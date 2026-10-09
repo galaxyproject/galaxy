@@ -200,3 +200,21 @@ def test_dir_mtime_cache_directory_listing_shared_across_registries(tmp_path, mo
     assert len(cache_listings()) == 2
     assert all(listing is listings[0] for listing in listings)
     assert "qux:3.0--0" in [image.image_identifier for image in listings[0]]
+
+
+def test_cached_singularity_container_resolver_picks_newest_cached_image(tmp_path):
+    for image in ("foo:1.0--0", "bar:2.0--0", "foo:1.10--0", "foo:1.2--0", "bar:10.0--0", "foo:1.2--1"):
+        (tmp_path / image).touch()
+    resolver = CachedMulledSingularityContainerResolver(
+        app_info=AppInfo(container_image_cache_path=str(tmp_path)), cache_directory=str(tmp_path)
+    )
+
+    def resolve(name, version):
+        tool_info = ToolInfo(requirements=[ToolRequirement(name=name, version=version, type="package")])
+        container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+        assert container_description
+        return os.path.basename(container_description.identifier)
+
+    assert resolve("foo", None) == "foo:1.10--0"
+    assert resolve("foo", "1.2") == "foo:1.2--1"
+    assert resolve("bar", None) == "bar:10.0--0"

@@ -108,9 +108,25 @@ class CachedV2MulledImageMultiTarget(NamedTuple):
 CachedTarget = Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]
 
 
+def _version_sorted_per_image_name(names: List[str]) -> List[str]:
+    """Order names newest version first within each image name.
+
+    Cached image lookups only compare entries that share an image name, so each image name's
+    entries are sorted on their own. That keeps the version sort keys of a single image name
+    alive at a time, instead of those of the whole directory.
+    """
+    by_image_name: Dict[str, List[str]] = {}
+    for name in names:
+        by_image_name.setdefault(name.rsplit(":", 1)[0], []).append(name)
+    sorted_names: List[str] = []
+    for image_names in by_image_name.values():
+        sorted_names.extend(version_sorted(image_names) if len(image_names) > 1 else image_names)
+    return sorted_names
+
+
 def _list_cached_mulled_images(path: str, hash_func: Literal["v1", "v2"]) -> List[CachedTarget]:
     contents = os.listdir(path)
-    sorted_images = version_sorted(contents)
+    sorted_images = _version_sorted_per_image_name(contents)
     raw_images = (identifier_to_cached_target(name, hash_func) for name in sorted_images)
     return [i for i in raw_images if i is not None]
 
