@@ -71,6 +71,10 @@ done
 
 log = logging.getLogger(__name__)
 
+# conda prefixes whose platform backfill thread already runs in this process
+_BACKFILL_STARTED_PREFIXES: set[str] = set()
+_BACKFILL_STARTED_LOCK = threading.Lock()
+
 
 class CondaDependencyResolver(
     DependencyResolver,
@@ -211,11 +215,18 @@ class CondaDependencyResolver(
         """Create missing foreign copies of the native environments in a daemon thread, once per process.
 
         Called by the job handler processes only, a short-lived process that merely builds the resolver
-        must not start work that it cannot finish.
+        must not start work that it cannot finish. A process holds several resolver instances for the
+        same conda prefix (the toolbox and the tool shed install manager each build one), so the guard
+        is keyed by prefix across the process.
         """
-        if self._backfill_enabled and self._backfill_thread is None and not self.disabled:
-            log.info("Starting backfill of conda platform environments")
-            self._start_platform_backfill()
+        if not self._backfill_enabled or self._backfill_thread is not None or self.disabled:
+            return
+        with _BACKFILL_STARTED_LOCK:
+            if self.conda_context.conda_prefix in _BACKFILL_STARTED_PREFIXES:
+                return
+            _BACKFILL_STARTED_PREFIXES.add(self.conda_context.conda_prefix)
+        log.info("Starting backfill of conda platform environments")
+        self._start_platform_backfill()
 
     @property
     def disabled(self) -> bool:

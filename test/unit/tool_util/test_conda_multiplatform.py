@@ -979,6 +979,26 @@ def test_backfill_thread_is_gated_by_options(fake_conda: FakeConda, tmp_path, mo
     assert started == [1]
 
 
+def test_backfill_starts_once_per_prefix_across_resolver_instances(
+    fake_conda: FakeConda, tmp_path, monkeypatch, caplog
+) -> None:
+    started: list[int] = []
+    monkeypatch.setattr(
+        CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1)
+    )
+    kwds = dict(platforms="linux-aarch64", auto_install=True, platforms_backfill=True)
+    with caplog.at_level("INFO"):
+        first = make_resolver(fake_conda, tmp_path, **kwds)
+        second = make_resolver(fake_conda, tmp_path, **kwds)
+        first.dependency_manager.start_background_tasks()
+        second.dependency_manager.start_background_tasks()
+    assert first._backfill_thread is not None
+    first._backfill_thread.join(10)
+    assert second._backfill_thread is None
+    assert started == [1]
+    assert caplog.text.count("Starting backfill") == 1
+
+
 def test_backfill_option_from_global_config(fake_conda: FakeConda, tmp_path) -> None:
     dependency_manager = make_dependency_manager(
         tmp_path, conda_platforms="linux-aarch64", conda_platforms_backfill=False, conda_auto_install=True
