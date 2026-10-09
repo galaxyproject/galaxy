@@ -17,7 +17,7 @@ env:
 permissions: {}
 jobs:
   build-client:
-    uses: ./.github/workflows/build_client.yaml
+    uses: $/.github/workflows/build_client.yaml
   test:
     name: Test
     needs: [build-client]
