@@ -357,6 +357,42 @@ describe("HeadlessMultiselect", () => {
         });
     });
 
+    describe("when pressing Tab on the close button", () => {
+        function tabOnCloseButton(wrapper: ReturnType<typeof mountWithProps>) {
+            const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+            wrapper.find("fieldset button").element.dispatchEvent(event);
+            return event;
+        }
+
+        it("moves focus to the first suggestion", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            const event = tabOnCloseButton(wrapper);
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(document.activeElement?.id).toBe("tags-option-0");
+            await close(wrapper);
+        });
+
+        it("keeps the native Tab when there are no suggestions", async () => {
+            const wrapper = mountWithProps({
+                options: [] as string[],
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            const event = tabOnCloseButton(wrapper);
+
+            expect(event.defaultPrevented).toBe(false);
+            await close(wrapper);
+        });
+    });
+
     describe("when selecting options", () => {
         it("selects options via keyboard", async () => {
             const wrapper = mountWithProps({
