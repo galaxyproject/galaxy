@@ -1,4 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeMonitoringData } from "@tests/test-data/monitoring";
+import { getFakeTaskMonitor } from "@tests/vitest/fakeTaskMonitor";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,20 +27,9 @@ const FAKE_MONITOR_REQUEST: MonitoringRequest = {
 
 const FAKE_EXPIRATION_TIME = 1000;
 
-const FAKE_MONITOR: TaskMonitor = {
-    waitForTask: vi.fn(),
-    stopWaitingForTask: vi.fn(),
-    isRunning: ref(false),
-    isCompleted: ref(false),
-    hasFailed: ref(false),
-    failureReason: ref(""),
-    requestHasFailed: ref(false),
-    taskStatus: ref(""),
-    expirationTime: FAKE_EXPIRATION_TIME,
-    isFinalState: vi.fn(),
-    loadStatus: vi.fn(),
-    fetchTaskStatus: vi.fn(),
-};
+function fakeMonitor(state: Partial<TaskMonitor> = {}) {
+    return getFakeTaskMonitor({ expirationTime: FAKE_EXPIRATION_TIME, ...state });
+}
 
 // Seed the monitoring data this component reads directly via localStorage, rather than
 // through usePersistentProgressTaskMonitor(). That composable's useLocalStorage() call
@@ -60,7 +51,7 @@ const mountedWrappers: VueWrapper[] = [];
 const mountComponent = (
     props: ComponentUnderTestProps = {
         monitorRequest: FAKE_MONITOR_REQUEST,
-        useMonitor: FAKE_MONITOR,
+        useMonitor: fakeMonitor(),
     },
 ) => {
     // The download tracker keeps its list in a Pinia store.
@@ -106,17 +97,10 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
     });
 
     it("renders in progress when monitoring data is available and in progress", () => {
-        const useMonitor = {
-            ...FAKE_MONITOR,
-            isRunning: ref(true),
-        };
-        const existingMonitoringData: MonitoringData = {
+        const useMonitor = fakeMonitor({ isRunning: ref(true) });
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
-            isFinal: false,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -132,17 +116,11 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
     });
 
     it("renders completed when monitoring data is available and completed", () => {
-        const useMonitor = {
-            ...FAKE_MONITOR,
-            isCompleted: ref(true),
-        };
-        const existingMonitoringData: MonitoringData = {
+        const useMonitor = fakeMonitor({ isCompleted: ref(true) });
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -158,17 +136,11 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
     });
 
     it("renders failed when monitoring data is available and failed", () => {
-        const useMonitor = {
-            ...FAKE_MONITOR,
-            hasFailed: ref(true),
-        };
-        const existingMonitoringData: MonitoringData = {
+        const useMonitor = fakeMonitor({ hasFailed: ref(true) });
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -189,17 +161,11 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR_REQUEST,
             taskType: "short_term_storage",
         };
-        const useMonitor = {
-            ...FAKE_MONITOR,
-            isCompleted: ref(true),
-        };
-        const existingMonitoringData: MonitoringData = {
+        const useMonitor = fakeMonitor({ isCompleted: ref(true) });
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(monitoringRequest, {
             taskId: taskId,
-            taskType: "short_term_storage",
-            request: monitoringRequest,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(monitoringRequest, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -219,17 +185,11 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
     });
 
     it("does not render a link to download the task result when completed and task type is 'task'", () => {
-        const useMonitor = {
-            ...FAKE_MONITOR,
-            isCompleted: ref(true),
-        };
-        const existingMonitoringData: MonitoringData = {
+        const useMonitor = fakeMonitor({ isCompleted: ref(true) });
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -245,17 +205,12 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
     });
 
     it("should render a warning alert when the task has expired even if the status is running", () => {
-        const useMonitor = {
-            ...FAKE_MONITOR,
-            isRunning: ref(true),
-        };
-        const existingMonitoringData: MonitoringData = {
+        const useMonitor = fakeMonitor({ isRunning: ref(true) });
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(Date.now() - FAKE_EXPIRATION_TIME * 2), // Make sure the task has expired
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
