@@ -1,13 +1,21 @@
 name: Playwright tests
 on:
   push:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/playwright.yaml'
+      - '.github/workflows/build_client.yaml'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/playwright.yaml'
+      - '.github/workflows/build_client.yaml'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
