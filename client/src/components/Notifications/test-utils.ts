@@ -1,85 +1,78 @@
 import type {
     MessageNotification,
-    NewSharedItemNotificationContentItemType,
-    NotificationVariants,
     SharedItemNotification,
     ToolInstallationRequestNotification,
     UserNotification,
 } from "@/api/notifications";
 
-export function generateRandomItemType() {
-    const itemTypes = ["history", "workflow", "visualization", "page"];
-    const randomIndex = Math.floor(Math.random() * itemTypes.length);
-    return itemTypes[randomIndex] as NewSharedItemNotificationContentItemType;
-}
+type NotificationOverrides<T extends UserNotification> = Partial<Omit<T, "category" | "content">> & {
+    content?: Partial<T["content"]>;
+};
 
-export function generateRandomString() {
-    return Math.random().toString(36).substring(7) as string;
-}
-
-export function generateRandomVariant() {
-    const variants: NotificationVariants[] = ["info", "warning", "urgent"];
-    const randomIndex = Math.floor(Math.random() * variants.length);
-    return variants[randomIndex] as NotificationVariants;
-}
-
-export function generateMessageNotification(): MessageNotification {
+function notificationDefaults() {
     return {
-        id: "notification-" + Math.floor(Math.random() * 1000000),
+        variant: "info" as const,
+        create_time: "2024-01-01T12:00:01.000Z",
+        update_time: "2024-01-01T12:00:02.000Z",
+        publication_time: "2024-01-01T12:00:03.000Z",
+        expiration_time: "2024-01-02T12:00:00.000Z",
+        seen_time: null,
+        deleted: false,
+    };
+}
+
+export function generateMessageNotification(
+    overrides: NotificationOverrides<MessageNotification> = {},
+): MessageNotification {
+    return {
+        ...notificationDefaults(),
+        id: "message-notification",
         source: "admin",
         category: "message",
-        variant: generateRandomVariant(),
-        create_time: new Date(Date.now() + 1).toISOString(),
-        update_time: new Date(Date.now() + 2).toISOString(),
-        publication_time: new Date(Date.now() + 3).toISOString(),
-        expiration_time: new Date(Date.now() + 86400000).toISOString(),
+        ...overrides,
         content: {
-            subject: generateRandomString(),
-            message: generateRandomString(),
+            subject: "Message subject",
+            message: "Message body",
             category: "message",
+            ...overrides.content,
         },
-        seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
-        deleted: false,
     };
 }
 
-export function generateNewSharedItemNotification(): SharedItemNotification {
+export function generateNewSharedItemNotification(
+    overrides: NotificationOverrides<SharedItemNotification> = {},
+): SharedItemNotification {
     return {
-        id: "notification-" + Math.floor(Math.random() * 1000000),
+        ...notificationDefaults(),
+        id: "shared-item-notification",
         source: "galaxy_sharing_system",
         category: "new_shared_item",
-        variant: generateRandomVariant(),
-        create_time: new Date(Date.now() + 1).toISOString(),
-        update_time: new Date(Date.now() + 2).toISOString(),
-        publication_time: new Date(Date.now() + 3).toISOString(),
-        expiration_time: new Date(Date.now() + 86400000).toISOString(),
+        ...overrides,
         content: {
             category: "new_shared_item",
-            item_type: generateRandomItemType(),
-            item_name: generateRandomString(),
-            owner_name: generateRandomString(),
-            slug: generateRandomString(),
+            item_type: "history",
+            item_name: "Shared history",
+            owner_name: "History owner",
+            slug: "shared-history",
+            ...overrides.content,
         },
-        seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
-        deleted: false,
     };
 }
 
-export function generateToolInstallationRequestNotification(): ToolInstallationRequestNotification {
+export function generateToolInstallationRequestNotification(
+    overrides: NotificationOverrides<ToolInstallationRequestNotification> = {},
+): ToolInstallationRequestNotification {
     return {
-        id: "notification-" + Math.floor(Math.random() * 1000000),
+        ...notificationDefaults(),
+        id: "tool-request-notification",
         source: "tool_installation_request_form",
         category: "tool_installation_request",
-        variant: generateRandomVariant(),
-        create_time: new Date(Date.now() + 1).toISOString(),
-        update_time: new Date(Date.now() + 2).toISOString(),
-        publication_time: new Date(Date.now() + 3).toISOString(),
-        expiration_time: new Date(Date.now() + 86400000).toISOString(),
+        ...overrides,
         content: {
             category: "tool_installation_request",
             tools: [
                 {
-                    name: generateRandomString(),
+                    name: "Example tool",
                     tool_shed_id: null,
                     tool_url: "https://github.com/example/tool",
                     description: "A useful scientific analysis tool",
@@ -90,9 +83,8 @@ export function generateToolInstallationRequestNotification(): ToolInstallationR
             workflow_id: null,
             additional_remarks: null,
             requester_email: "requester@example.com",
+            ...overrides.content,
         },
-        seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
-        deleted: false,
     };
 }
 
@@ -101,27 +93,17 @@ export function generateNotificationsList(n: number) {
         throw new Error("Invalid input. Number must be greater than 2.");
     }
 
-    let messageCount = 1;
-    let sharedItemCount = 1;
-    const remainingCount = n - 2;
-
-    const notifications: UserNotification[] = [generateMessageNotification(), generateNewSharedItemNotification()];
-
-    if (remainingCount > 0) {
-        for (let i = 0; i < remainingCount; i++) {
-            if (i % 2 === 0) {
-                notifications.push(generateMessageNotification());
-                messageCount = messageCount + 1;
-            } else {
-                notifications.push(generateNewSharedItemNotification());
-                sharedItemCount = sharedItemCount + 1;
-            }
-        }
-    }
+    const notifications = Array.from({ length: n }, (_, index) => {
+        const createNotification = index % 2 === 0 ? generateMessageNotification : generateNewSharedItemNotification;
+        return createNotification({
+            id: `notification-${index + 1}`,
+            seen_time: index % 4 < 2 ? null : "2024-01-01T12:00:04.000Z",
+        });
+    });
 
     return {
         notifications,
-        messageCount,
-        sharedItemCount,
+        messageCount: notifications.filter((notification) => notification.category === "message").length,
+        sharedItemCount: notifications.filter((notification) => notification.category === "new_shared_item").length,
     };
 }
