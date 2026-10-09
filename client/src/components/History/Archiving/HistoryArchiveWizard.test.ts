@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getFakeHistorySummary } from "@tests/test-data";
+import { getFakeFileSource } from "@tests/test-data/fileSources";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -21,43 +22,28 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 
 const { server, http } = useServerMock();
-
 const TEST_HISTORY_ID = "test-history-id";
-const TEST_HISTORY = {
-    id: TEST_HISTORY_ID,
-    archived: false,
-};
 
-const ARCHIVED_TEST_HISTORY = {
-    ...TEST_HISTORY,
-    archived: true,
-};
-
-async function mountComponentWithHistory(history?: HistorySummary) {
+async function mountComponentWithHistory(history: HistorySummary) {
+    const localVue = getLocalVue(true);
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
     const historyStore = useHistoryStore(pinia);
 
-    // getHistoryById is a computed getter, not a plain method, so it can't be
-    // spied on directly -- seed the store's cache instead, which is all it reads.
-    if (history) {
-        historyStore.setHistories([history]);
-    }
+    historyStore.setHistories([history]);
 
     const wrapper = shallowMount(HistoryArchiveWizard as object, {
         props: { historyId: TEST_HISTORY_ID },
-        global: localVue,
-        pinia,
+        global: withPlugins(localVue, pinia),
     });
     await flushPromises();
     return wrapper;
 }
 
 describe("HistoryArchiveWizard.vue", () => {
-    beforeEach(async () => {
+    beforeEach(() => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json([]);
@@ -65,36 +51,28 @@ describe("HistoryArchiveWizard.vue", () => {
         );
     });
 
-    it("should render only the simple archival mode when no writeable file sources are available", async () => {
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+    it("shows simple archival without tabs when no writable file sources are available", async () => {
+        const wrapper = await mountComponentWithHistory(getFakeHistorySummary({ id: TEST_HISTORY_ID }));
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
-        expect(optionTabs.length).toBe(0);
+        expect(optionTabs).toHaveLength(0);
+        expect(wrapper.findComponent({ name: "HistoryArchiveSimple" }).exists()).toBe(true);
     });
 
-    it("should render both archival modes when writeable file sources and celery tasks are available", async () => {
+    it("shows both archival modes when writable file sources and Celery tasks are available", async () => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json([
-                    {
+                    getFakeFileSource({
                         id: "test-posix-source",
-                        type: "posix",
-                        uri_root: "gxfiles://test-posix-source",
                         label: "TestSource",
                         doc: "For testing",
-                        writable: true,
-                        browsable: true,
-                        supports: {
-                            pagination: false,
-                            search: false,
-                            sorting: false,
-                        },
-                    },
+                    }),
                 ]);
             }),
         );
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory(getFakeHistorySummary({ id: TEST_HISTORY_ID }));
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
         expect(optionTabs.length).toBeGreaterThan(0);
@@ -106,8 +84,8 @@ describe("HistoryArchiveWizard.vue", () => {
         expect(freeStorageOption.exists()).toBe(true);
     });
 
-    it("should display a success alert when the history is archived instead of the archival options", async () => {
-        const wrapper = await mountComponentWithHistory(ARCHIVED_TEST_HISTORY as HistorySummary);
+    it("shows an archived history alert instead of archival options", async () => {
+        const wrapper = await mountComponentWithHistory(getFakeHistorySummary({ id: TEST_HISTORY_ID, archived: true }));
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");
         expect(optionTabs.length).toBe(0);
