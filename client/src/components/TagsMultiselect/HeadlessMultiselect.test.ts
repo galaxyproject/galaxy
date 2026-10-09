@@ -298,6 +298,49 @@ describe("HeadlessMultiselect", () => {
         });
     });
 
+    describe("as a combobox", () => {
+        it("reports the listbox it controls", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.attributes("role")).toBe("combobox");
+            expect(input.attributes("aria-expanded")).toBe("true");
+            expect(input.attributes("aria-controls")).toBe("tags-options");
+            expect(document.getElementById("tags-options")?.getAttribute("role")).toBe("listbox");
+            await close(wrapper);
+        });
+
+        it("points to the highlighted option", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.attributes("aria-activedescendant")).toBe("tags-option-0");
+
+            await keyPress(input, "ArrowDown");
+            expect(input.attributes("aria-activedescendant")).toBe("tags-option-1");
+            await close(wrapper);
+        });
+
+        it("points to no option when there are none", async () => {
+            const wrapper = mountWithProps({
+                options: [] as string[],
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.attributes("aria-activedescendant")).toBeUndefined();
+            await close(wrapper);
+        });
+    });
+
     describe("when selecting options", () => {
         it("selects options via keyboard", async () => {
             const wrapper = mountWithProps({

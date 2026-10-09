@@ -103,6 +103,12 @@ const trimmedOptions = computed(() => {
 /** the option which will be added when the `Enter` key is pressed */
 const highlightedOption = ref(0);
 
+const activeDescendant = computed(() =>
+    trimmedOptions.value[highlightedOption.value] !== undefined
+        ? `${props.id}-option-${highlightedOption.value}`
+        : undefined,
+);
+
 watch(
     () => trimmedSearchValue.value,
     () => {
@@ -307,12 +313,13 @@ onClickOutside(
                 v-model="searchValue"
                 aria-autocomplete="list"
                 :aria-label="props.placeholder"
-                role="searchbox"
+                role="combobox"
                 aria-haspopup="listbox"
                 type="text"
                 :aria-invalid="props.validator(trimmedSearchValue)"
-                :aria-owns="`${props.id}-options`"
-                :aria-activedescendant="`${props.id}-options`"
+                aria-expanded="true"
+                :aria-controls="`${props.id}-options`"
+                :aria-activedescendant="activeDescendant"
                 :data-parent-id="props.id"
                 :placeholder="props.placeholder"
                 @keydown.up="onInputUp"
@@ -338,7 +345,6 @@ onClickOutside(
             <div
                 :id="`${props.id}-options`"
                 tabindex="-1"
-                aria-expanded="true"
                 role="listbox"
                 class="headless-multiselect__options"
                 :style="{
