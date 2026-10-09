@@ -11,8 +11,9 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useResizeObserver } from "@vueuse/core";
 import { BBadge, BFormCheckbox, BLink } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
 import type { BootstrapSize } from "@/components/Common";
@@ -21,6 +22,7 @@ import { useUid } from "@/composables/utils/uid";
 import localize from "@/utils/localization";
 
 import type { CardAction, CardBadge, CardIndicator, Title, TitleIcon, TitleSize } from "./GCard.types";
+import { chooseHeaderLayout, type GCardHeaderLayout } from "./gCardHeaderLayout";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
@@ -30,6 +32,11 @@ import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
+
+/**
+ * Narrowest the title gets before the badges move to their own row; matches the title section's flex-basis
+ */
+const TITLE_MIN_WIDTH_REM = 10;
 
 interface Props {
     /** Unique identifier for the card
@@ -371,6 +378,72 @@ const hasHeaderControls = computed(
         props.selectable || props.canRenameTitle || props.canClearTitle || props.showBookmark || hasExtraActions.value,
 );
 
+const headerElement = ref<HTMLElement | null>(null);
+const selectElement = ref<HTMLElement | null>(null);
+const badgesElement = ref<HTMLElement | null>(null);
+const badgeListElement = ref<HTMLElement | null>(null);
+const indicatorsElement = ref<HTMLElement | null>(null);
+const actionsElement = ref<HTMLElement | null>(null);
+const headerLayout = ref<GCardHeaderLayout>("inline");
+let headerFrame: number | undefined;
+
+/**
+ * Places the badges beside the title, under the actions, or on their own row, whichever keeps the title 10rem wide.
+ * CSS alone cannot move the badges off the first row while the actions, which follow them in the DOM, stay on it.
+ * Only widths that do not depend on the applied layout are read, so the result cannot oscillate.
+ */
+function measureHeader() {
+    const header = headerElement.value;
+    const badges = badgesElement.value;
+    if (!header || !badges) {
+        setHeaderLayout("inline");
+        return;
+    }
+    if (header.clientWidth === 0) {
+        return;
+    }
+    const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const badgesGap = parseFloat(getComputedStyle(badges).columnGap) || 0;
+    const badgeParts = [badgeListElement.value, indicatorsElement.value].filter((el): el is HTMLElement => !!el);
+    setHeaderLayout(
+        chooseHeaderLayout({
+            actions: actionsElement.value?.offsetWidth,
+            available: header.clientWidth,
+            badges:
+                badgeParts.reduce((sum, el) => sum + el.offsetWidth, 0) +
+                badgesGap * Math.max(badgeParts.length - 1, 0),
+            gap: parseFloat(getComputedStyle(header).columnGap) || 0,
+            select: selectElement.value?.offsetWidth,
+            titleMin: TITLE_MIN_WIDTH_REM * rootFontSize,
+        }),
+    );
+}
+
+/**
+ * Applies the layout in the next frame, so the class change never resizes observed elements inside the observer callback
+ */
+function setHeaderLayout(layout: GCardHeaderLayout) {
+    if (headerFrame !== undefined) {
+        cancelAnimationFrame(headerFrame);
+    }
+    headerFrame = requestAnimationFrame(() => {
+        headerFrame = undefined;
+        headerLayout.value = layout;
+    });
+}
+
+useResizeObserver([headerElement, badgeListElement, indicatorsElement], measureHeader);
+
+watch([() => props.selectable, () => props.showBookmark, hasExtraActions, badgesElement], measureHeader, {
+    flush: "post",
+});
+
+onBeforeUnmount(() => {
+    if (headerFrame !== undefined) {
+        cancelAnimationFrame(headerFrame);
+    }
+});
+
 function onKeyDown(event: KeyboardEvent) {
     if (props.disabled) {
         return;
@@ -412,8 +485,15 @@ function onKeyDown(event: KeyboardEvent) {
             :class="[{ 'g-card-highlighted': props.highlighted }, contentClass]">
             <slot>
                 <div class="d-flex flex-column flex-gapy-1">
-                    <div :id="`g-card-${props.id}-header`" class="align-items-start d-flex flex-gapx-1">
-                        <div v-if="selectable" class="g-card-header-line align-items-center d-flex flex-shrink-0">
+                    <div
+                        :id="`g-card-${props.id}-header`"
+                        ref="headerElement"
+                        class="g-card-header align-items-start flex-gapx-1"
+                        :class="[`g-card-header-${headerLayout}`, { 'g-card-header-selectable': selectable }]">
+                        <div
+                            v-if="selectable"
+                            ref="selectElement"
+                            class="g-card-header-select g-card-header-line align-items-center d-flex flex-shrink-0">
                             <slot name="select">
                                 <BFormCheckbox
                                     :id="getElementId(props.id, 'select')"
@@ -425,177 +505,171 @@ function onKeyDown(event: KeyboardEvent) {
                         </div>
 
                         <div
-                            class="g-card-header-main align-items-start d-flex flex-gapx-1 flex-gapy-1 flex-grow-1 flex-wrap">
-                            <div
-                                class="g-card-title-section d-flex flex-column justify-content-center"
-                                :class="{ 'g-card-header-line': hasHeaderControls }">
-                                <div :id="`g-card-${props.id}-header-title`">
-                                    <slot name="title">
-                                        <Heading
-                                            :id="getElementId(props.id, 'title')"
-                                            bold
-                                            inline
-                                            :size="props.titleSize">
-                                            <FontAwesomeIcon
-                                                v-if="props.titleIcon?.icon"
-                                                class="mr-1"
-                                                :class="props.titleIcon.class"
-                                                :icon="props.titleIcon.icon"
-                                                :title="props.titleIcon.title"
-                                                :size="props.titleIcon.size"
-                                                fixed-width />
-                                            <BLink
-                                                v-if="typeof title === 'object'"
-                                                :id="getElementId(props.id, 'title-link')"
-                                                v-g-tooltip.hover
-                                                :title="localize(title.title)"
-                                                :class="{ 'g-card-title-truncate': props.titleNLines }"
-                                                @click.stop.prevent="title.handler && title.handler()">
-                                                {{ title.label }}
-                                            </BLink>
-                                            <template v-else>
-                                                <span
-                                                    :id="getElementId(props.id, 'title-text')"
-                                                    v-g-tooltip.onoverflow
-                                                    :title="localize(title)"
-                                                    :class="{ 'g-card-title-truncate': props.titleNLines }">
-                                                    {{ title }}
-                                                </span>
-                                            </template>
-
-                                            <slot name="titleActions">
-                                                <GButton
-                                                    v-if="props.canRenameTitle"
-                                                    :id="getElementId(props.id, 'rename')"
-                                                    v-g-tooltip.hover
-                                                    class="inline-icon-button g-card-rename"
-                                                    transparent
-                                                    icon-only
-                                                    color="blue"
-                                                    :title="localize(props.renameTitle)"
-                                                    @click="emit('rename')">
-                                                    <FontAwesomeIcon :icon="faPen" fixed-width />
-                                                </GButton>
-                                                <GButton
-                                                    v-if="props.canClearTitle"
-                                                    :id="getElementId(props.id, 'clear-title')"
-                                                    v-g-tooltip.hover
-                                                    class="inline-icon-button g-card-clear-title"
-                                                    transparent
-                                                    :title="localize(props.clearTitleTooltip)"
-                                                    @click="emit('clearTitle')">
-                                                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                                                </GButton>
-                                            </slot>
-                                        </Heading>
-                                    </slot>
-                                </div>
-
-                                <div class="align-items-center d-flex flex-gapx-1">
-                                    <slot name="titleBadges">
-                                        <template v-for="badge in props.titleBadges" :key="badge.id">
-                                            <BBadge
-                                                v-if="badge.visible ?? true"
-                                                :id="getBadgeId(props.id, badge.id)"
-                                                v-g-tooltip.hover
-                                                :pill="badge.type !== 'badge'"
-                                                class="mt-1"
-                                                :class="{
-                                                    'outline-badge': badge.variant?.includes('outline'),
-                                                    'cursor-pointer': badge.handler,
-                                                    [String(badge.class)]: badge.class,
-                                                }"
-                                                :title="localize(badge.title)"
-                                                :variant="badge.variant || 'secondary'"
-                                                :to="badge.to"
-                                                @click.stop="badge.handler && badge.handler()">
-                                                <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
-                                                {{ localize(badge.label) }}
-                                            </BBadge>
+                            class="g-card-title-section d-flex flex-column justify-content-center"
+                            :class="{ 'g-card-header-line': hasHeaderControls }">
+                            <div :id="`g-card-${props.id}-header-title`">
+                                <slot name="title">
+                                    <Heading :id="getElementId(props.id, 'title')" bold inline :size="props.titleSize">
+                                        <FontAwesomeIcon
+                                            v-if="props.titleIcon?.icon"
+                                            class="mr-1"
+                                            :class="props.titleIcon.class"
+                                            :icon="props.titleIcon.icon"
+                                            :title="props.titleIcon.title"
+                                            :size="props.titleIcon.size"
+                                            fixed-width />
+                                        <BLink
+                                            v-if="typeof title === 'object'"
+                                            :id="getElementId(props.id, 'title-link')"
+                                            v-g-tooltip.hover
+                                            :title="localize(title.title)"
+                                            :class="{ 'g-card-title-truncate': props.titleNLines }"
+                                            @click.stop.prevent="title.handler && title.handler()">
+                                            {{ title.label }}
+                                        </BLink>
+                                        <template v-else>
+                                            <span
+                                                :id="getElementId(props.id, 'title-text')"
+                                                v-g-tooltip.onoverflow
+                                                :title="localize(title)"
+                                                :class="{ 'g-card-title-truncate': props.titleNLines }">
+                                                {{ title }}
+                                            </span>
                                         </template>
-                                    </slot>
-                                </div>
+
+                                        <slot name="titleActions">
+                                            <GButton
+                                                v-if="props.canRenameTitle"
+                                                :id="getElementId(props.id, 'rename')"
+                                                v-g-tooltip.hover
+                                                class="inline-icon-button g-card-rename"
+                                                transparent
+                                                icon-only
+                                                color="blue"
+                                                :title="localize(props.renameTitle)"
+                                                @click="emit('rename')">
+                                                <FontAwesomeIcon :icon="faPen" fixed-width />
+                                            </GButton>
+                                            <GButton
+                                                v-if="props.canClearTitle"
+                                                :id="getElementId(props.id, 'clear-title')"
+                                                v-g-tooltip.hover
+                                                class="inline-icon-button g-card-clear-title"
+                                                transparent
+                                                :title="localize(props.clearTitleTooltip)"
+                                                @click="emit('clearTitle')">
+                                                <FontAwesomeIcon :icon="faTimes" fixed-width />
+                                            </GButton>
+                                        </slot>
+                                    </Heading>
+                                </slot>
+                            </div>
+
+                            <div class="align-items-center d-flex flex-gapx-1">
+                                <slot name="titleBadges">
+                                    <template v-for="badge in props.titleBadges" :key="badge.id">
+                                        <BBadge
+                                            v-if="badge.visible ?? true"
+                                            :id="getBadgeId(props.id, badge.id)"
+                                            v-g-tooltip.hover
+                                            :pill="badge.type !== 'badge'"
+                                            class="mt-1"
+                                            :class="{
+                                                'outline-badge': badge.variant?.includes('outline'),
+                                                'cursor-pointer': badge.handler,
+                                                [String(badge.class)]: badge.class,
+                                            }"
+                                            :title="localize(badge.title)"
+                                            :variant="badge.variant || 'secondary'"
+                                            :to="badge.to"
+                                            @click.stop="badge.handler && badge.handler()">
+                                            <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                            {{ localize(badge.label) }}
+                                        </BBadge>
+                                    </template>
+                                </slot>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="hasBadges || hasIndicators || $slots.badges || $slots.indicators"
+                            ref="badgesElement"
+                            class="g-card-header-badges align-items-center d-flex flex-gapx-1 flex-shrink-0 mw-100"
+                            :class="{ 'g-card-header-line': hasHeaderControls }">
+                            <div
+                                v-if="hasBadges || $slots.badges"
+                                :id="getElementId(props.id, 'badges')"
+                                ref="badgeListElement"
+                                class="align-items-center d-flex flex-gapx-1 flex-wrap">
+                                <slot name="badges">
+                                    <template v-for="badge in props.badges" :key="badge.id">
+                                        <BBadge
+                                            v-if="badge.visible ?? true"
+                                            :id="getBadgeId(props.id, badge.id)"
+                                            v-g-tooltip.hover.top
+                                            :pill="badge.type !== 'badge'"
+                                            :class="{
+                                                'outline-badge': badge.variant?.includes('outline'),
+                                                'cursor-pointer': badge.handler,
+                                                [String(badge.class)]: badge.class,
+                                            }"
+                                            :title="localize(badge.title)"
+                                            :variant="badge.variant || 'secondary'"
+                                            :to="badge.to"
+                                            :href="badge.href"
+                                            @click.stop="badge.handler && badge.handler()">
+                                            <FontAwesomeIcon
+                                                v-if="badge.icon"
+                                                :icon="badge.icon"
+                                                fixed-width
+                                                :spin="badge.spin" />
+                                            {{ localize(badge.label) }}
+                                        </BBadge>
+                                    </template>
+                                </slot>
                             </div>
 
                             <div
-                                v-if="hasBadges || hasIndicators || $slots.badges || $slots.indicators"
-                                class="g-card-header-badges align-items-center d-flex flex-gapx-1 flex-wrap mw-100"
-                                :class="{ 'g-card-header-line': hasHeaderControls }">
-                                <div
-                                    v-if="hasBadges || $slots.badges"
-                                    :id="getElementId(props.id, 'badges')"
-                                    class="align-items-center d-flex flex-gapx-1 flex-wrap">
-                                    <slot name="badges">
-                                        <template v-for="badge in props.badges" :key="badge.id">
-                                            <BBadge
-                                                v-if="badge.visible ?? true"
-                                                :id="getBadgeId(props.id, badge.id)"
-                                                v-g-tooltip.hover.top
-                                                :pill="badge.type !== 'badge'"
-                                                :class="{
-                                                    'outline-badge': badge.variant?.includes('outline'),
-                                                    'cursor-pointer': badge.handler,
-                                                    [String(badge.class)]: badge.class,
-                                                }"
-                                                :title="localize(badge.title)"
-                                                :variant="badge.variant || 'secondary'"
-                                                :to="badge.to"
-                                                :href="badge.href"
-                                                @click.stop="badge.handler && badge.handler()">
-                                                <FontAwesomeIcon
-                                                    v-if="badge.icon"
-                                                    :icon="badge.icon"
-                                                    fixed-width
-                                                    :spin="badge.spin" />
-                                                {{ localize(badge.label) }}
-                                            </BBadge>
-                                        </template>
-                                    </slot>
-                                </div>
-
-                                <div
-                                    v-if="hasIndicators || $slots.indicators"
-                                    :id="getElementId(props.id, 'indicators')">
-                                    <slot name="indicators">
-                                        <template v-for="indicator in props.indicators" :key="indicator.id">
-                                            <GButton
-                                                v-if="(indicator.visible ?? true) && !indicator.disabled"
-                                                :id="getIndicatorId(props.id, indicator.id)"
-                                                v-g-tooltip.hover
-                                                class="inline-icon-button"
-                                                :title="localize(indicator.title)"
-                                                v-bind="variantToColor(indicator.variant || 'link')"
-                                                :size="sizeToGSize(indicator.size || 'sm')"
-                                                :to="indicator.to"
-                                                :href="indicator.href"
-                                                :disabled="indicator.disabled"
-                                                :target="indicator.externalLink ? '_blank' : undefined"
-                                                @click.stop="indicator.handler && indicator.handler()">
-                                                <FontAwesomeIcon
-                                                    v-if="indicator.icon"
-                                                    :icon="indicator.icon"
-                                                    fixed-width />
-                                                {{ localize(indicator.label) }}
-                                            </GButton>
-                                            <FontAwesomeIcon
-                                                v-else-if="
-                                                    (indicator.visible ?? true) && indicator.disabled && indicator.icon
-                                                "
-                                                :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="`${indicator.id}-icon`"
-                                                v-g-tooltip.hover
-                                                :title="localize(indicator.title)"
-                                                :icon="indicator.icon"
-                                                :size="toIconSize(indicator.size) || 'sm'"
-                                                fixed-width />
-                                        </template>
-                                    </slot>
-                                </div>
+                                v-if="hasIndicators || $slots.indicators"
+                                :id="getElementId(props.id, 'indicators')"
+                                ref="indicatorsElement">
+                                <slot name="indicators">
+                                    <template v-for="indicator in props.indicators" :key="indicator.id">
+                                        <GButton
+                                            v-if="(indicator.visible ?? true) && !indicator.disabled"
+                                            :id="getIndicatorId(props.id, indicator.id)"
+                                            v-g-tooltip.hover
+                                            class="inline-icon-button"
+                                            :title="localize(indicator.title)"
+                                            v-bind="variantToColor(indicator.variant || 'link')"
+                                            :size="sizeToGSize(indicator.size || 'sm')"
+                                            :to="indicator.to"
+                                            :href="indicator.href"
+                                            :disabled="indicator.disabled"
+                                            :target="indicator.externalLink ? '_blank' : undefined"
+                                            @click.stop="indicator.handler && indicator.handler()">
+                                            <FontAwesomeIcon v-if="indicator.icon" :icon="indicator.icon" fixed-width />
+                                            {{ localize(indicator.label) }}
+                                        </GButton>
+                                        <FontAwesomeIcon
+                                            v-else-if="
+                                                (indicator.visible ?? true) && indicator.disabled && indicator.icon
+                                            "
+                                            :id="getIndicatorId(props.id, indicator.id)"
+                                            :key="`${indicator.id}-icon`"
+                                            v-g-tooltip.hover
+                                            :title="localize(indicator.title)"
+                                            :icon="indicator.icon"
+                                            :size="toIconSize(indicator.size) || 'sm'"
+                                            fixed-width />
+                                    </template>
+                                </slot>
                             </div>
                         </div>
 
                         <div
                             v-if="props.showBookmark || hasExtraActions || $slots['extra-actions']"
+                            ref="actionsElement"
                             class="g-card-header-actions align-items-center d-flex flex-shrink-0"
                             :class="{ 'g-card-header-line': hasHeaderControls }">
                             <slot v-if="props.showBookmark" name="bookmark">
@@ -890,9 +964,76 @@ function onKeyDown(event: KeyboardEvent) {
     }
 
     .g-card-title-section {
-        // Badges share the title's row while it keeps 10rem, and wrap below it on narrower cards.
         flex: 1 1 10rem;
         min-width: 0;
+    }
+
+    .g-card-header-badges > * {
+        // Keeps the measured badge widths independent of the stacked state.
+        flex-shrink: 0;
+    }
+
+    .g-card-header {
+        display: flex;
+    }
+
+    .g-card-header-column {
+        // Title on the left; the badges sit directly under the actions in a right-hand column.
+        display: grid;
+        grid-template-areas:
+            "title actions"
+            "title badges";
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto 1fr;
+        row-gap: 0.25rem;
+
+        &.g-card-header-selectable {
+            grid-template-areas:
+                "select title actions"
+                "select title badges";
+            grid-template-columns: auto minmax(0, 1fr) auto;
+        }
+
+        .g-card-header-select {
+            grid-area: select;
+        }
+
+        .g-card-title-section {
+            grid-area: title;
+        }
+
+        .g-card-header-badges {
+            grid-area: badges;
+            justify-self: end;
+        }
+
+        .g-card-header-actions {
+            grid-area: actions;
+            justify-self: end;
+        }
+    }
+
+    .g-card-header-stacked {
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
+
+        .g-card-title-section {
+            // Never pushes the actions off the first row, however narrow the card.
+            flex-basis: 0;
+        }
+
+        .g-card-header-badges {
+            // Own row below the title and actions, right edge in line with the caret.
+            order: 1;
+            flex-basis: 100%;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+
+            > * {
+                // A row wider than the card wraps instead of overflowing; a capped width still measures as stacked.
+                max-width: 100%;
+            }
+        }
     }
 
     .g-card-rename {

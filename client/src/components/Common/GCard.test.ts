@@ -1,13 +1,30 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import GCard from "./GCard.vue";
 
+const { resizeCallbacks } = vi.hoisted(() => ({ resizeCallbacks: [] as Array<() => void> }));
+
+vi.mock("@vueuse/core", async (importOriginal) => {
+    const actual = await importOriginal<object>();
+    return {
+        ...actual,
+        useResizeObserver: vi.fn((_target: unknown, callback: () => void) => {
+            resizeCallbacks.push(callback);
+            return { isSupported: { value: true }, stop: vi.fn() };
+        }),
+    };
+});
+
 const localVue = getLocalVue();
+
+function setWidth(element: Element, property: "clientWidth" | "offsetWidth", value: number) {
+    Object.defineProperty(element, property, { configurable: true, value });
+}
 
 function mountCard(propsData: object, slots: Record<string, string> = {}) {
     return mount(GCard as object, {
@@ -63,14 +80,16 @@ describe("GCard", () => {
             });
         }
 
-        it("keeps the title and badges in a wrapping group and the bookmark and menu in their own group", () => {
+        it("keeps the title, the badges and the bookmark and menu as separate groups of the header row", () => {
             const header = mountHeader().find("#g-card-card-header");
-            const main = header.find(".g-card-header-main");
+            const badges = header.find(".g-card-header-badges");
             const actions = header.find(".g-card-header-actions");
 
-            expect(main.classes()).toContain("flex-wrap");
-            for (const id of ["title", "badges", "indicators"]) {
-                expect(main.find(`#g-card-${id}-card`).exists()).toBe(true);
+            for (const group of [header.find(".g-card-title-section"), badges, actions]) {
+                expect(group.element.parentElement).toBe(header.element);
+            }
+            for (const id of ["badges", "indicators"]) {
+                expect(badges.find(`#g-card-${id}-card`).exists()).toBe(true);
             }
             expect(actions.classes()).toContain("flex-shrink-0");
             for (const id of ["bookmark-add", "extra-actions"]) {
@@ -135,6 +154,90 @@ describe("GCard", () => {
             );
 
             expect(header.find(".g-card-header-badges #slot-badge").exists()).toBe(true);
+        });
+
+        beforeEach(() => {
+            vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+                callback(0);
+                return 0;
+            });
+            vi.stubGlobal("cancelAnimationFrame", vi.fn());
+        });
+
+        function mountStackedHeader() {
+            resizeCallbacks.length = 0;
+            const wrapper = mountHeader();
+            const header = wrapper.find("#g-card-card-header");
+            const measure = resizeCallbacks.at(-1)!;
+            setWidth(header.element, "clientWidth", 300);
+            setWidth(header.find(".g-card-header-select").element, "offsetWidth", 20);
+            setWidth(header.find("#g-card-badges-card").element, "offsetWidth", 150);
+            setWidth(header.find("#g-card-indicators-card").element, "offsetWidth", 30);
+            setWidth(header.find(".g-card-header-actions").element, "offsetWidth", 40);
+            measure();
+            return { wrapper, header, measure };
+        }
+
+        it("keeps the badges on the first row until the header has been measured", () => {
+            const header = mountHeader().find("#g-card-card-header");
+
+            expect(header.classes()).toContain("g-card-header-inline");
+        });
+
+        it("moves the badges to their own row when they do not fit beside a 10rem title", async () => {
+            const { wrapper, header, measure } = mountStackedHeader();
+            await wrapper.vm.$nextTick();
+            expect(header.classes()).toContain("g-card-header-stacked");
+
+            setWidth(header.element, "clientWidth", 600);
+            measure();
+            await wrapper.vm.$nextTick();
+            expect(header.classes()).toContain("g-card-header-inline");
+        });
+
+        it("keeps the last layout while the header is hidden", async () => {
+            const { wrapper, header, measure } = mountStackedHeader();
+            setWidth(header.element, "clientWidth", 0);
+            measure();
+            await wrapper.vm.$nextTick();
+
+            expect(header.classes()).toContain("g-card-header-stacked");
+        });
+
+        it("returns to one row when the badges are removed", async () => {
+            const { wrapper, header } = mountStackedHeader();
+            await wrapper.vm.$nextTick();
+            await wrapper.setProps({ badges: [], indicators: [] } as never);
+            await wrapper.vm.$nextTick();
+
+            expect(header.classes()).toContain("g-card-header-inline");
+        });
+
+        it("measures again when the header controls change", async () => {
+            const widths: Array<[string, number]> = [
+                ["#g-card-badges-card", 120],
+                [".g-card-header-actions", 40],
+            ];
+            const offsetWidth = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (
+                this: HTMLElement,
+            ) {
+                return widths.find(([selector]) => this.matches(selector))?.[1] ?? 0;
+            });
+            try {
+                resizeCallbacks.length = 0;
+                const wrapper = mountCard({ badges: [{ id: "state", label: "ok", title: "State" }] });
+                const header = wrapper.find("#g-card-card-header");
+                setWidth(header.element, "clientWidth", 300);
+                resizeCallbacks.at(-1)!();
+                await wrapper.vm.$nextTick();
+                expect(header.classes()).toContain("g-card-header-inline");
+
+                await wrapper.setProps({ showBookmark: true } as never);
+                await wrapper.vm.$nextTick();
+                expect(header.classes()).toContain("g-card-header-column");
+            } finally {
+                offsetWidth.mockRestore();
+            }
         });
 
         it("clamps the title when titleNLines is set", () => {
