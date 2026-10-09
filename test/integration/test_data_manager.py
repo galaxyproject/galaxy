@@ -4,10 +4,8 @@ from unittest import SkipTest
 
 import pytest
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    skip_if_toolshed_down,
-)
+from galaxy.util.unittest_utils import skip_if_toolshed_down
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import (
     CONDA_AUTO_INSTALL_JOB_TIMEOUT,

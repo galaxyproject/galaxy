@@ -120,7 +120,7 @@ from galaxy.util import (
 )
 from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
-from galaxy.util.unittest_utils import skip_if_site_down
+from galaxy.util.unittest_utils import skip_if_toolshed_down as skip_if_toolshed_down  # noqa: F401 - re-exported
 from galaxy.util.unittest_utils.test_http_server import TestHttpServer
 from galaxy_test.base.decorators import (
     has_requirement,
@@ -300,9 +300,6 @@ def skip_without_visualization_plugin(plugin_name: str):
         return wrapped_method
 
     return method_wrapper
-
-
-skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
 
 
 def summarize_instance_history_on_error(method):
