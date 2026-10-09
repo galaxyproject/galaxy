@@ -1,129 +1,136 @@
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { createPinia, setActivePinia } from "pinia";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useActivityStore } from "@/stores/activityStore";
+import { ensureDefined } from "@/utils/assertions";
 
-// mock Galaxy object
-vi.mock("./activitySetup", () => ({
-    defaultActivities: [
+import { defaultActivities } from "./activitySetup";
+import { useActivityStore } from "./activityStore";
+import type { Activity } from "./activityStoreTypes";
+import { setupTestPinia } from "./testUtils";
+
+vi.mock("./activitySetup", async () => {
+    const { faFlask } = await import("@fortawesome/free-solid-svg-icons");
+    return {
+        defaultActivities: [
+            {
+                anonymous: false,
+                description: "a-description",
+                icon: faFlask,
+                id: "a-id",
+                mutable: false,
+                optional: false,
+                panel: true,
+                title: "a-title",
+                to: null,
+                tooltip: "a-tooltip",
+                visible: true,
+            },
+        ],
+    };
+});
+
+function getUpdatedActivities(): Activity[] {
+    const defaultActivity = ensureDefined(defaultActivities[0]);
+    return [
         {
-            anonymous: false,
-            description: "a-description",
-            icon: "a-icon" as unknown as IconDefinition,
-            id: "a-id",
-            mutable: false,
-            optional: false,
-            panel: true,
-            title: "a-title",
-            to: null,
-            tooltip: "a-tooltip",
-            visible: true,
+            ...defaultActivity,
+            description: "a-description-new",
+            icon: faWrench,
+            to: "a-to-new",
+            tooltip: "a-tooltip-new",
+            visible: false,
         },
-    ],
-}));
+        {
+            ...defaultActivity,
+            description: "b-description-new",
+            icon: faWrench,
+            id: "b-id",
+            mutable: true,
+            title: "b-title-new",
+            to: "b-to-new",
+            tooltip: "b-tooltip-new",
+        },
+    ];
+}
 
-const newActivities = [
-    {
-        anonymous: false,
-        description: "a-description-new",
-        icon: "a-icon-new" as unknown as IconDefinition,
-        id: "a-id",
-        mutable: false,
-        optional: false,
-        panel: true,
-        title: "a-title",
-        to: "a-to-new",
-        tooltip: "a-tooltip-new",
-        visible: false,
-    },
-    {
-        anonymous: false,
-        description: "b-description-new",
-        icon: "b-icon-new" as unknown as IconDefinition,
-        id: "b-id",
-        mutable: true,
-        optional: false,
-        panel: true,
-        title: "b-title-new",
-        to: "b-to-new",
-        tooltip: "b-tooltip-new",
-        visible: true,
-    },
-];
+async function createSyncedStore(activities?: Activity[]) {
+    const store = useActivityStore("default");
+    await store.sync();
+    if (activities) {
+        store.setAll(activities);
+    }
+    return store;
+}
 
 describe("Activity Store", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         // ensure clean localStorage between tests (useUserLocalStorage persistence)
         localStorage.clear();
     });
 
     it("initializes with default activities after sync", async () => {
         const activityStore = useActivityStore("default");
-        expect(activityStore.getAll().length).toBe(0);
+        expect(activityStore.getAll()).toEqual([]);
         await activityStore.sync();
-        expect(activityStore.getAll().length).toBe(1);
+        expect(activityStore.getAll()).toEqual(defaultActivities);
     });
 
     it("merges built-in and custom activities on sync", async () => {
-        const activityStore = useActivityStore("default");
-        await activityStore.sync();
+        const activityStore = await createSyncedStore();
         const initialActivities = activityStore.getAll();
-        expect(initialActivities[0]?.visible).toBeTruthy();
-        activityStore.setAll(newActivities);
-        expect(activityStore.activities.length).toBe(2);
+        expect(initialActivities[0]?.visible).toBe(true);
+        const updatedActivities = getUpdatedActivities();
+        activityStore.setAll(updatedActivities);
+        expect(activityStore.activities).toHaveLength(2);
         const currentActivities = activityStore.getAll();
-        expect(currentActivities[0]).toEqual(newActivities[0]);
-        expect(currentActivities[1]).toEqual(newActivities[1]);
+        expect(currentActivities[0]).toEqual(updatedActivities[0]);
+        expect(currentActivities[1]).toEqual(updatedActivities[1]);
         await activityStore.sync();
         const syncActivities = activityStore.getAll();
-        expect(syncActivities.length).toEqual(2);
+        expect(syncActivities).toHaveLength(2);
         expect(syncActivities[0]?.description).toEqual("a-description");
-        expect(syncActivities[0]?.visible).toBeFalsy();
-        expect(syncActivities[1]).toEqual(newActivities[1]);
+        expect(syncActivities[0]?.visible).toBe(false);
+        expect(syncActivities[1]).toEqual(updatedActivities[1]);
     });
 
-    it("removes activities and restores built-ins on sync", async () => {
-        const activityStore = useActivityStore("default");
-        await activityStore.sync();
-        const initialActivities = activityStore.getAll();
-        expect(initialActivities.length).toEqual(1);
+    it("restores a removed built-in activity on sync", async () => {
+        const activityStore = await createSyncedStore();
+        expect(activityStore.getAll()).toEqual(defaultActivities);
+
         activityStore.remove("a-id");
-        expect(activityStore.getAll().length).toEqual(0);
+        expect(activityStore.getAll()).toEqual([]);
         await activityStore.sync();
-        expect(activityStore.getAll().length).toEqual(1);
-        activityStore.setAll(newActivities);
-        expect(activityStore.getAll().length).toEqual(2);
+
+        expect(activityStore.getAll()).toEqual(defaultActivities);
+    });
+
+    it("keeps a removed custom activity absent after sync", async () => {
+        const activityStore = await createSyncedStore(getUpdatedActivities());
+        expect(activityStore.getAll()).toHaveLength(2);
+
         activityStore.remove("b-id");
         await activityStore.sync();
-        expect(activityStore.getAll().length).toEqual(1);
+
+        expect(activityStore.getAll().map(({ id }) => id)).toEqual(["a-id"]);
     });
 
     describe("setPosition", () => {
         it("reorders an activity to the specified position", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
-            activityStore.setAll(newActivities);
+            const activityStore = await createSyncedStore(getUpdatedActivities());
 
             const initialActivities = activityStore.getAll();
-            expect(initialActivities[0]?.id).toBe("a-id");
-            expect(initialActivities[1]?.id).toBe("b-id");
+            expect(initialActivities.map(({ id }) => id)).toEqual(["a-id", "b-id"]);
 
-            // initial order: [a-id, b-id]
             activityStore.setPosition("b-id", 0);
 
             const reorderedActivities = activityStore.getAll();
-            expect(reorderedActivities[0]?.id).toBe("b-id");
-            expect(reorderedActivities[1]?.id).toBe("a-id");
+            expect(reorderedActivities.map(({ id }) => id)).toEqual(["b-id", "a-id"]);
         });
 
         it("bounds the position within valid range", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
-            activityStore.setAll(newActivities);
+            const activityStore = await createSyncedStore(getUpdatedActivities());
 
-            // move to an out-of-range index
             activityStore.setPosition("a-id", 100);
 
             const activities = activityStore.getAll();
@@ -131,9 +138,7 @@ describe("Activity Store", () => {
         });
 
         it("does nothing when activity does not exist", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
-            activityStore.setAll(newActivities);
+            const activityStore = await createSyncedStore(getUpdatedActivities());
 
             const before = activityStore.getAll().map((a) => a.id);
             activityStore.setPosition("non-existent", 0);
@@ -145,21 +150,16 @@ describe("Activity Store", () => {
 
     describe("ensureSideBarOpen", () => {
         it("opens the sidebar for a panel activity", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
-            activityStore.setAll(newActivities);
+            const activityStore = await createSyncedStore(getUpdatedActivities());
 
-            // Initially a-id is in the sidebar
             expect(activityStore.toggledSideBar).toBe("a-id");
 
-            // Ensure b-id is open, which should set toggledSideBar to b-id
             activityStore.ensureSideBarOpen("b-id");
             expect(activityStore.toggledSideBar).toBe("b-id");
         });
 
         it("does nothing for unknown activity", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
+            const activityStore = await createSyncedStore();
 
             const previous = activityStore.toggledSideBar;
             activityStore.ensureSideBarOpen("non-existent");
@@ -169,8 +169,7 @@ describe("Activity Store", () => {
 
     describe("setSpecialPanelActivityIds", () => {
         it("prevents sync from resetting toggledSideBar when set to a registered special panel activity", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
+            const activityStore = await createSyncedStore();
 
             activityStore.setSpecialPanelActivityIds(["special-panel-id"]);
             activityStore.toggledSideBar = "special-panel-id";
@@ -181,8 +180,7 @@ describe("Activity Store", () => {
         });
 
         it("still resets toggledSideBar when it is not in defaults or registered special activities", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
+            const activityStore = await createSyncedStore();
 
             activityStore.setSpecialPanelActivityIds([]);
             activityStore.toggledSideBar = "unknown-panel-id";
@@ -193,8 +191,7 @@ describe("Activity Store", () => {
         });
 
         it("resets toggledSideBar after special activity is unregistered", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
+            const activityStore = await createSyncedStore();
 
             activityStore.setSpecialPanelActivityIds(["special-panel-id"]);
             activityStore.toggledSideBar = "special-panel-id";
@@ -209,9 +206,7 @@ describe("Activity Store", () => {
 
     describe("ensureVisible", () => {
         it("marks an existing activity as visible", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
-            activityStore.setAll(newActivities);
+            const activityStore = await createSyncedStore(getUpdatedActivities());
 
             const activity = activityStore.findById("a-id");
             expect(activity?.visible).toBe(false);
@@ -222,10 +217,13 @@ describe("Activity Store", () => {
         });
 
         it("does nothing for unknown activity", async () => {
-            const activityStore = useActivityStore("default");
-            await activityStore.sync();
+            const activityStore = await createSyncedStore();
+
+            const before = activityStore.getAll().map((activity) => ({ ...activity }));
 
             expect(() => activityStore.ensureVisible("non-existent")).not.toThrow();
+
+            expect(activityStore.getAll()).toEqual(before);
         });
     });
 });
