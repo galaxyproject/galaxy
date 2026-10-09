@@ -1,0 +1,24 @@
+<tool id="zarr_store_root_compat" name="zarr_store_root_compat" version="0.1.0" profile="24.2">
+    <!-- Published zarr wrappers still use $input.extra_files_path/$input.metadata.store_root; the
+         metadata is gone, so it must render empty and point at the store root. -->
+    <command><![CDATA[
+ls -A '$input.extra_files_path/$input.metadata.store_root' > '$listing'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="zarr"/>
+    </inputs>
+    <outputs>
+        <data name="listing" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="flat_store.zarr" class="Directory" ftype="zarr"/>
+            <output name="listing">
+                <assert_contents>
+                    <has_line line=".zgroup"/>
+                    <has_line line="0"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
