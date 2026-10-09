@@ -398,22 +398,22 @@ function onKeyDown(event: KeyboardEvent) {
             :class="[{ 'g-card-highlighted': props.highlighted }, contentClass]">
             <slot>
                 <div class="d-flex flex-column flex-gapy-1">
-                    <div
-                        :id="`g-card-${props.id}-header`"
-                        class="d-flex flex-gapy-1 flex-gapx-1 justify-content-between">
-                        <div class="d-flex flex-column flex-grow-1 g-card-title-section">
-                            <div class="d-flex">
-                                <div v-if="selectable">
-                                    <slot name="select">
-                                        <BFormCheckbox
-                                            :id="getElementId(props.id, 'select')"
-                                            v-g-tooltip.hover
-                                            :checked="selected"
-                                            :title="props.selectTitle || localize('Select for bulk actions')"
-                                            @change="emit('select')" />
-                                    </slot>
-                                </div>
+                    <div :id="`g-card-${props.id}-header`" class="align-items-start d-flex flex-gapx-1">
+                        <div v-if="selectable" class="g-card-header-line align-items-center d-flex flex-shrink-0">
+                            <slot name="select">
+                                <BFormCheckbox
+                                    :id="getElementId(props.id, 'select')"
+                                    v-g-tooltip.hover
+                                    :checked="selected"
+                                    :title="props.selectTitle || localize('Select for bulk actions')"
+                                    @change="emit('select')" />
+                            </slot>
+                        </div>
 
+                        <div
+                            class="g-card-header-main align-items-start d-flex flex-gapx-1 flex-gapy-1 flex-grow-1 flex-wrap">
+                            <div
+                                class="g-card-header-line g-card-title-section d-flex flex-column justify-content-center">
                                 <div :id="`g-card-${props.id}-header-title`">
                                     <slot name="title">
                                         <Heading
@@ -475,111 +475,37 @@ function onKeyDown(event: KeyboardEvent) {
                                         </Heading>
                                     </slot>
                                 </div>
-                            </div>
 
-                            <div class="align-items-center d-flex flex-gapx-1">
-                                <slot name="titleBadges">
-                                    <template v-for="badge in props.titleBadges" :key="badge.id">
-                                        <BBadge
-                                            v-if="badge.visible ?? true"
-                                            :id="getBadgeId(props.id, badge.id)"
-                                            v-g-tooltip.hover
-                                            :pill="badge.type !== 'badge'"
-                                            class="mt-1"
-                                            :class="{
-                                                'outline-badge': badge.variant?.includes('outline'),
-                                                'cursor-pointer': badge.handler,
-                                                [String(badge.class)]: badge.class,
-                                            }"
-                                            :title="localize(badge.title)"
-                                            :variant="badge.variant || 'secondary'"
-                                            :to="badge.to"
-                                            @click.stop="badge.handler && badge.handler()">
-                                            <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
-                                            {{ localize(badge.label) }}
-                                        </BBadge>
-                                    </template>
-                                </slot>
-                            </div>
-                        </div>
-
-                        <div class="align-items-start d-flex flex-row-reverse flex-wrap gap-1 flex-shrink-0">
-                            <div>
-                                <slot v-if="props.showBookmark" name="bookmark">
-                                    <GButton
-                                        v-if="!bookmarkLoading"
-                                        :id="
-                                            getElementId(
-                                                props.id,
-                                                props.bookmarked ? 'bookmark-remove' : 'bookmark-add',
-                                            )
-                                        "
-                                        v-g-tooltip.hover
-                                        class="inline-icon-button"
-                                        transparent
-                                        icon-only
-                                        color="blue"
-                                        :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
-                                        @click="toggleBookmark">
-                                        <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
-                                    </GButton>
-                                    <GButton
-                                        v-else
-                                        :id="getElementId(props.id, 'bookmark-loading')"
-                                        v-g-tooltip.hover
-                                        class="inline-icon-button"
-                                        transparent
-                                        icon-only
-                                        color="blue"
-                                        :title="localize('Bookmarking...')"
-                                        disabled>
-                                        <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
-                                    </GButton>
-                                </slot>
-
-                                <slot name="extra-actions">
-                                    <GDropdown
-                                        v-if="
-                                            props.extraActions?.length &&
-                                            props.extraActions.some((ea) => ea.visible ?? true)
-                                        "
-                                        :id="getElementId(props.id, 'extra-actions')"
-                                        v-g-tooltip.hover
-                                        right
-                                        no-caret
-                                        title="More options"
-                                        toggle-class="inline-icon-button"
-                                        variant="link"
-                                        @show="() => onExtraDropdown(true)"
-                                        @hide="() => onExtraDropdown(false)">
-                                        <template v-slot:button-content>
-                                            <FontAwesomeIcon :icon="faCaretDown" fixed-width />
+                                <div class="align-items-center d-flex flex-gapx-1">
+                                    <slot name="titleBadges">
+                                        <template v-for="badge in props.titleBadges" :key="badge.id">
+                                            <BBadge
+                                                v-if="badge.visible ?? true"
+                                                :id="getBadgeId(props.id, badge.id)"
+                                                v-g-tooltip.hover
+                                                :pill="badge.type !== 'badge'"
+                                                class="mt-1"
+                                                :class="{
+                                                    'outline-badge': badge.variant?.includes('outline'),
+                                                    'cursor-pointer': badge.handler,
+                                                    [String(badge.class)]: badge.class,
+                                                }"
+                                                :title="localize(badge.title)"
+                                                :variant="badge.variant || 'secondary'"
+                                                :to="badge.to"
+                                                @click.stop="badge.handler && badge.handler()">
+                                                <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
+                                                {{ localize(badge.label) }}
+                                            </BBadge>
                                         </template>
-
-                                        <template v-for="ea in props.extraActions" :key="ea.id">
-                                            <GDropdownItem
-                                                v-if="ea.visible ?? true"
-                                                :id="getActionId(props.id, ea.id)"
-                                                :disabled="ea.disabled"
-                                                :variant="ea.variant || 'link'"
-                                                :to="ea.to"
-                                                :href="ea.href"
-                                                :title="ea.title"
-                                                :size="ea.size || 'sm'"
-                                                :target="ea.externalLink ? '_blank' : undefined"
-                                                @click="ea.handler && ea.handler()">
-                                                <FontAwesomeIcon v-if="ea.icon" :icon="ea.icon" fixed-width />
-                                                {{ localize(ea.label) }}
-                                            </GDropdownItem>
-                                        </template>
-                                    </GDropdown>
-                                </slot>
+                                    </slot>
+                                </div>
                             </div>
 
-                            <div class="d-flex flex-gapx-1" style="margin-top: 1px">
+                            <div class="g-card-header-line align-items-center d-flex flex-gapx-1 flex-wrap mw-100">
                                 <div
                                     :id="getElementId(props.id, 'badges')"
-                                    class="align-items-center align-self-baseline d-flex flex-gapx-1">
+                                    class="align-items-center d-flex flex-gapx-1 flex-wrap">
                                     <slot name="badges">
                                         <template v-for="badge in props.badges" :key="badge.id">
                                             <BBadge
@@ -608,7 +534,7 @@ function onKeyDown(event: KeyboardEvent) {
                                     </slot>
                                 </div>
 
-                                <div :id="getElementId(props.id, 'indicators')" class="align-self-baseline">
+                                <div :id="getElementId(props.id, 'indicators')">
                                     <slot name="indicators">
                                         <template v-for="indicator in props.indicators" :key="indicator.id">
                                             <GButton
@@ -645,6 +571,73 @@ function onKeyDown(event: KeyboardEvent) {
                                     </slot>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="g-card-header-line g-card-header-actions align-items-center d-flex flex-shrink-0">
+                            <slot v-if="props.showBookmark" name="bookmark">
+                                <GButton
+                                    v-if="!bookmarkLoading"
+                                    :id="getElementId(props.id, props.bookmarked ? 'bookmark-remove' : 'bookmark-add')"
+                                    v-g-tooltip.hover
+                                    class="inline-icon-button"
+                                    transparent
+                                    icon-only
+                                    color="blue"
+                                    :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
+                                    @click="toggleBookmark">
+                                    <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
+                                </GButton>
+                                <GButton
+                                    v-else
+                                    :id="getElementId(props.id, 'bookmark-loading')"
+                                    v-g-tooltip.hover
+                                    class="inline-icon-button"
+                                    transparent
+                                    icon-only
+                                    color="blue"
+                                    :title="localize('Bookmarking...')"
+                                    disabled>
+                                    <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
+                                </GButton>
+                            </slot>
+
+                            <slot name="extra-actions">
+                                <GDropdown
+                                    v-if="
+                                        props.extraActions?.length &&
+                                        props.extraActions.some((ea) => ea.visible ?? true)
+                                    "
+                                    :id="getElementId(props.id, 'extra-actions')"
+                                    v-g-tooltip.hover
+                                    right
+                                    no-caret
+                                    title="More options"
+                                    toggle-class="inline-icon-button"
+                                    variant="link"
+                                    @show="() => onExtraDropdown(true)"
+                                    @hide="() => onExtraDropdown(false)">
+                                    <template v-slot:button-content>
+                                        <FontAwesomeIcon :icon="faCaretDown" fixed-width />
+                                    </template>
+
+                                    <template v-for="ea in props.extraActions" :key="ea.id">
+                                        <GDropdownItem
+                                            v-if="ea.visible ?? true"
+                                            :id="getActionId(props.id, ea.id)"
+                                            :disabled="ea.disabled"
+                                            :variant="ea.variant || 'link'"
+                                            :to="ea.to"
+                                            :href="ea.href"
+                                            :title="ea.title"
+                                            :size="ea.size || 'sm'"
+                                            :target="ea.externalLink ? '_blank' : undefined"
+                                            @click="ea.handler && ea.handler()">
+                                            <FontAwesomeIcon v-if="ea.icon" :icon="ea.icon" fixed-width />
+                                            {{ localize(ea.label) }}
+                                        </GDropdownItem>
+                                    </template>
+                                </GDropdown>
+                            </slot>
                         </div>
                     </div>
 
@@ -870,8 +863,15 @@ function onKeyDown(event: KeyboardEvent) {
         }
     }
 
+    .g-card-header-line {
+        // One shared first-row height so the checkbox, title, badges and actions center on the same line.
+        min-height: 1.5rem;
+    }
+
     .g-card-title-section {
-        min-width: 50%;
+        // Badges share the title's row while it keeps 10rem, and wrap below it on narrower cards.
+        flex: 1 1 10rem;
+        min-width: 0;
     }
 
     .g-card-rename {

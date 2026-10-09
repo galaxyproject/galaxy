@@ -48,4 +48,58 @@ describe("GCard", () => {
         await wrapper.find("#g-card-action-copy-card").trigger("click");
         expect(handler).toHaveBeenCalledOnce();
     });
+
+    describe("header", () => {
+        function mountHeader() {
+            return mountCard({
+                badges: [{ id: "count", label: "3 items", title: "View items", to: "/items" }],
+                canRenameTitle: true,
+                extraActions: [{ id: "delete", label: "Delete", title: "Delete", handler: vi.fn() }],
+                indicators: [{ id: "published", label: "Published", title: "Published", handler: vi.fn() }],
+                selectable: true,
+                showBookmark: true,
+                titleNLines: 2,
+            });
+        }
+
+        it("keeps the title and badges in a wrapping group and the bookmark and menu in their own group", () => {
+            const header = mountHeader().find("#g-card-card-header");
+            const main = header.find(".g-card-header-main");
+            const actions = header.find(".g-card-header-actions");
+
+            expect(main.classes()).toContain("flex-wrap");
+            for (const id of ["title", "badges", "indicators"]) {
+                expect(main.find(`#g-card-${id}-card`).exists()).toBe(true);
+            }
+            expect(actions.classes()).toContain("flex-shrink-0");
+            for (const id of ["bookmark-add", "extra-actions"]) {
+                expect(actions.find(`#g-card-${id}-card`).exists()).toBe(true);
+            }
+            expect(actions.find("#g-card-badges-card").exists()).toBe(false);
+        });
+
+        it("renders the header controls in reading order", () => {
+            const header = mountHeader().find("#g-card-card-header");
+            const expected = [
+                "g-card-select-card",
+                "g-card-title-card",
+                "g-card-rename-card",
+                "g-card-badges-card",
+                "g-card-indicators-card",
+                "g-card-bookmark-add-card",
+                "g-card-extra-actions-card",
+            ];
+            const ids = Array.from(header.element.querySelectorAll("[id]"), (el) => el.id).filter((id) =>
+                expected.includes(id),
+            );
+
+            expect(ids).toEqual(expected);
+        });
+
+        it("clamps the title when titleNLines is set", () => {
+            const title = mountHeader().find("#g-card-title-text-card");
+
+            expect(title.classes()).toContain("g-card-title-truncate");
+        });
+    });
 });
