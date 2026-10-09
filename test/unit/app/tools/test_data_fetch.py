@@ -877,6 +877,42 @@ def test_zarr_directory_detected_without_a_zarr_suffix(tmp_path):
     assert _fetch_single_path(str(source))[0]["ext"] == "zarr"
 
 
+def test_zarr_store_wrapped_in_a_folder_is_moved_to_the_root(tmp_path):
+    source = tmp_path / "upload"
+    store = source / "image.zarr"
+    store.mkdir(parents=True)
+    _write_zarr_store(str(store))
+
+    result, staged = _fetch_single_path(str(source))
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["ext"] == "zarr"
+    assert staged == [".zgroup", os.path.join("0", ".zarray"), os.path.join("0", "0")]
+
+
+def test_wrapped_store_with_a_child_named_like_the_wrapper(tmp_path):
+    source = tmp_path / "upload"
+    store = source / "0"
+    store.mkdir(parents=True)
+    _write_zarr_store(str(store))
+
+    result, staged = _fetch_single_path(str(source), ext="ome_zarr")
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [".zgroup", os.path.join("0", ".zarray"), os.path.join("0", "0")]
+
+
+def test_a_directory_with_a_single_folder_keeps_its_layout(tmp_path):
+    source = tmp_path / "some_dir"
+    (source / "nested").mkdir(parents=True)
+    (source / "nested" / "a.txt").write_text("hello")
+
+    result, staged = _fetch_single_path(str(source), ext="directory")
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [os.path.join("nested", "a.txt")]
+
+
 @pytest.mark.parametrize(
     "describe_store",
     [

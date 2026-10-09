@@ -29,7 +29,10 @@ except ImportError:
 import galaxy.datatypes.registry
 import galaxy.model.mapping
 from galaxy.datatypes import sniff
-from galaxy.datatypes.data import validate
+from galaxy.datatypes.data import (
+    Directory,
+    validate,
+)
 from galaxy.exceptions import MessageException
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
@@ -150,7 +153,11 @@ def set_meta_with_tool_provided(
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
     if not dataset_instance.metadata_deferred:
-        dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
+        datatype = dataset_instance.datatype
+        if isinstance(datatype, Directory):
+            # Settle the directory layout before metadata is read from it.
+            datatype.groom_directory_content(dataset_instance.extra_files_path)
+        datatype.set_meta(dataset_instance, **set_meta_kwds)
     for metadata_name, metadata_value in file_dict.get("metadata", {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
 

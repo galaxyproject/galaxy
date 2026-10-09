@@ -58,6 +58,7 @@ TEST_TOOL_IDS = [
     "discover_unknown_ext",
     "discover_format_tokens",
     "create_directory_index",
+    "zarr_store_in_wrapper_folder",
 ]
 
 
