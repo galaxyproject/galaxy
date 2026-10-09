@@ -1,176 +1,121 @@
+import { getFakeCollectionSummary } from "@tests/test-data/collections";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
-
-import type { HDCASummary } from "@/api";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import CollectionDescription from "./CollectionDescription.vue";
 
-const localVue = getLocalVue();
-
-const defaultTestHDCA: HDCASummary = {
-    id: "test_id",
-    name: "Test Collection",
-    hid: 1,
-    collection_id: "test_collection_id",
-    type: "collection",
-    collection_type: "list",
-    history_content_type: "dataset_collection",
-    element_count: null,
-    create_time: "2020-01-01T00:00:00",
-    update_time: null,
-    deleted: false,
-    visible: true,
-    elements_datatypes: [],
-    elements_deleted: 0,
-    elements_states: {},
-    history_id: "fake_history_id",
-    model_class: "HistoryDatasetCollectionAssociation",
-    populated_state: "ok",
-    tags: [],
-    url: "fake/url",
-    contents_url: "fake/contents/url",
-};
+enableAutoUnmount(afterEach);
 
 describe("CollectionDescription", () => {
-    let wrapper: VueWrapper;
-
-    beforeEach(() => {
-        wrapper = mount(CollectionDescription as object, {
-            props: {
-                hdca: defaultTestHDCA,
-            },
-            global: localVue,
+    it.each([
+        {
+            name: "heterogeneous list with one dataset",
+            collectionType: "list",
+            elementCount: 1,
+            datatypes: ["txt", "csv", "tabular"],
+            description: "a list with 1 dataset",
+        },
+        {
+            name: "pair with no datatype",
+            collectionType: "paired",
+            elementCount: 2,
+            datatypes: [],
+            description: "a pair with 2 datasets",
+        },
+        {
+            name: "list with no datatype",
+            collectionType: "list",
+            elementCount: 10,
+            datatypes: [],
+            description: "a list with 10 datasets",
+        },
+        {
+            name: "list of pairs with no datatype",
+            collectionType: "list:paired",
+            elementCount: 10,
+            datatypes: [],
+            description: "a list with 10 pairs",
+        },
+        {
+            name: "list of lists with no datatype",
+            collectionType: "list:list",
+            elementCount: 10,
+            datatypes: [],
+            description: "a list with 10 lists",
+        },
+        {
+            name: "unknown collection with no datatype",
+            collectionType: "other",
+            elementCount: 10,
+            datatypes: [],
+            description: "a collection with 10 dataset collections",
+        },
+        {
+            name: "homogeneous list with one dataset",
+            collectionType: "list",
+            elementCount: 1,
+            datatypes: ["tabular"],
+            description: "a list with 1 tabular dataset",
+        },
+        {
+            name: "homogeneous pair",
+            collectionType: "paired",
+            elementCount: 2,
+            datatypes: ["tabular"],
+            description: "a pair with 2 tabular datasets",
+        },
+        {
+            name: "homogeneous list",
+            collectionType: "list",
+            elementCount: 10,
+            datatypes: ["tabular"],
+            description: "a list with 10 tabular datasets",
+        },
+        {
+            name: "homogeneous list of pairs",
+            collectionType: "list:paired",
+            elementCount: 10,
+            datatypes: ["tabular"],
+            description: "a list with 10 tabular pairs",
+        },
+        {
+            name: "homogeneous list of lists",
+            collectionType: "list:list",
+            elementCount: 10,
+            datatypes: ["tabular"],
+            description: "a list with 10 tabular lists",
+        },
+        {
+            name: "homogeneous nested pair",
+            collectionType: "paired:paired",
+            elementCount: 10,
+            datatypes: ["tabular"],
+            description: "a nested collection with 10 tabular dataset collections",
+        },
+        {
+            name: "homogeneous unknown collection",
+            collectionType: "other",
+            elementCount: 10,
+            datatypes: ["tabular"],
+            description: "a collection with 10 tabular dataset collections",
+        },
+    ])("updates the description for $name", async ({ collectionType, elementCount, datatypes, description }) => {
+        const hdca = getFakeCollectionSummary({ element_count: null, elements_datatypes: [] });
+        const wrapper = shallowMount(CollectionDescription, {
+            props: { hdca },
+            global: getLocalVue(),
         });
-    });
-
-    it("should display expected heterogeneous descriptions", async () => {
-        const HETEROGENEOUS_DATATYPES = ["txt", "csv", "tabular"];
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                collection_type: "list",
-                element_count: 1,
-                elements_datatypes: HETEROGENEOUS_DATATYPES,
-            },
-        });
-        expect(wrapper.text()).toBe("a list with 1 dataset");
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 2,
-                collection_type: "paired",
-            },
-        });
-        expect(wrapper.text()).toBe("a pair with 2 datasets");
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "list",
-            },
-        });
-        expect(wrapper.text()).toBe("a list with 10 datasets");
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "list:paired",
-            },
-        });
-        expect(wrapper.text()).toBe("a list with 10 pairs");
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "list:list",
-            },
-        });
-        expect(wrapper.text()).toBe("a list with 10 lists");
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "other",
-            },
-        });
-        expect(wrapper.text()).toBe("a collection with 10 dataset collections");
-    });
-
-    it("should display expected homogeneous descriptions", async () => {
-        const EXPECTED_HOMOGENEOUS_DATATYPE = "tabular";
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 1,
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
-            },
-        });
-        expect(wrapper.text()).toBe(`a list with 1 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset`);
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 2,
-                collection_type: "paired",
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
-            },
-        });
-        expect(wrapper.text()).toBe(`a pair with 2 ${EXPECTED_HOMOGENEOUS_DATATYPE} datasets`);
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "list",
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
-            },
-        });
-        expect(wrapper.text()).toBe(`a list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} datasets`);
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "list:paired",
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
-            },
-        });
-        expect(wrapper.text()).toBe(`a list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} pairs`);
 
         await wrapper.setProps({
             hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "list:list",
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
+                ...hdca,
+                collection_type: collectionType,
+                element_count: elementCount,
+                elements_datatypes: datatypes,
             },
         });
-        expect(wrapper.text()).toBe(`a list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} lists`);
 
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "paired:paired",
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
-            },
-        });
-        expect(wrapper.text()).toBe(`a nested collection with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
-
-        await wrapper.setProps({
-            hdca: {
-                ...defaultTestHDCA,
-                element_count: 10,
-                collection_type: "other",
-                elements_datatypes: [EXPECTED_HOMOGENEOUS_DATATYPE],
-            },
-        });
-        expect(wrapper.text()).toBe(`a collection with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
+        expect(wrapper.text()).toBe(description);
     });
 });
