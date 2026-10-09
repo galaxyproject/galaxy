@@ -1,31 +1,23 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import FormCard from "./FormCard.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
 describe("FormCard", () => {
-    let wrapper;
-
-    beforeEach(() => {
-        wrapper = mount(FormCard, {
+    it("renders the title, description, and icon class", () => {
+        const wrapper = shallowMount(FormCard, {
             props: {
                 title: "title",
                 description: "description",
                 icon: "icon-class",
             },
-            global: localVue,
+            global: getLocalVue(),
         });
-    });
-
-    it("check props", async () => {
-        const title = wrapper.find(".portlet-title-text");
-        expect(title.text()).toBe("title");
-        const description = wrapper.find(".portlet-title-description");
-        expect(description.text()).toBe("description");
-        const icon = wrapper.find(".portlet-title-icon");
-        expect(icon.classes()).toContain("icon-class");
+        expect(wrapper.find(".portlet-title-text").text()).toBe("title");
+        expect(wrapper.find(".portlet-title-description").text()).toBe("description");
+        expect(wrapper.find(".portlet-title-icon").classes()).toContain("icon-class");
     });
 });
