@@ -1,5 +1,5 @@
-import { mount, type VueWrapper } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -10,86 +10,64 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 
 const MODAL_CONTENT_SELECTOR = '[data-description="workflow state upgrade modal content"]';
 
-describe("StateUpgradeModal.vue", () => {
-    let wrapper: VueWrapper;
+enableAutoUnmount(afterEach);
+afterEach(() => {
+    vi.mocked(sanitizeHtml).mockReset();
+    vi.mocked(sanitizeHtml).mockImplementation((html) => html ?? "");
+});
 
-    async function mountWith(stateMessages: UpgradeMessage[]) {
-        wrapper = mount(StateUpgradeModal as object, {
-            propsData: {
-                stateMessages,
-            },
-        });
-        await nextTick();
-    }
+function makeMessage(overrides: Partial<UpgradeMessage> = {}): UpgradeMessage {
+    return {
+        stepIndex: "2",
+        name: "step name",
+        details: ["my message 1", "my message 2"],
+        iconType: "",
+        label: "",
+        ...overrides,
+    };
+}
 
-    it("should not render if there are no messages", async () => {
-        const stateMessages: UpgradeMessage[] = [];
-        await mountWith(stateMessages);
-        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeFalsy();
+async function mountWith(stateMessages: UpgradeMessage[]) {
+    const wrapper = mount(StateUpgradeModal, { props: { stateMessages } });
+    await nextTick();
+    return wrapper;
+}
+
+describe("StateUpgradeModal", () => {
+    it("hides the content when there are no upgrade messages", async () => {
+        const wrapper = await mountWith([]);
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
     });
 
-    it("should render if there are messages", async () => {
-        const stateMessages = [
-            {
-                stepIndex: 2,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
-        await mountWith(stateMessages);
-        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeTruthy();
+    it("renders upgrade messages", async () => {
+        const wrapper = await mountWith([makeMessage()]);
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(true);
+        expect(wrapper.find(".workflow-state-upgrade-step-summaries b").text()).toBe("Step 3: step name");
+        expect(wrapper.findAll(".workflow-state-upgrade-step-details li").map((item) => item.text())).toEqual([
+            "my message 1",
+            "my message 2",
+        ]);
     });
 
-    async function mountSomeInitialMessagesAndDismiss() {
-        const stateMessages = [
-            {
-                stepIndex: 2,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
-        await mountWith(stateMessages);
-
-        // Close the modal by dispatching a "close" event on the dialog element
+    it.each([
+        { name: "reopens for new messages", messages: [makeMessage({ stepIndex: "3" })], visible: true },
+        { name: "stays closed for empty messages", messages: [], visible: false },
+    ])("$name after dismissal", async ({ messages, visible }) => {
+        const wrapper = await mountWith([makeMessage()]);
         wrapper.find("dialog").element.dispatchEvent(new Event("close"));
-
         await nextTick();
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(false);
 
-        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeFalsy();
-    }
+        await wrapper.setProps({ stateMessages: messages });
 
-    it("should re-render when passed new messages", async () => {
-        await mountSomeInitialMessagesAndDismiss();
-        const stateMessagesNew = [
-            {
-                stepIndex: 3,
-                name: "step name",
-                details: ["my message 1", "my message 2"],
-            },
-        ] as unknown as UpgradeMessage[];
-        await wrapper.setProps({
-            stateMessages: stateMessagesNew,
-        });
-
-        // Even though the modal was closed, it should re-open when new messages are passed in
-        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeTruthy();
-    });
-
-    it("should not re-render if sent empty messages", async () => {
-        await mountSomeInitialMessagesAndDismiss();
-        const stateMessagesNew: UpgradeMessage[] = [];
-        await wrapper.setProps({
-            stateMessages: stateMessagesNew,
-        });
-
-        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeFalsy();
+        expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBe(visible);
     });
 
     it("renders upgrade details through v-sanitize-html with the links profile", async () => {
         vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
         const detail =
             'Tool version changed, see <a href="https://toolshed.g2.bx.psu.edu" target="_blank">the Tool Shed</a>';
-        await mountWith([{ stepIndex: 1, name: "step", details: [detail] }] as unknown as UpgradeMessage[]);
+        const wrapper = await mountWith([makeMessage({ stepIndex: "1", name: "step", details: [detail] })]);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(detail, "links");
         expect(wrapper.find(".workflow-state-upgrade-step-details .sanitized a").exists()).toBe(true);
