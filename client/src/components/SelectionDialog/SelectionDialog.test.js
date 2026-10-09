@@ -1,7 +1,6 @@
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
-import { nextTick } from "vue";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { SELECTION_STATES } from "./selectionTypes";
 
@@ -9,32 +8,24 @@ import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 import GTable from "@/components/Common/GTable.vue";
 
-const mockOptions = {
-    callback: () => {},
-    modalShow: true,
-};
+enableAutoUnmount(afterEach);
+
+function mountSelectionDialog() {
+    return mount(SelectionDialog, {
+        props: { modalShow: true },
+        global: getLocalVue(),
+    });
+}
 
 describe("SelectionDialog.vue", () => {
-    let wrapper;
-    let localVue;
-
-    beforeEach(() => {
-        localVue = getLocalVue();
-        wrapper = mount(SelectionDialog, {
-            props: mockOptions,
-            global: localVue,
-        });
-    });
-
-    it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
-        expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBeTruthy();
-        expect(wrapper.findComponent(GTable).exists()).toBeFalsy();
-        await wrapper.setProps({ optionsShow: true });
-        expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBeFalsy();
-        expect(wrapper.findComponent(GTable).exists()).toBeTruthy();
+    it("names the search and its clear button", () => {
+        const wrapper = mountSelectionDialog();
+        expect(wrapper.get("input[type='text']").attributes("aria-label")).toContain("search");
+        expect(wrapper.get("button[aria-label='Clear search']").exists()).toBe(true);
     });
 
     it("opens a folder without also selecting its row", async () => {
+        const wrapper = mountSelectionDialog();
         const folder = { id: "folder", label: "Results", url: "gxfiles://results", isLeaf: false };
         await wrapper.setProps({ optionsShow: true, selectable: true, items: [folder] });
         const open = wrapper.get("button.selection-dialog-folder");
@@ -45,23 +36,29 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.emitted("onClick")).toBeUndefined();
     });
 
-    it("names the search and its clear button", () => {
-        expect(wrapper.get("input[type='text']").attributes("aria-label")).toContain("search");
-        expect(wrapper.get("button[aria-label='Clear search']").exists()).toBe(true);
+    it("replaces the loading spinner with options when optionsShow becomes true", async () => {
+        const wrapper = mountSelectionDialog();
+        expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBe(true);
+        expect(wrapper.findComponent(GTable).exists()).toBe(false);
+        await wrapper.setProps({ optionsShow: true });
+        expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBe(false);
+        expect(wrapper.findComponent(GTable).exists()).toBe(true);
     });
 
-    it("loads header correctly", async () => {
-        await nextTick();
-        expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();
+    it("renders the search header", () => {
+        const wrapper = mountSelectionDialog();
+        expect(wrapper.findComponent(DataDialogSearch).exists()).toBe(true);
     });
 
-    it("hideModal called on click cancel", async () => {
-        expect(wrapper.emitted("onCancel")).toBeFalsy();
-        wrapper.find("[data-description='selection dialog cancel']").trigger("click");
-        expect(wrapper.emitted("onCancel")).toBeTruthy();
+    it("emits onCancel when the cancel button is clicked", async () => {
+        const wrapper = mountSelectionDialog();
+        expect(wrapper.emitted("onCancel")).toBeUndefined();
+        await wrapper.find("[data-description='selection dialog cancel']").trigger("click");
+        expect(wrapper.emitted("onCancel")).toHaveLength(1);
     });
 
     it("syncs row selection state from incoming items", async () => {
+        const wrapper = mountSelectionDialog();
         await wrapper.setProps({
             optionsShow: true,
             selectable: true,
@@ -77,6 +74,7 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("shows select-all as checked when all incoming items are selected", async () => {
+        const wrapper = mountSelectionDialog();
         await wrapper.setProps({
             optionsShow: true,
             selectable: true,
@@ -92,6 +90,7 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("renders a MIXED row as an indeterminate checkbox", async () => {
+        const wrapper = mountSelectionDialog();
         await wrapper.setProps({
             optionsShow: true,
             selectable: true,
@@ -107,6 +106,7 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("emits onClick for the row when its checkbox is toggled", async () => {
+        const wrapper = mountSelectionDialog();
         await wrapper.setProps({
             optionsShow: true,
             selectable: true,
@@ -119,11 +119,12 @@ describe("SelectionDialog.vue", () => {
         const rowCheckbox = wrapper.find("tbody tr[aria-rowindex='1'] .g-table-select-column input");
         await rowCheckbox.trigger("change");
 
-        expect(wrapper.emitted("onClick")).toBeTruthy();
+        expect(wrapper.emitted("onClick")).toBeDefined();
         expect(emittedArg(wrapper, "onClick").id).toBe("1");
     });
 
     it("emits onClick exactly once when a selectable row is clicked", async () => {
+        const wrapper = mountSelectionDialog();
         await wrapper.setProps({
             optionsShow: true,
             selectable: true,
@@ -134,7 +135,7 @@ describe("SelectionDialog.vue", () => {
         // SelectionDialog must not toggle selection twice.
         await wrapper.find("tbody tr[aria-rowindex='1']").trigger("click");
 
-        expect(wrapper.emitted("onClick")).toBeTruthy();
+        expect(wrapper.emitted("onClick")).toBeDefined();
         expect(wrapper.emitted("onClick")).toHaveLength(1);
     });
 });
