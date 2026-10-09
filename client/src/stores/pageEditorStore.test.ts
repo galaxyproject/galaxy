@@ -1,3 +1,4 @@
+import { getFakePageDetails, getFakePageSummary } from "@tests/test-data/pages";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -16,34 +17,8 @@ const TEST_HISTORY_ID = "abc123historyid";
 const TEST_PAGE_ID = "def456pageid";
 const TEST_REVISION_ID = "rev789revisionid";
 
-const TEST_PAGE_SUMMARY: HistoryPageSummary = {
-    id: TEST_PAGE_ID,
-    history_id: TEST_HISTORY_ID,
-    title: "My Analysis Notes",
-    slug: null,
-    source_invocation_id: null,
-    published: false,
-    importable: false,
-    deleted: false,
-    latest_revision_id: TEST_REVISION_ID,
-    revision_ids: [TEST_REVISION_ID],
-    create_time: "2025-06-15T10:30:00Z",
-    update_time: "2025-06-15T12:45:00Z",
-    username: "test",
-    email_hash: "",
-    author_deleted: false,
-    model_class: "Page",
-    tags: [],
-};
-
-const TEST_PAGE_DETAILS: HistoryPageDetails = {
-    ...TEST_PAGE_SUMMARY,
-    content: "# Analysis\n\nSome markdown content here.",
-    content_editor: "# Analysis\n\nSome markdown content here.",
-    content_format: "markdown",
-    edit_source: "user",
-    annotation: null,
-};
+const TEST_PAGE_SUMMARY = getFakePageSummary();
+const TEST_PAGE_DETAILS = getFakePageDetails();
 
 const { server, http } = useServerMock();
 
