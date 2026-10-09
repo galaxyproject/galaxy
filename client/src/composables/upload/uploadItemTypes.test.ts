@@ -18,7 +18,7 @@ describe("validateUploadItem", () => {
         ["remote-files", makeRemoteFilesItem()],
         ["data-library", makeLibraryItem()],
         ["local-file", makeLocalFileItem()],
-    ] as [string, NewUploadItem][])("accepts a valid %s item", (_mode, item) => {
+    ] satisfies [string, NewUploadItem][])("accepts a valid %s item", (_mode, item) => {
         expect(validateUploadItem(item)).toBeUndefined();
     });
 
@@ -39,36 +39,13 @@ describe("validateUploadItem", () => {
     });
 
     it("rejects local-file with no file data", () => {
-        const item: NewUploadItem = {
-            uploadMode: "local-file",
-            name: "missing.txt",
-            size: 0,
-            targetHistoryId: "hist_1",
-            dbkey: "?",
-            extension: "auto",
-            spaceToTab: false,
-            toPosixLines: false,
-            autoDecompress: true,
-            deferred: false,
-        };
+        const item = makeLocalFileItem({ name: "missing.txt", size: 0, fileData: undefined });
         expect(validateUploadItem(item)).toMatch(/No file selected/);
     });
 
     it("rejects local-file with an empty file", () => {
         const emptyFile = new File([], "empty.txt");
-        const item: NewUploadItem = {
-            uploadMode: "local-file",
-            name: "empty.txt",
-            size: 0,
-            targetHistoryId: "hist_1",
-            dbkey: "?",
-            extension: "auto",
-            spaceToTab: false,
-            toPosixLines: false,
-            autoDecompress: true,
-            deferred: false,
-            fileData: emptyFile,
-        };
+        const item = makeLocalFileItem({ name: "empty.txt", size: 0, fileData: emptyFile });
         expect(validateUploadItem(item)).toMatch(/is empty/);
     });
 
