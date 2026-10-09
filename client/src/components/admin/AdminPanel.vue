@@ -4,6 +4,7 @@ import { computed, onMounted } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useAdminExtensionsStore } from "@/stores/adminExtensionsStore";
+import { withPrefix } from "@/utils/redirect";
 
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
@@ -43,7 +44,8 @@ const extensionSections = computed<PanelSection[]>(() => {
         items: extension.items.map((item) => {
             const id = `admin-link-ext-${extension.id}-${item.id}`;
             if (item.type === "link" && item.target === "new_tab") {
-                return { id, title: item.title, href: item.url };
+                // Relative URLs are served by Galaxy, so they need the URL prefix like framed links do.
+                return { id, title: item.title, href: withPrefix(item.url) };
             }
             return { id, title: item.title, route: `/admin/extensions/${extension.id}/${item.id}` };
         }),

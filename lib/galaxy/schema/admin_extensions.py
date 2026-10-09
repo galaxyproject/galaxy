@@ -6,8 +6,10 @@ declarative: they ship no JavaScript, and the client renders them from these
 models alone.
 """
 
+import math
 from typing import (
     Annotated,
+    Any,
     Literal,
 )
 
@@ -71,7 +73,8 @@ class AdminExtensionFormInput(Model):
         if self.min is not None and self.max is not None and self.min > self.max:
             raise ValueError("min must not exceed max")
         if self.default is not None:
-            coerce_setting_value(self, self.default)
+            # Keep the canonical form so readers get the declared type (False, not "false") before any save.
+            self.default = coerce_setting_value(self, self.default)
         return self
 
 
@@ -140,6 +143,9 @@ def coerce_setting_value(input_def: AdminExtensionFormInput, value: SettingValue
             number_f = float(str(value))
         except ValueError:
             raise ValueError(f"{label}: expected a number")
+        if not math.isfinite(number_f):
+            # NaN compares false against any bound and neither NaN nor infinity is valid JSON.
+            raise ValueError(f"{label}: expected a finite number")
         _check_bounds(input_def, number_f)
         return number_f
     if input_def.type == "select":
@@ -169,4 +175,4 @@ class AdminExtensionFormResponse(Model):
 
     title: str
     message: str | None = None
-    inputs: list[dict] = Field(..., description="Galaxy form input definitions with current values.")
+    inputs: list[dict[str, Any]] = Field(..., description="Galaxy form input definitions with current values.")

@@ -8,6 +8,12 @@ from galaxy.managers.admin_extensions import (
     AdminExtensionsManager,
     load_extensions,
 )
+from galaxy.schema.admin_extensions import (
+    AdminExtensionFormInput,
+    AdminExtensionFormItem,
+    AdminExtensionLinkItem,
+    coerce_setting_value,
+)
 
 VALID_CONFIG = """
 id: anvil
@@ -42,8 +48,9 @@ def test_load_extensions_reads_valid_config(tmp_path: Path):
     assert extension.id == "anvil"
     assert extension.section == "AnVIL"
     assert [item.id for item in extension.items] == ["monitor", "docs"]
-    assert extension.items[0].target == "iframe"
-    assert extension.items[1].target == "new_tab"
+    monitor, docs = extension.items
+    assert isinstance(monitor, AdminExtensionLinkItem) and monitor.target == "iframe"
+    assert isinstance(docs, AdminExtensionLinkItem) and docs.target == "new_tab"
 
 
 def test_load_extensions_accepts_yaml_extension(tmp_path: Path):
@@ -113,6 +120,7 @@ def test_manager_get_extension(manager: AdminExtensionsManager):
 
 def test_manager_get_item(manager: AdminExtensionsManager):
     item = manager.get_item("anvil", "monitor")
+    assert isinstance(item, AdminExtensionLinkItem)
     assert item.url == "/monitor"
     with pytest.raises(ObjectNotFound):
         manager.get_item("anvil", "missing")
@@ -149,7 +157,9 @@ def test_load_extensions_builds_default_keys_from_ids(tmp_path: Path):
         tmp_path, "forms", FORM_CONFIG.replace("        key: shared.ttl\n", "").replace("id: forms", "id: my-ext")
     )
     extension = load_extensions(str(tmp_path))[0]
-    assert extension.items[0].inputs[0].key == "my_ext.settings.ttl"
+    item = extension.items[0]
+    assert isinstance(item, AdminExtensionFormItem)
+    assert item.inputs[0].key == "my_ext.settings.ttl"
 
 
 def test_load_extensions_skips_extension_redeclaring_key_with_other_type(tmp_path: Path):
@@ -164,6 +174,26 @@ def test_load_extensions_skips_extension_redeclaring_key_with_other_type(tmp_pat
     write_extension(tmp_path, "c_same", FORM_CONFIG.replace("id: forms", "id: c"))
 
     assert [e.id for e in load_extensions(str(tmp_path))] == ["a", "c"]
+
+
+def test_form_input_defaults_are_stored_in_canonical_form():
+    # YAML authors may quote defaults; readers must still get the declared type before any save.
+    flag = AdminExtensionFormInput(name="flag", type="boolean", label="Flag", default="false")
+    assert flag.default is False
+    count = AdminExtensionFormInput(name="count", type="integer", label="Count", default="3")
+    assert count.default == 3
+    ratio = AdminExtensionFormInput(name="ratio", type="float", label="Ratio", default="0.5")
+    assert ratio.default == 0.5
+
+
+@pytest.mark.parametrize("value", ["nan", "NaN", "inf", "-Infinity", float("nan"), float("inf")])
+def test_float_inputs_reject_non_finite_values(value):
+    # NaN compares false against any bound and neither NaN nor infinity can be stored as JSON.
+    bounded = AdminExtensionFormInput(name="ratio", type="float", label="Ratio", min=0, max=1)
+    unbounded = AdminExtensionFormInput(name="ratio", type="float", label="Ratio")
+    for input_def in (bounded, unbounded):
+        with pytest.raises(ValueError, match="finite"):
+            coerce_setting_value(input_def, value)
 
 
 def test_load_extensions_rejects_invalid_form_items(tmp_path: Path):
