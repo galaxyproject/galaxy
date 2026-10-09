@@ -1,3 +1,9 @@
+from decimal import Decimal
+from typing import (
+    Any,
+    cast,
+)
+
 import pytest
 from pydantic import ValidationError
 
@@ -266,11 +272,13 @@ def _adapt_input(extension, deferred_uri=None):
     hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
     hda.id = 1
     assert hda.dataset is not None
-    hda.dataset.file_size = 4
+    hda.dataset.file_size = Decimal(4)
     if deferred_uri:
         hda.dataset.state = Dataset.states.DEFERRED
         hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
-    _, adapt_dataset, _ = setup_for_runtimeify(None, RewritingComputeEnvironment(), {"input": hda})
+    _, adapt_dataset, _ = setup_for_runtimeify(
+        cast(Any, None), cast(Any, RewritingComputeEnvironment()), {"input": hda}
+    )
     return adapt_dataset(DataRequestInternalHda(src="hda", id=1))
 
 
@@ -302,10 +310,12 @@ def test_adapt_dataset_resolves_an_implicitly_converted_input():
     converted = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="tabular")
     converted.id = 2
     assert converted.dataset is not None
-    converted.dataset.file_size = 4
+    converted.dataset.file_size = Decimal(4)
     ImplicitlyConvertedDatasetAssociation(parent=original, dataset=converted, file_type="tabular")
 
-    _, adapt_dataset, _ = setup_for_runtimeify(None, RewritingComputeEnvironment(), {"input": converted})
+    _, adapt_dataset, _ = setup_for_runtimeify(
+        cast(Any, None), cast(Any, RewritingComputeEnvironment()), {"input": converted}
+    )
     # The request still names the dataset the user picked; the job runs on its conversion.
     result = adapt_dataset(DataRequestInternalHda(src="hda", id=1))
 

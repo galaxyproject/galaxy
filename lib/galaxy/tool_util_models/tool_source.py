@@ -364,7 +364,7 @@ JsonTestCollectionDefDatasetElementDict = TypedDict(
     "JsonTestCollectionDefDatasetElementDict",
     {
         "identifier": str,
-        "class": Literal["File"],
+        "class": Literal["File", "Directory"],
         "path": NotRequired[str | None],
         "location": NotRequired[str | None],
         "name": NotRequired[str | None],
