@@ -1,61 +1,56 @@
-import type { MockedFunction } from "@vitest/spy";
+import { wait } from "@tests/vitest/helpers";
+import type { MockedFunction, MockInstance } from "@vitest/spy";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useResourceWatcher, type WatchOptions, type WatchResourceHandler } from "./resourceWatcher";
 
-// Mock the global document object
-const mockAddEventListener = vi.fn<typeof document.addEventListener>();
-const mockRemoveEventListener = vi.fn<typeof document.removeEventListener>();
-
-interface MockDocument {
-    addEventListener: MockedFunction<typeof document.addEventListener>;
-    removeEventListener: MockedFunction<typeof document.removeEventListener>;
-    visibilityState: "visible" | "hidden";
-}
-
-const mockDocument: MockDocument = {
-    addEventListener: mockAddEventListener,
-    removeEventListener: mockRemoveEventListener,
-    visibilityState: "visible",
-};
-
-Object.defineProperty(global, "document", {
-    value: mockDocument,
-    writable: true,
-});
-
-// Mock setTimeout and clearTimeout
-vi.useFakeTimers();
-
-// Helper function to get visibility change handler with proper typing
-function getVisibilityChangeHandler(): () => void {
-    const call = mockAddEventListener.mock.calls.find((call) => call[0] === "visibilitychange");
-    return call?.[1] as () => void;
-}
-
 describe("useResourceWatcher", () => {
     let mockWatchHandler: MockedFunction<WatchResourceHandler>;
+    let addEventListenerSpy: MockInstance<typeof document.addEventListener>;
+    let removeEventListenerSpy: MockInstance<typeof document.removeEventListener>;
+    let visibilityState: DocumentVisibilityState;
+    let watchers: ReturnType<typeof useResourceWatcher>[];
 
     beforeEach(() => {
-        vi.clearAllTimers();
-        vi.clearAllMocks();
+        vi.useFakeTimers();
         mockWatchHandler = vi.fn<WatchResourceHandler>().mockResolvedValue();
-        mockAddEventListener.mockClear();
-        mockRemoveEventListener.mockClear();
-        // Reset document visibility state
-        mockDocument.visibilityState = "visible";
+        visibilityState = "visible";
+        watchers = [];
+        vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibilityState);
+        addEventListenerSpy = vi.spyOn(document, "addEventListener");
+        removeEventListenerSpy = vi.spyOn(document, "removeEventListener");
     });
 
     afterEach(() => {
-        vi.runOnlyPendingTimers();
+        for (const watcher of watchers) {
+            watcher.dispose();
+        }
+        vi.clearAllTimers();
         vi.useRealTimers();
-        vi.useFakeTimers();
+        vi.restoreAllMocks();
     });
 
+    function createWatcher(handler = mockWatchHandler, options?: WatchOptions) {
+        const watcher = useResourceWatcher(handler, options);
+        watchers.push(watcher);
+        return watcher;
+    }
+
+    function changeVisibility(state: DocumentVisibilityState) {
+        visibilityState = state;
+        document.dispatchEvent(new Event("visibilitychange"));
+    }
+
+    function createSlowHandler(durationMs: number) {
+        return vi.fn<WatchResourceHandler>().mockImplementation(async () => {
+            await wait(durationMs);
+        });
+    }
+
     describe("basic functionality", () => {
-        it("should call the watch handler immediately when starting", async () => {
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("calls the watch handler immediately when started", () => {
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
 
@@ -63,33 +58,30 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledWith(undefined);
         });
 
-        it("should pass the app parameter to the watch handler", async () => {
+        it("passes the app to the watch handler", () => {
             const mockApp = { id: "test-app" };
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource(mockApp);
 
             expect(mockWatchHandler).toHaveBeenCalledWith(mockApp);
         });
 
-        it("should stop watching when stopWatchingResource is called", async () => {
-            const { startWatchingResource, stopWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("stops polling after stopWatchingResource", async () => {
+            const { startWatchingResource, stopWatchingResource } = createWatcher();
 
             startWatchingResource();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
             stopWatchingResource();
 
-            // Fast-forward time to ensure no more calls are made
-            vi.advanceTimersByTime(60000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(60000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
         });
 
-        it("should return correct value for isWatchingResource", async () => {
-            const { startWatchingResource, stopWatchingResource, isWatchingResource } =
-                useResourceWatcher(mockWatchHandler);
+        it("reports whether the watcher is started or stopped", () => {
+            const { startWatchingResource, stopWatchingResource, isWatchingResource } = createWatcher();
 
             expect(isWatchingResource.value).toBe(false);
 
@@ -102,173 +94,132 @@ describe("useResourceWatcher", () => {
     });
 
     describe("polling intervals", () => {
-        it("should use default short polling interval (3000ms) when app is active", async () => {
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("polls every 3000ms while visible by default", async () => {
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Advance time by the default short polling interval
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
-            // Advance time again
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
         });
 
-        it("should use custom short polling interval when provided", async () => {
+        it("uses a custom short polling interval", async () => {
             const customOptions: WatchOptions = {
                 shortPollingInterval: 1500,
             };
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler, customOptions);
+            const { startWatchingResource } = createWatcher(mockWatchHandler, customOptions);
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Advance time by the custom short polling interval
-            vi.advanceTimersByTime(1500);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(1500);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
         });
 
-        it("should switch to long polling interval when app becomes hidden", async () => {
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("switches to the default 10000ms interval after the pending short poll when hidden", async () => {
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Simulate visibility change event setup
-            expect(mockAddEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            expect(addEventListenerSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
 
-            // Change document visibility to hidden
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // The current timer (with short interval) should still complete first
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            // Visibility changes affect the next interval, not the already scheduled poll.
+            await vi.advanceTimersByTimeAsync(3000);
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
-            // Now the next timer should use the long polling interval
-            vi.advanceTimersByTime(10000); // Default long interval
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(10000);
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
         });
 
-        it("should use custom long polling interval when app is hidden", async () => {
+        it("uses a custom long interval after the pending short poll when hidden", async () => {
             const customOptions: WatchOptions = {
                 longPollingInterval: 5000,
             };
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler, customOptions);
+            const { startWatchingResource } = createWatcher(mockWatchHandler, customOptions);
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Get the visibility change handler
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // Change document visibility to hidden
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
-
-            // Current timer (short interval) completes first
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            // Visibility changes affect the next interval, not the already scheduled poll.
+            await vi.advanceTimersByTimeAsync(3000);
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
-            // Fast-forward by custom long interval
-            vi.advanceTimersByTime(5000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(5000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
         });
 
-        it("should disable background polling when enableBackgroundPolling is false", async () => {
+        it("stops polling when hidden and background polling is disabled", async () => {
             const customOptions: WatchOptions = {
                 enableBackgroundPolling: false,
             };
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler, customOptions);
+            const { startWatchingResource } = createWatcher(mockWatchHandler, customOptions);
 
             startWatchingResource();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Get the visibility change handler
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // Change document visibility to hidden
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
+            await vi.advanceTimersByTimeAsync(30000);
 
-            // Fast-forward by any amount of time
-            vi.advanceTimersByTime(30000);
-            await flushPromises();
-
-            // Should not have been called again
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
         });
     });
 
     describe("visibility change handling", () => {
-        it("should set up visibility change listener only once", () => {
-            useResourceWatcher(mockWatchHandler);
-            useResourceWatcher(mockWatchHandler);
+        it("registers one visibility listener per watcher instance", () => {
+            createWatcher();
+            createWatcher();
 
-            // Should only set up listener once per instance
-            expect(mockAddEventListener).toHaveBeenCalledTimes(2);
-            expect(mockAddEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+            expect(addEventListenerSpy).toHaveBeenCalledTimes(2);
+            expect(addEventListenerSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
         });
 
-        it("should switch to short interval when app becomes visible without restarting watcher", async () => {
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("returns to short polling when visible without restarting the active watcher", async () => {
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Get the visibility change handler
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // Simulate app becoming hidden
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
-
-            // Clear the handler calls
             mockWatchHandler.mockClear();
 
-            // Simulate app becoming visible again
-            mockDocument.visibilityState = "visible";
-            visibilityChangeHandler();
+            changeVisibility("visible");
 
-            // Should NOT immediately call the handler (watcher already running, no restart)
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(0);
 
-            // But should continue with short polling interval on next scheduled poll
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
         });
     });
 
     describe("error handling", () => {
-        it("should handle errors in watch handler gracefully and continue polling", async () => {
+        it("warns on a rejected request and continues polling", async () => {
             const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
             const error = new Error("Network error");
             mockWatchHandler.mockRejectedValueOnce(error).mockResolvedValue(undefined);
 
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
@@ -276,263 +227,195 @@ describe("useResourceWatcher", () => {
             expect(consoleWarnSpy).toHaveBeenCalledWith(error);
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Should continue polling despite the error
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
-
-            consoleWarnSpy.mockRestore();
         });
 
-        it("should handle multiple consecutive errors", async () => {
+        it("continues polling after consecutive rejected requests", async () => {
             const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
             const error1 = new Error("First error");
             const error2 = new Error("Second error");
 
             mockWatchHandler.mockRejectedValueOnce(error1).mockRejectedValueOnce(error2).mockResolvedValue(undefined);
 
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(error1);
 
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(error2);
 
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
-
-            consoleWarnSpy.mockRestore();
         });
     });
 
     describe("cleanup and resource management", () => {
-        it("should clear existing timeout when starting watching again", async () => {
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("replaces the pending timeout when restarted", async () => {
+            const { startWatchingResource } = createWatcher();
 
-            // Start watching
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Start watching again before the first timeout fires
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
-            // Fast-forward time - should only fire once more (from the second start)
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
         });
 
-        it("should stop polling even when watch handler takes longer than interval", async () => {
-            // Create a handler that takes 5 seconds to complete (longer than 3s interval)
-            const slowHandler = vi.fn<WatchResourceHandler>().mockImplementation(async () => {
-                // Simulate a slow network request that takes longer than the polling interval
-                await new Promise((resolve) => setTimeout(resolve, 5000));
-            });
+        it("stays stopped when a 5000ms request finishes after stopping", async () => {
+            const slowHandler = createSlowHandler(5000);
 
-            const { startWatchingResource, stopWatchingResource } = useResourceWatcher(slowHandler);
-
-            // Start watching
-            startWatchingResource();
-            expect(slowHandler).toHaveBeenCalledTimes(1);
-
-            // Advance time by 2 seconds (handler still running)
-            vi.advanceTimersByTime(2000);
-            await flushPromises();
-
-            // Stop watching while the handler is still executing
-            stopWatchingResource();
-
-            // Complete the slow handler execution
-            vi.advanceTimersByTime(3000); // Total 5 seconds for handler to complete
-            await flushPromises();
-
-            // Advance time well beyond the polling interval
-            vi.advanceTimersByTime(10000);
-            await flushPromises();
-
-            expect(slowHandler).toHaveBeenCalledTimes(1);
-        });
-
-        it("should handle multiple overlapping slow handlers correctly", async () => {
-            const slowHandler = vi.fn<WatchResourceHandler>().mockImplementation(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 8000)); // 8 seconds (longer than 2 intervals)
-            });
-
-            const { startWatchingResource, stopWatchingResource } = useResourceWatcher(slowHandler);
+            const { startWatchingResource, stopWatchingResource } = createWatcher(slowHandler);
 
             startWatchingResource();
             expect(slowHandler).toHaveBeenCalledTimes(1);
 
-            // Let the first handler run for 3 seconds (still running)
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(2000);
 
-            // The 3-second interval timer should NOT fire a new handler yet because the first is still running
-            expect(slowHandler).toHaveBeenCalledTimes(1);
-
-            // Stop watching while first handler is still running
             stopWatchingResource();
 
-            // Complete the first handler (8 seconds total)
-            vi.advanceTimersByTime(5000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(3000);
 
-            // Advance time, which should not trigger another call
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(10000);
 
             expect(slowHandler).toHaveBeenCalledTimes(1);
         });
 
-        it("should update isWatchingResource flag correctly with slow handlers", async () => {
-            const slowHandler = vi.fn<WatchResourceHandler>().mockImplementation(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 5000));
-            });
+        it("does not overlap polls while an 8000ms request is pending or restart after stopping", async () => {
+            const slowHandler = createSlowHandler(8000);
 
-            const { startWatchingResource, stopWatchingResource, isWatchingResource } = useResourceWatcher(slowHandler);
+            const { startWatchingResource, stopWatchingResource } = createWatcher(slowHandler);
 
-            // Start watching
+            startWatchingResource();
+            expect(slowHandler).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(3000);
+
+            expect(slowHandler).toHaveBeenCalledTimes(1);
+
+            stopWatchingResource();
+
+            await vi.advanceTimersByTimeAsync(5000);
+
+            await vi.advanceTimersByTimeAsync(3000);
+
+            expect(slowHandler).toHaveBeenCalledTimes(1);
+        });
+
+        it("reports the stopped state even after an in-flight request finishes", async () => {
+            const slowHandler = createSlowHandler(5000);
+
+            const { startWatchingResource, stopWatchingResource, isWatchingResource } = createWatcher(slowHandler);
+
             startWatchingResource();
             expect(isWatchingResource.value).toBe(true);
 
-            // Still watching while handler is running
-            vi.advanceTimersByTime(2000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(2000);
             expect(isWatchingResource.value).toBe(true);
 
-            // Stop watching while handler is still running
             stopWatchingResource();
             expect(isWatchingResource.value).toBe(false);
 
-            // Should remain stopped even after handler completes
-            vi.advanceTimersByTime(10000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(10000);
             expect(isWatchingResource.value).toBe(false);
         });
 
-        it("should remove the visibility listener on dispose and stay stopped", async () => {
-            const { startWatchingResource, dispose } = useResourceWatcher(mockWatchHandler);
+        it("removes the visibility listener on dispose and stays stopped", async () => {
+            const { startWatchingResource, dispose } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            const visibilityChangeHandler = addEventListenerSpy.mock.calls.find(
+                ([event]) => event === "visibilitychange",
+            )?.[1];
+            expect(visibilityChangeHandler).toEqual(expect.any(Function));
             dispose();
 
-            expect(mockRemoveEventListener).toHaveBeenCalledWith("visibilitychange", visibilityChangeHandler);
+            expect(removeEventListenerSpy).toHaveBeenCalledWith("visibilitychange", visibilityChangeHandler);
 
             mockWatchHandler.mockClear();
-            vi.advanceTimersByTime(60000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(60000);
 
             expect(mockWatchHandler).not.toHaveBeenCalled();
         });
 
-        it("should not schedule new timeout if current polling interval is undefined", async () => {
+        it("does not schedule another poll when hiding disables the interval", async () => {
             const customOptions: WatchOptions = {
                 enableBackgroundPolling: false,
             };
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler, customOptions);
+            const { startWatchingResource } = createWatcher(mockWatchHandler, customOptions);
 
             startWatchingResource();
 
-            // Get the visibility change handler
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // Change to hidden (disables polling)
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
-
-            // Clear previous calls
             mockWatchHandler.mockClear();
 
-            // Fast-forward time significantly
-            vi.advanceTimersByTime(60000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(60000);
 
-            // Should not have been called
             expect(mockWatchHandler).not.toHaveBeenCalled();
         });
     });
 
     describe("integration scenarios", () => {
-        it("should work correctly with all custom options", async () => {
+        it("uses custom visible and hidden intervals with background polling enabled", async () => {
             const customOptions: WatchOptions = {
                 shortPollingInterval: 1000,
                 longPollingInterval: 4000,
                 enableBackgroundPolling: true,
             };
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler, customOptions);
+            const { startWatchingResource } = createWatcher(mockWatchHandler, customOptions);
 
             startWatchingResource();
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // Test short interval
-            vi.advanceTimersByTime(1000);
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(1000);
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
-            // Change to hidden
-            const visibilityChangeHandler = getVisibilityChangeHandler();
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // Test long interval (after current short interval timer completes)
-            vi.advanceTimersByTime(1000); // Complete current timer
-            await flushPromises();
+            // Finish the pending short poll before the new hidden interval begins.
+            await vi.advanceTimersByTimeAsync(1000);
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
 
-            vi.advanceTimersByTime(4000); // Long interval
-            await flushPromises();
+            await vi.advanceTimersByTimeAsync(4000);
             expect(mockWatchHandler).toHaveBeenCalledTimes(4);
         });
 
-        it("should handle rapid visibility state changes", async () => {
-            const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
+        it("changes intervals without restarting on rapid visibility changes", async () => {
+            const { startWatchingResource } = createWatcher();
 
             startWatchingResource();
             await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(1); // Initial call
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            const visibilityChangeHandler = getVisibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // Change to hidden - this changes currentPollingInterval but doesn't restart timer
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
-
-            // Change to visible - this changes currentPollingInterval back to short but doesn't restart
-            mockDocument.visibilityState = "visible";
-            visibilityChangeHandler();
+            changeVisibility("visible");
             await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(1); // No additional call from becoming visible
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
-            // The timer continues with the short interval
-            vi.advanceTimersByTime(3000);
-            await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(2); // + 1 from short interval timer
+            await vi.advanceTimersByTimeAsync(3000);
+            expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
-            // Change to hidden again
-            mockDocument.visibilityState = "hidden";
-            visibilityChangeHandler();
+            changeVisibility("hidden");
 
-            // The next timer should use the long interval
-            vi.advanceTimersByTime(10000);
-            await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(3); // + 1 from long interval timer
+            await vi.advanceTimersByTimeAsync(10000);
+            expect(mockWatchHandler).toHaveBeenCalledTimes(3);
         });
     });
 });
