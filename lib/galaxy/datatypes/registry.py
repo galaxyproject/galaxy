@@ -668,14 +668,18 @@ class Registry:
         """Detect the datatype of the extra-files directory at ``path``.
 
         Return the matching extension with the deepest inheritance hierarchy,
-        or ``directory`` if none match.
+        or ``directory`` if none match. Content wrapped in a single folder also
+        matches, since grooming moves it to the root once the datatype is set.
         """
         matches = []
         for datatype in self.datatypes_by_extension.values():
             if not isinstance(datatype, data.Directory):
                 continue
             try:
-                if datatype.sniff_directory(path):
+                content_path = path
+                if wrapper := datatype.content_wrapper_name(path):
+                    content_path = os.path.join(path, wrapper)
+                if datatype.sniff_directory(content_path):
                     matches.append(datatype)
             except Exception:
                 self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)

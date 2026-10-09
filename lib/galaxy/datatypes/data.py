@@ -1284,8 +1284,45 @@ class Directory(Data):
         """Return whether the extra-files directory at ``path`` matches this datatype."""
         return False
 
+    def is_content_root(self, path: str) -> bool:
+        """Return whether the folder at ``path`` directly holds this datatype's content.
+
+        Datatypes whose content has a recognizable root (e.g. a Zarr store's metadata
+        file) override this so a copy wrapped in a single folder is moved up to the root
+        of the extra files path. A plain ``directory`` has no such root and is left as is.
+        """
+        return False
+
     def groom_directory_content(self, extra_files_path: str) -> None:
-        """Rearrange a staged directory so its content sits at the root of ``extra_files_path``."""
+        """Move content wrapped in a single folder up to the root of ``extra_files_path``."""
+        wrapper = self.content_wrapper_name(extra_files_path)
+        if wrapper is None:
+            return
+        wrapper_path = os.path.join(extra_files_path, wrapper)
+        if os.path.islink(extra_files_path) or os.path.islink(wrapper_path):
+            # Never move content through a link that may point outside the dataset.
+            return
+        # Stay inside extra_files_path, whose parent may not be writable. Rename the
+        # wrapper first so a child with the same name does not collide.
+        moved = tempfile.mkdtemp(prefix=".content_", dir=extra_files_path)
+        os.rmdir(moved)
+        os.rename(wrapper_path, moved)
+        for name in os.listdir(moved):
+            os.rename(os.path.join(moved, name), os.path.join(extra_files_path, name))
+        os.rmdir(moved)
+
+    def content_wrapper_name(self, path: str) -> str | None:
+        """Return the name of the single folder wrapping this datatype's content, if it is not at the root."""
+        if not os.path.isdir(path) or self.is_content_root(path):
+            return None
+        items_in_path = os.listdir(path)
+        if len(items_in_path) != 1:
+            return None
+        wrapper = items_in_path[0]
+        wrapper_path = os.path.join(path, wrapper)
+        if os.path.isdir(wrapper_path) and self.is_content_root(wrapper_path):
+            return wrapper
+        return None
 
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str
@@ -1350,42 +1387,11 @@ class ZarrDirectory(Directory):
 
         return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
-    def groom_directory_content(self, extra_files_path: str) -> None:
-        """Move a store wrapped in a single folder up to the root of ``extra_files_path``."""
-        wrapper = self._wrapper_folder_name(extra_files_path)
-        if wrapper is None:
-            return
-        wrapper_path = os.path.join(extra_files_path, wrapper)
-        if os.path.islink(extra_files_path) or os.path.islink(wrapper_path):
-            # Never move content through a link that may point outside the dataset.
-            return
-        # Stay inside extra_files_path, whose parent may not be writable. Rename the
-        # wrapper first so a child with the same name does not collide.
-        moved = tempfile.mkdtemp(prefix=".store_", dir=extra_files_path)
-        os.rmdir(moved)
-        os.rename(wrapper_path, moved)
-        for name in os.listdir(moved):
-            os.rename(os.path.join(moved, name), os.path.join(extra_files_path, name))
-        os.rmdir(moved)
+    def is_content_root(self, path: str) -> bool:
+        return self._find_zarr_metadata_file(path) is not None
 
     def sniff_directory(self, path: str) -> bool:
-        # Sniffing runs before grooming, so a store in a wrapper folder still counts.
-        store_path = path
-        if wrapper := self._wrapper_folder_name(path):
-            store_path = os.path.join(path, wrapper)
-        return self._get_format_version(store_path) is not None
-
-    def _wrapper_folder_name(self, extra_files_path: str) -> str | None:
-        """Return the name of the single folder wrapping the store, if the store is not at the root."""
-        if not os.path.isdir(extra_files_path) or self._find_zarr_metadata_file(extra_files_path):
-            return None
-        items_in_path = os.listdir(extra_files_path)
-        if len(items_in_path) != 1:
-            return None
-        wrapper = items_in_path[0]
-        if self._find_zarr_metadata_file(os.path.join(extra_files_path, wrapper)):
-            return wrapper
-        return None
+        return self._get_format_version(path) is not None
 
     def _load_zarr_metadata_file(self, store_root_path: str) -> dict[str, Any] | None:
         """Returns the path to the metadata file in the Zarr store."""
