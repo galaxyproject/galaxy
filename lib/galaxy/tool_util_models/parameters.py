@@ -829,15 +829,31 @@ class DataRequestInternalDce(StrictModel):
 
 
 class DataInternalJson(StrictModel):
-    class_: Annotated[Literal["File"], Field(alias="class")]
+    class_: Annotated[
+        Literal["File", "Directory"],
+        Field(
+            alias="class",
+            description="'Directory' for directory datatypes, whose content is a folder; 'File' otherwise.",
+        ),
+    ]
     basename: Annotated[
         str,
         Field(
             description="The base name of the file, that is, the name of the file without any leading directory path"
         ),
     ]
-    location: str
-    path: Annotated[str, Field(description="The absolute path to the file on disk.")]
+    location: Annotated[
+        str, Field(description="Where the data comes from; the source URI for a deferred dataset passed as a URI.")
+    ]
+    path: Annotated[
+        str | None,
+        Field(
+            description=(
+                "The absolute path to the file, or to the directory holding a directory dataset's content, on disk. "
+                "Unset for a deferred dataset passed as a URI (see ``location``)."
+            )
+        ),
+    ] = None
     listing: list[str] | None = None  # Should be recursive
     nameroot: Annotated[str | None, Field(description="The basename root such that nameroot + nameext == basename")]
     nameext: Annotated[str | None, Field(description="The basename extension such that nameroot + nameext == basename")]

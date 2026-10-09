@@ -5,6 +5,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes.data import Directory
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -62,9 +63,15 @@ def setup_for_runtimeify(
     hda_references: list[HistoryDatasetAssociation] = []
 
     # Build lookup for individual datasets
-    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {
-        d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None
-    }
+    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {}
+    for i, d in enumerate(input_datasets.values()):
+        if d is None:
+            continue
+        hdas_by_id[d.id] = (d, i)
+        # The request names the original dataset when the job got an implicit conversion of it.
+        for assoc in getattr(d, "implicitly_converted_parent_datasets", None) or []:
+            if assoc.parent_hda is not None:
+                hdas_by_id.setdefault(assoc.parent_hda.id, (d, i))
 
     # Build separate lookups for HDCAs and DCEs
     hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
@@ -99,16 +106,29 @@ def setup_for_runtimeify(
         if not hda_entry:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")
         assert hda_entry.dataset is not None
+        is_directory = isinstance(hda_entry.datatype, Directory)
         properties: dict[str, Any] = {
-            "class": "File",
+            "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
             "format": hda_entry.extension,
-            "path": (
-                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
-            ),
-            "size": hda_entry.dataset.get_size(),
+            # A deferred dataset has no local file to measure.
+            "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
             "listing": [],
         }
+        if hda_entry.has_deferred_data:
+            # Not materialized: the tool consumes the source URI and there is no local path.
+            properties["location"] = hda_entry.deferred_source_uri
+        elif is_directory:
+            # A directory dataset's content sits at the root of its extra files.
+            properties["path"] = (
+                compute_environment.input_extra_files_rewrite(hda_entry)
+                if compute_environment
+                else hda_entry.extra_files_path
+            )
+        else:
+            properties["path"] = (
+                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
+            )
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         return DataInternalJson(**properties)
 

@@ -24,6 +24,7 @@ from typing import (
 
 import galaxy.model
 from galaxy import util
+from galaxy.datatypes.data import Directory
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Dataset,
@@ -296,6 +297,13 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             ensure_path_in_directory(filename, self.job_working_directory)
         if extra_files:
             extra_files = safe_path_from_directory(extra_files, self.job_working_directory)
+            if dataset_attributes and dataset_attributes.get("ext"):
+                # Set later as well, but the layout depends on it and must be settled first.
+                primary_data.extension = dataset_attributes["ext"]
+            datatype = primary_data.datatype
+            if isinstance(datatype, Directory):
+                # Settle the layout while the files are still in the job's directory.
+                datatype.groom_directory_content(extra_files)
         # Move data from temp location to dataset location
         if not link_data:
             dataset = primary_data.dataset

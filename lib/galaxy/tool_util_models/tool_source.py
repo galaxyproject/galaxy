@@ -344,7 +344,8 @@ class FieldDict(TypedDict, closed=True):
 JsonTestDatasetDefDict = TypedDict(
     "JsonTestDatasetDefDict",
     {
-        "class": Literal["File"],
+        # "Directory" stages a folder as a directory dataset.
+        "class": Literal["File", "Directory"],
         "path": NotRequired[str | None],
         "location": NotRequired[str | None],
         "name": NotRequired[str | None],
@@ -363,7 +364,7 @@ JsonTestCollectionDefDatasetElementDict = TypedDict(
     "JsonTestCollectionDefDatasetElementDict",
     {
         "identifier": str,
-        "class": Literal["File"],
+        "class": Literal["File", "Directory"],
         "path": NotRequired[str | None],
         "location": NotRequired[str | None],
         "name": NotRequired[str | None],

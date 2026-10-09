@@ -344,17 +344,19 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
         primary_file = stream_to_file(
             StringIO(""), prefix="upload_directory_primary_file", dir=upload_config.working_directory
         )
+        # Stage the directory's content at the root of extra files.
         extra_files_path = f"{primary_file}_extra"
-        # Match the archive converter's layout for store_root metadata.
-        staged = os.path.join(extra_files_path, os.path.basename(path))
-        purged = _stage_directory(path, staged, purge_source)
+        purged = _stage_directory(path, extra_files_path, purge_source)
         # Reject links introduced since source validation.
-        _reject_symlinks(staged, name)
+        _reject_symlinks(extra_files_path, name)
         if purge_source and not purged:
             shutil.rmtree(path, ignore_errors=True)
 
         if sniff_ext:
             ext = registry.sniff_directory(extra_files_path)
+        datatype = registry.get_datatype_by_extension(ext)
+        if isinstance(datatype, Directory):
+            datatype.groom_directory_content(extra_files_path)
         rval: dict[str, Any] = {
             "name": name,
             "dbkey": item.get("dbkey", "?"),

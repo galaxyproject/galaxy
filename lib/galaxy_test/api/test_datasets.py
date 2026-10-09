@@ -468,6 +468,48 @@ class TestDatasetsApi(ApiTestCase):
         extra_files_response.raise_for_status()
         assert extra_files_response.text == fasta_contents
 
+    def test_zarr_store_moved_up_after_datatype_change(self, history_id: str):
+        # A plain directory keeps its wrapper folder; changing it to zarr sets metadata
+        # again, which moves the store up to the root.
+        with open(TestDataResolver().get_filename("wrapped_store.zarr.zip"), "rb") as archive:
+            payload = {
+                "history_id": history_id,
+                "targets": [
+                    {
+                        "destination": {"type": "hdas"},
+                        "items": [
+                            {
+                                "src": "pasted",
+                                "paste_content": "",
+                                "ext": "directory",
+                                "extra_files": {"items_from": "archive", "src": "files", "fuzzy_root": False},
+                            }
+                        ],
+                    }
+                ],
+                "__files": {"files_0|file_data": archive},
+            }
+            fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        dataset_id = fetch_response.json()["outputs"][0]["id"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        change_response = self._put(
+            f"histories/{history_id}/contents/{dataset_id}", data={"datatype": "zarr"}, json=True
+        )
+        self._assert_status_code_is(change_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id)
+        assert details["extension"] == "zarr"
+        assert str(details["metadata_zarr_format"]) == "2"
+        extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset_id)
+        assert ".zgroup" in {extra_file["path"] for extra_file in extra_files}
+        # Viewers such as Vizarr request files relative to the store.
+        display_response = self._get(f"histories/{history_id}/contents/{dataset_id}/display?filename=.zgroup")
+        display_response.raise_for_status()
+        assert "zarr_format" in display_response.text
+
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(
             history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
