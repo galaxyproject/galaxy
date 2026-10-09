@@ -1,11 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
-import { shallowMount } from "@vue/test-utils";
+import { getFakeFileSource } from "@tests/test-data/fileSources";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 import { useFileSources } from "./fileSources";
 
@@ -14,8 +15,6 @@ const REMOTE_FILES_API_ROUTE = "/api/remote_files/plugins";
 const TestComponent = defineComponent({
     setup() {
         return {
-            // Call the composable and expose all return values into our
-            // component instance so we can access them with wrapper.vm
             ...useFileSources(),
         };
     },
@@ -28,33 +27,17 @@ const TestComponent = defineComponent({
 `,
 });
 
-function setupWrapper(): any {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    return shallowMount(TestComponent, { pinia });
-}
+enableAutoUnmount(afterEach);
 
-function buildFakeFileSource(id: string, writable: boolean = true): BrowsableFilesSourcePlugin {
-    const type = `${id}Type`;
-    return {
-        id: id,
-        type,
-        uri_root: `${type}://`,
-        label: `${id} Label`,
-        doc: `${id} Doc`,
-        writable,
-        browsable: true,
-        supports: {
-            pagination: false,
-            search: false,
-            sorting: false,
-        },
-    };
+function setupWrapper() {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    return shallowMount(TestComponent, { global: withPlugins(getLocalVue(), pinia) });
 }
 
 const { server, http } = useServerMock();
 
 describe("useFileSources", () => {
-    beforeEach(async () => {
+    beforeEach(() => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json([]);
@@ -62,13 +45,13 @@ describe("useFileSources", () => {
         );
     });
 
-    it("should be initially loading", async () => {
+    it("is loading before the file-source request completes", () => {
         const wrapper = setupWrapper();
         expect(wrapper.vm.isLoading).toBe(true);
     });
 
-    it("should fetch file sources on mount", async () => {
-        const expectedFileSources = [buildFakeFileSource("foo")];
+    it("loads the returned file sources on mount", async () => {
+        const expectedFileSources = [getFakeFileSource({ id: "foo" })];
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
@@ -85,8 +68,11 @@ describe("useFileSources", () => {
         expect(wrapper.vm.fileSources).toEqual(expectedFileSources);
     });
 
-    it("should set hasWritable to false if no file sources are writable", async () => {
-        const expectedFileSources = [buildFakeFileSource("foo", false), buildFakeFileSource("bar", false)];
+    it("reports no writable source when every source is read-only", async () => {
+        const expectedFileSources = [
+            getFakeFileSource({ id: "foo", writable: false }),
+            getFakeFileSource({ id: "bar", writable: false }),
+        ];
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
@@ -97,11 +83,14 @@ describe("useFileSources", () => {
 
         await flushPromises();
 
-        expect(wrapper.vm.hasWritable).toEqual(false);
+        expect(wrapper.vm.hasWritable).toBe(false);
     });
 
-    it("should set hasWritable to true if any file sources are writable", async () => {
-        const expectedFileSources = [buildFakeFileSource("foo", true), buildFakeFileSource("bar", false)];
+    it("reports a writable source when one source is writable", async () => {
+        const expectedFileSources = [
+            getFakeFileSource({ id: "foo", writable: true }),
+            getFakeFileSource({ id: "bar", writable: false }),
+        ];
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
@@ -112,6 +101,6 @@ describe("useFileSources", () => {
 
         await flushPromises();
 
-        expect(wrapper.vm.hasWritable).toEqual(true);
+        expect(wrapper.vm.hasWritable).toBe(true);
     });
 });
