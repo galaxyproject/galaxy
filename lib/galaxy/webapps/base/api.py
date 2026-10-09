@@ -128,6 +128,8 @@ class GalaxyFileResponse(FileResponse):
 
     nginx_x_accel_redirect_base: str | None = None
     apache_xsendfile: bool | None = None
+    # Each chunk is a threadpool read and an ASGI send; starlette's 64 KiB makes large downloads hop-bound.
+    chunk_size = 1024 * 1024
 
     def __init__(
         self,
