@@ -1,16 +1,17 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
+import { setupTestPinia } from "./testUtils";
+
 const { server, http } = useServerMock();
 
 describe("userStore", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
     });
     afterEach(() => {
         const userStore = useUserStore();
@@ -18,18 +19,29 @@ describe("userStore", () => {
     });
 
     describe("addRecentTool", () => {
-        it("adds tools to the front, deduplicates, and ignores empty ids", () => {
+        it("ignores an empty tool ID", () => {
             const userStore = useUserStore();
 
             userStore.addRecentTool("");
             expect(userStore.recentTools).toEqual([]);
+        });
+
+        it("adds newly used tools at the front", () => {
+            const userStore = useUserStore();
 
             userStore.addRecentTool("tool_a");
             userStore.addRecentTool("tool_b");
             userStore.addRecentTool("tool_c");
             expect(userStore.recentTools).toEqual(["tool_c", "tool_b", "tool_a"]);
+        });
 
-            // re-adding an existing tool moves it to front without duplicating
+        it("moves a reused tool to the front without duplicating it", () => {
+            const userStore = useUserStore();
+            userStore.addRecentTool("tool_a");
+            userStore.addRecentTool("tool_b");
+            userStore.addRecentTool("tool_c");
+            expect(userStore.recentTools).toEqual(["tool_c", "tool_b", "tool_a"]);
+
             userStore.addRecentTool("tool_a");
             expect(userStore.recentTools).toEqual(["tool_a", "tool_c", "tool_b"]);
         });
