@@ -1,5 +1,5 @@
 import { faAws, faDropbox, faGithub, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
-import { faCloud, faFolderTree, faGlobe, faNetworkWired, type IconDefinition } from "font-awesome-6";
+import { faCloud, faFolderTree, faGlobe, faNetworkWired, faServer, type IconDefinition } from "font-awesome-6";
 
 import type { components } from "@/api/schema";
 import { contains } from "@/utils/filtering";
@@ -131,6 +131,11 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message:
             "This is a file source that connects with an ARC DataHUB (GitLab) instance. Exported files are submitted as a merge request.",
+    },
+    galaxy2galaxy: {
+        icon: faServer,
+        message:
+            "This is a read-only file source that browses the histories and data libraries of another Galaxy server.",
     },
 };
 

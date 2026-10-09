@@ -360,3 +360,22 @@
   base_url: https://git.nfdi4plants.org
   # token: ${user.preferences['arc|token']}
   writable: false
+
+# Another Galaxy server's histories and data libraries, read-only. Requires the optional
+# 'galaxy-fsspec' package. An API key is always needed: there is no anonymous browsing, and the key
+# grants everything the account on that server can see, so it cannot be narrowed to one history.
+# Datasets appear as files and collections as folders. Galaxy can already fetch a single dataset
+# from another Galaxy with a drs:// URI; this adds browsing, collections and data libraries.
+# Here the admin picks the server and each user enters their own key in their preferences (the
+# galaxy2galaxy entry in user_preferences_extra_conf.yml). Never put a fixed key here: every user
+# would see that account. To let users pick the server too, offer production_galaxy2galaxy.yml as a
+# file source template instead.
+- type: galaxy2galaxy
+  id: galaxy2galaxy-usegalaxy-org
+  label: usegalaxy.org
+  doc: Browse the histories and data libraries of usegalaxy.org
+  base_url: https://usegalaxy.org
+  api_key: ${user.user_vault.read_secret('preferences/galaxy2galaxy/api_key')}
+  # Show entries the way the history panel does, as "1-my-dataset".
+  # show_hid_in_names: true
+  writable: false
