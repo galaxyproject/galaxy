@@ -357,6 +357,20 @@ function toIconSize(size: BootstrapSize | undefined): SizeProp | undefined {
  */
 const allowedTitleLines = computed(() => props.titleNLines);
 
+const hasExtraActions = computed(() => props.extraActions?.some((ea) => ea.visible ?? true) ?? false);
+
+const hasBadges = computed(() => props.badges?.some((b) => b.visible ?? true) ?? false);
+
+const hasIndicators = computed(() => props.indicators?.some((i) => i.visible ?? true) ?? false);
+
+/**
+ * Whether the header's first row holds controls taller than a text-size title line
+ */
+const hasHeaderControls = computed(
+    () =>
+        props.selectable || props.canRenameTitle || props.canClearTitle || props.showBookmark || hasExtraActions.value,
+);
+
 function onKeyDown(event: KeyboardEvent) {
     if (props.disabled) {
         return;
@@ -413,7 +427,8 @@ function onKeyDown(event: KeyboardEvent) {
                         <div
                             class="g-card-header-main align-items-start d-flex flex-gapx-1 flex-gapy-1 flex-grow-1 flex-wrap">
                             <div
-                                class="g-card-header-line g-card-title-section d-flex flex-column justify-content-center">
+                                class="g-card-title-section d-flex flex-column justify-content-center"
+                                :class="{ 'g-card-header-line': hasHeaderControls }">
                                 <div :id="`g-card-${props.id}-header-title`">
                                     <slot name="title">
                                         <Heading
@@ -502,8 +517,12 @@ function onKeyDown(event: KeyboardEvent) {
                                 </div>
                             </div>
 
-                            <div class="g-card-header-line align-items-center d-flex flex-gapx-1 flex-wrap mw-100">
+                            <div
+                                v-if="hasBadges || hasIndicators || $slots.badges || $slots.indicators"
+                                class="g-card-header-badges align-items-center d-flex flex-gapx-1 flex-wrap mw-100"
+                                :class="{ 'g-card-header-line': hasHeaderControls }">
                                 <div
+                                    v-if="hasBadges || $slots.badges"
                                     :id="getElementId(props.id, 'badges')"
                                     class="align-items-center d-flex flex-gapx-1 flex-wrap">
                                     <slot name="badges">
@@ -534,7 +553,9 @@ function onKeyDown(event: KeyboardEvent) {
                                     </slot>
                                 </div>
 
-                                <div :id="getElementId(props.id, 'indicators')">
+                                <div
+                                    v-if="hasIndicators || $slots.indicators"
+                                    :id="getElementId(props.id, 'indicators')">
                                     <slot name="indicators">
                                         <template v-for="indicator in props.indicators" :key="indicator.id">
                                             <GButton
@@ -573,7 +594,10 @@ function onKeyDown(event: KeyboardEvent) {
                             </div>
                         </div>
 
-                        <div class="g-card-header-line g-card-header-actions align-items-center d-flex flex-shrink-0">
+                        <div
+                            v-if="props.showBookmark || hasExtraActions || $slots['extra-actions']"
+                            class="g-card-header-actions align-items-center d-flex flex-shrink-0"
+                            :class="{ 'g-card-header-line': hasHeaderControls }">
                             <slot v-if="props.showBookmark" name="bookmark">
                                 <GButton
                                     v-if="!bookmarkLoading"
@@ -603,10 +627,7 @@ function onKeyDown(event: KeyboardEvent) {
 
                             <slot name="extra-actions">
                                 <GDropdown
-                                    v-if="
-                                        props.extraActions?.length &&
-                                        props.extraActions.some((ea) => ea.visible ?? true)
-                                    "
+                                    v-if="hasExtraActions"
                                     :id="getElementId(props.id, 'extra-actions')"
                                     v-g-tooltip.hover
                                     right

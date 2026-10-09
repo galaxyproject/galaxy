@@ -9,9 +9,10 @@ import GCard from "./GCard.vue";
 
 const localVue = getLocalVue();
 
-function mountCard(propsData: object) {
+function mountCard(propsData: object, slots: Record<string, string> = {}) {
     return mount(GCard as object, {
         propsData: { id: "card", title: "Card", ...propsData },
+        slots,
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
         stubs: { FontAwesomeIcon: true },
@@ -94,6 +95,46 @@ describe("GCard", () => {
             );
 
             expect(ids).toEqual(expected);
+        });
+
+        it("sizes the first row for header controls only when the card has them", () => {
+            const withControls = mountHeader().find("#g-card-card-header .g-card-title-section");
+            const withoutControls = mountCard({ badges: [{ id: "state", label: "ok", title: "State" }] }).find(
+                "#g-card-card-header .g-card-title-section",
+            );
+
+            expect(withControls.classes()).toContain("g-card-header-line");
+            expect(withoutControls.classes()).not.toContain("g-card-header-line");
+        });
+
+        it("omits the badges and actions groups when the card has nothing to show in them", () => {
+            const header = mountCard({
+                badges: [{ id: "hidden", label: "Hidden", title: "Hidden", visible: false }],
+                extraActions: [{ id: "hidden", label: "Hidden", title: "Hidden", visible: false }],
+            }).find("#g-card-card-header");
+
+            expect(header.find(".g-card-header-badges").exists()).toBe(false);
+            expect(header.find("#g-card-badges-card").exists()).toBe(false);
+            expect(header.find("#g-card-indicators-card").exists()).toBe(false);
+            expect(header.find(".g-card-header-actions").exists()).toBe(false);
+        });
+
+        it("renders only the badge or indicator container that has content", () => {
+            const header = mountCard({
+                indicators: [{ id: "published", label: "Published", title: "Published", handler: vi.fn() }],
+            }).find("#g-card-card-header");
+
+            expect(header.find(".g-card-header-badges").exists()).toBe(true);
+            expect(header.find("#g-card-badges-card").exists()).toBe(false);
+            expect(header.find("#g-card-indicators-card").exists()).toBe(true);
+        });
+
+        it("renders the badges group for slot content", () => {
+            const header = mountCard({}, { badges: "<span id='slot-badge'>Slot badge</span>" }).find(
+                "#g-card-card-header",
+            );
+
+            expect(header.find(".g-card-header-badges #slot-badge").exists()).toBe(true);
         });
 
         it("clamps the title when titleNLines is set", () => {
