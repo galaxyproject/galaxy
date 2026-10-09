@@ -687,6 +687,17 @@ galaxy:
   # false if running from installed packages.
   #conda_auto_init: false
 
+  # Comma separated list of additional conda platforms (subdirs such as
+  # linux-aarch64 or osx-arm64) for which Galaxy maintains every conda
+  # environment it creates, so that a heterogeneous cluster sharing the
+  # conda_prefix (for example over NFS) can run jobs on all of them. The
+  # platform Galaxy itself runs on is always included. Environments for
+  # a foreign platform are created under
+  # <conda_prefix>/platforms/<platform>/ and failures there never fail
+  # the installation on the native platform. Leave unset to use only the
+  # native platform.
+  #conda_platforms: null
+
   # You must set this to true if conda_prefix and job_working_directory
   # are not on the same volume, or some conda dependencies will fail to
   # execute at job runtime. Conda will copy packages content instead of

@@ -617,6 +617,24 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~
+``conda_platforms``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma separated list of additional conda platforms (subdirs such
+    as linux-aarch64 or osx-arm64) for which Galaxy maintains every
+    conda environment it creates, so that a heterogeneous cluster
+    sharing the conda_prefix (for example over NFS) can run jobs on
+    all of them. The platform Galaxy itself runs on is always
+    included. Environments for a foreign platform are created under
+    <conda_prefix>/platforms/<platform>/ and failures there never fail
+    the installation on the native platform. Leave unset to use only
+    the native platform.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``conda_copy_dependencies``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
