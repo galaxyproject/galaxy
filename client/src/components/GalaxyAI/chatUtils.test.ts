@@ -11,14 +11,18 @@ describe("chatUtils", () => {
     });
 
     describe("scrollToBottom", () => {
-        it("scrolls element without error", () => {
-            const el = { scrollHeight: 500, scrollTo: vi.fn() } as unknown as HTMLElement;
-            scrollToBottom(el);
-            expect(el.scrollTo).toHaveBeenCalled();
+        it("scrolls to the full content height without animation", () => {
+            const container = document.createElement("div");
+            Object.defineProperty(container, "scrollHeight", { value: 500 });
+            container.scrollTo = vi.fn();
+
+            scrollToBottom(container);
+
+            expect(container.scrollTo).toHaveBeenCalledExactlyOnceWith({ top: 500, behavior: "auto" });
         });
 
         it("does nothing when container is undefined", () => {
-            scrollToBottom(undefined);
+            expect(() => scrollToBottom(undefined)).not.toThrow();
         });
     });
 });
