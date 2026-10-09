@@ -1,33 +1,39 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
-import Vue from "vue";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import MarkdownVitessce from "./MarkdownVitessce.vue";
+import VisualizationWrapper from "./VisualizationWrapper.vue";
 
 vi.mock("@/onload", () => ({
     getAppRoot: () => "/",
 }));
 
-Vue.directive("localize", {});
+enableAutoUnmount(afterEach);
 
 const { server, http } = useServerMock();
 
+function mountContent(content) {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    return mount(MarkdownVitessce, {
+        props: { content: typeof content === "string" ? content : JSON.stringify(content) },
+        global: {
+            ...withPlugins(getLocalVue(), pinia),
+            stubs: { VisualizationWrapper: true },
+        },
+    });
+}
+
 describe("MarkdownVitessce.vue", () => {
-    it("displays error on invalid JSON", async () => {
-        const wrapper = mount(MarkdownVitessce, {
-            props: {
-                content: "{invalid",
-            },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-        });
+    it("displays error on invalid JSON", () => {
+        const wrapper = mountContent("{invalid");
         expect(wrapper.text()).toContain("SyntaxError");
     });
 
-    it("shows info alert when invocation is missing", async () => {
+    it("shows info alert when invocation is missing", () => {
         const content = {
             datasets: [
                 {
@@ -44,15 +50,11 @@ describe("MarkdownVitessce.vue", () => {
                 },
             ],
         };
-        const wrapper = mount(MarkdownVitessce, {
-            props: {
-                content: JSON.stringify(content),
-            },
-        });
+        const wrapper = mountContent(content);
         expect(wrapper.text()).toContain("Data for rendering this Vitessce Dashboard is not yet available.");
     });
 
-    it("uses dataset ID directly when __gx_dataset_id is present", async () => {
+    it("uses dataset ID directly when __gx_dataset_id is present", () => {
         const content = {
             datasets: [
                 {
@@ -66,28 +68,21 @@ describe("MarkdownVitessce.vue", () => {
                 },
             ],
         };
-        const wrapper = mount(MarkdownVitessce, {
-            props: {
-                content: JSON.stringify(content),
-            },
+        const wrapper = mountContent(content);
+        const config = wrapper.getComponent(VisualizationWrapper).props("config");
+        expect(config.dataset_content.datasets[0].files[0]).toEqual({
+            fileType: "obs",
+            url: "/api/datasets/123/display",
         });
-        const config = wrapper.vm.visualizationConfig;
-        expect(config.dataset_content.datasets[0].files[0].url).toBe("/api/datasets/123/display");
-        expect(config.dataset_content.datasets[0].files[0].__gx_dataset_id).toBeUndefined();
     });
 
     it("resolves __gx_dataset_label via invocation and uses dataset URL", async () => {
         server.use(
-            http.get("/api/invocations/{invocation_id}", ({ response }) =>
-                response(200).json({
-                    inputs: [
-                        {
-                            label: "some_input",
-                            id: "label_id",
-                        },
-                    ],
-                }),
-            ),
+            http.get("/api/invocations/{invocation_id}", ({ response }) => {
+                return response(200).json({
+                    inputs: [{ label: "some_input", id: "label_id" }],
+                });
+            }),
         );
         const content = {
             datasets: [
@@ -105,26 +100,14 @@ describe("MarkdownVitessce.vue", () => {
                 },
             ],
         };
-        const localVue = getLocalVue(true);
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        const wrapper = mount(MarkdownVitessce, {
-            props: {
-                content: JSON.stringify(content),
-            },
-            global: {
-                ...localVue,
-                plugins: [...(localVue.plugins ?? []), pinia],
-                components: {
-                    ...(localVue.components ?? {}),
-                    VisualizationWrapper: {
-                        template: "<div class='viz-wrapper-stub' />",
-                    },
-                },
-            },
+        const wrapper = mountContent(content);
+        // Resolving the label starts an HTTP request from the content watcher.
+        await vi.waitFor(() => {
+            const config = wrapper.getComponent(VisualizationWrapper).props("config");
+            expect(config.dataset_content.datasets[0].files[0]).toEqual({
+                fileType: "obs",
+                url: "/api/datasets/label_id/display",
+            });
         });
-        await new Promise((resolve) => setTimeout(resolve));
-        const file = wrapper.vm.visualizationConfig.dataset_content.datasets[0].files[0];
-        expect(file.url).toBe("/api/datasets/label_id/display");
-        expect(file.__gx_dataset_label).toBeUndefined();
     });
 });
