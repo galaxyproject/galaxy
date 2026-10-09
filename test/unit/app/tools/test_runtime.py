@@ -297,9 +297,9 @@ def test_adapt_dataset_directory_datatypes(extension):
 
 
 def test_adapt_dataset_deferred_input_has_location_and_no_path():
-    result = _adapt_input("zarr", deferred_uri="https://example.org/data/store.zarr")
+    result = _adapt_input("directory", deferred_uri="https://example.org/data/folder")
     assert result.class_ == "Directory"
-    assert result.location == "https://example.org/data/store.zarr"
+    assert result.location == "https://example.org/data/folder"
     assert result.path is None
 
 

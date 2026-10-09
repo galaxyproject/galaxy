@@ -831,7 +831,10 @@ class DataRequestInternalDce(StrictModel):
 class DataInternalJson(StrictModel):
     class_: Annotated[
         Literal["File", "Directory"],
-        Field(alias="class", description="'Directory' for directory datatypes, such as zarr; 'File' otherwise."),
+        Field(
+            alias="class",
+            description="'Directory' for directory datatypes, whose content is a folder; 'File' otherwise.",
+        ),
     ]
     basename: Annotated[
         str,
