@@ -7,6 +7,7 @@ import signal
 import stat
 import subprocess
 import sys
+import threading
 import time
 from typing import (
     Any,
@@ -83,13 +84,14 @@ if argv[:1] == ["create"]:
     ]
     with open(os.path.join(prefix, "conda-meta", "history"), "w") as fh:
         fh.write("==> 2026-01-01 00:00:00 <==\\n# cmd: conda create\\n# update specs: " + json.dumps(specs) + "\\n")
-    for rel in ("bin/tool", "bin/activate", "share/note.txt"):
+    for rel in ("bin/tool", "bin/activate", "share/note.txt", "lib/libx.a"):
         os.makedirs(os.path.dirname(os.path.join(prefix, rel)), exist_ok=True)
-        with open(os.path.join(prefix, rel), "w") as fh:
-            fh.write("content")
+        with open(os.path.join(prefix, rel), "wb") as fh:
+            fh.write(b"\\xcf\\xfa\\xed\\xfe" + b"content" if rel == "bin/tool" else b"!<arch>\\n" if rel == "lib/libx.a" else b"content")
     record = {{"name": "pkg", "paths_data": {{"paths": [
         {{"_path": "bin/tool", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
         {{"_path": "share/note.txt", "file_mode": "text", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
+        {{"_path": "lib/libx.a", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
         {{"_path": "bin/gone", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
         {{"_path": "bin/plain", "path_type": "hardlink"}},
     ]}}}}
@@ -464,7 +466,58 @@ def test_osx_signs_only_patched_binaries(fake_conda: FakeConda, fake_signer: Fak
     assert calls == [["sign", env_binary(fake_conda, "osx-arm64", "__samtools@1.9")]]
     assert os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
     assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
-    assert "Signed 1 files (0 failed)" in caplog.text
+    assert "Signed 1 Mach-O files for osx-arm64 (1 patched files were not Mach-O)" in caplog.text
+
+
+def write_patched_file(prefix: str, rel: str, content: bytes) -> dict:
+    path = os.path.join(prefix, rel)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as fh:
+        fh.write(content)
+    return {"_path": rel, "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}
+
+
+def test_only_macho_files_are_signed(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path, caplog) -> None:
+    context = make_context(fake_conda, codesign_exec=fake_signer.exec)
+    prefix = str(tmp_path / "osx-env")
+    entries = [
+        write_patched_file(prefix, "bin/macho", b"\xcf\xfa\xed\xfe" + b"\x00" * 16),
+        write_patched_file(prefix, "lib/fat.dylib", b"\xca\xfe\xba\xbe" + b"\x00" * 16),
+        write_patched_file(prefix, "share/terminfo/x", b"xterm|terminal,\n\tam,\n"),
+        write_patched_file(prefix, "lib/libhts.a", b"!<arch>\n" + b"\x00" * 16),
+    ]
+    os.makedirs(os.path.join(prefix, "conda-meta"))
+    with open(os.path.join(prefix, "conda-meta", "pkg-1.0-0.json"), "w") as fh:
+        json.dump({"name": "pkg", "paths_data": {"paths": entries}}, fh)
+    with caplog.at_level("DEBUG"):
+        assert context.sign_platform_files("osx-arm64", prefix)
+    assert fake_signer.calls() == [
+        ["sign", os.path.join(prefix, "bin", "macho")],
+        ["sign", os.path.join(prefix, "lib", "fat.dylib")],
+    ]
+    assert "Signed 2 Mach-O files for osx-arm64 (2 patched files were not Mach-O)" in caplog.text
+
+
+def test_non_macho_files_do_not_count_as_failures(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    context = make_context(fake_conda, codesign_exec=fake_signer.exec)
+    prefix = str(tmp_path / "osx-env")
+    entries = [write_patched_file(prefix, "lib/libhts.a", b"!<arch>\n")]
+    os.makedirs(os.path.join(prefix, "conda-meta"))
+    with open(os.path.join(prefix, "conda-meta", "pkg-1.0-0.json"), "w") as fh:
+        json.dump({"name": "pkg", "paths_data": {"paths": entries}}, fh)
+    fake_signer.fail()
+    assert context.sign_platform_files("osx-arm64", prefix)
+    assert fake_signer.calls() == []
+
+
+def test_marker_is_written_with_mixed_patched_files(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    # the fake conda lists a Mach-O bin/tool and a patched static archive lib/libx.a
+    resolver = make_resolver(fake_conda, tmp_path, platforms="osx-arm64", codesign_exec=fake_signer.exec)
+    install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    env = os.path.join(fake_conda.prefix, "platforms", "osx-arm64", "envs", "__samtools@1.9")
+    assert os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
+    assert fake_signer.calls()[-1:] == [["sign", os.path.join(env, "bin", "tool")]]
+    assert all(call[1].endswith("bin/tool") for call in fake_signer.calls())
 
 
 def test_osx_64_is_signed_too(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
@@ -490,7 +543,7 @@ def test_failing_signer_leaves_no_marker(fake_conda: FakeConda, fake_signer: Fak
     assert not os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
     assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
     assert "fake signer error" in caplog.text
-    assert "Signed 0 files (1 failed)" in caplog.text
+    assert "Signed 0 Mach-O files for osx-arm64 (1 patched files were not Mach-O), 1 failed" in caplog.text
     assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="osx-arm64"), NullDependency)
 
 
@@ -669,6 +722,70 @@ def test_lock_is_released_when_the_holder_dies(tmp_path) -> None:
         assert locked
     assert time.monotonic() - started < 2
     assert os.path.exists(lock_path)
+
+
+def test_threads_of_one_process_exclude_each_other(tmp_path) -> None:
+    lock_path = str(tmp_path / ".locks" / "__x@1.lock")
+    first_holds = threading.Event()
+    release_first = threading.Event()
+    order: List[str] = []
+
+    def first() -> None:
+        with conda_util._env_lock(lock_path, 10) as locked:
+            assert locked
+            order.append("first acquired")
+            first_holds.set()
+            assert release_first.wait(10)
+            order.append("first releasing")
+
+    def second() -> None:
+        with conda_util._env_lock(lock_path, 10) as locked:
+            assert locked
+            order.append("second acquired")
+
+    t1 = threading.Thread(target=first)
+    t2 = threading.Thread(target=second)
+    t1.start()
+    assert first_holds.wait(10)
+    t2.start()
+    t2.join(0.5)
+    assert t2.is_alive()
+    assert order == ["first acquired"]
+    release_first.set()
+    t1.join(10)
+    t2.join(10)
+    assert order == ["first acquired", "first releasing", "second acquired"]
+
+
+def test_second_thread_times_out_while_the_first_holds_the_lock(tmp_path) -> None:
+    lock_path = str(tmp_path / ".locks" / "__x@1.lock")
+    first_holds = threading.Event()
+    release_first = threading.Event()
+    results: List[bool] = []
+
+    def first() -> None:
+        with conda_util._env_lock(lock_path, 10) as locked:
+            results.append(locked)
+            first_holds.set()
+            release_first.wait(10)
+
+    def second() -> None:
+        start = time.monotonic()
+        with conda_util._env_lock(lock_path, 0.3) as locked:
+            results.append(locked)
+        results.append(time.monotonic() - start >= 0.25)
+
+    t1 = threading.Thread(target=first)
+    t1.start()
+    assert first_holds.wait(10)
+    t2 = threading.Thread(target=second)
+    t2.start()
+    t2.join(10)
+    release_first.set()
+    t1.join(10)
+    assert results == [True, False, True]
+    with conda_util._env_lock(lock_path, 1) as locked:
+        assert locked
 
 
 def test_lock_can_be_taken_repeatedly(tmp_path) -> None:

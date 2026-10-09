@@ -347,8 +347,10 @@ silicon refuses to run such files. Conda re-signs them only when it runs on macO
 Galaxy therefore signs these files on the head node after each successful create, using ``rcodesign`` from the
 `apple-codesign <https://github.com/indygreg/apple-platform-rs>`_ project, which produces the same ad-hoc signature as
 ``codesign -s -`` and runs on Linux. The files are taken from the ``conda-meta`` records of the environment: those
-with ``file_mode: binary`` and a ``prefix_placeholder``. Each is signed with ``rcodesign sign <file>``. The number of
-signed and failed files is logged. If a file cannot be signed, the environment is kept but is not marked as usable, so
+with ``file_mode: binary`` and a ``prefix_placeholder``. Among these only Mach-O files (including fat binaries,
+recognized by their magic number) are signed, each with ``rcodesign sign <file>``; terminfo files and static archives
+are left alone. The number of signed and skipped files, and of failed signatures, is logged. If a file cannot be
+signed, the environment is kept but is not marked as usable, so
 jobs do not resolve to it.
 
 ``rcodesign`` is distributed as a static Linux binary on the

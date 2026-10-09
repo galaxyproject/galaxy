@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import (
     Callable,
@@ -152,9 +153,64 @@ def find_conda_prefix() -> str:
     return os.path.join(home, "miniforge3")
 
 
+MACHO_MAGICS = frozenset(
+    (
+        b"\xfe\xed\xfa\xce",  # 32-bit big-endian
+        b"\xfe\xed\xfa\xcf",  # 64-bit big-endian
+        b"\xce\xfa\xed\xfe",  # 32-bit little-endian
+        b"\xcf\xfa\xed\xfe",  # 64-bit little-endian
+        b"\xca\xfe\xba\xbe",  # fat binary
+        b"\xbe\xba\xfe\xca",  # fat binary, byte-swapped
+    )
+)
+
+
+def is_macho(path: str) -> bool:
+    """True if the file at ``path`` starts with a Mach-O (or fat binary) magic number."""
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(4) in MACHO_MAGICS
+    except OSError:
+        return False
+
+
+_thread_locks: Dict[str, threading.Lock] = {}
+_thread_locks_guard = threading.Lock()
+
+
+def _thread_lock_for(path: str) -> threading.Lock:
+    with _thread_locks_guard:
+        lock = _thread_locks.get(path)
+        if lock is None:
+            lock = _thread_locks[path] = threading.Lock()
+        return lock
+
+
 @contextlib.contextmanager
 def _env_lock(path: str, timeout: Union[int, float]) -> Iterator[bool]:
-    """Exclusive lock on the file ``path``, yields False if it could not be taken within ``timeout`` seconds.
+    """Exclusive lock on ``path``, yields False if it could not be taken within ``timeout`` seconds.
+
+    Two locks are needed. ``fcntl.lockf`` locks belong to the process, so two threads of one process would
+    both acquire them, and Galaxy job runners install dependencies from several worker threads. A per-path
+    :class:`threading.Lock` therefore serializes the threads of this process, and the file lock serializes
+    other processes and hosts sharing the file system. The thread lock is taken first, the file lock second,
+    and both are released in reverse order. ``timeout`` covers the wait for both together.
+    """
+    thread_lock = _thread_lock_for(os.path.abspath(path))
+    deadline = time.monotonic() + timeout
+    if not thread_lock.acquire(timeout=max(0.0, timeout)):
+        yield False
+        return
+    try:
+        with _file_lock(path, max(0.0, deadline - time.monotonic())) as locked:
+            yield locked
+    finally:
+        thread_lock.release()
+
+
+@contextlib.contextmanager
+def _file_lock(path: str, timeout: Union[int, float]) -> Iterator[bool]:
+    """Exclusive file lock on ``path`` (the cross-process part of :func:`_env_lock`).
 
     On POSIX this is an ``fcntl.lockf`` byte-range lock, which the kernel releases when the holding process
     dies, so a killed process (or one that ends while a daemon thread is installing) cannot leave a stale
@@ -690,12 +746,16 @@ class CondaContext(installable.InstallableContext):
 
         Conda patches the install prefix into binaries, which invalidates their code signature,
         and only re-signs them when it runs on macOS. The files are taken from the conda-meta
-        records (binary files with a prefix placeholder). Returns False if the files could not
+        records (binary files with a prefix placeholder) and only those with a Mach-O magic number
+        are signed. Returns False if the files could not
         be signed (no signer configured, or the signer failed for at least one file).
         """
         if not subdir.startswith("osx-"):
             return True
-        files = patched_binary_files(prefix)
+        patched = patched_binary_files(prefix)
+        files = [path for path in patched if is_macho(path)]
+        skipped = len(patched) - len(files)
+        log.debug("Skipping %d patched files that are not Mach-O in '%s'", skipped, prefix)
         if not self.codesign_exec:
             if files:
                 log.warning("No code signer available, not signing %d files in '%s'", len(files), prefix)
@@ -713,7 +773,13 @@ class CondaContext(installable.InstallableContext):
             else:
                 failed += 1
                 log.warning("Failed to sign '%s' (exit code %s):\n%s", path, returncode, stderr)
-        log.info("Signed %d files (%d failed) in '%s' for platform %s", signed, failed, prefix, subdir)
+        log.info(
+            "Signed %d Mach-O files for %s (%d patched files were not Mach-O)%s",
+            signed,
+            subdir,
+            skipped,
+            f", {failed} failed" if failed else "",
+        )
         return failed == 0
 
     def ensure_platform_bases(self) -> None:
