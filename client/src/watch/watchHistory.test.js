@@ -1,105 +1,70 @@
-import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { createPinia, mapState, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { suppressDebugConsole } from "@tests/vitest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import { useHistoryItemsStore } from "@/stores/historyItemsStore";
-import { useHistoryStore } from "@/stores/historyStore";
-
-import { watchHistoryOnce } from "./watchHistory";
 
 const { server, http } = useServerMock();
 
-const testApp = {
-    template: `<div/>`,
-    computed: {
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
-        ...mapState(useHistoryItemsStore, ["getHistoryItems"]),
-    },
-};
+function historyItem({ id, hid, name, state }) {
+    return { id, hid, name, state, deleted: false, visible: true, history_id: "history-id" };
+}
+
+function serveHistory(updateTime, items) {
+    server.use(
+        http.untyped.get("/history/current_history_json", () => {
+            return HttpResponse.json({ id: "history-id", update_time: updateTime });
+        }),
+        http.get("/api/histories/{history_id}/contents", ({ response }) => {
+            return response.untyped(HttpResponse.json(items));
+        }),
+    );
+}
 
 describe("watchHistory", () => {
-    let wrapper;
-    let pinia;
-    const historyData = {
-        id: "history-id",
-        update_time: "0",
-    };
-    const historyItems = [
-        {
-            id: "id-1",
-            hid: 1,
-            name: "first",
-            state: "ok",
-            deleted: false,
-            visible: true,
-            history_id: "history-id",
-        },
-        {
-            id: "id-2",
-            hid: 2,
-            name: "second",
-            state: "error",
-            deleted: false,
-            visible: true,
-            history_id: "history-id",
-        },
-    ];
+    let watchHistoryOnce;
+    let historyStore;
+    let historyItemsStore;
+    let initialItems;
 
-    beforeEach(() => {
-        pinia = createPinia();
-        setActivePinia(pinia);
-        useHistoryItemsStore(pinia);
-
-        wrapper = mount(testApp, {
-            global: {
-                ...getLocalVue(),
-                plugins: [pinia],
-            },
-        });
-
-        const historyStore = useHistoryStore();
+    beforeEach(async () => {
+        // The watcher keeps its update-time cursor at module scope, independently of Pinia.
+        // Import its stores from the same fresh registry so each scenario owns both caches.
+        vi.resetModules();
+        const [watcher, historyModule, itemsModule, { setupTestPinia }] = await Promise.all([
+            import("./watchHistory"),
+            import("@/stores/historyStore"),
+            import("@/stores/historyItemsStore"),
+            import("@/stores/testUtils"),
+        ]);
+        setupTestPinia();
+        watchHistoryOnce = watcher.watchHistoryOnce;
+        historyStore = historyModule.useHistoryStore();
+        historyItemsStore = itemsModule.useHistoryItemsStore();
         historyStore.setHistories([{ id: "history-id" }]);
         historyStore.setCurrentHistoryId("history-id");
+        initialItems = [
+            historyItem({ id: "id-1", hid: 1, name: "first", state: "ok" }),
+            historyItem({ id: "id-2", hid: 2, name: "second", state: "error" }),
+        ];
     });
 
-    it("sets up the history and history item stores", async () => {
-        server.use(
-            http.untyped.get("/history/current_history_json", () => {
-                return HttpResponse.json(historyData);
-            }),
-            http.untyped.get(/api\/histories\/history-id\/contents?.*/, () => {
-                return HttpResponse.json(historyItems);
-            }),
-        );
+    it("loads history items and supports name and state filters", async () => {
+        serveHistory("0", initialItems);
+
         await watchHistoryOnce();
-        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(2);
-        expect(wrapper.vm.getHistoryItems("history-id", "second")[0].hid).toBe(2);
-        expect(wrapper.vm.getHistoryItems("history-id", "state:ok")[0].hid).toBe(1);
+
+        expect(historyItemsStore.getHistoryItems("history-id", "")).toHaveLength(2);
+        expect(historyItemsStore.getHistoryItems("history-id", "second")[0].hid).toBe(2);
+        expect(historyItemsStore.getHistoryItems("history-id", "state:ok")[0].hid).toBe(1);
     });
 
-    it("survives a failing request", async () => {
-        suppressDebugConsole(); // we log that 500, totally expected, do not include it in test output
-
-        // Stage 1: Initial successful load. `watchHistory.js` tracks the last-seen
-        // update_time in a module-level variable (by design -- there's only one watcher
-        // in production), so this needs a value newer than the previous test's "0" or the
-        // fetch gets skipped as a no-op here too.
-        server.use(
-            http.untyped.get("/history/current_history_json", () => {
-                return HttpResponse.json({ ...historyData, update_time: "0.1" });
-            }),
-            http.untyped.get(/api\/histories\/history-id\/contents?.*/, () => {
-                return HttpResponse.json(historyItems);
-            }),
-        );
-
+    it("retains loaded items after a failed request and merges the next successful update", async () => {
+        suppressDebugConsole(); // The expected 500 response is logged by the HTTP client.
+        serveHistory("0.1", initialItems);
         await watchHistoryOnce();
-        expect(wrapper.vm.currentHistoryId).toBe("history-id");
-        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(2);
+        expect(historyStore.currentHistoryId).toBe("history-id");
+        expect(historyItemsStore.getHistoryItems("history-id", "")).toHaveLength(2);
 
-        // Stage 2: Failing request
         server.resetHandlers();
         server.use(
             http.untyped.get("/history/current_history_json", () => {
@@ -107,35 +72,13 @@ describe("watchHistory", () => {
             }),
         );
 
-        try {
-            await watchHistoryOnce();
-        } catch (error) {
-            expect(error.message).toContain("500");
-        }
+        await expect(watchHistoryOnce()).rejects.toThrow("500");
+        expect(historyItemsStore.getHistoryItems("history-id", "")).toHaveLength(2);
 
-        // Stage 3: Recovery with updated data
         server.resetHandlers();
-        server.use(
-            http.untyped.get("/history/current_history_json", () => {
-                return HttpResponse.json({ ...historyData, update_time: "1" });
-            }),
-            http.untyped.get(/api\/histories\/history-id\/contents?.*/, () => {
-                return HttpResponse.json([
-                    {
-                        id: "id-3",
-                        hid: 3,
-                        name: "third",
-                        state: "ok",
-                        deleted: false,
-                        visible: true,
-                        history_id: "history-id",
-                    },
-                ]);
-            }),
-        );
-
+        serveHistory("1", [historyItem({ id: "id-3", hid: 3, name: "third", state: "ok" })]);
         await watchHistoryOnce();
-        // We should have received the update and have 3 items in the history
-        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(3);
+
+        expect(historyItemsStore.getHistoryItems("history-id", "")).toHaveLength(3);
     });
 });
