@@ -396,6 +396,8 @@ it("emits update on change", async () => {
 });
 ```
 
+**Mounted GModal**: Click its footer buttons with `clickModalButton(wrapper, "Ok")` from `@/components/BaseComponents/test-utils`. GModal emits `ok`/`cancel` when its native dialog closes, so a synthetic `vm.$emit("cancel")` leaves the dialog open and a later close emits `cancel` again. Emitting on GModal is fine only when `shallowMount` stubs it.
+
 #### Pinia Store Testing
 
 **Setup for Component Tests**:
