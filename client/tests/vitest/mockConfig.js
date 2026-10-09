@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { ref } from "vue";
 
 import { useConfig } from "@/composables/config";
 
@@ -6,7 +7,7 @@ vi.mock("@/composables/config");
 
 export function setupMockConfig(configValues, isConfigLoaded = true) {
     return useConfig.mockReturnValue({
-        config: { value: configValues },
-        isConfigLoaded: isConfigLoaded,
+        config: ref(configValues),
+        isConfigLoaded: ref(isConfigLoaded),
     });
 }
