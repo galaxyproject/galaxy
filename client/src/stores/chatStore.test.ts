@@ -1,16 +1,23 @@
-import { createPinia, setActivePinia } from "pinia";
+import { getFakeChatHistoryItem } from "@tests/test-data/chat";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import type { ChatHistoryItem } from "@/components/GalaxyAI/chatTypes";
+import { useServerMock } from "@/api/client/__mocks__";
 
-import { useChatStore } from "./chatStore";
+import { type ChatLocation, useChatStore } from "./chatStore";
+import { setupTestPinia } from "./testUtils";
 
-const { mockPut } = vi.hoisted(() => ({ mockPut: vi.fn() }));
+const { server, http } = useServerMock();
+const deleteRequest = vi.fn();
 
-vi.mock("@/api/client", () => ({
-    GalaxyApi: () => ({ PUT: mockPut, GET: vi.fn(), DELETE: vi.fn() }),
-}));
+function registerDeleteHandler() {
+    server.use(
+        http.put("/api/chat/exchanges/batch/delete", async ({ request, response }) => {
+            deleteRequest(await request.json());
+            return response(200).json({});
+        }),
+    );
+}
 
 vi.mock("@/composables/userLocalStorage", () => ({
     useUserLocalStorage: vi.fn((_key: string, initialValue: unknown) => ref(initialValue)),
@@ -18,7 +25,7 @@ vi.mock("@/composables/userLocalStorage", () => ({
 
 describe("chatStore", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         vi.clearAllMocks();
     });
 
@@ -84,14 +91,15 @@ describe("chatStore", () => {
     });
 
     describe("setLocation", () => {
-        it("changes the chat location", () => {
+        it.each<{ from: ChatLocation; to: ChatLocation }>([
+            { from: "center", to: "right" },
+            { from: "right", to: "bottom" },
+            { from: "bottom", to: "center" },
+        ])("changes the chat location from $from to $to", ({ from, to }) => {
             const store = useChatStore();
-            store.setLocation("right");
-            expect(store.chatLocation).toBe("right");
-            store.setLocation("bottom");
-            expect(store.chatLocation).toBe("bottom");
-            store.setLocation("center");
-            expect(store.chatLocation).toBe("center");
+            store.setLocation(from);
+            store.setLocation(to);
+            expect(store.chatLocation).toBe(to);
         });
     });
 
@@ -126,14 +134,14 @@ describe("chatStore", () => {
     describe("deleteChats", () => {
         it("removes the given ids from history", () => {
             const store = useChatStore();
-            store.chatHistory = [{ id: "a" }, { id: "b" }, { id: "c" }] as ChatHistoryItem[];
+            store.chatHistory = ["a", "b", "c"].map((id) => getFakeChatHistoryItem({ id }));
             store.deleteChats(new Set(["a", "c"]));
             expect(store.chatHistory.map((item) => item.id)).toEqual(["b"]);
         });
 
         it("clears activeChatId when the open chat is among the deleted ids", () => {
             const store = useChatStore();
-            store.chatHistory = [{ id: "a" }, { id: "b" }] as ChatHistoryItem[];
+            store.chatHistory = ["a", "b"].map((id) => getFakeChatHistoryItem({ id }));
             store.setActiveChatId("a");
             store.deleteChats(new Set(["a"]));
             expect(store.activeChatId).toBeNull();
@@ -141,7 +149,7 @@ describe("chatStore", () => {
 
         it("preserves activeChatId when the open chat is not deleted", () => {
             const store = useChatStore();
-            store.chatHistory = [{ id: "a" }, { id: "b" }] as ChatHistoryItem[];
+            store.chatHistory = ["a", "b"].map((id) => getFakeChatHistoryItem({ id }));
             store.setActiveChatId("b");
             store.deleteChats(new Set(["a"]));
             expect(store.activeChatId).toBe("b");
@@ -150,22 +158,23 @@ describe("chatStore", () => {
 
     describe("deleteChatsByIds", () => {
         it("deletes via the batch endpoint and drops the open chat if included", async () => {
-            mockPut.mockResolvedValue({ error: undefined });
+            registerDeleteHandler();
             const store = useChatStore();
-            store.chatHistory = [{ id: "a" }, { id: "b" }, { id: "c" }] as ChatHistoryItem[];
+            store.chatHistory = ["a", "b", "c"].map((id) => getFakeChatHistoryItem({ id }));
             store.setActiveChatId("a");
 
             await store.deleteChatsByIds(new Set(["a", "b"]));
 
-            expect(mockPut).toHaveBeenCalledWith("/api/chat/exchanges/batch/delete", { body: { ids: ["a", "b"] } });
+            expect(deleteRequest).toHaveBeenCalledExactlyOnceWith({ ids: ["a", "b"] });
             expect(store.chatHistory.map((item) => item.id)).toEqual(["c"]);
             expect(store.activeChatId).toBeNull();
         });
 
         it("does nothing for an empty set", async () => {
+            registerDeleteHandler();
             const store = useChatStore();
             await store.deleteChatsByIds(new Set());
-            expect(mockPut).not.toHaveBeenCalled();
+            expect(deleteRequest).not.toHaveBeenCalled();
         });
     });
 
