@@ -1,9 +1,9 @@
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as PagesApi from "@/api/pages";
 import { createPageFromTitle } from "@/api/pages";
-import type { WorkflowSummary } from "@/api/workflows";
 import { loadWorkflows } from "@/api/workflows";
 import type { ChatHistoryItem } from "@/components/GalaxyAI/chatTypes";
 import { uploadMethodRegistry } from "@/components/Panels/Upload/uploadMethodRegistry";
@@ -33,7 +33,7 @@ vi.mock("@/components/Workflow/workflows.services", () => ({
     getWorkflowFull: vi.fn(),
 }));
 
-const RNA_SEQ = { id: "wf1", name: "RNA-seq analysis", owner: "me", tags: [] } as unknown as WorkflowSummary;
+const RNA_SEQ = getFakeWorkflowSummary({ id: "wf1", name: "RNA-seq analysis", owner: "me" });
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
     return makeBaseCtx({
