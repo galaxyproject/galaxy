@@ -1,12 +1,12 @@
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkflowSummary } from "@/api/workflows";
 import { loadWorkflows } from "@/api/workflows";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
-import { useUserStore } from "@/stores/userStore";
 
-import { makeCtx, renderedSections } from "../test-utils";
+import { makeCtx, renderedSections, signIn } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -45,7 +45,7 @@ const PUBLISHED_SCOPE: ScopeDefinition = {
 };
 
 function workflow(id: string, name: string, owner = "me", updateTime = "2026-08-30T10:00:00"): WorkflowSummary {
-    return { id, name, owner, update_time: updateTime, tags: [] } as unknown as WorkflowSummary;
+    return getFakeWorkflowSummary({ id, name, owner, update_time: updateTime });
 }
 
 const RNA = workflow("wf1", "RNA-seq analysis", "me", "2026-08-30T10:00:00");
@@ -87,11 +87,6 @@ function mockWorkflowsApi() {
         const matched = query ? data.filter((entry) => entry.name.toLowerCase().includes(query)) : data;
         return { data: matched, totalMatches: matched.length };
     });
-}
-
-function signIn(username = "me") {
-    const userStore = useUserStore();
-    userStore.currentUser = { id: "user-1", email: "me@example.org", username, isAnonymous: false } as never;
 }
 
 async function scopedSections(scope: ScopeDefinition, query = "") {
