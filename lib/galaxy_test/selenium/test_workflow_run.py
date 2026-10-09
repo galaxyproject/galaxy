@@ -835,6 +835,7 @@ steps:
 """)
         element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
         assert element.text == "Ex2"
+        self.screenshot("workflow_run_text_static_restrictions_default")
         self.workflow_run_submit()
         history_id = self.current_history_id()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
