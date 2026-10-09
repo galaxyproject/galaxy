@@ -15,7 +15,18 @@ vi.mock("@/utils/redirect", async (importOriginal) => ({
 const LANDING_PATH = "/tool_landings/1234-5678?public=true";
 
 function runGuard(query: RouteLocationNormalized["query"] = {}) {
-    return redirectLoggedIn({ query } as RouteLocationNormalized);
+    const route: RouteLocationNormalized = {
+        path: "/login/start",
+        fullPath: "/login/start",
+        name: undefined,
+        params: {},
+        hash: "",
+        query,
+        matched: [],
+        meta: {},
+        redirectedFrom: undefined,
+    };
+    return redirectLoggedIn(route);
 }
 
 function setUser(id: string | null) {
@@ -30,12 +41,12 @@ describe("redirectLoggedIn", () => {
         vi.resetAllMocks();
     });
 
-    it("renders the login form for anonymous users", () => {
+    it("allows anonymous users to enter the login route", () => {
         setUser(null);
         expect(runGuard()).toBeUndefined();
     });
 
-    it("renders the login form when there is no Galaxy user at all", () => {
+    it("allows entry when there is no Galaxy user at all", () => {
         vi.mocked(getGalaxyInstance).mockReturnValue({} as ReturnType<typeof getGalaxyInstance>);
         expect(runGuard()).toBeUndefined();
     });
@@ -50,21 +61,26 @@ describe("redirectLoggedIn", () => {
         expect(runGuard({ redirect: LANDING_PATH })).toBe(LANDING_PATH);
     });
 
-    it("refuses to bounce logged-in users off this Galaxy", () => {
+    it.each([
+        { name: "absolute URL", redirect: "https://evil.example.com/" },
+        { name: "protocol-relative URL", redirect: "//evil.example.com/" },
+    ])("sends logged-in users home instead of a $name", ({ redirect }) => {
         setUser("f2db41e1fa331b3e");
-        expect(runGuard({ redirect: "https://evil.example.com/" })).toBe("/");
-        expect(runGuard({ redirect: "//evil.example.com/" })).toBe("/");
+
+        expect(runGuard({ redirect })).toBe("/");
     });
 
     it("sends logged-in users on to an allowed external site", () => {
         setUser("f2db41e1fa331b3e");
         const target = "https://tools.example.org/back?item=1";
+
         expect(runGuard({ redirect: target })).toBe(false);
         expect(redirectToUrl).toHaveBeenCalledWith(target);
     });
 
-    it("does not bounce a logged-in user back to the login route", () => {
+    it("sends logged-in users home instead of returning to the login route", () => {
         setUser("f2db41e1fa331b3e");
+
         expect(runGuard({ redirect: "/login/start" })).toBe("/");
     });
 });
