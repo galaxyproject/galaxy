@@ -7,11 +7,9 @@ import { MetadataJsonViewerStub } from "./test-utils"
 
 enableAutoUnmount(afterEach)
 
-const fixtureMetadata = repositoryMetadataColumnMaker
-
-function mountTab(props: { metadata: RepositoryMetadata | null }) {
+function mountTab(metadata: RepositoryMetadata | null) {
     return mount(OverviewTab, {
-        props,
+        props: { metadata },
         global: { stubs: { MetadataJsonViewer: MetadataJsonViewerStub } },
     })
 }
@@ -19,25 +17,22 @@ function mountTab(props: { metadata: RepositoryMetadata | null }) {
 describe("OverviewTab", () => {
     describe("rendering", () => {
         it("displays revision selector when metadata is provided", () => {
-            const wrapper = mountTab({ metadata: fixtureMetadata })
+            const wrapper = mountTab(repositoryMetadataColumnMaker)
 
             expect(wrapper.find(".q-select").exists()).toBe(true)
         })
 
-        it("shows 'No metadata available' when metadata is null", () => {
-            const wrapper = mountTab({ metadata: null })
-
-            expect(wrapper.text()).toContain("No metadata available")
-        })
-
-        it("shows 'No metadata available' when metadata is empty object", () => {
-            const wrapper = mountTab({ metadata: {} })
+        it.each([
+            { name: "null", metadata: null },
+            { name: "empty", metadata: {} },
+        ])("shows 'No metadata available' for $name metadata", ({ metadata }) => {
+            const wrapper = mountTab(metadata)
 
             expect(wrapper.text()).toContain("No metadata available")
         })
 
         it("displays MetadataJsonViewer with selected revision data", () => {
-            const wrapper = mountTab({ metadata: fixtureMetadata })
+            const wrapper = mountTab(repositoryMetadataColumnMaker)
 
             expect(wrapper.find(".mock-json-viewer").exists()).toBe(true)
             // Verify actual data is passed - fixture contains Add_a_column1 tool
@@ -47,35 +42,32 @@ describe("OverviewTab", () => {
 
     describe("revision selection", () => {
         it("defaults to newest revision (highest numeric_revision)", () => {
-            const wrapper = mountTab({ metadata: fixtureMetadata })
+            const wrapper = mountTab(repositoryMetadataColumnMaker)
 
-            // The mock renders JSON - newest revision should have highest version tool
-            const viewerText = wrapper.find(".mock-json-viewer").text()
-            // column_maker fixture has versions 1.1.0, 1.2.0, 1.3.0 across revisions
-            // Newest should show 1.3.0
-            expect(viewerText).toContain("1.3.0")
+            const viewer = wrapper.getComponent(MetadataJsonViewerStub)
+
+            expect(viewer.props("data")).toEqual(repositoryMetadataColumnMaker["2:062143ff0665"])
+            expect(viewer.text()).toContain("1.3.0")
         })
     })
 
     describe("edge cases", () => {
         it("handles single revision metadata", () => {
-            const keys = Object.keys(fixtureMetadata)
             const singleRevision: RepositoryMetadata = {
-                [keys[0]]: fixtureMetadata[keys[0]],
+                "0:d6e73113c7a5": repositoryMetadataColumnMaker["0:d6e73113c7a5"],
             }
 
-            const wrapper = mountTab({ metadata: singleRevision })
+            const wrapper = mountTab(singleRevision)
 
             expect(wrapper.find(".mock-json-viewer").exists()).toBe(true)
         })
 
         it("handles revision with empty tools array", () => {
-            const keys = Object.keys(fixtureMetadata)
             const emptyToolsMetadata: RepositoryMetadata = {
-                [keys[0]]: makeRevision({ tools: [] }),
+                "0:d6e73113c7a5": makeRevision({ tools: [] }),
             }
 
-            const wrapper = mountTab({ metadata: emptyToolsMetadata })
+            const wrapper = mountTab(emptyToolsMetadata)
 
             expect(wrapper.find(".mock-json-viewer").exists()).toBe(true)
         })
