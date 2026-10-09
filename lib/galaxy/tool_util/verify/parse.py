@@ -394,9 +394,22 @@ def _process_raw_inputs(
                         if not isinstance(param_value, list):
                             param_value = [param_value]
                         if value_state_representation == "test_case_json":
-                            param_value = [v["path"] for v in param_value]
-                        for v in param_value:
-                            _add_uploaded_dataset(context.for_state(), v, param_extra, input_source, required_files)
+                            # Each dataset carries its own class and filetype, as XML tests do in attributes.
+                            datasets = param_value
+                            param_value = []
+                            for dataset in datasets:
+                                dataset_extra = dict(param_extra)
+                                if dataset_class := dataset.get("class"):
+                                    dataset_extra["class"] = dataset_class
+                                if filetype := dataset.get("filetype"):
+                                    dataset_extra["ftype"] = filetype
+                                param_value.append(dataset["path"])
+                                _add_uploaded_dataset(
+                                    context.for_state(), dataset["path"], dataset_extra, input_source, required_files
+                                )
+                        else:
+                            for v in param_value:
+                                _add_uploaded_dataset(context.for_state(), v, param_extra, input_source, required_files)
                     processed_value = param_value
                 elif param_type == "data_collection":
                     assert "collection" in param_extra
