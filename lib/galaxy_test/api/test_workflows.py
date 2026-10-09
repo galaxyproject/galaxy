@@ -10564,17 +10564,25 @@ inputs:
       - {value: a, label: A}
       - {value: b, label: B}
     default: b
+  empty_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: "", label: Empty}
+    default: ""
 steps: {}
 """)
         with self.dataset_populator.test_history() as history_id:
             run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
-        single_input, multiple_input, labeled_input = (step["inputs"][0] for step in run_workflow["steps"])
+        single_input, multiple_input, labeled_input, empty_input = (step["inputs"][0] for step in run_workflow["steps"])
         assert single_input["value"] == "b"
         assert single_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", False]]
         assert multiple_input["value"] == ["b", "c"]
         assert multiple_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", True]]
         assert labeled_input["value"] == "b"
         assert labeled_input["options"] == [["A", "a", False], ["B", "b", True]]
+        assert empty_input["value"] == ""
+        assert empty_input["options"] == [["A", "a", False], ["Empty", "", True]]
 
     def test_value_restriction_selects_multiple_text_list_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
