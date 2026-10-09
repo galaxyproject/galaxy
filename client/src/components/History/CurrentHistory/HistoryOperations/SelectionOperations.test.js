@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import SelectionOperations from "./SelectionOperations.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 vi.mock("@/composables/confirmDialog", () => ({
     useConfirmDialog: () => ({
@@ -363,6 +364,19 @@ describe("History Selection Operations", () => {
             it("should hide `Manage Storage Location` option", async () => {
                 const option = '[data-description="storage operation"]';
                 expect(wrapper.find(option).exists()).toBe(false);
+            });
+        });
+    });
+
+    describe("Tag dialogs", () => {
+        it("show the tag suggestions in the dialog flow, under a full-width tag input", async () => {
+            wrapper = await mountSelectionOperationsWrapper(NO_TASKS_CONFIG);
+            const tagEditors = wrapper.findAllComponents(StatelessTags);
+
+            expect(tagEditors).toHaveLength(2);
+            tagEditors.forEach((editor) => {
+                expect(editor.props("listInFlow")).toBe(true);
+                expect(editor.props("inline")).toBe(false);
             });
         });
     });
