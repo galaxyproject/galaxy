@@ -635,6 +635,39 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``conda_platforms_backfill``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Create the missing environments of the platforms in
+    conda_platforms for environments that already exist for the native
+    platform. At startup, and only with conda_auto_install enabled, a
+    background thread goes through the environments in
+    <conda_prefix>/envs and creates their copies for each configured
+    platform that lacks one. The package specs are read from the
+    conda-meta/history of the native environment. The thread logs how
+    many environments it checked, created and skipped. Set to false to
+    create foreign environments only when an environment is installed.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``conda_platforms_retry_days``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    A foreign environment that failed to be created is recorded in
+    <conda_prefix>/platforms/<platform>/envs/<environment name>.failed.
+    The backfill (see conda_platforms_backfill) leaves it alone until
+    the record is this many days old, so that a failing solve is not
+    repeated at every start and a transient failure is retried
+    eventually.
+:Default: ``7``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``conda_codesign_exec``
 ~~~~~~~~~~~~~~~~~~~~~~~

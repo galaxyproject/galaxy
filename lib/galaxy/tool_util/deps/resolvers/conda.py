@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+import threading
 from collections.abc import Iterable
 
 import galaxy.tool_util.deps.installable
@@ -34,6 +35,7 @@ from ..conda_util import (
     cleanup_failed_install_of_environment,
     CondaContext,
     CondaTarget,
+    DEFAULT_PLATFORMS_RETRY_DAYS,
     hash_conda_packages,
     install_conda,
     install_conda_target,
@@ -100,6 +102,8 @@ class CondaDependencyResolver(
         "platforms": None,
         "platform_overrides": None,
         "codesign_exec": None,
+        "platforms_backfill": True,
+        "platforms_retry_days": DEFAULT_PLATFORMS_RETRY_DAYS,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
     # The platform keyword of a resolve call selects the environments of that conda platform.
@@ -114,6 +118,11 @@ class CondaDependencyResolver(
     #   codesign_exec:       code signer used to ad-hoc sign the files conda patches in osx-* environments
     #                        (``<codesign_exec> sign <file>``, as rcodesign), global default is the
     #                        ``conda_codesign_exec`` config option, falls back to ``rcodesign`` on PATH.
+    #   platforms_backfill:  create the foreign copies of environments that exist natively but lack them, in a
+    #                        background thread at startup (requires auto_install), global default is the
+    #                        ``conda_platforms_backfill`` config option (default true).
+    #   platforms_retry_days: a failed foreign create is not retried before this many days have passed, global
+    #                        default is the ``conda_platforms_retry_days`` config option (default 7).
     #   platform_overrides:  mapping subdir -> {environment variable: value} applied on top of the defaults
     #                        (CONDA_OVERRIDE_GLIBC=2.17 for linux-*, CONDA_OVERRIDE_OSX=11.0 for osx-*), as a dict
     #                        or a JSON string, e.g. {"linux-aarch64": {"CONDA_OVERRIDE_GLIBC": "2.28"}}.
@@ -168,6 +177,7 @@ class CondaDependencyResolver(
             platforms=platforms,
             platform_overrides=platform_overrides,
             codesign_exec=get_option("codesign_exec"),
+            platforms_retry_days=_parse_retry_days(get_option("platforms_retry_days")),
         )
         if any(p.startswith("osx-") for p in conda_context.platforms) and not conda_context.codesign_exec:
             log.warning(
@@ -194,6 +204,10 @@ class CondaDependencyResolver(
         self._disabled: bool | None = None
         if self.auto_init:
             self.disabled  # noqa: B018 — eager conda init + probe at startup
+        self._backfill_thread: threading.Thread | None = None
+        if platforms and auto_install and not read_only and _string_as_bool(get_option("platforms_backfill")):
+            if not self.disabled:
+                self._start_platform_backfill()
 
     @property
     def disabled(self) -> bool:
@@ -210,6 +224,19 @@ class CondaDependencyResolver(
     @disabled.setter
     def disabled(self, value: bool) -> None:
         self._disabled = value
+
+    def _start_platform_backfill(self) -> None:
+        """Create missing foreign copies of the native environments in a daemon thread."""
+        self._backfill_thread = threading.Thread(
+            target=self._backfill_platform_environments, name="conda-platform-backfill", daemon=True
+        )
+        self._backfill_thread.start()
+
+    def _backfill_platform_environments(self) -> None:
+        try:
+            self.conda_context.backfill_platform_environments()
+        except Exception:
+            log.warning("Backfill of conda platform environments failed", exc_info=True)
 
     def _ensure_platform_bases(self) -> None:
         """Create the conda bases of foreign platforms, never failing Galaxy startup."""
@@ -709,6 +736,15 @@ def _parse_platform_overrides(value) -> dict[str, dict[str, str]]:
         log.warning("Ignoring invalid conda platform_overrides, expected a mapping: %s", value)
         return {}
     return {str(k): dict(v) for k, v in value.items() if isinstance(v, dict)}
+
+
+def _parse_retry_days(value) -> float:
+    try:
+        days = float(value)
+    except (TypeError, ValueError):
+        log.warning("Ignoring invalid conda_platforms_retry_days '%s'", value)
+        return float(DEFAULT_PLATFORMS_RETRY_DAYS)
+    return max(days, 0.0)
 
 
 def _string_as_bool(value):

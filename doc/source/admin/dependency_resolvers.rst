@@ -180,6 +180,8 @@ Conda Dependency Resolver
       copy_dependencies: <true|false>
       read_only: <true|false>
       platforms: [conda subdir, conda subdir...]
+      platforms_backfill: <true|false>
+      platforms_retry_days: <days>
       platform_overrides: {conda subdir: {variable: value}}
       codesign_exec: <path to code signer>
 
@@ -234,6 +236,15 @@ platforms
     Additional conda platforms (subdirs such as ``linux-aarch64`` or ``osx-arm64``) for which Galaxy creates every
     environment it installs, as a list or a comma separated string (default: value of the global ``conda_platforms``
     option or none). See `Heterogeneous clusters: one conda prefix, several platforms`_.
+
+platforms_backfill
+    If ``true`` and ``auto_install`` is on, a background thread creates the foreign copies of environments that exist
+    only for the native platform, see `Backfill of existing environments`_ (default: value of the global
+    ``conda_platforms_backfill`` option or ``true``).
+
+platforms_retry_days
+    Number of days a failed foreign create is left alone by the backfill (default: value of the global
+    ``conda_platforms_retry_days`` option or ``7``).
 
 platform_overrides
     Environment variables that Conda gets when it solves for a foreign platform, as a mapping from platform to
@@ -307,6 +318,24 @@ native installation completes normally. The native and the foreign creates of on
 ``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs of the same requirement set wait for
 each other, and a foreign copy that already exists is not created again. A foreign environment counts as installed once
 its marker is written and the Conda base of its platform exists.
+
+Backfill of existing environments
+.................................
+
+Environments that exist for the native platform before ``platforms`` is set receive their foreign copies in the
+background. With ``auto_install`` on and ``platforms_backfill`` true (global option ``conda_platforms_backfill``), a
+daemon thread starts with the resolver, goes through the ``__*`` and ``mulled-v1-*`` environments in
+``<conda_prefix>/envs`` and creates each one for every configured platform that lacks it, under the same lock as a
+regular install. The package specs come from the ``# update specs:`` line of the first transaction in
+``conda-meta/history`` of the native environment, which holds the specs of the create command; for a ``__name@version``
+environment without such a line they follow from the name. Galaxy logs the start and the end of the backfill with the
+numbers of environments checked, created, failed and skipped.
+
+A foreign create that fails leaves ``<conda_prefix>/platforms/<platform>/envs/<environment name>.failed`` with a
+timestamp and the tail of the conda output. The backfill does not try that environment and platform again until the
+file is ``platforms_retry_days`` old (global option ``conda_platforms_retry_days``, default 7), so a failing solve is
+not repeated at every start and a transient failure is retried eventually. A new install of the environment always
+tries again and removes the file on success.
 
 Signing of macOS environments
 .............................
@@ -400,7 +429,7 @@ Limits
 ......
 
 * Foreign environments are created when a requirement set is installed while the option is set. Environments installed
-  earlier exist for the native platform only, until they are installed again.
+  earlier receive their foreign copies from the backfill, which needs ``auto_install``.
 * Packages that have no build for a platform cannot be installed there. Galaxy skips that platform for the tool and
   the tool routes to destinations of other platforms.
 * Environments for macOS that are cross-installed from Linux are only usable once their patched binaries are signed,

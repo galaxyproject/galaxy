@@ -5,6 +5,7 @@ import os
 import shutil
 import stat
 import sys
+import time
 from typing import (
     Any,
     Dict,
@@ -75,7 +76,12 @@ if argv[:1] == ["create"]:
         print("fake solver error for " + subdir)
         sys.exit(1)
     os.makedirs(os.path.join(prefix, "conda-meta"), exist_ok=True)
-    open(os.path.join(prefix, "conda-meta", "history"), "w").close()
+    value_flags = ("--name", "-p", "--platform", "-c", "--solver")
+    specs = [
+        a for i, a in enumerate(argv[1:], 1) if not a.startswith("-") and not (argv[i - 1] in value_flags)
+    ]
+    with open(os.path.join(prefix, "conda-meta", "history"), "w") as fh:
+        fh.write("==> 2026-01-01 00:00:00 <==\\n# cmd: conda create\\n# update specs: " + json.dumps(specs) + "\\n")
     for rel in ("bin/tool", "bin/activate", "share/note.txt"):
         os.makedirs(os.path.dirname(os.path.join(prefix, rel)), exist_ok=True)
         with open(os.path.join(prefix, rel), "w") as fh:
@@ -197,7 +203,9 @@ def make_dependency_manager(tmp_path, **app_config) -> DependencyManager:
 
 def make_resolver(fake: FakeConda, tmp_path, **kwds) -> CondaDependencyResolver:
     dependency_manager = make_dependency_manager(tmp_path)
-    options: Dict[str, Any] = dict(prefix=fake.prefix, exec=fake.exec, auto_init=True, auto_install=False)
+    options: Dict[str, Any] = dict(
+        prefix=fake.prefix, exec=fake.exec, auto_init=True, auto_install=False, platforms_backfill=False
+    )
     options.update(kwds)
     resolver = CondaDependencyResolver(dependency_manager, **options)
     dependency_manager.dependency_resolvers = [resolver]
@@ -780,3 +788,137 @@ def test_conda_auto_install_enabled(fake_conda: FakeConda, tmp_path) -> None:
     assert dm.configured_conda_platforms() == []
     resolver.disabled = False
     assert dm.configured_conda_platforms() == ["linux-64", "linux-aarch64"]
+
+
+def native_only_env(fake: FakeConda, name: str, specs: Optional[List[str]]) -> None:
+    """A native environment as installed before conda_platforms was set."""
+    meta = os.path.join(fake.prefix, "envs", name, "conda-meta")
+    os.makedirs(meta)
+    with open(os.path.join(meta, "history"), "w") as fh:
+        if specs is not None:
+            fh.write("==> 2026-01-01 00:00:00 <==\n# cmd: conda create\n# update specs: " + json.dumps(specs) + "\n")
+
+
+def subdir_creates(fake: FakeConda) -> List[Dict[str, Any]]:
+    return [c for c in fake.creates() if "--platform" in c["argv"] and "-p" in c["argv"] and c["argv"][-1] != "python"]
+
+
+def test_failure_is_recorded_and_cleared_by_a_later_success(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    fake_conda.fail_for("linux-aarch64")
+    install_conda_target(CondaTarget("samtools", version="1.9"), context)
+    failed = context.platform_failure_path("linux-aarch64", "__samtools@1.9")
+    assert failed == foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9") + ".failed"
+    with open(failed) as fh:
+        timestamp, *tail = fh.read().splitlines()
+    assert timestamp.endswith("+00:00")
+    assert "fake solver error for linux-aarch64" in tail
+    assert context.platform_failure_is_fresh("linux-aarch64", "__samtools@1.9")
+    fake_conda.fail_for()
+    with context.env_lock("__samtools@1.9"):
+        assert context.create_platform_environments("__samtools@1.9", ["samtools=1.9"]) == {"linux-aarch64": True}
+    assert not os.path.exists(failed)
+
+
+def test_backfill_creates_missing_foreign_environments(fake_conda: FakeConda, tmp_path, caplog) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    native_only_env(fake_conda, "__samtools@1.9", ["samtools=1.9"])
+    native_only_env(fake_conda, "mulled-v1-abc", ["samtools=1.9", "bwa=0.7"])
+    native_only_env(fake_conda, "__bwa@0.7", None)  # no recorded specs, the name gives them
+    native_only_env(fake_conda, "mulled-v1-nospecs", None)
+    native_only_env(fake_conda, "unrelated", ["x"])
+    n_creates = len(fake_conda.creates())
+    with caplog.at_level("INFO"):
+        counts = context.backfill_platform_environments()
+    assert counts == dict(environments=4, created=6, failed=0, present=0, recently_failed=0, without_specs=1)
+    new = fake_conda.creates()[n_creates:]
+    assert len(new) == 6
+    assert {c["argv"][-1] for c in new} == {"samtools=1.9", "bwa=0.7"}
+    merged = [c for c in new if c["argv"][-2:] == ["samtools=1.9", "bwa=0.7"]]
+    assert len(merged) == 2
+    for subdir in ("linux-aarch64", "osx-arm64"):
+        for name in ("__samtools@1.9", "mulled-v1-abc", "__bwa@0.7"):
+            assert os.path.exists(foreign_marker(fake_conda, subdir, name))
+    assert not os.path.exists(foreign_env(fake_conda, "linux-aarch64", "unrelated"))
+    assert "Starting backfill" in caplog.text and "Finished backfill" in caplog.text
+    assert "6 created" in caplog.text
+    # a second run finds everything present
+    n_creates = len(fake_conda.creates())
+    counts = context.backfill_platform_environments()
+    assert len(fake_conda.creates()) == n_creates
+    assert counts["created"] == 0 and counts["present"] == 6
+
+
+def test_backfill_skips_fresh_failures_and_retries_old_ones(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    native_only_env(fake_conda, "__samtools@1.9", ["samtools=1.9"])
+    context.record_platform_failure("linux-aarch64", "__samtools@1.9", "earlier error")
+    context.record_platform_failure("osx-arm64", "__samtools@1.9", "earlier error")
+    old = time.time() - 8 * 86400
+    os.utime(context.platform_failure_path("osx-arm64", "__samtools@1.9"), (old, old))
+    n_creates = len(fake_conda.creates())
+    counts = context.backfill_platform_environments()
+    new = fake_conda.creates()[n_creates:]
+    assert [c["CONDA_SUBDIR"] for c in new] == ["osx-arm64"]
+    assert counts["recently_failed"] == 1 and counts["created"] == 1
+    assert os.path.exists(context.platform_failure_path("linux-aarch64", "__samtools@1.9"))
+    assert not os.path.exists(context.platform_failure_path("osx-arm64", "__samtools@1.9"))
+    assert os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
+    assert not os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+def test_backfill_failure_is_recorded_and_not_retried(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    native_only_env(fake_conda, "__samtools@1.9", ["samtools=1.9"])
+    fake_conda.fail_for("linux-aarch64")
+    counts = context.backfill_platform_environments()
+    assert counts["failed"] == 1
+    assert os.path.exists(context.platform_failure_path("linux-aarch64", "__samtools@1.9"))
+    n_creates = len(fake_conda.creates())
+    counts = context.backfill_platform_environments()
+    assert len(fake_conda.creates()) == n_creates
+    assert counts["recently_failed"] == 1
+
+
+def test_retry_days_option(fake_conda: FakeConda, tmp_path) -> None:
+    context = make_context(fake_conda, platforms="linux-aarch64", platforms_retry_days=1)
+    context.record_platform_failure("linux-aarch64", "__x@1", "error")
+    path = context.platform_failure_path("linux-aarch64", "__x@1")
+    two_days = time.time() - 2 * 86400
+    os.utime(path, (two_days, two_days))
+    assert not context.platform_failure_is_fresh("linux-aarch64", "__x@1")
+    resolver = make_resolver(fake_conda, tmp_path, platforms_retry_days="3")
+    assert resolver.conda_context.platforms_retry_days == 3.0
+    assert make_resolver(fake_conda, tmp_path).conda_context.platforms_retry_days == 7.0
+
+
+def test_backfill_thread_is_gated_by_options(fake_conda: FakeConda, tmp_path, monkeypatch) -> None:
+    started: List[int] = []
+    monkeypatch.setattr(
+        CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1)
+    )
+    resolver = make_resolver(
+        fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True, platforms_backfill=True
+    )
+    assert resolver._backfill_thread is not None
+    resolver._backfill_thread.join(10)
+    assert started == [1]
+    for kwds in (
+        dict(platforms="linux-aarch64", auto_install=False, platforms_backfill=True),
+        dict(platforms="linux-aarch64", auto_install=True, platforms_backfill=False),
+        dict(auto_install=True, platforms_backfill=True),
+    ):
+        assert make_resolver(fake_conda, tmp_path, **kwds)._backfill_thread is None
+    assert started == [1]
+
+
+def test_backfill_option_from_global_config(fake_conda: FakeConda, tmp_path) -> None:
+    dependency_manager = make_dependency_manager(
+        tmp_path, conda_platforms="linux-aarch64", conda_platforms_backfill=False, conda_auto_install=True
+    )
+    resolver = CondaDependencyResolver(dependency_manager, prefix=fake_conda.prefix, exec=fake_conda.exec)
+    assert resolver._backfill_thread is None

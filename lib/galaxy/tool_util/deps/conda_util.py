@@ -1,4 +1,6 @@
+import ast
 import contextlib
+import datetime
 import functools
 import glob
 import hashlib
@@ -12,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from collections.abc import (
     Callable,
     Iterable,
@@ -57,8 +60,12 @@ CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
 PLATFORMS_DIRECTORY_NAME = "platforms"
 PLATFORM_OK_MARKER = ".galaxy-conda-platform-ok"
+PLATFORM_FAILED_SUFFIX = ".failed"
 PLATFORM_LOCK_TIMEOUT = 300
+DEFAULT_PLATFORMS_RETRY_DAYS = 7
 LOCKS_DIRECTORY_NAME = ".locks"
+# Environment name prefixes of the environments Galaxy creates: "__name@version" and "mulled-v1-<hash>"
+GALAXY_ENV_NAME_PREFIXES = ("__", "mulled-v1-")
 PLATFORM_SUBDIR_PATTERN = re.compile(r"^[a-z0-9]+-[a-z0-9_]+$")
 # Virtual package overrides that let conda solve for a platform other than
 # the one it is running on.
@@ -159,6 +166,7 @@ class CondaContext(installable.InstallableContext):
         platforms: str | list[str] | None = None,
         platform_overrides: dict[str, dict[str, str | None]] | None = None,
         codesign_exec: str | None = None,
+        platforms_retry_days: int | float = DEFAULT_PLATFORMS_RETRY_DAYS,
     ) -> None:
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
@@ -190,6 +198,7 @@ class CondaContext(installable.InstallableContext):
         self.use_local = use_local
         self.platforms: list[str] = parse_platforms(platforms)
         self.platform_overrides: dict[str, dict[str, str]] = platform_overrides or {}
+        self.platforms_retry_days = platforms_retry_days
         self._native_platform: str | None = None
         self._native_platform_failed = False
         self.codesign_exec: str | None = codesign_exec or which("rcodesign")
@@ -565,6 +574,33 @@ class CondaContext(installable.InstallableContext):
             return False
         return True
 
+    def platform_failure_path(self, subdir: str, env_name: str) -> str:
+        """Record of a failed foreign create, next to (not inside) the environment directory."""
+        return self.platform_env_path(subdir, env_name) + PLATFORM_FAILED_SUFFIX
+
+    def record_platform_failure(self, subdir: str, env_name: str, message: str) -> None:
+        path = self.platform_failure_path(subdir, env_name)
+        tail = "\n".join(str(message).strip().splitlines()[-20:])
+        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as fh:
+                fh.write(f"{timestamp}\n{tail}\n")
+        except OSError:
+            log.warning("Could not write platform failure record '%s'", path, exc_info=True)
+
+    def clear_platform_failure(self, subdir: str, env_name: str) -> None:
+        with contextlib.suppress(OSError):
+            os.remove(self.platform_failure_path(subdir, env_name))
+
+    def platform_failure_is_fresh(self, subdir: str, env_name: str) -> bool:
+        """True if a failure record exists that is younger than ``platforms_retry_days``."""
+        try:
+            age = time.time() - os.path.getmtime(self.platform_failure_path(subdir, env_name))
+        except OSError:
+            return False
+        return age < self.platforms_retry_days * 86400
+
     @contextlib.contextmanager
     def env_lock(self, env_name: str, timeout: Optional[Union[int, float]] = None) -> Iterator[bool]:
         """Lock for all creation work on ``env_name`` (native and foreign), yields False if it could not be taken.
@@ -659,16 +695,17 @@ class CondaContext(installable.InstallableContext):
         env_name: str,
         specs: Iterable[str],
         allow_local: bool = True,
+        platforms: Iterable[str] | None = None,
     ) -> dict[str, bool]:
         """Create ``env_name`` on the foreign platforms that do not have it yet.
 
         The caller holds :meth:`env_lock` of ``env_name``. Platforms that already have the
         environment are skipped (and reported as successful). A failure is logged as a warning,
-        and does not raise. Returns {subdir: success}.
+        recorded in a failure file and does not raise. Returns {subdir: success}.
         """
         specs = list(specs)
         results: dict[str, bool] = {}
-        for subdir in self.foreign_platforms:
+        for subdir in self.foreign_platforms if platforms is None else list(platforms):
             if self.platform_has_env(subdir, env_name):
                 results[subdir] = True
                 continue
@@ -685,7 +722,7 @@ class CondaContext(installable.InstallableContext):
                     output = out.read()
             except Exception:
                 log.warning("Failed to create conda environment %s for platform %s", env_name, subdir, exc_info=True)
-                ret, output = 1, ""
+                ret, output = 1, "exception while running conda, see the Galaxy log"
             if ret == 0:
                 try:
                     signed = self.sign_platform_files(subdir, env_path)
@@ -693,6 +730,7 @@ class CondaContext(installable.InstallableContext):
                     log.warning("Failed to sign files of environment %s for %s", env_name, subdir, exc_info=True)
                     signed = False
                 if signed and self.mark_platform_env_ok(subdir, env_name):
+                    self.clear_platform_failure(subdir, env_name)
                     results[subdir] = True
                 else:
                     log.warning(
@@ -700,6 +738,7 @@ class CondaContext(installable.InstallableContext):
                         env_name,
                         subdir,
                     )
+                    self.record_platform_failure(subdir, env_name, "unsigned files or missing platform base")
                     results[subdir] = False
             else:
                 log.warning(
@@ -711,6 +750,7 @@ class CondaContext(installable.InstallableContext):
                 )
                 if not existed_before:
                     shutil.rmtree(env_path, ignore_errors=True)
+                self.record_platform_failure(subdir, env_name, output)
                 results[subdir] = False
         return results
 
@@ -720,6 +760,98 @@ class CondaContext(installable.InstallableContext):
             return
         for subdir in self.foreign_platforms:
             shutil.rmtree(self.platform_env_path(subdir, env_name), ignore_errors=True)
+            self.clear_platform_failure(subdir, env_name)
+
+    def native_env_specs(self, env_name: str) -> List[str]:
+        """Package specs the native environment ``env_name`` was created from.
+
+        Taken from the explicit specs of the first transaction in ``conda-meta/history``
+        (``# update specs:`` line, written by conda for the create command), which also covers
+        merged ``mulled-v1-<hash>`` environments whose name cannot be reversed. Without such a line
+        a ``__name@version`` environment name gives the single spec. Empty if neither works.
+        """
+        history = os.path.join(self.env_path(env_name), "conda-meta", "history")
+        try:
+            with open(history) as fh:
+                for line in fh:
+                    if not line.startswith("# update specs:"):
+                        continue
+                    try:
+                        specs = ast.literal_eval(line.split(":", 1)[1].strip())
+                    except (ValueError, SyntaxError):
+                        break
+                    if isinstance(specs, (list, tuple)) and specs and all(isinstance(x, str) and x for x in specs):
+                        return list(specs)
+                    break
+        except OSError:
+            pass
+        versioned = VERSIONED_ENV_DIR_NAME.match(env_name)
+        if versioned:
+            name, version = versioned.group(1), versioned.group(2)
+            return [f"{name}=*" if version == "_uv_" else f"{name}={version}"]
+        return []
+
+    def backfill_platform_environments(self, allow_local: bool = True) -> Dict[str, int]:
+        """Create the missing foreign copies of the native environments.
+
+        Only environments with a name Galaxy gives them are considered. A platform with a failure
+        record younger than ``platforms_retry_days`` is left alone. Each environment is handled
+        under its :meth:`env_lock`. Returns counts of what happened.
+        """
+        counts = dict(environments=0, created=0, failed=0, present=0, recently_failed=0, without_specs=0)
+        foreign = self.foreign_platforms
+        if not foreign:
+            return counts
+        try:
+            names = sorted(
+                n
+                for n in os.listdir(self.envs_path)
+                if n.startswith(GALAXY_ENV_NAME_PREFIXES) and os.path.isdir(self.env_path(n))
+            )
+        except OSError:
+            return counts
+        log.info(
+            "Starting backfill of conda environments for platforms %s (%d native environments)", foreign, len(names)
+        )
+        for env_name in names:
+            counts["environments"] += 1
+            try:
+                with self.env_lock(env_name) as locked:
+                    if not locked or not self.has_env(env_name):
+                        continue
+                    missing = []
+                    for subdir in foreign:
+                        if self.platform_has_env(subdir, env_name):
+                            counts["present"] += 1
+                        elif self.platform_failure_is_fresh(subdir, env_name):
+                            counts["recently_failed"] += 1
+                        else:
+                            missing.append(subdir)
+                    if not missing:
+                        continue
+                    specs = self.native_env_specs(env_name)
+                    if not specs:
+                        log.warning("Cannot derive the package specs of conda environment %s, skipping it", env_name)
+                        counts["without_specs"] += 1
+                        continue
+                    results = self.create_platform_environments(env_name, specs, allow_local, platforms=missing)
+                    counts["created"] += sum(1 for ok in results.values() if ok)
+                    counts["failed"] += sum(1 for ok in results.values() if not ok)
+            except Exception:
+                log.warning("Backfill of conda environment %s failed", env_name, exc_info=True)
+                counts["failed"] += 1
+        log.info(
+            "Finished backfill of conda environments for platforms %s: %d environments checked, %d created, "
+            "%d failed, %d already present, %d skipped after a recent failure, %d without known specs",
+            foreign,
+            counts["environments"],
+            counts["created"],
+            counts["failed"],
+            counts["present"],
+            counts["recently_failed"],
+            counts["without_specs"],
+        )
+        return counts
 
     def has_env(self, env_name: str) -> bool:
         env_path = self.env_path(env_name)
@@ -898,13 +1030,13 @@ def _create_on_all_platforms(
 
     Without configured platforms this is the plain native create. Otherwise both steps run under the
     lock of the environment, so that concurrent installs do not create or delete the same directories.
-    Only the native exit code is returned, foreign failures are logged.
+    Only the native exit code is returned, foreign failures are logged and recorded.
     """
     if not conda_context.platforms:
         return conda_context.exec_create(native_create_args, allow_local=allow_local)
     with conda_context.env_lock(env_name) as locked:
         if not locked:
-            # Native install as before, a later install adds the foreign copies.
+            # Native install as before, the backfill adds the foreign copies later.
             return conda_context.exec_create(native_create_args, allow_local=allow_local)
         ret = 0 if conda_context.has_env(env_name) else conda_context.exec_create(native_create_args, allow_local)
         if ret == 0:
