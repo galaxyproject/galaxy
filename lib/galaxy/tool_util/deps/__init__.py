@@ -396,6 +396,13 @@ class DependencyManager:
                     result.append(platform)
         return result
 
+    def start_background_tasks(self):
+        """Start the background work of the resolvers that have some (called by job handler processes)."""
+        for resolver in self.dependency_resolvers:
+            start = getattr(resolver, "start_background_tasks", None)
+            if start is not None:
+                start()
+
     def uses_tool_shed_dependencies(self):
         return any(isinstance(r, ToolShedPackageDependencyResolver) for r in self.dependency_resolvers)
 
@@ -537,6 +544,9 @@ class NullDependencyManager(DependencyManager):
         self._enabled_container_types = []
         self._destination_for_container_type = {}
         self.default_base_path = None
+
+    def start_background_tasks(self):
+        pass
 
     def uses_tool_shed_dependencies(self):
         return False

@@ -15,10 +15,6 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements,
 )
-from galaxy.util.filelock import (
-    FileLock,
-    FileLockException,
-)
 from . import (
     Dependency,
     DependencyException,
@@ -30,6 +26,7 @@ from . import (
     SpecificationPatternDependencyResolver,
 )
 from ..conda_util import (
+    _env_lock,
     build_isolated_environment,
     cleanup_failed_install,
     cleanup_failed_install_of_environment,
@@ -42,6 +39,7 @@ from ..conda_util import (
     install_conda_targets,
     installed_conda_targets,
     is_conda_target_installed,
+    LOCKS_DIRECTORY_NAME,
     parse_platforms,
     USE_PATH_EXEC_DEFAULT,
 )
@@ -205,9 +203,19 @@ class CondaDependencyResolver(
         if self.auto_init:
             self.disabled  # noqa: B018 — eager conda init + probe at startup
         self._backfill_thread: threading.Thread | None = None
-        if platforms and auto_install and not read_only and _string_as_bool(get_option("platforms_backfill")):
-            if not self.disabled:
-                self._start_platform_backfill()
+        self._backfill_enabled = False
+        if platforms and auto_install and not read_only:
+            self._backfill_enabled = _string_as_bool(get_option("platforms_backfill"))
+
+    def start_background_tasks(self) -> None:
+        """Create missing foreign copies of the native environments in a daemon thread, once per process.
+
+        Called by the job handler processes only, a short-lived process that merely builds the resolver
+        must not start work that it cannot finish.
+        """
+        if self._backfill_enabled and self._backfill_thread is None and not self.disabled:
+            log.info("Starting backfill of conda platform environments")
+            self._start_platform_backfill()
 
     @property
     def disabled(self) -> bool:
@@ -226,7 +234,6 @@ class CondaDependencyResolver(
         self._disabled = value
 
     def _start_platform_backfill(self) -> None:
-        """Create missing foreign copies of the native environments in a daemon thread."""
         self._backfill_thread = threading.Thread(
             target=self._backfill_platform_environments, name="conda-platform-backfill", daemon=True
         )
@@ -243,10 +250,14 @@ class CondaDependencyResolver(
         parent_path = self.conda_context.parent_path
         try:
             if os.access(parent_path, os.W_OK):
-                with FileLock(os.path.join(parent_path, "conda-platforms"), timeout=300):
-                    self.conda_context.ensure_platform_bases()
-        except FileLockException:
-            log.warning("Failed to get file lock for creating conda platform bases")
+                lock_path = os.path.join(
+                    self.conda_context.conda_prefix, LOCKS_DIRECTORY_NAME, "conda-platforms.lock"
+                )
+                with _env_lock(lock_path, 300) as locked:
+                    if locked:
+                        self.conda_context.ensure_platform_bases()
+                    else:
+                        log.warning("Failed to get file lock %s for creating conda platform bases", lock_path)
         except Exception:
             log.warning("Failed to create conda platform bases", exc_info=True)
 

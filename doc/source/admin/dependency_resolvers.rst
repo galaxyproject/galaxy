@@ -315,17 +315,18 @@ The platform Galaxy runs on is always included and keeps the layout of a single-
 ``<conda_prefix>/platforms/<platform>/envs/<environment name>``. Whenever Galaxy creates an environment for a requirement
 set, it creates the same environment for every foreign platform with ``CONDA_SUBDIR`` set to that platform and
 records each success in a marker file. An environment that cannot be created for a foreign platform is logged, and the
-native installation completes normally. The native and the foreign creates of one environment run under a lock file
-``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs of the same requirement set wait for
-each other, and a foreign copy that already exists is not created again. A foreign environment counts as installed once
-its marker is written and the Conda base of its platform exists.
+native installation completes normally. The native and the foreign creates of one environment run under a POSIX file
+lock on ``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs of the same requirement set wait
+for each other. The operating system releases the lock when the holding process dies, so a killed process leaves no
+stale lock behind, and the lock file stays in place. A foreign copy that already exists is not created again. A
+foreign environment counts as installed once its marker is written and the Conda base of its platform exists.
 
 Backfill of existing environments
 .................................
 
 Environments that exist for the native platform before ``platforms`` is set receive their foreign copies in the
 background. With ``auto_install`` on and ``platforms_backfill`` true (global option ``conda_platforms_backfill``), a
-daemon thread starts with the resolver, goes through the ``__*`` and ``mulled-v1-*`` environments in
+daemon thread starts in each job handler process, goes through the ``__*`` and ``mulled-v1-*`` environments in
 ``<conda_prefix>/envs`` and creates each one for every configured platform that lacks it, under the same lock as a
 regular install. The package specs come from the ``# update specs:`` line of the first transaction in
 ``conda-meta/history`` of the native environment, which holds the specs of the create command; for a ``__name@version``

@@ -1,6 +1,7 @@
 import ast
 import contextlib
 import datetime
+import errno
 import functools
 import glob
 import hashlib
@@ -24,6 +25,11 @@ from typing import (
     Any,
     TYPE_CHECKING,
 )
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None  # type: ignore[assignment]
 
 from packaging.version import Version
 
@@ -144,6 +150,67 @@ def find_conda_prefix() -> str:
         if os.path.exists(destination):
             return destination
     return os.path.join(home, "miniforge3")
+
+
+@contextlib.contextmanager
+def _env_lock(path: str, timeout: Union[int, float]) -> Iterator[bool]:
+    """Exclusive lock on the file ``path``, yields False if it could not be taken within ``timeout`` seconds.
+
+    On POSIX this is an ``fcntl.lockf`` byte-range lock, which the kernel releases when the holding process
+    dies, so a killed process (or one that ends while a daemon thread is installing) cannot leave a stale
+    lock behind. The lock file is persistent and never removed, deleting it would race with other lockers.
+    Without ``fcntl`` the file-creation based :class:`FileLock` is used.
+    """
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError:
+        log.warning("Could not create the directory of lock file %s", path, exc_info=True)
+        yield False
+        return
+    if fcntl is None:
+        file_lock = FileLock(path, timeout=timeout)
+        try:
+            file_lock.acquire()
+        except FileLockException:
+            yield False
+            return
+        except OSError:
+            log.warning("Could not take lock %s", path, exc_info=True)
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            file_lock.release()
+        return
+    try:
+        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o666)
+    except OSError:
+        log.warning("Could not open lock file %s", path, exc_info=True)
+        yield False
+        return
+    try:
+        deadline = time.monotonic() + timeout
+        locked = False
+        while True:
+            try:
+                fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                locked = True
+                break
+            except OSError as e:
+                if e.errno not in (errno.EACCES, errno.EAGAIN):
+                    log.warning("Could not take lock %s", path, exc_info=True)
+                    break
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(min(0.2, max(0.0, deadline - time.monotonic())))
+        try:
+            yield locked
+        finally:
+            if locked:
+                fcntl.lockf(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
 
 
 class CondaContext(installable.InstallableContext):
@@ -608,25 +675,15 @@ class CondaContext(installable.InstallableContext):
         The lock file is ``<conda_prefix>/.locks/<env_name>.lock``, outside of ``envs`` where the
         environment name pattern would pick it up as an environment.
         """
-        lock = None
         if timeout is None:
             timeout = PLATFORM_LOCK_TIMEOUT
-        try:
-            lock_dir = os.path.join(self.conda_prefix, LOCKS_DIRECTORY_NAME)
-            os.makedirs(lock_dir, exist_ok=True)
-            lock = FileLock(os.path.join(lock_dir, env_name), timeout=timeout)
-            lock.acquire()
-        except FileLockException:
-            log.warning("Timed out waiting for the lock of conda environment %s", env_name)
-            lock = None
-        except OSError:
-            log.warning("Could not lock conda environment %s", env_name, exc_info=True)
-            lock = None
-        try:
-            yield lock is not None
-        finally:
-            if lock is not None:
-                lock.release()
+        lock_path = os.path.join(self.conda_prefix, LOCKS_DIRECTORY_NAME, f"{env_name}.lock")
+        with _env_lock(lock_path, timeout) as locked:
+            if not locked:
+                log.warning(
+                    "Timed out waiting for the lock of conda environment %s (lock file %s)", env_name, lock_path
+                )
+            yield locked
 
     def sign_platform_files(self, subdir: str, prefix: str) -> bool:
         """Ad-hoc sign the Mach-O files conda rewrote in ``prefix`` (osx-* platforms only).

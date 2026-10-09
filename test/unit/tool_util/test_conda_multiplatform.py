@@ -3,7 +3,9 @@
 import json
 import os
 import shutil
+import signal
 import stat
+import subprocess
 import sys
 import time
 from typing import (
@@ -40,7 +42,6 @@ from galaxy.tool_util.deps.resolvers.conda import (
     CondaDependencyResolver,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.filelock import FileLock
 
 FAKE_CONDA = """\
 #!{python}
@@ -566,8 +567,8 @@ def test_second_install_finds_the_environment_present_and_keeps_it(fake_conda: F
     for subdir in ("linux-aarch64", "osx-arm64"):
         assert os.path.exists(foreign_marker(fake_conda, subdir, env_name))
         assert os.path.exists(os.path.join(foreign_env(fake_conda, subdir, env_name), "share", "keep.txt"))
-    # lock file removed again
-    assert os.listdir(os.path.join(fake_conda.prefix, ".locks")) == []
+    # lock files stay in place, they are never removed
+    assert all(name.endswith(".lock") for name in os.listdir(os.path.join(fake_conda.prefix, ".locks")))
 
 
 def test_second_install_only_adds_the_missing_foreign_environment(fake_conda: FakeConda, tmp_path) -> None:
@@ -612,17 +613,70 @@ def test_marked_environment_survives_a_failing_recreate(fake_conda: FakeConda, t
     assert os.path.exists(marked)
 
 
+LOCK_HOLDER = """
+import sys
+sys.path.insert(0, {lib!r})
+from galaxy.tool_util.deps.conda_util import _env_lock
+with _env_lock(sys.argv[1], 10) as locked:
+    print("locked" if locked else "failed", flush=True)
+    sys.stdin.read()
+"""
+
+
+def hold_lock_in_subprocess(path: str) -> "subprocess.Popen[str]":
+    """Start a process that holds the lock on ``path`` until it is killed or its stdin closes."""
+    lib = os.path.abspath(os.path.join(os.path.dirname(conda_util.__file__), "..", "..", ".."))
+    process = subprocess.Popen(
+        [sys.executable, "-c", LOCK_HOLDER.format(lib=lib), path],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+        env=dict(os.environ, PYTHONPATH=os.pathsep.join(p for p in sys.path if p)),
+    )
+    assert process.stdout is not None
+    assert process.stdout.readline().strip() == "locked"
+    return process
+
+
 def test_held_lock_makes_the_install_native_only(fake_conda: FakeConda, tmp_path, monkeypatch, caplog) -> None:
     resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
     context = resolver.conda_context
     monkeypatch.setattr(conda_util, "PLATFORM_LOCK_TIMEOUT", 0.2)
-    os.makedirs(os.path.join(fake_conda.prefix, ".locks"))
-    with FileLock(os.path.join(fake_conda.prefix, ".locks", "__samtools@1.9")):
+    lock_path = os.path.join(fake_conda.prefix, ".locks", "__samtools@1.9.lock")
+    holder = hold_lock_in_subprocess(lock_path)
+    try:
         with caplog.at_level("WARNING"):
             assert install_conda_target(CondaTarget("samtools", version="1.9"), context) == 0
+    finally:
+        holder.kill()
+        holder.wait()
     assert "Timed out waiting for the lock" in caplog.text
+    assert lock_path in caplog.text
     assert os.path.isdir(os.path.join(fake_conda.prefix, "envs", "__samtools@1.9"))
     assert not os.path.exists(foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+@pytest.mark.skipif(conda_util.fcntl is None, reason="needs POSIX locks")
+def test_lock_is_released_when_the_holder_dies(tmp_path) -> None:
+    lock_path = str(tmp_path / ".locks" / "__x@1.lock")
+    holder = hold_lock_in_subprocess(lock_path)
+    with conda_util._env_lock(lock_path, 0.3) as locked:
+        assert not locked
+    holder.send_signal(signal.SIGKILL)
+    holder.wait()
+    started = time.monotonic()
+    with conda_util._env_lock(lock_path, 5) as locked:
+        assert locked
+    assert time.monotonic() - started < 2
+    assert os.path.exists(lock_path)
+
+
+def test_lock_can_be_taken_repeatedly(tmp_path) -> None:
+    lock_path = str(tmp_path / ".locks" / "__x@1.lock")
+    for _ in range(2):
+        with conda_util._env_lock(lock_path, 1) as locked:
+            assert locked
+    assert os.path.exists(lock_path)
 
 
 def test_foreign_environment_needs_the_platform_base(fake_conda: FakeConda, tmp_path) -> None:
@@ -896,23 +950,32 @@ def test_retry_days_option(fake_conda: FakeConda, tmp_path) -> None:
     assert make_resolver(fake_conda, tmp_path).conda_context.platforms_retry_days == 7.0
 
 
-def test_backfill_thread_is_gated_by_options(fake_conda: FakeConda, tmp_path, monkeypatch) -> None:
+def test_backfill_thread_is_gated_by_options(fake_conda: FakeConda, tmp_path, monkeypatch, caplog) -> None:
     started: List[int] = []
     monkeypatch.setattr(
         CondaDependencyResolver, "_backfill_platform_environments", lambda self: started.append(1)
     )
-    resolver = make_resolver(
-        fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True, platforms_backfill=True
-    )
+    with caplog.at_level("INFO"):
+        resolver = make_resolver(
+            fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True, platforms_backfill=True
+        )
+        assert resolver._backfill_thread is None
+        assert "Starting backfill" not in caplog.text
+        assert started == []
+        resolver.dependency_manager.start_background_tasks()
+        resolver.dependency_manager.start_background_tasks()
     assert resolver._backfill_thread is not None
     resolver._backfill_thread.join(10)
     assert started == [1]
+    assert caplog.text.count("Starting backfill") == 1
     for kwds in (
         dict(platforms="linux-aarch64", auto_install=False, platforms_backfill=True),
         dict(platforms="linux-aarch64", auto_install=True, platforms_backfill=False),
         dict(auto_install=True, platforms_backfill=True),
     ):
-        assert make_resolver(fake_conda, tmp_path, **kwds)._backfill_thread is None
+        other = make_resolver(fake_conda, tmp_path, **kwds)
+        other.dependency_manager.start_background_tasks()
+        assert other._backfill_thread is None
     assert started == [1]
 
 
