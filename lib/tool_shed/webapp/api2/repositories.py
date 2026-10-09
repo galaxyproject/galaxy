@@ -717,6 +717,7 @@ class FastAPIRepositories:
         operation_id="repositories__files",
         response_model=RepositoryRevisionFiles,
         allow_cors=True,
+        public=True,
     )
     def get_files(
         self,
@@ -734,6 +735,7 @@ class FastAPIRepositories:
         operation_id="repositories__file_contents",
         response_model=RepositoryFileContents,
         allow_cors=True,
+        public=True,
     )
     def get_file_contents(
         self,
