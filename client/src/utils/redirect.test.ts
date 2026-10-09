@@ -1,4 +1,4 @@
-import { describe, expect, it, test, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -6,58 +6,69 @@ import { safeRedirectPath, withPrefix } from "./redirect";
 
 vi.mock("@/onload/loadConfig");
 
-test("route prefix changes", async () => {
-    vi.mocked(getAppRoot).mockReturnValue("/prefix");
-    // test routes
-    expect(withPrefix("http://")).toEqual("http://");
-    expect(withPrefix("/")).toEqual("/prefix/");
-    expect(withPrefix("/home")).toEqual("/prefix/home");
-    // keep protocols in query parameters intact
-    expect(withPrefix("/authz/cilogon/login?idphint=https://test.com")).toEqual(
-        "/prefix/authz/cilogon/login?idphint=https://test.com",
-    );
-    // ensure that it can only be called once
-    expect(withPrefix(withPrefix("/home"))).toEqual("/prefix/prefix/home");
-    // This doesn't do what it looks like it should do?
+describe("withPrefix", () => {
+    beforeEach(() => {
+        vi.mocked(getAppRoot).mockReturnValue("/prefix");
+    });
+
+    it.each([
+        { name: "leaves a protocol unchanged", input: "http://", expected: "http://" },
+        { name: "prefixes the root path", input: "/", expected: "/prefix/" },
+        { name: "prefixes a route", input: "/home", expected: "/prefix/home" },
+        {
+            name: "preserves a protocol inside query parameters",
+            input: "/authz/cilogon/login?idphint=https://test.com",
+            expected: "/prefix/authz/cilogon/login?idphint=https://test.com",
+        },
+    ])("$name", ({ input, expected }) => {
+        expect(withPrefix(input)).toEqual(expected);
+    });
+
+    it("adds the prefix again when called twice", () => {
+        expect(withPrefix(withPrefix("/home"))).toEqual("/prefix/prefix/home");
+    });
 });
 
 describe("safeRedirectPath", () => {
-    it("accepts relative paths, query string and all", () => {
-        expect(safeRedirectPath("/")).toEqual("/");
-        expect(safeRedirectPath("/tool_landings/1234-5678?public=true")).toEqual(
-            "/tool_landings/1234-5678?public=true",
-        );
-        expect(safeRedirectPath("/histories/list#anchor")).toEqual("/histories/list#anchor");
+    it.each([
+        { name: "the root path", path: "/" },
+        { name: "a path with a query string", path: "/tool_landings/1234-5678?public=true" },
+        { name: "a path with an anchor", path: "/histories/list#anchor" },
+    ])("accepts $name", ({ path }) => {
+        expect(safeRedirectPath(path)).toEqual(path);
     });
 
-    it("rejects anything pointing off this Galaxy", () => {
-        expect(safeRedirectPath("https://evil.example.com/")).toBeUndefined();
-        expect(safeRedirectPath("http://evil.example.com/")).toBeUndefined();
-        // protocol-relative -- the browser reads these as another origin
-        expect(safeRedirectPath("//evil.example.com/")).toBeUndefined();
-        expect(safeRedirectPath("/\\evil.example.com/")).toBeUndefined();
-        // browsers strip tabs and newlines, so this reaches the network as "//evil.example.com"
-        expect(safeRedirectPath("/\t/evil.example.com")).toBeUndefined();
-        expect(safeRedirectPath("/\n/evil.example.com")).toBeUndefined();
-        expect(safeRedirectPath(" //evil.example.com")).toBeUndefined();
+    it.each([
+        { name: "an HTTPS URL", path: "https://evil.example.com/" },
+        { name: "an HTTP URL", path: "http://evil.example.com/" },
+        { name: "a protocol-relative URL", path: "//evil.example.com/" },
+        { name: "a backslash normalized to a second slash", path: "/\\evil.example.com/" },
+        { name: "a tab between slashes", path: "/\t/evil.example.com" },
+        { name: "a newline between slashes", path: "/\n/evil.example.com" },
+        { name: "a space before a protocol-relative URL", path: " //evil.example.com" },
+    ])("rejects $name pointing outside this Galaxy", ({ path }) => {
+        expect(safeRedirectPath(path)).toBeUndefined();
     });
 
-    it("refuses control characters outright", () => {
-        // Accepting these would hand on a value whose meaning changes when it is resolved.
-        expect(safeRedirectPath("/foo\tbar")).toBeUndefined();
-        expect(safeRedirectPath("/foo\nbar")).toBeUndefined();
-        expect(safeRedirectPath("/foo\u0000bar")).toBeUndefined();
-        expect(safeRedirectPath("/foo\u007fbar")).toBeUndefined();
-        expect(safeRedirectPath(" /histories/list")).toBeUndefined();
-        expect(safeRedirectPath("/histories/list ")).toBeUndefined();
+    // Browsers discard these characters when resolving URLs, changing the target.
+    it.each([
+        { name: "a tab", path: "/foo\tbar" },
+        { name: "a newline", path: "/foo\nbar" },
+        { name: "a null character", path: "/foo\u0000bar" },
+        { name: "a DEL character", path: "/foo\u007fbar" },
+        { name: "leading whitespace", path: " /histories/list" },
+        { name: "trailing whitespace", path: "/histories/list " },
+    ])("rejects a path containing $name", ({ path }) => {
+        expect(safeRedirectPath(path)).toBeUndefined();
     });
 
-    it("rejects non-paths and empty values", () => {
-        expect(safeRedirectPath(undefined)).toBeUndefined();
-        expect(safeRedirectPath(null)).toBeUndefined();
-        expect(safeRedirectPath("")).toBeUndefined();
-        expect(safeRedirectPath("histories/list")).toBeUndefined();
-        // vue-router hands back an array when a param is repeated
-        expect(safeRedirectPath(["/histories/list"])).toBeUndefined();
+    it.each([
+        { name: "undefined", path: undefined },
+        { name: "null", path: null },
+        { name: "an empty string", path: "" },
+        { name: "a path without a leading slash", path: "histories/list" },
+        { name: "an array from a repeated vue-router parameter", path: ["/histories/list"] },
+    ])("rejects $name", ({ path }) => {
+        expect(safeRedirectPath(path)).toBeUndefined();
     });
 });
