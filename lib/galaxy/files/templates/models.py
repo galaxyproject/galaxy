@@ -55,6 +55,7 @@ FileSourceTemplateType = Literal[
     "github",
     "iiif",
     "ipfs",
+    "xrootd",
     "mavedb",
     "omero",
     "ssh",
@@ -528,6 +529,24 @@ class IPFSFileSourceConfiguration(StrictModel):
     gateway_url: str
 
 
+class XRootDFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["xrootd"]
+    root: str | TemplateExpansion
+    hostid: str | TemplateExpansion
+    timeout: int | TemplateExpansion = 30
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class XRootDFileSourceConfiguration(StrictModel):
+    type: Literal["xrootd"]
+    root: str
+    hostid: str
+    writable: bool = False
+    timeout: int = 30
+
+
 class MaveDBFileSourceTemplateConfiguration(StrictModel):
     type: Literal["mavedb"]
     base_url: str | TemplateExpansion = "https://api.mavedb.org/api/v1"
@@ -664,6 +683,7 @@ FileSourceTemplateConfiguration = Annotated[
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
     | IPFSFileSourceTemplateConfiguration
+    | XRootDFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
@@ -697,6 +717,7 @@ FileSourceConfiguration = Annotated[
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
     | IPFSFileSourceConfiguration
+    | XRootDFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
@@ -790,6 +811,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
     "ipfs": IPFSFileSourceConfiguration,
+    "xrootd": XRootDFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
