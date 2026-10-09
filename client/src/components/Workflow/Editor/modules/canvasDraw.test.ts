@@ -1,28 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GraphStep } from "@/composables/useInvocationGraph";
-import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { setupTestPinia } from "@/stores/testUtils";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { createMockStepPosition, createTestStep } from "../test_fixtures";
 import { drawStepBorders, drawSteps, getStepColor, initStateColors } from "./canvasDraw";
 
-/**
- * Makes a mock CSSStyleDeclaration whose `getPropertyValue` resolves CSS custom properties
- * from a plain object. Simulates how `initStateColors` reads `--state-color-*` vars from
- * a real element's computed style at mount time.
- */
-function makeMockStyle(vars: Record<string, string>): CSSStyleDeclaration {
-    return { getPropertyValue: (prop: string) => vars[prop] ?? "" } as unknown as CSSStyleDeclaration;
+function makeStyle(vars: Record<string, string>): CSSStyleDeclaration {
+    const style = document.createElement("div").style;
+    for (const [name, value] of Object.entries(vars)) {
+        style.setProperty(name, value);
+    }
+    return style;
 }
 
-/** Makes a mock Step object provided with default values, allowing overrides. */
 function makeStep(overrides: Partial<Step> = {}): Step {
-    return { id: 0, position: { left: 10, top: 20 }, errors: null, type: "tool", ...overrides } as unknown as Step;
+    return { ...createTestStep(0), id: 0, position: { left: 10, top: 20 }, errors: null, ...overrides };
 }
 
-/** Makes a mock GraphStep object provided with default values, allowing overrides. */
 function makeGraphStep(overrides: Partial<GraphStep> = {}): GraphStep {
-    return makeStep(overrides as Partial<Step>) as unknown as GraphStep;
+    return { ...makeStep(), state: "uninitialized", jobs: {}, ...overrides };
 }
 
 /**
@@ -42,14 +41,16 @@ function makeCtx(): CanvasRenderingContext2D {
     } as unknown as CanvasRenderingContext2D;
 }
 
-/** Makes a mock workflow state store with specified step positions. */
-function makeStateStore(
-    positions: Record<number, { width: number; height: number }>,
-): ReturnType<typeof useWorkflowStateStore> {
-    return { stepPosition: positions } as unknown as ReturnType<typeof useWorkflowStateStore>;
+function makeStateStore(positions: Record<number, { width: number; height: number }>) {
+    setupTestPinia();
+    const store = useWorkflowStateStore("minimap-test");
+    for (const [id, { width, height }] of Object.entries(positions)) {
+        store.stepPosition[Number(id)] = createMockStepPosition(width, height);
+    }
+    return store;
 }
 
-const MOCK_COLORS: Record<string, string> = {
+const MOCK_COLORS = {
     "--state-color-ok": "#ok-color",
     "--state-color-error": "#error-color",
     "--state-color-uninitialized": "#uninitialized-color",
@@ -57,7 +58,7 @@ const MOCK_COLORS: Record<string, string> = {
 
 describe("initStateColors + getStepColor", () => {
     beforeEach(() => {
-        initStateColors(makeMockStyle(MOCK_COLORS));
+        initStateColors(makeStyle(MOCK_COLORS));
     });
 
     describe("plain editor steps (no headerClass)", () => {
@@ -71,35 +72,31 @@ describe("initStateColors + getStepColor", () => {
     });
 
     describe("invocation steps (with headerClass)", () => {
-        it("returns the CSS var color for an active header-* class", () => {
-            const step = makeGraphStep({ headerClass: { "node-header-invocation": true, "header-ok": true } });
-            expect(getStepColor(step, "#node", "#error")).toBe(MOCK_COLORS["--state-color-ok"]);
-        });
-
-        it("returns the CSS var color for header-error", () => {
-            const step = makeGraphStep({
+        it.each<{ name: string; headerClass: Record<string, boolean>; color: string }>([
+            {
+                name: "active ok state",
+                headerClass: { "node-header-invocation": true, "header-ok": true },
+                color: MOCK_COLORS["--state-color-ok"],
+            },
+            {
+                name: "active error state",
                 headerClass: { "node-header-invocation": true, "header-error": true },
-            });
-            expect(getStepColor(step, "#node", "#error")).toBe(MOCK_COLORS["--state-color-error"]);
-        });
-
-        it("ignores inactive header-* classes and falls back to nodeColor", () => {
-            const step = makeGraphStep({
+                color: MOCK_COLORS["--state-color-error"],
+            },
+            {
+                name: "inactive state class",
                 headerClass: { "node-header-invocation": true, "header-ok": false },
-            });
-            expect(getStepColor(step, "#node", "#error")).toBe("#node");
-        });
-
-        it("falls back to nodeColor when headerClass has no active header-* keys", () => {
-            const step = makeGraphStep({ headerClass: { "node-header-invocation": true } });
-            expect(getStepColor(step, "#node", "#error")).toBe("#node");
-        });
-
-        it("returns the CSS var color for header-uninitialized", () => {
-            const step = makeGraphStep({
+                color: "#node",
+            },
+            { name: "no state class", headerClass: { "node-header-invocation": true }, color: "#node" },
+            {
+                name: "active uninitialized state",
                 headerClass: { "node-header-invocation": true, "header-uninitialized": true },
-            });
-            expect(getStepColor(step, "#node", "#error")).toBe(MOCK_COLORS["--state-color-uninitialized"]);
+                color: MOCK_COLORS["--state-color-uninitialized"],
+            },
+        ])("uses the expected color for $name", ({ headerClass, color }) => {
+            const step = makeGraphStep({ headerClass });
+            expect(getStepColor(step, "#node", "#error")).toBe(color);
         });
     });
 });
@@ -113,9 +110,9 @@ describe("drawSteps", () => {
         drawSteps(ctx, steps, "#ff0000", stateStore);
 
         expect(ctx.fillStyle).toBe("#ff0000");
-        expect(ctx.beginPath).toHaveBeenCalled();
+        expect(ctx.beginPath).toHaveBeenCalledTimes(1);
         expect(ctx.rect).toHaveBeenCalledWith(5, 10, 100, 40);
-        expect(ctx.fill).toHaveBeenCalled();
+        expect(ctx.fill).toHaveBeenCalledTimes(1);
     });
 
     it("skips steps with no recorded position", () => {
@@ -140,7 +137,7 @@ describe("drawStepBorders", () => {
         expect(ctx.strokeStyle).toBe("#0000ff");
         expect(ctx.lineWidth).toBe(1);
         expect(ctx.rect).toHaveBeenCalledWith(5, 10, 100, 40);
-        expect(ctx.stroke).toHaveBeenCalled();
+        expect(ctx.stroke).toHaveBeenCalledTimes(1);
     });
 
     it("skips steps with no recorded position", () => {
