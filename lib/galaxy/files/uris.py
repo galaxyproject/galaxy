@@ -135,7 +135,7 @@ def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str
     try:
         addrinfo = socket.getaddrinfo(parsed_url, port)
     except socket.gaierror as e:
-        log.debug("Could not resolve url '%': %'", url, e)
+        log.debug("Could not resolve url '%s': '%s'", url, e)
         raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
     # Get the IP addresses that this entry resolves to (uniquely)
     # We drop:
