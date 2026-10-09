@@ -181,6 +181,19 @@ terminal this starts for executing Vitest tests.
 
 ### Testing Best Practices and Patterns
 
+#### Readable Test Scenarios
+
+Name each test after the behavior and the condition that produces it. Keep setup,
+the action, and assertions together so the scenario can be understood without
+tracing unrelated requests or mutable fixtures. Split independent success and
+failure scenarios into separate tests or use
+[`it.each`](https://vitest.dev/api/test#test-each) to test combinations.
+
+Use helpers to remove repeated domain setup, while keeping the scenario's inputs
+and expected results visible in the test. Reuse existing test-data factories
+before adding new ones. Extract a shared helper when multiple files need the same
+setup; keep a short, single-use arrangement inline.
+
 #### Test File Structure
 
 Test files should be placed adjacent to the code they test with a `.test.ts` or `.test.js` extension:
@@ -275,16 +288,23 @@ beforeEach(() => {
 });
 ```
 
-For untyped responses (endpoints not in OpenAPI spec):
+For response shapes not covered by the generated OpenAPI schema, use
+`response.untyped(...)`:
 
 ```typescript
+import { beforeEach } from "vitest";
+
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-server.use(
-    http.get("/api/configuration", ({ response }) => {
-        return response.untyped(HttpResponse.json({ enable_feature: true }));
-    }),
-);
+const { server, http } = useServerMock();
+
+beforeEach(() => {
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response.untyped(HttpResponse.json({ enable_feature: true }));
+        }),
+    );
+});
 ```
 
 See the [MSW documentation](https://mswjs.io/docs/) for advanced usage patterns.
@@ -408,7 +428,11 @@ describe("useMyStore", () => {
 
 #### Composable Testing
 
-Test composables by mounting a minimal component that uses them:
+Call composables directly when they only calculate or render values and do not
+require component lifecycle hooks or injection.
+
+For composables that require lifecycle hooks or a component context, mount a
+minimal component that uses them:
 
 ```typescript
 import { mount } from "@vue/test-utils";
@@ -452,7 +476,10 @@ vi.mock("vue-router/composables", () => ({
 
 #### Async Operations
 
-Always use `flushPromises()` after operations that trigger API calls or state updates:
+Await the promise returned by the operation under test when it exposes one.
+For mounted components whose lifecycle or event handlers start API calls without
+returning their promises, use `flushPromises()` before asserting the resulting
+state:
 
 ```typescript
 import flushPromises from "flush-promises";
