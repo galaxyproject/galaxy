@@ -1,6 +1,6 @@
 import { getFakeStorageOperationRun } from "@tests/test-data/storageOperations";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type {
@@ -82,21 +82,36 @@ const RUN_FAILED_RESPONSE: StorageOperationRunResponse = {
 };
 
 const { server, http } = useServerMock();
+const watchers: ReturnType<typeof useStorageRunWatcher>[] = [];
+
+afterEach(() => {
+    for (const watcher of watchers.splice(0)) {
+        watcher.stopPolling();
+    }
+});
+
+function createRunWatcher() {
+    const watcher = useStorageRunWatcher(HISTORY, RUN_ID);
+    watchers.push(watcher);
+    return watcher;
+}
 
 describe("bulkStoragePreview", () => {
     it("posts to the preview endpoint and returns snapshot data", async () => {
         server.use(
-            http.post("/api/histories/{history_id}/contents/bulk/storage/preview", ({ response }) =>
-                response(200).json(PREVIEW_RESPONSE),
+            http.post(
+                "/api/histories/{history_id}/contents/bulk/storage/preview",
+                async ({ params, request, response }) => {
+                    expect(params.history_id).toBe(HISTORY.id);
+                    expect(await request.json()).toEqual({ mode: "move", target_object_store_id: "other", items: [] });
+                    return response(200).json(PREVIEW_RESPONSE);
+                },
             ),
         );
 
         const result = await bulkStoragePreview(HISTORY, "other", {}, []);
 
-        expect(result).toBeDefined();
-        expect(result!.snapshot_id).toBe(SNAPSHOT_ID);
-        expect(result!.eligibility.eligible_count).toBe(1);
-        expect(result!.eligibility.ineligible_count).toBe(0);
+        expect(result).toEqual(PREVIEW_RESPONSE);
     });
 
     it("propagates server errors as exceptions", async () => {
@@ -113,15 +128,23 @@ describe("bulkStoragePreview", () => {
 describe("bulkStorageExecute", () => {
     it("posts snapshot_id and execution_policy and returns run summary", async () => {
         server.use(
-            http.post("/api/histories/{history_id}/contents/bulk/storage/execute", ({ response }) =>
-                response(200).json(EXECUTE_RESPONSE),
+            http.post(
+                "/api/histories/{history_id}/contents/bulk/storage/execute",
+                async ({ params, request, response }) => {
+                    expect(params.history_id).toBe(HISTORY.id);
+                    expect(await request.json()).toEqual({
+                        snapshot_id: SNAPSHOT_ID,
+                        execution_policy: { skip_ineligible: true },
+                        notify_on_completion: true,
+                    });
+                    return response(200).json(EXECUTE_RESPONSE);
+                },
             ),
         );
 
         const result = await bulkStorageExecute(HISTORY, SNAPSHOT_ID);
 
-        expect(result!.run.run_id).toBe(RUN_ID);
-        expect(result!.run.state).toBe("pending");
+        expect(result).toEqual(EXECUTE_RESPONSE);
     });
 
     it("propagates server errors as exceptions", async () => {
@@ -145,7 +168,7 @@ describe("bulkStorageRunStatus", () => {
 
         const result = await bulkStorageRunStatus(HISTORY, RUN_ID);
 
-        expect(result!.run.failed_count).toBe(1);
+        expect(result).toEqual(RUN_FAILED_RESPONSE);
     });
 });
 
@@ -157,7 +180,7 @@ describe("useStorageRunWatcher", () => {
             ),
         );
 
-        const { runStatus, isTerminal, startPolling } = useStorageRunWatcher(HISTORY, RUN_ID);
+        const { runStatus, isTerminal, startPolling } = createRunWatcher();
 
         expect(isTerminal.value).toBe(false);
         expect(runStatus.value).toBeNull();
@@ -165,34 +188,34 @@ describe("useStorageRunWatcher", () => {
         startPolling();
         await flushPromises();
 
-        expect(runStatus.value!.run.state).toBe("pending");
+        expect(runStatus.value).toEqual(RUN_PENDING_RESPONSE);
         expect(isTerminal.value).toBe(false);
     });
 
-    it("marks isTerminal=true when run reaches completed state and stops polling", async () => {
+    it("marks a completed successful run as terminal", async () => {
         server.use(
             http.get("/api/histories/{history_id}/contents/bulk/storage/runs/{run_id}", ({ response }) =>
                 response(200).json(RUN_COMPLETED_RESPONSE),
             ),
         );
 
-        const { runStatus, isTerminal, startPolling } = useStorageRunWatcher(HISTORY, RUN_ID);
+        const { runStatus, isTerminal, startPolling } = createRunWatcher();
 
         startPolling();
         await flushPromises();
 
-        expect(runStatus.value!.run.state).toBe("completed");
+        expect(runStatus.value).toEqual(RUN_COMPLETED_RESPONSE);
         expect(isTerminal.value).toBe(true);
     });
 
-    it("marks isTerminal=true when run reaches failed state", async () => {
+    it("marks a completed run with failed items as terminal", async () => {
         server.use(
             http.get("/api/histories/{history_id}/contents/bulk/storage/runs/{run_id}", ({ response }) =>
                 response(200).json(RUN_FAILED_RESPONSE),
             ),
         );
 
-        const { isTerminal, startPolling } = useStorageRunWatcher(HISTORY, RUN_ID);
+        const { isTerminal, startPolling } = createRunWatcher();
 
         startPolling();
         await flushPromises();
@@ -200,19 +223,18 @@ describe("useStorageRunWatcher", () => {
         expect(isTerminal.value).toBe(true);
     });
 
-    it("tracks run state for failure runs", async () => {
+    it("retains the completed run state and its failed item count", async () => {
         server.use(
             http.get("/api/histories/{history_id}/contents/bulk/storage/runs/{run_id}", ({ response }) =>
                 response(200).json(RUN_FAILED_RESPONSE),
             ),
         );
 
-        const { runStatus, startPolling } = useStorageRunWatcher(HISTORY, RUN_ID);
+        const { runStatus, startPolling } = createRunWatcher();
 
         startPolling();
         await flushPromises();
 
-        expect(runStatus.value!.run.state).toBe("completed");
-        expect(runStatus.value!.run.failed_count).toBe(1);
+        expect(runStatus.value).toEqual(RUN_FAILED_RESPONSE);
     });
 });
