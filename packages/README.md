@@ -21,8 +21,9 @@ the only workspace: the former nested `packages/pyproject.toml` workspace
 has been removed, so every `uv` command run from a package directory
 resolves to the root workspace and its environment.
 
-The exact uv version to use is pinned in `.uv-version` at the repository
-root. Use that version when syncing or regenerating the lock.
+The exact uv version to use is pinned in `.tool-versions` at the repository
+root. Both mise and asdf can read this file. Use the pinned version when
+syncing or regenerating the lock.
 
 The root `uv.lock` is tracked and is the only workspace lockfile. The
 `.gitignore` exception for it keeps Galaxy runtime lock files ignored.
