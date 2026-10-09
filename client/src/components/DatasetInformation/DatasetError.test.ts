@@ -1,9 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { expectConfigurationRequest, getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { expectConfigurationRequest, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { components } from "@/api/schema";
@@ -11,7 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
 const DATASET_ID = "dataset_id";
 
@@ -21,7 +21,8 @@ const { server, http } = useServerMock();
 
 type RegexJobMessage = components["schemas"]["RegexJobMessage"];
 
-async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
+async function mountDatasetError({ hasDuplicateInputs = true, hasEmptyInputs = true, userEmail = "" } = {}) {
+    const localVue = getLocalVue();
     const pinia = createPinia();
     const error1: RegexJobMessage = {
         desc: "message_1",
@@ -59,7 +60,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
                 tool_stderr: "tool_stderr",
                 job_stderr: "job_stderr",
                 job_messages: [error1, error2],
-                user_email,
+                user_email: userEmail,
                 create_time: "2021-01-01T00:00:00",
                 update_time: "2021-01-01T00:00:00",
                 id: "job_id",
@@ -74,22 +75,19 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
 
         http.get("/api/jobs/{job_id}/common_problems", ({ response }) => {
             return response(200).json({
-                has_duplicate_inputs: has_duplicate_inputs,
-                has_empty_inputs: has_empty_inputs,
+                has_duplicate_inputs: hasDuplicateInputs,
+                has_empty_inputs: hasEmptyInputs,
             });
         }),
     );
 
-    const wrapper = mount(DatasetError as object, {
-        props: {
-            datasetId: DATASET_ID,
-        },
-        global: localVue,
-        pinia,
-    });
+    const userStore = useUserStore(pinia);
+    userStore.currentUser = getFakeRegisteredUser({ email: userEmail });
 
-    const userStore = useUserStore();
-    userStore.currentUser = getFakeRegisteredUser({ email: user_email });
+    const wrapper = mount(DatasetError as object, {
+        props: { datasetId: DATASET_ID },
+        global: withPlugins(localVue, pinia),
+    });
 
     await flushPromises();
 
@@ -97,8 +95,8 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
 }
 
 describe("DatasetError", () => {
-    it("check props with common problems", async () => {
-        const wrapper = await montDatasetError();
+    it("renders job diagnostics and detected empty and duplicate inputs", async () => {
+        const wrapper = await mountDatasetError();
 
         expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
         expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
@@ -108,12 +106,16 @@ describe("DatasetError", () => {
         expect(nth(messages, 0).text()).toBe("message_1");
         expect(nth(messages, 1).text()).toBe("message_2");
 
-        expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
-        expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
+        expect(wrapper.find("#dataset-error-has-empty-inputs").exists()).toBe(true);
+        expect(wrapper.find("#dataset-error-has-duplicate-inputs").exists()).toBe(true);
     });
 
-    it("check props without common problems", async () => {
-        const wrapper = await montDatasetError(false, false, "user_email");
+    it("renders job diagnostics without common input problems or an email field", async () => {
+        const wrapper = await mountDatasetError({
+            hasDuplicateInputs: false,
+            hasEmptyInputs: false,
+            userEmail: "user_email",
+        });
 
         expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
         expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
@@ -124,8 +126,8 @@ describe("DatasetError", () => {
         expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
     });
 
-    it("hides form fields and button on success", async () => {
-        const wrapper = await montDatasetError();
+    it("hides the report form after successfully submitting an error report", async () => {
+        const wrapper = await mountDatasetError();
 
         server.use(
             http.post("/api/jobs/{job_id}/error", ({ response }) => {
@@ -135,8 +137,8 @@ describe("DatasetError", () => {
             }),
         );
 
-        const FormAndSubmitButton = "#email-report-form";
-        expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
+        const reportForm = "#email-report-form";
+        expect(wrapper.find(reportForm).exists()).toBe(true);
 
         const submitButton = "#email-report-submit";
         expect(wrapper.find(submitButton).exists()).toBe(true);
@@ -145,6 +147,6 @@ describe("DatasetError", () => {
 
         await flushPromises();
 
-        expect(wrapper.find(FormAndSubmitButton).exists()).toBe(false);
+        expect(wrapper.find(reportForm).exists()).toBe(false);
     });
 });
