@@ -1341,7 +1341,7 @@ def _is_default_option(value, default_value) -> bool:
     """Whether a select option starts selected for a parameter default (any entry of a list default)."""
     if isinstance(default_value, list):
         return value in default_value
-    return bool(default_value and value == default_value)
+    return default_value is not None and value == default_value
 
 
 def _parameter_def_list_to_options(parameter_value, default_value=None) -> list[OptionDict]:
