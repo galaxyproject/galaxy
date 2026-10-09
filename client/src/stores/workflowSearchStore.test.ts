@@ -1,31 +1,30 @@
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createTestStep } from "@/components/Workflow/Editor/test_fixtures";
 import { type NewStep, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
+import { setupTestPinia } from "./testUtils";
 import { useWorkflowSearchStore } from "./workflowSearchStore";
 
 const WORKFLOW_ID = "mock-workflow";
 
 const toolStep: NewStep = {
+    ...createTestStep(0, {
+        inputs: [
+            {
+                name: "input1",
+                label: "Input Dataset",
+                input_type: "dataset",
+                extensions: [],
+                multiple: false,
+                optional: false,
+            },
+        ],
+        outputs: [{ name: "html_file", type: "data", multiple: false, optional: false, extensions: [] }],
+    }),
     name: "FastQC",
     label: "quality_check",
-    type: "tool",
     annotation: "QC tool",
-    input_connections: {},
-    inputs: [
-        {
-            name: "input1",
-            label: "Input Dataset",
-            input_type: "dataset",
-            extensions: [],
-            multiple: false,
-            optional: false,
-        },
-    ],
-    outputs: [{ name: "html_file", type: "data", multiple: false, optional: false, extensions: [] }],
-    tool_state: {},
-    workflow_outputs: [],
 };
 
 function createEl(id: string) {
@@ -35,91 +34,87 @@ function createEl(id: string) {
     return el;
 }
 
-function setupDom(stepId: number) {
+function setupSearchWorkflow() {
+    const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
+    const stepId = step.id;
     createEl("canvas-container");
     createEl(`wf-node-step-${stepId}`);
     createEl(`node-${stepId}-input-input1`);
     createEl(`node-${stepId}-output-html_file`);
+    return { step, searchStore: useWorkflowSearchStore(WORKFLOW_ID) };
 }
 
 describe("workflowSearchStore", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
+        document.body.innerHTML = "";
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
         document.body.innerHTML = "";
     });
 
     describe("search results", () => {
-        it("finds a step by name", () => {
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
+        it.each([
+            { field: "name", query: "FastQC" },
+            { field: "label", query: "quality_check" },
+            { field: "annotation", query: "QC tool" },
+        ])("finds the step by its $field", ({ query }) => {
+            const { step, searchStore } = setupSearchWorkflow();
 
-            const results = useWorkflowSearchStore(WORKFLOW_ID).searchWorkflow("FastQC");
+            const results = searchStore.searchWorkflow(query);
 
             expect(results.length).toBeGreaterThan(0);
-            expect(results.some((r) => r.searchData.type === "step")).toBe(true);
-        });
-
-        it("finds a step by label", () => {
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
-
-            const results = useWorkflowSearchStore(WORKFLOW_ID).searchWorkflow("quality_check");
-
-            expect(results.some((r) => r.searchData.type === "step")).toBe(true);
-        });
-
-        it("finds a step by annotation", () => {
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
-
-            const results = useWorkflowSearchStore(WORKFLOW_ID).searchWorkflow("QC tool");
-
-            expect(results.some((r) => r.searchData.type === "step")).toBe(true);
+            expect(results).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        searchData: expect.objectContaining({ type: "step", stepId: String(step.id) }),
+                    }),
+                ]),
+            );
         });
 
         it("returns empty results for a non-matching query", () => {
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
+            const { searchStore } = setupSearchWorkflow();
 
-            const results = useWorkflowSearchStore(WORKFLOW_ID).searchWorkflow("zzz-no-match");
+            const results = searchStore.searchWorkflow("zzz-no-match");
 
             expect(results).toHaveLength(0);
         });
 
         it("finds input terminal by label", () => {
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
+            const { searchStore } = setupSearchWorkflow();
 
-            const results = useWorkflowSearchStore(WORKFLOW_ID).searchWorkflow("Input Dataset");
+            const results = searchStore.searchWorkflow("Input Dataset");
 
-            expect(results.some((r) => r.searchData.type === "input")).toBe(true);
+            expect(results).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        searchData: expect.objectContaining({ type: "input", label: "Input Dataset" }),
+                    }),
+                ]),
+            );
         });
     });
 
     describe("search cache (regression: ref-vs-null bug)", () => {
         it("does not crash on the first call when the cache is empty", () => {
-            // Before the fix, `searchDataCacheData` (a Ref) was always truthy, so the
-            // cache guard `&& searchDataCacheData` passed on the very first call and
-            // returned null. Then searchWorkflow called null.map(...) → TypeError.
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
+            // A truthy Ref used to let a null cache through on the first search.
+            const { searchStore } = setupSearchWorkflow();
 
-            const searchStore = useWorkflowSearchStore(WORKFLOW_ID);
             expect(() => searchStore.searchWorkflow("FastQC")).not.toThrow();
             expect(searchStore.searchWorkflow("FastQC")).toBeInstanceOf(Array);
         });
 
         it("does not re-collect DOM data on a repeated call with the same changeId", () => {
-            const step = useWorkflowStepStore(WORKFLOW_ID).addStep(toolStep);
-            setupDom(step.id);
+            const { searchStore } = setupSearchWorkflow();
 
-            const searchStore = useWorkflowSearchStore(WORKFLOW_ID);
             searchStore.searchWorkflow("FastQC"); // primes the cache
 
             const spy = vi.spyOn(document, "getElementById");
             searchStore.searchWorkflow("FastQC"); // should hit cache, skip DOM traversal
             expect(spy).not.toHaveBeenCalled();
-            spy.mockRestore();
         });
     });
 });
