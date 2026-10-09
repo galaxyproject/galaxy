@@ -1,10 +1,8 @@
 import { faFile, faMagic, faSitemap, faWrench } from "@fortawesome/free-solid-svg-icons";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Ref, ref } from "vue";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
-
-import type { ActiveContext } from "./useActiveContext";
 
 // Mock route as a reactive ref so tests can mutate it
 const mockRoute: Ref<{ path: string; query: Record<string, string>; params: Record<string, string> }> = ref({
@@ -27,7 +25,6 @@ vi.mock("@/stores/toolStore", () => ({
     }),
 }));
 
-// Import after mocks are in place
 const { useActiveContext } = await import("./useActiveContext");
 
 function withRoute(path: string, query: Record<string, string> = {}, params: Record<string, string> = {}) {
@@ -36,6 +33,11 @@ function withRoute(path: string, query: Record<string, string> = {}, params: Rec
 }
 
 describe("useActiveContext", () => {
+    beforeEach(() => {
+        for (const id of Object.keys(mockToolNames)) {
+            delete mockToolNames[id];
+        }
+    });
     describe("activeContext", () => {
         it("returns null for unrecognized routes", () => {
             const { activeContext } = withRoute("/some/random/page");
@@ -64,22 +66,26 @@ describe("useActiveContext", () => {
 
         it("includes tool name when the tool store has it", () => {
             mockToolNames["bowtie2"] = "Bowtie2";
-            try {
-                const { activeContext } = withRoute("/", { tool_id: "bowtie2" });
-                expect((activeContext.value as ActiveContext & { contextType: "tool" }).toolName).toBe("Bowtie2");
-            } finally {
-                delete mockToolNames["bowtie2"];
-            }
+            const { activeContext } = withRoute("/", { tool_id: "bowtie2" });
+            expect(activeContext.value).toMatchObject({ contextType: "tool", toolId: "bowtie2", toolName: "Bowtie2" });
         });
 
         it("omits tool name when store returns placeholder", () => {
             const { activeContext } = withRoute("/", { tool_id: "unknown_tool" });
-            expect((activeContext.value as ActiveContext & { contextType: "tool" }).toolName).toBeUndefined();
+            expect(activeContext.value).toMatchObject({
+                contextType: "tool",
+                toolId: "unknown_tool",
+                toolName: undefined,
+            });
         });
 
         it("includes version when present in query", () => {
             const { activeContext } = withRoute("/", { tool_id: "bwa_mem", version: "0.7.17" });
-            expect((activeContext.value as ActiveContext & { contextType: "tool" }).toolVersion).toBe("0.7.17");
+            expect(activeContext.value).toMatchObject({
+                contextType: "tool",
+                toolId: "bwa_mem",
+                toolVersion: "0.7.17",
+            });
         });
 
         it("detects dataset context", () => {
@@ -185,12 +191,8 @@ describe("useActiveContext", () => {
 
         it("labels tool context with name", () => {
             mockToolNames["samtools_sort"] = "Samtools Sort";
-            try {
-                const { contextLabel } = withRoute("/", { tool_id: "samtools_sort" });
-                expect(contextLabel.value).toBe("Tool: Samtools Sort");
-            } finally {
-                delete mockToolNames["samtools_sort"];
-            }
+            const { contextLabel } = withRoute("/", { tool_id: "samtools_sort" });
+            expect(contextLabel.value).toBe("Tool: Samtools Sort");
         });
 
         it("labels tool context with ID when name unavailable", () => {
