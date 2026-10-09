@@ -1,16 +1,12 @@
 /**
  * Tests for the unified pages API client.
  */
+import { getFakePageDetails, getFakePageSummary } from "@tests/test-data/pages";
 import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import type {
-    CreateHistoryPagePayload,
-    HistoryPageDetails,
-    HistoryPageSummary,
-    UpdateHistoryPagePayload,
-} from "./pages";
+import type { CreateHistoryPagePayload, UpdateHistoryPagePayload } from "./pages";
 import {
     createHistoryPage,
     createPage,
@@ -28,56 +24,31 @@ const { server, http } = useServerMock();
 
 const TEST_HISTORY_ID = "abc123historyid";
 const TEST_PAGE_ID = "def456pageid";
-const TEST_REVISION_ID = "rev789revisionid";
-
-const TEST_PAGE_SUMMARY: HistoryPageSummary = {
-    id: TEST_PAGE_ID,
-    history_id: TEST_HISTORY_ID,
-    title: "My Analysis Notes",
-    slug: null,
-    source_invocation_id: null,
-    published: false,
-    importable: false,
-    deleted: false,
-    latest_revision_id: TEST_REVISION_ID,
-    revision_ids: [TEST_REVISION_ID],
-    create_time: "2025-06-15T10:30:00Z",
-    update_time: "2025-06-15T12:45:00Z",
-    username: "test",
-    email_hash: "",
-    author_deleted: false,
-    model_class: "Page",
-    tags: [],
-};
-
-const TEST_PAGE_DETAILS: HistoryPageDetails = {
-    ...TEST_PAGE_SUMMARY,
-    content: "# Analysis\n\nSome markdown content here.",
-    content_editor: "# Analysis\n\nSome markdown content here.",
-    content_format: "markdown",
-    edit_source: "user",
-    annotation: null,
-};
+const TEST_PAGE_SUMMARY = getFakePageSummary();
+const TEST_PAGE_DETAILS = getFakePageDetails();
 
 describe("pages API", () => {
     describe("fetchHistoryPages", () => {
         it("returns list of pages for a history", async () => {
+            let historyId: string | null = null;
             server.use(
-                http.get("/api/pages", ({ response }: any) => {
+                http.get("/api/pages", ({ request, response }) => {
+                    historyId = new URL(request.url).searchParams.get("history_id");
                     return response(200).json([TEST_PAGE_SUMMARY]);
-                }) as any,
+                }),
             );
 
             const result = await fetchHistoryPages(TEST_HISTORY_ID);
 
+            expect(historyId).toBe(TEST_HISTORY_ID);
             expect(result).toEqual([TEST_PAGE_SUMMARY]);
         });
 
         it("returns empty list when history has no pages", async () => {
             server.use(
-                http.get("/api/pages", ({ response }: any) => {
+                http.get("/api/pages", ({ response }) => {
                     return response(200).json([]);
-                }) as any,
+                }),
             );
 
             const result = await fetchHistoryPages(TEST_HISTORY_ID);
@@ -87,9 +58,9 @@ describe("pages API", () => {
 
         it("throws on server error", async () => {
             server.use(
-                http.get("/api/pages", ({ response }: any) => {
+                http.get("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
 
             await expect(fetchHistoryPages(TEST_HISTORY_ID)).rejects.toThrow();
@@ -98,22 +69,25 @@ describe("pages API", () => {
 
     describe("fetchHistoryPage", () => {
         it("returns page details by id", async () => {
+            let requestedPageId: string | undefined;
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
+                http.get("/api/pages/{id}", ({ params, response }) => {
+                    requestedPageId = params.id;
                     return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
+                }),
             );
 
             const result = await fetchHistoryPage(TEST_PAGE_ID);
 
+            expect(requestedPageId).toBe(TEST_PAGE_ID);
             expect(result).toEqual(TEST_PAGE_DETAILS);
         });
 
         it("throws on page not found", async () => {
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
+                http.get("/api/pages/{id}", ({ response }) => {
                     return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
 
             await expect(fetchHistoryPage("nonexistent")).rejects.toThrow();
@@ -129,18 +103,21 @@ describe("pages API", () => {
         };
 
         it("returns created page details", async () => {
+            let body: CreateHistoryPagePayload | undefined;
             server.use(
-                http.post("/api/pages", ({ response }: any) => {
+                http.post("/api/pages", async ({ request, response }) => {
+                    body = await request.json();
                     return response(200).json({
                         ...TEST_PAGE_DETAILS,
                         title: "New Page",
                         content: "# New Page\n\nInitial content.",
                     });
-                }) as any,
+                }),
             );
 
             const result = await createHistoryPage(CREATE_PAYLOAD);
 
+            expect(body).toEqual(CREATE_PAYLOAD);
             expect(result.title).toBe("New Page");
             expect(result.content).toBe("# New Page\n\nInitial content.");
             expect(result.history_id).toBe(TEST_HISTORY_ID);
@@ -149,9 +126,9 @@ describe("pages API", () => {
 
         it("throws on creation error", async () => {
             server.use(
-                http.post("/api/pages", ({ response }: any) => {
+                http.post("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "Cannot create page", err_code: 400 }, { status: 400 });
-                }) as any,
+                }),
             );
 
             await expect(createHistoryPage(CREATE_PAYLOAD)).rejects.toThrow();
@@ -166,19 +143,25 @@ describe("pages API", () => {
         };
 
         it("returns updated page details", async () => {
+            let body: UpdateHistoryPagePayload | undefined;
+            let requestedPageId: string | undefined;
             server.use(
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                http.put("/api/pages/{id}", async ({ params, request, response }) => {
+                    requestedPageId = params.id;
+                    body = await request.json();
                     return response(200).json({
                         ...TEST_PAGE_DETAILS,
                         title: "Updated Title",
                         content: "# Updated Content\n\nRevised analysis.",
                         update_time: "2025-06-16T09:00:00Z",
                     });
-                }) as any,
+                }),
             );
 
             const result = await updateHistoryPage(TEST_PAGE_ID, UPDATE_PAYLOAD);
 
+            expect(requestedPageId).toBe(TEST_PAGE_ID);
+            expect(body).toEqual(UPDATE_PAYLOAD);
             expect(result.title).toBe("Updated Title");
             expect(result.content).toBe("# Updated Content\n\nRevised analysis.");
             expect(result.update_time).toBe("2025-06-16T09:00:00Z");
@@ -186,9 +169,9 @@ describe("pages API", () => {
 
         it("throws on update error", async () => {
             server.use(
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response("4XX").json({ err_msg: "Page is deleted", err_code: 400 }, { status: 400 });
-                }) as any,
+                }),
             );
 
             await expect(updateHistoryPage(TEST_PAGE_ID, UPDATE_PAYLOAD)).rejects.toThrow();
@@ -197,35 +180,47 @@ describe("pages API", () => {
 
     describe("savePage", () => {
         it("saves content via PUT with default edit_source", async () => {
+            let body: UpdateHistoryPagePayload | undefined;
+            let requestedPageId: string | undefined;
             server.use(
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                http.put("/api/pages/{id}", async ({ params, request, response }) => {
+                    requestedPageId = params.id;
+                    body = await request.json();
                     return response(200).json({
                         ...TEST_PAGE_DETAILS,
                         content: "# Saved Content",
                         edit_source: "user",
                     });
-                }) as any,
+                }),
             );
 
             const result = await savePage(TEST_PAGE_ID, "# Saved Content");
 
+            expect(requestedPageId).toBe(TEST_PAGE_ID);
+            expect(body).toEqual({ content: "# Saved Content", edit_source: "user" });
             expect(result.content).toBe("# Saved Content");
             expect(result.edit_source).toBe("user");
         });
 
         it("saves content with custom edit_source", async () => {
+            let body: UpdateHistoryPagePayload | undefined;
+            let requestedPageId: string | undefined;
             server.use(
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                http.put("/api/pages/{id}", async ({ params, request, response }) => {
+                    requestedPageId = params.id;
+                    body = await request.json();
                     return response(200).json({
                         ...TEST_PAGE_DETAILS,
                         content: "# Agent Content",
                         edit_source: "agent",
                     });
-                }) as any,
+                }),
             );
 
             const result = await savePage(TEST_PAGE_ID, "# Agent Content", "agent");
 
+            expect(requestedPageId).toBe(TEST_PAGE_ID);
+            expect(body).toEqual({ content: "# Agent Content", edit_source: "agent" });
             expect(result.content).toBe("# Agent Content");
             expect(result.edit_source).toBe("agent");
         });
@@ -233,11 +228,11 @@ describe("pages API", () => {
 
     describe("loadPages", () => {
         it("requests own pages and parses total matches by default", async () => {
-            let query: URLSearchParams | undefined;
+            let query: Record<string, string> | undefined;
 
             server.use(
                 http.get("/api/pages", ({ request, response }) => {
-                    query = new URL(request.url).searchParams;
+                    query = Object.fromEntries(new URL(request.url).searchParams);
                     return response(200).json([TEST_PAGE_SUMMARY], { headers: { total_matches: "7" } });
                 }),
             );
@@ -246,21 +241,23 @@ describe("pages API", () => {
 
             expect(result.data).toEqual([TEST_PAGE_SUMMARY]);
             expect(result.totalMatches).toBe(7);
-            expect(query?.get("show_own")).toBe("true");
-            expect(query?.get("show_shared")).toBe("false");
-            expect(query?.get("show_published")).toBe("false");
-            expect(query?.get("sort_by")).toBe("update_time");
-            expect(query?.get("sort_desc")).toBe("true");
-            expect(query?.get("limit")).toBe("20");
-            expect(query?.get("offset")).toBe("0");
+            expect(query).toMatchObject({
+                show_own: "true",
+                show_shared: "false",
+                show_published: "false",
+                sort_by: "update_time",
+                sort_desc: "true",
+                limit: "20",
+                offset: "0",
+            });
         });
 
         it("passes through visibility, search, sorting and paging options", async () => {
-            let query: URLSearchParams | undefined;
+            let query: Record<string, string> | undefined;
 
             server.use(
                 http.get("/api/pages", ({ request, response }) => {
-                    query = new URL(request.url).searchParams;
+                    query = Object.fromEntries(new URL(request.url).searchParams);
                     return response(200).json([]);
                 }),
             );
@@ -276,29 +273,31 @@ describe("pages API", () => {
                 offset: 10,
             });
 
-            expect(query?.get("show_own")).toBe("false");
-            expect(query?.get("show_shared")).toBe("true");
-            expect(query?.get("show_published")).toBe("true");
-            expect(query?.get("search")).toBe("analysis");
-            expect(query?.get("sort_by")).toBe("title");
-            expect(query?.get("sort_desc")).toBe("false");
-            expect(query?.get("limit")).toBe("5");
-            expect(query?.get("offset")).toBe("10");
+            expect(query).toMatchObject({
+                show_own: "false",
+                show_shared: "true",
+                show_published: "true",
+                search: "analysis",
+                sort_by: "title",
+                sort_desc: "false",
+                limit: "5",
+                offset: "10",
+            });
         });
 
         it("converts the is:standalone filter to the backend type filter", async () => {
-            let query: URLSearchParams | undefined;
+            let query: Record<string, string> | undefined;
 
             server.use(
                 http.get("/api/pages", ({ request, response }) => {
-                    query = new URL(request.url).searchParams;
+                    query = Object.fromEntries(new URL(request.url).searchParams);
                     return response(200).json([]);
                 }),
             );
 
             await loadPages({ search: "notes is:standalone" });
 
-            expect(query?.get("search")).toBe("notes type:standalone");
+            expect(query?.search).toBe("notes type:standalone");
         });
 
         it("defaults total matches to zero when the header is missing", async () => {
@@ -326,11 +325,11 @@ describe("pages API", () => {
 
     describe("createPage", () => {
         it("creates a markdown page by default and returns it", async () => {
-            let body: Record<string, unknown> | undefined;
+            let body: CreateHistoryPagePayload | undefined;
 
             server.use(
                 http.post("/api/pages", async ({ request, response }) => {
-                    body = (await request.json()) as Record<string, unknown>;
+                    body = await request.json();
                     return response(200).json({ ...TEST_PAGE_DETAILS, title: "My Notes", slug: "my-notes" });
                 }),
             );
@@ -348,11 +347,11 @@ describe("pages API", () => {
         });
 
         it("allows overriding the content format and content", async () => {
-            let body: Record<string, unknown> | undefined;
+            let body: CreateHistoryPagePayload | undefined;
 
             server.use(
                 http.post("/api/pages", async ({ request, response }) => {
-                    body = (await request.json()) as Record<string, unknown>;
+                    body = await request.json();
                     return response(200).json(TEST_PAGE_DETAILS);
                 }),
             );
@@ -397,36 +396,37 @@ describe("pages API", () => {
     });
 
     describe("createPageFromTitle", () => {
-        /** Answers each create with `conflicts` in turn, recording the slugs sent */
-        function useCreateResponses(...conflicts: boolean[]) {
+        function mockPageCreation(...outcomes: ("created" | "slug-conflict")[]) {
             const slugs: unknown[] = [];
             server.use(
                 http.post("/api/pages", async ({ request, response }) => {
-                    const body = (await request.json()) as Record<string, unknown>;
+                    const body = await request.json();
                     slugs.push(body.slug);
-                    if (conflicts[slugs.length - 1]) {
+                    if (outcomes[slugs.length - 1] === "slug-conflict") {
                         return response("4XX").json(
                             { err_msg: "Page identifier must be unique", err_code: 400006 },
                             { status: 400 },
                         );
                     }
-                    return response(200).json({ ...TEST_PAGE_DETAILS, slug: body.slug as string });
+                    return response(200).json({ ...TEST_PAGE_DETAILS, slug: body.slug });
                 }),
             );
             return slugs;
         }
 
-        it("slugs the title, falling back for a title without usable characters", async () => {
-            const slugs = useCreateResponses(false, false);
+        it.each([
+            { name: "slugs a title with words", title: "My New Page", expectedSlug: "my-new-page" },
+            { name: "uses a fallback for a title without usable characters", title: "!!!", expectedSlug: "page" },
+        ])("$name", async ({ title, expectedSlug }) => {
+            const slugs = mockPageCreation("created");
 
-            await createPageFromTitle({ title: "My New Page" });
-            await createPageFromTitle({ title: "!!!" });
+            await createPageFromTitle({ title });
 
-            expect(slugs).toEqual(["my-new-page", "page"]);
+            expect(slugs).toEqual([expectedSlug]);
         });
 
         it("retries a slug the user already owns once with a suffix", async () => {
-            const slugs = useCreateResponses(true, false);
+            const slugs = mockPageCreation("slug-conflict", "created");
 
             const page = await createPageFromTitle({ title: "Lab notes" });
 
@@ -435,7 +435,7 @@ describe("pages API", () => {
         });
 
         it("reports a suffixed slug that is taken too", async () => {
-            const slugs = useCreateResponses(true, true);
+            const slugs = mockPageCreation("slug-conflict", "slug-conflict");
 
             await expect(createPageFromTitle({ title: "Lab notes" })).rejects.toThrow("Page identifier must be unique");
             expect(slugs).toEqual(["lab-notes", "lab-notes-2"]);
@@ -444,20 +444,23 @@ describe("pages API", () => {
 
     describe("deleteHistoryPage", () => {
         it("resolves without error on success", async () => {
+            let requestedPageId: string | undefined;
             server.use(
-                http.delete("/api/pages/{id}", ({ response }: any) => {
+                http.delete("/api/pages/{id}", ({ params, response }) => {
+                    requestedPageId = params.id;
                     return response(204).empty();
-                }) as any,
+                }),
             );
 
             await expect(deleteHistoryPage(TEST_PAGE_ID)).resolves.toBeUndefined();
+            expect(requestedPageId).toBe(TEST_PAGE_ID);
         });
 
         it("throws on deletion error", async () => {
             server.use(
-                http.delete("/api/pages/{id}", ({ response }: any) => {
+                http.delete("/api/pages/{id}", ({ response }) => {
                     return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
 
             await expect(deleteHistoryPage(TEST_PAGE_ID)).rejects.toThrow();
