@@ -20,6 +20,8 @@ jobs:
           python-version: '3.10'
       - name: Update dependencies
         run: make update-dependencies
+      - name: Check lock and requirements exports
+        run: sh lib/galaxy/dependencies/update.sh --check
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:
