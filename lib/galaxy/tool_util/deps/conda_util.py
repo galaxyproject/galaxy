@@ -48,6 +48,34 @@ USE_PATH_EXEC_DEFAULT = False
 CONDA_PACKAGE_SPECS = ("conda>=23.7.0", "conda-libmamba-solver", "pyopenssl>=22.1.0")
 CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
+PLATFORMS_DIRECTORY_NAME = "platforms"
+PLATFORM_OK_MARKER = ".galaxy-conda-platform-ok"
+PLATFORM_SUBDIR_PATTERN = re.compile(r"^[a-z0-9]+-[a-z0-9_]+$")
+# Virtual package overrides that let conda solve for a platform other than
+# the one it is running on.
+DEFAULT_PLATFORM_OVERRIDES: dict[str, dict[str, str]] = {
+    "linux": {"CONDA_OVERRIDE_GLIBC": "2.17"},
+    "osx": {"CONDA_OVERRIDE_OSX": "11.0"},
+}
+
+
+def parse_platforms(platforms: Union[None, str, Iterable[str]]) -> list[str]:
+    """Normalize a comma separated string or a list of conda subdirs.
+
+    Invalid entries are dropped with a warning, duplicates are removed
+    while keeping the order.
+    """
+    result: list[str] = []
+    for platform_ in listify(platforms if isinstance(platforms, str) else list(platforms or []), do_strip=True):
+        platform_ = str(platform_).strip()
+        if not platform_:
+            continue
+        if not PLATFORM_SUBDIR_PATTERN.match(platform_):
+            log.warning("Ignoring invalid conda platform '%s'", platform_)
+            continue
+        if platform_ not in result:
+            result.append(platform_)
+    return result
 
 
 def conda_link() -> str:
@@ -95,6 +123,8 @@ class CondaContext(installable.InstallableContext):
         use_path_exec: bool = USE_PATH_EXEC_DEFAULT,
         copy_dependencies: bool = False,
         use_local: bool = USE_LOCAL_DEFAULT,
+        platforms: Union[None, str, list[str]] = None,
+        platform_overrides: dict[str, dict[str, str | None]] = None,
     ) -> None:
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
@@ -124,6 +154,9 @@ class CondaContext(installable.InstallableContext):
             self.conda_exec = self._bin("conda")
         self.ensure_channels: list[str] = listify(ensure_channels)
         self.use_local = use_local
+        self.platforms: list[str] = parse_platforms(platforms)
+        self.platform_overrides: dict[str, dict[str, str]] = platform_overrides or {}
+        self._native_platform: str | None = None
         self._reset_conda_properties()
 
     def _reset_conda_properties(self) -> None:
@@ -236,9 +269,17 @@ class CondaContext(installable.InstallableContext):
             )
             return False
 
-    def exec_command(self, operation: str, args: list[str], stdout_path: str | None = None) -> int:
+    def exec_command(
+        self,
+        operation: str,
+        args: list[str],
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
         """
         Execute the requested command.
+
+        ``extra_env`` holds additional environment variables for this call only.
 
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -249,6 +290,8 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
+        if extra_env:
+            env.update(extra_env)
         cmd_string = shlex.join(cmd)
         kwds: dict[str, Any] = {}
         conda_exec_home: str | None = None
@@ -284,7 +327,13 @@ class CondaContext(installable.InstallableContext):
             return True
         return any(match["version"] == version for match in out)
 
-    def exec_create(self, args: Iterable[str], allow_local: bool = True, stdout_path: str | None = None) -> int:
+    def exec_create(
+        self,
+        args: Iterable[str],
+        allow_local: bool = True,
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -300,7 +349,7 @@ class CondaContext(installable.InstallableContext):
             create_args.extend(self._solver_args)
             create_args.extend(self._override_channels_args)
             create_args.extend(args)
-            ret = self.exec_command("create", create_args, stdout_path=stdout_path)
+            ret = self.exec_command("create", create_args, stdout_path=stdout_path, extra_env=extra_env)
             if ret == 0:
                 break
         return ret
@@ -315,7 +364,13 @@ class CondaContext(installable.InstallableContext):
         remove_args.extend(args)
         return self.exec_command("env remove", remove_args)
 
-    def exec_install(self, args: Iterable[str], allow_local: bool = True, stdout_path: str | None = None) -> int:
+    def exec_install(
+        self,
+        args: Iterable[str],
+        allow_local: bool = True,
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -331,7 +386,7 @@ class CondaContext(installable.InstallableContext):
             install_args.extend(self._solver_args)
             install_args.extend(self._override_channels_args)
             install_args.extend(args)
-            ret = self.exec_command("install", install_args, stdout_path=stdout_path)
+            ret = self.exec_command("install", install_args, stdout_path=stdout_path, extra_env=extra_env)
             if ret == 0:
                 break
         if ret == 0:
@@ -384,6 +439,152 @@ class CondaContext(installable.InstallableContext):
     @property
     def envs_path(self) -> str:
         return os.path.join(self.conda_prefix, "envs")
+
+    @property
+    def native_platform(self) -> str:
+        """The conda subdir of the machine conda runs on (cached)."""
+        if self._native_platform is None:
+            self._native_platform = self.conda_info()["platform"]
+        assert isinstance(self._native_platform, str)
+        return self._native_platform
+
+    @property
+    def foreign_platforms(self) -> list[str]:
+        """Configured platforms other than the native one."""
+        if not self.platforms:
+            return []
+        try:
+            native = self.native_platform
+        except Exception:
+            log.exception("Could not determine the native conda platform, ignoring configured platforms")
+            return []
+        return [p for p in self.platforms if p != native]
+
+    @property
+    def configured_platforms(self) -> list[str]:
+        """The native platform followed by the configured foreign platforms."""
+        if not self.platforms:
+            return []
+        try:
+            return [self.native_platform] + self.foreign_platforms
+        except Exception:
+            log.exception("Could not determine the native conda platform, ignoring configured platforms")
+            return []
+
+    def is_native_platform(self, subdir: str | None) -> bool:
+        return not subdir or subdir == self.native_platform
+
+    def platform_prefix(self, subdir: str) -> str:
+        """Conda base for ``subdir``: ``conda_prefix`` if native, else ``<conda_prefix>/platforms/<subdir>``."""
+        if self.is_native_platform(subdir):
+            return self.conda_prefix
+        return os.path.join(self.conda_prefix, PLATFORMS_DIRECTORY_NAME, subdir)
+
+    def platform_env_path(self, subdir: str, env_name: str) -> str:
+        return os.path.join(self.platform_prefix(subdir), "envs", env_name)
+
+    def platform_activate(self, subdir: str | None) -> str:
+        if not subdir or self.is_native_platform(subdir):
+            return self.activate
+        return os.path.join(self.platform_prefix(subdir), "bin", "activate")
+
+    def platform_env_vars(self, subdir: str) -> dict[str, str]:
+        """Environment variables for solving for ``subdir`` from another platform.
+
+        Defaults set the glibc (linux-*) or macOS (osx-*) virtual package version;
+        ``platform_overrides`` ({subdir: {variable: value}}) is applied on top.
+        """
+        env = {"CONDA_SUBDIR": subdir}
+        env.update(DEFAULT_PLATFORM_OVERRIDES.get(subdir.split("-", 1)[0], {}))
+        env.update({str(k): str(v) for k, v in (self.platform_overrides.get(subdir) or {}).items()})
+        return env
+
+    def platform_has_env(self, subdir: str, env_name: str) -> bool:
+        """Cheap filesystem check, a foreign environment counts once its marker exists."""
+        if self.is_native_platform(subdir):
+            return self.has_env(env_name)
+        return os.path.isfile(os.path.join(self.platform_env_path(subdir, env_name), PLATFORM_OK_MARKER))
+
+    def mark_platform_env_ok(self, subdir: str, env_name: str) -> None:
+        env_path = self.platform_env_path(subdir, env_name)
+        if not os.path.isdir(env_path):
+            return
+        try:
+            with open(os.path.join(env_path, PLATFORM_OK_MARKER), "w"):
+                pass
+        except OSError:
+            log.warning("Could not write platform marker in '%s'", env_path, exc_info=True)
+
+    def ensure_platform_bases(self) -> None:
+        """Create the conda base of every foreign platform that lacks one.
+
+        Failures are logged and never raised.
+        """
+        for subdir in self.foreign_platforms:
+            base = self.platform_prefix(subdir)
+            if os.path.exists(os.path.join(base, "conda-meta", "history")):
+                continue
+            log.info("Creating conda base for platform %s in %s, this may take several minutes.", subdir, base)
+            try:
+                os.makedirs(os.path.dirname(base), exist_ok=True)
+                args = ["--yes", "--platform", subdir, "-p", base]
+                args.extend(self._override_channels_args)
+                args.extend(["conda", "python"])
+                with tempfile.NamedTemporaryFile("r", suffix=".log") as out:
+                    ret = self.exec_command(
+                        "create", args, stdout_path=out.name, extra_env=self.platform_env_vars(subdir)
+                    )
+                    if ret != 0:
+                        log.warning(
+                            "Failed to create conda base for platform %s (exit code %s):\n%s",
+                            subdir,
+                            ret,
+                            out.read(),
+                        )
+            except Exception:
+                log.warning("Failed to create conda base for platform %s", subdir, exc_info=True)
+
+    def create_platform_environments(
+        self, env_name: str, specs: Iterable[str], allow_local: bool = True
+    ) -> dict[str, bool]:
+        """Create ``env_name`` on every foreign platform, after the native one.
+
+        A failure is logged as a warning and does not raise. Returns {subdir: success}.
+        """
+        specs = list(specs)
+        results: dict[str, bool] = {}
+        for subdir in self.foreign_platforms:
+            env_path = self.platform_env_path(subdir, env_name)
+            try:
+                with tempfile.NamedTemporaryFile("r", suffix=".log") as out:
+                    ret = self.exec_create(
+                        ["--platform", subdir, "-p", env_path] + specs,
+                        allow_local=allow_local,
+                        stdout_path=out.name,
+                        extra_env=self.platform_env_vars(subdir),
+                    )
+                    output = out.read()
+            except Exception:
+                log.warning("Failed to create conda environment %s for platform %s", env_name, subdir, exc_info=True)
+                ret, output = 1, ""
+            if ret == 0:
+                self.mark_platform_env_ok(subdir, env_name)
+                results[subdir] = True
+            else:
+                log.warning(
+                    "Could not create conda environment %s for platform %s (exit code %s):\n%s",
+                    env_name,
+                    subdir,
+                    ret,
+                    output,
+                )
+                shutil.rmtree(env_path, ignore_errors=True)
+                results[subdir] = False
+        return results
+
+    def remove_platform_environments(self, env_name: str) -> None:
+        for subdir in self.foreign_platforms:
+            shutil.rmtree(self.platform_env_path(subdir, env_name), ignore_errors=True)
 
     def has_env(self, env_name: str) -> bool:
         env_path = self.env_path(env_name)
@@ -551,6 +752,29 @@ def install_conda(conda_context: CondaContext, force_conda_build: bool = False) 
     return conda_context.exec_install(package_targets, allow_local=False)
 
 
+def _create_on_all_platforms(
+    conda_context: CondaContext,
+    env_name: str,
+    native_create_args: list[str],
+    specs: list[str],
+    allow_local: bool = True,
+) -> int:
+    """Create the named environment natively, then on each configured foreign platform.
+
+    Only the native exit code is returned, foreign failures are logged.
+    """
+    ret = conda_context.exec_create(native_create_args, allow_local=allow_local)
+    if ret == 0 and os.path.isdir(conda_context.env_path(env_name)):
+        try:
+            with open(os.path.join(conda_context.env_path(env_name), PLATFORM_OK_MARKER), "w"):
+                pass
+        except OSError:
+            log.warning("Could not write platform marker for environment %s", env_name, exc_info=True)
+    if ret == 0 and conda_context.platforms:
+        conda_context.create_platform_environments(env_name, specs, allow_local=allow_local)
+    return ret
+
+
 def install_conda_targets(
     conda_targets: Iterable[CondaTarget],
     conda_context: CondaContext,
@@ -565,9 +789,9 @@ def install_conda_targets(
             "--name",
             env_name,  # environment for package
         ]
-        for conda_target in conda_targets:
-            create_args.append(conda_target.package_specifier)
-        return conda_context.exec_create(create_args, allow_local=allow_local)
+        specs = [conda_target.package_specifier for conda_target in conda_targets]
+        create_args.extend(specs)
+        return _create_on_all_platforms(conda_context, env_name, create_args, specs, allow_local)
     else:
         return conda_context.exec_install([t.package_specifier for t in conda_targets], allow_local=allow_local)
 
@@ -584,7 +808,9 @@ def install_conda_target(conda_target: CondaTarget, conda_context: CondaContext,
             conda_target.install_environment,  # environment for package
             conda_target.package_specifier,
         ]
-        return conda_context.exec_create(create_args)
+        return _create_on_all_platforms(
+            conda_context, conda_target.install_environment, create_args, [conda_target.package_specifier]
+        )
     else:
         return conda_context.exec_install([conda_target.package_specifier])
 
@@ -753,6 +979,7 @@ __all__ = (
     "CondaContext",
     "CondaTarget",
     "install_conda",
+    "parse_platforms",
     "install_conda_target",
     "requirements_to_conda_targets",
     "split_version_build",

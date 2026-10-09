@@ -3,14 +3,20 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
+import json
 import logging
 import os
 import re
+from collections.abc import Iterable
 
 import galaxy.tool_util.deps.installable
 from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements,
+)
+from galaxy.util.filelock import (
+    FileLock,
+    FileLockException,
 )
 from . import (
     Dependency,
@@ -34,6 +40,7 @@ from ..conda_util import (
     install_conda_targets,
     installed_conda_targets,
     is_conda_target_installed,
+    parse_platforms,
     USE_PATH_EXEC_DEFAULT,
 )
 
@@ -90,8 +97,20 @@ class CondaDependencyResolver(
         "auto_init": True,
         "copy_dependencies": False,
         "use_local": False,
+        "platforms": None,
+        "platform_overrides": None,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
+
+    # Multi-platform support (all optional, unset keeps the single platform behaviour):
+    #
+    #   platforms:           comma separated string or list of conda subdirs (e.g. "linux-aarch64,osx-arm64"),
+    #                        global default is the ``conda_platforms`` config option. The native subdir is always
+    #                        implicitly included. Foreign environments live in
+    #                        <prefix>/platforms/<subdir>/envs/<env name>.
+    #   platform_overrides:  mapping subdir -> {environment variable: value} applied on top of the defaults
+    #                        (CONDA_OVERRIDE_GLIBC=2.17 for linux-*, CONDA_OVERRIDE_OSX=11.0 for osx-*), as a dict
+    #                        or a JSON string, e.g. {"linux-aarch64": {"CONDA_OVERRIDE_GLIBC": "2.28"}}.
 
     def __init__(self, dependency_manager, **kwds):
         read_only = _string_as_bool(kwds.get("read_only", "false"))
@@ -128,6 +147,9 @@ class CondaDependencyResolver(
         if ensure_channels is None:
             ensure_channels = DEFAULT_ENSURE_CHANNELS
 
+        platforms = parse_platforms(get_option("platforms"))
+        platform_overrides = _parse_platform_overrides(get_option("platform_overrides"))
+
         conda_context = CondaContext(
             conda_prefix=conda_prefix,
             conda_exec=conda_exec,
@@ -137,6 +159,8 @@ class CondaDependencyResolver(
             use_path_exec=use_path_exec,
             copy_dependencies=copy_dependencies,
             use_local=use_local,
+            platforms=platforms,
+            platform_overrides=platform_overrides,
         )
         self.use_local = use_local
         self.ensure_channels = ensure_channels
@@ -166,11 +190,25 @@ class CondaDependencyResolver(
             )
             if self.auto_init and not self._disabled:
                 self.conda_context.ensure_conda_build_installed_if_needed()
+                if self.conda_context.platforms:
+                    self._ensure_platform_bases()
         return self._disabled
 
     @disabled.setter
     def disabled(self, value: bool) -> None:
         self._disabled = value
+
+    def _ensure_platform_bases(self) -> None:
+        """Create the conda bases of foreign platforms, never failing Galaxy startup."""
+        parent_path = self.conda_context.parent_path
+        try:
+            if os.access(parent_path, os.W_OK):
+                with FileLock(os.path.join(parent_path, "conda-platforms"), timeout=300):
+                    self.conda_context.ensure_platform_bases()
+        except FileLockException:
+            log.warning("Failed to get file lock for creating conda platform bases")
+        except Exception:
+            log.warning("Failed to create conda platform bases", exc_info=True)
 
     def clean(self, **kwds):
         return self.conda_context.exec_clean()
@@ -191,6 +229,8 @@ class CondaDependencyResolver(
             env if not env.startswith(self.conda_context.envs_path) else os.path.basename(env) for env in environments
         ]
         return_codes = [self.conda_context.exec_remove([env]) for env in environments]
+        for env in environments:
+            self.conda_context.remove_platform_environments(env)
         final_return_code = 0
         for env, return_code in zip(environments, return_codes):
             if return_code == 0:
@@ -251,6 +291,29 @@ class CondaDependencyResolver(
 
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
+        platform = self._requested_foreign_platform(kwds)
+        if platform is not None:
+            # Foreign platforms are only ever populated alongside the native install, never on demand.
+            if platform is False:
+                return []
+            for capitalized_package_names in (True, False):
+                env = self.merged_environment_name(conda_targets, capitalized_package_names)
+                if self.conda_context.platform_has_env(platform, env):
+                    return [
+                        MergedCondaDependency(
+                            self.conda_context,
+                            self.conda_context.platform_env_path(platform, env),
+                            exact=not self.versionless or requirement.version is None,
+                            name=requirement.name,
+                            version=requirement.version,
+                            preserve_python_environment=preserve_python_environment,
+                            dependency_resolver=self,
+                            platform=platform,
+                        )
+                        for requirement in requirements
+                    ]
+            return []
+
         for capitalized_package_names in (True, False):
             env = self.merged_environment_name(conda_targets, capitalized_package_names)
             is_installed = self.conda_context.has_env(env)
@@ -308,6 +371,26 @@ class CondaDependencyResolver(
             version = None
 
         conda_target = CondaTarget(name, version=version)
+
+        platform = self._requested_foreign_platform(kwds)
+        if platform is not None:
+            # Foreign platforms are only ever populated alongside the native install, never on demand.
+            if platform is False:
+                return NullDependency(version=version, name=name)
+            for env_name in (conda_target.install_environment, conda_target.capitalized_install_environment):
+                if self.conda_context.platform_has_env(platform, env_name):
+                    return MergedCondaDependency(
+                        self.conda_context,
+                        self.conda_context.platform_env_path(platform, env_name),
+                        exact,
+                        name,
+                        version,
+                        preserve_python_environment=kwds.get("preserve_python_environment", False),
+                        dependency_resolver=self,
+                        platform=platform,
+                    )
+            return NullDependency(version=version, name=name)
+
         is_installed = is_conda_target_installed(conda_target, conda_context=self.conda_context)
 
         preserve_python_environment = kwds.get("preserve_python_environment", False)
@@ -344,6 +427,57 @@ class CondaDependencyResolver(
             version,
             preserve_python_environment=preserve_python_environment,
             dependency_resolver=self,
+        )
+
+    def _requested_foreign_platform(self, kwds):
+        """Interpret the ``platform`` keyword of a resolve call.
+
+        Returns None for the native platform (or no platform), the subdir for a configured
+        foreign platform and False for a platform that is not configured.
+        """
+        platform = kwds.get("platform")
+        if not platform:
+            return None
+        if self.conda_context.is_native_platform(platform):
+            return None
+        if platform in self.conda_context.platforms:
+            return platform
+        return False
+
+    def platforms_for_requirements(self, requirements: Iterable[ToolRequirement]) -> list[str]:
+        """Configured platforms (native first) on which all package requirements exist.
+
+        Only the filesystem is consulted. Without package requirements all configured platforms
+        are returned, without any configured platform the result is empty.
+        """
+        configured = self.conda_context.configured_platforms
+        if not configured or self.disabled:
+            return configured
+        targets: list[CondaTarget] = []
+        for requirement in requirements:
+            if requirement.type != "package":
+                continue
+            expanded = self._expand_requirement(requirement)
+            targets.append(CondaTarget(expanded.name, version=None if self.versionless else expanded.version))
+        if not targets:
+            return configured
+        result = []
+        for platform in configured:
+            if self._platform_has_targets(platform, targets):
+                result.append(platform)
+        return result
+
+    def _platform_has_targets(self, platform: str, targets: list[CondaTarget]) -> bool:
+        if len(targets) > 1:
+            for capitalized in (True, False):
+                if self.conda_context.platform_has_env(platform, self.merged_environment_name(targets, capitalized)):
+                    return True
+        return all(
+            any(
+                self.conda_context.platform_has_env(platform, env_name)
+                for env_name in (target.install_environment, target.capitalized_install_environment)
+            )
+            for target in targets
         )
 
     def _expand_requirement(self, requirement):
@@ -430,8 +564,10 @@ class MergedCondaDependency(Dependency):
         version: str | None = None,
         preserve_python_environment: bool = False,
         dependency_resolver: DependencyResolver | None = None,
+        platform: str | None = None,
     ) -> None:
-        self.activate = conda_context.activate
+        self.activate = conda_context.platform_activate(platform)
+        self.platform = platform
         self.conda_context = conda_context
         self.environment_path = environment_path
         self._exact = exact
@@ -541,6 +677,22 @@ class CondaDependency(Dependency):
             return f"""export PATH=$PATH:'{self.environment_path}/bin' """
         else:
             return CONDA_SOURCE_CMD.format(activate_path=self.activate, environment_path=self.environment_path)
+
+
+def _parse_platform_overrides(value) -> dict[str, dict[str, str]]:
+    """Accept a dict or a JSON string mapping subdir to a dict of environment variables."""
+    if not value:
+        return {}
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            log.warning("Ignoring invalid conda platform_overrides, expected JSON: %s", value)
+            return {}
+    if not isinstance(value, dict):
+        log.warning("Ignoring invalid conda platform_overrides, expected a mapping: %s", value)
+        return {}
+    return {str(k): dict(v) for k, v in value.items() if isinstance(v, dict)}
 
 
 def _string_as_bool(value):

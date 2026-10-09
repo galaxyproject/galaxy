@@ -8,7 +8,6 @@ import os.path
 import shutil
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -201,7 +200,12 @@ class DependencyManager:
     def precache(self):
         return string_as_bool(self.get_app_option("precache_dependencies", True))
 
-    def dependency_shell_commands(self, requirements: ToolRequirements, **kwds: Any) -> list[str]:
+    def dependency_shell_commands(
+        self, requirements: ToolRequirements, platform: str | None = None, **kwds: Any
+    ) -> list[str]:
+        """Shell commands activating the dependencies, optionally for a conda ``platform`` (subdir)."""
+        if platform:
+            kwds["platform"] = platform
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
         return [
@@ -210,12 +214,17 @@ class DependencyManager:
             if not isinstance(dependency, ContainerDependency)
         ]
 
-    def requirements_to_dependencies(self, requirements, **kwds):
+    def requirements_to_dependencies(self, requirements, platform: str | None = None, **kwds):
         """
         Takes a list of requirements and returns a dictionary
         with requirements as key and dependencies as value caching
         these on the tool instance if supplied.
+
+        ``platform`` is an optional conda subdir (e.g. linux-aarch64) that is passed on
+        to the resolvers, resolvers without platform support ignore it.
         """
+        if platform:
+            kwds["platform"] = platform
         requirement_to_dependency = self._requirements_to_dependencies_dict(requirements, **kwds)
 
         if "tool_instance" in kwds:
@@ -328,6 +337,20 @@ class DependencyManager:
 
         return requirement_to_dependency
 
+    def platforms_for_requirements(self, requirements: ToolRequirements) -> list[str]:
+        """Configured conda platforms (native first) on which all requirements are available.
+
+        Only filesystem checks are made. Empty if no conda platforms are configured.
+        """
+        result: list[str] = []
+        for resolver in self.dependency_resolvers:
+            if getattr(resolver, "resolver_type", None) != "conda":
+                continue
+            for platform in resolver.platforms_for_requirements(requirements):
+                if platform not in result:
+                    result.append(platform)
+        return result
+
     def uses_tool_shed_dependencies(self):
         return any(isinstance(r, ToolShedPackageDependencyResolver) for r in self.dependency_resolvers)
 
@@ -341,7 +364,7 @@ class DependencyManager:
             return NullDependency(name=name, version=version)
 
     def __build_dependency_resolvers_plugin_source(
-        self, conf_file: Optional["StrPath"]
+        self, conf_file: "StrPath" | None
     ) -> plugin_config.PluginConfigSource:
         if not conf_file:
             return self.__default_dependency_resolvers_source()
@@ -414,7 +437,7 @@ class CachedDependencyManager(DependencyManager):
                 return
         [dep.build_cache(hashed_dependencies_dir) for dep in cacheable_dependencies]
 
-    def dependency_shell_commands(self, requirements, **kwds):
+    def dependency_shell_commands(self, requirements, platform: str | None = None, **kwds):
         """
         Runs a set of requirements through the dependency resolvers and returns
         a list of commands required to activate the dependencies. If dependencies
@@ -422,6 +445,8 @@ class CachedDependencyManager(DependencyManager):
         If cached environment exists or is successfully created, will generate
         commands to activate it.
         """
+        if platform:
+            kwds["platform"] = platform
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
@@ -471,7 +496,10 @@ class NullDependencyManager(DependencyManager):
     def uses_tool_shed_dependencies(self):
         return False
 
-    def dependency_shell_commands(self, requirements, **kwds):
+    def dependency_shell_commands(self, requirements, platform=None, **kwds):
+        return []
+
+    def platforms_for_requirements(self, requirements):
         return []
 
     def find_dep(self, name, version=None, type="package", **kwds):
