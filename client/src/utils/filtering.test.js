@@ -4,258 +4,265 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { getHistoryListFilters } from "@/components/History/historyList";
 import Filtering, { contains, equals } from "@/utils/filtering";
 
-const filterTexts = [
-    "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
-    'name:"name of item" hid_gt:10 hid-lt:100 create_time-gt:"2021-01-01" update_time-lt:\'2022-01-01\' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true',
+const filterSyntaxCases = [
+    {
+        syntax: "comparison operators and single quotes",
+        text: "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
+        visible: "TRUE",
+    },
+    {
+        syntax: "comparison aliases and mixed quotes",
+        text: 'name:"name of item" hid_gt:10 hid-lt:100 create_time-gt:"2021-01-01" update_time-lt:\'2022-01-01\' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true',
+        visible: "true",
+    },
 ];
 const sampleFilters = [
     {
-        filters: {
-            deleted: "true",
-            visible: null,
-            invalid: "value",
-        },
-        validFilters: {
-            deleted: true,
-        },
-        invalidFilters: {
-            invalid: "value",
-            visible: null,
-        },
+        scenario: "boolean conversion with null and unknown filters",
+        filters: { deleted: "true", visible: null, invalid: "value" },
+        validFilters: { deleted: true },
+        invalidFilters: { invalid: "value", visible: null },
         validText: "deleted:true visible:any",
     },
     {
-        filters: {
-            deleted: "any",
-            related: 10,
-            hid_gt: 5,
-            hid_less_than: 20,
-        },
-        validFilters: {
-            deleted: "any",
-            related: 10,
-            hid_gt: 5,
-        },
-        invalidFilters: {
-            hid_less_than: 20,
-        },
+        scenario: "any and numeric filters with an unsupported comparison alias",
+        filters: { deleted: "any", related: 10, hid_gt: 5, hid_less_than: 20 },
+        validFilters: { deleted: "any", related: 10, hid_gt: 5 },
+        invalidFilters: { hid_less_than: 20 },
         validText: "deleted:any related:10 hid>5 visible:any",
     },
 ];
 
-describe("filtering", () => {
-    test("parse default filter", () => {
-        let queryDict = HistoryFilters.getQueryDict("");
-        expect(queryDict["deleted"]).toBe(false);
-        expect(queryDict["visible"]).toBe(true);
-        queryDict = HistoryFilters.getQueryDict("deleted:true");
-        expect(queryDict["deleted"]).toBe(true);
-        expect(queryDict["visible"]).toBeUndefined();
-        queryDict = HistoryFilters.getQueryDict("visible:false");
-        expect(queryDict["deleted"]).toBeUndefined;
-        expect(queryDict["visible"]).toBe(false);
-        queryDict = HistoryFilters.getQueryDict("extension:ext");
-        expect(queryDict["extension-eq"]).toBe("ext");
-        expect(queryDict["deleted"]).toBe(false);
-        expect(queryDict["visible"]).toBe(true);
+const expectedParsedFilters = {
+    name: "name of item",
+    hid_gt: "10",
+    hid_lt: "100",
+    create_time_gt: "2021-01-01",
+    update_time_lt: "2022-01-01",
+    state: "success",
+    extension: "ext",
+    tag: "first",
+    deleted: "false",
+    visible: "true",
+};
+
+const matchingHistoryItem = {
+    create_time: "2021-06-01",
+    extension: "ext",
+    deleted: false,
+    hid: 11,
+    name: "contains the name of item.",
+    state: "success",
+    tags: ["first", "second"],
+    update_time: "2021-06-01",
+    visible: true,
+};
+
+const localMatchCases = [
+    { scenario: "all filters match", overrides: {}, matches: true },
+    { scenario: "index at lower bound", overrides: { hid: 10 }, matches: false },
+    { scenario: "index at upper bound", overrides: { hid: 100 }, matches: false },
+    { scenario: "index below upper bound", overrides: { hid: 99 }, matches: true },
+    { scenario: "different state", overrides: { state: "error" }, matches: false },
+    { scenario: "creation date at lower bound", overrides: { create_time: "2021-01-01" }, matches: false },
+    { scenario: "creation date above lower bound", overrides: { create_time: "2021-01-02" }, matches: true },
+    { scenario: "update date at upper bound", overrides: { update_time: "2022-01-01" }, matches: false },
+    { scenario: "update date below upper bound", overrides: { update_time: "2021-12-31" }, matches: true },
+    { scenario: "missing required tag", overrides: { tags: ["second"] }, matches: false },
+    { scenario: "hidden item", overrides: { visible: false }, matches: false },
+    { scenario: "deleted item", overrides: { deleted: true }, matches: false },
+    { scenario: "non-true deleted value", overrides: { deleted: "nottrue" }, matches: true },
+];
+
+describe("history content filters", () => {
+    test.each([
+        ["empty search", "", { deleted: false, visible: true }],
+        ["explicit deleted flag", "deleted:true", { deleted: true }],
+        ["explicit visibility flag", "visible:false", { visible: false }],
+        ["non-default filter", "extension:ext", { "extension-eq": "ext", deleted: false, visible: true }],
+    ])("applies default filters for %s", (_scenario, text, expectedQuery) => {
+        // Exact equality also checks that explicitly setting one default does not insert the other.
+        expect(HistoryFilters.getQueryDict(text)).toEqual(expectedQuery);
     });
-    test("parse name filter", () => {
+
+    test("uses unspecified text as the name filter", () => {
         const filters = HistoryFilters.getFiltersForText("name of item");
-        expect(filters[0][0]).toBe("name");
-        expect(filters[0][1]).toBe("name of item");
-        const queryDict = HistoryFilters.getQueryDict("name of item");
-        expect(queryDict["name-contains"]).toBe("name of item");
+        expect(filters[0]).toEqual(["name", "name of item"]);
+        expect(HistoryFilters.getQueryDict("name of item")["name-contains"]).toBe("name of item");
     });
-    test("parse any for default parameters", () => {
-        const filters = HistoryFilters.getFiltersForText("deleted:any");
-        expect(filters.length).toBe(0);
-        const queryDict = HistoryFilters.getQueryDict("deleted:any");
-        expect(Object.keys(queryDict).length).toBe(0);
-        const filtersAny = HistoryFilters.getFiltersForText("name:any");
-        expect(filtersAny[0][0]).toBe("name");
-        expect(filtersAny[0][1]).toBe("any");
+
+    test("removes any from default filters but keeps it as a literal name", () => {
+        expect(HistoryFilters.getFiltersForText("deleted:any")).toEqual([]);
+        expect(HistoryFilters.getQueryDict("deleted:any")).toEqual({});
+        expect(HistoryFilters.getFiltersForText("name:any")[0]).toEqual(["name", "any"]);
     });
-    test("parse check filter", () => {
-        expect(HistoryFilters.checkFilter(filterTexts[0], "name", "name of item")).toBe(true);
-        expect(HistoryFilters.checkFilter(filterTexts[0], "tag", "first")).toBe(true);
-        expect(HistoryFilters.checkFilter(filterTexts[0], "tag", "second")).toBe(false);
-        expect(HistoryFilters.checkFilter(filterTexts[0], "deleted", "false")).toBe(true);
-        expect(HistoryFilters.checkFilter(filterTexts[0], "visible", true)).toBe(true);
-        expect(HistoryFilters.checkFilter(filterTexts[0], "visible", "false")).toBe(false);
+
+    test.each([
+        ["name", "name of item", true],
+        ["tag", "first", true],
+        ["tag", "second", false],
+        ["deleted", "false", true],
+        ["visible", true, true],
+        ["visible", "false", false],
+    ])("checks %s against %s: %s", (key, value, matches) => {
+        expect(HistoryFilters.checkFilter(filterSyntaxCases[0].text, key, value)).toBe(matches);
     });
-    test("parse get filter value", () => {
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "name")).toBe("name of item");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid_gt")).toBe("10");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid_lt")).toBe("100");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "tag")).toBe("first");
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "deleted")).toBe(false);
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "visible")).toBe(true);
-        expect(HistoryFilters.getFilterValue(filterTexts[0], "invalid")).toBe(undefined);
-        expect(HistoryFilters.getFilterValue(filterTexts[1], "hid_gt")).toBe("10");
-        expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time_gt")).toBe("2021-01-01");
-        expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time_gt", true)).toBe(1609459200);
-        expect(HistoryFilters.getFilterValue("", "deleted")).toBe(false);
-        expect(HistoryFilters.getFilterValue("", "visible")).toBe(true);
-        expect(HistoryFilters.getFilterValue("name_eq:Select", "name")).toBe(undefined);
-        expect(HistoryFilters.getFilterValue("name_eq:Select", "name_eq")).toBe("select");
+
+    test.each([
+        ["name", "name of item"],
+        ["hid_gt", "10"],
+        ["hid_lt", "100"],
+        ["tag", "first"],
+        ["deleted", false],
+        ["visible", true],
+        ["invalid", undefined],
+    ])("reads %s from operator syntax", (key, expectedValue) => {
+        expect(HistoryFilters.getFilterValue(filterSyntaxCases[0].text, key)).toBe(expectedValue);
     });
-    test("parse get valid filters and settings", () => {
-        sampleFilters.forEach((sample) => {
-            const { validFilters, invalidFilters } = HistoryFilters.getValidFilters(sample.filters);
-            expect(validFilters).toEqual(sample.validFilters);
-            expect(invalidFilters).toEqual(sample.invalidFilters);
-            expect(HistoryFilters.getFilterText(sample.filters)).toEqual(sample.validText);
+
+    test.each([
+        ["hid_gt", false, "10"],
+        ["create_time_gt", false, "2021-01-01"],
+        ["create_time_gt", true, 1609459200],
+    ])("reads %s from alias syntax with backend formatting %s", (key, backendFormatted, expectedValue) => {
+        expect(HistoryFilters.getFilterValue(filterSyntaxCases[1].text, key, backendFormatted)).toBe(expectedValue);
+    });
+
+    test.each([
+        ["deleted", false],
+        ["visible", true],
+    ])("reads the default %s from an empty search", (key, expectedValue) => {
+        expect(HistoryFilters.getFilterValue("", key)).toBe(expectedValue);
+    });
+
+    test.each([
+        ["name", undefined],
+        ["name_eq", "select"],
+    ])("reads %s from an explicit exact-name filter", (key, expectedValue) => {
+        expect(HistoryFilters.getFilterValue("name_eq:Select", key)).toBe(expectedValue);
+    });
+
+    test.each(sampleFilters)(
+        "validates and serializes $scenario",
+        ({ filters, validFilters, invalidFilters, validText }) => {
+            expect(HistoryFilters.getValidFilters(filters)).toEqual({ validFilters, invalidFilters });
+            expect(HistoryFilters.getFilterText(filters)).toBe(validText);
+        },
+    );
+
+    describe.each(filterSyntaxCases)("$syntax", ({ text, visible }) => {
+        test("parses normalized filter entries in their original order", () => {
+            expect(HistoryFilters.getFiltersForText(text)).toEqual(
+                Object.entries({ ...expectedParsedFilters, visible }),
+            );
+        });
+
+        test("converts filter entries to a query dictionary", () => {
+            const query = HistoryFilters.getQueryDict(text);
+            expect(query).toEqual({
+                "name-contains": "name of item",
+                "hid-gt": "10",
+                "hid-lt": "100",
+                "create_time-gt": 1609459200,
+                "update_time-lt": 1640995200,
+                "state-eq": "success",
+                "extension-eq": "ext",
+                tag: "first",
+                deleted: false,
+                visible: true,
+            });
+            expect(query["name-eq"]).toBeUndefined();
+        });
+
+        test("synchronizes parsed filter keys and values", () => {
+            expect(Object.fromEntries(HistoryFilters.getFiltersForText(text))).toEqual({
+                ...expectedParsedFilters,
+                visible,
+            });
+        });
+
+        test.each(localMatchCases)("matches a history item: $scenario", ({ overrides, matches }) => {
+            const filters = HistoryFilters.getFiltersForText(text);
+            expect(HistoryFilters.testFilters(filters, { ...matchingHistoryItem, ...overrides })).toBe(matches);
         });
     });
-    test("parse filter text as entries", () => {
-        filterTexts.forEach((filterText, i) => {
-            const filters = HistoryFilters.getFiltersForText(filterText);
-            expect(filters[0][0]).toBe("name");
-            expect(filters[0][1]).toBe("name of item");
-            expect(filters[1][0]).toBe("hid_gt");
-            expect(filters[1][1]).toBe("10");
-            expect(filters[2][0]).toBe("hid_lt");
-            expect(filters[2][1]).toBe("100");
-            expect(filters[3][0]).toBe("create_time_gt");
-            expect(filters[3][1]).toBe("2021-01-01");
-            expect(filters[4][0]).toBe("update_time_lt");
-            expect(filters[4][1]).toBe("2022-01-01");
-            expect(filters[5][0]).toBe("state");
-            expect(filters[5][1]).toBe("success");
-            expect(filters[6][0]).toBe("extension");
-            expect(filters[6][1]).toBe("ext");
-            expect(filters[7][0]).toBe("tag");
-            expect(filters[7][1]).toBe("first");
-            expect(filters[8][0]).toBe("deleted");
-            expect(filters[8][1]).toBe("false");
-            expect(filters[9][0]).toBe("visible");
-            // filterTexts[0] quotes `visible:'TRUE'`, so its parsed value keeps the original
-            // case; filterTexts[1] uses the bare `visible:true`. toBool folds both downstream.
-            expect(filters[9][1]).toBe(i === 0 ? "TRUE" : "true");
-            const filters_eq = HistoryFilters.getFiltersForText('genome_build_eq:"hg19"');
-            expect(filters_eq[0][0]).toBe("genome_build_eq");
-            expect(filters_eq[0][1]).toBe("hg19");
-        });
+
+    test("parses an explicit exact genome-build filter", () => {
+        expect(HistoryFilters.getFiltersForText('genome_build_eq:"hg19"')[0]).toEqual(["genome_build_eq", "hg19"]);
     });
-    test("parse filter text as query dictionary", () => {
-        filterTexts.forEach((filterText) => {
-            const queryDict = HistoryFilters.getQueryDict(filterText);
-            // both fixtures quote the name (`name:'name of item'`) but the value has a space
-            expect(queryDict["name-contains"]).toBe("name of item");
-            expect(queryDict["name-eq"]).toBeUndefined();
-            expect(queryDict["hid-gt"]).toBe("10");
-            expect(queryDict["hid-lt"]).toBe("100");
-            expect(queryDict["create_time-gt"]).toBe(1609459200);
-            expect(queryDict["update_time-lt"]).toBe(1640995200);
-            expect(queryDict["state-eq"]).toBe("success");
-            expect(queryDict["extension-eq"]).toBe("ext");
-            expect(queryDict["tag"]).toBe("first");
-            expect(queryDict["deleted"]).toBe(false);
-            expect(queryDict["visible"]).toBe(true);
-        });
-        const queryDict = HistoryFilters.getQueryDict("name_eq:'name of item'");
-        expect(queryDict["name-eq"]).toBe("name of item");
+
+    test("routes an explicit exact-name filter to name-eq", () => {
+        expect(HistoryFilters.getQueryDict("name_eq:'name of item'")["name-eq"]).toBe("name of item");
     });
-    test("apply valid filters to existing filterText", () => {
-        expect(HistoryFilters.applyFiltersToText(sampleFilters[0].filters, "")).toEqual("deleted:true visible:true");
-        expect(HistoryFilters.applyFiltersToText(sampleFilters[1].filters, "")).toEqual(
-            "deleted:any visible:true related:10 hid>5",
-        );
-        expect(
-            HistoryFilters.applyFiltersToText(
-                { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
-                "",
-            ),
-        ).toEqual("hid<100 create_time>2021-01-01 state:success tag:first");
-        expect(
-            HistoryFilters.applyFiltersToText(
-                { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
-                filterTexts[0],
-                true,
-            ),
-        ).toEqual("name:'name of item' hid>10 update_time<2022-01-01 extension:ext");
-        expect(HistoryFilters.applyFiltersToText({ deleted: "any", visible: true }, "")).toEqual(
-            "deleted:any visible:true",
-        );
-        expect(HistoryFilters.applyFiltersToText({ deleted: "any" }, "deleted:any visible:true", true)).toEqual(
-            "visible:true deleted:any",
-        );
+
+    test.each([
+        {
+            scenario: "ignores invalid filters while converting a deleted flag",
+            filters: sampleFilters[0].filters,
+            text: "",
+            remove: false,
+            expected: "deleted:true visible:true",
+        },
+        {
+            scenario: "adds numeric filters alongside any and default visibility",
+            filters: sampleFilters[1].filters,
+            text: "",
+            remove: false,
+            expected: "deleted:any visible:true related:10 hid>5",
+        },
+        {
+            scenario: "adds comparison, state, and tag filters",
+            filters: { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
+            text: "",
+            remove: false,
+            expected: "hid<100 create_time>2021-01-01 state:success tag:first",
+        },
+        {
+            scenario: "removes only the specified filters from an existing search",
+            filters: { hid_lt: 100, create_time_gt: "2021-01-01", state: "success", tag: "first" },
+            text: filterSyntaxCases[0].text,
+            remove: true,
+            expected: "name:'name of item' hid>10 update_time<2022-01-01 extension:ext",
+        },
+        {
+            scenario: "keeps explicit any and visibility filters",
+            filters: { deleted: "any", visible: true },
+            text: "",
+            remove: false,
+            expected: "deleted:any visible:true",
+        },
+        {
+            scenario: "restores any when removing a default filter from an existing search",
+            filters: { deleted: "any" },
+            text: "deleted:any visible:true",
+            remove: true,
+            expected: "visible:true deleted:any",
+        },
+    ])("applies filters: $scenario", ({ filters, text, remove, expected }) => {
+        expect(HistoryFilters.applyFiltersToText(filters, text, remove)).toBe(expected);
     });
-    test("set a single valid filter to existing filterText", () => {
-        expect(HistoryFilters.setFilterValue("", "deleted", "any")).toEqual("deleted:any visible:true");
-        expect(HistoryFilters.setFilterValue("deleted:any visible:true", "deleted", "false")).toEqual("");
-        expect(HistoryFilters.setFilterValue("", "deleted", "true")).toEqual("deleted:true visible:true");
-        expect(HistoryFilters.setFilterValue("hid<299", "create_time_gt", "11-09-1981")).toEqual(
-            "hid<299 create_time>11-09-1981",
-        );
-        expect(HistoryFilters.setFilterValue("hid<299", "create_time_lt", "11-09-1981")).toEqual(
-            "hid<299 create_time<11-09-1981",
-        );
-        expect(HistoryFilters.setFilterValue("hid<299", "a_created_time_gt", "11-09-1981")).toEqual("hid<299");
+
+    test.each([
+        ["", "deleted", "any", "deleted:any visible:true"],
+        ["deleted:any visible:true", "deleted", "false", ""],
+        ["", "deleted", "true", "deleted:true visible:true"],
+        ["hid<299", "create_time_gt", "11-09-1981", "hid<299 create_time>11-09-1981"],
+        ["hid<299", "create_time_lt", "11-09-1981", "hid<299 create_time<11-09-1981"],
+        ["hid<299", "a_created_time_gt", "11-09-1981", "hid<299"],
+    ])("sets %s: %s=%s -> %s", (text, key, value, expectedText) => {
+        expect(HistoryFilters.setFilterValue(text, key, value)).toBe(expectedText);
     });
-    test("validate filtering of a history item", () => {
-        const item = {
-            create_time: "2021-06-01",
-            extension: "ext",
-            deleted: false,
-            hid: 11,
-            name: "contains the name of item.",
-            state: "success",
-            tags: ["first", "second"],
-            update_time: "2021-06-01",
-            visible: true,
-        };
-        filterTexts.forEach((filterText) => {
-            const filters = HistoryFilters.getFiltersForText(filterText);
-            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
-            expect(HistoryFilters.testFilters(filters, { ...item, hid: 10 })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, hid: 100 })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, hid: 99 })).toBe(true);
-            expect(HistoryFilters.testFilters(filters, { ...item, state: "error" })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, create_time: "2021-01-01" })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, create_time: "2021-01-02" })).toBe(true);
-            expect(HistoryFilters.testFilters(filters, { ...item, update_time: "2022-01-01" })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, update_time: "2021-12-31" })).toBe(true);
-            expect(HistoryFilters.testFilters(filters, { ...item, tags: ["second"] })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, visible: false })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, deleted: true })).toBe(false);
-            expect(HistoryFilters.testFilters(filters, { ...item, deleted: "nottrue" })).toBe(true);
-        });
+
+    test.each([
+        ["tag:#test", "#test"],
+        ["tag:'#test me'", "#test me"],
+        ['tag:"#test me"', "#test me"],
+    ])("parses a named tag from %s", (text, value) => {
+        expect(HistoryFilters.getFiltersForText(text)[0]).toEqual(["tag", value]);
     });
-    test("Parsing & sync of filters", () => {
-        // Expected parsed filters
-        const parsedFilters = {
-            name: "name of item",
-            hid_gt: "10",
-            hid_lt: "100",
-            create_time_gt: "2021-01-01",
-            update_time_lt: "2022-01-01",
-            state: "success",
-            extension: "ext",
-            tag: "first",
-            deleted: "false",
-            visible: "true",
-        };
-        // iterate through filterTexts and compare with parsedFilters. filterTexts[0] quotes
-        // `visible:'TRUE'`, so its parsed value keeps the original case (see the quoted-value
-        // block below); everything else folds the same either way.
-        filterTexts.forEach((filterText, i) => {
-            const expected = i === 0 ? { ...parsedFilters, visible: "TRUE" } : parsedFilters;
-            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(expected);
-        });
-    });
-    test("named tag (hash) conversion", () => {
-        const filters = HistoryFilters.getFiltersForText("tag:#test");
-        expect(filters[0][0]).toBe("tag");
-        expect(filters[0][1]).toBe("#test");
-        const filtersQuote = HistoryFilters.getFiltersForText("tag:'#test me'");
-        expect(filtersQuote[0][0]).toBe("tag");
-        expect(filtersQuote[0][1]).toBe("#test me");
-        const filtersQuoteDouble = HistoryFilters.getFiltersForText('tag:"#test me"');
-        expect(filtersQuoteDouble[0][0]).toBe("tag");
-        expect(filtersQuoteDouble[0][1]).toBe("#test me");
-        const queryDict = HistoryFilters.getQueryDict("tag:#test");
-        expect(queryDict["tag"]).toBe("name:test");
+
+    test("converts a hash-prefixed tag to a backend name tag", () => {
+        expect(HistoryFilters.getQueryDict("tag:#test")["tag"]).toBe("name:test");
     });
 });
 
@@ -268,7 +275,7 @@ describe("filtering", () => {
 describe("quoted filter values (case preserved, grouped, not routed to _eq)", () => {
     // A filter set with a `name`/`name_eq` sibling pair and no default filters, so the
     // parsed output isn't padded with `deleted`/`visible` defaults.
-    const F = new Filtering(
+    const filters = new Filtering(
         {
             name: { type: String, handler: contains("name"), menuItem: true },
             name_eq: { handler: equals("name"), menuItem: false },
@@ -279,51 +286,51 @@ describe("quoted filter values (case preserved, grouped, not routed to _eq)", ()
     );
 
     test("getFiltersForText keeps original case for quoted values, folds unquoted", () => {
-        expect(Object.fromEntries(F.getFiltersForText("name:'GREP'"))).toEqual({ name: "GREP" });
-        expect(Object.fromEntries(F.getFiltersForText("name:GREP"))).toEqual({ name: "grep" });
-        expect(Object.fromEntries(F.getFiltersForText('name:"GREP"'))).toEqual({ name: "GREP" });
+        expect(Object.fromEntries(filters.getFiltersForText("name:'GREP'"))).toEqual({ name: "GREP" });
+        expect(Object.fromEntries(filters.getFiltersForText("name:GREP"))).toEqual({ name: "grep" });
+        expect(Object.fromEntries(filters.getFiltersForText('name:"GREP"'))).toEqual({ name: "GREP" });
     });
 
     test("getFiltersForText strips the surrounding quotes from the stored value", () => {
-        const [[, value]] = F.getFiltersForText("name:'GREP'");
+        const [[, value]] = filters.getFiltersForText("name:'GREP'");
         expect(value).toBe("GREP");
         expect(value).not.toContain("'");
     });
 
     test("getQueryDict keeps a quoted keyed value on the normal -contains handler", () => {
         // quoted -> case preserved, but still `-contains`
-        expect(F.getQueryDict("name:'GREP'")).toEqual({ "name-contains": "GREP" });
+        expect(filters.getQueryDict("name:'GREP'")).toEqual({ "name-contains": "GREP" });
         // unquoted -> case-insensitive substring, lowercased
-        expect(F.getQueryDict("name:GREP")).toEqual({ "name-contains": "grep" });
+        expect(filters.getQueryDict("name:GREP")).toEqual({ "name-contains": "grep" });
     });
 
     test("getQueryDict routes the explicit name_eq: key to an exact match", () => {
-        expect(F.getQueryDict("name_eq:GREP")).toEqual({ "name-eq": "grep" });
-        expect(F.getQueryDict("name_eq:'GREP'")).toEqual({ "name-eq": "GREP" });
+        expect(filters.getQueryDict("name_eq:GREP")).toEqual({ "name-eq": "grep" });
+        expect(filters.getQueryDict("name_eq:'GREP'")).toEqual({ "name-eq": "GREP" });
     });
 
     test("getQueryString emits the case-preserved, still-contains query", () => {
-        expect(F.getQueryString("name:'GREP'")).toBe("q=name-contains&qv=GREP");
-        expect(F.getQueryString("name:grep")).toBe("q=name-contains&qv=grep");
+        expect(filters.getQueryString("name:'GREP'")).toBe("q=name-contains&qv=GREP");
+        expect(filters.getQueryString("name:grep")).toBe("q=name-contains&qv=grep");
     });
 
     test("a quoted value with no _eq sibling still strips quotes and preserves case", () => {
-        expect(F.getQueryDict("state:'OK'")).toEqual({ "state-eq": "OK" });
+        expect(filters.getQueryDict("state:'OK'")).toEqual({ "state-eq": "OK" });
     });
 
     test("getFilterText re-serializes a quoted single-word value unquoted", () => {
         // the quotes carried no distinct meaning once parsed, so they don't come back
-        expect(F.getFilterText({ name: "GREP" }, false, "name:'GREP'")).toBe("name:GREP");
-        expect(F.getFilterText({ name: "grep" }, false, "name:grep")).toBe("name:grep");
+        expect(filters.getFilterText({ name: "GREP" }, false, "name:'GREP'")).toBe("name:GREP");
+        expect(filters.getFilterText({ name: "grep" }, false, "name:grep")).toBe("name:grep");
     });
 
     test("getFilterText keeps quoting values that contain a space", () => {
-        expect(F.getFilterText({ name: "name of item" })).toBe("name:'name of item'");
+        expect(filters.getFilterText({ name: "name of item" })).toBe("name:'name of item'");
     });
 
     test("getFilterValue returns the case-preserved value for a quoted filter", () => {
-        expect(F.getFilterValue("name:'GREP'", "name")).toBe("GREP");
-        expect(F.getFilterValue("name:grep", "name")).toBe("grep");
+        expect(filters.getFilterValue("name:'GREP'", "name")).toBe("GREP");
+        expect(filters.getFilterValue("name:grep", "name")).toBe("grep");
     });
 
     test("local testFilters matching is unaffected by quoting (stays case-insensitive)", () => {
@@ -342,11 +349,11 @@ describe("quoted filter values (case preserved, grouped, not routed to _eq)", ()
 /**
  * A single quoted bare token (`'Grep1'` typed on its own, with no `key:`) is an exact-match
  * request for the `autoFilterKey`: the quotes are stripped from the folded value, and the query
- * routes through the `_eq` handler like a keyed quoted value would. An unquoted bare token, or
+ * routes through the `_eq` handler. An unquoted bare token, or
  * more than one bare token, stays a plain case-insensitive substring search.
  */
 describe("a lone quoted bare token routes autoFilterKey through exact match", () => {
-    const F = new Filtering(
+    const filters = new Filtering(
         {
             search: { type: String, handler: contains("search"), menuItem: true },
             search_eq: { handler: equals("search"), menuItem: false },
@@ -357,31 +364,31 @@ describe("a lone quoted bare token routes autoFilterKey through exact match", ()
     );
 
     test("getFiltersForText strips the quotes when folding into autoFilterKey", () => {
-        expect(Object.fromEntries(F.getFiltersForText("'Grep1'"))).toEqual({ search: "Grep1" });
+        expect(Object.fromEntries(filters.getFiltersForText("'Grep1'"))).toEqual({ search: "Grep1" });
         // an unquoted bare token is folded verbatim (the backend lowercases a `-contains` search)
-        expect(Object.fromEntries(F.getFiltersForText("Grep1"))).toEqual({ search: "Grep1" });
+        expect(Object.fromEntries(filters.getFiltersForText("Grep1"))).toEqual({ search: "Grep1" });
     });
 
     test("getQueryDict routes the lone quoted bare token to the _eq handler", () => {
-        expect(F.getQueryDict("'Grep1'")).toEqual({ "search-eq": "Grep1" });
-        expect(F.getQueryDict("Grep1")).toEqual({ "search-contains": "Grep1" });
+        expect(filters.getQueryDict("'Grep1'")).toEqual({ "search-eq": "Grep1" });
+        expect(filters.getQueryDict("Grep1")).toEqual({ "search-contains": "Grep1" });
     });
 
     test("more than one bare token is a plain search, not an exact match", () => {
-        expect(F.getQueryDict("foo 'Grep1'")["search-eq"]).toBeUndefined();
+        expect(filters.getQueryDict("foo 'Grep1'")["search-eq"]).toBeUndefined();
     });
 
     test("getFilterText writes the folded value back unlabeled, keeping its exact-match quotes", () => {
-        expect(F.getFilterText({ search: "Grep1" }, false, "'Grep1'")).toBe("'Grep1'");
+        expect(filters.getFilterText({ search: "Grep1" }, false, "'Grep1'")).toBe("'Grep1'");
         // an unquoted bare token stays unquoted
-        expect(F.getFilterText({ search: "Grep1" }, false, "Grep1")).toBe("Grep1");
+        expect(filters.getFilterText({ search: "Grep1" }, false, "Grep1")).toBe("Grep1");
     });
 
     test("the exact-match quotes survive applying another filter alongside the bare token", () => {
         // regression: the `key === unspecifiedTextKey` branch used to write the value before the
         // quoting could be applied, so adding a sibling filter silently dropped the exact match
         // (JobsFilters uses this shape: quoted bare text for an exact tool search, plus state:)
-        const cf = new Filtering(
+        const filtersWithState = new Filtering(
             {
                 search: { type: String, handler: contains("search"), menuItem: true },
                 search_eq: { handler: equals("search"), menuItem: false },
@@ -391,12 +398,12 @@ describe("a lone quoted bare token routes autoFilterKey through exact match", ()
             true,
             "search",
         );
-        expect(cf.applyFiltersToText({ state: "ok" }, "'Grep1'")).toBe("'Grep1' state:ok");
+        expect(filtersWithState.applyFiltersToText({ state: "ok" }, "'Grep1'")).toBe("'Grep1' state:ok");
     });
 });
 
 describe("quote matching + unspecified text + autoFilterKey combined (JobsFilters-shaped)", () => {
-    const JF = new Filtering(
+    const jobFilters = new Filtering(
         {
             tool_id: { type: String, handler: contains("tool_id"), menuItem: true },
             tool_id_eq: { handler: equals("tool_id"), menuItem: false },
@@ -408,41 +415,41 @@ describe("quote matching + unspecified text + autoFilterKey combined (JobsFilter
     );
 
     test("unquoted unspecified text is a plain, case-folded contains search", () => {
-        expect(JF.getQueryDict("grep1")).toEqual({ "tool_id-contains": "grep1" });
+        expect(jobFilters.getQueryDict("grep1")).toEqual({ "tool_id-contains": "grep1" });
     });
 
     test("an explicit key:value stays -contains even when quoted", () => {
-        expect(JF.getQueryDict("tool_id:foo")).toEqual({ "tool_id-contains": "foo" });
-        expect(JF.getQueryDict("tool_id:'Foo'")).toEqual({ "tool_id-contains": "Foo" });
+        expect(jobFilters.getQueryDict("tool_id:foo")).toEqual({ "tool_id-contains": "foo" });
+        expect(jobFilters.getQueryDict("tool_id:'Foo'")).toEqual({ "tool_id-contains": "Foo" });
     });
 
     test("the explicit tool_id_eq: key requests an exact match", () => {
-        expect(JF.getQueryDict("tool_id_eq:Foo")).toEqual({ "tool_id-eq": "foo" });
+        expect(jobFilters.getQueryDict("tool_id_eq:Foo")).toEqual({ "tool_id-eq": "foo" });
     });
 
     test("a quoted bare multi-word token is still an exact match (autoFilterKey's own syntax)", () => {
-        expect(JF.getQueryDict("'Advanced Cut'")).toEqual({ "tool_id-eq": "Advanced Cut" });
+        expect(jobFilters.getQueryDict("'Advanced Cut'")).toEqual({ "tool_id-eq": "Advanced Cut" });
     });
 
     test("a quoted bare token is an exact match, case preserved", () => {
-        expect(JF.getQueryDict("'Grep1'")).toEqual({ "tool_id-eq": "Grep1" });
+        expect(jobFilters.getQueryDict("'Grep1'")).toEqual({ "tool_id-eq": "Grep1" });
     });
 
     test("adding state: alongside a quoted bare token keeps the exact match (regression)", () => {
-        const text = JF.applyFiltersToText({ state: "ok" }, "'Grep1'");
+        const text = jobFilters.applyFiltersToText({ state: "ok" }, "'Grep1'");
         expect(text).toBe("'Grep1' state:ok");
-        expect(JF.getQueryDict(text)).toEqual({ "tool_id-eq": "Grep1", "state-eq": "ok" });
+        expect(jobFilters.getQueryDict(text)).toEqual({ "tool_id-eq": "Grep1", "state-eq": "ok" });
     });
 
     test("adding state: alongside an unquoted bare token stays a plain search", () => {
-        const text = JF.applyFiltersToText({ state: "ok" }, "grep1");
+        const text = jobFilters.applyFiltersToText({ state: "ok" }, "grep1");
         expect(text).toBe("grep1 state:ok");
-        expect(JF.getQueryDict(text)).toEqual({ "tool_id-contains": "grep1", "state-eq": "ok" });
+        expect(jobFilters.getQueryDict(text)).toEqual({ "tool_id-contains": "grep1", "state-eq": "ok" });
     });
 
     test("unspecified text alongside an explicit key:value does not itself become an exact match", () => {
         // two bare/keyed tokens for the same autoFilterKey -- only a LONE quoted bare token is exact
-        expect(JF.getQueryDict("grep1 tool_id:foo")["tool_id-eq"]).toBeUndefined();
+        expect(jobFilters.getQueryDict("grep1 tool_id:foo")["tool_id-eq"]).toBeUndefined();
     });
 });
 
