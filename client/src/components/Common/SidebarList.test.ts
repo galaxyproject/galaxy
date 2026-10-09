@@ -1,5 +1,6 @@
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { nth } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import SidebarList from "./SidebarList.vue";
 
@@ -14,8 +15,12 @@ const ITEMS: TestItem[] = [
     { id: 3, label: "Gamma" },
 ];
 
-function mountList(props: Record<string, unknown> = {}) {
-    return mount(SidebarList as any, {
+enableAutoUnmount(afterEach);
+
+type Props = InstanceType<typeof SidebarList>["$props"];
+
+function mountList(props: Partial<Props> = {}) {
+    return mount(SidebarList, {
         props: {
             items: ITEMS,
             isLoading: false,
@@ -97,9 +102,9 @@ describe("SidebarList", () => {
         it("renders scoped slot content with correct item and index", () => {
             const wrapper = mountList();
             const items = wrapper.findAll("[data-description='sidebar item']");
-            expect(items.at(0)!.text()).toContain("Alpha-0");
-            expect(items.at(1)!.text()).toContain("Beta-1");
-            expect(items.at(2)!.text()).toContain("Gamma-2");
+            expect(nth(items, 0).text()).toContain("Alpha-0");
+            expect(nth(items, 1).text()).toContain("Beta-1");
+            expect(nth(items, 2).text()).toContain("Gamma-2");
         });
 
         it("does not render loading or empty states", () => {
@@ -113,30 +118,27 @@ describe("SidebarList", () => {
         it("emits select with item, index, and event on click", async () => {
             const wrapper = mountList();
             const items = wrapper.findAll("[data-description='sidebar item']");
-            await items.at(1)!.trigger("click");
+            await nth(items, 1).trigger("click");
 
-            const emitted = wrapper.emitted("select")!;
+            const emitted = wrapper.emitted("select");
             expect(emitted).toHaveLength(1);
-            expect(emitted[0]![0]).toEqual(ITEMS[1]);
-            expect(emitted[0]![1]).toBe(1);
-            expect(emitted[0]![2]).toBeInstanceOf(MouseEvent);
+            expect(nth(emitted, 0)).toEqual([ITEMS[1], 1, expect.any(MouseEvent)]);
         });
 
         it("emits select on Enter keydown", async () => {
             const wrapper = mountList();
             const items = wrapper.findAll("[data-description='sidebar item']");
-            await items.at(0)!.trigger("keydown", { key: "Enter" });
+            await nth(items, 0).trigger("keydown", { key: "Enter" });
 
-            const emitted = wrapper.emitted("select")!;
+            const emitted = wrapper.emitted("select");
             expect(emitted).toHaveLength(1);
-            expect(emitted[0]![0]).toEqual(ITEMS[0]);
-            expect(emitted[0]![1]).toBe(0);
+            expect(nth(emitted, 0)).toEqual([ITEMS[0], 0, expect.any(KeyboardEvent)]);
         });
 
         it("does not emit select on non-Enter keydown", async () => {
             const wrapper = mountList();
             const items = wrapper.findAll("[data-description='sidebar item']");
-            await items.at(0)!.trigger("keydown", { key: "Space" });
+            await nth(items, 0).trigger("keydown", { key: "Space" });
             expect(wrapper.emitted("select")).toBeFalsy();
         });
     });
@@ -165,9 +167,9 @@ describe("SidebarList", () => {
                 itemClass: (_item: TestItem, index: number) => ({ active: index === 1 }),
             });
             const items = wrapper.findAll("[data-description='sidebar item']");
-            expect(items.at(0)!.classes()).not.toContain("active");
-            expect(items.at(1)!.classes()).toContain("active");
-            expect(items.at(2)!.classes()).not.toContain("active");
+            expect(nth(items, 0).classes()).not.toContain("active");
+            expect(nth(items, 1).classes()).toContain("active");
+            expect(nth(items, 2).classes()).not.toContain("active");
         });
 
         it("applies string class from itemClass function", () => {
@@ -175,8 +177,8 @@ describe("SidebarList", () => {
                 itemClass: (_item: TestItem, index: number) => (index === 0 ? "first" : undefined),
             });
             const items = wrapper.findAll("[data-description='sidebar item']");
-            expect(items.at(0)!.classes()).toContain("first");
-            expect(items.at(1)!.classes()).not.toContain("first");
+            expect(nth(items, 0).classes()).toContain("first");
+            expect(nth(items, 1).classes()).not.toContain("first");
         });
     });
 });
