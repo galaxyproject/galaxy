@@ -50,7 +50,8 @@ dependencies = [
     "ijson",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
     "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
-    "isal>=1.7.0",  # Python 3.13 support
+    "isal>=1.7.0",
+    "isal>=1.8.0; python_version >= '3.14'",  # Wheels for Python 3.14 and newer
     "jinja2",
     "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
     "lagom",
@@ -274,7 +275,16 @@ extra-index-url = ["https://wheels.galaxyproject.org/simple"]
 index-strategy = "unsafe-best-match"
 package = false
 
+# Galaxy's index carries isal 1.8.0 wheels for Python 3.15 only. Select PyPI
+# explicitly on earlier Python versions so those wheels do not shadow PyPI's
+# wheels for the same release.
+[[tool.uv.index]]
+name = "isal-pypi"
+url = "https://pypi.org/simple"
+explicit = true
+
 [tool.uv.sources]
+isal = { index = "isal-pypi", marker = "python_version < '3.15'" }
 galaxy-auth = { workspace = true }
 galaxy-config = { workspace = true }
 galaxy-data = { workspace = true }
