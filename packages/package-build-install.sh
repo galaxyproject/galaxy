@@ -8,7 +8,6 @@
 set -euo pipefail
 
 : "${PACKAGE_LIST_FILE:=packages_by_dep_dag.txt}"
-: "${PIP_EXTRA_ARGS:=--extra-index-url https://wheels.galaxyproject.org}"
 #: ${SETUP_VENV:=true}
 
 INSTALL=true
@@ -16,18 +15,53 @@ EDITABLE=false
 META=false
 WHEELHOUSE=
 
-if command -v uv >/dev/null; then
-    VENV_CMD="$(command -v uv) venv"
-    PIP_CMD="$(command -v uv) pip"
-else
-    VENV_CMD='python3 -m venv'
-    PIP_CMD='pip'
+# Use one environment for package build dependencies and the installed Galaxy.
+: "${VENV=../.venv}"
+case "$VENV" in
+    /*) ;;
+    *) VENV="$(pwd)/$VENV" ;;
+esac
+export VENV
+
+if [ -z "${PIP_EXTRA_ARGS:-}" ]; then
+    if command -v uv >/dev/null; then
+        PIP_EXTRA_ARGS="--index-strategy unsafe-best-match --extra-index-url https://wheels.galaxyproject.org/simple"
+    else
+        PIP_EXTRA_ARGS="--extra-index-url https://wheels.galaxyproject.org/simple"
+    fi
 fi
 
-# Prevent making a venv for build deps for each package, Used inside the package dir, so refers to
-# <source_root>/packages/.venv
-: "${VENV=../.venv}"
-export VENV
+ensure_venv() {
+    if [ ! -d "$VENV" ]; then
+        if command -v uv >/dev/null; then
+            uv venv "$VENV"
+        else
+            python3 -m venv "$VENV"
+        fi
+    fi
+}
+
+pip_install() {
+    ensure_venv
+    if command -v uv >/dev/null; then
+        uv pip install --python "$VENV/bin/python" "$@"
+    else
+        "$VENV/bin/python" -m pip install "$@"
+    fi
+}
+
+build_release_packages() {
+    if command -v galaxy-release-util >/dev/null && galaxy-release-util --help >/dev/null 2>&1; then
+        galaxy-release-util build --galaxy-root ..
+    elif command -v uvx >/dev/null; then
+        local release_util_requirement
+        release_util_requirement=$(grep '^galaxy-release-util==' ../lib/galaxy/dependencies/dev-requirements.txt)
+        uvx --from "$release_util_requirement" galaxy-release-util build --galaxy-root ..
+    else
+        echo "ERROR: galaxy-release-util is required to build the Galaxy metapackage." >&2
+        exit 1
+    fi
+}
 
 trap_handler() {
     if [ -n "$WHEELHOUSE" ]; then
@@ -70,30 +104,34 @@ if [ -n "$up_to" ] && [ ! -d "$up_to" ]; then
     exit 1
 fi
 
-while read -r package; do
-    [ -n "$package" ] || continue
-    if $INSTALL && [[ $package == meta ]] && ! $META; then continue; fi
-    printf "\n========= PACKAGE %s =========\n\n" "$package"
-    pushd "$package"
-    if $EDITABLE; then
-        ${PIP_CMD} install -e .
-    else
-        if [ ! -d "$VENV" ]; then
-            ${VENV_CMD} "$VENV"
-            VIRTUAL_ENV="${VENV}" ${PIP_CMD} install -r dev-requirements.txt
+if $META && ! $EDITABLE; then
+    build_release_packages
+else
+    while read -r package; do
+        [ -n "$package" ] || continue
+        if $INSTALL && [[ $package == meta ]] && ! $META; then continue; fi
+        printf "\n========= PACKAGE %s =========\n\n" "$package"
+        pushd "$package"
+        if $EDITABLE; then
+            pip_install -e .
+        else
+            if [ ! -d "$VENV" ]; then
+                ensure_venv
+                pip_install -r dev-requirements.txt
+            fi
+            make dist
+            if $INSTALL && ! $META; then
+                pip_install dist/*.whl
+            fi
         fi
-        make dist
-        if $INSTALL && ! $META; then
-            ${PIP_CMD} install dist/*.whl
-        fi
-    fi
-    popd
-    [ "$package" != "$up_to" ] || exit
-done < "$PACKAGE_LIST_FILE"
+        popd
+        [ "$package" != "$up_to" ] || exit
+    done < "$PACKAGE_LIST_FILE"
+fi
 
 if $INSTALL && $META && ! $EDITABLE; then
     WHEELHOUSE=$(mktemp -d -t gxpkgwheelhouseXXXXXX)
     cp ./*/dist/*.whl "$WHEELHOUSE"
     # shellcheck disable=SC2086
-    ${PIP_CMD} install ${PIP_EXTRA_ARGS} --find-links "$WHEELHOUSE" meta/dist/*.whl
+    pip_install ${PIP_EXTRA_ARGS} --find-links "$WHEELHOUSE" meta/dist/*.whl
 fi

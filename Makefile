@@ -214,6 +214,9 @@ update-navigation-schema: client-node-deps
 install-client: ## Install prebuilt client wheel from PyPI matching the current Galaxy version
 	$(IN_VENV) pip install "galaxy-web-client==$$(PYTHONPATH=lib python -c 'from galaxy.version import VERSION; print(VERSION)')"
 
+install-packages: ## Build and install Galaxy packages from this checkout into VENV
+	cd packages && VENV="$(abspath $(VENV))" ./package-build-install.sh -m
+
 client: client-node-deps ## Rebuild client-side artifacts for local development.
 	$(IN_VENV) cd client && $(NODE_ENV) pnpm run build
 
