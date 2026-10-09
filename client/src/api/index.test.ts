@@ -1,4 +1,4 @@
-import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeHistorySummary, getFakeHistorySummaryExtended, getFakeRegisteredUser } from "@tests/test-data";
 import { describe, expect, it } from "vitest";
 
 import { type AnonymousUser, type HistorySummaryExtended, isAnonymousUser, isRegisteredUser, userOwnsHistory } from ".";
@@ -18,14 +18,12 @@ const historySummary = getFakeHistorySummary({
 });
 
 function historyWithOwner(user_id: string | null, id = "1234"): HistorySummaryExtended {
-    return {
+    return getFakeHistorySummaryExtended({
         ...historySummary,
         id,
         url: `/history/${id}`,
-        contents_active: { active: 0, deleted: 0, hidden: 0 },
-        size: 0,
         user_id,
-    };
+    });
 }
 
 const registeredUsersHistory = historyWithOwner("fake-user-id");
