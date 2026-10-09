@@ -17,7 +17,7 @@ describe("parseSampleSheetValue", () => {
         ["boolean", "TRUE", true],
         ["boolean", false, false],
         ["string", "treated 1", "treated 1"],
-        ["element_identifier", "sample.1", "sample.1"],
+        ["element_identifier", "sample 1", "sample 1"],
     ] as const)("parses a %s column's %j as %j", (type, input, expected) => {
         expect(parseSampleSheetValue(input, column(type))).toEqual({ valid: true, value: expected });
     });
@@ -30,6 +30,7 @@ describe("parseSampleSheetValue", () => {
         ["float", "1abc"],
         ["boolean", "yes"],
         ["string", "a/b"],
+        ["element_identifier", "sample.1"],
     ] as const)("rejects a %s column's %j", (type, input) => {
         expect(parseSampleSheetValue(input, column(type))).toEqual({ valid: false });
     });

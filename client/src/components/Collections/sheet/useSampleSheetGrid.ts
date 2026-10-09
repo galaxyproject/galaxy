@@ -80,7 +80,6 @@ export function parseSampleSheetValue(
             return lower === "true" || lower === "false" ? valid(lower === "true") : INVALID;
         }
         case "element_identifier":
-            return valid(text);
         case "string":
         default:
             return /^[\w\-_ ?]*$/.test(text) ? valid(text) : INVALID;
