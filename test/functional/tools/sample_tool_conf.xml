@@ -9,6 +9,8 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
+  <tool file="runtime_environment.xml" />
+  <tool file="runtime_environment_parallelism.xml" />
   <tool file="image_diff.xml" />
   <tool file="output_format_input.xml" />
   <tool file="ucsc_tablebrowser.xml" />

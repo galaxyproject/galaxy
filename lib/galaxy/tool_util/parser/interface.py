@@ -23,6 +23,7 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
     DirectCredential,
@@ -266,6 +267,10 @@ class ToolSource(metaclass=ABCMeta):
     def parse_tmp_directory_vars(self):
         """Directories to override if a tmp_target is not None."""
         return ["TMPDIR", "TMP", "TEMP"]
+
+    def parse_runtime_environment_variables(self) -> list[RuntimeEnvironmentVariable]:
+        """Runtime variable names consumed by an installed tool."""
+        return []
 
     def parse_docker_env_pass_through(self):
         return [

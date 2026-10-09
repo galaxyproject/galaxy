@@ -112,6 +112,79 @@ exec
 raw
 : Disable auto-quoting of values when setting up environment variables.
 
+#### Job and tool environment scopes
+
+`env` is the legacy alias for `job_env`. Both configure the job script environment.
+For local and cluster runners that wrap the tool command in Docker or Singularity,
+these entries are **not automatically injected into the tool container**. This
+legacy behavior is preserved for security reasons, so job-scoped variables are
+not exposed to tool containers by default.
+
+`tool_env` exports variables in the job script and explicitly forwards them into
+wrapped tool containers. It accepts only `name`/`value` entries and the optional
+`raw` flag; `file` and `execute` are rejected because Galaxy cannot know which
+names they define. Names must be valid shell variable names. For example:
+
+```yaml
+execution:
+  default: local_docker
+  environments:
+    local_docker:
+      runner: local
+      docker_enabled: true
+      job_env:
+        - name: HOST_SETTING
+          value: host_value
+      tool_env:
+        - name: _JAVA_OPTIONS
+          value: "-Xmx6G"
+```
+
+XML destinations accept sibling `<env>`, `<job_env>` and `<tool_env>` elements,
+using the same attributes:
+
+```xml
+<destination id="local_docker" runner="local">
+    <param id="docker_enabled">true</param>
+    <job_env id="HOST_SETTING">host_value</job_env>
+    <tool_env id="_JAVA_OPTIONS">-Xmx6G</tool_env>
+</destination>
+```
+
+All entries are exported in configuration order (XML element order, or YAML key
+and list order). If a name appears more than once, the later definition wins.
+On non-containerized destinations, both scopes reach the tool.
+
+Container-native runners, including Kubernetes and Pulsar coexecution, run the
+whole job script inside the tool container. Consequently `env`, `job_env` and
+`tool_env` all reach the tool. Galaxy warns at config load when `job_env` is
+configured for these runners; it cannot provide host/tool separation there.
+
+Installed tools can also declare `<runtime_environment_variable name="X"
+required="false" description="Runtime setting" />` under `<requirements>`.
+Galaxy forwards those names from the job environment regardless of how the value
+was set, including sourced files and executed setup commands. Installed YAML tools
+use a `runtime_environment_variables` list with `name`, `required` and `description`.
+User-defined tools cannot make these declarations. Reserved names and prefixes
+are listed in the tool schema documentation. Secret-looking names trigger a lint
+warning recommending `<credentials>`.
+
+Docker receives bare `-e NAME` arguments. With `docker_sudo`, sudo resets the
+environment, so set values are expanded on the host as `-e "NAME=value"` and no
+sudoers change is needed. Singularity/Apptainer receives
+`SINGULARITYENV_NAME` only when `NAME` is set. An empty string is set; an undefined
+variable is omitted. Missing required declared variables produce a warning on
+the job information page and an info-level log entry, without failing the job.
+Only variable names are recorded. Optional variables produce no warning.
+
+Prefer `tool_env` for variables consumed by tools. Setting them through
+`<param id="docker_env_VARIABLE">VALUE</param>` or
+`<param id="singularity_env_VARIABLE">VALUE</param>` is a supported anti-pattern:
+it ties the configuration to a specific container runtime, so switching runtimes
+or running without a container can change the tool's environment. These params
+set values only inside the corresponding container runtime and override values
+forwarded from the job environment.
+
 Destinations may also specify other destinations (which may be dynamic destinations) that jobs should be resubmitted to if they fail to complete at the first destination for certain reasons. This is done with the `<resubmit>` tag contained within a `<destination>`.
 
 condition

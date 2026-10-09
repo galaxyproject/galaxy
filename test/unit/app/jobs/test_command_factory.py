@@ -251,6 +251,7 @@ tee -a '../outputs/tool_stderr' < "$__err" >&2 & """
 
 class MockJobWrapper:
     def __init__(self, job_dir):
+        self.tool = None
         self.strict_shell = False
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []

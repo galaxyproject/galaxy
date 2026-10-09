@@ -22895,6 +22895,34 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** RuntimeEnvironmentVariable */
+        RuntimeEnvironmentVariable: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        };
+        /** RuntimeEnvironmentWarningJobMessage */
+        RuntimeEnvironmentWarningJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /**
+             * Type
+             * @constant
+             */
+            type: "runtime_environment_warning";
+            /** Variable Names */
+            variable_names: string[];
+        };
         /** SampleSheetColumnDefinition */
         SampleSheetColumnDefinition: {
             /** Default Value */
@@ -23867,6 +23895,7 @@ export interface components {
                       | components["schemas"]["OutputCollectionSecurityJobMessage"]
                       | components["schemas"]["OutputDiscoveryJobMessage"]
                       | components["schemas"]["StdioReadErrorJobMessage"]
+                      | components["schemas"]["RuntimeEnvironmentWarningJobMessage"]
                   )[]
                 | null;
             /**
@@ -30018,6 +30047,11 @@ export interface components {
                       | components["schemas"]["ContainerRequirement"]
                   )[]
                 | null;
+            /**
+             * runtime_environment_variables
+             * @default []
+             */
+            runtime_environment_variables: components["schemas"]["RuntimeEnvironmentVariable"][];
             /**
              * shell_command
              * @description A string that contains the command to be executed. Reference inputs inside `$()` as `$(inputs.input_name)` for scalar values and `$(inputs.input_name.path)` for files; `${ ... }` evaluates a JavaScript function body that must return a value. Substituted values are not shell-quoted, so quote them yourself. Because `$(` and `${` are consumed by the expression evaluator, shell command substitution and braced parameter expansion do not reach the shell: escape them as `\$(` and `\${`, and prefer unbraced variables such as `$GALAXY_SLOTS`.
