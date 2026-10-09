@@ -434,6 +434,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def go_to_history_sharing(self, history_id: str) -> None:
         self.navigate_to(self.build_url(f"histories/sharing?id={history_id}"))
 
+    def go_to_collection_sheet(self, collection_id: str) -> None:
+        self.navigate_to(self.build_url(f"collection/{collection_id}/sheet"))
+        self.components.collection_sheet._.wait_for_present()
+
     def make_history_private(self):
         self.click_history_option_sharing()
         sharing = self.components.histories.sharing

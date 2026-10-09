@@ -52,8 +52,8 @@ const defaultColDef: ColDef = {
 </script>
 
 <template>
-    <div>
-        <GAlert v-if="collectionLoadError" variant="danger" show dismissible>
+    <div data-description="collection sheet">
+        <GAlert v-if="collectionLoadError" variant="danger" data-description="collection sheet error" show dismissible>
             {{ collectionLoadError }}
         </GAlert>
         <LoadingSpan v-else-if="!collection" />

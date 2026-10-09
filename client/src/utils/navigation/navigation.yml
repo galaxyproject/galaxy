@@ -423,6 +423,13 @@ edit_collection_attributes:
     save_dbkey_btn: '.save-dbkey-edit'
     save_datatype_btn: '.save-datatype-edit'
 
+collection_sheet:
+  selectors:
+    _: '[data-description="collection sheet"]'
+    error: '[data-description="collection sheet"] [data-description="collection sheet error"]'
+    loading: '[data-description="collection sheet"] .loading-icon'
+    grid_cell: '[data-description="collection sheet"] [row-index="${row_index}"] .ag-cell-value[col-id="${column_name}"]'
+
 tool_panel:
   selectors:
     edam_link: 'a[href^="https://edamontology.github.io/edam-browser"]'

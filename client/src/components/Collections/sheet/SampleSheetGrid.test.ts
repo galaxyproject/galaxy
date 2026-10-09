@@ -138,11 +138,12 @@ describe("SampleSheetGrid", () => {
         expect(rows[0]!.control).toBe(true);
     });
 
-    it.each(["", null])("rejects clearing a required integer to %j", async (cleared) => {
+    it("rejects clearing a required integer and keeps the old value", async () => {
         const wrapper = await mountGrid(URIS, [{ name: "replicate", type: "int", optional: false }]);
         const rows = gridRows(wrapper);
 
-        expect(setCell(gridColumn(wrapper, "replicate"), rows, 0, cleared)).toBe(false);
+        // The number editor the grid infers from the starting 0 hands over null when cleared.
+        expect(setCell(gridColumn(wrapper, "replicate"), rows, 0, null)).toBe(false);
 
         expect(rows[0]!.replicate).toBe(0);
     });
