@@ -3,8 +3,10 @@ from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetSource,
     HistoryDatasetAssociation,
     ImplicitlyConvertedDatasetAssociation,
     set_datatypes_registry,
@@ -257,6 +259,40 @@ class RewritingComputeEnvironment:
 
     def input_extra_files_rewrite(self, dataset):
         return f"/job/inputs/dataset_{dataset.id}_files"
+
+
+def _adapt_input(extension, deferred_uri=None):
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
+    hda.id = 1
+    assert hda.dataset is not None
+    hda.dataset.file_size = 4
+    if deferred_uri:
+        hda.dataset.state = Dataset.states.DEFERRED
+        hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
+    _, adapt_dataset, _ = setup_for_runtimeify(None, RewritingComputeEnvironment(), {"input": hda})
+    return adapt_dataset(DataRequestInternalHda(src="hda", id=1))
+
+
+def test_adapt_dataset_file():
+    result = _adapt_input("txt")
+    assert result.class_ == "File"
+    assert result.path == "/job/inputs/dataset_1.dat"
+
+
+@pytest.mark.parametrize("extension", ["directory", "zarr", "ome_zarr"])
+def test_adapt_dataset_directory_datatypes(extension):
+    result = _adapt_input(extension)
+    assert result.class_ == "Directory"
+    assert result.path == "/job/inputs/dataset_1_files"
+    assert result.format == extension
+
+
+def test_adapt_dataset_deferred_input_has_location_and_no_path():
+    result = _adapt_input("zarr", deferred_uri="https://example.org/data/store.zarr")
+    assert result.class_ == "Directory"
+    assert result.location == "https://example.org/data/store.zarr"
+    assert result.path is None
 
 
 def test_adapt_dataset_resolves_an_implicitly_converted_input():
