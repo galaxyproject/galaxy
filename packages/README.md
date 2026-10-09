@@ -67,6 +67,14 @@ once from the repository root and then runs tests for a specific package:
     $ uv run --locked --package galaxy-util --group dev pytest packages/util/tests
 
 `uv lock --check` verifies the lock is up to date without modifying it.
+Runtime exports live under `packages/app/src/galaxy/dependencies/`; tooling
+exports live under `requirements/`. Regenerate them from the existing lock without
+upgrading dependencies with `sh packages/app/src/galaxy/dependencies/update.sh --export-only`.
+Run the same script with `--check` to verify the lock and exports without
+changing them. CI runs this check on dependency changes. `make
+update-dependencies` deliberately upgrades dependencies and regenerates the
+exports; lint and conditional requirements retain their separate inputs.
+
 
 The per-package ``Makefile`` (symlinked as e.g. ``packages/auth/Makefile``)
 targets the same root workspace, so package commands can also be run from
