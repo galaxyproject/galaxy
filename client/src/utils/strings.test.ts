@@ -3,23 +3,17 @@ import { describe, expect, it } from "vitest";
 import { capitalizeFirstLetter } from "./strings";
 
 describe("capitalizeFirstLetter", () => {
-    it("capitalizes a normal string", () => {
-        expect(capitalizeFirstLetter("google")).toBe("Google");
+    it.each([
+        { name: "normal string", input: "google", expected: "Google" },
+        { name: "surrounding whitespace", input: "  google  ", expected: "Google" },
+        { name: "undefined input", input: undefined, expected: "" },
+        { name: "empty string", input: "", expected: "" },
+    ])("capitalizes $name", ({ input, expected }) => {
+        expect(capitalizeFirstLetter(input)).toBe(expected);
     });
 
-    it("trims whitespace", () => {
-        expect(capitalizeFirstLetter("  google  ")).toBe("Google");
-    });
-
-    it("returns empty string for undefined input", () => {
-        expect(capitalizeFirstLetter(undefined)).toBe("");
-    });
-
-    it("returns empty string for null input", () => {
-        expect(capitalizeFirstLetter(null as unknown as string)).toBe("");
-    });
-
-    it("returns empty string for empty string", () => {
-        expect(capitalizeFirstLetter("")).toBe("");
+    it("returns an empty string for null at runtime", () => {
+        // @ts-expect-error Null can arrive from untyped callers despite the string API.
+        expect(capitalizeFirstLetter(null)).toBe("");
     });
 });
