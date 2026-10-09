@@ -1,10 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
     HistoryDatasetAssociation,
+    ImplicitlyConvertedDatasetAssociation,
+    set_datatypes_registry,
 )
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
@@ -14,10 +17,12 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRecordRuntime,
     DataCollectionSampleSheetRuntime,
     DataInternalJson,
+    DataRequestInternalHda,
 )
 from galaxy.tools.runtime import (
     _validate_collection_runtime_dict,
     collection_to_runtime,
+    setup_for_runtimeify,
 )
 
 
@@ -244,3 +249,29 @@ def test_validate_collection_runtime_dict_rejects_unknown_nested():
     raw = {"class": "Collection", "name": "x", "collection_type": "list:banana", "tags": [], "elements": []}
     with pytest.raises(ValueError, match="Cannot build runtime model"):
         _validate_collection_runtime_dict(raw)
+
+
+class RewritingComputeEnvironment:
+    def input_path_rewrite(self, dataset):
+        return f"/job/inputs/dataset_{dataset.id}.dat"
+
+    def input_extra_files_rewrite(self, dataset):
+        return f"/job/inputs/dataset_{dataset.id}_files"
+
+
+def test_adapt_dataset_resolves_an_implicitly_converted_input():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    original = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="csv")
+    original.id = 1
+    converted = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="tabular")
+    converted.id = 2
+    assert converted.dataset is not None
+    converted.dataset.file_size = 4
+    ImplicitlyConvertedDatasetAssociation(parent=original, dataset=converted, file_type="tabular")
+
+    _, adapt_dataset, _ = setup_for_runtimeify(None, RewritingComputeEnvironment(), {"input": converted})
+    # The request still names the dataset the user picked; the job runs on its conversion.
+    result = adapt_dataset(DataRequestInternalHda(src="hda", id=1))
+
+    assert result.format == "tabular"
+    assert result.path == "/job/inputs/dataset_2.dat"

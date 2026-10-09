@@ -62,9 +62,15 @@ def setup_for_runtimeify(
     hda_references: list[HistoryDatasetAssociation] = []
 
     # Build lookup for individual datasets
-    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {
-        d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None
-    }
+    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {}
+    for i, d in enumerate(input_datasets.values()):
+        if d is None:
+            continue
+        hdas_by_id[d.id] = (d, i)
+        # The request names the original dataset when the job got an implicit conversion of it.
+        for assoc in getattr(d, "implicitly_converted_parent_datasets", None) or []:
+            if assoc.parent_hda is not None:
+                hdas_by_id.setdefault(assoc.parent_hda.id, (d, i))
 
     # Build separate lookups for HDCAs and DCEs
     hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
