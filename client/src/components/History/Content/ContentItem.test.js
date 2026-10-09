@@ -1,8 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { emittedArg, getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { emittedArg, getLocalVue, suppressLucideVue2Deprecation, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -14,8 +13,8 @@ vi.mock("@/components/History/model/queries");
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+enableAutoUnmount(afterEach);
+afterEach(() => vi.restoreAllMocks());
 
 vi.mock("vue-router", async (importOriginal) => ({
     ...(await importOriginal()),
@@ -23,116 +22,115 @@ vi.mock("vue-router", async (importOriginal) => ({
     useRouter: vi.fn(() => ({})),
 }));
 
-// mock queries
-updateContentFields.mockImplementation(async () => {});
+function makeItem() {
+    return {
+        id: "item_id",
+        some_data: "some_data",
+        tags: ["tag1", "tag2", "tag3"],
+        deleted: false,
+        visible: true,
+    };
+}
 
-const item = {
-    id: "item_id",
-    some_data: "some_data",
-    tags: ["tag1", "tag2", "tag3"],
-    deleted: false,
-    visible: true,
-};
+beforeEach(() => {
+    suppressLucideVue2Deprecation();
+    vi.mocked(updateContentFields).mockReset().mockResolvedValue(undefined);
+});
+
+function mountContentItem() {
+    const item = makeItem();
+    const localVue = getLocalVue();
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    server.use(
+        http.get("/api/object_stores", ({ response }) => {
+            return response(200).json([]);
+        }),
+
+        http.get("/api/datasets/{dataset_id}", ({ response }) => {
+            // We need to use untyped here because this endpoint is not
+            // described in the OpenAPI spec due to its complexity for now.
+            return response.untyped(HttpResponse.json(item));
+        }),
+    );
+
+    return mount(ContentItem, {
+        props: {
+            expandDataset: true,
+            item,
+            id: 1,
+            isDataset: true,
+            isHistoryItem: true,
+            name: "name",
+            selected: false,
+            selectable: false,
+            filterable: true,
+        },
+        global: withPlugins(localVue, pinia, router),
+        stubs: {
+            DatasetDetails: true,
+            vueTagsInput: false,
+        },
+        provide: {
+            store: {
+                dispatch: vi.fn,
+                getters: {},
+            },
+        },
+    });
+}
 
 describe("ContentItem", () => {
-    let wrapper;
-
-    beforeEach(() => {
-        suppressLucideVue2Deprecation();
-
-        server.use(
-            http.get("/api/object_stores", ({ response }) => {
-                return response(200).json([]);
-            }),
-
-            http.get("/api/datasets/{dataset_id}", ({ response }) => {
-                // We need to use untyped here because this endpoint is not
-                // described in the OpenAPI spec due to its complexity for now.
-                return response.untyped(HttpResponse.json(item));
-            }),
-        );
-
-        wrapper = mount(ContentItem, {
-            props: {
-                expandDataset: true,
-                item,
-                id: 1,
-                isDataset: true,
-                isHistoryItem: true,
-                name: "name",
-                selected: false,
-                selectable: false,
-                filterable: true,
-            },
-            global: localVue,
-            stubs: {
-                DatasetDetails: true,
-                vueTagsInput: false,
-            },
-            provide: {
-                store: {
-                    dispatch: vi.fn,
-                    getters: {},
-                },
-            },
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-            router,
-        });
+    it("renders the history item number, name, and all tags", () => {
+        const wrapper = mountContentItem();
+        expect(wrapper.attributes("data-hid")).toBe("1");
+        expect(wrapper.get(".content-title").text()).toBe("name");
+        expect(wrapper.findAll(".stateless-tags .tag").map((tag) => tag.text())).toEqual(["tag1", "tag2", "tag3"]);
     });
 
-    it("check basics", async () => {
-        expect(wrapper.attributes("data-hid")).toBe("1");
-        expect(wrapper.find(".content-title").text()).toBe("name");
-        const tags = wrapper.find(".stateless-tags").findAll(".tag");
-
-        // verify tags
-        expect(tags.length).toBe(3);
-
-        for (let i = 0; i < 3; i++) {
-            expect(tags.at(i).text()).toBe(`tag${i + 1}`);
-
-            await tags.at(i).trigger("click");
-            expect(emittedArg(wrapper, "tag-click", i)).toBe(`tag${i + 1}`);
+    it("emits each tag when clicked", async () => {
+        const wrapper = mountContentItem();
+        const tags = wrapper.findAll(".stateless-tags .tag");
+        for (const [index, tag] of tags.entries()) {
+            await tag.trigger("click");
+            expect(emittedArg(wrapper, "tag-click", index)).toBe(`tag${index + 1}`);
         }
+    });
 
-        // close all tags
-        for (let i = 0; i < 3; i++) {
-            const tagRemover = wrapper.find(`.tag[data-option=tag${i + 1}] button`);
-
-            await tagRemover.trigger("click");
-            expect(wrapper.emitted("tag-change")[i][1]).not.toContain(`tag${i + 1}`);
+    it("emits tags with each removed tag excluded, then hides empty non-history tags", async () => {
+        const wrapper = mountContentItem();
+        for (const [index, tag] of ["tag1", "tag2", "tag3"].entries()) {
+            await wrapper.get(`.tag[data-option=${tag}] button`).trigger("click");
+            expect(wrapper.emitted("tag-change")[index][1]).not.toContain(tag);
         }
-
         await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
         expect(wrapper.find(".stateless-tags").exists()).toBe(false);
+    });
 
-        // expansion button
-        const $el = wrapper.find(".cursor-pointer");
-        $el.trigger("click");
-        expect(wrapper.emitted("update:expand-dataset")).toBeDefined();
+    it("emits collapse when the expanded dataset header is clicked", async () => {
+        const wrapper = mountContentItem();
+        await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
+        await wrapper.get(".cursor-pointer").trigger("click");
+        expect(emittedArg(wrapper, "update:expand-dataset")).toBe(false);
+    });
 
-        // select and unselect
-        const noSelector = wrapper.find(".selector > svg");
-        expect(noSelector.exists()).toBe(false);
-
+    it("shows selection on demand and emits select then unselect", async () => {
+        const wrapper = mountContentItem();
+        await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
+        expect(wrapper.find(".selector > svg").exists()).toBe(false);
         await wrapper.setProps({ selectable: true });
-        expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-success"]));
+        expect(wrapper.classes()).toContain("alert-success");
 
-        const selector = wrapper.find(".selector > svg");
+        const selector = wrapper.get(".selector > svg");
         expect(selector.attributes("data-icon")).toBe("square");
-        selector.trigger("click");
-
-        await nextTick();
+        await selector.trigger("click");
         expect(emittedArg(wrapper, "update:selected")).toBe(true);
 
         await wrapper.setProps({ selected: true });
-        // The icon re-renders as a new <svg>, so look it up again.
-        const checkedSelector = wrapper.find(".selector > svg");
+        const checkedSelector = wrapper.get(".selector > svg");
         expect(checkedSelector.attributes("data-icon")).toBe("check-square");
-        checkedSelector.trigger("click");
-
-        await nextTick();
+        await checkedSelector.trigger("click");
         expect(emittedArg(wrapper, "update:selected", 1)).toBe(false);
-        expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
+        expect(wrapper.classes()).toContain("alert-info");
     });
 });
