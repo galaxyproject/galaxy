@@ -9,13 +9,28 @@ import {
     resolveMentions,
 } from "./useEntityMentions";
 
-const mockHistoryStore = {
-    currentHistoryId: "history-1" as string | null,
-    currentHistory: { id: "history-1", name: "My Analysis" } as { id: string; name: string } | null,
-    getHistoryById: (_id: string) => null as { id: string; name: string } | null,
-};
+interface HistorySummary {
+    id: string;
+    name: string;
+}
 
-const mockHistoryItems: Array<Record<string, unknown>> = [];
+interface MentionDataset {
+    id: string;
+    hid: number;
+    name: string;
+    history_content_type: "dataset";
+    extension: string;
+    state: string;
+}
+
+const { mockHistoryStore, mockHistoryItems } = vi.hoisted(() => ({
+    mockHistoryStore: {
+        currentHistoryId: "history-1" as string | null,
+        currentHistory: { id: "history-1", name: "My Analysis" } as HistorySummary | null,
+        getHistoryById: vi.fn<(id: string) => HistorySummary | null>(),
+    },
+    mockHistoryItems: [] as MentionDataset[],
+}));
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => mockHistoryStore,
@@ -143,17 +158,17 @@ describe("parseMentions", () => {
     });
 
     it("parses multiple mentions", () => {
-        const result = parseMentions("compare @dataset:1 with @dataset:2");
-        expect(result).toHaveLength(2);
-        expect(result[0]!.identifier).toBe("1");
-        expect(result[1]!.identifier).toBe("2");
+        expect(parseMentions("compare @dataset:1 with @dataset:2")).toEqual([
+            { type: "dataset", identifier: "1", startIndex: 8, endIndex: 18 },
+            { type: "dataset", identifier: "2", startIndex: 24, endIndex: 34 },
+        ]);
     });
 
     it("parses mixed entity types", () => {
-        const result = parseMentions("@dataset:10 in @history:current");
-        expect(result).toHaveLength(2);
-        expect(result[0]!.type).toBe("dataset");
-        expect(result[1]!.type).toBe("history");
+        expect(parseMentions("@dataset:10 in @history:current")).toEqual([
+            { type: "dataset", identifier: "10", startIndex: 0, endIndex: 11 },
+            { type: "history", identifier: "current", startIndex: 15, endIndex: 31 },
+        ]);
     });
 });
 
@@ -214,7 +229,10 @@ describe("resolveMentions", () => {
     beforeEach(() => {
         mockHistoryStore.currentHistoryId = historyId;
         mockHistoryStore.currentHistory = { id: historyId, name: "My Analysis" };
-        mockHistoryStore.getHistoryById = (id: string) => (id === "h-9" ? { id: "h-9", name: "Other" } : null);
+        mockHistoryStore.getHistoryById.mockReset();
+        mockHistoryStore.getHistoryById.mockImplementation((id) =>
+            id === "h-9" ? { id: "h-9", name: "Other" } : null,
+        );
         mockHistoryItems.length = 0;
         mockHistoryItems.push(
             {
