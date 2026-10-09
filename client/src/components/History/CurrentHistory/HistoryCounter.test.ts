@@ -1,11 +1,11 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, shallowMount } from "@vue/test-utils";
+import { getFakeHistorySummaryExtended, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { RegisteredUser } from "@/api";
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { setSseConnected, setSseHasEverConnected, sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
@@ -20,11 +20,7 @@ const sseState = vi.hoisted(() => ({
 
 vi.mock("@/composables/useNotificationSSE", () => sseMockFactory(sseState));
 
-// userStore wires its localStorage-backed refs through this composable; the
-// real watcher hits ``window.localStorage`` which jsdom doesn't expose with a
-// usable Storage prototype here. We don't read any of those refs in this
-// test, so a ref-returning stub is enough to keep userStore initialization
-// happy.
+// These storage-backed preferences are unrelated to the refresh button.
 vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
     const { ref } = await import("vue");
     return {
@@ -34,64 +30,45 @@ vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue();
-
-const baseHistory = {
-    id: "hist-1",
-    name: "Test history",
-    user_id: "user-1",
-    size: 0,
-    contents_active: { active: 0, deleted: 0, hidden: 0 },
-    update_time: new Date().toISOString(),
-    create_time: new Date().toISOString(),
-    deleted: false,
-    archived: false,
-    purged: false,
-    published: false,
-};
-
-function registerConfigHandler(enableSse: boolean): void {
-    server.use(
-        http.get("/api/configuration", ({ response }) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return response(200).json({ enable_sse_updates: enableSse } as any);
-        }),
-    );
-}
+enableAutoUnmount(afterEach);
+const now = new Date("2026-01-01T12:00:00Z");
 
 function setEnableSse(enabled: boolean): void {
-    registerConfigHandler(enabled);
-    // The store kicks off ``loadConfig`` on creation; ``setConfiguration``
-    // makes the value visible synchronously regardless of the network round
-    // trip so the component reads it on mount.
-    useConfigStore().setConfiguration({ enable_sse_updates: enabled } as never);
-    // The refresh button is gated on ``currentUser``; without a logged-in
-    // user the GButtonGroup that contains it is never rendered.
-    useUserStore().currentUser = { id: "user-1", email: "u@example.com" } as RegisteredUser;
+    server.use(
+        http.get("/api/configuration", ({ response }) =>
+            response.untyped(HttpResponse.json({ enable_sse_updates: enabled })),
+        ),
+    );
+    // Match the pending response synchronously so mount does not depend on its timing.
+    useConfigStore(pinia).setConfiguration({ enable_sse_updates: enabled });
+    useUserStore(pinia).currentUser = getFakeRegisteredUser({ id: "user-1", email: "u@example.com" });
 }
 
-// `getLocalVue()` bakes its own pinia into `localVue.plugins` at module-load
-// time, which is a different instance than the one `beforeEach` below makes
-// active. Mounting with just `localVue` would install that stale pinia, so
-// the component would never see store state set up via `setEnableSse()` /
-// `useUserStore()` in the tests. Pass the per-test pinia explicitly -- the
-// adapter lets an explicit `pinia` option win over `localVue`'s default.
 let pinia: ReturnType<typeof createPinia>;
 
-function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }> = {}, deep = false) {
+function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }> = {}, renderButtons = false) {
+    const localVue = getLocalVue();
+    setActivePinia(pinia);
     const options = {
-        propsData: {
-            history: baseHistory,
+        props: {
+            history: {
+                ...getFakeHistorySummaryExtended({
+                    id: "hist-1",
+                    name: "Test history",
+                    user_id: "user-1",
+                    size: 0,
+                    contents_active: { active: 0, deleted: 0, hidden: 0 },
+                    update_time: now.toISOString(),
+                }),
+                create_time: now.toISOString(),
+            },
             lastChecked: props.lastChecked ?? new Date(),
             isWatching: props.isWatching ?? true,
         },
-        localVue,
-        pinia,
+        global: withPlugins(localVue, pinia),
     };
     // Stub for prop assertions; real mount so clicks reach GButton's handler.
-    return deep
-        ? mount(HistoryCounter as unknown as object, options)
-        : shallowMount(HistoryCounter as unknown as object, options);
+    return renderButtons ? mount(HistoryCounter as object, options) : shallowMount(HistoryCounter as object, options);
 }
 
 function refreshButton(wrapper: ReturnType<typeof shallowMount>) {
@@ -104,18 +81,14 @@ describe("HistoryCounter — refresh button", () => {
         setActivePinia(pinia);
         sseState.connect.mockClear();
         sseState.disconnect.mockClear();
-        // sseMockFactory lazily creates these refs on first call; reset to a
-        // known state for each test.
-        Reflect.deleteProperty(sseState, "connected");
-        Reflect.deleteProperty(sseState, "hasEverConnected");
-        // Re-create refs by invoking the factory once — every component mount
-        // already triggers this, but doing it explicitly makes the per-test
-        // state setup obvious.
-        sseMockFactory(sseState);
+        setSseConnected(sseState, false);
+        setSseHasEverConnected(sseState, false);
         vi.useFakeTimers();
+        vi.setSystemTime(now);
     });
 
     afterEach(() => {
+        vi.clearAllTimers();
         vi.useRealTimers();
     });
 
@@ -217,7 +190,6 @@ describe("HistoryCounter — refresh button", () => {
 
         await refreshButton(wrapper).trigger("click");
 
-        expect(wrapper.emitted("reloadContents")).toBeTruthy();
-        expect(wrapper.emitted("reloadContents")?.length).toBe(1);
+        expect(wrapper.emitted("reloadContents")).toEqual([[]]);
     });
 });
