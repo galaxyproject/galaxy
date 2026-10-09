@@ -1,0 +1,111 @@
+{
+  "categories": [
+    {
+      "name": "catA",
+      "results": [
+        {
+          "category": "catA",
+          "error": null,
+          "name": "wf_ok.ga",
+          "ok": true,
+          "path": "catA/wf_ok.ga",
+          "skipped_reason": null,
+          "status": "ok",
+          "steps_converted": 4,
+          "steps_fallback": 0
+        },
+        {
+          "category": "catA",
+          "error": null,
+          "name": "wf_partial.ga",
+          "ok": true,
+          "path": "catA/wf_partial.ga",
+          "skipped_reason": null,
+          "status": "ok",
+          "steps_converted": 3,
+          "steps_fallback": 1
+        }
+      ]
+    },
+    {
+      "name": "catB",
+      "results": [
+        {
+          "category": "catB",
+          "error": "export failed",
+          "name": "wf_err.ga",
+          "ok": false,
+          "path": "catB/wf_err.ga",
+          "skipped_reason": null,
+          "status": "error",
+          "steps_converted": 0,
+          "steps_fallback": 0
+        },
+        {
+          "category": "catB",
+          "error": null,
+          "name": "wf_skip.ga",
+          "ok": false,
+          "path": "catB/wf_skip.ga",
+          "skipped_reason": "legacy encoding",
+          "status": "skipped",
+          "steps_converted": 0,
+          "steps_fallback": 0
+        }
+      ]
+    }
+  ],
+  "output_dir": "/tmp/out",
+  "root": "/tmp/workflows",
+  "summary": {
+    "fail": 1,
+    "ok": 2,
+    "skipped": 1
+  },
+  "workflows": [
+    {
+      "category": "catA",
+      "error": null,
+      "name": "wf_ok.ga",
+      "ok": true,
+      "path": "catA/wf_ok.ga",
+      "skipped_reason": null,
+      "status": "ok",
+      "steps_converted": 4,
+      "steps_fallback": 0
+    },
+    {
+      "category": "catA",
+      "error": null,
+      "name": "wf_partial.ga",
+      "ok": true,
+      "path": "catA/wf_partial.ga",
+      "skipped_reason": null,
+      "status": "ok",
+      "steps_converted": 3,
+      "steps_fallback": 1
+    },
+    {
+      "category": "catB",
+      "error": "export failed",
+      "name": "wf_err.ga",
+      "ok": false,
+      "path": "catB/wf_err.ga",
+      "skipped_reason": null,
+      "status": "error",
+      "steps_converted": 0,
+      "steps_fallback": 0
+    },
+    {
+      "category": "catB",
+      "error": null,
+      "name": "wf_skip.ga",
+      "ok": false,
+      "path": "catB/wf_skip.ga",
+      "skipped_reason": "legacy encoding",
+      "status": "skipped",
+      "steps_converted": 0,
+      "steps_fallback": 0
+    }
+  ]
+}

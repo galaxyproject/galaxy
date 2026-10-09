@@ -1,0 +1,21 @@
+class: GalaxyWorkflow
+label: Synthetic Cat Unmatched Connection Format2
+inputs:
+  input_dataset:
+    type: data
+  run_it:
+    type: boolean
+steps:
+  concat:
+    tool_id: cat
+    tool_version: "1.0.0"
+    in:
+      input1:
+        source: input_dataset
+      not_a_real_port:
+        source: run_it
+    state:
+      queries: []
+outputs:
+  concatenated:
+    outputSource: concat/out_file1

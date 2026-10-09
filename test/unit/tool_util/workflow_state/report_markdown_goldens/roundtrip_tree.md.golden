@@ -1,0 +1,11 @@
+# Roundtrip Validation: /tmp/workflows
+
+**5 workflows:** 1 clean, 1 benign, 2 fail, 0 error, 1 skipped
+
+- **catA/wf_clean.ga**: OK
+- **catA/wf_benign.ga**: OK (1 benign)
+- **catB/wf_mismatch.ga**: ROUNDTRIP_MISMATCH (1 errors)
+  - step_1/param_x: value changed from 1 to 2
+- **catB/wf_conv_fail.ga**: CONVERSION_FAIL
+  - step 1 (tool_x): [type_not_handled] cannot convert
+- **catB/wf_skip.ga**: SKIPPED

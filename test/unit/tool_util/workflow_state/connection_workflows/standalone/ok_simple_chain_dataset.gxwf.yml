@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  data_in: data
+steps:
+  step1:
+    tool_id: gx_data
+    in:
+      parameter: data_in
+  step2:
+    tool_id: gx_data
+    in:
+      parameter:
+        source: step1/output

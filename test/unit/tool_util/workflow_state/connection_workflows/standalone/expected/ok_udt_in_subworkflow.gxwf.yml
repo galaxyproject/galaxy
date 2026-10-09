@@ -1,0 +1,20 @@
+- target: [valid]
+  value: true
+- target: [step_results, 1, step_type]
+  value: subworkflow
+- target: [step_results, 1, connections, 0, status]
+  value: "ok"
+- target: [step_results, 1, resolved_outputs, 0, name]
+  value: inner_out
+- target: [step_results, 2, tool_id]
+  value: gx_data
+- target: [step_results, 2, connections, 0, source_step]
+  value: "1"
+- target: [step_results, 2, connections, 0, source_output]
+  value: inner_out
+- target: [step_results, 2, connections, 0, status]
+  value: "ok"
+- target: [summary, ok]
+  value: 2
+- target: [summary, invalid]
+  value: 0

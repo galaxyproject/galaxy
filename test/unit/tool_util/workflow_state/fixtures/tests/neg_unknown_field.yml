@@ -1,0 +1,6 @@
+- doc: TestJob with unknown top-level field
+  job:
+    input: 42
+  outputs:
+    out: expected.txt
+  unknown_field: oops

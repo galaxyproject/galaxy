@@ -1,4 +1,8 @@
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Collection,
+    Iterable,
+)
 from typing import (
     Any,
     cast,
@@ -10,6 +14,8 @@ from typing_extensions import Protocol
 from galaxy.tool_util_models.parameters import (
     ConditionalParameterModel,
     ConditionalWhen,
+    RepeatParameterModel,
+    SectionParameterModel,
     simple_input_models,
     ToolParameterBundle,
     ToolParameterT,
@@ -168,5 +174,162 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: dict[str, KVT]) -> list
 
 def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> str | bool | None:
     if value is not None and not isinstance(value, (str, bool)):
+        if isinstance(value, (int, float)):
+            return str(value)
         raise Exception(f"Invalid conditional test value ({value}) for parameter ({test_parameter_name})")
     return value
+
+
+NATIVE_BOOKKEEPING_KEYS = frozenset(
+    {
+        "__current_case__",
+        "__index__",
+        "__input_ext",
+        "__page__",
+        "__rerun_remap_job_id__",
+        "__job_resource",
+        "chromInfo",
+    }
+)
+
+
+def _test_value_matches_discriminator(test_value, discriminator) -> bool:
+    """Compare test value against when discriminator, handling bool/string coercion.
+
+    Native tool_state double-encoding means json.loads("true") produces Python True (bool),
+    but gx_select conditional discriminators are always strings ("true"/"false").
+    gx_boolean discriminators are actual bools. Handle both cases.
+    """
+    if test_value == discriminator:
+        return True
+    if isinstance(test_value, bool) and isinstance(discriminator, str):
+        return str(test_value).lower() == discriminator
+    if isinstance(test_value, str) and isinstance(discriminator, bool):
+        return test_value.lower() == str(discriminator).lower()
+    return False
+
+
+def select_which_when_native(conditional: ConditionalParameterModel, conditional_state: dict) -> ConditionalWhen | None:
+    """Select which conditional branch matches the test parameter value.
+
+    Returns None when no branch matches (e.g., boolean conditional set to
+    false with only a <when value="true"> branch — the conditional is inactive).
+    """
+    test_parameter = conditional.test_parameter
+    test_parameter_name = test_parameter.name
+    explicit_test_value = conditional_state.get(test_parameter_name)
+    test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
+
+    for when in conditional.whens:
+        if test_value is None and when.is_default_when:
+            return when
+        elif test_value is not None and _test_value_matches_discriminator(test_value, when.discriminator):
+            return when
+
+    # No branch matched — try default when as fallback
+    for when in conditional.whens:
+        if when.is_default_when:
+            return when
+
+    return None
+
+
+def active_branch_params(
+    conditional: ConditionalParameterModel,
+    conditional_state: dict,
+    select: Callable[[ConditionalParameterModel, dict], ConditionalWhen | None] = select_which_when_native,
+) -> list[ToolParameterT]:
+    """Return the tool inputs active for a conditional given its current state.
+
+    Always includes the test parameter; appends the matched branch's parameters
+    when a branch is active, and returns just the test parameter when no branch
+    matches. *select* overrides the branch-matching strategy (e.g. the
+    error-suppressing format2 selector) — it must share
+    ``select_which_when_native``'s "None means no active branch" contract.
+    """
+    when = select(conditional, conditional_state)
+    params: list[ToolParameterT] = [conditional.test_parameter]
+    if when is not None:
+        params += list(when.parameters)
+    return params
+
+
+def strip_undeclared_keys(
+    state: dict[str, Any],
+    tool_inputs: list[ToolParameterT],
+    removed_keys: list[str] | None = None,
+    prefix: str = "",
+    preserve_keys: Collection[str] = (),
+) -> list[str]:
+    """Remove undeclared ("stale") keys from a tool_state dict, in place.
+
+    Recurses into declared conditional/repeat/section containers, following the
+    active conditional branch. Keys in ``preserve_keys`` (e.g. framework
+    bookkeeping keys like ``__current_case__``) are kept even when undeclared.
+    Mutates ``state`` in place to preserve key ordering. Returns the removed key
+    paths (also appended to ``removed_keys`` when supplied).
+    """
+    if removed_keys is None:
+        removed_keys = []
+    known = {inp.name for inp in tool_inputs}
+
+    stale = [key for key in state if key not in known and key not in preserve_keys]
+    for key in stale:
+        path = f"{prefix}{key}" if prefix else key
+        removed_keys.append(path)
+        del state[key]
+
+    for tool_input in tool_inputs:
+        name = tool_input.name
+        if name not in state:
+            continue
+
+        value = state[name]
+        parameter_type = tool_input.parameter_type
+        child_prefix = f"{prefix}{name}|" if prefix else f"{name}|"
+
+        if parameter_type == "gx_conditional":
+            conditional = cast(ConditionalParameterModel, tool_input)
+            if not isinstance(value, dict):
+                continue
+            cond_state = value
+
+            branch_inputs = active_branch_params(conditional, cond_state)
+            strip_undeclared_keys(
+                cond_state, branch_inputs, removed_keys, prefix=child_prefix, preserve_keys=preserve_keys
+            )
+            state[name] = cond_state
+
+        elif parameter_type == "gx_repeat":
+            repeat = cast(RepeatParameterModel, tool_input)
+            if not isinstance(value, list):
+                continue
+            repeat_state = value
+
+            for i, instance in enumerate(repeat_state):
+                if isinstance(instance, dict):
+                    instance_prefix = f"{prefix}{name}_{i}|"
+                    strip_undeclared_keys(
+                        instance,
+                        list(repeat.parameters),
+                        removed_keys,
+                        prefix=instance_prefix,
+                        preserve_keys=preserve_keys,
+                    )
+            state[name] = repeat_state
+
+        elif parameter_type == "gx_section":
+            section = cast(SectionParameterModel, tool_input)
+            if not isinstance(value, dict):
+                continue
+            section_state = value
+            strip_undeclared_keys(
+                section_state,
+                list(section.parameters),
+                removed_keys,
+                prefix=child_prefix,
+                preserve_keys=preserve_keys,
+            )
+            state[name] = section_state
+
+    return removed_keys

@@ -1,0 +1,194 @@
+{
+  "id": "fastqc",
+  "version": "0.74+galaxy0",
+  "name": "FastQC",
+  "description": "Read Quality reports",
+  "inputs": [
+    {
+      "name": "input_file",
+      "parameter_type": "gx_data",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "data",
+      "extensions": [
+        "data"
+      ],
+      "multiple": false,
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "contaminants",
+      "parameter_type": "gx_data",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "data",
+      "extensions": [
+        "data"
+      ],
+      "multiple": false,
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "adapters",
+      "parameter_type": "gx_data",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "data",
+      "extensions": [
+        "data"
+      ],
+      "multiple": false,
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "limits",
+      "parameter_type": "gx_data",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "data",
+      "extensions": [
+        "data"
+      ],
+      "multiple": false,
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "nogroup",
+      "parameter_type": "gx_boolean",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "boolean",
+      "value": false,
+      "truevalue": null,
+      "falsevalue": null
+    },
+    {
+      "name": "min_length",
+      "parameter_type": "gx_integer",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "integer",
+      "value": null,
+      "min": null,
+      "max": null,
+      "validators": []
+    },
+    {
+      "name": "kmers",
+      "parameter_type": "gx_integer",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "integer",
+      "value": 7,
+      "min": 2,
+      "max": 10,
+      "validators": []
+    }
+  ],
+  "outputs": [
+    {
+      "name": "html_file",
+      "label": "${tool.name} on ${on_string}: Webpage",
+      "hidden": false,
+      "type": "data",
+      "format": "html",
+      "format_source": null,
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": "output.html",
+      "precreate_directory": false
+    },
+    {
+      "name": "text_file",
+      "label": "${tool.name} on ${on_string}: RawData",
+      "hidden": false,
+      "type": "data",
+      "format": "txt",
+      "format_source": null,
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": "output.txt",
+      "precreate_directory": false
+    }
+  ],
+  "citations": [
+    {
+      "type": "bibtex",
+      "content": "@unpublished{andrews_s,\n            author = {Andrews, S.},\n            keywords = {bioinformatics, ngs, qc},\n            priority = {2},\n            title = {{FastQC A Quality Control tool for High Throughput Sequence Data}},\n            url = {http://www.bioinformatics.babraham.ac.uk/projects/fastqc/}\n        }"
+    }
+  ],
+  "license": null,
+  "profile": "16.01",
+  "edam_operations": [],
+  "edam_topics": [],
+  "xrefs": [
+    {
+      "value": "fastqc",
+      "type": "bio.tools"
+    }
+  ],
+  "help": {
+    "format": "restructuredtext",
+    "content": "\n.. class:: infomark\n\n**Purpose**\n\nFastQC aims to provide a simple way to do some quality control checks on raw\nsequence data coming from high throughput sequencing pipelines.\nIt provides a set of analyses which you can use to get a quick\nimpression of whether your data has any problems of\nwhich you should be aware before doing any further analysis.\n\nThe main functions of FastQC are:\n\n- Import of data from BAM, SAM or FastQ/FastQ.gz files (any variant),\n- Providing a quick overview to tell you in which areas there may be problems\n- Summary graphs and tables to quickly assess your data\n- Export of results to an HTML based permanent report\n- Offline operation to allow automated generation of reports without running the interactive application\n\n-----\n\n.. class:: infomark\n\n**FastQC**\n\nThis is a Galaxy wrapper. It merely exposes the external package FastQC_ which is documented at FastQC_\nKindly acknowledge it as well as this tool if you use it.\nFastQC incorporates the Picard-tools_ libraries for SAM/BAM processing.\n\nThe contaminants file parameter was borrowed from the independently developed\nfastqcwrapper contributed to the Galaxy Community Tool Shed by J. Johnson.\nAdaption to version 0.11.2 by T. McGowan.\n\n-----\n\n.. class:: infomark\n\n**Inputs and outputs**\n\nFastQC_ is the best place to look for documentation - it's very good.\nA summary follows below for those in a tearing hurry.\n\nThis wrapper will accept a Galaxy fastq, fastq.gz, sam or bam as the input read file to check.\nIt will also take an optional file containing a list of contaminants information, in the form of\na tab-delimited file with 2 columns, name and sequence. As another option the tool takes a custom\nlimits.txt file that allows setting the warning thresholds for the different modules and also specifies\nwhich modules to include in the output.\n\nThe tool produces a basic text and a HTML output file that contain all of the results, including the following:\n\n- Basic Statistics\n- Per base sequence quality\n- Per sequence quality scores\n- Per base sequence content\n- Per base GC content\n- Per sequence GC content\n- Per base N content\n- Sequence Length Distribution\n- Sequence Duplication Levels\n- Overrepresented sequences\n- Kmer Content\n\nAll except Basic Statistics and Overrepresented sequences are plots.\n .. _FastQC: http://www.bioinformatics.babraham.ac.uk/projects/fastqc/\n .. _Picard-tools: https://broadinstitute.github.io/picard/\n    "
+  }
+}

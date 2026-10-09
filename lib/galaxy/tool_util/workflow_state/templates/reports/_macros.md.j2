@@ -1,0 +1,60 @@
+{#-
+  Shared macros for workflow_state report templates.
+
+  IMPORTANT: every construct used here must also be valid in Nunjucks so
+  the TypeScript mirror can render identical markdown. That means: only
+  `for`, `if`, `set`, `macro`, `import`, `include`, and the shared-subset
+  filters (`length`, `default`, `upper`, `lower`, `replace`, `join`,
+  `sort`, `selectattr`). No custom filters, no globals.
+-#}
+
+{#-
+  status_badge(label)
+  Renders the summary-line badge shared across every report header.
+-#}
+{% macro status_badge(label) -%}
+**Status:** {{ label }}
+{%- endmacro %}
+
+{#-
+  kv_summary(summary)
+  Render a dict-of-counts as ``key: value, key: value`` (insertion order
+  is preserved by Pydantic ``model_dump``, so upstream models control
+  ordering). Used under the status badge in every report header.
+-#}
+{% macro kv_summary(summary) -%}
+{% for key, value in summary.items() -%}
+{{ key }}: {{ value }}{% if not loop.last %}, {% endif %}
+{%- endfor %}
+{%- endmacro %}
+
+{#-
+  workflow_state_cells(r)
+  Renders the 5 trailing cells of a workflow table row — handling the
+  error / skipped / ok three-branch logic that every current
+  ``format_*_markdown`` reimplements. ``r`` is the json-dumped
+  workflow result dict.
+
+  Expected columns (Total | OK | Fail | Skip | Details). Callers provide
+  the leading ``| name`` cell themselves so they can choose how to label
+  it (basename, relative_path, etc.).
+-#}
+{% macro workflow_state_cells(r) -%}
+{% if r.skipped_reason -%}
+- | - | - | - | SKIPPED: {{ r.skipped_reason }}
+{%- elif r.error -%}
+- | - | - | - | ERROR: {{ r.error }}
+{%- else -%}
+{% set s = r.summary %}
+{{ (r.results | length) }} | {{ s.ok }} | {{ s.fail }} | {{ s.skip }} |
+{%- endif %}
+{%- endmacro %}
+
+{#-
+  failure_bullet(f)
+  Renders a single ``all_failures`` entry as a markdown bullet. The input
+  dict has keys ``workflow``, ``step``, ``tool_id``, ``message``.
+-#}
+{% macro failure_bullet(f) -%}
+- **{{ f.workflow }}** Step {{ f.step }} ({{ f.tool_id }}): {{ f.message }}
+{%- endmacro %}
