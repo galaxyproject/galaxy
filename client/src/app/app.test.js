@@ -1,62 +1,71 @@
 import galaxyOptions from "@tests/test-data/bootstrapped";
 import { suppressDebugConsole } from "@tests/vitest/helpers";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getGalaxyInstance, setGalaxyInstance } from "@/app";
 import { GalaxyApp } from "@/app/galaxy";
 
-export function setupTestGalaxy(galaxyOptions_ = null) {
-    galaxyOptions_ = galaxyOptions_ || galaxyOptions;
-    const app = new GalaxyApp(galaxyOptions_);
-    setGalaxyInstance(app);
-}
+describe("GalaxyApp", () => {
+    let app;
+    let previousLocale;
 
-// suppress console noise
-suppressDebugConsole();
-
-describe("App base construction/initialization defaults", () => {
     beforeEach(() => {
-        setupTestGalaxy(galaxyOptions);
+        suppressDebugConsole();
+        vi.stubGlobal("_galaxyInstance", undefined);
+        vi.stubGlobal("_l", window._l);
+        previousLocale = sessionStorage.getItem("currentLocale");
+        app = new GalaxyApp(galaxyOptions);
+        setGalaxyInstance(app);
     });
 
-    test("App base construction/initialization defaults", () => {
-        const app = getGalaxyInstance();
-        expect(app.options && typeof app.options === "object").toBeTruthy();
-        expect(app.config && typeof app.config === "object").toBeTruthy();
-        expect(app.user && typeof app.config === "object").toBeTruthy();
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+        if (previousLocale === null) {
+            sessionStorage.removeItem("currentLocale");
+        } else {
+            sessionStorage.setItem("currentLocale", previousLocale);
+        }
+    });
+
+    it("initializes the registered instance with options, config, user and localization", () => {
+        expect(getGalaxyInstance()).toBe(app);
+        expect(app.options).toBeTypeOf("object");
+        expect(app.options).toBeTruthy();
+        expect(app.config).toBeTypeOf("object");
+        expect(app.config).toBeTruthy();
+        expect(app.user).toBeTypeOf("object");
+        expect(app.user).toBeTruthy();
         expect(app.localize).toBe(window._l);
     });
 
-    test("App base default options", () => {
-        const app = getGalaxyInstance();
-        expect(app.options !== undefined && typeof app.options === "object").toBeTruthy();
+    it("uses default root and patchExisting options when omitted", () => {
+        expect(app.options).toBeTypeOf("object");
+        expect(app.options).toBeTruthy();
         expect(app.options.root).toBe("/");
         expect(app.options.patchExisting).toBe(true);
     });
 
-    // we no longer patch attributes from existing Galaxy objects, test expresses that
-    test("App base will patch in attributes from existing Galaxy objects", () => {
-        const existingApp = getGalaxyInstance();
-        existingApp.foo = 123;
+    it("does not copy attributes from the previously registered instance", () => {
+        app.foo = 123;
 
-        const newApp = new GalaxyApp();
-        setGalaxyInstance(newApp);
+        const replacement = new GalaxyApp();
+        setGalaxyInstance(replacement);
 
-        expect(newApp.foo).toBeUndefined();
+        expect(replacement.foo).toBeUndefined();
     });
 
-    test("App base config", () => {
-        const app = getGalaxyInstance();
-        expect(app.config && typeof app.config === "object").toBeTruthy();
+    it("uses the bootstrapped configuration", () => {
+        expect(app.config).toBeTypeOf("object");
+        expect(app.config).toBeTruthy();
         expect(app.config.allow_user_deletion).toBe(false);
         expect(app.config.allow_local_account_creation).toBe(true);
         expect(app.config.wiki_url).toBe("https://galaxyproject.org/");
         expect(app.config.ftp_upload_site).toBe(null);
     });
 
-    test("App base user", () => {
-        const app = getGalaxyInstance();
-        expect(app.user !== undefined && typeof app.user === "object").toBeTruthy();
+    it("initializes a non-admin user from bootstrapped data", () => {
+        expect(app.user).toBeTypeOf("object");
         expect(app.user.isAdmin()).toBe(false);
     });
 });
