@@ -1,11 +1,12 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
+import { runInTestScope } from "@tests/vitest/effectScope";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createPinia, disposePinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { ref, unref } from "vue";
 
-import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
-import type { WorkflowSummary } from "@/api/workflows";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCardActions";
 import { raisedToasts } from "@/composables/__mocks__/toast";
@@ -23,15 +24,11 @@ const { server, http } = useServerMock();
 const OWNER = "owner";
 
 function setup(editorView = false, sharedWithMeView = false, refreshCallback = () => {}) {
-    const workflow = ref({
-        id: "workflow_id",
-        name: "Workflow",
-        owner: OWNER,
-        deleted: false,
-        published: false,
-    } as unknown as WorkflowSummary);
+    const workflow = ref(getFakeWorkflowSummary({ id: "workflow_id", name: "Workflow", owner: OWNER }));
     const noop = () => {};
-    return useWorkflowCardActions(workflow, false, editorView, refreshCallback, noop, noop, sharedWithMeView);
+    return runInTestScope(() =>
+        useWorkflowCardActions(workflow, false, editorView, refreshCallback, noop, noop, sharedWithMeView),
+    );
 }
 
 function findAction(actions: CardAction[], id: string) {
@@ -42,21 +39,24 @@ function ids(actions: CardAction[]) {
     return actions.map((action) => action.id);
 }
 
-function loadOwner() {
-    useUserStore().setCurrentUser({
-        id: "user_id",
-        email: "owner@example.org",
-        username: OWNER,
-    } as RegisteredUser);
+function createUserStore() {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    onTestFinished(() => disposePinia(pinia));
+    return useUserStore(pinia);
+}
+
+function loadOwner(userStore: ReturnType<typeof useUserStore>) {
+    userStore.setCurrentUser(getFakeRegisteredUser({ id: "user_id", email: "owner@example.org", username: OWNER }));
 }
 
 describe("useWorkflowCardActions", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
         vi.clearAllMocks();
     });
 
     it("shows owner actions once the current user loads after setup", () => {
+        const userStore = createUserStore();
         const { workflowCardExtraActions, workflowCardSecondaryActions, workflowCardPrimaryActions } = setup();
 
         expect(findAction(unref(workflowCardExtraActions), "workflow-delete")?.visible).toBe(false);
@@ -64,7 +64,7 @@ describe("useWorkflowCardActions", () => {
         expect(findAction(unref(workflowCardPrimaryActions), "workflow-edit")?.visible).toBe(false);
         expect(findAction(unref(workflowCardPrimaryActions), "workflow-import")?.visible).toBe(true);
 
-        loadOwner();
+        loadOwner(userStore);
 
         expect(findAction(unref(workflowCardExtraActions), "workflow-delete")?.visible).toBe(true);
         expect(findAction(unref(workflowCardSecondaryActions), "workflow-share")?.visible).toBe(true);
@@ -73,7 +73,8 @@ describe("useWorkflowCardActions", () => {
     });
 
     it("places common and run actions by view", () => {
-        loadOwner();
+        const userStore = createUserStore();
+        loadOwner(userStore);
 
         const listView = setup(false);
         expect(ids(unref(listView.workflowCardExtraActions))).toEqual([
@@ -120,6 +121,7 @@ describe("useWorkflowCardActions", () => {
     });
 
     it("offers removing a shared workflow only in the shared with me view", () => {
+        createUserStore();
         expect(
             findAction(unref(setup(false, true).workflowCardExtraActions), "workflow-unshare-with-me")?.visible,
         ).toBe(true);
@@ -127,6 +129,7 @@ describe("useWorkflowCardActions", () => {
     });
 
     it("keeps the share when removal is not confirmed", async () => {
+        createUserStore();
         const unshared: string[] = [];
         server.use(
             http.put("/api/workflows/{workflow_id}/unshare_with_me", ({ params, response }) => {
@@ -152,6 +155,7 @@ describe("useWorkflowCardActions", () => {
     });
 
     it("reports a failed removal without refreshing", async () => {
+        createUserStore();
         server.use(
             http.put("/api/workflows/{workflow_id}/unshare_with_me", ({ response }) => {
                 return response("4XX").json({ err_msg: "Workflow not found", err_code: 404 }, { status: 404 });
