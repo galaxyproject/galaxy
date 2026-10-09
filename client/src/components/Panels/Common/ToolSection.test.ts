@@ -1,3 +1,4 @@
+import { getFakeTool } from "@tests/test-data/tools";
 import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
@@ -26,9 +27,7 @@ describe("ToolSection", () => {
     test("test tool section", () => {
         const wrapper = mount(ToolSection, {
             props: {
-                category: {
-                    name: "name",
-                } as Tool,
+                category: getFakeTool({ name: "name" }),
             },
             global: withPlugins(localVue, pinia),
         });
@@ -48,7 +47,7 @@ describe("ToolSection", () => {
                     title: "tool_section",
                     // The store types elems without labels, but ToolSection.vue renders them.
                     elems: [
-                        { name: "name" } as Tool,
+                        getFakeTool({ name: "name" }),
                         {
                             model_class: "ToolSectionLabel",
                             id: "label",
@@ -80,7 +79,7 @@ describe("ToolSection", () => {
                     name: "tool_section",
                     title: "tool_section",
                     elems: [
-                        { name: "name" } as Tool,
+                        getFakeTool({ name: "name" }),
                         {
                             model_class: "ToolSectionLabel",
                             id: "label",
@@ -133,10 +132,10 @@ describe("ToolSection element ordering", () => {
     }
 
     const tools = [
-        { id: "z_tool", name: "Zebra" },
-        { id: "a_tool", name: "Apple" },
-        { id: "m_tool", name: "Mango" },
-    ] as Tool[];
+        getFakeTool({ id: "z_tool", name: "Zebra" }),
+        getFakeTool({ id: "a_tool", name: "Apple" }),
+        getFakeTool({ id: "m_tool", name: "Mango" }),
+    ];
 
     function getRenderedToolIds(wrapper: VueWrapper) {
         return wrapper.findAll("[data-tool-id]").map((w) => w.attributes("data-tool-id"));
@@ -155,11 +154,11 @@ describe("ToolSection element ordering", () => {
     });
 
     test("does not render ToolSectionLabels as tools", async () => {
-        const elemsWithLabel = [
-            { id: "z_tool", name: "Zebra" },
+        const elemsWithLabel: (ToolSectionLabel | Tool)[] = [
+            getFakeTool({ id: "z_tool", name: "Zebra" }),
             { model_class: "ToolSectionLabel", id: "label_1", text: "A Label" },
-            { id: "a_tool", name: "Apple" },
-        ] as (ToolSectionLabel | Tool)[];
+            getFakeTool({ id: "a_tool", name: "Apple" }),
+        ];
         const wrapper = mountSection(elemsWithLabel);
         await wrapper.find(".name").trigger("click");
         expect(getRenderedToolIds(wrapper)).toEqual(["z_tool", "a_tool"]);

@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeTool } from "@tests/test-data/tools";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -47,7 +48,13 @@ const MIXED_TAG_AND_ONTOLOGY_FILTER_SETTINGS = {
 };
 const MIXED_TAG_AND_ONTOLOGY_WHOOSH_QUERY =
     '(tool_tags:("join, subtract and group") AND edam_operations:("operation_3695"))';
-const toolsList = toolsListUntyped as unknown as Tool[];
+const toolsList = toolsListUntyped.map((tool) => {
+    // JSON imports widen the empty-string hidden flag to string.
+    if (tool.hidden !== "" && typeof tool.hidden !== "boolean") {
+        throw new Error(`Invalid hidden flag in tool fixture: ${tool.id}`);
+    }
+    return getFakeTool({ ...tool, hidden: tool.hidden });
+});
 
 const routerPushMock = vi.fn();
 
