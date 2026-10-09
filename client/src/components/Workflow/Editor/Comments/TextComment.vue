@@ -5,7 +5,8 @@ import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
+const sanitize = DOMPurify.sanitize;
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";

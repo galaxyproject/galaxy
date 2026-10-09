@@ -2,7 +2,8 @@
 import { faUniversity, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
+const sanitize = DOMPurify.sanitize;
 import { onMounted, ref } from "vue";
 
 import type { CardBadge } from "@/components/Common/GCard.types";

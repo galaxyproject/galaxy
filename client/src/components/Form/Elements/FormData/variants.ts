@@ -1,10 +1,10 @@
 import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import type { IconDefinition } from "font-awesome-6";
+
 
 /** Data input variations interface */
 export interface VariantInterface {
     batch: string;
-    icon: IconDefinition;
+    icon: Object;
     library?: boolean;
     multiple: boolean;
     src: string;
