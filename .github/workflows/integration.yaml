@@ -154,7 +154,7 @@ jobs:
           name: mulled-resolution-cache-seed
           path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Install Apptainer's singularity
-        uses: './galaxy root/.github/actions/install_apptainer'
+        uses: $/.github/actions/install_apptainer
       - name: Run tests
         env:
           GALAXY_TEST_MULLED_RESOLUTION_CACHE_SEED: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
