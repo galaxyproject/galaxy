@@ -645,14 +645,16 @@ class ARCFileSourceConfiguration(StrictModel):
 
 class NomadFileSourceTemplateConfiguration(StrictModel):
     type: Literal["nomad"]
-    base_url: str | TemplateExpansion
+    base_url: str | TemplateExpansion = "https://nomad-lab.eu/prod/v1"
+    token: str | TemplateExpansion | None = None
     template_start: str | None = None
     template_end: str | None = None
 
 
 class NomadFileSourceConfiguration(StrictModel):
     type: Literal["nomad"]
-    base_url: str
+    base_url: str = "https://nomad-lab.eu/prod/v1"
+    token: str | None = None
 
 
 FileSourceTemplateConfiguration = Annotated[
