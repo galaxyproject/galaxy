@@ -1,0 +1,25 @@
+<tool id="gx_allow_uri_if_protocol_single" name="gx_allow_uri_if_protocol_single" version="1.0.0">
+    <command><![CDATA[
+        #for $input in [$input1, $nested.input2]:
+            #if $input:
+                #if $input.is_deferred:
+                    ## A deferred dataset whose source URI uses the 'https' protocol is not
+                    ## materialized, so the input resolves to the URI itself.
+                    echo '$input' >> '$output' &&
+                #else:
+                    cat '$input' >> '$output' &&
+                #end if
+            #end if
+        #end for
+        true
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt,zarr" allow_uri_if_protocol="https"/>
+        <section name="nested" title="Nested">
+            <param name="input2" type="data" format="txt,zarr" allow_uri_if_protocol="https" optional="true"/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+</tool>

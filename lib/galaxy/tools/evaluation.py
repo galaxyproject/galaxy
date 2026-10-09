@@ -382,6 +382,8 @@ class ToolEvaluator:
         Walk input datasets and collections and find inputs that need to be materialized.
         """
         deferred_objects: dict[str, DeferrableObjectsT] = {}
+        # Deferred inputs the tool consumes as URIs (``allow_uri_if_protocol``).
+        uri_inputs: set[str] = set()
 
         def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
             if (
@@ -393,7 +395,10 @@ class ToolEvaluator:
         def find_deferred_datasets(input, value, context, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
                 if isinstance(value, model.DatasetInstance) and value.state == model.Dataset.states.DEFERRED:
-                    deferred_objects[prefixed_name] = value
+                    if self._should_materialize_deferred_input(input, value):
+                        deferred_objects[prefixed_name] = value
+                    else:
+                        uri_inputs.add(prefixed_name)
                 elif isinstance(value, list):
                     # handle single list reduction as a collection input
                     if (
@@ -407,7 +412,7 @@ class ToolEvaluator:
                         return
 
                     for v in value:
-                        if self._should_materialize_deferred_input(prefixed_name, v):
+                        if self._should_materialize_deferred_input(input, v):
                             deferred_objects[prefixed_name] = value
                             break
 
@@ -418,18 +423,22 @@ class ToolEvaluator:
         # object array also. This is so messy. I think in this case - we only need these for
         # Pulsar staging up which uses the hackier input_datasets flat dict.
         for key, value in input_datasets.items():
-            if key not in deferred_objects and value is not None and value.state == model.Dataset.states.DEFERRED:
-                if self._should_materialize_deferred_input(key, value):
+            if (
+                key not in deferred_objects
+                and key not in uri_inputs
+                and value is not None
+                and value.state == model.Dataset.states.DEFERRED
+            ):
+                if self._should_materialize_deferred_input(self.tool.inputs.get(key), value):
                     deferred_objects[key] = value
 
         return deferred_objects
 
-    def _should_materialize_deferred_input(self, input_name: str, input_value: DeferrableObjectsT) -> bool:
+    def _should_materialize_deferred_input(self, deferred_input: Any, input_value: DeferrableObjectsT) -> bool:
         """
         We can skip materializing some deferred datasets if the input can work with URIs that are prefixed
         with a known prefix set in `allow_uri_if_protocol`.
         """
-        deferred_input = self.tool.inputs.get(input_name)
         if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
             source_uri = input_value.deferred_source_uri or ""
             for prefix in deferred_input.allow_uri_if_protocol:
