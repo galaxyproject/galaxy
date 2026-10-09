@@ -1,13 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
-import MountTarget from "./MarkdownGalaxy.vue";
+import MarkdownGalaxy from "./MarkdownGalaxy.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const { server, http } = useServerMock();
@@ -41,8 +41,8 @@ vi.mock("@/stores/workflowStore", () => ({
     })),
 }));
 
-const localVue = getLocalVue();
-const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+enableAutoUnmount(afterEach);
+afterEach(() => vi.useRealTimers());
 
 let postRequests = [];
 
@@ -50,7 +50,7 @@ beforeEach(() => {
     postRequests = [];
 });
 
-function mountComponent(propsData = {}, options = {}) {
+function mountMarkdown(props = {}, options = {}) {
     const handlers = [
         http.get("/api/histories/test_history_id", ({ response }) =>
             response(200).json({ id: "test_history_id", name: "history_name" }),
@@ -80,20 +80,19 @@ function mountComponent(propsData = {}, options = {}) {
 
     server.use(...handlers);
 
-    return mount(MountTarget, {
-        global: localVue,
-        pinia,
-        propsData,
+    return mount(MarkdownGalaxy, {
+        global: withPlugins(getLocalVue(), createTestingPinia({ createSpy: vi.fn, stubActions: false })),
+        props,
         stubs: {
             FontAwesomeIcon: true,
         },
     });
 }
 
-describe("MarkdownContainer", () => {
-    it("Renders version", async () => {
+describe("MarkdownGalaxy", () => {
+    it("renders the Galaxy version and expands its optional collapse heading", async () => {
         const version = "test_version";
-        const wrapper = mountComponent({
+        const wrapper = mountMarkdown({
             content: "generate_galaxy_version()",
         });
         const versionEl = wrapper.find(".galaxy-version");
@@ -109,25 +108,24 @@ describe("MarkdownContainer", () => {
         expect(heading.text()).toBe(collapse);
         const container = wrapper.find(".g-collapse");
         expect(container.classes()).not.toContain("g-collapse-open");
-        await heading.vm.$emit("click");
+        await heading.find("h2").trigger("click");
         expect(container.classes()).toContain("g-collapse-open");
     });
 
-    it("Renders time stamp", async () => {
-        const time = new Date();
+    it("renders the current UTC timestamp", async () => {
+        const time = new Date("2025-01-15T12:34:56Z");
         vi.useFakeTimers();
         vi.setSystemTime(time);
-        const wrapper = mountComponent({
+        const wrapper = mountMarkdown({
             content: "generate_time()",
         });
         const version = wrapper.find(".galaxy-time");
         expect(version.exists()).toBe(true);
         expect(version.text()).toBe(time.toUTCString());
-        vi.useRealTimers();
     });
 
-    it("Renders history link", async () => {
-        const wrapper = mountComponent(
+    it("loads the history link name and imports it on click", async () => {
+        const wrapper = mountMarkdown(
             {
                 content: "history_link(history_id=test_history_id)",
             },
@@ -141,26 +139,23 @@ describe("MarkdownContainer", () => {
         expect(link.text()).toBe("Click to Import History: history_name");
         await link.trigger("click");
         await flushPromises();
-        expect(postRequests.length).toBe(1);
+        expect(postRequests).toHaveLength(1);
         expect(postRequests[0].data.history_id).toBe("test_history_id");
-        const error = wrapper.find(".text-success");
-        const message = error.find("span");
-        expect(message.text()).toBe("Successfully Imported History: history_name!");
+        expect(wrapper.find(".text-success span").text()).toBe("Successfully Imported History: history_name!");
     });
 
-    it("Renders history link (with failing import error message)", async () => {
-        const wrapper = mountComponent({
+    it("shows the history import error when the import request fails", async () => {
+        server.use(http.untyped.post("/api/histories", () => HttpResponse.error()));
+        const wrapper = mountMarkdown({
             content: "history_link(history_id=test_history_id)",
         });
         await wrapper.find("a").trigger("click");
         await flushPromises();
-        const error = wrapper.find(".text-danger");
-        const message = error.find("span");
-        expect(message.text()).toBe("Failed to handle History: history_name!");
+        expect(wrapper.find(".text-danger span").text()).toBe("Failed to handle History: history_name!");
     });
 
-    it("Renders error for invalid directive syntax", async () => {
-        const wrapper = mountComponent({
+    it("shows an error for invalid directive syntax", async () => {
+        const wrapper = mountMarkdown({
             content: "not_valid_content(",
         });
         const alert = wrapper.find(".alert-danger");
@@ -168,16 +163,16 @@ describe("MarkdownContainer", () => {
         expect(alert.text()).toContain("The directive provided below is invalid");
     });
 
-    it("Renders error for invalid component type", async () => {
-        const wrapper = mountComponent({
+    it("shows an error for an unknown component type", async () => {
+        const wrapper = mountMarkdown({
             content: "unknown_component()",
         });
         const alert = wrapper.find(".alert-danger");
         expect(alert.text()).toContain("Invalid component type");
     });
 
-    it("Renders error for missing required label", async () => {
-        const wrapper = mountComponent({
+    it("rejects an unknown component even with an unmatched input label", async () => {
+        const wrapper = mountMarkdown({
             content: "tool_a(input=foo)",
             labels: [{ type: "input", label: "NotFoo" }],
         });
@@ -185,8 +180,8 @@ describe("MarkdownContainer", () => {
         expect(alert.text()).toContain("Invalid component type tool_a");
     });
 
-    it("Renders info alert if labels exist but no invocation_id is present", async () => {
-        const wrapper = mountComponent({
+    it("shows unavailable data when labels have no invocation ID", async () => {
+        const wrapper = mountMarkdown({
             content: "history_dataset_display(input=foo)",
             labels: [
                 { type: "input", label: "foo" },
@@ -198,8 +193,8 @@ describe("MarkdownContainer", () => {
         expect(alert.text()).toContain("Data for rendering not yet available for");
     });
 
-    it("Renders danger alert if more than one label exists", async () => {
-        const wrapper = mountComponent({
+    it("rejects a dataset directive with both input and output labels", async () => {
+        const wrapper = mountMarkdown({
             content: "history_dataset_display(input=foo, output=bar)",
             labels: [
                 { type: "input", label: "foo" },
@@ -211,14 +206,14 @@ describe("MarkdownContainer", () => {
         expect(alert.text()).toMatch(/Invalid or missing label for\s*history_dataset_display/);
     });
 
-    it("Renders loading span while invocation is loading", async () => {
+    it("shows a loading indicator while the invocation loads", async () => {
         const { useInvocationStore } = await import("@/stores/invocationStore");
         vi.mocked(useInvocationStore).mockReturnValueOnce({
             getInvocationById: () => null,
             getInvocationLoadError: () => null,
             isLoadingInvocation: vi.fn(() => true),
         });
-        const wrapper = mountComponent({
+        const wrapper = mountMarkdown({
             content: "history_dataset_display(invocation_id=123, input=foo)",
             labels: [
                 { type: "input", label: "foo" },
@@ -229,7 +224,7 @@ describe("MarkdownContainer", () => {
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
     });
 
-    it("Handles invocation fetching and workflow ID resolution", async () => {
+    it("fetches the invocation workflow before resolving directive arguments", async () => {
         const invocation = { workflow_id: "wf123", inputs: {}, outputs: {} };
         const { useInvocationStore } = await import("@/stores/invocationStore");
         const { useWorkflowStore } = await import("@/stores/workflowStore");
@@ -243,7 +238,7 @@ describe("MarkdownContainer", () => {
             fetchWorkflowForInstanceIdCached: fetchWorkflowMock,
             getStoredWorkflowIdByInstanceId: () => "wf123",
         });
-        mountComponent({
+        mountMarkdown({
             content: "tool_a(invocation_id=123, input=foo, output=bar)",
             labels: [
                 { type: "input", label: "foo" },
@@ -255,7 +250,7 @@ describe("MarkdownContainer", () => {
     });
 
     it("parses compact and show_column_headers args as booleans, not truthy strings", async () => {
-        const wrapper = mountComponent(
+        const wrapper = mountMarkdown(
             {
                 content:
                     "history_dataset_as_table(history_dataset_id=dataset_id, compact=false, show_column_headers=false)",
@@ -276,7 +271,7 @@ describe("MarkdownContainer", () => {
     });
 
     it("defaults compact to false and show_column_headers to true when args are absent", async () => {
-        const wrapper = mountComponent(
+        const wrapper = mountMarkdown(
             { content: "history_dataset_as_table(history_dataset_id=dataset_id)" },
             { enableDatasetAsTable: true },
         );
