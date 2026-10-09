@@ -1025,7 +1025,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         tool_dir: Optional[StrPath] = None,
     ):
         """Load a tool from the config named by `config_file`"""
-        self.config_file = os.path.realpath(config_file) if config_file else None
+        self.config_file = config_file
         # Determine the full path of the directory where the tool config is
         if self.config_file is not None:
             tool_dir = tool_dir or os.path.dirname(self.config_file)
