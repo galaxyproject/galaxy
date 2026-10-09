@@ -1,17 +1,13 @@
 import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
-import { DOMWrapper, mount } from "@vue/test-utils";
+import { DOMWrapper, enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { nextTick } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 
 describe("HeadlessMultiselect", () => {
-    const localVue = getLocalVue();
+    enableAutoUnmount(afterEach);
 
-    // The component teleports its options popup to `#app` (falling back to a
-    // parent `<dialog>` id, which doesn't apply here). Recreate that root so
-    // the teleported content actually lands in the DOM, mirroring how the
-    // real app mounts.
+    // Keep the real teleport and focus behavior by mounting into its popup target.
     let appRoot: HTMLDivElement;
 
     beforeEach(() => {
@@ -25,10 +21,10 @@ describe("HeadlessMultiselect", () => {
     });
 
     type Props = InstanceType<typeof HeadlessMultiselect>["$props"];
-    const mountWithProps = (props: Props) => {
-        return mount(HeadlessMultiselect as any, {
-            props: props,
-            global: localVue,
+    const mountWithProps = (props: Partial<Props> = {}) => {
+        return mount(HeadlessMultiselect, {
+            props: { options: sampleOptions, selected: [], ...props },
+            global: getLocalVue(),
             attachTo: appRoot,
         });
     };
@@ -43,62 +39,48 @@ describe("HeadlessMultiselect", () => {
         invalid: ".headless-multiselect__option.invalid",
     } as const;
 
-    async function keyPress(wrapper: DOMWrapper<Element>, key: string) {
-        wrapper.trigger("keydown", {
+    async function keyPress(wrapper: Pick<DOMWrapper<Element>, "trigger">, key: string) {
+        await wrapper.trigger("keydown", {
             key,
             code: key,
         });
-        await nextTick();
-        wrapper.trigger("keyup", {
+        await wrapper.trigger("keyup", {
             key,
             code: key,
         });
-        await nextTick();
     }
 
     async function open(wrapper: ReturnType<typeof mountWithProps>) {
-        wrapper.find(selectors.openButton).trigger("click");
-        await nextTick();
-        return wrapper.find(selectors.input);
+        await wrapper.get(selectors.openButton).trigger("click");
+        return wrapper.get(selectors.input);
     }
 
     async function close(wrapper: ReturnType<typeof mountWithProps>) {
-        await keyPress(wrapper.find(selectors.input), "Escape");
+        await keyPress(wrapper.get(selectors.input), "Escape");
     }
 
-    // The options popup is teleported to `#app`, so it's no longer a
-    // descendant of `wrapper.element` -- query the DOM directly for it.
+    // Teleported options belong to the app root, outside wrapper.element.
     function findAllOptions() {
-        return new DOMWrapper(document.body).findAll(selectors.option);
+        return new DOMWrapper(appRoot).findAll(selectors.option);
     }
 
     function findHighlighted() {
-        return new DOMWrapper(document.body).find(selectors.highlighted);
+        return new DOMWrapper(appRoot).find(selectors.highlighted);
     }
 
     describe("while toggling the popup", () => {
         it("shows and hides options", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
-
-            let options;
+            const wrapper = mountWithProps();
 
             await open(wrapper);
-            options = findAllOptions();
-            expect(options.length).toBe(sampleOptions.length);
+            expect(findAllOptions()).toHaveLength(sampleOptions.length);
 
             await close(wrapper);
-            options = findAllOptions();
-            expect(options.length).toBe(0);
+            expect(findAllOptions()).toHaveLength(0);
         });
 
         it("retains focus", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
             expect(input.element).toBe(document.activeElement);
@@ -111,33 +93,22 @@ describe("HeadlessMultiselect", () => {
 
     describe("while inputting text", () => {
         it("filters options", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
-
-            let options;
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
 
             await input.setValue("a");
-            options = findAllOptions();
-            expect(options.length).toBe(5);
+            expect(findAllOptions()).toHaveLength(5);
 
             await input.setValue("na");
-            options = findAllOptions();
-            expect(options.length).toBe(4);
+            expect(findAllOptions()).toHaveLength(4);
 
             await input.setValue("");
-            options = findAllOptions();
-            expect(options.length).toBe(6);
+            expect(findAllOptions()).toHaveLength(6);
         });
 
         it("shows the search value on top", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
 
@@ -151,78 +122,57 @@ describe("HeadlessMultiselect", () => {
         });
 
         it("allows for switching the highlighted value", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
-
-            let highlighted;
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
 
-            highlighted = findHighlighted();
-            expect(highlighted.find("span").text()).toBe("#named");
+            expect(findHighlighted().find("span").text()).toBe("#named");
 
             await keyPress(input, "ArrowDown");
-            highlighted = findHighlighted();
-            expect(highlighted.find("span").text()).toBe("#named_2");
+            expect(findHighlighted().find("span").text()).toBe("#named_2");
 
             await keyPress(input, "ArrowDown");
-            highlighted = findHighlighted();
-            expect(highlighted.find("span").text()).toBe("#named_3");
+            expect(findHighlighted().find("span").text()).toBe("#named_3");
 
             await keyPress(input, "ArrowUp");
-            highlighted = findHighlighted();
-            expect(highlighted.find("span").text()).toBe("#named_2");
+            expect(findHighlighted().find("span").text()).toBe("#named_2");
 
             await close(wrapper);
         });
 
         it("resets the highlighted option on input", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
-
-            let highlighted;
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
 
             await keyPress(input, "ArrowDown");
-            highlighted = findHighlighted();
-            expect(highlighted.find("span").text()).toBe("#named_2");
+            expect(findHighlighted().find("span").text()).toBe("#named_2");
 
             await input.setValue("a");
 
-            highlighted = findHighlighted();
-            expect(highlighted.find("span").text()).toBe("a");
+            expect(findHighlighted().find("span").text()).toBe("a");
 
             await close(wrapper);
         });
 
         it("shows if the input value is valid", async () => {
             const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
                 validator: (value: string) => value !== "invalid",
             });
 
             const input = await open(wrapper);
             await input.setValue("valid");
-            expect(() => new DOMWrapper(document.body).get(selectors.invalid)).toThrow();
+            expect(new DOMWrapper(appRoot).find(selectors.invalid).exists()).toBe(false);
 
             await input.setValue("invalid");
-            expect(() => new DOMWrapper(document.body).get(selectors.invalid)).not.toThrow();
+            expect(new DOMWrapper(appRoot).get(selectors.invalid).find("span").text()).toBe("invalid");
             await close(wrapper);
         });
     });
 
     describe("when selecting options", () => {
         it("selects options via keyboard", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
 
@@ -237,7 +187,6 @@ describe("HeadlessMultiselect", () => {
 
         it("deselects options via keyboard", async () => {
             const wrapper = mountWithProps({
-                options: sampleOptions,
                 selected: ["name:named", "name:named_2", "name:named_3"],
             });
 
@@ -253,10 +202,7 @@ describe("HeadlessMultiselect", () => {
         });
 
         it("allows for adding new options", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
+            const wrapper = mountWithProps();
 
             const input = await open(wrapper);
             await input.setValue("123");
@@ -267,10 +213,7 @@ describe("HeadlessMultiselect", () => {
         });
 
         it("selects options with mouse", async () => {
-            const wrapper = mountWithProps({
-                options: sampleOptions,
-                selected: [] as string[],
-            });
+            const wrapper = mountWithProps();
 
             await open(wrapper);
             const options = findAllOptions();
@@ -285,7 +228,6 @@ describe("HeadlessMultiselect", () => {
 
         it("deselects options with mouse", async () => {
             const wrapper = mountWithProps({
-                options: sampleOptions,
                 selected: ["name:named", "name:named_2", "name:named_3"],
             });
 
