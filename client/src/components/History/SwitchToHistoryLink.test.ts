@@ -1,16 +1,19 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getFakeHistorySummaryExtended, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistorySummaryExtended } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import type * as HistoryStoreModule from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import SwitchToHistoryLink from "./SwitchToHistoryLink.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
+afterEach(() => vi.restoreAllMocks());
 
 const { server, http } = useServerMock();
 
@@ -36,11 +39,11 @@ vi.mock("vue-router", () => ({
 
 // Mock the history store
 vi.mock("@/stores/historyStore", async () => {
-    const originalModule = await vi.importActual("@/stores/historyStore");
+    const originalModule = await vi.importActual<typeof HistoryStoreModule>("@/stores/historyStore");
     return {
         ...originalModule,
         useHistoryStore: () => ({
-            ...(originalModule as any).useHistoryStore(),
+            ...originalModule.useHistoryStore(),
             currentHistoryId: "current-history-id",
             setCurrentHistory: mockSetCurrentHistory,
             getHistoryLoadError: mockGetHistoryLoadError,
@@ -64,116 +67,146 @@ vi.mock("@/stores/eventStore", () => {
     };
 });
 
-/** Clear up and initialize all mocks for the test. */
-function initializeMocks() {
-    mockSetCurrentHistory.mockClear();
-    mockApplyFilters.mockClear();
-    mockWindowOpen.mockClear();
+beforeEach(() => {
+    vi.clearAllMocks();
     mockGetHistoryLoadError.mockReturnValue(null);
-    const windowSpy = vi.spyOn(window, "open");
-    windowSpy.mockImplementation(() => mockWindowOpen());
+    vi.spyOn(window, "open").mockImplementation(mockWindowOpen);
+});
+
+function mountHistoryLink(history: HistorySummaryExtended, filters?: Record<string, string | boolean>) {
+    server.use(http.get("/api/histories/{history_id}", ({ response }) => response(200).json(history)));
+    return mountLink(history.id, filters);
 }
 
-/** Mock `<SwitchToHistoryLink>` component for testing.
- * @param history - The history to be mocked
- * @param hasFilters - Whether the component has the `filters` prop (generates sample filters)
- */
-function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, hasFilters = false) {
-    initializeMocks();
-
+function mountLink(historyId: string, filters?: Record<string, string | boolean>) {
+    const localVue = getLocalVue(true);
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-
-    server.use(
-        http.get("/api/histories/{history_id}", ({ response }) => {
-            return response(200).json(history);
-        }),
-    );
-
-    const filters = hasFilters ? { deleted: false, visible: true, hid: "1" } : undefined;
-
-    const wrapper = mount(SwitchToHistoryLink as object, {
-        props: {
-            historyId: history.id,
-            filters,
-        },
-        global: localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-    });
-
-    const userStore = useUserStore();
-    userStore.currentUser = {
+    useUserStore(pinia).currentUser = getFakeRegisteredUser({
         email: "email",
         id: "user_id",
-        isAnonymous: false,
-        total_disk_usage: 0,
         nice_total_disk_usage: "0 bytes",
-        purged: false,
-        deleted: false,
-        is_admin: false,
         username: "user",
-        preferences: {},
         quota: "abcdef",
-    };
-    return wrapper;
+    });
+    return mount(SwitchToHistoryLink as object, {
+        props: { historyId, filters },
+        global: withPlugins(localVue, pinia),
+        stubs: { FontAwesomeIcon: true },
+    });
 }
 
-/**
- * This function expects a specific action to be taken based on the provided history's properties.
- * @param tooltip What tooltip text to expect
- * @param history The history object to test (with variations like `deleted`, `archived`, etc.)
- * @param opensInNewTab Whether the history should open in a new tab on click
- * @param hasFilters Whether the `SwitchToHistoryLink` has a `filters` prop
- * @param setsCurrentHistory Whether we set the current history on click
- * @param setsFilters Whether filters are applied to the current history on click
- */
-async function expectActionForHistory(
-    tooltip:
-        | "Switch to this history"
-        | "This is your current history"
-        | "View in new tab"
-        | "Switch to history and view dataset",
-    history: HistorySummaryExtended,
-    opensInNewTab = false,
-    hasFilters = false,
-    setsCurrentHistory = false,
-    setsFilters = false,
-) {
-    const wrapper = mountSwitchToHistoryLinkForHistory(history, hasFilters);
+const datasetFilters = { deleted: false, visible: true, hid: "1" };
 
-    // Wait for the history to be loaded
-    await flushPromises();
-
-    expect(wrapper.find(selectors.tooltip).text()).toEqual(tooltip);
-    expect(wrapper.text()).toContain(history.name);
-
-    await wrapper.find(selectors.historyLinkButton).trigger("click");
-
-    expect(mockSetCurrentHistory).toHaveBeenCalledTimes(setsCurrentHistory ? 1 : 0);
-    expect(mockApplyFilters).toHaveBeenCalledTimes(setsFilters ? 1 : 0);
-    expect(mockWindowOpen).toHaveBeenCalledTimes(opensInNewTab ? 1 : 0);
-
-    // Click with ctrl key pressed down this time
-    await wrapper.find(selectors.historyLinkButton).trigger("click", { ctrlKey: true });
-
-    // None of the other click operations are called (counts remain as is), but we always open the history in a new tab
-    expect(mockSetCurrentHistory).toHaveBeenCalledTimes(setsCurrentHistory ? 1 : 0);
-    expect(mockApplyFilters).toHaveBeenCalledTimes(setsFilters ? 1 : 0);
-    expect(mockWindowOpen).toHaveBeenCalledTimes(opensInNewTab ? 2 : 1); // Ctrl+Click opens in new tab
-}
+const actionCases = [
+    {
+        name: "switches to an active history",
+        id: "active-history-id",
+        historyName: "History Active",
+        tooltip: "Switch to this history",
+        switches: 1,
+        appliesFilters: 0,
+        newTabs: 0,
+    },
+    {
+        name: "switches to an active history and applies filters",
+        id: "active-history-id",
+        historyName: "History Active",
+        filters: datasetFilters,
+        tooltip: "Switch to history and view dataset",
+        switches: 1,
+        appliesFilters: 1,
+        newTabs: 0,
+    },
+    {
+        name: "leaves the current history selected",
+        id: "current-history-id",
+        historyName: "History Current",
+        tooltip: "This is your current history",
+        switches: 0,
+        appliesFilters: 0,
+        newTabs: 0,
+    },
+    {
+        name: "applies filters without switching the current history",
+        id: "current-history-id",
+        historyName: "History Current",
+        filters: datasetFilters,
+        tooltip: "Switch to history and view dataset",
+        switches: 0,
+        appliesFilters: 1,
+        newTabs: 0,
+    },
+    {
+        name: "opens a purged history in a new tab",
+        id: "purged-history-id",
+        historyName: "History Purged",
+        purged: true,
+        tooltip: "View in new tab",
+        switches: 0,
+        appliesFilters: 0,
+        newTabs: 1,
+    },
+    {
+        name: "switches to a purged history and applies filters",
+        id: "purged-history-id",
+        historyName: "History Purged",
+        purged: true,
+        filters: datasetFilters,
+        tooltip: "Switch to history and view dataset",
+        switches: 1,
+        appliesFilters: 1,
+        newTabs: 0,
+    },
+    {
+        name: "opens an archived history in a new tab",
+        id: "archived-history-id",
+        historyName: "History Archived",
+        archived: true,
+        tooltip: "View in new tab",
+        switches: 0,
+        appliesFilters: 0,
+        newTabs: 1,
+    },
+    {
+        name: "switches to an archived history and applies filters",
+        id: "archived-history-id",
+        historyName: "History Archived",
+        archived: true,
+        filters: datasetFilters,
+        tooltip: "Switch to history and view dataset",
+        switches: 1,
+        appliesFilters: 1,
+        newTabs: 0,
+    },
+    {
+        name: "opens a public history owned by another user in a new tab",
+        id: "public-history-id",
+        historyName: "History Published",
+        published: true,
+        user_id: "other_user_id",
+        tooltip: "View in new tab",
+        switches: 0,
+        appliesFilters: 0,
+        newTabs: 1,
+    },
+    {
+        name: "opens a public unowned history in a new tab even with filters",
+        filters: datasetFilters,
+        id: "public-history-id",
+        historyName: "History Published",
+        published: true,
+        user_id: "other_user_id",
+        tooltip: "View in new tab",
+        switches: 0,
+        appliesFilters: 0,
+        newTabs: 1,
+    },
+];
 
 describe("SwitchToHistoryLink", () => {
     it("loads the history information from the store", async () => {
-        const history = {
-            id: "history-id-to-load",
-            name: "History Name",
-            deleted: false,
-            archived: false,
-            purged: false,
-        } as HistorySummaryExtended;
-        const wrapper = mountSwitchToHistoryLinkForHistory(history);
+        const history = getFakeHistorySummaryExtended({ id: "history-id-to-load", name: "History Name" });
+        const wrapper = mountHistoryLink(history);
 
         expect(wrapper.find(selectors.historyLink).exists()).toBe(false);
         expect(wrapper.html()).toContain("Loading");
@@ -185,105 +218,38 @@ describe("SwitchToHistoryLink", () => {
         expect(wrapper.text()).toContain(history.name);
     });
 
-    it("sets current history or applies filters if the history can be switched to", async () => {
-        const history = {
-            id: "active-history-id",
-            name: "History Active",
-            deleted: false,
-            purged: false,
-            archived: false,
-            user_id: "user_id",
-        } as HistorySummaryExtended;
+    it.each(actionCases)("$name; Ctrl-click only opens a new tab", async (scenario) => {
+        const history = getFakeHistorySummaryExtended({
+            id: scenario.id,
+            name: scenario.historyName,
+            user_id: scenario.user_id ?? "user_id",
+            purged: scenario.purged ?? false,
+            archived: scenario.archived ?? false,
+            published: scenario.published ?? false,
+        });
+        const wrapper = mountHistoryLink(history, scenario.filters);
+        await flushPromises();
 
-        // We switch to this history
-        await expectActionForHistory("Switch to this history", history, false, false, true, false);
+        expect(wrapper.get(selectors.tooltip).text()).toBe(scenario.tooltip);
+        expect(wrapper.text()).toContain(history.name);
 
-        // Since history was not current, we switch to it AND apply filters
-        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
-    });
+        await wrapper.get(selectors.historyLinkButton).trigger("click");
+        expect(mockSetCurrentHistory).toHaveBeenCalledTimes(scenario.switches);
+        expect(mockApplyFilters).toHaveBeenCalledTimes(scenario.appliesFilters);
+        expect(mockWindowOpen).toHaveBeenCalledTimes(scenario.newTabs);
 
-    it("only applies filters when the history is the Current history", async () => {
-        const history = {
-            id: "current-history-id",
-            name: "History Current",
-            deleted: false,
-            purged: false,
-            archived: false,
-            user_id: "user_id",
-        } as HistorySummaryExtended;
-
-        // We do nothing since the history is already current
-        await expectActionForHistory("This is your current history", history);
-
-        // Since history is already current, we only apply filters
-        await expectActionForHistory("Switch to history and view dataset", history, false, true, false, true);
-    });
-
-    it("opens purged history in new tab or applies filters", async () => {
-        const history = {
-            id: "purged-history-id",
-            name: "History Purged",
-            deleted: false,
-            purged: true,
-            archived: false,
-            user_id: "user_id",
-        } as HistorySummaryExtended;
-
-        // We view the purged history in a new tab
-        await expectActionForHistory("View in new tab", history, true);
-
-        // We switch to the purged history and apply filters
-        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
-    });
-
-    it("opens archived history in new tab or applies filters", async () => {
-        const history = {
-            id: "archived-history-id",
-            name: "History Archived",
-            deleted: false,
-            purged: false,
-            archived: true,
-            user_id: "user_id",
-        } as HistorySummaryExtended;
-
-        // We view the archived history in a new tab
-        await expectActionForHistory("View in new tab", history, true);
-
-        // We switch to the archived history and apply filters
-        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
-    });
-
-    it("only opens an accessible unowned history in new tab", async () => {
-        const history = {
-            id: "public-history-id",
-            name: "History Published",
-            deleted: false,
-            purged: false,
-            archived: false,
-            published: true,
-            user_id: "other_user_id",
-        } as HistorySummaryExtended;
-
-        // We view the accessible (but other user's) history in a new tab
-        await expectActionForHistory("View in new tab", history, true);
-
-        // Since the history isn't owned, we can't switch to it and apply filters; so we just view it in a new tab
-        await expectActionForHistory("View in new tab", history, true);
+        await wrapper.get(selectors.historyLinkButton).trigger("click", { ctrlKey: true });
+        expect(mockSetCurrentHistory).toHaveBeenCalledTimes(scenario.switches);
+        expect(mockApplyFilters).toHaveBeenCalledTimes(scenario.appliesFilters);
+        expect(mockWindowOpen).toHaveBeenCalledTimes(scenario.newTabs + 1);
+        expect(vi.mocked(window.open)).toHaveBeenLastCalledWith(`resolved-/histories/view?id=${history.id}`, "_blank");
     });
 
     it("shows an error badge when the history is inaccessible (backend error)", async () => {
-        initializeMocks();
-
         // The history store is fully mocked, so mockGetHistoryLoadError is used to emulate a 403
         mockGetHistoryLoadError.mockReturnValue(new Error("History is not accessible to the current user"));
 
-        const pinia = createTestingPinia({ createSpy: vi.fn });
-        const wrapper = mount(SwitchToHistoryLink as object, {
-            propsData: { historyId: "inaccessible-history-id" },
-            localVue,
-            pinia,
-            stubs: { FontAwesomeIcon: true },
-        });
+        const wrapper = mountLink("inaccessible-history-id");
 
         await flushPromises();
 
