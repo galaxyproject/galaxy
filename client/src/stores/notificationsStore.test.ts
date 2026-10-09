@@ -1,15 +1,14 @@
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
-import type { UserNotification } from "@/api/notifications";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import type { components } from "@/api/schema";
+import { generateMessageNotification } from "@/components/Notifications/test-utils";
 
-import { emitSse, sseMockFactory, useVisibilityPatch } from "./_testing/sseStoreSupport";
+import { emitSse, sseMockFactory, trackVisibilityListeners, useVisibilityPatch } from "./_testing/sseStoreSupport";
 import { useNotificationsStore } from "./notificationsStore";
+import { setupTestPinia } from "./testUtils";
 
-// ``vi.mock`` is hoisted above module-level ``const`` declarations, so the
-// capture-state has to be built via ``vi.hoisted`` to be visible to the factory.
 const sseState = vi.hoisted(() => {
     return {
         onEvent: null as ((event: MessageEvent) => void) | null,
@@ -20,63 +19,53 @@ const sseState = vi.hoisted(() => {
 
 vi.mock("@/composables/useNotificationSSE", () => sseMockFactory(sseState));
 
-// Realistic fixture: a single unread notification, as returned by
-// GET /api/notifications. Shape mirrors UserNotification.
-function makeNotificationFixture(overrides: Partial<UserNotification> = {}): UserNotification {
-    return {
-        id: "notif-1",
-        source: "galaxy_test",
-        category: "message",
-        variant: "info",
-        create_time: "2026-01-01T00:00:00",
-        update_time: "2026-01-01T00:00:00",
-        publication_time: "2026-01-01T00:00:00",
-        expiration_time: null,
-        seen_time: null,
-        deleted: false,
-        content: { category: "message", subject: "hello", message: "welcome" },
-        ...overrides,
-    } as UserNotification;
-}
-
-const SCENARIO_NOTIFICATION = makeNotificationFixture();
-const SCENARIO_STATUS_SINCE = {
+const initialNotification = generateMessageNotification({
+    id: "notif-1",
+    source: "galaxy_test",
+    create_time: "2026-01-01T00:00:00",
+    update_time: "2026-01-01T00:00:00",
+    publication_time: "2026-01-01T00:00:00",
+    expiration_time: null,
+    content: { subject: "hello", message: "welcome" },
+});
+const initialStatus = {
     total_unread_count: 1,
-    notifications: [SCENARIO_NOTIFICATION],
+    notifications: [initialNotification],
     broadcasts: [],
-};
+} satisfies components["schemas"]["NotificationStatusSummary"];
 
 const { server, http } = useServerMock();
 
 const statusSpy = vi.fn();
 
-function registerDefaultHandlers({ enableSseUpdates }: { enableSseUpdates: boolean }) {
+function registerHandlers(enableSseUpdates: boolean) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
-            return response(200).json({
-                enable_notification_system: true,
-                enable_sse_updates: enableSseUpdates,
-            } as any);
+            return response.untyped(
+                HttpResponse.json({
+                    enable_notification_system: true,
+                    enable_sse_updates: enableSseUpdates,
+                }),
+            );
         }),
         http.get("/api/notifications", ({ response }) => {
-            return response(200).json([SCENARIO_NOTIFICATION]);
+            return response(200).json([initialNotification]);
         }),
         http.get("/api/notifications/broadcast", ({ response }) => {
             return response(200).json([]);
         }),
         http.get("/api/notifications/status", ({ response }) => {
             statusSpy();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return response(200).json(SCENARIO_STATUS_SINCE as any);
+            return response(200).json(initialStatus);
         }),
     );
 }
 
 /** Config load + initial fetch + store-decision watch needs a couple of ticks. */
-async function primeStore(startFn: () => Promise<void> | void): Promise<void> {
+async function startWatching(store: ReturnType<typeof useNotificationsStore>): Promise<void> {
     // Let the config-store fetch resolve before the store's `watch` runs.
     await vi.runOnlyPendingTimersAsync();
-    await startFn();
+    await store.startWatchingNotifications();
     // Two flush cycles: one for the config watch, one for the resulting fetch.
     await flushPromises();
     await vi.runOnlyPendingTimersAsync();
@@ -85,30 +74,36 @@ async function primeStore(startFn: () => Promise<void> | void): Promise<void> {
 
 describe("notificationsStore — config-driven SSE vs polling", () => {
     let visibility: ReturnType<typeof useVisibilityPatch>;
+    let visibilityListeners: ReturnType<typeof trackVisibilityListeners>;
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         sseState.connect.mockClear();
         sseState.disconnect.mockClear();
         sseState.onEvent = null;
         statusSpy.mockClear();
         vi.useFakeTimers();
         visibility = useVisibilityPatch();
+        visibility.set("visible");
+        visibilityListeners = trackVisibilityListeners();
     });
 
     afterEach(() => {
+        useNotificationsStore().stopWatchingNotifications();
+        useNotificationsStore().$dispose();
+        visibilityListeners.restore();
         visibility.restore();
         vi.useRealTimers();
     });
 
     describe("when enable_sse_updates is true (SSE scenario)", () => {
         beforeEach(() => {
-            registerDefaultHandlers({ enableSseUpdates: true });
+            registerHandlers(true);
         });
 
         it("connects SSE and does not poll the status endpoint", async () => {
             const store = useNotificationsStore();
-            await primeStore(() => store.startWatchingNotifications());
+            await startWatching(store);
 
             expect(sseState.connect).toHaveBeenCalledTimes(1);
 
@@ -121,7 +116,7 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
 
         it("does not start polling when the tab regains visibility", async () => {
             const store = useNotificationsStore();
-            await primeStore(() => store.startWatchingNotifications());
+            await startWatching(store);
 
             visibility.set("hidden");
             visibility.set("visible");
@@ -134,9 +129,10 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
 
         it("ingests notification_update events into the store state", async () => {
             const store = useNotificationsStore();
-            await primeStore(() => store.startWatchingNotifications());
+            await startWatching(store);
 
-            const pushed = makeNotificationFixture({
+            const pushed = generateMessageNotification({
+                ...initialNotification,
                 id: "notif-2",
                 content: { category: "message", subject: "pushed via sse", message: "hi" },
             });
@@ -149,11 +145,16 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
 
         it("ingests notification_status catch-up events on reconnect", async () => {
             const store = useNotificationsStore();
-            await primeStore(() => store.startWatchingNotifications());
+            await startWatching(store);
 
             emitSse(sseState, "notification_status", {
                 total_unread_count: 42,
-                notifications: [makeNotificationFixture({ id: "notif-catchup" })],
+                notifications: [
+                    generateMessageNotification({
+                        ...initialNotification,
+                        id: "notif-catchup",
+                    }),
+                ],
                 broadcasts: [],
             });
             await flushPromises();
@@ -165,12 +166,12 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
 
     describe("when enable_sse_updates is false (polling scenario)", () => {
         beforeEach(() => {
-            registerDefaultHandlers({ enableSseUpdates: false });
+            registerHandlers(false);
         });
 
         it("does not connect SSE and polls the status endpoint on the configured interval", async () => {
             const store = useNotificationsStore();
-            await primeStore(() => store.startWatchingNotifications());
+            await startWatching(store);
 
             expect(sseState.connect).not.toHaveBeenCalled();
 
