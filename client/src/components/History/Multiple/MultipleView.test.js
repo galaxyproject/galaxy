@@ -1,10 +1,10 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -19,13 +19,17 @@ setupMockConfig({});
 
 const { server, http } = useServerMock();
 
+enableAutoUnmount(afterEach);
+
 const getFakeHistorySummaries = (num) => {
-    return Array.from({ length: num }, (_, index) => ({
-        id: `test-history-id-${index}`,
-        name: `History-${index}`,
-        tags: [],
-        update_time: new Date().toISOString(),
-    }));
+    return Array.from({ length: num }, (_, index) =>
+        getFakeHistorySummary({
+            id: `test-history-id-${index}`,
+            name: `History-${index}`,
+            tags: [],
+            update_time: `2026-01-01T00:00:${String(index).padStart(2, "0")}`,
+        }),
+    );
 };
 
 describe("MultipleView", () => {
@@ -54,14 +58,17 @@ describe("MultipleView", () => {
             }),
         );
 
+        const pinia = createPinia();
+        const localVue = getLocalVue();
         const wrapper = mount(MultipleView, {
-            pinia: createPinia(),
-            stubs: {
-                HistoryPanel: true,
-                icon: { template: "<div></div>" },
-                "router-link": { template: "<a><slot /></a>", props: ["to"] },
+            global: {
+                ...withPlugins(localVue, pinia),
+                stubs: {
+                    HistoryPanel: true,
+                    icon: { template: "<div></div>" },
+                    "router-link": { template: "<a><slot /></a>", props: ["to"] },
+                },
             },
-            localVue: getLocalVue(),
         });
 
         const userStore = useUserStore();
@@ -76,74 +83,66 @@ describe("MultipleView", () => {
         return wrapper;
     }
 
-    it("more than 4 histories should not show the current history", async () => {
+    it("hides the oldest current history when only four of eight histories are displayed", async () => {
         const count = 8;
         const currentHistoryId = FIRST_HISTORY_ID;
 
-        // Set up UserHistories and wrapper
         const wrapper = await setUpWrapper(count, currentHistoryId);
 
-        // Test: current (first) history should not be shown because only 4 latest are shown by default
-        expect(wrapper.find("button[title='Current History']").exists()).toBeFalsy();
+        expect(wrapper.find("button[title='Current History']").exists()).toBe(false);
 
-        expect(wrapper.find("button[title='Switch to this history']").exists()).toBeTruthy();
+        expect(wrapper.find("button[title='Switch to this history']").exists()).toBe(true);
 
-        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBe(true);
 
-        expect(wrapper.find("[data-description='open select histories modal']").exists()).toBeTruthy();
+        expect(wrapper.find("[data-description='open select histories modal']").exists()).toBe(true);
     });
 
-    it("less than 4 histories should show the current history", async () => {
+    it("shows the current history when all three histories fit in the display", async () => {
         const count = 3;
         const currentHistoryId = FIRST_HISTORY_ID;
 
-        // Set up UserHistories and wrapper
         const wrapper = await setUpWrapper(count, currentHistoryId);
 
-        // Test: current (first) history should be shown because only 4 latest are shown by default, and count = 3
-        expect(wrapper.find("button[title='Current History']").exists()).toBeTruthy();
+        expect(wrapper.find("button[title='Current History']").exists()).toBe(true);
     });
 
     it("load more button is shown when histories exceed the display limit", async () => {
         const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
-        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+        expect(wrapper.find(".load-more-picker").exists()).toBe(true);
     });
 
     it("load more button is hidden when all histories fit within the display limit", async () => {
         const wrapper = await setUpWrapper(3, FIRST_HISTORY_ID);
-        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+        expect(wrapper.find(".load-more-picker").exists()).toBe(false);
     });
 
     it("clicking load more expands displayed histories and hides the button when all are shown", async () => {
         const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
 
-        // Initially 4 of 8 shown; load more is visible
-        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
-        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+        expect(wrapper.find(".load-more-picker").exists()).toBe(true);
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBe(true);
 
         await wrapper.find(".load-more-picker").trigger("click");
         await flushPromises();
 
-        // All 8 now shown; load more is gone and title reflects new count
-        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
-        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBeTruthy();
+        expect(wrapper.find(".load-more-picker").exists()).toBe(false);
+        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBe(true);
     });
 
     it("clicking load more multiple times progressively shows more histories", async () => {
         const wrapper = await setUpWrapper(12, FIRST_HISTORY_ID);
 
-        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBe(true);
 
-        // First click: 4 → 8; load more still present since 12 > 8
         await wrapper.find(".load-more-picker").trigger("click");
         await flushPromises();
-        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
-        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBeTruthy();
+        expect(wrapper.find(".load-more-picker").exists()).toBe(true);
+        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBe(true);
 
-        // Second click: 8 → 12; load more gone since 12 === 12
         await wrapper.find(".load-more-picker").trigger("click");
         await flushPromises();
-        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
-        expect(wrapper.find("div[title='Currently showing 12 most recently updated histories']").exists()).toBeTruthy();
+        expect(wrapper.find(".load-more-picker").exists()).toBe(false);
+        expect(wrapper.find("div[title='Currently showing 12 most recently updated histories']").exists()).toBe(true);
     });
 });
