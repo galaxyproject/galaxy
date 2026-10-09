@@ -120,7 +120,7 @@ importlib-metadata==8.7.1 ; python_full_version < '3.12'
 importlib-resources==7.1.0 ; python_full_version < '3.12'
 invoke==3.0.3
 isa-rwval==0.10.11
-isal==1.7.2 ; python_full_version < '3.15'
+isal==1.8.0 ; python_full_version < '3.15'
 isal==1.8.0 ; python_full_version >= '3.15'
 isodate==0.7.2 ; python_full_version < '3.11'
 jaraco-classes==3.4.0
