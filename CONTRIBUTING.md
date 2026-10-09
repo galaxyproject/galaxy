@@ -161,7 +161,7 @@ workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) rooted at
 the repository root: the root `pyproject.toml` is the only workspace manifest
 and the tracked `uv.lock` is the only lockfile. Regenerate it from the
 manifests rather than hand-editing it. Use the uv version pinned in
-`.uv-version` at the repository root.
+`.tool-versions` at the repository root.
 
 Package sources live under `packages/*/src` (the former `lib/` tree now only
 contains the root `galaxy_test` test-support package) and package test suites
@@ -182,7 +182,7 @@ anything.
 
 If a pull request that moves sources conflicts on `uv.lock`, resolve the
 conflicts in the `pyproject.toml` manifests and dependency groups first, then
-regenerate the lock with the uv version pinned in `.uv-version` and review the
+regenerate the lock with the uv version pinned in `.tool-versions` and review the
 resulting dependency diff. Never concatenate lock files or run broad upgrades
 (e.g. `uv lock --upgrade`) in source-move pull requests. See the [Galaxy
 Development FAQ](doc/source/dev/faq.rst) and the [packages

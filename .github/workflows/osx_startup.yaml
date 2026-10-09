@@ -63,7 +63,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
-          version-file: galaxy root/.uv-version
+          version-file: galaxy root/.tool-versions
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests

@@ -39,14 +39,14 @@ cd "$workspace_root"
 requirements_dir="$workspace_root/requirements"
 
 # Create a virtual environment in a tmp directory and install uv into it
-# Use the repository uv version pinned in .uv-version.
-uv_version="$(cat "$workspace_root/.uv-version" 2>/dev/null || echo "")"
+# Use the repository uv version pinned in .tool-versions.
+uv_version="$(awk '$1 == "uv" { print $2 }' "$workspace_root/.tool-versions")"
 if command -v uv >/dev/null; then
     uv="$(command -v uv)"
     if [ -n "$uv_version" ]; then
         installed_version="$($uv --version 2>/dev/null | awk '{print $2}')"
         if [ "$installed_version" != "$uv_version" ]; then
-            echo "WARNING: uv $installed_version != pinned $uv_version (.uv-version); proceeding with installed version" >&2
+            echo "WARNING: uv $installed_version != pinned $uv_version (.tool-versions); proceeding with installed version" >&2
         fi
     fi
 else

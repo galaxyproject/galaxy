@@ -61,7 +61,7 @@ export ``pinned-requirements.txt`` stays under
 tooling requirement files are regenerated under the repository-level
 ``requirements/`` directory). This also regenerates the root ``uv.lock``,
 which is tracked in the repository and is never hand-edited; regenerate
-it with the uv version pinned in the root ``.uv-version`` file:
+it with the uv version pinned in the root ``.tool-versions`` file:
 
 .. code-block:: bash
 
