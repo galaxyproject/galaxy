@@ -60,12 +60,6 @@ const title = computed(() => {
     return title;
 });
 
-function initializeRowData(rowData: AgRowData[], rows: RowsType) {
-    for (const row of rows) {
-        rowData.push({ ...row });
-    }
-}
-
 const BOOLEAN_COLUMNS: ParsedFetchWorkbookColumnType[] = [
     "to_posix_lines",
     "space_to_tab",
@@ -121,8 +115,8 @@ function initializeTabularVersionOfTarget() {
     collectionTypeRef.value = collectionType;
     autoDecompressRef.value = table.autoDecompress;
     initializeColumns(columns);
-    gridRowData.value.splice(0, gridRowData.value.length);
-    initializeRowData(gridRowData.value, rows);
+    // ag-grid-vue3 marks the bound array raw, so in-place changes stop reaching the grid
+    gridRowData.value = rows.map((row) => ({ ...row }));
     richSupportForTarget.value = true;
     viewMode.value = "table";
 }
