@@ -1,58 +1,41 @@
-import { getLocalVue, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, suppressExpectedErrorMessages, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http, HttpResponse } from "msw";
-import { createPinia, setActivePinia } from "pinia";
+import { createPinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defineComponent, ref } from "vue";
+import { defineComponent } from "vue";
 
 import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { makeCollectionConfig, makeLibraryItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
+import { setupTestPinia } from "@/stores/testUtils";
 import * as uploadUtils from "@/utils/upload";
 import { buildPreparedUpload } from "@/utils/upload";
 
 import { useUploadSubmission } from "./useUploadSubmission";
 
-const SELECTORS = {
-    RUN: "[data-test-id='run']",
-    RESULT: "[data-test-id='result']",
-    ERROR: "[data-test-id='error']",
-};
-
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 const { server } = useServerMock();
 
-function mountHarness(prepared: PreparedUpload, targetObjectStoreId?: string) {
+async function mountSubmission(prepared: PreparedUpload, targetObjectStoreId?: string) {
+    let submission: ReturnType<typeof useUploadSubmission> | undefined;
+    // useConfig loads configuration on mount, so the composable needs a component context.
     const Harness = defineComponent({
         setup() {
-            const { submitPreparedUpload } = useUploadSubmission();
-            const result = ref("");
-            const error = ref("");
-
-            async function run() {
-                try {
-                    const uploaded = await submitPreparedUpload("hist_1", prepared, undefined, targetObjectStoreId);
-                    result.value = JSON.stringify(uploaded);
-                } catch (err) {
-                    error.value = String(err);
-                }
-            }
-
-            return { error, result, run };
+            submission = useUploadSubmission();
         },
-        template: `
-            <div>
-                <button data-test-id="run" @click="run">run</button>
-                <div data-test-id="result">{{ result }}</div>
-                <div data-test-id="error">{{ error }}</div>
-            </div>
-        `,
+        template: "<div />",
     });
-
-    return mount(Harness, { localVue, pinia: createPinia() });
+    mount(Harness, { global: withPlugins(getLocalVue(), createPinia()) });
+    await flushPromises();
+    if (!submission) {
+        throw new Error("Upload submission harness did not initialize");
+    }
+    const { submitPreparedUpload } = submission;
+    return () => submitPreparedUpload("hist_1", prepared, undefined, targetObjectStoreId);
 }
 
 function makeSubmissionCollectionConfig() {
@@ -64,7 +47,7 @@ function makeSubmissionCollectionConfig() {
 
 describe("useUploadSubmission", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         useUploadState().clearAll();
 
         server.use(http.get("/api/configuration", () => HttpResponse.json({ chunk_upload_size: 42 })));
@@ -72,6 +55,7 @@ describe("useUploadSubmission", () => {
 
     afterEach(() => {
         useUploadState().clearAll();
+        vi.restoreAllMocks();
     });
 
     it("submits mixed uploads, tracks completion, and flattens nested fetch outputs", async () => {
@@ -101,18 +85,15 @@ describe("useUploadSubmission", () => {
 
         const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/remote.txt" });
         const apiPrepared = buildPreparedUpload([apiItem]);
-        const wrapper = mountHarness({
+        const submit = await mountSubmission({
             apiItems: apiPrepared.apiItems,
             uploadItems: [apiItem, makeLibraryItem()],
         });
-        await flushPromises();
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_1"');
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hdca_1"');
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_2"');
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_1" }));
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hdca_1" }));
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_2" }));
 
         const state = useUploadState();
         const pastedEntry = state.activeItems.value.find((item) => item.name === "remote.txt");
@@ -139,14 +120,11 @@ describe("useUploadSubmission", () => {
 
         const firstItem = makeUrlItem({ name: "first.txt", url: "https://example.org/first.txt" });
         const secondItem = makeUrlItem({ name: "second.txt", url: "https://example.org/second.txt" });
-        const wrapper = mountHarness(buildPreparedUpload([firstItem, secondItem]));
-        await flushPromises();
+        const submit = await mountSubmission(buildPreparedUpload([firstItem, secondItem]));
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_url_1"');
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_url_2"');
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_url_1" }));
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_url_2" }));
         expect(useUploadState().activeItems.value.every((item) => item.status === "processing")).toBe(true);
         expect(useUploadState().activeItems.value.every((item) => item.datasetIds.length === 1)).toBe(true);
     });
@@ -170,16 +148,11 @@ describe("useUploadSubmission", () => {
 
         const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/broken.txt" });
         const apiPrepared = buildPreparedUpload([apiItem]);
-        const wrapper = mountHarness({
+        const submit = await mountSubmission({
             apiItems: apiPrepared.apiItems,
             uploadItems: [apiItem, makeLibraryItem()],
         });
-        await flushPromises();
-
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await vi.waitFor(() => {
-            expect(wrapper.find(SELECTORS.ERROR).text()).toContain("upload failed");
-        });
+        await expect(submit()).rejects.toThrow("upload failed");
 
         const [apiUpload, libraryUpload] = useUploadState().activeItems.value;
         expect(apiUpload?.status).toBe("error");
@@ -198,19 +171,14 @@ describe("useUploadSubmission", () => {
             ),
         );
 
-        const wrapper = mountHarness({
+        const submit = await mountSubmission({
             apiItems: [],
             uploadItems: [
                 makeLibraryItem({ name: "first.txt", lddaId: "ldda_1" }),
                 makeLibraryItem({ name: "second.txt", lddaId: "ldda_2" }),
             ],
         });
-        await flushPromises();
-
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("Action requires account activation.");
+        await expect(submit()).rejects.toThrow("Action requires account activation.");
 
         const state = useUploadState();
         expect(state.activeItems.value).toHaveLength(2);
@@ -233,23 +201,29 @@ describe("useUploadSubmission", () => {
             }),
         );
 
-        const wrapper = mountHarness({
+        const submit = await mountSubmission({
             apiItems: [],
             uploadItems: [makeLibraryItem({ name: "fallback-name.txt", lddaId: "ldda_3" })],
         });
-        await flushPromises();
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"name":"fallback-name.txt"');
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_3"');
+        expect(datasets).toContainEqual(expect.objectContaining({ name: "fallback-name.txt" }));
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_3" }));
     });
 
-    it("resolves the submission promise promptly when a tracked upload is cancelled", async () => {
+    it("resolves the submission promise while a cancelled fetch response is still pending", async () => {
+        let releaseFetch = () => {};
+        const fetchReleased = new Promise<void>((resolve) => {
+            releaseFetch = resolve;
+        });
+        let markFetchStarted = () => {};
+        const fetchStarted = new Promise<void>((resolve) => {
+            markFetchStarted = resolve;
+        });
         server.use(
             http.post("/api/tools/fetch", async () => {
-                await new Promise((resolve) => setTimeout(resolve, 200));
+                markFetchStarted();
+                await fetchReleased;
                 return HttpResponse.json({
                     jobs: [{ id: "job_cancelled" }],
                     outputs: [{ id: "hda_cancelled", name: "cancelled.txt", hid: 1, src: "hda" }],
@@ -258,19 +232,21 @@ describe("useUploadSubmission", () => {
         );
 
         const apiItem = makeUrlItem({ name: "cancelled.txt", url: "https://example.org/cancelled.txt" });
-        const wrapper = mountHarness(buildPreparedUpload([apiItem]));
-        await flushPromises();
+        const submit = await mountSubmission(buildPreparedUpload([apiItem]));
+        const pendingSubmission = submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
+        try {
+            await fetchStarted;
+            const itemId = useUploadState().activeItems.value[0]?.id;
+            expect(itemId).toBeDefined();
+            useUploadBatchOperations({ autoRecover: false }).cancelUpload(itemId!);
 
-        const itemId = useUploadState().activeItems.value[0]?.id;
-        expect(itemId).toBeDefined();
-        useUploadBatchOperations({ autoRecover: false }).cancelUpload(itemId!);
-
-        await vi.waitFor(() => expect(useUploadState().activeItems.value[0]?.status).toBe("cancelled"));
-        expect(wrapper.find(SELECTORS.RESULT).text()).toBe("");
-        expect(wrapper.find(SELECTORS.ERROR).text()).toBe("");
+            await expect(pendingSubmission).resolves.toEqual([]);
+            expect(useUploadState().activeItems.value[0]?.status).toBe("cancelled");
+            expect(useUploadState().activeItems.value[0]?.datasetIds).toEqual([]);
+        } finally {
+            releaseFetch();
+        }
     });
 
     it("groups direct collection uploads into a batch in upload state", async () => {
@@ -300,13 +276,10 @@ describe("useUploadSubmission", () => {
         const firstItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
         const secondItem = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
         const prepared = buildPreparedUpload([firstItem, secondItem], makeSubmissionCollectionConfig());
-        const wrapper = mountHarness(prepared);
-        await flushPromises();
+        const submit = await mountSubmission(prepared);
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hdca_2"');
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hdca_2" }));
 
         const state = useUploadState();
         const batch = state.activeBatches.value[0];
@@ -337,13 +310,10 @@ describe("useUploadSubmission", () => {
         );
 
         const apiItem = makeUrlItem({ name: "stored.txt", url: "https://example.org/stored.txt" });
-        const wrapper = mountHarness(buildPreparedUpload([apiItem]), "object_store_2");
-        await flushPromises();
+        const submit = await mountSubmission(buildPreparedUpload([apiItem]), "object_store_2");
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_store_1"');
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_store_1" }));
     });
 
     it("creates a two-step collection for library-only uploads", async () => {
@@ -362,13 +332,10 @@ describe("useUploadSubmission", () => {
         );
 
         const prepared = buildPreparedUpload([makeLibraryItem()], makeSubmissionCollectionConfig());
-        const wrapper = mountHarness(prepared);
-        await flushPromises();
+        const submit = await mountSubmission(prepared);
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_1"');
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_lib_1" }));
 
         const batch = useUploadState().activeBatches.value[0];
         expect(batch?.status).toBe("processing");
@@ -388,11 +355,8 @@ describe("useUploadSubmission", () => {
         );
 
         const prepared = buildPreparedUpload([makeLibraryItem()], makeSubmissionCollectionConfig());
-        const wrapper = mountHarness(prepared);
-        await flushPromises();
-
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
+        const submit = await mountSubmission(prepared);
+        await expect(submit()).rejects.toThrow("Action requires account activation.");
 
         const batch = useUploadState().activeBatches.value[0];
         expect(batch?.status).toBe("error");
@@ -425,14 +389,13 @@ describe("useUploadSubmission", () => {
 
         const apiItem = makeUrlItem({ name: "api-first.txt" });
         const libraryItem = makeLibraryItem({ name: "library-second.txt", lddaId: "ldda_2" });
-        const wrapper = mountHarness(buildPreparedUpload([apiItem, libraryItem], makeSubmissionCollectionConfig()));
-        await flushPromises();
+        const submit = await mountSubmission(
+            buildPreparedUpload([apiItem, libraryItem], makeSubmissionCollectionConfig()),
+        );
+        const datasets = await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_api_1"');
-        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_2"');
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_api_1" }));
+        expect(datasets).toContainEqual(expect.objectContaining({ id: "hda_lib_2" }));
 
         const batch = useUploadState().activeBatches.value[0];
         expect(batch?.status).toBe("processing");
@@ -449,15 +412,10 @@ describe("useUploadSubmission", () => {
             ),
         );
 
-        const wrapper = mountHarness(
+        const submit = await mountSubmission(
             buildPreparedUpload([makeLibraryItem({ lddaId: "ldda_3" })], makeSubmissionCollectionConfig()),
         );
-        await flushPromises();
-
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("Collection error");
+        await expect(submit()).rejects.toThrow("Collection error");
 
         const batch = useUploadState().activeBatches.value[0];
         expect(batch?.status).toBe("error");
@@ -469,60 +427,50 @@ describe("useUploadSubmission", () => {
 
         const uploadDatasetsSpy = vi.spyOn(uploadUtils, "uploadDatasets").mockResolvedValue(undefined);
         const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/remote.txt" });
-        const wrapper = mountHarness({ apiItems: buildPreparedUpload([apiItem]).apiItems, uploadItems: [apiItem] });
-        await flushPromises();
+        const submit = await mountSubmission({
+            apiItems: buildPreparedUpload([apiItem]).apiItems,
+            uploadItems: [apiItem],
+        });
+        await submit();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(uploadDatasetsSpy).toHaveBeenCalled();
+        expect(uploadDatasetsSpy).toHaveBeenCalledOnce();
         expect(uploadDatasetsSpy.mock.calls[0]?.[1]).toMatchObject({
             chunkSize: 10485760,
         });
-        uploadDatasetsSpy.mockRestore();
     });
 
-    it("scopes AbortSignals per file for standalone uploads and shared for collection batches", async () => {
+    it("gives each standalone upload its own AbortSignal", async () => {
         const uploadDatasetsSpy = vi.spyOn(uploadUtils, "uploadDatasets").mockResolvedValue(undefined);
+        const firstItem = makeUrlItem({ name: "1.txt", url: "https://example.org/1.txt" });
+        const secondItem = makeUrlItem({ name: "2.txt", url: "https://example.org/2.txt" });
+        const submit = await mountSubmission(buildPreparedUpload([firstItem, secondItem]));
+
+        await submit();
+
+        expect(uploadDatasetsSpy).toHaveBeenCalledOnce();
+        const standaloneConfig = uploadDatasetsSpy.mock.calls[0]?.[1];
+        expect(standaloneConfig?.signal).toBeUndefined();
+        expect(standaloneConfig?.signals).toHaveLength(2);
+        expect(standaloneConfig?.signals?.[0]).toBeInstanceOf(AbortSignal);
+        expect(standaloneConfig?.signals?.[1]).toBeInstanceOf(AbortSignal);
+        expect(standaloneConfig?.signals?.[0]).not.toBe(standaloneConfig?.signals?.[1]);
+    });
+
+    it("shares one AbortSignal across a direct collection batch", async () => {
         const uploadCollectionDatasetsSpy = vi
             .spyOn(uploadUtils, "uploadCollectionDatasets")
             .mockResolvedValue(undefined);
+        const firstItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
+        const secondItem = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
+        const submit = await mountSubmission(
+            buildPreparedUpload([firstItem, secondItem], makeSubmissionCollectionConfig()),
+        );
 
-        try {
-            const firstItem = makeUrlItem({ name: "1.txt", url: "https://example.org/1.txt" });
-            const secondItem = makeUrlItem({ name: "2.txt", url: "https://example.org/2.txt" });
-            const standaloneWrapper = mountHarness(buildPreparedUpload([firstItem, secondItem]));
-            await flushPromises();
+        await submit();
 
-            await standaloneWrapper.find(SELECTORS.RUN).trigger("click");
-            await flushPromises();
-
-            expect(uploadDatasetsSpy).toHaveBeenCalled();
-            const standaloneConfig = uploadDatasetsSpy.mock.calls[0]?.[1];
-            expect(standaloneConfig?.signal).toBeUndefined();
-            expect(standaloneConfig?.signals).toHaveLength(2);
-            // Each standalone item gets a distinct controller, so cancelling one can't abort the other.
-            expect(standaloneConfig?.signals?.[0]).not.toBe(standaloneConfig?.signals?.[1]);
-
-            useUploadState().clearAll();
-
-            const firstBatched = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
-            const secondBatched = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
-            const batchWrapper = mountHarness(
-                buildPreparedUpload([firstBatched, secondBatched], makeSubmissionCollectionConfig()),
-            );
-            await flushPromises();
-
-            await batchWrapper.find(SELECTORS.RUN).trigger("click");
-            await flushPromises();
-
-            expect(uploadCollectionDatasetsSpy).toHaveBeenCalled();
-            const batchConfig = uploadCollectionDatasetsSpy.mock.calls[0]?.[2];
-            expect(batchConfig?.signal).toBeInstanceOf(AbortSignal);
-            expect(batchConfig?.signals).toBeUndefined();
-        } finally {
-            uploadDatasetsSpy.mockRestore();
-            uploadCollectionDatasetsSpy.mockRestore();
-        }
+        expect(uploadCollectionDatasetsSpy).toHaveBeenCalledOnce();
+        const batchConfig = uploadCollectionDatasetsSpy.mock.calls[0]?.[2];
+        expect(batchConfig?.signal).toBeInstanceOf(AbortSignal);
+        expect(batchConfig?.signals).toBeUndefined();
     });
 });
