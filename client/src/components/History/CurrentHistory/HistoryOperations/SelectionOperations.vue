@@ -98,8 +98,12 @@
             @ok="changeDatatypeOfSelected"
             @cancel="resetDatatype">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
-            <DatatypesProvider v-slot="{ item: datatypes, loading: loadingDatatypes }">
+            <DatatypesProvider v-slot="{ item: datatypes, loading: loadingDatatypes, error: datatypesError }">
+                <BAlert v-if="datatypesError" show variant="danger">
+                    Unable to load datatypes: {{ datatypesError }}
+                </BAlert>
                 <SingleItemSelector
+                    v-else
                     collection-name="Data Types"
                     :loading="loadingDatatypes"
                     :items="datatypes"
@@ -154,6 +158,7 @@
 </template>
 
 <script>
+import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -184,6 +189,7 @@ import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {
+        BAlert,
         CollectionCreatorIndex,
         DbKeyProvider,
         DatatypesProvider,
