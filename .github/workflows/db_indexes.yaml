@@ -1,15 +1,21 @@
 name: Database indexes
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/db_indexes.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/db_indexes.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

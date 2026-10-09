@@ -1,13 +1,19 @@
 name: Converter tests
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/converter_tests.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/converter_tests.yaml'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'

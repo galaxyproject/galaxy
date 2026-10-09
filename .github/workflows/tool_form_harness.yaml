@@ -11,6 +11,12 @@ on:
       - 'packages/test_selenium/src/galaxy_test/selenium/test_tool_form_harness.py'
       - 'test/functional/tools/**'
       - '.github/workflows/tool_form_harness.yaml'
+      - '.github/workflows/build_client.yaml'
+      - 'client/.node_version'
+      - 'client/.npmrc'
+      - 'client/package.json'
+      - 'client/pnpm-lock.yaml'
+      - 'client/pnpm-workspace.yaml'
   pull_request:
     paths:
       - 'client/src/components/Form/**'
@@ -22,6 +28,12 @@ on:
       - 'packages/test_selenium/src/galaxy_test/selenium/test_tool_form_harness.py'
       - 'test/functional/tools/**'
       - '.github/workflows/tool_form_harness.yaml'
+      - '.github/workflows/build_client.yaml'
+      - 'client/.node_version'
+      - 'client/.npmrc'
+      - 'client/package.json'
+      - 'client/pnpm-lock.yaml'
+      - 'client/pnpm-workspace.yaml'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'

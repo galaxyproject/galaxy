@@ -1,13 +1,19 @@
 name: Toolshed tests
 on:
   push:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/toolshed.yaml'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/toolshed.yaml'
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   TOOL_SHED_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'

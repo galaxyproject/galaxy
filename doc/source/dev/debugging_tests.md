@@ -10,35 +10,45 @@ The following instructions assume that you have cloned your Galaxy fork into ~/g
 4. Optionally, save the workspace by selecting 'File -> Save Workspace As...' and save as 'galaxy.code-workspace' in the `~/galaxy` directory
 5. Add the following snippet to `~/galaxy/.vscode/settings.json` (create the file if it does not already exist)
 
-    ```json
-    {
-        "python.testing.unittestEnabled": false,
-        "python.testing.nosetestsEnabled": false,
-        "python.testing.pytestEnabled": true,
-        "python.testing.pytestArgs": [
-            "test/",
-            "--ignore=test/shed_functional/",
-            "--ignore=test/functional",
-            "--ignore=test/unit/shed_unit/test_shed_index.py",
-            "packages/test_api/"
-        ],
-        "python.pythonPath": ".venv/bin/python3",
-        "pythonTestExplorer.testFramework": "pytest",
-    }
-    ```
+   ```json
+   {
+     "python.testing.unittestEnabled": false,
+     "python.testing.nosetestsEnabled": false,
+     "python.testing.pytestEnabled": true,
+     "python.testing.pytestArgs": [
+       "test/",
+       "--ignore=test/shed_functional/",
+       "--ignore=test/functional",
+       "--ignore=test/unit/shed_unit/test_shed_index.py",
+       "packages/test_api/"
+     ],
+     "python.pythonPath": ".venv/bin/python3",
+     "pythonTestExplorer.testFramework": "pytest"
+   }
+   ```
 
 6. Re-start VS Code
-7. Choose the .venv Python as your Python Interpreter. First `Ctrl+Shift+P` then `>Python: Select Interpreter`.
-+![VS Code Python Interpreter](select_python_interpreter.png)
+7. Choose the .venv Python as your Python Interpreter. First `Ctrl+Shift+P` then `>Python: Select Interpreter`. +![VS Code Python Interpreter](select_python_interpreter.png)
 8. Select Test on Activity Bar, on the far left hand side. You should see unit and integration tests under 'Python' (as shown in the image below). It may take a few seconds for the tests to load up. If they do not, click the 'Discover Tests' icon and wait for the tests to load.
-![VS Code Tests](tests.png)
+   ![VS Code Tests](tests.png)
 9. Expand integration/unit tests, select a test to display its source code in editor, add a breakpoint, and start the debugger by clicking on the debug icon (next to test name)
 
 ## Debugging tests within GitHub actions
 
 Sometimes it is necessary to debug tests that work locally. There are a few different strategies one could employ.
-The first step is often to exclude the workflow runs that are passing, so that you don't waste time waiting for your test.
-To do this you can delete all the workflow YAML files in `.github/workflows/` except for the one that sets up the failing test.
+For the broadly filtered test workflows, a change confined to their workflow
+file selects that workflow without starting the other broadly filtered suites. Changes to the shared
+`build_client.yaml` workflow also run its callers: Playwright, integration
+Selenium, startup tests, and the tool form harness. A change that also touches
+source files still runs the suites selected by those source files. Scheduled
+and manually dispatched runs are independent of these path filters.
+
+When editing these filters, use ordered `paths` entries: include `**`, exclude
+unneeded directories and `.github/workflows/**`, then include the workflow's
+own file and any reusable workflows it calls. Keep the push and pull request
+filters in sync. A new reusable workflow must be included in each caller's
+filter so changes to it exercise the calling jobs. Narrow filters should also
+include the shared configuration and scripts their jobs read.
 
 If the YAML file has a `strategy` section that splits tests into multiple job runs, keep just the one that contains the failing test.
 If the test never finishes, add `-s` to the options that `run_tests.sh` pass to `pytest` (i.e. `-s` needs to be after a `--`), so you can see live output.

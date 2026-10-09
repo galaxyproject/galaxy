@@ -82,10 +82,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             roles, dataset_association.dataset
         )
 
-    @web.expose
-    def default(self, trans: GalaxyWebTransaction, dataset_id=None, **kwd):
-        return "This link may not be followed from within Galaxy."
-
     @web.expose_api_raw_anonymous_and_sessionless
     def get_metadata_file(self, trans: GalaxyWebTransaction, hda_id=None, metadata_name=None, **kwd):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""

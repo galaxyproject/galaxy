@@ -39,8 +39,7 @@ const currentStateJobs = computed(() => {
         return [];
     }
     return jobsByState.value[currentState.value].slice().sort((a, b) => {
-        let compare = 0;
-        compare = new Date(a.update_time).getTime() - new Date(b.update_time).getTime();
+        const compare = new Date(a.update_time).getTime() - new Date(b.update_time).getTime();
 
         return sortDesc.value ? -compare : compare;
     });

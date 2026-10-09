@@ -1,13 +1,21 @@
 name: macOS startup
 on:
   push:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/osx_startup.yaml'
+      - '.github/workflows/build_client.yaml'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/osx_startup.yaml'
+      - '.github/workflows/build_client.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

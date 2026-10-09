@@ -217,7 +217,7 @@ const tb = gb * kb;
  * or `strong` tag with "-" (as string)
  */
 export function bytesToString(size: number, normalFont = true, numPlaces = 1) {
-    let unit = "";
+    let unit: string;
 
     if (size >= tb) {
         size = size / tb;

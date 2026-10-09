@@ -211,7 +211,7 @@ export function getBatchDisplayInfo(batch: BatchWithProgress): BatchDisplayInfo 
     const deferredCount = uploads.filter((u: UploadItem) => u.deferred).length;
 
     // Create summary of upload modes
-    let uploadModeSummary = "";
+    let uploadModeSummary: string;
     if (uploadModes.size === 1) {
         const mode = Array.from(uploadModes)[0] as UploadMethod;
         const methodConfig = getUploadMethod(mode);

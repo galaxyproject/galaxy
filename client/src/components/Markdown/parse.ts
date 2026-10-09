@@ -60,9 +60,8 @@ export function splitMarkdown(markdown: string, preserveWhitespace = false) {
                 }
                 const galaxyEndIndex = galaxyEnd + 4;
                 const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
-                let args = null;
                 try {
-                    args = getArgs(galaxySection);
+                    const args = getArgs(galaxySection);
                     sections.push(args);
                 } catch {
                     markdownErrors.push({

@@ -1,15 +1,21 @@
 name: Main tool tests
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/main_tools.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/main_tools.yaml'
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'

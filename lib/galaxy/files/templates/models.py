@@ -6,6 +6,7 @@ from typing import (
 
 from pydantic import (
     Field,
+    field_validator,
     model_validator,
     RootModel,
 )
@@ -18,6 +19,7 @@ from galaxy.util.config_templates import (
     ImplicitConfigurationParameters,
     MarkdownContent,
     merge_implicit_parameters,
+    normalize_s3_bucket,
     OAuth2Configuration,
     populate_default_variables,
     SecretsDict,
@@ -156,7 +158,14 @@ class OneDriveFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictModel
     drive_mode: Literal["appfolder", "full"] = "appfolder"
 
 
-class S3FSFileSourceTemplateConfiguration(StrictModel):
+class S3FSConfigMixin:
+    @field_validator("bucket", mode="before")
+    @classmethod
+    def normalize_bucket(cls, value: Any) -> Any:
+        return normalize_s3_bucket(value)
+
+
+class S3FSFileSourceTemplateConfiguration(S3FSConfigMixin, StrictModel):
     type: Literal["s3fs"]
     endpoint_url: str | TemplateExpansion | None = None
     anon: bool | TemplateExpansion | None = False
@@ -168,7 +177,7 @@ class S3FSFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
-class S3FSFileSourceConfiguration(StrictModel):
+class S3FSFileSourceConfiguration(S3FSConfigMixin, StrictModel):
     type: Literal["s3fs"]
     endpoint_url: str | None = None
     anon: bool | None = False

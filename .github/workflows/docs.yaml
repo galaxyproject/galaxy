@@ -1,13 +1,19 @@
 name: Build docs
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/docs.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/docs.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

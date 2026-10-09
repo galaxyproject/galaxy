@@ -1,15 +1,21 @@
 name: Unit w/postgres tests
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/unit-postgres.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'packages/test_selenium/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/unit-postgres.yaml'
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/postgres?client_encoding=utf8'  # using postgres as the db
 concurrency:

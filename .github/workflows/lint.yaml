@@ -4,6 +4,8 @@ on:
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'
+      - '.ci/**'
+      - 'Makefile'
       - .flake8
       - .isort.cfg
       - packages/app/src/galaxy/dependencies/**
@@ -14,6 +16,8 @@ on:
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'
+      - '.ci/**'
+      - 'Makefile'
       - .flake8
       - .isort.cfg
       - packages/app/src/galaxy/dependencies/**

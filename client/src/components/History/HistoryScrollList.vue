@@ -115,7 +115,7 @@ watch(
 );
 
 const filtered = computed<HistorySummary[]>(() => {
-    let filteredHistories: HistorySummary[] = [];
+    let filteredHistories: HistorySummary[];
     if (!validFilter.value) {
         filteredHistories = historiesProxy.value;
     } else {
