@@ -29,6 +29,7 @@ lib/galaxy/web/framework/meta.json
 
 # Galaxy runtime files
 *.lock
+!uv.lock
 *.log
 *.pid
 
