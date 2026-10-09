@@ -6,7 +6,6 @@ import logging
 import os
 import shutil
 import tempfile
-from functools import partial
 from typing import Annotated
 from urllib.parse import parse_qsl
 
@@ -21,6 +20,7 @@ from python_multipart.exceptions import FormParserError
 from python_multipart.multipart import (
     Field,
     File,
+    FormParser,
 )
 from starlette.requests import ClientDisconnect
 
@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["jobs"])
 
 UPLOAD_STAGING_PREFIX = ".job_files_upload_"
+PARSER_WRITE_SIZE = 256 * 1024
 
 JOB_FILES_DESCRIPTION = (
     "Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, "
@@ -116,16 +117,7 @@ class FastAPIJobFiles:
     ) -> dict[str, str]:
         params = dict(request.query_params)
         query_auth = path is not None and job_key is not None
-        if query_auth:
-            # Authorize before reading the body so the upload is staged on the target's filesystem and renamed.
-            staging_parent = await anyio.to_thread.run_sync(self.manager.authorize_write, job_id, path, job_key)
-            await anyio.to_thread.run_sync(util.safe_makedirs, staging_parent)
-        else:
-            staging_parent = self.manager.upload_dir
-        await anyio.to_thread.run_sync(release_request_sessions)
-        staging_dir = await anyio.to_thread.run_sync(
-            partial(tempfile.mkdtemp, prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
-        )
+        staging_dir = await anyio.to_thread.run_sync(self._start_upload, job_id, path, job_key, query_auth)
         try:
             try:
                 fields, uploads = await _parse_body(request, staging_dir)
@@ -134,27 +126,39 @@ class FastAPIJobFiles:
                 raise exceptions.RequestParameterInvalidException("Client disconnected during job files upload.")
             for key, value in fields.items():
                 params.setdefault(key, value)
-            if query_auth:
-                # The path was authorized before the body was read; only the job can have finished since.
-                await anyio.to_thread.run_sync(self.manager.assert_job_active, job_id)
-            else:
-                await anyio.to_thread.run_sync(
-                    self.manager.authorize_write, job_id, params.get("path"), params.get("job_key")
-                )
-            path = params.get("path")
-            assert path
-            if "__file_path" in params:
-                source_path = await anyio.to_thread.run_sync(self.manager.nginx_upload_path, params["__file_path"])
-            elif "session_id" in params:
-                source_path = await anyio.to_thread.run_sync(self.manager.tus_upload_path, params["session_id"])
-            elif upload := uploads.get("file", uploads.get("__file")):
-                source_path = upload
-            else:
-                raise exceptions.RequestParameterMissingException("No file uploaded.")
-            await anyio.to_thread.run_sync(self.manager.write, path, source_path)
+            await anyio.to_thread.run_sync(self._finish_upload, job_id, params, uploads, query_auth)
         finally:
             await anyio.to_thread.run_sync(_remove_staging_dir, staging_dir)
         return {"message": "ok"}
+
+    def _start_upload(self, job_id: str, path: str | None, job_key: str | None, query_auth: bool) -> str:
+        """Return a new directory to stage the upload in, authorizing first when the query allows it."""
+        if query_auth:
+            # Authorize before reading the body so the upload is staged on the target's filesystem and renamed.
+            staging_parent = self.manager.authorize_write(job_id, path, job_key)
+            util.safe_makedirs(staging_parent)
+        else:
+            staging_parent = self.manager.upload_dir
+        release_request_sessions()
+        return tempfile.mkdtemp(prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
+
+    def _finish_upload(self, job_id: str, params: dict[str, str], uploads: dict[str, str], query_auth: bool) -> None:
+        path = params.get("path")
+        if query_auth:
+            # The path was authorized before the body was read; only the job can have finished since.
+            self.manager.assert_job_active(job_id)
+        else:
+            self.manager.authorize_write(job_id, path, params.get("job_key"))
+        assert path
+        if "__file_path" in params:
+            source_path = self.manager.nginx_upload_path(params["__file_path"])
+        elif "session_id" in params:
+            source_path = self.manager.tus_upload_path(params["session_id"])
+        elif upload := uploads.get("file", uploads.get("__file")):
+            source_path = upload
+        else:
+            raise exceptions.RequestParameterMissingException("No file uploaded.")
+        self.manager.write(path, source_path)
 
     @router.post("/api/job_files/tus_hooks", include_in_schema=False)
     def tus_hooks(self) -> None:
@@ -171,6 +175,15 @@ def _remove_staging_dir(staging_dir: str) -> None:
         shutil.rmtree(staging_dir)
     except OSError:
         log.warning("Failed to remove job files upload staging directory %s", staging_dir, exc_info=True)
+
+
+def _finalize_parser(parser: FormParser, remaining: bytes, files: list[File]) -> None:
+    if remaining:
+        parser.write(remaining)
+    parser.finalize()
+    for file in files:
+        if file.in_memory:
+            file.flush_to_disk()
 
 
 async def _parse_body(request: Request, upload_dir: str) -> tuple[dict[str, str], dict[str, str]]:
@@ -196,12 +209,16 @@ async def _parse_body(request: Request, upload_dir: str) -> tuple[dict[str, str]
             files.append,
             config={"UPLOAD_DIR": upload_dir, "UPLOAD_DELETE_TMP": False, "MAX_MEMORY_FILE_SIZE": 0},
         )
+        # Hand the parser at least PARSER_WRITE_SIZE per threadpool call; a small upload takes a single call.
+        pending: list[bytes] = []
+        pending_size = 0
         async for chunk in request.stream():
-            await anyio.to_thread.run_sync(parser.write, chunk)
-        await anyio.to_thread.run_sync(parser.finalize)
-        for file in files:
-            if file.in_memory:
-                file.flush_to_disk()
+            pending.append(chunk)
+            pending_size += len(chunk)
+            if pending_size >= PARSER_WRITE_SIZE:
+                await anyio.to_thread.run_sync(parser.write, b"".join(pending))
+                pending, pending_size = [], 0
+        await anyio.to_thread.run_sync(_finalize_parser, parser, b"".join(pending), files)
         uploads = {
             file.field_name.decode(): os.fsdecode(file.actual_file_name)
             for file in files
