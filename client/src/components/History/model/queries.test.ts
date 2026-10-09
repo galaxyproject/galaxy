@@ -1,3 +1,4 @@
+import { getFakeStorageOperationRun } from "@tests/test-data/storageOperations";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -30,19 +31,11 @@ const PREVIEW_RESPONSE: StorageOperationPreviewResponse = {
 };
 
 const EXECUTE_RESPONSE: StorageOperationExecuteResponse = {
-    run: {
+    run: getFakeStorageOperationRun({
         run_id: RUN_ID,
-        state: "pending",
-        mode: "move",
-        target_object_store_id: "other",
         create_time: "2099-01-01T00:00:00",
         update_time: "2099-01-01T00:00:00",
-        total_count: 1,
-        succeeded_count: 0,
-        failed_count: 0,
-        skipped_count: 0,
-        total_bytes_processed: 0,
-    },
+    }),
 };
 
 const RUN_PENDING_RESPONSE: StorageOperationRunResponse = {
