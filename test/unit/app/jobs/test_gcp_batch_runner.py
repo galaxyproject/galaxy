@@ -14,13 +14,16 @@ from galaxy.jobs.runners.gcp_batch import (
     RUNNER_PARAM_SPECS,
 )
 from galaxy.jobs.runners.util.gcp_batch import (
+    compute_gpu_machine_type,
     convert_cpu_to_milli,
     convert_duration_to_seconds,
     convert_memory_to_mib,
     DEFAULT_MAX_RUN_DURATION,
+    gpu_count_for_machine_type,
     parse_docker_volumes_param,
     parse_volume_spec,
     parse_volumes_param,
+    resolve_gpu_count,
     resolve_max_run_duration,
     sanitize_label_value,
 )
@@ -429,3 +432,321 @@ class TestGetJobParams:
         params = runner._get_job_params(destination)
 
         assert params["job_id_prefix"] == "from-destination"
+
+
+class TestComputeGpuMachineType:
+    """L4 GPU jobs select the smallest g2-standard shape satisfying gpus/cores/mem."""
+
+    @pytest.mark.parametrize(
+        "gpu_count,cpu_milli,memory_mib,expected",
+        [
+            (1, 32000, 116 * 1024, "g2-standard-32"),  # the image_learner example
+            (1, 1000, 1024, "g2-standard-4"),  # smallest single-GPU shape
+            (1, 8000, 30 * 1024, "g2-standard-8"),
+            (1, 12000, 40 * 1024, "g2-standard-12"),
+            (1, 16000, 64 * 1024, "g2-standard-16"),  # exact fit
+            (1, 1000, 100 * 1024, "g2-standard-32"),  # memory-driven, not cpu-driven
+            (2, 24000, 96 * 1024, "g2-standard-24"),
+            (4, 48000, 192 * 1024, "g2-standard-48"),
+            (8, 96000, 384 * 1024, "g2-standard-96"),
+        ],
+    )
+    def test_selects_expected_machine_type(self, gpu_count, cpu_milli, memory_mib, expected):
+        assert compute_gpu_machine_type(gpu_count, cpu_milli, memory_mib) == expected
+
+    @pytest.mark.parametrize("gpu_count", [3, 5, 6, 7, 16])
+    def test_unsupported_gpu_count_raises(self, gpu_count):
+        with pytest.raises(ValueError, match="not supported"):
+            compute_gpu_machine_type(gpu_count, 4000, 16 * 1024)
+
+    @pytest.mark.parametrize(
+        "gpu_count,cpu_milli,memory_mib",
+        [
+            (1, 64000, 16 * 1024),  # 64 vCPU exceeds the largest single-L4 shape (32)
+            (1, 1000, 200 * 1024),  # 200 GiB exceeds the largest single-L4 shape (128)
+            (2, 32000, 96 * 1024),  # 2 L4 only on g2-standard-24 (24 vCPU) < 32
+        ],
+    )
+    def test_oversize_request_raises(self, gpu_count, cpu_milli, memory_mib):
+        with pytest.raises(ValueError, match="satisfies the requested"):
+            compute_gpu_machine_type(gpu_count, cpu_milli, memory_mib)
+
+
+class TestResolveGpuCount:
+    """gpus is a TPV scheduling quantity: a string, possibly fractional, that has to
+    become a whole number of physical L4 devices."""
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (None, 0),  # unset
+            ("", 0),  # empty destination interpolation
+            (0, 0),
+            ("0", 0),  # every non-GPU job arrives here once the destination forwards gpus
+            ("0.0", 0),
+            (1, 1),
+            ("1", 1),  # the common case: forwarded as a string
+            ("2", 2),
+            ("8", 8),
+            (0.25, 1),  # a share of a GPU still needs a whole card (upstream libcarna_render)
+            ("0.25", 1),
+            ("0.5", 1),
+            ("1.5", 2),  # rounds up, never down
+            (1.0, 1),
+            ("1.0", 1),
+        ],
+    )
+    def test_resolves_to_whole_gpus(self, value, expected):
+        assert resolve_gpu_count(value) == expected
+
+    @pytest.mark.parametrize("value", ["abc", "1x", "{gpus}", object(), "nan", "inf"])
+    def test_non_numeric_raises_with_a_useful_message(self, value):
+        with pytest.raises(ValueError, match="Invalid GPU request"):
+            resolve_gpu_count(value)
+
+    @pytest.mark.parametrize("value,expected", [("1", 1), ("0.25", 1), (0, 0)])
+    def test_runner_config_values_go_through_the_param_spec_map(self, value, expected):
+        """A fractional gpus in the plugin config must not break runner construction."""
+        runner = _make_runner({"gpus": value})
+        assert runner.runner_params["gpus"] == expected
+
+
+class TestGpuCountForMachineType:
+    """G2 shapes bundle their L4 GPUs with the machine type, so the count has to be
+    derivable from the type alone when a destination configures one explicitly."""
+
+    @pytest.mark.parametrize(
+        "machine_type,expected",
+        [
+            ("g2-standard-4", 1),
+            ("g2-standard-32", 1),
+            ("g2-standard-24", 2),
+            ("g2-standard-48", 4),
+            ("g2-standard-96", 8),
+        ],
+    )
+    def test_known_g2_shapes(self, machine_type, expected):
+        assert gpu_count_for_machine_type(machine_type) == expected
+
+    def test_unknown_g2_shape_still_carries_a_gpu(self):
+        assert gpu_count_for_machine_type("g2-future-16") == 1
+
+    @pytest.mark.parametrize("machine_type", [None, "", "n2-standard-4", "a2-highgpu-1g"])
+    def test_non_g2_has_none(self, machine_type):
+        assert gpu_count_for_machine_type(machine_type) == 0
+
+
+class TestGetGpus:
+    """GoogleCloudBatchJobRunner._get_gpus resolution."""
+
+    def test_resource_param_wins(self):
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 1}, {"gpus": 2}) == 2
+
+    def test_params_used_when_no_resource_param(self):
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 1}, {}) == 1
+
+    def test_defaults_to_zero(self):
+        runner = _make_runner()
+        assert runner._get_gpus({}, {}) == 0
+
+    def test_zero_is_not_overridden_by_falsy_resource_param(self):
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 0}, {"gpus": 0}) == 0
+
+    @pytest.mark.parametrize("value", [0, "0", "0.0"])
+    def test_explicit_zero_resource_param_overrides_destination(self, value):
+        """A user asking for no GPUs must not be handed a GPU VM because the destination
+        defaults to one; precedence is decided by presence, not truthiness."""
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 2}, {"gpus": value}) == 0
+
+    @pytest.mark.parametrize("value", [None, ""])
+    def test_blank_resource_param_falls_back_to_destination(self, value):
+        """An unset or blank form field is not a request for zero GPUs."""
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": 2}, {"gpus": value}) == 2
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [("0", 0), ("1", 1), ("0.25", 1), ("0.5", 1), ("2", 2)],
+    )
+    def test_string_and_fractional_destination_values(self, value, expected):
+        """TPV forwards gpus through param interpolation, so params holds strings."""
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": value}, {}) == expected
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [("0", 0), ("1", 1), ("0.25", 1), ("2", 2)],
+    )
+    def test_string_and_fractional_resource_values(self, value, expected):
+        runner = _make_runner()
+        assert runner._get_gpus({}, {"gpus": value}) == expected
+
+    def test_fractional_resource_param_wins_over_destination(self):
+        """A fractional request is truthy after rounding, so it must still take precedence."""
+        runner = _make_runner()
+        assert runner._get_gpus({"gpus": "2"}, {"gpus": "0.25"}) == 1
+
+
+TEST_JOB_FILE = "/mnt/nfs/jobs_directory/000/42/galaxy_42.sh"
+
+
+def _fake_job_wrapper(destination_params=None, resource_params=None, tool_id="image_learner"):
+    """A stand-in for the JobWrapper attributes the spec/script builders touch."""
+    destination_params = destination_params if destination_params is not None else {}
+    resource_params = resource_params if resource_params is not None else {}
+    return cast(
+        Any,
+        SimpleNamespace(
+            job_id=42,
+            tool=SimpleNamespace(id=tool_id, version="1.0"),
+            job_destination=SimpleNamespace(id="gcp_batch", tags=None, params=destination_params),
+            get_id_tag=lambda: "42",
+            get_resource_parameters=lambda: resource_params,
+        ),
+    )
+
+
+def _fake_ajs(job_wrapper):
+    return cast(Any, SimpleNamespace(job_file=TEST_JOB_FILE, job_wrapper=job_wrapper))
+
+
+class TestContainerScriptGpuFlag:
+    """The container must be started with --gpus, the analog of Singularity's --nv;
+    without it a GPU job runs blind to the device on a correctly provisioned G2 VM."""
+
+    def _render(self, gpus=None):
+        runner = _make_runner()
+        job_wrapper = _fake_job_wrapper()
+        args: tuple[Any, ...] = (job_wrapper, _fake_ajs(job_wrapper), {}, "quay.io/example/tool:1.0", 4000, 8192)
+        if gpus is None:
+            # Exercise the default argument as well as the explicit one.
+            return runner._create_container_execution_script(*args)
+        return runner._create_container_execution_script(*args, gpus)
+
+    @pytest.mark.parametrize("gpus", [1, 2, 4, 8])
+    def test_gpu_flag_rendered_when_gpus_requested(self, gpus):
+        assert "--gpus all" in self._render(gpus)
+
+    def test_no_gpu_flag_for_cpu_jobs(self):
+        """Guards every existing CPU job against a regression in the GPU branch."""
+        assert "--gpus" not in self._render(0)
+
+    def test_no_gpu_flag_by_default(self):
+        assert "--gpus" not in self._render()
+
+    def test_script_still_renders_the_docker_run(self):
+        """string.Template raises KeyError on an unmapped placeholder, so a missing
+        template_params entry would break script generation entirely."""
+        script = self._render(1)
+        assert "docker run --rm  --gpus all" in script
+        assert "quay.io/example/tool:1.0" in script
+        assert TEST_JOB_FILE in script
+
+
+def _spec_runner(runner_params=None):
+    """A runner able to build a batch job spec: no GCP client, no container finder."""
+    runner = _make_runner(runner_params)
+    runner.app = cast(Any, SimpleNamespace(config=SimpleNamespace(server_name="handler0")))
+    runner._get_container_image = lambda job_wrapper: "quay.io/example/tool:1.0"
+    return runner
+
+
+def _build_spec(destination_params, runner_params=None, resource_params=None):
+    runner = _spec_runner(runner_params)
+    job_wrapper = _fake_job_wrapper(destination_params=destination_params, resource_params=resource_params)
+    params = runner._get_job_params(job_wrapper.job_destination)
+    return runner._create_batch_job_spec(job_wrapper, _fake_ajs(job_wrapper), params)
+
+
+# A GPU tool as TPV forwards it: every value arrives as an interpolated string.
+GPU_DESTINATION_PARAMS = {"gpus": "1", "cores": "32", "mem": "116"}
+
+
+class TestCreateBatchJobSpecGpu:
+    """End to end through _create_batch_job_spec: a TPV GPU request has to reach both
+    the machine type and the docker run inside the generated script."""
+
+    def test_gpu_request_selects_g2_machine_type_and_gpu_flag(self):
+        job = _build_spec(GPU_DESTINATION_PARAMS)
+
+        instance = job.allocation_policy.instances[0]
+        assert instance.policy.machine_type == "g2-standard-32"
+        assert "--gpus all" in job.task_groups[0].task_spec.runnables[0].script.text
+
+    def test_cpu_job_gets_neither(self):
+        job = _build_spec({"cores": "2", "mem": "4"})
+
+        instance = job.allocation_policy.instances[0]
+        assert not instance.policy.machine_type.startswith("g2-")
+        assert not instance.install_gpu_drivers
+        assert "--gpus" not in job.task_groups[0].task_spec.runnables[0].script.text
+
+    def test_fractional_gpu_request_selects_a_whole_gpu_shape(self):
+        """gpus: 0.25 means a share of a GPU; GCP Batch can only attach a whole L4."""
+        job = _build_spec({"gpus": "0.25", "cores": "4", "mem": "16"})
+
+        assert job.allocation_policy.instances[0].policy.machine_type == "g2-standard-4"
+
+    def test_unsupported_gpu_count_raises_naming_the_supported_set(self):
+        """queue_job turns this into the job's failure message, so it has to be legible."""
+        with pytest.raises(ValueError, match=r"3 L4 GPU\(s\) is not supported"):
+            _build_spec({"gpus": "3", "cores": "4", "mem": "16"})
+
+    def test_explicit_g2_machine_type_exposes_gpus_without_a_gpus_param(self):
+        """A destination that pins machine_type: g2-standard-4 gets the L4 with the VM;
+        the container must still be started with --gpus or the tool runs blind to it."""
+        job = _build_spec({"machine_type": "g2-standard-4", "cores": "4", "mem": "16"})
+
+        instance = job.allocation_policy.instances[0]
+        assert instance.policy.machine_type == "g2-standard-4"
+        assert instance.install_gpu_drivers is True
+        assert "--gpus all" in job.task_groups[0].task_spec.runnables[0].script.text
+
+    def test_explicit_g2_machine_type_is_honored_over_the_computed_shape(self):
+        """gpus: 1 with cores/mem that would select g2-standard-4 still uses the pinned type."""
+        job = _build_spec({**GPU_DESTINATION_PARAMS, "machine_type": "g2-standard-8", "cores": "4", "mem": "16"})
+
+        instance = job.allocation_policy.instances[0]
+        assert instance.policy.machine_type == "g2-standard-8"
+        assert "--gpus all" in job.task_groups[0].task_spec.runnables[0].script.text
+
+    def test_zero_resource_param_overrides_the_destination_gpu(self):
+        """A user explicitly requesting 0 GPUs on a GPU destination gets a CPU VM."""
+        job = _build_spec({"gpus": "1", "cores": "4", "mem": "16"}, resource_params={"gpus": "0"})
+
+        instance = job.allocation_policy.instances[0]
+        assert not instance.policy.machine_type.startswith("g2-")
+        assert not instance.install_gpu_drivers
+        assert "--gpus" not in job.task_groups[0].task_spec.runnables[0].script.text
+
+
+class TestInstallGpuDrivers:
+    """A custom VM image can have the L4 drivers baked in, in which case Batch must be
+    told to skip the boot-time driver install."""
+
+    def test_defaults_to_installing_drivers(self):
+        job = _build_spec(GPU_DESTINATION_PARAMS)
+        assert job.allocation_policy.instances[0].install_gpu_drivers is True
+
+    @pytest.mark.parametrize("value", [False, "false", "False", "no", "0"])
+    def test_destination_can_disable_the_driver_install(self, value):
+        """Destination params bypass the runner param spec mapping and arrive as strings,
+        so bool() would read "false" as True and install the drivers anyway."""
+        job = _build_spec({**GPU_DESTINATION_PARAMS, "install_gpu_drivers": value})
+        assert job.allocation_policy.instances[0].install_gpu_drivers is False
+
+    @pytest.mark.parametrize("value", [True, "true", "True", "yes", "1"])
+    def test_destination_can_enable_the_driver_install(self, value):
+        job = _build_spec({**GPU_DESTINATION_PARAMS, "install_gpu_drivers": value})
+        assert job.allocation_policy.instances[0].install_gpu_drivers is True
+
+    @pytest.mark.parametrize("value,expected", [("false", False), ("true", True)])
+    def test_runner_config_can_disable_the_driver_install(self, value, expected):
+        """Runner config values go through the param spec map, which must also parse
+        the string rather than applying bool()."""
+        job = _build_spec(GPU_DESTINATION_PARAMS, runner_params={"install_gpu_drivers": value})
+        assert job.allocation_policy.instances[0].install_gpu_drivers is expected
