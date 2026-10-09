@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { DEFAULT_QUOTA_SOURCE_LABEL, toQuotaUsage, type UserQuotaUsageData } from "./QuotaUsage";
 
@@ -24,25 +24,25 @@ const RAW_UNLIMITED_SOURCE_QUOTA_USAGE: UserQuotaUsageData = {
 };
 
 describe("QuotaUsage", () => {
-    const defaultQuotaUsage = toQuotaUsage(RAW_DEFAULT_QUOTA_USAGE);
-    const limitedQuotaUsage = toQuotaUsage(RAW_LIMITED_SOURCE_QUOTA_USAGE);
-    const unlimitedQuotaUsage = toQuotaUsage(RAW_UNLIMITED_SOURCE_QUOTA_USAGE);
-
-    test("default quota source label should have the default value", () => {
-        expect(defaultQuotaUsage.sourceLabel).toBe(DEFAULT_QUOTA_SOURCE_LABEL);
+    it.each([
+        { name: "the default source", data: RAW_DEFAULT_QUOTA_USAGE, expectedLabel: DEFAULT_QUOTA_SOURCE_LABEL },
+        { name: "a named source", data: RAW_LIMITED_SOURCE_QUOTA_USAGE, expectedLabel: "The source" },
+    ])("labels $name", ({ data, expectedLabel }) => {
+        const quotaUsage = toQuotaUsage(data);
+        expect(quotaUsage.sourceLabel).toBe(expectedLabel);
     });
 
-    test("non default quota source label should have the correct value", () => {
-        expect(limitedQuotaUsage.sourceLabel).toBe(RAW_LIMITED_SOURCE_QUOTA_USAGE.quota_source_label);
+    it("formats unlimited quota as 'unlimited'", () => {
+        const quotaUsage = toQuotaUsage(RAW_UNLIMITED_SOURCE_QUOTA_USAGE);
+        expect(quotaUsage.isUnlimited).toBe(true);
+        expect(quotaUsage.niceQuota).toBe("unlimited");
     });
 
-    test("nice quota should be 'unlimited' when the source is unlimited", () => {
-        expect(unlimitedQuotaUsage.isUnlimited).toBe(true);
-        expect(unlimitedQuotaUsage.niceQuota).toBe("unlimited");
-    });
-
-    test("is unlimited should indicate the correct status", () => {
-        expect(unlimitedQuotaUsage.isUnlimited).toBe(true);
-        expect(limitedQuotaUsage.isUnlimited).toBe(false);
+    it.each([
+        { name: "an unlimited source", data: RAW_UNLIMITED_SOURCE_QUOTA_USAGE, expected: true },
+        { name: "a limited source", data: RAW_LIMITED_SOURCE_QUOTA_USAGE, expected: false },
+    ])("reports unlimited status for $name", ({ data, expected }) => {
+        const quotaUsage = toQuotaUsage(data);
+        expect(quotaUsage.isUnlimited).toBe(expected);
     });
 });
