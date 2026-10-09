@@ -344,7 +344,7 @@ class FieldDict(TypedDict, closed=True):
 JsonTestDatasetDefDict = TypedDict(
     "JsonTestDatasetDefDict",
     {
-        # "Directory" stages a folder as a directory dataset, e.g. a zarr store.
+        # "Directory" stages a folder as a directory dataset.
         "class": Literal["File", "Directory"],
         "path": NotRequired[str | None],
         "location": NotRequired[str | None],

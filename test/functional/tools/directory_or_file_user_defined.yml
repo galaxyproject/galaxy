@@ -10,7 +10,7 @@ shell_command: |
 inputs:
   - name: input1
     type: data
-    format: [txt, zarr]
+    format: [txt, directory]
 outputs:
   - name: output1
     type: data
@@ -29,14 +29,14 @@ tests:
   - inputs:
       input1:
         class: Directory
-        path: flat_store.zarr
-        filetype: zarr
+        path: simple_directory
+        filetype: directory
     outputs:
       output1:
         asserts:
           - that: has_line
-            line: ".zgroup"
+            line: "a.txt"
           - that: has_line
-            line: "0"
+            line: "sub"
           - that: has_line
             line: "class=Directory"
