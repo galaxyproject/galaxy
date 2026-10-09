@@ -80,7 +80,7 @@ def env(tmp_path: Path):
     session.commit()
     queue_worker = FakeQueueWorker()
     app = cast(Any, SimpleNamespace(queue_worker=queue_worker))
-    manager = AdminSettingsManager(app, session, extensions)
+    manager = AdminSettingsManager(app, cast(Any, session), extensions)
     return SimpleNamespace(
         extensions=extensions, manager=manager, session=session, user=user, queue_worker=queue_worker
     )

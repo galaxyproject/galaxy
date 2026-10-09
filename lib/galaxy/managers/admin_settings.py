@@ -132,7 +132,7 @@ class AdminSettingsManager:
             if self._cache is not None and time.monotonic() - self._cache_loaded_at < CACHE_TTL_SECONDS:
                 return self._cache
         rows = self._sa_session.execute(select(AdminSetting.key, AdminSetting.value)).all()
-        loaded = dict(rows)
+        loaded: dict[str, Any] = {row.key: row.value for row in rows}
         with self._lock:
             self._cache = loaded
             self._cache_loaded_at = time.monotonic()

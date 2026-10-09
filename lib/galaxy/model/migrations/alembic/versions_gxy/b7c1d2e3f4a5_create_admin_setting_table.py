@@ -21,7 +21,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     create_table(
         "admin_setting",
         sa.Column("key", sa.String(255), primary_key=True),
@@ -32,5 +32,5 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> None:
     drop_table("admin_setting")

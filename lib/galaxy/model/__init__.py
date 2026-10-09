@@ -13059,7 +13059,8 @@ class AdminSetting(Base):
     __tablename__ = "admin_setting"
 
     key: Mapped[str] = mapped_column(String(255), primary_key=True)
-    value: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    # A JSON scalar: bool, int, float, str or null, as validated by the declaring extension.
+    value: Mapped[Any] = mapped_column(MutableJSONType)
     create_time: Mapped[datetime | None] = mapped_column(default=now)
     update_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id", ondelete="SET NULL"), index=True)
