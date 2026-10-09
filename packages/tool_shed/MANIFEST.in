@@ -1,7 +1,6 @@
 include src/tool_shed/webapp/model/migrations/alembic.ini
 include src/tool_shed/webapp/model/migrations/alembic/script.py.mako
 include src/tool_shed/webapp/package.json
-include src/tool_shed/webapp/frontend/.eslintignore
 include src/tool_shed/webapp/frontend/src/util.ts
 include src/tool_shed/webapp/frontend/src/schema/types.ts
 include src/tool_shed/webapp/frontend/src/schema/schema.ts
@@ -143,7 +142,7 @@ include src/tool_shed/webapp/frontend/pnpm-lock.yaml
 include src/tool_shed/webapp/frontend/.prettierignore
 include src/tool_shed/webapp/frontend/package.json
 include src/tool_shed/webapp/frontend/vitest.config.ts
-include src/tool_shed/webapp/frontend/.eslintrc.js
+include src/tool_shed/webapp/frontend/eslint.config.mjs
 include src/tool_shed/webapp/frontend/tsconfig.json
 include src/tool_shed/webapp/frontend/.node_version
 include src/tool_shed/webapp/frontend/static/favicon.ico
@@ -270,3 +269,4 @@ include src/tool_shed/test/test_data/blast/blastxml_to_top_descr.tar
 include src/tool_shed/test/test_data/blast/blast_datatypes.tar
 include src/tool_shed/test/functional/api_notes.md
 include src/tool_shed/test/README.md
+recursive-include src/tool_shed/test *.py

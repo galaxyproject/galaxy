@@ -466,3 +466,7 @@ include src/galaxy/datatypes/test/3.txt
 include src/galaxy/datatypes/test/dosimzml
 include src/galaxy/datatypes/test/test.neper.tess
 include src/galaxy/datatypes/test/subsampled_visium.spatialdata.zip
+include src/galaxy/datatypes/test/ocr_sample.abbyy.xml
+include src/galaxy/datatypes/test/ocr_sample.alto
+include src/galaxy/datatypes/test/ocr_sample.hocr
+include src/galaxy/datatypes/test/ocr_sample.page.xml

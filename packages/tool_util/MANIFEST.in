@@ -214,7 +214,6 @@ include src/galaxy/tool_util/unittest_utils/functional_tools/multiple_versions_h
 include src/galaxy/tool_util/unittest_utils/functional_tools/empty_select.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/converter_target_datatype.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/select_optional_legacy.xml
-include src/galaxy/tool_util/unittest_utils/functional_tools/.claude/commands/convert-to-yaml.md
 include src/galaxy/tool_util/unittest_utils/functional_tools/collection_mixed_param.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/collection_creates_dynamic_nested.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/collection_paired_structured_like_with_data_input.xml
@@ -417,7 +416,6 @@ include src/galaxy/tool_util/unittest_utils/functional_tools/collection_optional
 include src/galaxy/tool_util/unittest_utils/functional_tools/html_output.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/column_param_list.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/simple_constructs.yml
-include src/galaxy/tool_util/unittest_utils/functional_tools/CLAUDE.md
 include src/galaxy/tool_util/unittest_utils/functional_tools/output_filter_exception_1.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/implicit_nested_list_conversion.xml
 include src/galaxy/tool_util/unittest_utils/functional_tools/multi_data_param.xml

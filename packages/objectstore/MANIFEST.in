@@ -82,3 +82,4 @@ include src/galaxy/objectstore/examples/cloud_direct_download.yml
 include src/galaxy/objectstore/examples/cloud_azure_full.yml
 include src/galaxy/objectstore/examples/boto3_simple.xml
 include src/galaxy/objectstore/examples/gcp_boto3_integration_test.yml
+include src/galaxy/objectstore/examples/__init__.py
