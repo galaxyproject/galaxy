@@ -69,7 +69,7 @@ def setup_for_runtimeify(
             continue
         hdas_by_id[d.id] = (d, i)
         # The request names the original dataset when the job got an implicit conversion of it.
-        for assoc in getattr(d, "implicitly_converted_parent_datasets", None) or []:
+        for assoc in d.implicitly_converted_parent_datasets:
             if assoc.parent_hda is not None:
                 hdas_by_id.setdefault(assoc.parent_hda.id, (d, i))
 
