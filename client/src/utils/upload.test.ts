@@ -1,7 +1,6 @@
-import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, test, vi } from "vitest";
 
-import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
+import { GALAXY_RESPONSE_HEADERS, HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { CompositeDataElement, HdasUploadTarget, HdcaUploadTarget, NestedElement } from "@/api/tools";
 
 import { createTusUpload } from "./tusUpload";
@@ -23,7 +22,6 @@ import {
     uploadItemDefaults,
 } from "./upload";
 
-// Mock the TUS upload functionality
 vi.mock("./tusUpload", () => ({
     createTusUpload: vi.fn(),
     NamedBlob: class {},
@@ -33,10 +31,8 @@ vi.mock("@/onload/loadConfig", () => ({
     getAppRoot: () => "/",
 }));
 
-// Helper to create a mock File object for testing
 function createMockFile(name: string, content: string = "test content"): File {
-    const blob = new Blob([content], { type: "text/plain" });
-    return new File([blob], name, { lastModified: Date.now() });
+    return new File([content], name, { lastModified: 0 });
 }
 
 /** Common element fields shared by all upload element types in tests. */
@@ -54,8 +50,11 @@ const commonElementDefaults = {
 // ============================================================================
 
 describe("buildLegacyPayload", () => {
-    test("basic validation", () => {
+    it("rejects an empty list", () => {
         expect(() => buildLegacyPayload([], "historyId")).toThrow("No upload items provided.");
+    });
+
+    it("rejects a new upload without content", () => {
         expect(() =>
             buildLegacyPayload([{ fileMode: "new", fileName: "", fileSize: 0 } as LegacyUploadItem], "historyId"),
         ).toThrow("Content not available.");
@@ -68,7 +67,7 @@ describe("buildLegacyPayload", () => {
             buildLegacyPayload(
                 [
                     {
-                        fileMode: "unknown" as LegacyUploadItem["fileMode"],
+                        fileMode: "unknown",
                         fileName: "test",
                         fileSize: 1,
                     } as LegacyUploadItem,
@@ -78,17 +77,13 @@ describe("buildLegacyPayload", () => {
         ).toThrow("No valid upload items after conversion.");
     });
 
-    test("empty fileContent validation", () => {
+    it.each([
+        { name: "empty", content: "" },
+        { name: "whitespace-only", content: "   " },
+    ])("rejects $name pasted content", ({ content }) => {
         expect(() =>
             buildLegacyPayload(
-                [{ fileMode: "new", fileName: "test", fileContent: "", fileSize: 0 } as LegacyUploadItem],
-                "historyId",
-            ),
-        ).toThrow("Content not available.");
-
-        expect(() =>
-            buildLegacyPayload(
-                [{ fileMode: "new", fileName: "test", fileContent: "   ", fileSize: 0 } as LegacyUploadItem],
+                [{ fileMode: "new", fileName: "test", fileContent: content, fileSize: 0 } as LegacyUploadItem],
                 "historyId",
             ),
         ).toThrow("Content not available.");
@@ -137,9 +132,7 @@ describe("buildLegacyPayload", () => {
         expect(target.destination).toEqual({ type: "hdas" });
         expect(target.elements).toHaveLength(1);
 
-        const element = target.elements![0] as { src: string; paste_content: string };
-        expect(element.src).toBe("pasted");
-        expect(element.paste_content).toBe(" fileContent ");
+        expect(target.elements![0]).toMatchObject({ src: "pasted", paste_content: " fileContent " });
     });
 
     test("local file payload", () => {
@@ -164,10 +157,7 @@ describe("buildLegacyPayload", () => {
         expect(result.files[0]).toBe(mockFile);
 
         const target = result.targets[0]!;
-        const element = target.elements![0] as { src: string; dbkey: string; ext: string };
-        expect(element.src).toBe("files");
-        expect(element.dbkey).toBe("hg38");
-        expect(element.ext).toBe("txt");
+        expect(target.elements![0]).toMatchObject({ src: "files", dbkey: "hg38", ext: "txt" });
     });
 
     test("URL payload", () => {
@@ -189,10 +179,7 @@ describe("buildLegacyPayload", () => {
         expect(result.files).toEqual([]);
 
         const target = result.targets[0]!;
-        const element = target.elements![0] as { src: string; url: string; deferred: boolean };
-        expect(element.src).toBe("url");
-        expect(element.url).toBe("http://example.com/data.bed");
-        expect(element.deferred).toBe(true);
+        expect(target.elements![0]).toMatchObject({ src: "url", url: "http://example.com/data.bed", deferred: true });
     });
 
     test("multiple URLs from new mode", () => {
@@ -211,11 +198,8 @@ describe("buildLegacyPayload", () => {
         const target = result.targets[0]!;
         expect(target.elements).toHaveLength(2);
 
-        const elem1 = target.elements![0] as { src: string; url: string };
-        const elem2 = target.elements![1] as { src: string; url: string };
-        expect(elem1.src).toBe("url");
-        expect(elem1.url).toBe("http://example.com/1.txt");
-        expect(elem2.url).toBe("http://example.com/2.txt");
+        expect(target.elements![0]).toMatchObject({ src: "url", url: "http://example.com/1.txt" });
+        expect(target.elements![1]).toMatchObject({ src: "url", url: "http://example.com/2.txt" });
     });
 
     test("Galaxy filename stripping", () => {
@@ -233,8 +217,7 @@ describe("buildLegacyPayload", () => {
         );
 
         const target = result.targets[0]!;
-        const element = target.elements![0] as { name: string };
-        expect(element.name).toBe("PreviousFile");
+        expect(target.elements![0]).toMatchObject({ name: "PreviousFile" });
     });
 
     test("composite payload", () => {
@@ -285,70 +268,57 @@ describe("buildLegacyPayload", () => {
 });
 
 describe("isGalaxyFileName", () => {
-    test("recognizes Galaxy file names", () => {
-        expect(isGalaxyFileName("Galaxy5-[MyFile].bed")).toBe(true);
-        expect(isGalaxyFileName("Galaxy123-[Some File Name].txt")).toBe(true);
-    });
-
-    test("rejects non-Galaxy file names", () => {
-        expect(isGalaxyFileName("myfile.txt")).toBe(false);
-        expect(isGalaxyFileName("Galaxy-[NoNumber].txt")).toBe(false);
-        expect(isGalaxyFileName(null)).toBe(false);
-        expect(isGalaxyFileName(undefined)).toBe(false);
+    it.each([
+        { name: "numbered Galaxy file", filename: "Galaxy5-[MyFile].bed", expected: true },
+        { name: "Galaxy file containing spaces", filename: "Galaxy123-[Some File Name].txt", expected: true },
+        { name: "ordinary filename", filename: "myfile.txt", expected: false },
+        { name: "Galaxy filename without a number", filename: "Galaxy-[NoNumber].txt", expected: false },
+        { name: "null filename", filename: null, expected: false },
+        { name: "undefined filename", filename: undefined, expected: false },
+    ])("classifies $name as Galaxy format: $expected", ({ filename, expected }) => {
+        expect(isGalaxyFileName(filename)).toBe(expected);
     });
 });
 
 describe("stripGalaxyFilePrefix", () => {
-    test("strips Galaxy prefix", () => {
-        expect(stripGalaxyFilePrefix("Galaxy5-[MyFile].bed")).toBe("MyFile");
-        expect(stripGalaxyFilePrefix("Galaxy123-[Some File].txt")).toBe("Some File");
-    });
-
-    test("returns original if no match", () => {
-        expect(stripGalaxyFilePrefix("myfile.txt")).toBe("myfile.txt");
+    it.each([
+        { name: "numbered Galaxy file", filename: "Galaxy5-[MyFile].bed", expected: "MyFile" },
+        { name: "Galaxy file containing spaces", filename: "Galaxy123-[Some File].txt", expected: "Some File" },
+        { name: "ordinary filename", filename: "myfile.txt", expected: "myfile.txt" },
+    ])("extracts the name from $name", ({ filename, expected }) => {
+        expect(stripGalaxyFilePrefix(filename)).toBe(expected);
     });
 });
 
 describe("cleanUrlFilename", () => {
-    test("removes URL path and query parameters", () => {
-        expect(cleanUrlFilename("http://example.com/path/to/file.pdf?download=1")).toBe("file.pdf");
-    });
-
-    test("decodes URL-encoded characters", () => {
-        expect(cleanUrlFilename("file%20name.pdf")).toBe("file name.pdf");
-        expect(cleanUrlFilename("Readme%20Statistical%20Downscaling.pdf")).toBe("Readme Statistical Downscaling.pdf");
-        expect(cleanUrlFilename("special%26chars%3D.txt")).toBe("special&chars=.txt");
-    });
-
-    test("handles both encoding and query parameters", () => {
-        expect(cleanUrlFilename("Readme%20Statistical%20Downscaling.pdf?download=1")).toBe(
-            "Readme Statistical Downscaling.pdf",
-        );
-        expect(cleanUrlFilename("my%20file.txt?token=abc123")).toBe("my file.txt");
-    });
-
-    test("returns original for normal filenames", () => {
-        expect(cleanUrlFilename("normal.txt")).toBe("normal.txt");
-        expect(cleanUrlFilename("file-with-dashes.bed")).toBe("file-with-dashes.bed");
-    });
-
-    test("handles malformed URL encoding gracefully", () => {
-        // Malformed percent encoding (invalid hex)
-        expect(cleanUrlFilename("file%ZZname.txt")).toBe("file%ZZname.txt");
-        // Incomplete percent encoding
-        expect(cleanUrlFilename("file%2.txt")).toBe("file%2.txt");
-    });
-
-    test("handles empty query string", () => {
-        expect(cleanUrlFilename("file.txt?")).toBe("file.txt");
-    });
-
-    test("returns null for empty filename", () => {
-        expect(cleanUrlFilename("")).toBeNull();
-    });
-
-    test("returns null for URL with no filename", () => {
-        expect(cleanUrlFilename("http://example.com/")).toBeNull();
+    it.each([
+        {
+            name: "URL path and query",
+            filename: "http://example.com/path/to/file.pdf?download=1",
+            expected: "file.pdf",
+        },
+        { name: "encoded space", filename: "file%20name.pdf", expected: "file name.pdf" },
+        {
+            name: "multiple encoded spaces",
+            filename: "Readme%20Statistical%20Downscaling.pdf",
+            expected: "Readme Statistical Downscaling.pdf",
+        },
+        { name: "encoded punctuation", filename: "special%26chars%3D.txt", expected: "special&chars=.txt" },
+        {
+            name: "encoded spaces and download query",
+            filename: "Readme%20Statistical%20Downscaling.pdf?download=1",
+            expected: "Readme Statistical Downscaling.pdf",
+        },
+        { name: "encoded space and token query", filename: "my%20file.txt?token=abc123", expected: "my file.txt" },
+        { name: "ordinary filename", filename: "normal.txt", expected: "normal.txt" },
+        { name: "filename with dashes", filename: "file-with-dashes.bed", expected: "file-with-dashes.bed" },
+        { name: "invalid percent-encoding hex", filename: "file%ZZname.txt", expected: "file%ZZname.txt" },
+        { name: "incomplete percent encoding", filename: "file%2.txt", expected: "file%2.txt" },
+        { name: "empty query string", filename: "file.txt?", expected: "file.txt" },
+        { name: "empty filename", filename: "", expected: null },
+        { name: "URL with no filename", filename: "http://example.com/", expected: null },
+    ])("cleans $name", ({ filename, expected }) => {
+        expect(cleanUrlFilename(filename)).toBe(expected);
     });
 });
 
@@ -459,17 +429,18 @@ describe("createUrlUploadItem", () => {
 });
 
 describe("parseContentToUploadItems", () => {
-    test("throws on empty content", () => {
-        expect(() => parseContentToUploadItems("", "historyId")).toThrow("Content not available.");
-        expect(() => parseContentToUploadItems("   ", "historyId")).toThrow("Content not available.");
+    it.each([
+        { name: "empty", content: "" },
+        { name: "whitespace-only", content: "   " },
+    ])("rejects $name content", ({ content }) => {
+        expect(() => parseContentToUploadItems(content, "historyId")).toThrow("Content not available.");
     });
 
     test("parses plain text as pasted content", () => {
         const items = parseContentToUploadItems("some plain text\nwith multiple lines", "historyId");
 
         expect(items).toHaveLength(1);
-        expect(items[0]!.src).toBe("pasted");
-        expect((items[0] as { paste_content: string }).paste_content).toBe("some plain text\nwith multiple lines");
+        expect(items[0]).toMatchObject({ src: "pasted", paste_content: "some plain text\nwith multiple lines" });
     });
 
     test("parses URLs when first line is a URL", () => {
@@ -479,10 +450,10 @@ describe("parseContentToUploadItems", () => {
         );
 
         expect(items).toHaveLength(2);
-        expect(items[0]!.src).toBe("url");
-        expect((items[0] as { url: string }).url).toBe("http://example.com/file1.txt");
-        expect(items[1]!.src).toBe("url");
-        expect((items[1] as { url: string }).url).toBe("http://example.com/file2.txt");
+        expect(items).toMatchObject([
+            { src: "url", url: "http://example.com/file1.txt" },
+            { src: "url", url: "http://example.com/file2.txt" },
+        ]);
     });
 
     test("throws on invalid URL in URL list", () => {
@@ -502,16 +473,16 @@ describe("parseContentToUploadItems", () => {
         const items = parseContentToUploadItems(content, "historyId");
 
         expect(items).toHaveLength(3);
-        expect((items[0] as { url: string }).url).toBe("gxfiles://myftp/file.txt");
-        expect((items[1] as { url: string }).url).toBe("drs://example.org/abc");
-        expect((items[2] as { url: string }).url).toBe("zenodo://record/123");
+        expect(items[0]).toMatchObject({ url: "gxfiles://myftp/file.txt" });
+        expect(items[1]).toMatchObject({ url: "drs://example.org/abc" });
+        expect(items[2]).toMatchObject({ url: "zenodo://record/123" });
     });
 
     test("handles whitespace around URLs", () => {
         const items = parseContentToUploadItems("  http://example.com/file.txt  \n  ", "historyId");
 
         expect(items).toHaveLength(1);
-        expect((items[0] as { url: string }).url).toBe("http://example.com/file.txt");
+        expect(items[0]).toMatchObject({ url: "http://example.com/file.txt" });
     });
 });
 
@@ -545,8 +516,7 @@ describe("buildUploadPayload", () => {
         expect(result.targets[0]!.destination).toEqual({ type: "hdas" });
         expect(result.targets[0]!.elements).toHaveLength(1);
 
-        const element = result.targets[0]!.elements![0] as { auto_decompress: boolean };
-        expect(element.auto_decompress).toBe(true);
+        expect(result.targets[0]!.elements![0]).toMatchObject({ auto_decompress: true });
     });
 
     test("builds payload preserving item auto_decompress setting", () => {
@@ -558,8 +528,7 @@ describe("buildUploadPayload", () => {
         ];
 
         const result = buildUploadPayload(items);
-        const element = result.targets[0]!.elements![0] as { auto_decompress: boolean };
-        expect(element.auto_decompress).toBe(false);
+        expect(result.targets[0]!.elements![0]).toMatchObject({ auto_decompress: false });
     });
 
     test("builds composite payload", () => {
@@ -651,12 +620,8 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.elements).toHaveLength(2);
 
         // Elements are reversed to match history panel display order (newest HID first)
-        const elem1 = target.elements[0] as { src: string; url: string };
-        const elem2 = target.elements[1] as { src: string; url: string };
-        expect(elem1.src).toBe("url");
-        expect(elem1.url).toBe("http://example.com/2.txt");
-        expect(elem2.src).toBe("url");
-        expect(elem2.url).toBe("http://example.com/1.txt");
+        expect(target.elements[0]).toMatchObject({ src: "url", url: "http://example.com/2.txt" });
+        expect(target.elements[1]).toMatchObject({ src: "url", url: "http://example.com/1.txt" });
     });
 
     test("builds list collection payload with local file items", () => {
@@ -681,10 +646,8 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.collection_type).toBe("list");
         expect(target.elements).toHaveLength(2);
 
-        const elem1 = target.elements[0] as { src: string };
-        const elem2 = target.elements[1] as { src: string };
-        expect(elem1.src).toBe("files");
-        expect(elem2.src).toBe("files");
+        expect(target.elements[0]).toMatchObject({ src: "files" });
+        expect(target.elements[1]).toMatchObject({ src: "files" });
     });
 
     test("builds list:paired collection payload with nested elements", () => {
@@ -708,12 +671,8 @@ describe("buildCollectionUploadPayload", () => {
         expect(pair.name).toBe("sample");
         expect(pair.elements).toHaveLength(2);
 
-        const fwd = pair.elements[0] as { name: string; src: string; url: string };
-        const rev = pair.elements[1] as { name: string; src: string; url: string };
-        expect(fwd.name).toBe("forward");
-        expect(fwd.src).toBe("url");
-        expect(rev.name).toBe("reverse");
-        expect(rev.src).toBe("url");
+        expect(pair.elements[0]).toMatchObject({ name: "forward", src: "url" });
+        expect(pair.elements[1]).toMatchObject({ name: "reverse", src: "url" });
     });
 
     test("builds list:paired with multiple pairs", () => {
@@ -784,10 +743,8 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.elements).toHaveLength(2);
 
         // Elements are reversed to match history panel display order (newest HID first)
-        const elem1 = target.elements[0] as { src: string };
-        const elem2 = target.elements[1] as { src: string };
-        expect(elem1.src).toBe("url");
-        expect(elem2.src).toBe("files");
+        expect(target.elements[0]).toMatchObject({ src: "url" });
+        expect(target.elements[1]).toMatchObject({ src: "files" });
     });
 
     test("handles pasted content in collection", () => {
@@ -807,9 +764,7 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.elements).toHaveLength(2);
 
         // Elements are reversed to match history panel display order (newest HID first)
-        const elem1 = target.elements[0] as { src: string; paste_content: string };
-        expect(elem1.src).toBe("pasted");
-        expect(elem1.paste_content).toBe("content 2");
+        expect(target.elements[0]).toMatchObject({ src: "pasted", paste_content: "content 2" });
     });
 
     test("validates empty file data", () => {
@@ -835,20 +790,20 @@ describe("buildCollectionUploadPayload", () => {
 // ============================================================================
 
 describe("upload submission", () => {
-    const { server } = useServerMock();
+    const { server, http } = useServerMock();
 
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.mocked(createTusUpload).mockReset();
     });
 
     describe("fetchDatasets", () => {
-        it("should successfully send payload to API", async () => {
+        it("sends the payload to the API", async () => {
             const mockResponse = { jobs: [{ id: "job123" }], outputs: [{ id: "dataset1" }] };
             const successCallback = vi.fn();
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json(mockResponse);
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json(mockResponse));
                 }),
             );
 
@@ -864,14 +819,16 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith(mockResponse);
         });
 
-        it("should handle API errors", async () => {
+        it("reports API errors", async () => {
             const errorCallback = vi.fn();
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json(
-                        { err_msg: "Upload failed" },
-                        { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(
+                        HttpResponse.json(
+                            { err_msg: "Upload failed" },
+                            { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                        ),
                     );
                 }),
             );
@@ -885,14 +842,13 @@ describe("upload submission", () => {
                 { error: errorCallback },
             );
 
-            expect(errorCallback).toHaveBeenCalled();
-            const errorArg = errorCallback.mock.calls[0]?.[0];
-            expect(errorArg).toBe("Upload failed");
+            expect(errorCallback).toHaveBeenCalledTimes(1);
+            expect(errorCallback).toHaveBeenCalledWith("Upload failed");
         });
     });
 
     describe("submitUpload", () => {
-        it("should immediately fail if error_message is present", async () => {
+        it("reports validation errors before starting TUS", async () => {
             const errorCallback = vi.fn();
 
             await submitUpload({
@@ -910,7 +866,7 @@ describe("upload submission", () => {
             expect(createTusUpload).not.toHaveBeenCalled();
         });
 
-        it("should upload files via TUS when files are present", async () => {
+        it("uploads local files via TUS", async () => {
             const mockFile = new File(["content"], "test.txt");
             const successCallback = vi.fn();
             const progressCallback = vi.fn();
@@ -921,8 +877,8 @@ describe("upload submission", () => {
             });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job789" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job789" }] }));
                 }),
             );
 
@@ -961,12 +917,12 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job789" }] });
         });
 
-        it("should upload via TUS for composite uploads even without files", async () => {
+        it("submits an empty composite payload", async () => {
             const successCallback = vi.fn();
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_composite" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_composite" }] }));
                 }),
             );
 
@@ -981,16 +937,15 @@ describe("upload submission", () => {
                 isComposite: true,
             });
 
-            // For composite with no files, should still go through TUS path
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_composite" }] });
         });
 
-        it("should directly submit URL uploads without TUS", async () => {
+        it("submits URL uploads without TUS", async () => {
             const successCallback = vi.fn();
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_url" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_url" }] }));
                 }),
             );
 
@@ -1021,7 +976,7 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_url" }] });
         });
 
-        it("should convert pasted content to blob and upload via TUS", async () => {
+        it("uploads pasted content as a blob via TUS", async () => {
             const successCallback = vi.fn();
 
             vi.mocked(createTusUpload).mockResolvedValue({
@@ -1030,8 +985,8 @@ describe("upload submission", () => {
             });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_paste" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_paste" }] }));
                 }),
             );
 
@@ -1065,7 +1020,7 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_paste" }] });
         });
 
-        it("should keep pasted upload tracking aligned with per-file signals", async () => {
+        it("keeps pasted upload tracking aligned with per-file signals", async () => {
             const cancelledFile = new AbortController();
             cancelledFile.abort();
             const activeFile = new AbortController();
@@ -1077,8 +1032,8 @@ describe("upload submission", () => {
             });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_paste_partial" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_paste_partial" }] }));
                 }),
             );
 
@@ -1130,21 +1085,23 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_paste_partial" }] });
         });
 
-        it("should not report URL upload success after a later URL fails", async () => {
+        it("suppresses success when a later URL fails", async () => {
             const successCallback = vi.fn();
             const errorCallback = vi.fn();
             let requestCount = 0;
 
             server.use(
-                http.post("/api/tools/fetch", () => {
+                http.post("/api/tools/fetch", ({ response }) => {
                     requestCount += 1;
                     if (requestCount === 2) {
-                        return HttpResponse.json(
-                            { err_msg: "second URL failed" },
-                            { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                        return response.untyped(
+                            HttpResponse.json(
+                                { err_msg: "second URL failed" },
+                                { status: 500, headers: GALAXY_RESPONSE_HEADERS },
+                            ),
                         );
                     }
-                    return HttpResponse.json({ jobs: [{ id: "job_url_first" }] });
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_url_first" }] }));
                 }),
             );
 
@@ -1189,7 +1146,7 @@ describe("upload submission", () => {
             expect(successCallback).not.toHaveBeenCalled();
         });
 
-        it("should use custom chunk size if provided", async () => {
+        it("uses the supplied TUS chunk size", async () => {
             const mockFile = new File(["content"], "chunked.txt");
             const customChunkSize = 5242880; // 5MB
 
@@ -1199,8 +1156,8 @@ describe("upload submission", () => {
             });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_chunk" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_chunk" }] }));
                 }),
             );
 
@@ -1221,7 +1178,7 @@ describe("upload submission", () => {
             );
         });
 
-        it("should handle multiple file uploads sequentially", async () => {
+        it("uploads multiple files in sequence", async () => {
             const file1 = new File(["content1"], "file1.txt");
             const file2 = new File(["content2"], "file2.txt");
             const successCallback = vi.fn();
@@ -1237,8 +1194,8 @@ describe("upload submission", () => {
                 });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_multi" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_multi" }] }));
                 }),
             );
 
@@ -1256,15 +1213,11 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_multi" }] });
         });
 
-        it("should skip a cancelled file via per-file signals and still submit the rest", async () => {
+        it("skips a cancelled file and submits the remaining file", async () => {
             const file1 = new File(["content1"], "file1.txt");
             const file2 = new File(["content2"], "file2.txt");
             const successCallback = vi.fn();
-            interface FetchedBody {
-                "files_0|file_data"?: { session_id: string };
-                targets: [{ elements: Array<{ name: string }> }];
-            }
-            let fetchedBody: FetchedBody | null = null;
+            const fetchedBodies: unknown[] = [];
 
             vi.mocked(createTusUpload).mockResolvedValueOnce({
                 sessionId: "session2",
@@ -1272,9 +1225,9 @@ describe("upload submission", () => {
             });
 
             server.use(
-                http.post("/api/tools/fetch", async ({ request }) => {
-                    fetchedBody = (await request.json()) as FetchedBody;
-                    return HttpResponse.json({ jobs: [{ id: "job_partial" }] });
+                http.post("/api/tools/fetch", async ({ request, response }) => {
+                    fetchedBodies.push(await request.json());
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_partial" }] }));
                 }),
             );
 
@@ -1314,22 +1267,23 @@ describe("upload submission", () => {
             // Only the non-cancelled file is uploaded via TUS and submitted
             expect(createTusUpload).toHaveBeenCalledTimes(1);
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_partial" }] });
-            const body = fetchedBody as FetchedBody | null;
-            expect(body?.["files_0|file_data"]).toMatchObject({ session_id: "session2" });
-            expect(body?.targets[0].elements).toHaveLength(1);
-            expect(body?.targets[0].elements[0]).toMatchObject({ name: "file2.txt" });
+            expect(fetchedBodies).toHaveLength(1);
+            expect(fetchedBodies[0]).toMatchObject({
+                "files_0|file_data": { session_id: "session2" },
+                targets: [{ elements: [{ name: "file2.txt" }] }],
+            });
         });
 
-        it("should not submit anything when every file is cancelled via per-file signals", async () => {
+        it("skips submission when every file is cancelled", async () => {
             const file1 = new File(["content1"], "file1.txt");
             const successCallback = vi.fn();
             const errorCallback = vi.fn();
             const fetchSpy = vi.fn();
 
             server.use(
-                http.post("/api/tools/fetch", () => {
+                http.post("/api/tools/fetch", ({ response }) => {
                     fetchSpy();
-                    return HttpResponse.json({ jobs: [{ id: "job_none" }] });
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_none" }] }));
                 }),
             );
 
@@ -1354,7 +1308,7 @@ describe("upload submission", () => {
             expect(errorCallback).not.toHaveBeenCalled();
         });
 
-        it("should still fail the whole submission on a genuine (non-cancellation) error with per-file signals", async () => {
+        it("fails the submission on an upload error with per-file signals", async () => {
             const file1 = new File(["content1"], "file1.txt");
             const file2 = new File(["content2"], "file2.txt");
             const errorCallback = vi.fn();
@@ -1375,17 +1329,12 @@ describe("upload submission", () => {
             expect(errorCallback).toHaveBeenCalledWith(new Error("Upload failed"));
         });
 
-        it("should skip a file aborted mid-upload in per-file mode and still submit the rest", async () => {
+        it("skips a file aborted during an earlier upload and submits the rest", async () => {
             const file1 = new File(["content1"], "file1.txt");
             const file2 = new File(["content2"], "file2.txt");
             const file3 = new File(["content3"], "file3.txt");
             const successCallback = vi.fn();
-            interface FetchedBody {
-                "files_0|file_data"?: { session_id: string };
-                "files_1|file_data"?: { session_id: string };
-                targets: [{ elements: Array<{ name: string }> }];
-            }
-            let fetchedBody: FetchedBody | null = null;
+            const fetchedBodies: unknown[] = [];
 
             const controller2 = new AbortController();
 
@@ -1398,9 +1347,9 @@ describe("upload submission", () => {
                 .mockResolvedValueOnce({ sessionId: "session3", fileName: "file3.txt" });
 
             server.use(
-                http.post("/api/tools/fetch", async ({ request }) => {
-                    fetchedBody = (await request.json()) as FetchedBody;
-                    return HttpResponse.json({ jobs: [{ id: "job_partial_mid" }] });
+                http.post("/api/tools/fetch", async ({ request, response }) => {
+                    fetchedBodies.push(await request.json());
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_partial_mid" }] }));
                 }),
             );
 
@@ -1448,15 +1397,15 @@ describe("upload submission", () => {
             // File 2 was aborted mid-loop; files 1 and 3 should still be uploaded.
             expect(createTusUpload).toHaveBeenCalledTimes(2);
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_partial_mid" }] });
-            const body = fetchedBody as FetchedBody | null;
-            expect(body?.["files_0|file_data"]).toMatchObject({ session_id: "session1" });
-            expect(body?.["files_1|file_data"]).toMatchObject({ session_id: "session3" });
-            expect(body?.targets[0].elements).toHaveLength(2);
-            expect(body?.targets[0].elements[0]).toMatchObject({ name: "file1.txt" });
-            expect(body?.targets[0].elements[1]).toMatchObject({ name: "file3.txt" });
+            expect(fetchedBodies).toHaveLength(1);
+            expect(fetchedBodies[0]).toMatchObject({
+                "files_0|file_data": { session_id: "session1" },
+                "files_1|file_data": { session_id: "session3" },
+                targets: [{ elements: [{ name: "file1.txt" }, { name: "file3.txt" }] }],
+            });
         });
 
-        it("should invoke progress callback during upload", async () => {
+        it("reports TUS progress through the callback", async () => {
             const mockFile = new File(["content"], "progress.txt");
             const progressCallback = vi.fn();
 
@@ -1472,8 +1421,8 @@ describe("upload submission", () => {
             });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_progress" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_progress" }] }));
                 }),
             );
 
@@ -1492,7 +1441,7 @@ describe("upload submission", () => {
             expect(progressCallback).toHaveBeenCalledWith(100);
         });
 
-        it("should handle TUS upload errors", async () => {
+        it("reports TUS upload errors", async () => {
             const mockFile = new File(["content"], "error.txt");
             const errorCallback = vi.fn();
 
@@ -1508,15 +1457,15 @@ describe("upload submission", () => {
                 error: errorCallback,
             });
 
-            expect(errorCallback).toHaveBeenCalled();
+            expect(errorCallback).toHaveBeenCalledWith(new Error("Upload failed"));
         });
 
-        it("should directly submit HDCA collection target with URLs (no TUS)", async () => {
+        it("submits URL collections without TUS", async () => {
             const successCallback = vi.fn();
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_hdca" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_hdca" }] }));
                 }),
             );
 
@@ -1555,7 +1504,7 @@ describe("upload submission", () => {
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_hdca" }] });
         });
 
-        it("should upload HDCA collection with local files via TUS", async () => {
+        it("uploads local files in a collection via TUS", async () => {
             const file1 = new File(["content1"], "file1.txt");
             const file2 = new File(["content2"], "file2.txt");
             const successCallback = vi.fn();
@@ -1571,8 +1520,8 @@ describe("upload submission", () => {
                 });
 
             server.use(
-                http.post("/api/tools/fetch", () => {
-                    return HttpResponse.json({ jobs: [{ id: "job_hdca_files" }] });
+                http.post("/api/tools/fetch", ({ response }) => {
+                    return response.untyped(HttpResponse.json({ jobs: [{ id: "job_hdca_files" }] }));
                 }),
             );
 
