@@ -9,6 +9,7 @@ from galaxy.datatypes.anvio import AnvioStructureDB
 from galaxy.datatypes.data import (
     Data,
     get_file_peek,
+    ZarrDirectory,
 )
 from galaxy.datatypes.interval import (
     Bed,
@@ -33,3 +34,32 @@ def test_is_datatype_change_allowed():
     assert AnvioStructureDB.is_datatype_change_allowed() is False
     # BedStrict explictly disallows datatype change with `allow_datatype_change = False`
     assert BedStrict.is_datatype_change_allowed() is False
+
+
+def test_zarr_groom_moves_a_wrapped_store_to_the_root(tmp_path):
+    (tmp_path / "wrapped.zarr" / "0").mkdir(parents=True)
+    (tmp_path / "wrapped.zarr" / ".zgroup").write_text('{"zarr_format": 2}')
+
+    ZarrDirectory().groom_directory_content(str(tmp_path))
+
+    assert sorted(os.listdir(tmp_path)) == [".zgroup", "0"]
+
+
+def test_zarr_groom_leaves_a_symlinked_wrapper_alone(tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / ".zgroup").write_text('{"zarr_format": 2}')
+    extra_files = tmp_path / "extra_files"
+    extra_files.mkdir()
+    (extra_files / "wrapped.zarr").symlink_to(outside)
+
+    ZarrDirectory().groom_directory_content(str(extra_files))
+
+    assert os.listdir(extra_files) == ["wrapped.zarr"]
+    assert os.listdir(outside) == [".zgroup"]
+
+
+def test_zarr_format_version_ignores_non_object_metadata(tmp_path):
+    (tmp_path / ".zgroup").write_text("[1, 2]")
+
+    assert ZarrDirectory()._get_format_version(str(tmp_path)) is None

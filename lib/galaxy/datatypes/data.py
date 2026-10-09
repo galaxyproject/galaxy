@@ -1284,6 +1284,9 @@ class Directory(Data):
         """Return whether the extra-files directory at ``path`` matches this datatype."""
         return False
 
+    def groom_directory_content(self, extra_files_path: str) -> None:
+        """Rearrange a staged directory so its content sits at the root of ``extra_files_path``."""
+
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str
     ) -> tuple[bool, str, str]:
@@ -1300,18 +1303,6 @@ class ZarrDirectory(Directory):
 
     edam_format = "format_3915"
     file_ext = "zarr"
-
-    # This wouldn't be needed if the CompressedFile.extract function didn't
-    # create an extra folder under the dataset's extra_files_path.
-    # Maybe this can be avoided somehow?
-    MetadataElement(
-        name="store_root",
-        default=None,
-        desc="Name of the root folder where the zarr store is located",
-        readonly=True,
-        optional=False,
-        visible=False,
-    )
 
     MetadataElement(
         name="zarr_format",
@@ -1330,14 +1321,8 @@ class ZarrDirectory(Directory):
             dataset.blurb = "file purged from disk"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        store_root_folder = self._find_store_root_folder_name(dataset)
-        if store_root_folder is None:
-            log.debug("Directory structure does not look like Zarr format")
-            return
-        dataset.metadata.store_root = store_root_folder
-
-        root_directory = os.path.join(dataset.extra_files_path, store_root_folder)
-        format_version = self._get_format_version(root_directory)
+        # The store sits at the root of extra_files_path (see groom_directory_content).
+        format_version = self._get_format_version(dataset.extra_files_path)
         if not format_version:
             log.debug("Could not determine Zarr format version")
             return
@@ -1357,8 +1342,7 @@ class ZarrDirectory(Directory):
         **kwd,
     ):
         if preview:
-            store_root_path = os.path.join(dataset.extra_files_path, dataset.metadata.store_root)
-            metadata_file_path = self._find_zarr_metadata_file(store_root_path)
+            metadata_file_path = self._find_zarr_metadata_file(dataset.extra_files_path)
             if metadata_file_path:
                 headers = kwd.get("headers", {})
                 headers["content-type"] = "application/json"
@@ -1366,36 +1350,42 @@ class ZarrDirectory(Directory):
 
         return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
+    def groom_directory_content(self, extra_files_path: str) -> None:
+        """Move a store wrapped in a single folder up to the root of ``extra_files_path``."""
+        wrapper = self._wrapper_folder_name(extra_files_path)
+        if wrapper is None:
+            return
+        wrapper_path = os.path.join(extra_files_path, wrapper)
+        if os.path.islink(extra_files_path) or os.path.islink(wrapper_path):
+            # Never move content through a link that may point outside the dataset.
+            return
+        # Stay inside extra_files_path, whose parent may not be writable. Rename the
+        # wrapper first so a child with the same name does not collide.
+        moved = tempfile.mkdtemp(prefix=".store_", dir=extra_files_path)
+        os.rmdir(moved)
+        os.rename(wrapper_path, moved)
+        for name in os.listdir(moved):
+            os.rename(os.path.join(moved, name), os.path.join(extra_files_path, name))
+        os.rmdir(moved)
+
     def sniff_directory(self, path: str) -> bool:
-        store_root = self._store_root_folder_name(path)
-        if store_root is None:
-            return False
-        try:
-            metadata = self._load_zarr_metadata_file(os.path.join(path, store_root))
-        except (OSError, ValueError):
-            return False
-        return isinstance(metadata, dict) and metadata.get("zarr_format") is not None
+        # Sniffing runs before grooming, so a store in a wrapper folder still counts.
+        store_path = path
+        if wrapper := self._wrapper_folder_name(path):
+            store_path = os.path.join(path, wrapper)
+        return self._get_format_version(store_path) is not None
 
-    def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> str | None:
-        """Returns the name of the root folder where the Zarr store is located.
-
-        The Zarr store can be directly in the extra files folder or in a subfolder.
-        """
-        return self._store_root_folder_name(dataset.extra_files_path)
-
-    def _store_root_folder_name(self, extra_files_path: str) -> str | None:
-        if not os.path.isdir(extra_files_path):
+    def _wrapper_folder_name(self, extra_files_path: str) -> str | None:
+        """Return the name of the single folder wrapping the store, if the store is not at the root."""
+        if not os.path.isdir(extra_files_path) or self._find_zarr_metadata_file(extra_files_path):
             return None
-        if self._find_zarr_metadata_file(extra_files_path):
-            return ""  # The store is in the root of the extra files folder
         items_in_path = os.listdir(extra_files_path)
         if len(items_in_path) != 1:
             return None
-        sub_folder_name = items_in_path[0]
-        zarr_store_path = os.path.join(extra_files_path, sub_folder_name)
-        if os.path.isdir(zarr_store_path) and self._find_zarr_metadata_file(zarr_store_path):
-            return sub_folder_name  # The store is in a subfolder of the extra files folder
-        return None  # The directory structure does not look like Zarr format
+        wrapper = items_in_path[0]
+        if self._find_zarr_metadata_file(os.path.join(extra_files_path, wrapper)):
+            return wrapper
+        return None
 
     def _load_zarr_metadata_file(self, store_root_path: str) -> dict[str, Any] | None:
         """Returns the path to the metadata file in the Zarr store."""
@@ -1406,25 +1396,24 @@ class ZarrDirectory(Directory):
 
     def _find_zarr_metadata_file(self, store_root_path: str) -> str | None:
         """Returns the path to the metadata file in the Zarr store."""
-        meta_file = None
-        files_in_store = os.listdir(store_root_path)
-
         # Depending on the Zarr version, the metadata file can be in different locations
         # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
         # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
         # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+        # Probe the names directly; listing the store root scales with its chunk count.
         for meta_filename in ["meta", ".zarray", ".zgroup", "zarr.json"]:
-            if meta_filename in files_in_store:
-                meta_file = os.path.join(store_root_path, meta_filename)
-                break
-
-        if meta_file and os.path.isfile(meta_file):
-            return meta_file
+            meta_file = os.path.join(store_root_path, meta_filename)
+            if os.path.isfile(meta_file):
+                return meta_file
         return None
 
     def _get_format_version(self, store_root_path: str) -> str | None:
         """Returns the Zarr format version from the metadata file in the Zarr store."""
-        if metadata_file := self._load_zarr_metadata_file(store_root_path):
+        try:
+            metadata_file = self._load_zarr_metadata_file(store_root_path)
+        except (OSError, ValueError):
+            return None
+        if isinstance(metadata_file, dict):
             return metadata_file.get("zarr_format")
         return None
 

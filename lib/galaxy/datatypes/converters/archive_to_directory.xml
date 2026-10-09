@@ -70,6 +70,24 @@
                 </extra_files>
             </output>
         </test>
+        <test>
+            <!-- The store sits in a single wrapper folder; metadata setting moves it to the root. -->
+            <param name="input1" ftype="zip" value="wrapped_store.zarr.zip"/>
+            <param name="__target_datatype__" value="zarr"/>
+            <output name="output1" ftype="zarr">
+                <metadata name="zarr_format" value="2"/>
+                <extra_files type="file" name=".zgroup">
+                    <assert_contents>
+                        <has_text text="zarr_format"/>
+                    </assert_contents>
+                </extra_files>
+                <extra_files type="file" name="0/.zarray">
+                    <assert_contents>
+                        <has_text text="zarr_format"/>
+                    </assert_contents>
+                </extra_files>
+            </output>
+        </test>
     </tests>
     <help>
     </help>

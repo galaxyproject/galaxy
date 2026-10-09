@@ -344,7 +344,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
         primary_file = stream_to_file(
             StringIO(""), prefix="upload_directory_primary_file", dir=upload_config.working_directory
         )
-        # The directory's content sits at the root of extra files, not in a subfolder.
+        # Stage the directory's content at the root of extra files.
         extra_files_path = f"{primary_file}_extra"
         purged = _stage_directory(path, extra_files_path, purge_source)
         # Reject links introduced since source validation.
@@ -354,6 +354,9 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
 
         if sniff_ext:
             ext = registry.sniff_directory(extra_files_path)
+        datatype = registry.get_datatype_by_extension(ext)
+        if isinstance(datatype, Directory):
+            datatype.groom_directory_content(extra_files_path)
         rval: dict[str, Any] = {
             "name": name,
             "dbkey": item.get("dbkey", "?"),

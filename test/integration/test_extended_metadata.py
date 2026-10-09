@@ -56,6 +56,7 @@ TEST_TOOL_IDS = [
     "all_output_types",
     "discover_sort_by",
     "create_directory_index",
+    "zarr_store_in_wrapper_folder",
 ]
 
 
