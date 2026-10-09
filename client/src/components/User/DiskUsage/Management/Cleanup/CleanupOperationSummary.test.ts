@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
-import { getFakeCleanableItem } from "./test-utils";
+import { getFakeCleanableItem, getFakeCleanupOperation } from "./test-utils";
 
 import CleanupOperationSummary from "./CleanupOperationSummary.vue";
 
@@ -19,10 +19,7 @@ const EXPECTED_ITEMS = [
 ];
 
 /** Operation that can clean some items */
-const CLEANUP_OPERATION: CleanupOperation = {
-    id: "operation-id",
-    name: "operation name",
-    description: "operation description",
+const CLEANUP_OPERATION = getFakeCleanupOperation({
     fetchSummary: async () =>
         new CleanableSummary({
             total_size: 1024,
@@ -39,22 +36,15 @@ const CLEANUP_OPERATION: CleanupOperation = {
             },
             EXPECTED_ITEMS,
         ),
-};
+});
 /** Operation without items to clean*/
-const EMPTY_CLEANUP_OPERATION: CleanupOperation = {
+const EMPTY_CLEANUP_OPERATION = getFakeCleanupOperation({
     id: "operation-id-empty",
     name: "empty operation",
     description: "operation that has no items to clean",
-    fetchSummary: async () =>
-        new CleanableSummary({
-            total_size: 0,
-            total_items: 0,
-        }),
-    fetchItems: async () => [],
-    cleanupItems: async () => new CleanupResult(),
-};
+});
 /** Operation that fails on every action */
-const ERROR_CLEANUP_OPERATION: CleanupOperation = {
+const ERROR_CLEANUP_OPERATION = getFakeCleanupOperation({
     id: "operation-id-error",
     name: "operation with error",
     description: "operation causing errors",
@@ -67,7 +57,7 @@ const ERROR_CLEANUP_OPERATION: CleanupOperation = {
     cleanupItems: () => {
         throw new Error("Cannot cleanup items");
     },
-};
+});
 
 async function mountCleanupOperationSummaryWith(
     operation: CleanupOperation,
