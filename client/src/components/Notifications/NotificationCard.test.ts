@@ -39,8 +39,9 @@ async function mountNotificationCard(notification: UserNotification): Promise<Vu
 
 describe("NotificationCard", () => {
     it("renders markdown in message notifications", async () => {
-        const notification = generateMessageNotification();
-        notification.content.message = "This is a **markdown** message to test _rendering_";
+        const notification = generateMessageNotification({
+            content: { message: "This is a **markdown** message to test _rendering_" },
+        });
 
         const wrapper = await mountNotificationCard(notification);
 
@@ -49,25 +50,28 @@ describe("NotificationCard", () => {
         );
     });
 
-    it("shows the shared item type and owner", async () => {
-        const notification = generateNewSharedItemNotification();
+    it.each(["history", "workflow", "visualization", "page"] as const)(
+        "shows the shared %s type and owner",
+        async (itemType) => {
+            const notification = generateNewSharedItemNotification({ content: { item_type: itemType } });
 
-        const wrapper = await mountNotificationCard(notification);
+            const wrapper = await mountNotificationCard(notification);
 
-        expect(wrapper.text()).toContain(notification.content.item_type);
-        expect(wrapper.text()).toContain(`The user ${notification.content.owner_name} shared`);
+            expect(wrapper.text()).toContain(notification.content.item_type);
+            expect(wrapper.text()).toContain(`The user ${notification.content.owner_name} shared`);
 
-        const description = wrapper.find(`#g-card-description-${notification.id}`).text();
-        expect(description).toContain(`The user ${notification.content.owner_name} shared`);
-        expect(description).toContain(`${notification.content.item_type}  with you`);
-    });
+            const description = wrapper.find(`#g-card-description-${notification.id}`).text();
+            expect(description).toContain(`The user ${notification.content.owner_name} shared`);
+            expect(description).toContain(`${notification.content.item_type}  with you`);
+        },
+    );
 
     describe.each([
         { category: "message", createNotification: generateMessageNotification },
         { category: "new_shared_item", createNotification: generateNewSharedItemNotification },
     ])("$category notification actions", ({ createNotification }) => {
         it("marks an unread notification as read and shows its expiration action", async () => {
-            const notification = { ...createNotification(), seen_time: null };
+            const notification = createNotification({ seen_time: null });
             const wrapper = await mountNotificationCard(notification);
             const notificationsStore = useNotificationsStore();
             const updateNotification = vi.spyOn(notificationsStore, "updateNotification");
@@ -92,7 +96,7 @@ describe("NotificationCard", () => {
         });
 
         it("deletes a notification when its delete action is clicked", async () => {
-            const notification = { ...createNotification(), seen_time: "2024-01-01T12:00:00.000Z" };
+            const notification = createNotification({ seen_time: "2024-01-01T12:00:00.000Z" });
             const wrapper = await mountNotificationCard(notification);
             const notificationsStore = useNotificationsStore();
             const updateNotification = vi.spyOn(notificationsStore, "updateNotification");
@@ -115,8 +119,9 @@ describe("NotificationCard", () => {
 
     it("renders the message markdown through v-sanitize-html", async () => {
         vi.mocked(sanitizeHtml).mockClear();
-        const notification = generateMessageNotification();
-        notification.content.message = "A [link](/histories/list) and <b>raw</b>";
+        const notification = generateMessageNotification({
+            content: { message: "A [link](/histories/list) and <b>raw</b>" },
+        });
 
         await mountNotificationCard(notification);
 
@@ -142,17 +147,20 @@ describe("NotificationCard", () => {
     });
 
     it("shows the tool shed ID alongside the requested tool name", async () => {
-        const notification = generateToolInstallationRequestNotification();
-        notification.content.tools = [
-            {
-                name: "bwa",
-                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
-                tool_url: null,
-                description: null,
-                scientific_domain: null,
-                requested_version: "0.7.17",
+        const notification = generateToolInstallationRequestNotification({
+            content: {
+                tools: [
+                    {
+                        name: "bwa",
+                        tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
+                        tool_url: null,
+                        description: null,
+                        scientific_domain: null,
+                        requested_version: "0.7.17",
+                    },
+                ],
             },
-        ];
+        });
 
         const wrapper = await mountNotificationCard(notification);
 
@@ -162,25 +170,28 @@ describe("NotificationCard", () => {
     });
 
     it("associates each tool with its own details in requests for multiple tools", async () => {
-        const notification = generateToolInstallationRequestNotification();
-        notification.content.tools = [
-            {
-                name: "bwa",
-                tool_shed_id: null,
-                tool_url: null,
-                description: "Aligner for short reads",
-                scientific_domain: null,
-                requested_version: null,
+        const notification = generateToolInstallationRequestNotification({
+            content: {
+                tools: [
+                    {
+                        name: "bwa",
+                        tool_shed_id: null,
+                        tool_url: null,
+                        description: "Aligner for short reads",
+                        scientific_domain: null,
+                        requested_version: null,
+                    },
+                    {
+                        name: "samtools",
+                        tool_shed_id: null,
+                        tool_url: null,
+                        description: "SAM/BAM utilities",
+                        scientific_domain: null,
+                        requested_version: "1.13",
+                    },
+                ],
             },
-            {
-                name: "samtools",
-                tool_shed_id: null,
-                tool_url: null,
-                description: "SAM/BAM utilities",
-                scientific_domain: null,
-                requested_version: "1.13",
-            },
-        ];
+        });
 
         const wrapper = await mountNotificationCard(notification);
 
@@ -202,8 +213,9 @@ describe("NotificationCard", () => {
     });
 
     it("links the requested workflow to its run page", async () => {
-        const notification = generateToolInstallationRequestNotification();
-        notification.content.workflow_id = "encoded-workflow-id-abc";
+        const notification = generateToolInstallationRequestNotification({
+            content: { workflow_id: "encoded-workflow-id-abc" },
+        });
 
         const wrapper = await mountNotificationCard(notification);
 
