@@ -3479,6 +3479,7 @@ def test_list_linters():
         "InputsDataOptionsFiltersType",
         "InputsDataOptionsMultiple",
         "InputsDatasourceTags",
+        "InputsDrillDownFromFile",
         "InputsMissing",
         "InputsMissingDataSource",
         "InputsName",
@@ -3778,4 +3779,14 @@ DRILL_DOWN_ATTRIBUTES = """
 def test_xsd_drill_down_attributes(lint_ctx):
     tool_source = get_xml_tool_source(DRILL_DOWN_ATTRIBUTES)
     run_lint_module(lint_ctx, xsd, tool_source)
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_drill_down_from_file_deprecated(lint_ctx):
+    tool_source = get_xml_tool_source(DRILL_DOWN_ATTRIBUTES)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert lint_ctx.warn_messages == [
+        "Drill down parameter [tables] uses deprecated 'from_file' attribute.",
+        "Drill down parameter [table] uses deprecated 'from_file' attribute.",
+    ]
     assert not lint_ctx.error_messages

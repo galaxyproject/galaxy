@@ -6,7 +6,7 @@
 echo "parameter: $parameter" > '$output'
     ]]></command>
     <inputs>
-        <!-- from_file is resolved against Galaxy's tool_data_path (tool-data/ in the test server) -->
+        <!-- deprecated from_file, kept for legacy tools; resolved against Galaxy's tool_data_path (tool-data/ in the test server) -->
         <param name="parameter" type="drill_down" from_file="../test/functional/tool-data/gx_drill_down_from_file_options.xml" />
     </inputs>
     <expand macro="simple_text_output" />
