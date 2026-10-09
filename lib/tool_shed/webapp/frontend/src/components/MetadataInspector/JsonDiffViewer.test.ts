@@ -1,172 +1,97 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount } from "@vue/test-utils"
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils"
+import { afterEach, describe, expect, it } from "vitest"
+
 import JsonDiffViewer from "./JsonDiffViewer.vue"
 
+enableAutoUnmount(afterEach)
+
 describe("JsonDiffViewer", () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
+    it("renders the diff container", () => {
+        const wrapper = shallowMount(JsonDiffViewer, {
+            props: { before: { key: "value1" }, after: { key: "value2" } },
+        })
+
+        expect(wrapper.find(".json-diff-viewer").exists()).toBe(true)
     })
 
-    describe("rendering", () => {
-        it("renders diff container", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { key: "value1" },
-                    after: { key: "value2" },
-                },
-            })
+    const unchangedObject = { key: "value", nested: { a: 1 } }
 
-            expect(wrapper.find(".json-diff-viewer").exists()).toBe(true)
-        })
+    it.each([
+        { name: "identical nested objects", before: unchangedObject, after: unchangedObject },
+        { name: "empty objects", before: {}, after: {} },
+    ])("shows no changes for $name", ({ before, after }) => {
+        const wrapper = shallowMount(JsonDiffViewer, { props: { before, after } })
 
-        it("shows 'No changes detected' when objects are identical", () => {
-            const data = { key: "value", nested: { a: 1 } }
-
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: data,
-                    after: data,
-                },
-            })
-
-            expect(wrapper.text()).toContain("No changes detected")
-        })
-
-        it("detects and shows simple value changes", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { name: "old" },
-                    after: { name: "new" },
-                },
-            })
-
-            const html = wrapper.html()
-            // jsondiffpatch adds CSS classes for modifications
-            expect(html).toContain("old")
-            expect(html).toContain("new")
-        })
+        expect(wrapper.get(".json-diff-viewer").text()).toBe("No changes detected")
     })
 
-    describe("diff detection", () => {
-        it("detects added properties", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { existing: "value" },
-                    after: { existing: "value", added: "new value" },
-                },
-            })
+    it.each([
+        {
+            name: "a changed string",
+            before: { name: "old" },
+            after: { name: "new" },
+            expectedText: ["old", "new"],
+        },
+        {
+            name: "an added property",
+            before: { existing: "value" },
+            after: { existing: "value", added: "new value" },
+            expectedText: ["added", "new value"],
+        },
+        {
+            name: "a removed property",
+            before: { existing: "value", removed: "old value" },
+            after: { existing: "value" },
+            expectedText: ["removed", "old value"],
+        },
+        {
+            name: "a nested change",
+            before: { nested: { value: "old" } },
+            after: { nested: { value: "new" } },
+            expectedText: ["nested", "value", "old", "new"],
+        },
+        {
+            name: "an appended array item",
+            before: { items: ["a", "b"] },
+            after: { items: ["a", "b", "c"] },
+            expectedText: ['"c"'],
+        },
+        {
+            name: "a null value replaced by a string",
+            before: { value: null },
+            after: { value: "something" },
+            expectedText: ["null", "something"],
+        },
+        {
+            name: "a changed boolean",
+            before: { flag: true },
+            after: { flag: false },
+            expectedText: ["flag", "true", "false"],
+        },
+        {
+            name: "a changed number",
+            before: { count: 1 },
+            after: { count: 2 },
+            expectedText: ["1", "2"],
+        },
+        {
+            name: "a deeply nested change",
+            before: { a: { b: { c: { d: "old" } } } },
+            after: { a: { b: { c: { d: "new" } } } },
+            expectedText: ["old", "new"],
+        },
+        {
+            name: "a changed version in an array matched by ID",
+            before: { tools: [{ id: "tool1", version: "1.0" }] },
+            after: { tools: [{ id: "tool1", version: "2.0" }] },
+            expectedText: ["version", "1.0", "2.0"],
+        },
+    ])("shows $name", ({ before, after, expectedText }) => {
+        const wrapper = shallowMount(JsonDiffViewer, { props: { before, after } })
+        const renderedDiff = wrapper.get(".json-diff-viewer").text()
 
-            expect(wrapper.html()).toContain("added")
-        })
-
-        it("detects removed properties", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { existing: "value", removed: "old value" },
-                    after: { existing: "value" },
-                },
-            })
-
-            expect(wrapper.html()).toContain("removed")
-        })
-
-        it("detects nested changes", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { nested: { value: "old" } },
-                    after: { nested: { value: "new" } },
-                },
-            })
-
-            const html = wrapper.html()
-            expect(html).toContain("nested")
-            expect(html).toContain("value")
-        })
-
-        it("detects array changes", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { items: ["a", "b"] },
-                    after: { items: ["a", "b", "c"] },
-                },
-            })
-
-            expect(wrapper.html()).toContain("c")
-        })
-    })
-
-    describe("edge cases", () => {
-        it("handles empty objects", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: {},
-                    after: {},
-                },
-            })
-
-            expect(wrapper.text()).toContain("No changes detected")
-        })
-
-        it("handles null values", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { value: null },
-                    after: { value: "something" },
-                },
-            })
-
-            expect(wrapper.html()).toContain("something")
-        })
-
-        it("handles boolean changes", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { flag: true },
-                    after: { flag: false },
-                },
-            })
-
-            expect(wrapper.html()).toContain("flag")
-        })
-
-        it("handles numeric changes", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { count: 1 },
-                    after: { count: 2 },
-                },
-            })
-
-            expect(wrapper.html()).toContain("1")
-            expect(wrapper.html()).toContain("2")
-        })
-
-        it("handles deeply nested objects", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: { a: { b: { c: { d: "old" } } } },
-                    after: { a: { b: { c: { d: "new" } } } },
-                },
-            })
-
-            const html = wrapper.html()
-            expect(html).toContain("old")
-            expect(html).toContain("new")
-        })
-
-        it("handles arrays of objects with id-based matching", () => {
-            const wrapper = mount(JsonDiffViewer, {
-                props: {
-                    before: {
-                        tools: [{ id: "tool1", version: "1.0" }],
-                    },
-                    after: {
-                        tools: [{ id: "tool1", version: "2.0" }],
-                    },
-                },
-            })
-
-            expect(wrapper.html()).toContain("version")
-        })
+        for (const text of expectedText) {
+            expect(renderedDiff).toContain(text)
+        }
     })
 })
