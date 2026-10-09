@@ -1,23 +1,37 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import { format, parseISO } from "date-fns";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import UtcDate from "./UtcDate.vue";
 
-describe("UTCDate component", () => {
-    const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
+afterEach(() => vi.useRealTimers());
 
-    it("Loads a date in default mode, can format outputs as expected.", async () => {
-        const wrapper = shallowMount(UtcDate, {
-            props: { date: "2015-10-21T16:29:00.000000" },
-            global: localVue,
-        });
+const DATE = "2015-10-21T16:29:00.000000";
+
+function mountDate() {
+    return shallowMount(UtcDate, {
+        props: { date: DATE },
+        global: getLocalVue(),
+    });
+}
+
+describe("UtcDate", () => {
+    it("renders the default mode as an ISO date", () => {
+        const wrapper = mountDate();
+        expect(wrapper.text()).toBe("2015-10-21T16:29:00.000Z");
+    });
+
+    it("updates from an ISO date to elapsed time when the mode changes", async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2025-10-21T16:29:00.000Z"));
+        const wrapper = mountDate();
         expect(wrapper.text()).toBe("2015-10-21T16:29:00.000Z");
 
         await wrapper.setProps({ mode: "elapsed" });
-        expect(wrapper.text()).toContain("years ago");
 
+        expect(wrapper.text()).toBe("about 10 years ago");
         await wrapper.setProps({ mode: "pretty" });
         expect(wrapper.text()).toBe(format(parseISO("2015-10-21T16:29:00.000Z"), "eeee MMM do H:mm:ss yyyy zz"));
     });
