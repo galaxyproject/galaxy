@@ -179,6 +179,7 @@ Conda Dependency Resolver
       auto_init: <true|false>
       copy_dependencies: <true|false>
       read_only: <true|false>
+      platforms: [conda subdir, conda subdir...]
 
 The ``conda`` dependency resolver is used to find (and optionally install-on-demand) dependencies using the `Conda
 Package Manager <https://conda.io/>`__.  For a very detailed discussion of Conda dependency resolution, check out the
@@ -227,6 +228,11 @@ copy_dependencies
 read_only
     If ``true``, Galaxy will not attempt to install or uninstall requirement sets into this environment.
 
+platforms
+    Additional conda platforms (subdirs such as ``linux-aarch64`` or ``osx-arm64``) for which Galaxy creates every
+    environment it installs, as a list or a comma separated string (default: value of the global ``conda_platforms``
+    option or none). See `Heterogeneous clusters: one conda prefix, several platforms`_.
+
 The conda resolver will search for Conda environments named::
 
     __<requirement_name>@<requirement_version>
@@ -252,6 +258,107 @@ be automatically installed at tool runtime), use the following:
       auto_init: true
       auto_install: true
       prefix: /galaxy/conda
+
+Heterogeneous clusters: one conda prefix, several platforms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Many sites share the Conda prefix with all compute nodes over NFS. Nodes of a different platform (for example
+``linux-aarch64`` next to ``linux-64``, or Apple silicon next to Linux) cannot run the binaries of the platform Galaxy
+is installed on. With the ``platforms`` option Galaxy installs every tool environment for each configured platform
+into the same prefix, and the job script of a job selects the environment of the platform it runs on. The compute
+nodes need no Conda installation and no configuration beyond access to the shared prefix.
+
+Configure the platforms globally in ``galaxy.yml``:
+
+.. code-block:: yaml
+
+    galaxy:
+      conda_platforms: linux-aarch64,osx-arm64
+
+or per resolver:
+
+.. code-block:: yaml
+
+    - type: conda
+      prefix: /shared/galaxy/conda
+      platforms: [linux-aarch64, osx-arm64]
+
+The platform Galaxy runs on is always included and keeps the layout of a single-platform installation:
+``<conda_prefix>/envs/<environment name>``. Each foreign platform has its own Conda base at
+``<conda_prefix>/platforms/<platform>/`` with the environments in
+``<conda_prefix>/platforms/<platform>/envs/<environment name>``. Whenever Galaxy creates an environment for a requirement
+set, it creates the same environment for every foreign platform with ``CONDA_SUBDIR`` set to that platform and
+records each success in a marker file. An environment that cannot be created for a foreign platform is logged and
+does not affect the native installation.
+
+Platform of a job destination
+.............................
+
+A destination in ``job_conf.yml`` (or an XML ``<param>``) sets the ``platform`` parameter:
+
+.. code-block:: yaml
+
+    execution:
+      environments:
+        slurm_arm:
+          runner: slurm
+          native_specification: '-p arm'
+          platform: linux-aarch64
+
+When Galaxy builds the job script for a job on this destination, the activation commands point to the Conda base and
+environment of ``linux-aarch64``. Destinations without the parameter use the platform Galaxy runs on and behave as
+before. The destination of a job is assigned in the job handler before the runner builds the command line, so the
+parameter applies to static and dynamic destinations alike. The parameter is stored with the job and is applied again
+after a Galaxy restart. If a tool has package requirements and none resolves to an environment for the platform of the
+destination, the job fails with a message naming the platform, the destination and the requirements.
+
+Jobs that resolve dependencies remotely (Pulsar with ``dependency_resolution: remote``) do not use the parameter.
+
+Routing jobs to destinations by platform
+........................................
+
+A dynamic destination rule can select a destination from the environments that exist for a tool. The function
+``galaxy.jobs.platform_routing.platform_destination`` takes the destinations in order of preference and returns the
+first one whose platform has the environments of all package requirements of the tool. The ``job_conf.yml``
+destination:
+
+.. code-block:: yaml
+
+    execution:
+      environments:
+        platform_router:
+          runner: dynamic
+          type: python
+          function: route_by_platform
+
+and the rule in a module of the configured ``rules_module`` (``galaxy.jobs.rules`` by default):
+
+.. code-block:: python
+
+    from galaxy.jobs.platform_routing import platform_destination
+
+
+    def route_by_platform(app, tool, job):
+        return platform_destination(app, tool, job, ["slurm_x86", "slurm_arm", "pulsar_mac"])
+
+The platform of each listed destination is read from its ``platform`` parameter. A mapping from destination id to
+platform can be passed instead of the list. Tools without package requirements get the first destination. If no
+destination matches, the function returns the ``default`` argument when it is given and otherwise raises a
+``JobMappingException`` that fails the job with a message listing the installed and the offered platforms.
+``DependencyManager.platforms_for_requirements`` is the underlying check. It consults only the file system.
+
+Limits
+......
+
+* Foreign environments are created when a requirement set is installed while the option is set. Environments installed
+  earlier exist for the native platform only, until they are installed again.
+* Packages that have no build for a platform cannot be installed there. Galaxy skips that platform for the tool and
+  the tool routes to destinations of other platforms.
+* Environments for macOS that are cross-installed from Linux contain binaries without a valid ad-hoc signature.
+  Apple silicon requires one, so the binaries must be signed with ``codesign --force --sign -`` on first use on the
+  Mac.
+* Windows platforms are not supported.
+* The metadata commands of a job run with the dependencies of the native platform.
 
 Lmod Dependency Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~
