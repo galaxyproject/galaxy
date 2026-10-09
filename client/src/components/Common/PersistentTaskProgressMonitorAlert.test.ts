@@ -1,3 +1,4 @@
+import { getFakeMonitoringData } from "@tests/test-data/monitoring";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
@@ -104,13 +105,9 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR,
             isRunning: ref(true),
         };
-        const existingMonitoringData: MonitoringData = {
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
-            isFinal: false,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -130,13 +127,10 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR,
             isCompleted: ref(true),
         };
-        const existingMonitoringData: MonitoringData = {
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -156,13 +150,10 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR,
             hasFailed: ref(true),
         };
-        const existingMonitoringData: MonitoringData = {
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -187,13 +178,10 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR,
             isCompleted: ref(true),
         };
-        const existingMonitoringData: MonitoringData = {
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(monitoringRequest, {
             taskId: taskId,
-            taskType: "short_term_storage",
-            request: monitoringRequest,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(monitoringRequest, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -217,13 +205,10 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR,
             isCompleted: ref(true),
         };
-        const existingMonitoringData: MonitoringData = {
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
-            startedAt: new Date(),
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({
@@ -243,13 +228,11 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             ...FAKE_MONITOR,
             isRunning: ref(true),
         };
-        const existingMonitoringData: MonitoringData = {
+        const existingMonitoringData: MonitoringData = getFakeMonitoringData(FAKE_MONITOR_REQUEST, {
             taskId: "1",
-            taskType: "task",
-            request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(Date.now() - FAKE_EXPIRATION_TIME * 2), // Make sure the task has expired
             isFinal: true,
-        };
+        });
         seedMonitoringData(FAKE_MONITOR_REQUEST, existingMonitoringData);
 
         const wrapper = mountComponent({

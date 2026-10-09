@@ -1,3 +1,4 @@
+import { getFakeMonitoringData } from "@tests/test-data/monitoring";
 import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
@@ -62,13 +63,9 @@ describe("usePersistentProgressTaskMonitor", () => {
     });
 
     it("should start monitoring with provided monitoring data", async () => {
-        const monitoringData: MonitoringData = {
+        const monitoringData: MonitoringData = getFakeMonitoringData(MOCK_REQUEST, {
             taskId: "123",
-            taskType: "task",
-            request: MOCK_REQUEST,
-            startedAt: new Date(),
-            isFinal: false,
-        };
+        });
 
         const { start, isRunning } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor, monitoringData);
 
@@ -84,13 +81,9 @@ describe("usePersistentProgressTaskMonitor", () => {
     });
 
     it("should reset monitoring data", () => {
-        const monitoringData: MonitoringData = {
+        const monitoringData: MonitoringData = getFakeMonitoringData(MOCK_REQUEST, {
             taskId: "123",
-            taskType: "task",
-            request: MOCK_REQUEST,
-            startedAt: new Date(),
-            isFinal: false,
-        };
+        });
 
         const { reset, hasMonitoringData } = usePersistentProgressTaskMonitor(
             MOCK_REQUEST,
