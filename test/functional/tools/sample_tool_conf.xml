@@ -321,6 +321,7 @@
   <tool file="zarr_store_in_wrapper_folder.xml" />
   <tool file="zarr_store_root_compat.xml" />
   <tool file="discover_zarr_store_in_wrapper_folder.xml" />
+  <tool file="dataset_path.xml" />
   <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />

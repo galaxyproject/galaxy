@@ -4349,6 +4349,43 @@ sibling files, include an index or another stable unique value in each name.
 For bulk or nested collection staging, prefer a configfile using
 ``data_style="staging_path_and_source_path"``.
 
+Datasets of directory datatypes (``directory`` and its subclasses) keep their
+content in a folder, ``$input.extra_files_path``, rather than in ``$input``
+itself, and that content always sits at the root of the folder.
+``$input.path`` is where a tool finds a dataset's data on disk: the dataset's
+file for regular datatypes, and that folder for directory datatypes. A single
+input can then accept both kinds of format through one value, the same way
+``$(inputs.input.path)`` works in YAML tools. For example, an input taking
+AnnData either as an ``h5ad`` file or as a ``zarr`` store needs no branching.
+``$input.path`` is available since Galaxy 26.2, so tools using it should set
+``profile="26.2"`` or later:
+
+```xml
+<param name="input" type="data" format="h5ad,zarr" label="AnnData"/>
+```
+
+```bash
+python '$__tool_directory__/script.py' --input '$input.path'
+```
+
+For a directory output, write the content directly into ``$output.path``.
+
+With ``allow_uri_if_protocol``, a deferred dataset may reach the tool as its
+source URI instead of being downloaded first. ``$input.path`` is then empty and
+``$input`` renders the URI, so check ``$input.is_deferred`` to choose:
+
+```bash
+#if $input.is_deferred
+    --input '$input'
+#else
+    --input '$input.path'
+#end if
+```
+
+Zarr datasets no longer set the ``store_root`` metadata, since the store sits
+at the root of the folder. ``$input.extra_files_path/$input.metadata.store_root``
+still points at the store, but new tools should use ``$input.path``.
+
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.
 
