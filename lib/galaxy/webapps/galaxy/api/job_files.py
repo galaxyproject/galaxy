@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import tempfile
+import time
 from typing import Annotated
 from urllib.parse import parse_qsl
 
@@ -44,6 +45,8 @@ router = Router(tags=["jobs"])
 
 UPLOAD_STAGING_PREFIX = ".job_files_upload_"
 PARSER_WRITE_SIZE = 256 * 1024
+RECHECK_BODY_SIZE = 1024 * 1024
+RECHECK_SECONDS = 1.0
 
 JOB_FILES_DESCRIPTION = (
     "Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, "
@@ -118,6 +121,7 @@ class FastAPIJobFiles:
         params = dict(request.query_params)
         query_auth = path is not None and job_key is not None
         staging_dir = await anyio.to_thread.run_sync(self._start_upload, job_id, path, job_key, query_auth)
+        started = time.monotonic()
         try:
             try:
                 fields, uploads = await _parse_body(request, staging_dir)
@@ -126,7 +130,9 @@ class FastAPIJobFiles:
                 raise exceptions.RequestParameterInvalidException("Client disconnected during job files upload.")
             for key, value in fields.items():
                 params.setdefault(key, value)
-            await anyio.to_thread.run_sync(self._finish_upload, job_id, params, uploads, query_auth)
+            # A long upload can outlive the job; a small one arrives right after the first check.
+            recheck = query_auth and _long_upload(request, time.monotonic() - started)
+            await anyio.to_thread.run_sync(self._finish_upload, job_id, params, uploads, query_auth, recheck)
         finally:
             await anyio.to_thread.run_sync(_remove_staging_dir, staging_dir)
         return {"message": "ok"}
@@ -142,13 +148,15 @@ class FastAPIJobFiles:
         release_request_sessions()
         return tempfile.mkdtemp(prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
 
-    def _finish_upload(self, job_id: str, params: dict[str, str], uploads: dict[str, str], query_auth: bool) -> None:
+    def _finish_upload(
+        self, job_id: str, params: dict[str, str], uploads: dict[str, str], query_auth: bool, recheck: bool
+    ) -> None:
         path = params.get("path")
-        if query_auth:
+        if not query_auth:
+            self.manager.authorize_write(job_id, path, params.get("job_key"))
+        elif recheck:
             # The path was authorized before the body was read; only the job can have finished since.
             self.manager.assert_job_active(job_id)
-        else:
-            self.manager.authorize_write(job_id, path, params.get("job_key"))
         assert path
         if "__file_path" in params:
             source_path = self.manager.nginx_upload_path(params["__file_path"])
@@ -175,6 +183,11 @@ def _remove_staging_dir(staging_dir: str) -> None:
         shutil.rmtree(staging_dir)
     except OSError:
         log.warning("Failed to remove job files upload staging directory %s", staging_dir, exc_info=True)
+
+
+def _long_upload(request: Request, elapsed: float) -> bool:
+    content_length = request.headers.get("content-length")
+    return content_length is None or int(content_length) >= RECHECK_BODY_SIZE or elapsed >= RECHECK_SECONDS
 
 
 def _finalize_parser(parser: FormParser, remaining: bytes, files: list[File]) -> None:
