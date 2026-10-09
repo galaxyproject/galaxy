@@ -1,14 +1,14 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getFakeMonitoringData } from "@tests/test-data/monitoring";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import type { TaskMonitor } from "@/composables/genericTaskMonitor";
-import type { MonitoringData, PersistentProgressTaskMonitorResult } from "@/composables/persistentProgressMonitor";
+import type { PersistentProgressTaskMonitorResult } from "@/composables/persistentProgressMonitor";
 
 import DownloadItemCard from "./DownloadItemCard.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 
 vi.mock("@/components/TagsMultiselect/StatelessTags.vue", () => ({
     default: {
@@ -22,54 +22,7 @@ vi.mock("@/composables/persistentProgressMonitor", () => ({
 }));
 
 const fakeTaskId = "mock-task-id";
-const requestStartDate = new Date();
-const expirationTime = 1000 * 60 * 60; // 1 hour
-const expirationDate = new Date(requestStartDate.getTime() + expirationTime);
-const baseMonitoringData: MonitoringData = {
-    taskId: fakeTaskId,
-    taskType: "short_term_storage",
-    request: {
-        source: "test",
-        action: "download",
-        taskType: "short_term_storage",
-        object: { id: "obj1", type: "history", name: "Test History" },
-        description: "Test download description",
-    },
-    startedAt: requestStartDate,
-    isFinal: false,
-};
-
-const defaultMonitor: TaskMonitor = {
-    waitForTask: vi.fn(),
-    stopWaitingForTask: vi.fn(),
-    isRunning: ref(false),
-    isCompleted: ref(false),
-    hasFailed: ref(false),
-    failureReason: ref(""),
-    requestHasFailed: ref(false),
-    taskStatus: ref(""),
-    expirationTime: expirationTime,
-    isFinalState: vi.fn(),
-    loadStatus: vi.fn(),
-    fetchTaskStatus: vi.fn(),
-};
-
-const defaultPersistentProgressTaskMonitor: PersistentProgressTaskMonitorResult = {
-    ...defaultMonitor,
-    hasMonitoringData: ref(true),
-    monitoringData: ref(baseMonitoringData),
-    expirationDate: ref(expirationDate),
-    canExpire: ref(true),
-    hasExpired: ref(false),
-    storedTaskId: fakeTaskId,
-    status: ref(""),
-    start: vi.fn(),
-    stop: vi.fn(),
-    reset: vi.fn(),
-    checkStatus: vi.fn(),
-};
-
-const mockUsePersistentProgressTaskMonitor = vi.fn().mockReturnValue(defaultPersistentProgressTaskMonitor);
+const mockUsePersistentProgressTaskMonitor = vi.fn();
 
 const badgeIds = {
     inProgress: "in-progress",
@@ -87,19 +40,49 @@ const actionsIds = {
 } as const;
 
 describe("DownloadItemCard.vue", () => {
-    function mountDownloadItemCard(options: { monitoringData?: MonitoringData } = {}) {
-        const monitoringData = options.monitoringData || baseMonitoringData;
-        return mount(DownloadItemCard as object, {
+    function mountDownloadItemCard(state: Partial<PersistentProgressTaskMonitorResult> = {}) {
+        const monitoringData = getFakeMonitoringData(
+            {
+                source: "test",
+                action: "download",
+                taskType: "short_term_storage",
+                object: { id: "obj1", type: "history", name: "Test History" },
+                description: "Test download description",
+            },
+            { taskId: fakeTaskId, startedAt: new Date("2024-01-01T00:00:00.000Z") },
+        );
+        const monitor: PersistentProgressTaskMonitorResult = {
+            isRunning: ref(false),
+            isCompleted: ref(false),
+            hasFailed: ref(false),
+            failureReason: ref(""),
+            requestHasFailed: ref(false),
+            hasMonitoringData: ref(true),
+            monitoringData: ref(monitoringData),
+            expirationDate: ref(new Date("2024-01-01T01:00:00.000Z")),
+            canExpire: ref(true),
+            hasExpired: ref(false),
+            storedTaskId: fakeTaskId,
+            status: ref(""),
+            start: vi.fn(),
+            stop: vi.fn(),
+            reset: vi.fn(),
+            checkStatus: vi.fn(),
+            ...state,
+        };
+        mockUsePersistentProgressTaskMonitor.mockReturnValue(monitor);
+        return mount(DownloadItemCard, {
             props: { monitoringData },
-            global: localVue,
+            global: getLocalVue(true),
         });
     }
 
     afterEach(() => {
-        vi.clearAllMocks();
+        mockUsePersistentProgressTaskMonitor.mockReset();
+        vi.restoreAllMocks();
     });
 
-    it("always renders title and description and go to object action", async () => {
+    it("renders the history title, description, and navigation action", () => {
         const wrapper = mountDownloadItemCard();
 
         const actualTitle = wrapper.find("#g-card-title-text-mock-task-id").text();
@@ -111,11 +94,10 @@ describe("DownloadItemCard.vue", () => {
         expect(getActionButtonById(wrapper, actionsIds.goToObject).exists()).toBe(true);
     });
 
-    it("shows 'running' state when isRunning", async () => {
-        updateProgressMonitor({
+    it("shows preparation progress while the download is running", () => {
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(true),
         });
-        const wrapper = mountDownloadItemCard();
 
         expect(getBadgeById(wrapper, badgeIds.inProgress).exists()).toBe(true);
         expect(getBadgeById(wrapper, badgeIds.expirationDate).exists()).toBe(true);
@@ -129,13 +111,12 @@ describe("DownloadItemCard.vue", () => {
         expect(wrapper.text()).toContain("Preparing History for download");
     });
 
-    it("shows 'ready' state when is available to download", async () => {
-        updateProgressMonitor({
+    it("offers download and copy actions after preparation completes", () => {
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(false),
             isCompleted: ref(true),
             hasExpired: ref(false),
         });
-        const wrapper = mountDownloadItemCard();
 
         expect(getBadgeById(wrapper, badgeIds.inProgress).exists()).toBe(false);
         expect(getBadgeById(wrapper, badgeIds.expirationDate).exists()).toBe(true);
@@ -147,13 +128,12 @@ describe("DownloadItemCard.vue", () => {
         expect(getActionButtonById(wrapper, actionsIds.remove).exists()).toBe(false);
     });
 
-    it("shows 'expired' state when hasExpired", async () => {
-        updateProgressMonitor({
+    it("offers removal instead of download actions after expiration", () => {
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(false),
             isCompleted: ref(true),
             hasExpired: ref(true),
         });
-        const wrapper = mountDownloadItemCard();
 
         expect(getBadgeById(wrapper, badgeIds.inProgress).exists()).toBe(false);
         expect(getBadgeById(wrapper, badgeIds.expirationDate).exists()).toBe(false);
@@ -167,15 +147,14 @@ describe("DownloadItemCard.vue", () => {
         expect(wrapper.text()).toContain("The download request has expired and the result is no longer available");
     });
 
-    it("shows 'failed' state when hasFailed", async () => {
+    it("shows the failure reason and offers removal when preparation fails", () => {
         const expectedFailureReason = "Failed to prepare download";
-        updateProgressMonitor({
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(false),
             isCompleted: ref(false),
             hasFailed: ref(true),
             failureReason: ref(expectedFailureReason),
         });
-        const wrapper = mountDownloadItemCard();
 
         expect(getBadgeById(wrapper, badgeIds.inProgress).exists()).toBe(false);
         expect(getBadgeById(wrapper, badgeIds.expirationDate).exists()).toBe(false);
@@ -197,58 +176,44 @@ describe("DownloadItemCard.vue", () => {
         await goToButton.trigger("click");
 
         expect(wrapper.emitted("onGoTo")).toBeTruthy();
-        expect(nth(wrapper.emitted("onGoTo"), 0)[0]).toContain(baseMonitoringData.request.object.id);
+        expect(emittedArg(wrapper, "onGoTo")).toBe("/histories/view?id=obj1");
     });
 
     it("emits onDownload when Download is clicked", async () => {
-        updateProgressMonitor({
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(false),
             isCompleted: ref(true),
             hasExpired: ref(false),
         });
-        const wrapper = mountDownloadItemCard();
 
         const downloadButton = getActionButtonById(wrapper, actionsIds.download);
         await downloadButton.trigger("click");
 
         expect(wrapper.emitted("onDownload")).toBeTruthy();
-        expect(nth(wrapper.emitted("onDownload"), 0)[0]).toContain(fakeTaskId);
+        expect(emittedArg(wrapper, "onDownload")).toContain(fakeTaskId);
     });
 
     it("emits onDelete when Remove is clicked", async () => {
-        updateProgressMonitor({
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(false),
             isCompleted: ref(true),
             hasExpired: ref(true),
         });
-        const wrapper = mountDownloadItemCard();
 
         const removeButton = getActionButtonById(wrapper, actionsIds.remove);
         await removeButton.trigger("click");
 
         expect(wrapper.emitted("onDelete")).toBeTruthy();
-        // Vue 3 wraps prop objects in a reactive proxy, so this is no longer the exact
-        // same object reference as `baseMonitoringData.request` even though its
-        // contents are identical.
-        expect(nth(wrapper.emitted("onDelete"), 0)[0]).toEqual(baseMonitoringData.request);
+        expect(emittedArg(wrapper, "onDelete")).toEqual(wrapper.props("monitoringData").request);
     });
 
     it("copies the download link to the clipboard when Copy Download Link is clicked", async () => {
-        const writeText = vi.fn().mockResolvedValue(undefined);
-
-        Object.defineProperty(navigator, "clipboard", {
-            writable: true,
-            configurable: true,
-            value: {
-                writeText,
-            },
-        });
-        updateProgressMonitor({
+        const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
+        const wrapper = mountDownloadItemCard({
             isRunning: ref(false),
             isCompleted: ref(true),
             hasExpired: ref(false),
         });
-        const wrapper = mountDownloadItemCard();
 
         const copyLinkButton = getActionButtonById(wrapper, actionsIds.copyDownloadLink);
         await copyLinkButton.trigger("click");
@@ -257,13 +222,6 @@ describe("DownloadItemCard.vue", () => {
         expect(writeText).toHaveBeenCalledWith(expect.stringContaining(fakeTaskId));
     });
 });
-
-function updateProgressMonitor(stateChanges: Partial<PersistentProgressTaskMonitorResult>) {
-    mockUsePersistentProgressTaskMonitor.mockReturnValue({
-        ...defaultPersistentProgressTaskMonitor,
-        ...stateChanges,
-    });
-}
 
 function getBadgeById(wrapper: ReturnType<typeof mount>, badgeId: string) {
     return wrapper.find(`#g-card-badge-${badgeId}-${fakeTaskId}`);
