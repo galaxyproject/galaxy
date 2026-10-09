@@ -1,6 +1,6 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { fetchDatasets } from "@/utils/upload";
+import { fetchDatasets, submitUpload } from "@/utils/upload";
 
 import { UploadQueue } from "./upload-queue.js";
 
@@ -10,217 +10,201 @@ vi.mock("@/utils/upload", async (importOriginal) => {
         ...actual,
         fetchDatasets: vi.fn(),
         submitUpload: vi.fn((config) => {
-            // Simulate calling success callback
             config.success?.();
         }),
     };
 });
 
-function StubFile(name = null, size = 0, mode = "local") {
+function createFile(name = null, size = 0, mode = "local") {
     return { name, size, mode };
 }
 
-function instrumentedUploadQueue(options = {}) {
-    const uploadQueue = new UploadQueue(options);
-    uploadQueue.encountedErrors = false;
-    uploadQueue.opts.error = function (d, m) {
-        uploadQueue.encountedErrors = true;
-    };
-    return uploadQueue;
+function createQueue(options = {}) {
+    return new UploadQueue({ ...options, error: vi.fn() });
+}
+
+function createLocalUploadQueue() {
+    const fileEntries = {};
+    return createQueue({
+        get: (index) => fileEntries[index],
+        announce: (index, file) => {
+            fileEntries[index] = {
+                fileMode: file.mode,
+                fileName: file.name,
+                fileSize: file.size,
+                fileContent: "fileContent",
+                fileData: new File(["test content"], file.name || "test.txt", { type: "text/plain" }),
+                targetHistoryId: "mockhistoryid",
+            };
+        },
+    });
 }
 
 describe("UploadQueue", () => {
-    test("a queue is initialized to correct state", () => {
-        const q = instrumentedUploadQueue({ foo: 1 });
-        expect(q.size).toEqual(0);
-        expect(q.isRunning).toBe(false);
-        expect(q.opts.foo).toEqual(1); // passed as options
-        expect(q.opts.multiple).toBe(true); // default value
-        expect(q.encountedErrors).toBeFalsy();
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    test("resetting the queue removes all files from it", () => {
-        const q = instrumentedUploadQueue();
-        q.add([StubFile("a"), StubFile("b")]);
-        expect(q.size).toEqual(2);
-        q.reset();
-        expect(q.size).toEqual(0);
-        expect(q.encountedErrors).toBeFalsy();
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
-    test("calling configure updates options", () => {
-        const q = instrumentedUploadQueue({ foo: 1 });
-        expect(q.opts.foo).toEqual(1);
-        expect(q.opts.bar).toBeUndefined();
-        q.configure({ bar: 2 }); // overwrite bar
-        expect(q.opts.foo).toEqual(1); // value unchangee
-        expect(q.opts.bar).toEqual(2); // value overwritten
-        expect(q.encountedErrors).toBeFalsy();
+    it("initializes an empty, idle queue with supplied and default options", () => {
+        const queue = createQueue({ foo: 1 });
+        expect(queue.size).toEqual(0);
+        expect(queue.isRunning).toBe(false);
+        expect(queue.opts.foo).toEqual(1);
+        expect(queue.opts.multiple).toBe(true);
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 
-    test("calling start sets isRunning to true", () => {
-        const q = instrumentedUploadQueue();
-        q._process = vi.fn(); // mock this, otherwise it'll reset isRunning after it's done.
-        expect(q.isRunning).toBe(false);
-        q.start();
-        expect(q.isRunning).toBe(true);
-        expect(q.encountedErrors).toBeFalsy();
+    it("resetting the queue removes all files from it", () => {
+        const queue = createQueue();
+        queue.add([createFile("a"), createFile("b")]);
+        expect(queue.size).toEqual(2);
+        queue.reset();
+        expect(queue.size).toEqual(0);
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 
-    test("calling start is a noop if queue is running", () => {
-        const q = instrumentedUploadQueue();
+    it("merges new options without discarding existing ones", () => {
+        const queue = createQueue({ foo: 1 });
+        expect(queue.opts.foo).toEqual(1);
+        expect(queue.opts.bar).toBeUndefined();
+        queue.configure({ bar: 2 });
+        expect(queue.opts.foo).toEqual(1);
+        expect(queue.opts.bar).toEqual(2);
+        expect(queue.opts.error).not.toHaveBeenCalled();
+    });
+
+    it("marks the queue running before processing finishes", () => {
+        const queue = createQueue();
+        queue._process = vi.fn(); // Keep processing pending so start does not immediately return to idle.
+        expect(queue.isRunning).toBe(false);
+        queue.start();
+        expect(queue.isRunning).toBe(true);
+        expect(queue.opts.error).not.toHaveBeenCalled();
+    });
+
+    it("does not restart processing an already running queue", () => {
+        const queue = createQueue();
         const mockedProcess = vi.fn();
-        q._process = mockedProcess;
-        q.isRunning = true;
-        q.start();
-        expect(mockedProcess.mock.calls.length).toBe(0); // function was not called
-        expect(q.encountedErrors).toBeFalsy();
+        queue._process = mockedProcess;
+        queue.isRunning = true;
+        queue.start();
+        expect(mockedProcess).not.toHaveBeenCalled();
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 
-    test("calling start processes all files in queue", () => {
-        const fileEntries = {};
-        const q = instrumentedUploadQueue({
-            get: (index) => fileEntries[index],
-            announce: (index, file) => {
-                fileEntries[index] = {
-                    fileMode: file.mode,
-                    fileName: file.name,
-                    fileSize: file.size,
-                    fileContent: "fileContent",
-                    fileData: new File(["test content"], file.name || "test.txt", { type: "text/plain" }),
-                    targetHistoryId: "mockhistoryid",
-                };
-            },
-        });
-        const spy = vi.spyOn(q, "_process");
-        const mockedSubmit = vi.fn(() => q._process());
-        q._processSubmit = mockedSubmit;
-        q.add([StubFile("a"), StubFile("b")]);
-        q.start();
-        expect(q.size).toEqual(0);
-        expect(q.encountedErrors).toBeFalsy();
-        expect(spy.mock.calls.length).toEqual(3); // called for 2, 1, 0 files.
-        spy.mockRestore(); // not necessary, but safer, in case we later modify implementation.
+    it("processes both local files and drains the queue", () => {
+        const queue = createLocalUploadQueue();
+        const processSpy = vi.spyOn(queue, "_process");
+        queue.add([createFile("a"), createFile("b")]);
+        queue.start();
+        expect(queue.size).toEqual(0);
+        expect(queue.opts.error).not.toHaveBeenCalled();
+        expect(processSpy).toHaveBeenCalledTimes(3);
+        expect(submitUpload).toHaveBeenCalledTimes(2);
     });
 
-    test("calling stop sets isPaused to true", () => {
-        const q = instrumentedUploadQueue();
-        q.start();
-        expect(q.isPaused).toBe(false);
-        q.stop();
-        expect(q.isPaused).toBe(true);
+    it("marks the queue paused when stopped", () => {
+        const queue = createQueue();
+        queue.start();
+        expect(queue.isPaused).toBe(false);
+        queue.stop();
+        expect(queue.isPaused).toBe(true);
     });
 
-    test("adding files increases the queue size by the number of files", () => {
-        const q = instrumentedUploadQueue();
-        expect(q.size).toEqual(0);
-        q.add([StubFile("a"), StubFile("b")]);
-        expect(q.nextIndex).toEqual(2);
-        expect(q.size).toEqual(2);
-        q.add([StubFile("c")]);
-        expect(q.size).toEqual(3);
+    it("adding files increases the queue size by the number of files", () => {
+        const queue = createQueue();
+        expect(queue.size).toEqual(0);
+        queue.add([createFile("a"), createFile("b")]);
+        expect(queue.nextIndex).toEqual(2);
+        expect(queue.size).toEqual(2);
+        queue.add([createFile("c")]);
+        expect(queue.size).toEqual(3);
     });
 
-    test("adding files increases the next index by the number of files", () => {
-        const q = instrumentedUploadQueue();
-        expect(q.nextIndex).toEqual(0);
-        q.add([StubFile("a"), StubFile("b")]);
-        expect(q.nextIndex).toEqual(2);
+    it("adding files increases the next index by the number of files", () => {
+        const queue = createQueue();
+        expect(queue.nextIndex).toEqual(0);
+        queue.add([createFile("a"), createFile("b")]);
+        expect(queue.nextIndex).toEqual(2);
     });
 
-    test("duplicate files are not added to the queue, unless the mode is set to 'new'", () => {
-        const q = instrumentedUploadQueue();
-        const file1 = StubFile("a", 1);
-        const file2 = StubFile("a", 1);
-        const file3 = StubFile("a", 1, "new");
-        q.add([file1, file2]); // file2 is a duplicate of file1, so only 1 file is added
-        expect(q.size).toEqual(1); // queue size incremented by 1
-        expect(q.nextIndex).toEqual(1); // next index value incremented by 1
-        q.add([file3]); // file3 is a duplicate of file1 and file2, but its mode is "new"
-        expect(q.size).toEqual(2); // queue size incremented by 1
-        expect(q.nextIndex).toEqual(2); // next index value incremented by 1
+    it("duplicate files are not added to the queue, unless the mode is set to 'new'", () => {
+        const queue = createQueue();
+        const originalFile = createFile("a", 1);
+        const duplicateFile = createFile("a", 1);
+        const pastedFile = createFile("a", 1, "new");
+        queue.add([originalFile, duplicateFile]);
+        expect(queue.size).toEqual(1);
+        expect(queue.nextIndex).toEqual(1);
+        queue.add([pastedFile]);
+        expect(queue.size).toEqual(2);
+        expect(queue.nextIndex).toEqual(2);
     });
 
-    test("adding a file calls opts.announce with correct arguments", () => {
+    it("announces the added file with its string index", () => {
         const mockAnnounce = vi.fn();
-        const q = instrumentedUploadQueue({ announce: mockAnnounce });
-        const file = StubFile("a");
-        expect(mockAnnounce.mock.calls.length).toBe(0);
-        q.add([file]);
-        expect(mockAnnounce.mock.calls.length).toBe(1); // called once
-        expect(mockAnnounce.mock.calls[0][0]).toBe("0"); // first arg is index=0
-        expect(mockAnnounce.mock.calls[0][1]).toBe(file); // second arg is file
+        const queue = createQueue({ announce: mockAnnounce });
+        const file = createFile("a");
+        expect(mockAnnounce).not.toHaveBeenCalled();
+        queue.add([file]);
+        expect(mockAnnounce).toHaveBeenCalledExactlyOnceWith("0", file);
+        expect(mockAnnounce.mock.calls[0][1]).toBe(file);
     });
 
-    test("removing a file reduces the queue size by 1", () => {
-        const fileEntries = {};
-        const q = instrumentedUploadQueue({
-            announce: (index, file) => {
-                fileEntries[index] = file;
-            },
-        });
-        q.add([StubFile("a"), StubFile("b")]);
-        expect(q.size).toEqual(2);
-        q.remove("0");
-        expect(q.size).toEqual(1);
+    it("removing a file reduces the queue size by 1", () => {
+        const queue = createQueue();
+        queue.add([createFile("a"), createFile("b")]);
+        expect(queue.size).toEqual(2);
+        queue.remove("0");
+        expect(queue.size).toEqual(1);
     });
 
-    test("removing a file by index out of sequence is allowed", () => {
-        const q = instrumentedUploadQueue();
-        const file1 = StubFile("a");
-        const file2 = StubFile("b");
-        const file3 = StubFile("c");
-        q.add([file1, file2, file3]);
-        expect(q.size).toEqual(3);
-        q.remove("1"); // remove file2 (which has index=1)
-        expect(q.size).toEqual(2);
-        expect(q.queue.get("0")).toBe(file1);
-        expect(q.queue.get("1")).toBeUndefined();
-        expect(q.queue.get("2")).toBe(file3);
-        expect(q.encountedErrors).toBeFalsy();
+    it("removing a file by index out of sequence is allowed", () => {
+        const queue = createQueue();
+        const file1 = createFile("a");
+        const file2 = createFile("b");
+        const file3 = createFile("c");
+        queue.add([file1, file2, file3]);
+        expect(queue.size).toEqual(3);
+        queue.remove("1"); // remove file2 (which has index=1)
+        expect(queue.size).toEqual(2);
+        expect(queue.queue.get("0")).toBe(file1);
+        expect(queue.queue.get("1")).toBeUndefined();
+        expect(queue.queue.get("2")).toBe(file3);
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 
-    test("removing a file that was already submitted is a noop", () => {
-        const fileEntries = {};
-        const q = instrumentedUploadQueue({
-            get: (index) => fileEntries[index],
-            announce: (index, file) => {
-                fileEntries[index] = {
-                    fileMode: file.mode,
-                    fileName: file.name,
-                    fileSize: file.size,
-                    fileContent: "fileContent",
-                    fileData: new File(["test content"], file.name, { type: "text/plain" }),
-                    targetHistoryId: "mockhistoryid",
-                };
-            },
-        });
-        q._processSubmit = vi.fn(() => q._process());
-        q.add([StubFile("a", 1), StubFile("b", 2)]);
-        q.start();
-        expect(q.size).toEqual(0);
-        expect(() => q.remove("0")).not.toThrow();
-        q.add([StubFile("a", 1)]);
-        expect(q.size).toEqual(1);
-        expect(q.encountedErrors).toBeFalsy();
+    it("removing a file that was already submitted is a noop", () => {
+        const queue = createLocalUploadQueue();
+        queue.add([createFile("a", 1), createFile("b", 2)]);
+        queue.start();
+        expect(queue.size).toEqual(0);
+        expect(() => queue.remove("0")).not.toThrow();
+        queue.add([createFile("a", 1)]);
+        expect(queue.size).toEqual(1);
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 
-    test("removing a file via _processIndex, obeys FIFO protocol", () => {
-        const q = instrumentedUploadQueue();
-        q.add([StubFile("a"), StubFile("b")]);
-        let nextIndex = q._processIndex();
+    it("processes remaining files in insertion order", () => {
+        const queue = createQueue();
+        queue.add([createFile("a"), createFile("b")]);
+        let nextIndex = queue._processIndex();
         expect(nextIndex).toEqual("0");
-        q.remove(nextIndex);
-        nextIndex = q._processIndex();
+        queue.remove(nextIndex);
+        nextIndex = queue._processIndex();
         expect(nextIndex).toEqual("1");
-        q.remove(nextIndex);
-        expect(q._processIndex()).toBeUndefined();
-        expect(q.encountedErrors).toBeFalsy();
+        queue.remove(nextIndex);
+        expect(queue._processIndex()).toBeUndefined();
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 
-    test("remote file batch", () => {
+    it("submits three remote files in one payload for their target history", () => {
         const fileEntries = {};
-        const q = instrumentedUploadQueue({
+        const queue = createQueue({
             historyId: "historyId",
             announce: (index, file) => {
                 fileEntries[index] = {
@@ -237,55 +221,59 @@ describe("UploadQueue", () => {
             },
             get: (index) => fileEntries[index],
         });
-        q.add([StubFile("a"), StubFile("b"), StubFile("c")]);
-        expect(q.size).toEqual(3);
-        q.start();
-        expect(fetchDatasets.mock.calls[0][0]).toEqual({
-            auto_decompress: true,
-            files: [],
-            history_id: "historyId",
-            targets: [
-                {
-                    auto_decompress: true,
-                    destination: { type: "hdas" },
-                    elements: [
-                        {
-                            auto_decompress: true,
-                            dbkey: "?",
-                            deferred: true,
-                            ext: "auto",
-                            name: "a",
-                            space_to_tab: true,
-                            src: "url",
-                            to_posix_lines: false,
-                            url: "http://test.me.0",
-                        },
-                        {
-                            auto_decompress: true,
-                            dbkey: "?",
-                            deferred: true,
-                            ext: "auto",
-                            name: "b",
-                            space_to_tab: true,
-                            src: "url",
-                            to_posix_lines: false,
-                            url: "http://test.me.1",
-                        },
-                        {
-                            auto_decompress: true,
-                            dbkey: "?",
-                            deferred: true,
-                            ext: "auto",
-                            name: "c",
-                            space_to_tab: true,
-                            src: "url",
-                            to_posix_lines: false,
-                            url: "http://test.me.2",
-                        },
-                    ],
-                },
-            ],
-        });
-        expect(q.encountedErrors).toBeFalsy();
+        queue.add([createFile("a"), createFile("b"), createFile("c")]);
+        expect(queue.size).toEqual(3);
+        queue.start();
+        expect(fetchDatasets).toHaveBeenCalledTimes(1);
+        expect(fetchDatasets).toHaveBeenCalledWith(
+            {
+                auto_decompress: true,
+                files: [],
+                history_id: "historyId",
+                targets: [
+                    {
+                        auto_decompress: true,
+                        destination: { type: "hdas" },
+                        elements: [
+                            {
+                                auto_decompress: true,
+                                dbkey: "?",
+                                deferred: true,
+                                ext: "auto",
+                                name: "a",
+                                space_to_tab: true,
+                                src: "url",
+                                to_posix_lines: false,
+                                url: "http://test.me.0",
+                            },
+                            {
+                                auto_decompress: true,
+                                dbkey: "?",
+                                deferred: true,
+                                ext: "auto",
+                                name: "b",
+                                space_to_tab: true,
+                                src: "url",
+                                to_posix_lines: false,
+                                url: "http://test.me.1",
+                            },
+                            {
+                                auto_decompress: true,
+                                dbkey: "?",
+                                deferred: true,
+                                ext: "auto",
+                                name: "c",
+                                space_to_tab: true,
+                                src: "url",
+                                to_posix_lines: false,
+                                url: "http://test.me.2",
+                            },
+                        ],
+                    },
+                ],
+            },
+            expect.objectContaining({ success: expect.any(Function), error: expect.any(Function) }),
+        );
+        expect(queue.opts.error).not.toHaveBeenCalled();
     });
 });
