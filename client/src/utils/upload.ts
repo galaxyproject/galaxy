@@ -824,8 +824,7 @@ export function buildCollectionUploadPayload(items: ApiUploadItem[], options: Co
     let elements: HdcaUploadTarget["elements"];
 
     if (options.collectionType === "list") {
-        // reverse the order of the elements to emulate what we have in the history panel
-        elements = dataElements.reverse();
+        elements = dataElements;
     } else if (options.collectionType === "list:paired") {
         elements = buildPairedElements(items, dataElements);
     } else {
@@ -1371,8 +1370,17 @@ export async function uploadCollectionDatasets(
         error?.(uploadError);
     };
 
+    // Reverse list items to emulate the order we have in the history panel. The server pairs
+    // uploaded files with `src: "files"` elements by position, so items and their per-item
+    // upload ids and signals must be reversed together to keep each file with its element.
+    const reverse = collectionOptions.collectionType === "list";
+    const ordered = <T>(values: T[]) => (reverse ? [...values].reverse() : values);
+    const orderedItems = ordered(items);
+    const orderedUploadIds = uploadIds && ordered(uploadIds);
+    const orderedSignals = signals && ordered(signals);
+
     try {
-        const payload = buildCollectionUploadPayload(items, collectionOptions);
+        const payload = buildCollectionUploadPayload(orderedItems, collectionOptions);
 
         const data: UploadDataPayload = {
             history_id: payload.history_id,
@@ -1389,10 +1397,10 @@ export async function uploadCollectionDatasets(
             error: reportError,
             warning,
             progress,
-            uploadIds,
+            uploadIds: orderedUploadIds,
             perFileProgress,
             signal,
-            signals,
+            signals: orderedSignals,
         });
     } catch (err) {
         if (!errorReported) {

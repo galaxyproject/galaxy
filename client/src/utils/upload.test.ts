@@ -20,6 +20,7 @@ import {
     parseContentToUploadItems,
     stripGalaxyFilePrefix,
     submitUpload,
+    uploadCollectionDatasets,
     uploadItemDefaults,
 } from "./upload";
 
@@ -650,13 +651,12 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.name).toBe("My List");
         expect(target.elements).toHaveLength(2);
 
-        // Elements are reversed to match history panel display order (newest HID first)
         const elem1 = target.elements[0] as { src: string; url: string };
         const elem2 = target.elements[1] as { src: string; url: string };
         expect(elem1.src).toBe("url");
-        expect(elem1.url).toBe("http://example.com/2.txt");
+        expect(elem1.url).toBe("http://example.com/1.txt");
         expect(elem2.src).toBe("url");
-        expect(elem2.url).toBe("http://example.com/1.txt");
+        expect(elem2.url).toBe("http://example.com/2.txt");
     });
 
     test("builds list collection payload with local file items", () => {
@@ -681,10 +681,13 @@ describe("buildCollectionUploadPayload", () => {
         expect(target.collection_type).toBe("list");
         expect(target.elements).toHaveLength(2);
 
-        const elem1 = target.elements[0] as { src: string };
-        const elem2 = target.elements[1] as { src: string };
+        // The server pairs the k-th `src: "files"` element with the k-th uploaded file
+        const elem1 = target.elements[0] as { src: string; name: string };
+        const elem2 = target.elements[1] as { src: string; name: string };
         expect(elem1.src).toBe("files");
+        expect(elem1.name).toBe("file1.txt");
         expect(elem2.src).toBe("files");
+        expect(elem2.name).toBe("file2.txt");
     });
 
     test("builds list:paired collection payload with nested elements", () => {
@@ -783,11 +786,10 @@ describe("buildCollectionUploadPayload", () => {
         const target = result.targets[0] as HdcaUploadTarget;
         expect(target.elements).toHaveLength(2);
 
-        // Elements are reversed to match history panel display order (newest HID first)
         const elem1 = target.elements[0] as { src: string };
         const elem2 = target.elements[1] as { src: string };
-        expect(elem1.src).toBe("url");
-        expect(elem2.src).toBe("files");
+        expect(elem1.src).toBe("files");
+        expect(elem2.src).toBe("url");
     });
 
     test("handles pasted content in collection", () => {
@@ -806,10 +808,9 @@ describe("buildCollectionUploadPayload", () => {
         const target = result.targets[0] as HdcaUploadTarget;
         expect(target.elements).toHaveLength(2);
 
-        // Elements are reversed to match history panel display order (newest HID first)
         const elem1 = target.elements[0] as { src: string; paste_content: string };
         expect(elem1.src).toBe("pasted");
-        expect(elem1.paste_content).toBe("content 2");
+        expect(elem1.paste_content).toBe("content 1");
     });
 
     test("validates empty file data", () => {
@@ -1607,6 +1608,55 @@ describe("upload submission", () => {
 
             expect(createTusUpload).toHaveBeenCalledTimes(2);
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_hdca_files" }] });
+        });
+    });
+
+    describe("uploadCollectionDatasets", () => {
+        it("pairs each list element with its own local file", async () => {
+            const fileA = createMockFile("A.txt", "a");
+            const fileB = createMockFile("B.txt", "b");
+            const progressByUploadId: Record<string, string> = {};
+            let uploadingFileName = "";
+            interface FetchedBody {
+                [key: `files_${number}|file_data`]: { session_id: string };
+                targets: [{ elements: Array<{ name: string; src: string }> }];
+            }
+            let fetchedBody: FetchedBody | null = null;
+
+            vi.mocked(createTusUpload).mockImplementation(async (options) => {
+                const fileName = (options.file as File).name;
+                uploadingFileName = fileName;
+                options.onProgress?.(100);
+                return { sessionId: `session-${fileName}`, fileName };
+            });
+
+            server.use(
+                http.post("/api/tools/fetch", async ({ request }) => {
+                    fetchedBody = (await request.json()) as FetchedBody;
+                    return HttpResponse.json({ jobs: [{ id: "job_list" }] });
+                }),
+            );
+
+            await uploadCollectionDatasets(
+                [createFileUploadItem(fileA, "historyId"), createFileUploadItem(fileB, "historyId")],
+                { collectionName: "My List", collectionType: "list" },
+                {
+                    uploadIds: ["upload-A", "upload-B"],
+                    perFileProgress: (uploadId) => {
+                        progressByUploadId[uploadId] = uploadingFileName;
+                    },
+                },
+            );
+
+            const body = fetchedBody as FetchedBody | null;
+            const elements = body?.targets[0].elements ?? [];
+            // List elements are reversed to match history panel display order (newest HID first)
+            expect(elements.map((element) => element.name)).toEqual(["B.txt", "A.txt"]);
+            // The server pairs the k-th `src: "files"` element with `files_k`
+            elements.forEach((element, index) => {
+                expect(body?.[`files_${index}|file_data`]).toMatchObject({ session_id: `session-${element.name}` });
+            });
+            expect(progressByUploadId).toEqual({ "upload-A": "A.txt", "upload-B": "B.txt" });
         });
     });
 });
