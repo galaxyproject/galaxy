@@ -23,11 +23,14 @@ from galaxy.tool_util.parameters import (
     RequestToolState,
     strictify,
 )
+from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.util import parse_profile_version
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
     ConditionalWhen,
+    DataCollectionParameterModel,
     DataParameterModel,
     SectionParameterModel,
     ToolParameterBundleModel,
@@ -43,6 +46,19 @@ ID_MAP: Dict[int, str] = {
     EXAMPLE_ID_1: EXAMPLE_ID_1_ENCODED,
     EXAMPLE_ID_2: EXAMPLE_ID_2_ENCODED,
 }
+
+
+def test_data_parameter_models_carry_extensions():
+    tool_source = get_tool_source(functional_test_tool_path("implicit_conversion_shared_input_y.yml"))
+    bundle = input_models_for_tool_source(tool_source)
+    assert [p.extensions for p in bundle.parameters if isinstance(p, DataParameterModel)] == [["fasta"], ["tabular"]]
+
+
+def test_data_collection_parameter_models_carry_extensions():
+    bundle = input_models_for_tool_source(tool_source_for("implicit_collection_conversion"))
+    (parameter,) = bundle.parameters
+    assert isinstance(parameter, DataCollectionParameterModel)
+    assert parameter.extensions == ["tabular"]
 
 
 def test_decode_data():
