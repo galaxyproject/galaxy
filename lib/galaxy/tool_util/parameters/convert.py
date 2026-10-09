@@ -609,8 +609,9 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
     return decode_callback
 
 
-DatasetToRuntimeJson = Callable[[DataJobInternalT], DataInternalJson]
-CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], Any]
+# Both adapters receive the extensions the consuming parameter accepts.
+DatasetToRuntimeJson = Callable[[DataJobInternalT, list[str]], DataInternalJson]
+CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str], list[str]], Any]
 
 
 # Parameter models the narrow YAML authoring layer is allowed to produce.
@@ -661,15 +662,15 @@ def runtimeify(
     if yaml_origin:
         assert_yaml_v1_parameters(list(input_models.parameters))
 
-    def adapt_dict(value: dict):
+    def adapt_dict(value: dict, extensions: list[str]):
         assert isinstance(value, dict), str(value)
         src = value.get("src")
         if src == "dce":
             dce_ref = DatasetCollectionElementReference(**value)
-            as_json = adapt_dataset(dce_ref).model_dump(by_alias=True)
+            as_json = adapt_dataset(dce_ref, extensions).model_dump(by_alias=True)
         else:
             data_request_internal_hda = DataRequestInternalHda(**value)
-            as_json = adapt_dataset(data_request_internal_hda).model_dump(by_alias=True)
+            as_json = adapt_dataset(data_request_internal_hda, extensions).model_dump(by_alias=True)
         return as_json
 
     def to_runtime_callback(parameter: ToolParameterT, value: Any):
@@ -677,15 +678,15 @@ def runtimeify(
             if value is None:
                 return VISITOR_NO_REPLACEMENT
             if parameter.multiple and isinstance(value, list):
-                return list(map(adapt_dict, value))
+                return [adapt_dict(v, parameter.extensions) for v in value]
             else:
-                return adapt_dict(value)
+                return adapt_dict(value, parameter.extensions)
         elif isinstance(parameter, DataCollectionParameterModel):
             if value is None:
                 return VISITOR_NO_REPLACEMENT
             assert isinstance(value, dict), str(value)
             collection_request = DataCollectionRequestInternal(**value)
-            result = adapt_collection(collection_request, parameter.collection_type)
+            result = adapt_collection(collection_request, parameter.collection_type, parameter.extensions)
             return result.model_dump(by_alias=True)
         else:
             return VISITOR_NO_REPLACEMENT

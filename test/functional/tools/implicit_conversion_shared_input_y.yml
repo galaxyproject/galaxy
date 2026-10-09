@@ -1,0 +1,46 @@
+class: GalaxyTool
+id: implicit_conversion_shared_input_y
+name: implicit_conversion_shared_input_y
+version: "0.1.0"
+shell_command: |
+  echo 'formats: $(inputs.as_fasta.format) $(inputs.as_tabular.format)' &&
+  head -n 1 '$(inputs.as_fasta.path)' > as_fasta.txt &&
+  cut -f 1 '$(inputs.as_tabular.path)' > as_tabular.txt
+inputs:
+  - name: as_fasta
+    type: data
+    format: fasta
+  - name: as_tabular
+    type: data
+    format: tabular
+outputs:
+  - name: as_fasta
+    type: data
+    format: txt
+    from_work_dir: as_fasta.txt
+  - name: as_tabular
+    type: data
+    format: txt
+    from_work_dir: as_tabular.txt
+tests:
+  - inputs:
+      as_fasta:
+        class: File
+        path: 1.fasta
+        filetype: fasta
+      as_tabular:
+        class: File
+        path: 1.fasta
+        filetype: fasta
+    outputs:
+      as_fasta:
+        asserts:
+          - has_line:
+              line: ">hg17"
+      as_tabular:
+        asserts:
+          - has_line:
+              line: "hg17"
+    assert_stdout:
+      - has_line:
+          line: "formats: fasta tabular"
