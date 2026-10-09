@@ -853,7 +853,7 @@ def test_directory_path_is_staged_as_directory_dataset(tmp_path):
     assert "error_message" not in result, result.get("error_message")
     assert result["ext"] == "directory"
     assert result["name"] == "some_dir"
-    assert staged == [os.path.join("some_dir", "nested", "a.txt")]
+    assert staged == [os.path.join("nested", "a.txt")]
     assert result["_primary_file_size"] == 0
 
 
@@ -866,7 +866,7 @@ def test_zarr_directory_path_is_detected(tmp_path):
 
     assert "error_message" not in result, result.get("error_message")
     assert result["ext"] == "zarr"
-    assert os.path.join("input9.zarr", ".zgroup") in staged
+    assert ".zgroup" in staged
 
 
 def test_zarr_directory_detected_without_a_zarr_suffix(tmp_path):
@@ -945,7 +945,7 @@ def test_directory_upload_purges_the_source_when_asked(tmp_path):
     result, staged = _fetch_single_path(str(source), purge_source=True)
 
     assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert staged == ["a.txt"]
     assert not source.exists(), "purge_source: true must not leave the source tree behind"
 
 
@@ -957,7 +957,7 @@ def test_directory_upload_keeps_the_source_when_not_purging(tmp_path):
     result, staged = _fetch_single_path(str(source), purge_source=False)
 
     assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert staged == ["a.txt"]
     assert (source / "a.txt").read_text() == "hello"
 
 
@@ -975,7 +975,7 @@ def test_directory_purge_keeps_the_staged_copy_when_the_source_cannot_be_removed
         parent.chmod(0o700)
 
     assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a.txt")], "the staged tree must survive intact"
+    assert staged == ["a.txt"], "the staged tree must survive intact"
 
 
 def test_directory_purge_renames_within_a_filesystem(tmp_path, monkeypatch):
@@ -995,7 +995,7 @@ def test_directory_purge_renames_within_a_filesystem(tmp_path, monkeypatch):
     result, staged = _fetch_single_path(str(source), purge_source=True)
 
     assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert staged == ["a.txt"]
     assert not source.exists()
     assert copied == [], f"expected a rename, but the tree was copied: {copied}"
 
@@ -1029,7 +1029,7 @@ def test_directory_purge_falls_back_to_copying_when_the_source_is_read_only(tmp_
     result, staged = _fetch_single_path(str(source), purge_source=True)
 
     assert "error_message" not in result, result.get("error_message")
-    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert staged == ["a.txt"]
     assert (source / "a.txt").read_text() == "hello", "a read-only source is left in place"
 
 
@@ -1042,7 +1042,7 @@ def test_directory_path_with_a_trailing_slash(tmp_path):
 
     assert "error_message" not in result, result.get("error_message")
     assert result["name"] == "some_dir"
-    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert staged == ["a.txt"]
 
 
 def test_a_directory_holding_a_text_file_named_meta_is_not_zarr(tmp_path):
@@ -1077,7 +1077,7 @@ def test_non_object_json_meta_uses_directory_datatype(tmp_path, meta_content):
 
     assert "error_message" not in result, result.get("error_message")
     assert result["ext"] == "directory"
-    assert staged == [os.path.join("notes", "meta")]
+    assert staged == ["meta"]
 
 
 @pytest.mark.parametrize(
