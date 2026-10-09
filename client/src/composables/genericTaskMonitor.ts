@@ -162,21 +162,31 @@ export function useGenericMonitor(options: {
     }
 
     async function fetchTaskStatus(taskId: string, fetchOptions: FetchStatusOptions = { keepPolling: true }) {
+        requestId.value = taskId;
+        // A reply that arrives after this monitor was stopped or moved to another task is dropped.
+        const isCurrent = () => requestId.value === taskId;
         try {
             isRunning.value = true;
             const result = await options.fetchStatus(taskId);
+            if (!isCurrent()) {
+                return;
+            }
             taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
                 isRunning.value = false;
                 if (hasFailed.value) {
                     const errorMessage = await options.fetchFailureReason(taskId);
-                    failureReason.value = errorMessage;
+                    if (isCurrent()) {
+                        failureReason.value = errorMessage;
+                    }
                 }
             } else if (fetchOptions.keepPolling) {
                 pollAfterDelay(taskId);
             }
         } catch (err) {
-            handleError(errorMessageAsString(err));
+            if (isCurrent()) {
+                handleError(errorMessageAsString(err));
+            }
         }
     }
 
@@ -204,13 +214,20 @@ export function useGenericMonitor(options: {
     function resetState() {
         resetTimeout();
         taskStatus.value = undefined;
+        failureReason.value = undefined;
         requestHasFailed.value = false;
+        isRunning.value = false;
+    }
+
+    function stopWaitingForTask() {
+        resetTimeout();
+        requestId.value = undefined;
         isRunning.value = false;
     }
 
     return {
         waitForTask,
-        stopWaitingForTask: resetTimeout,
+        stopWaitingForTask,
         isFinalState,
         loadStatus,
         fetchTaskStatus,

@@ -46,6 +46,7 @@
             <GToast />
             <CommandPalette v-if="paletteEnabled" />
             <ConfirmDialog ref="confirmDialogRef" />
+            <ExportToAnotherGalaxyDialog />
             <BroadcastsOverlay />
             <DragGhost />
             <template v-if="showMasthead">
@@ -80,6 +81,7 @@ import GToast from "@/components/BaseComponents/GToast.vue";
 import CommandPalette from "@/components/CommandPalette/CommandPalette.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
+import ExportToAnotherGalaxyDialog from "@/components/History/Content/ExportToAnotherGalaxyDialog.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
@@ -94,6 +96,7 @@ export default {
         WindowManagerWindow,
         GToast,
         ConfirmDialog,
+        ExportToAnotherGalaxyDialog,
         BroadcastsOverlay,
         TourRunner,
     },

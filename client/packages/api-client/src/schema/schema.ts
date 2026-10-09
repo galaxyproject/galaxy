@@ -2884,6 +2884,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/contents_from_store_async": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Launch a task to create history contents from a model store. */
+        post: operations["create_from_store_async_api_histories__history_id__contents_from_store_async_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/copy_contents": {
         parameters: {
             query?: never;
@@ -42679,6 +42696,54 @@ export interface operations {
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_from_store_async_api_histories__history_id__contents_from_store_async_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHistoryContentFromStore"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
