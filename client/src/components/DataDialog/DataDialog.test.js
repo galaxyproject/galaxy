@@ -1,4 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
+import axios from "axios";
 import { describe, expect, it, vi } from "vitest";
 
 import { Model } from "./model";
@@ -50,6 +51,20 @@ describe("model.js", () => {
         expect(model.count()).toBe(1);
         result = model.finalize();
         expect(result[0]).toBe("tag_2");
+    });
+});
+
+describe("services/Services:get", () => {
+    // Browsers leave statusText empty over HTTP/2.
+    it.each([
+        [503, "", "Galaxy is temporarily unavailable (503)"],
+        [418, undefined, "The request failed (418)"],
+    ])("names a %d when the status text is %j", async (status, statusText, message) => {
+        vi.spyOn(axios, "get").mockRejectedValueOnce({
+            response: { status, statusText, data: "<html><body>nginx</body></html>" },
+        });
+        const services = new Services(mockOptions);
+        await expect(services.get("/api/datasets")).rejects.toBe(message);
     });
 });
 
