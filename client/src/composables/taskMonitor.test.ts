@@ -1,6 +1,5 @@
 import { suppressDebugConsole } from "@tests/vitest/helpers";
-import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useTaskMonitor } from "@/composables/taskMonitor";
@@ -15,95 +14,95 @@ const REQUEST_FAILED_TASK_ID = "request-failed-fake-task-id";
 const { server, http } = useServerMock();
 
 describe("useTaskMonitor", () => {
-    beforeEach(() => {
-        server.use(
-            http.get("/api/tasks/{task_id}/state", ({ response, params }) => {
-                switch (params.task_id) {
-                    case PENDING_TASK_ID:
-                        return response(200).json("PENDING");
+    const monitors: ReturnType<typeof useTaskMonitor>[] = [];
 
-                    case COMPLETED_TASK_ID:
-                        return response(200).json("SUCCESS");
+    function createMonitor() {
+        const monitor = useTaskMonitor();
+        monitors.push(monitor);
+        return monitor;
+    }
 
-                    case FAILED_TASK_ID:
-                        return response(200).json("FAILURE");
-
-                    case REQUEST_FAILED_TASK_ID:
-                        return response("5XX").json({ err_msg: "Request failed", err_code: 500 }, { status: 500 });
-
-                    default:
-                        return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
-                }
-            }),
-            http.get("/api/tasks/{task_id}/result", ({ response, params }) => {
-                switch (params.task_id) {
-                    case PENDING_TASK_ID:
-                        return response(200).json({ state: "PENDING", result: "" });
-
-                    case COMPLETED_TASK_ID:
-                        return response(200).json({ state: "SUCCESS", result: "" });
-
-                    case FAILED_TASK_ID:
-                        return response(200).json({ state: "FAILURE", result: "The failure reason" });
-
-                    case REQUEST_FAILED_TASK_ID:
-                        return response("5XX").json({ err_msg: "Request failed", err_code: 500 }, { status: 500 });
-
-                    default:
-                        return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
-                }
-            }),
-        );
+    afterEach(() => {
+        monitors.forEach((monitor) => monitor.stopWaitingForTask());
+        monitors.length = 0;
+        vi.restoreAllMocks();
     });
 
-    it("should indicate the task is running when it is still pending", async () => {
-        const { waitForTask, isRunning, taskStatus } = useTaskMonitor();
+    function mockTaskState(taskId: string, state: "PENDING" | "SUCCESS" | "FAILURE") {
+        server.use(
+            http.get("/api/tasks/{task_id}/state", ({ response, params }) => {
+                expect(params.task_id).toBe(taskId);
+                return response(200).json(state);
+            }),
+        );
+    }
+
+    function mockFailureReason(taskId: string) {
+        server.use(
+            http.get("/api/tasks/{task_id}/result", ({ response, params }) => {
+                expect(params.task_id).toBe(taskId);
+                return response(200).json({ state: "FAILURE", result: "The failure reason" });
+            }),
+        );
+    }
+
+    it("keeps monitoring a PENDING task", async () => {
+        const { waitForTask, isRunning, taskStatus } = createMonitor();
+
+        mockTaskState(PENDING_TASK_ID, "PENDING");
 
         expect(isRunning.value).toBe(false);
-        waitForTask(PENDING_TASK_ID);
-        await flushPromises();
+        await waitForTask(PENDING_TASK_ID);
         expect(isRunning.value).toBe(true);
         expect(taskStatus.value).toBe("PENDING");
     });
 
-    it("should indicate the task is successfully completed when the state is SUCCESS", async () => {
-        const { waitForTask, isRunning, isCompleted, taskStatus } = useTaskMonitor();
+    it("marks a SUCCESS task complete and stops monitoring", async () => {
+        const { waitForTask, isRunning, isCompleted, taskStatus } = createMonitor();
+
+        mockTaskState(COMPLETED_TASK_ID, "SUCCESS");
 
         expect(isCompleted.value).toBe(false);
-        waitForTask(COMPLETED_TASK_ID);
-        await flushPromises();
+        await waitForTask(COMPLETED_TASK_ID);
         expect(isCompleted.value).toBe(true);
         expect(isRunning.value).toBe(false);
         expect(taskStatus.value).toBe("SUCCESS");
     });
 
-    it("should indicate the task has failed when the state is FAILED", async () => {
-        const { waitForTask, isRunning, hasFailed, taskStatus, failureReason } = useTaskMonitor();
+    it("marks a FAILURE task failed and retrieves its reason", async () => {
+        const { waitForTask, isRunning, hasFailed, taskStatus, failureReason } = createMonitor();
+
+        mockTaskState(FAILED_TASK_ID, "FAILURE");
+        mockFailureReason(FAILED_TASK_ID);
 
         expect(hasFailed.value).toBe(false);
-        waitForTask(FAILED_TASK_ID);
-        await flushPromises();
+        await waitForTask(FAILED_TASK_ID);
         expect(hasFailed.value).toBe(true);
         expect(isRunning.value).toBe(false);
         expect(taskStatus.value).toBe("FAILURE");
         expect(failureReason.value).toBe("The failure reason");
     });
 
-    it("should indicate the task status request failed when the request failed", async () => {
-        const { waitForTask, requestHasFailed, isRunning, isCompleted, taskStatus } = useTaskMonitor();
+    it("reports a failed status request without marking the task complete", async () => {
+        const { waitForTask, requestHasFailed, isRunning, isCompleted, taskStatus } = createMonitor();
         suppressDebugConsole();
+        server.use(
+            http.get("/api/tasks/{task_id}/state", ({ response, params }) => {
+                expect(params.task_id).toBe(REQUEST_FAILED_TASK_ID);
+                return response("5XX").json({ err_msg: "Request failed", err_code: 500 }, { status: 500 });
+            }),
+        );
 
         expect(requestHasFailed.value).toBe(false);
-        waitForTask(REQUEST_FAILED_TASK_ID);
-        await flushPromises();
+        await waitForTask(REQUEST_FAILED_TASK_ID);
         expect(requestHasFailed.value).toBe(true);
         expect(isRunning.value).toBe(false);
         expect(isCompleted.value).toBe(false);
         expect(taskStatus.value).toBe("Request failed");
     });
 
-    it("should load the status from the stored monitoring data", async () => {
-        const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus } = useTaskMonitor();
+    it("restores a completed task from stored status", () => {
+        const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus } = createMonitor();
         const expectedStatus = "SUCCESS";
         const storedStatus: StoredTaskStatus = {
             taskStatus: expectedStatus,
@@ -117,8 +116,8 @@ describe("useTaskMonitor", () => {
         expect(hasFailed.value).toBe(false);
     });
 
-    it("should load the status from the stored monitoring data with failure reason", async () => {
-        const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus, failureReason } = useTaskMonitor();
+    it("restores a failed task and its stored failure reason", () => {
+        const { loadStatus, isRunning, isCompleted, hasFailed, taskStatus, failureReason } = createMonitor();
         const expectedStatus = "FAILURE";
         const expectedFailureReason = "The stored failure reason";
         const storedStatus: StoredTaskStatus = {
@@ -136,24 +135,27 @@ describe("useTaskMonitor", () => {
     });
 
     describe("isFinalState", () => {
-        it("should indicate is final state when the task is completed", async () => {
-            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } = useTaskMonitor();
+        it("recognizes a completed task as final", async () => {
+            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } = createMonitor();
+
+            mockTaskState(COMPLETED_TASK_ID, "SUCCESS");
 
             expect(isFinalState(taskStatus.value)).toBe(false);
-            waitForTask(COMPLETED_TASK_ID);
-            await flushPromises();
+            await waitForTask(COMPLETED_TASK_ID);
             expect(isFinalState(taskStatus.value)).toBe(true);
             expect(isRunning.value).toBe(false);
             expect(isCompleted.value).toBe(true);
             expect(hasFailed.value).toBe(false);
         });
 
-        it("should indicate is final state when the task has failed", async () => {
-            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } = useTaskMonitor();
+        it("recognizes a failed task as final", async () => {
+            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, taskStatus } = createMonitor();
+
+            mockTaskState(FAILED_TASK_ID, "FAILURE");
+            mockFailureReason(FAILED_TASK_ID);
 
             expect(isFinalState(taskStatus.value)).toBe(false);
-            waitForTask(FAILED_TASK_ID);
-            await flushPromises();
+            await waitForTask(FAILED_TASK_ID);
             expect(isFinalState(taskStatus.value)).toBe(true);
             expect(isRunning.value).toBe(false);
             expect(isCompleted.value).toBe(false);
