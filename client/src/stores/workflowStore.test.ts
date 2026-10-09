@@ -1,5 +1,4 @@
-import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkflowSummary } from "@/api/workflows";
@@ -7,12 +6,12 @@ import { loadWorkflows } from "@/api/workflows";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
-// Mock `getWorkflowFull` function
+import { setupTestPinia } from "./testUtils";
+
 vi.mock("@/components/Workflow/workflows.services", () => ({
     getWorkflowFull: vi.fn(),
 }));
 
-// Mock the workflows API layer used by the list cache
 vi.mock("@/api/workflows", () => ({
     loadWorkflows: vi.fn(),
 }));
@@ -25,7 +24,15 @@ const mockWorkflow = {
 };
 
 function workflowSummary(id: string, name: string, extra: Partial<WorkflowSummary> = {}): WorkflowSummary {
-    return { id, name, update_time: "2026-08-31T10:00:00", ...extra } as WorkflowSummary;
+    return getFakeWorkflowSummary({ id, name, ...extra });
+}
+
+function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((resolvePromise) => {
+        resolve = resolvePromise;
+    });
+    return { promise, resolve };
 }
 
 function mockLoadWorkflowsOnce(data: WorkflowSummary[]) {
@@ -36,141 +43,85 @@ describe("useWorkflowStore", () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>;
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         workflowStore = useWorkflowStore();
-        vi.clearAllMocks();
+        vi.mocked(getWorkflowFull).mockReset();
+        vi.mocked(loadWorkflows).mockReset();
     });
 
     describe("getFullWorkflowCached", () => {
-        it("should fetch workflow when not cached", async () => {
+        it("fetches an uncached workflow and version", async () => {
             vi.mocked(getWorkflowFull).mockResolvedValue(mockWorkflow);
 
             const result = await workflowStore.getFullWorkflowCached("workflow-123", 1);
-            await flushPromises();
 
             expect(getWorkflowFull).toHaveBeenCalledTimes(1);
             expect(getWorkflowFull).toHaveBeenCalledWith("workflow-123", 1);
             expect(result).toEqual(mockWorkflow);
         });
 
-        it("should return cached workflow on subsequent calls", async () => {
+        it("returns a cached workflow without another request", async () => {
             vi.mocked(getWorkflowFull).mockResolvedValue(mockWorkflow);
 
-            // First call - should fetch
-            const result1 = await workflowStore.getFullWorkflowCached("workflow-123", 1);
-            await flushPromises();
+            const firstResult = await workflowStore.getFullWorkflowCached("workflow-123", 1);
             expect(getWorkflowFull).toHaveBeenCalledTimes(1);
-            expect(result1).toEqual(mockWorkflow);
+            expect(firstResult).toEqual(mockWorkflow);
 
-            // Second call - should return cached
-            const result2 = await workflowStore.getFullWorkflowCached("workflow-123", 1);
-            await flushPromises();
+            const secondResult = await workflowStore.getFullWorkflowCached("workflow-123", 1);
 
-            // Still only one API call
             expect(getWorkflowFull).toHaveBeenCalledTimes(1);
-            expect(result2).toEqual(mockWorkflow);
+            expect(secondResult).toEqual(mockWorkflow);
         });
 
-        it("should prevent duplicate concurrent requests for same workflow", async () => {
-            // Create a promise that we can control when it resolves
-            let resolveWorkflow: (value: any) => void;
-            const workflowPromise = new Promise((resolve) => {
-                resolveWorkflow = resolve;
-            });
-            vi.mocked(getWorkflowFull).mockReturnValue(workflowPromise);
+        it.each([2, 5])(
+            "deduplicates %i concurrent requests for the same workflow and version",
+            async (requestCount) => {
+                const response = deferred<typeof mockWorkflow>();
+                vi.mocked(getWorkflowFull).mockReturnValue(response.promise);
 
-            // Start two concurrent requests for the same workflow
-            const promise1 = workflowStore.getFullWorkflowCached("workflow-123", 1);
-            const promise2 = workflowStore.getFullWorkflowCached("workflow-123", 1);
+                const requests = Array.from({ length: requestCount }, () =>
+                    workflowStore.getFullWorkflowCached("workflow-123", 1),
+                );
 
-            // At this point, getWorkflowFull should only be called once
-            expect(getWorkflowFull).toHaveBeenCalledTimes(1);
+                expect(getWorkflowFull).toHaveBeenCalledTimes(1);
+                response.resolve(mockWorkflow);
+                expect(await Promise.all(requests)).toEqual(Array(requestCount).fill(mockWorkflow));
+                expect(getWorkflowFull).toHaveBeenCalledTimes(1);
+            },
+        );
 
-            // Resolve the workflow promise
-            resolveWorkflow!(mockWorkflow);
-            await flushPromises();
-
-            // Both promises should resolve with the same workflow
-            const [result1, result2] = await Promise.all([promise1, promise2]);
-            expect(result1).toEqual(mockWorkflow);
-            expect(result2).toEqual(mockWorkflow);
-
-            // Still only one API call
-            expect(getWorkflowFull).toHaveBeenCalledTimes(1);
-        });
-
-        it("should allow concurrent requests for different workflows", async () => {
+        it("fetches different workflows independently", async () => {
             const mockWorkflow1 = { ...mockWorkflow, id: "workflow-1" };
             const mockWorkflow2 = { ...mockWorkflow, id: "workflow-2" };
 
             vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflow1);
             vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflow2);
 
-            // Start concurrent requests for different workflows
-            const [result1, result2] = await Promise.all([
+            const [firstResult, secondResult] = await Promise.all([
                 workflowStore.getFullWorkflowCached("workflow-1"),
                 workflowStore.getFullWorkflowCached("workflow-2"),
             ]);
-            await flushPromises();
 
-            // Should make two separate API calls
             expect(getWorkflowFull).toHaveBeenCalledTimes(2);
-            expect(result1).toEqual(mockWorkflow1);
-            expect(result2).toEqual(mockWorkflow2);
+            expect(firstResult).toEqual(mockWorkflow1);
+            expect(secondResult).toEqual(mockWorkflow2);
         });
 
-        it("should allow concurrent requests for different versions of same workflow", async () => {
+        it("fetches different versions of the same workflow independently", async () => {
             const mockWorkflowV1 = { ...mockWorkflow, version: 1 };
             const mockWorkflowV2 = { ...mockWorkflow, version: 2 };
 
             vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflowV1);
             vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflowV2);
 
-            // Start concurrent requests for different versions
-            const [result1, result2] = await Promise.all([
+            const [firstResult, secondResult] = await Promise.all([
                 workflowStore.getFullWorkflowCached("workflow-123", 1),
                 workflowStore.getFullWorkflowCached("workflow-123", 2),
             ]);
-            await flushPromises();
 
-            // Should make two separate API calls
             expect(getWorkflowFull).toHaveBeenCalledTimes(2);
-            expect(result1).toEqual(mockWorkflowV1);
-            expect(result2).toEqual(mockWorkflowV2);
-        });
-
-        it("should deduplicate multiple concurrent requests", async () => {
-            // Mock API response which we can resolve later
-            let resolveWorkflow: (value: any) => void;
-            const workflowPromise = new Promise((resolve) => {
-                resolveWorkflow = resolve;
-            });
-            vi.mocked(getWorkflowFull).mockReturnValue(workflowPromise);
-
-            // Start 5 concurrent requests
-            const promises = [
-                workflowStore.getFullWorkflowCached("workflow-123", 1),
-                workflowStore.getFullWorkflowCached("workflow-123", 1),
-                workflowStore.getFullWorkflowCached("workflow-123", 1),
-                workflowStore.getFullWorkflowCached("workflow-123", 1),
-                workflowStore.getFullWorkflowCached("workflow-123", 1),
-            ];
-
-            // Only one API call should be made
-            expect(getWorkflowFull).toHaveBeenCalledTimes(1);
-
-            // Resolving the API call
-            resolveWorkflow!(mockWorkflow);
-            await flushPromises();
-
-            // All 5 promises should resolve with the same result
-            const results = await Promise.all(promises);
-            results.forEach((result) => {
-                expect(result).toEqual(mockWorkflow);
-            });
-
-            // Still only one API call total
-            expect(getWorkflowFull).toHaveBeenCalledTimes(1);
+            expect(firstResult).toEqual(mockWorkflowV1);
+            expect(secondResult).toEqual(mockWorkflowV2);
         });
     });
 
@@ -246,7 +197,13 @@ describe("useWorkflowStore", () => {
             mockLoadWorkflowsOnce([workflowSummary("w1", "Old name", { tags: ["a"] })]);
             await workflowStore.fetchWorkflowList("my");
 
-            mockLoadWorkflowsOnce([workflowSummary("w1", "New name")]);
+            // A partial API summary must leave the cached tags intact.
+            const updatedSummary: Partial<WorkflowSummary> = {
+                id: "w1",
+                name: "New name",
+                update_time: "2026-08-31T10:00:00",
+            };
+            mockLoadWorkflowsOnce([updatedSummary as WorkflowSummary]);
             await workflowStore.fetchWorkflowList("published");
 
             expect(workflowStore.allWorkflowSummaries).toHaveLength(1);
@@ -282,18 +239,12 @@ describe("useWorkflowStore", () => {
         });
 
         it("keeps concurrent pages in separate request and cache slots", async () => {
-            type WorkflowListResult = { data: WorkflowSummary[]; totalMatches: number };
-            let resolvePage0: (result: WorkflowListResult) => void = () => undefined;
-            let resolvePage1: (result: WorkflowListResult) => void = () => undefined;
-            vi.mocked(loadWorkflows).mockImplementation(({ offset }) => {
-                return new Promise((resolve) => {
-                    if (offset === 0) {
-                        resolvePage0 = resolve;
-                    } else {
-                        resolvePage1 = resolve;
-                    }
-                });
-            });
+            type WorkflowListResult = Awaited<ReturnType<typeof loadWorkflows>>;
+            const page0Response = deferred<WorkflowListResult>();
+            const page1Response = deferred<WorkflowListResult>();
+            vi.mocked(loadWorkflows).mockImplementation(({ offset }) =>
+                offset === 0 ? page0Response.promise : page1Response.promise,
+            );
             const page0Options = { limit: 20, offset: 0 };
             const page1Options = { limit: 20, offset: 20 };
 
@@ -301,8 +252,8 @@ describe("useWorkflowStore", () => {
             const page1 = workflowStore.fetchWorkflowList("my", "", page1Options);
 
             expect(loadWorkflows).toHaveBeenCalledTimes(2);
-            resolvePage0({ data: [workflowSummary("w0", "Page zero")], totalMatches: 2 });
-            resolvePage1({ data: [workflowSummary("w1", "Page one")], totalMatches: 2 });
+            page0Response.resolve({ data: [workflowSummary("w0", "Page zero")], totalMatches: 2 });
+            page1Response.resolve({ data: [workflowSummary("w1", "Page one")], totalMatches: 2 });
             const [page0Result, page1Result] = await Promise.all([page0, page1]);
 
             expect(page0Result.map((workflow) => workflow.id)).toEqual(["w0"]);
