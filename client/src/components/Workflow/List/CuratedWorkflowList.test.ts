@@ -158,7 +158,9 @@ describe("CuratedWorkflowList", () => {
         const wrapper = await mountCuratedList({ source: "iwc", total_matches: 3, workflows });
 
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(3);
-        expect(wrapper.find("#curated-workflows-source-note").exists()).toBe(true);
+        const sourceNote = wrapper.find("#curated-workflows-source-note");
+        expect(sourceNote.text()).toContain("Intergalactic Workflow Commission");
+        expect(sourceNote.find('a[href="https://iwc.galaxyproject.org"]').attributes("target")).toBe("_blank");
         expect(wrapper.find("#curated-workflows-preparing").exists()).toBe(false);
         expect(wrapper.find("#curated-workflows-unavailable").exists()).toBe(false);
         expect(wrapper.find("#curated-workflows-empty").exists()).toBe(false);
@@ -182,6 +184,9 @@ describe("CuratedWorkflowList", () => {
 
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(2);
         expect(wrapper.find("#g-card-action-curated-run-f2db41e1fa331b3e").exists()).toBe(true);
+        // A local feed is someone's own curation, not IWC's, so nothing points at the IWC gallery.
+        expect(wrapper.find("#curated-workflows-source-note").text()).not.toContain("IWC");
+        expect(wrapper.find('a[href="https://iwc.galaxyproject.org"]').exists()).toBe(false);
         expect(countsRequested).not.toHaveBeenCalled();
     });
 

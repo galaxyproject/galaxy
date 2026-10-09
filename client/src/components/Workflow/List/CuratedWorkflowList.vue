@@ -29,6 +29,7 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
 
@@ -234,9 +235,10 @@ onMounted(() => load());
 
             <div v-if="source === 'iwc'" id="curated-workflows-source-note" class="text-muted mb-2">
                 <span v-localize>
-                    Curated by the Intergalactic Workflow Commission. Import a workflow to add it to this Galaxy.
+                    These workflows come from the Intergalactic Workflow Commission (IWC). Import one to add it to this
+                    Galaxy, or browse the full gallery at
                 </span>
-                <GLink :href="IWC_URL" target="_blank">iwc.galaxyproject.org</GLink>
+                <ExternalLink :href="IWC_URL">iwc.galaxyproject.org</ExternalLink>
             </div>
             <div v-else-if="source === 'local'" id="curated-workflows-source-note" class="text-muted mb-2">
                 <span v-localize>Workflows curated for this Galaxy.</span>
@@ -317,7 +319,7 @@ onMounted(() => load());
                 <p>{{ message }}</p>
                 <p>
                     <span v-localize>You can browse the catalog at</span>
-                    <GLink :href="IWC_URL" target="_blank">iwc.galaxyproject.org</GLink>
+                    <ExternalLink :href="IWC_URL">iwc.galaxyproject.org</ExternalLink>
                     <span v-localize>or</span>
                     <GLink to="/workflows/import">import a workflow directly</GLink>
                     <span v-localize>.</span>
