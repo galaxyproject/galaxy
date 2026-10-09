@@ -232,6 +232,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 optional=optional,
                 multiple=multiple,
                 url_default=url_default,
+                extensions=input_source.parse_extensions(),
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "data_collection":
@@ -243,6 +244,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=optional,
                 value=default_value,
+                extensions=input_source.parse_extensions(),
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "select":
