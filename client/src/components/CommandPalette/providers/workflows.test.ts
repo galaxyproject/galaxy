@@ -1,3 +1,4 @@
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -45,7 +46,7 @@ const PUBLISHED_SCOPE: ScopeDefinition = {
 };
 
 function workflow(id: string, name: string, owner = "me", updateTime = "2026-08-30T10:00:00"): WorkflowSummary {
-    return { id, name, owner, update_time: updateTime, tags: [] } as unknown as WorkflowSummary;
+    return getFakeWorkflowSummary({ id, name, owner, update_time: updateTime });
 }
 
 const RNA = workflow("wf1", "RNA-seq analysis", "me", "2026-08-30T10:00:00");

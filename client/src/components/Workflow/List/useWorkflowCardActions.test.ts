@@ -1,9 +1,9 @@
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref, unref } from "vue";
 
 import type { RegisteredUser } from "@/api";
-import type { WorkflowSummary } from "@/api/workflows";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCardActions";
 import { useUserStore } from "@/stores/userStore";
@@ -15,13 +15,7 @@ vi.mock("@/composables/confirmDialog", () => ({
 const OWNER = "owner";
 
 function setup(editorView = false) {
-    const workflow = ref({
-        id: "workflow_id",
-        name: "Workflow",
-        owner: OWNER,
-        deleted: false,
-        published: false,
-    } as unknown as WorkflowSummary);
+    const workflow = ref(getFakeWorkflowSummary({ id: "workflow_id", name: "Workflow", owner: OWNER }));
     const noop = () => {};
     return useWorkflowCardActions(workflow, false, editorView, noop, noop, noop);
 }
