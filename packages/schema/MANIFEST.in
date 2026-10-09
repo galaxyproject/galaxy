@@ -1,0 +1,4 @@
+include src/galaxy/schema/drs/gen.sh
+include src/galaxy/schema/wes/gen.sh
+include src/galaxy/schema/bco/gen.sh
+include src/galaxy/schema/terms.yml

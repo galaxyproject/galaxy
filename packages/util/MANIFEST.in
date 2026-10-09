@@ -1,0 +1,3 @@
+include src/galaxy/util/rules_dsl_spec.yml
+include src/galaxy/util/docutils_template.txt
+include src/galaxy/exceptions/error_codes.json
