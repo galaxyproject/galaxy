@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { createTestStep } from "@/components/Workflow/Editor/test_fixtures";
 import {
@@ -10,6 +9,7 @@ import {
     useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 
+import { setupTestPinia } from "./testUtils";
 import { useConnectionStore } from "./workflowConnectionStore";
 
 const stepInputConnection: StepInputConnection = {
@@ -33,54 +33,46 @@ const workflowStepZero: NewStep = {
 
 const workflowStepOne: NewStep = { ...workflowStepZero, input_connections: stepInputConnection };
 
-describe("Connection Store", () => {
+describe("Workflow Step Store", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
     });
 
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
-    it("adds step", () => {
+    it("adds a step to an empty workflow", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
         expect(stepStore.steps).toStrictEqual({});
         stepStore.addStep(workflowStepZero);
         expect(stepStore.getStep(0)).toStrictEqual(workflowStepZero);
         expect(workflowStepZero.id).toBe(0);
     });
-    it("removes step", () => {
+    it("removes an existing step by id", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
         const addedStep = stepStore.addStep(workflowStepZero);
         expect(addedStep.id).toBe(0);
         stepStore.removeStep(addedStep.id);
-        expect(stepStore.getStep(0)).toBe(undefined);
+        expect(stepStore.getStep(0)).toBeUndefined();
     });
-    it("creates connection if step has connection", () => {
+    it("creates a connection when a step declares an input connection", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
         const connectionStore = useConnectionStore("mock-workflow");
         stepStore.addStep(workflowStepZero);
         stepStore.addStep(workflowStepOne);
-        expect(connectionStore.connections.length).toBe(1);
+        expect(connectionStore.connections).toHaveLength(1);
     });
-    it("removes connection if step has connection", () => {
+    it("removes a step's input connection when the step is removed", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
         const connectionStore = useConnectionStore("mock-workflow");
         stepStore.addStep(workflowStepZero);
         const stepOne = stepStore.addStep(workflowStepOne);
-        expect(connectionStore.connections.length).toBe(1);
+        expect(connectionStore.connections).toHaveLength(1);
         stepStore.removeStep(stepOne.id);
-        expect(connectionStore.connections.length).toBe(0);
+        expect(connectionStore.connections).toHaveLength(0);
     });
 });
 
 describe("getCombinedStepInputs", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
+        setupTestPinia();
     });
 
     const regularInput: InputTerminalSource = {
@@ -118,13 +110,13 @@ describe("getCombinedStepInputs", () => {
 
     it("includes extra inputs when step has conditional parameters", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
-        stepStore.addStep(workflowStepZero); // Add step 0 as output source
+        stepStore.addStep(workflowStepZero);
         const step = stepStore.addStep(stepWithWhen);
 
         const combinedInputs = getCombinedStepInputs(step, stepStore);
 
         expect(combinedInputs.length).toBeGreaterThan(1);
-        const inputNames = combinedInputs.map((i) => i.name);
+        const inputNames = combinedInputs.map((input) => input.name);
         expect(inputNames).toContain("check_value");
         expect(inputNames).toContain("input_dataset");
     });
@@ -136,7 +128,6 @@ describe("getCombinedStepInputs", () => {
 
         const combinedInputs = getCombinedStepInputs(step, stepStore);
 
-        // Extra inputs should come first
         expect(combinedInputs[0]?.name).toBe("check_value");
         expect(combinedInputs[1]?.name).toBe("input_dataset");
     });
@@ -154,9 +145,9 @@ describe("getCombinedStepInputs", () => {
         expect(getCombinedStepInputs(step, stepStore)).toHaveLength(0);
     });
 
-    it("handles step with no inputs gracefully", () => {
+    it("returns no inputs for a step without regular or conditional inputs", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
-        const step = stepStore.addStep(workflowStepZero); // Step with empty inputs
+        const step = stepStore.addStep(workflowStepZero);
 
         const combinedInputs = getCombinedStepInputs(step, stepStore);
 
