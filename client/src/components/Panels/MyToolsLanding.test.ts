@@ -1,11 +1,11 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeTool } from "@tests/test-data/tools";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { Tool } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import MyToolsLanding from "./MyToolsLanding.vue";
@@ -14,11 +14,10 @@ vi.mock("@/composables/config");
 
 const localVue = getLocalVue();
 
-function makeTool(id: string): Tool {
-    return { id, name: id, description: "", version: "1.0", model_class: "Tool" } as unknown as Tool;
-}
-
-const TOOLS = { cat1: makeTool("cat1"), cat2: makeTool("cat2") };
+const TOOLS = {
+    cat1: getFakeTool({ id: "cat1", name: "cat1" }),
+    cat2: getFakeTool({ id: "cat2", name: "cat2" }),
+};
 const FAVORITE_ORDER = [
     { object_type: "tools", object_id: "cat1" },
     { object_type: "tools", object_id: "cat2" },
