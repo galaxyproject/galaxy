@@ -2554,6 +2554,12 @@ class MinimalJobWrapper(HasResourceParameters):
             for metric_name, metric_value in properties.items():
                 if metric_value is not None:
                     has_metrics.add_metric(plugin, metric_name, metric_value)
+        actual_platform = per_plugin_properties.get("core", {}).get("platform")
+        if actual_platform and self.platform and actual_platform != self.platform:
+            log.warning(
+                f"Job {self.job_id} ran on platform {actual_platform} but destination "
+                f"{job.destination_id} requests platform {self.platform}"
+            )
 
     def get_output_sizes(self):
         sizes = []

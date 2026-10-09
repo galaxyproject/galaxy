@@ -292,6 +292,7 @@ Many sites share the Conda prefix with all compute nodes over NFS. Nodes of a di
 is installed on. With the ``platforms`` option Galaxy installs every tool environment for each configured platform
 into the same prefix, and the job script of a job selects the environment of the platform it runs on. The compute
 nodes need no Conda installation and no configuration beyond access to the shared prefix.
+The job information page shows the platform that ran a job as the Platform metric.
 
 Configure the platforms globally in ``galaxy.yml``:
 
