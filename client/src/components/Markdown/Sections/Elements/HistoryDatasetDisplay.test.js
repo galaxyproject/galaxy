@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -41,20 +41,18 @@ vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: vi.fn(() => mockHistoryStore),
 }));
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
 const { server, http } = useServerMock();
 
 function setUpDatatypesStore() {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    const datatypesStore = useDatatypesMapperStore();
+    const datatypesStore = useDatatypesMapperStore(pinia);
     datatypesStore.datatypesMapper = testDatatypesMapper;
     return pinia;
 }
 
 describe("HistoryDatasetDisplay", () => {
-    let wrapper;
-
     const tabularDatasetId = "someId";
     const tabular = { item_data: "29994\t-1.25\n37191\t-1.05\n36810\t2.08\n33320\t1.15" };
     const tabularMetaData = {
@@ -72,54 +70,56 @@ describe("HistoryDatasetDisplay", () => {
     const textMetaData = { extension: "txt", name: "someName", state: "ok", peek: "needs a peek" };
 
     async function mountTarget(datasetId, metaData, content, propsData = {}) {
-        server.resetHandlers();
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(metaData)),
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(content)),
         );
-        wrapper = mount(HistoryDatasetDisplay, {
-            global: localVue,
+        const localVue = getLocalVue();
+        const pinia = setUpDatatypesStore();
+        const wrapper = mount(HistoryDatasetDisplay, {
+            global: withPlugins(localVue, pinia),
             propsData: { datasetId, ...propsData },
-            pinia: setUpDatatypesStore(),
         });
         await flushPromises();
+        return wrapper;
     }
 
     beforeEach(() => {
         vi.mocked(copyDataset).mockReset();
         vi.mocked(Toast.success).mockReset();
         vi.mocked(Toast.error).mockReset();
+        mockHistoryStore.loadCurrentHistory.mockReset();
         mockHistoryStore.currentHistoryId = "current_history_id";
     });
 
-    it("should render table", async () => {
-        await mountTarget(tabularDatasetId, tabularMetaData, tabular);
+    it("renders tabular content with all cells and column headers", async () => {
+        const wrapper = await mountTarget(tabularDatasetId, tabularMetaData, tabular);
         expect(wrapper.find("table").exists()).toBe(true);
         expect(wrapper.findAll("td").length).toBe(tabularTableDataCounts);
         expect(wrapper.findAll("th").length).toBe(tabularMetaData.metadata_columns);
     });
 
-    it("should render text", async () => {
-        await mountTarget(textDatasetId, textMetaData, text);
+    it("renders text content", async () => {
+        const wrapper = await mountTarget(textDatasetId, textMetaData, text);
         const renderedText = wrapper.find(".word-wrap-normal");
         expect(renderedText.exists()).toBe(true);
         expect(renderedText.text()).toBe(text.item_data);
     });
 
-    it("should render header with embedded true", async () => {
-        await mountTarget(textDatasetId, textMetaData, text);
+    it("hides the dataset header when embedded becomes true", async () => {
+        const wrapper = await mountTarget(textDatasetId, textMetaData, text);
         expect(wrapper.find(".card-header").exists()).toBe(true);
         await wrapper.setProps({ embedded: true });
         expect(wrapper.find(".card-header").exists()).toBe(false);
     });
 
-    it("should expand dataset", async () => {
-        await mountTarget(textDatasetId, textMetaData, text);
-        const expandBTN = wrapper.find(SELECTORS.EXPAND_BUTTON);
-        expect(expandBTN.exists()).toBe(true);
+    it("expands text content when the expand button is clicked", async () => {
+        const wrapper = await mountTarget(textDatasetId, textMetaData, text);
+        const expandButton = wrapper.find(SELECTORS.EXPAND_BUTTON);
+        expect(expandButton.exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset").exists()).toBe(true);
 
-        await expandBTN.trigger("click");
+        await expandButton.trigger("click");
 
         expect(wrapper.find(SELECTORS.COLLAPSE_BUTTON).exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset-expanded").exists()).toBe(true);
@@ -127,12 +127,12 @@ describe("HistoryDatasetDisplay", () => {
 
     it("copies the dataset into the current history and shows a success toast", async () => {
         vi.mocked(copyDataset).mockResolvedValueOnce({});
-        await mountTarget(textDatasetId, textMetaData, text);
+        const wrapper = await mountTarget(textDatasetId, textMetaData, text);
 
-        const importBtn = wrapper.find(SELECTORS.IMPORT_BUTTON);
-        expect(importBtn.exists()).toBe(true);
+        const importButton = wrapper.find(SELECTORS.IMPORT_BUTTON);
+        expect(importButton.exists()).toBe(true);
 
-        await importBtn.trigger("click");
+        await importButton.trigger("click");
         await flushPromises();
 
         expect(copyDataset).toHaveBeenCalledWith(textDatasetId, "current_history_id");
@@ -142,7 +142,7 @@ describe("HistoryDatasetDisplay", () => {
 
     it("shows an error toast if copying the dataset fails", async () => {
         vi.mocked(copyDataset).mockRejectedValueOnce(new Error("failed"));
-        await mountTarget(textDatasetId, textMetaData, text);
+        const wrapper = await mountTarget(textDatasetId, textMetaData, text);
 
         await wrapper.find(SELECTORS.IMPORT_BUTTON).trigger("click");
         await flushPromises();
