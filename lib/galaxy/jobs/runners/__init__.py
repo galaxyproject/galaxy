@@ -35,6 +35,7 @@ from galaxy.job_execution.output_collect import (
 )
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
+from galaxy.jobs.oidc_user import configure_destination as configure_oidc_username
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
@@ -605,6 +606,7 @@ class BaseJobRunner:
             output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
         )
 
+        configure_oidc_username(job_wrapper)
         destination_info = job_wrapper.job_destination.params
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:

@@ -4,15 +4,21 @@
 """
 
 import os
+import re
 import shlex
 import sys
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import (
+    Any,
     TYPE_CHECKING,
 )
 
 if TYPE_CHECKING:
     from .container_volumes import DockerVolume
 
+from galaxy.exceptions import ConfigurationError
+from galaxy.util import asbool
 from galaxy.util.commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
@@ -27,6 +33,93 @@ DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
 DEFAULT_SET_USER = None if sys.platform == "darwin" else "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
+
+UID_VARIABLE = "GALAXY_DOCKER_UID"
+GID_VARIABLE = "GALAXY_DOCKER_GID"
+GROUPS_VARIABLE = "GALAXY_DOCKER_GROUPS"
+GROUP_ARGUMENTS_VARIABLE = "GALAXY_DOCKER_GROUP_ARGS"
+# ``--user`` value and extra arguments naming whatever ``build_docker_user_setup_command``
+# resolved. Both layers that emit these must agree, so keep them here with the builder.
+HOST_RESOLVED_USER = f'"${UID_VARIABLE}:${GID_VARIABLE}"'
+HOST_RESOLVED_GROUP_ARGUMENTS = f"${GROUP_ARGUMENTS_VARIABLE}"
+
+# Destination parameters (``docker_`` prefixed) shared by the job runner that resolves an
+# identity from an OIDC token claim and the container class that consumes it.
+USERNAME_FROM_TOKEN_PROP = "username_from_token"
+USERNAME_FROM_OIDC_TOKEN_CLAIM_PROP = "username_from_oidc_token_claim"
+USERNAME_FROM_OIDC_TOKEN_CLAIM_PARAM = f"docker_{USERNAME_FROM_OIDC_TOKEN_CLAIM_PROP}"
+
+ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+@dataclass(frozen=True)
+class UsernameFromTokenOptions:
+    """How an identity resolved from an OIDC token claim is applied to a container."""
+
+    set_user: bool = False
+    expose_as_env: str | None = None
+
+    @property
+    def enabled(self) -> bool:
+        return self.set_user or bool(self.expose_as_env)
+
+
+def parse_username_from_token_options(config: Any) -> UsernameFromTokenOptions:
+    """Validate the part of ``docker_username_from_oidc_token_claim`` the container layer uses.
+
+    Which providers and claims supply the identity is validated in ``galaxy.jobs.oidc_user``,
+    which can reach Galaxy's auth machinery.
+    """
+    if not config:
+        return UsernameFromTokenOptions()
+    if not isinstance(config, Mapping):
+        raise ConfigurationError(f"{USERNAME_FROM_OIDC_TOKEN_CLAIM_PARAM} must be a mapping")
+    try:
+        set_user = asbool(config.get("set_user", False))
+    except ValueError as exc:
+        raise ConfigurationError(f"{USERNAME_FROM_OIDC_TOKEN_CLAIM_PARAM} set_user must be a boolean") from exc
+    expose_as_env = config.get("expose_as_env")
+    if expose_as_env is not None and (
+        not isinstance(expose_as_env, str) or not ENV_NAME_PATTERN.fullmatch(expose_as_env)
+    ):
+        raise ConfigurationError(
+            f"{USERNAME_FROM_OIDC_TOKEN_CLAIM_PARAM} expose_as_env must be an environment variable name"
+        )
+    return UsernameFromTokenOptions(set_user=set_user, expose_as_env=expose_as_env or None)
+
+
+def build_docker_user_setup_command(username: str, include_groups: bool = False) -> str:
+    """Resolve a literal account on the execution host, aborting on invalid identity data."""
+    quoted_username = shlex.quote(username)
+    commands = []
+    for variable, flag, label in (
+        (UID_VARIABLE, "-u", "UID"),
+        (GID_VARIABLE, "-g", "GID"),
+    ):
+        commands.append(f"""{variable}=$(id {flag} -- {quoted_username}) || {{
+    echo "Failed to resolve Docker user {label} on the execution host" >&2
+    exit 1
+}}
+case "${variable}" in
+    ''|*[!0-9]*) echo "Invalid Docker user {label} on the execution host" >&2; exit 1;;
+esac""")
+    if include_groups:
+        commands.append(f"""{GROUPS_VARIABLE}=$(id -G -- {quoted_username}) || {{
+    echo "Failed to resolve Docker user groups on the execution host" >&2
+    exit 1
+}}
+case "${GROUPS_VARIABLE}" in
+    ''|*[!0-9\\ ]*) echo "Invalid Docker user groups on the execution host" >&2; exit 1;;
+esac
+{GROUP_ARGUMENTS_VARIABLE}=""
+for galaxy_docker_group in ${GROUPS_VARIABLE}; do
+    {GROUP_ARGUMENTS_VARIABLE}="${GROUP_ARGUMENTS_VARIABLE} --group-add $galaxy_docker_group"
+done
+[ -n "${GROUP_ARGUMENTS_VARIABLE}" ] || {{
+    echo "Empty Docker user groups on the execution host" >&2
+    exit 1
+}}""")
+    return "\n".join(commands)
 
 
 def kill_command(container: str, signal: str | None = None, **kwds) -> list[str]:
