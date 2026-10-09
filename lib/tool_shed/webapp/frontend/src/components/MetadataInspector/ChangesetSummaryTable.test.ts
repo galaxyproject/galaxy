@@ -1,17 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from "vitest"
-import { mount } from "@vue/test-utils"
+import { describe, it, expect, afterEach } from "vitest"
+import { enableAutoUnmount, mount } from "@vue/test-utils"
 import { nextTick } from "vue"
 import ChangesetSummaryTable from "./ChangesetSummaryTable.vue"
-import { getChangesetDetails, resetMetadataPreview, makeChangeset } from "./__fixtures__"
+import { getChangesetDetails, resetMetadataPreview, makeChangeset, type ChangesetMetadataStatus } from "./__fixtures__"
+
+enableAutoUnmount(afterEach)
 
 // Real fixture data from API
 const fixtureChangesets = getChangesetDetails(resetMetadataPreview)
 
 describe("ChangesetSummaryTable", () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
     describe("rendering with real fixture data", () => {
         it("renders a table", () => {
             const wrapper = mount(ChangesetSummaryTable, {
@@ -46,28 +44,23 @@ describe("ChangesetSummaryTable", () => {
     })
 
     describe("comparison_result display", () => {
-        it("displays friendly labels for comparison_result values", () => {
-            const changesets = [
-                makeChangeset({ comparison_result: "initial", record_operation: null }),
-                makeChangeset({ comparison_result: "not equal and not subset", record_operation: "updated" }),
-                makeChangeset({ comparison_result: "equal", record_operation: null }),
-                makeChangeset({ comparison_result: "subset", record_operation: null }),
-            ]
-
+        it.each<Pick<ChangesetMetadataStatus, "comparison_result" | "record_operation"> & { label: string }>([
+            { comparison_result: "initial", record_operation: null, label: "First revision" },
+            { comparison_result: "not equal and not subset", record_operation: "updated", label: "Modified" },
+            { comparison_result: "equal", record_operation: null, label: "Unchanged" },
+            { comparison_result: "subset", record_operation: null, label: "Expanded" },
+        ])("labels $comparison_result as $label", ({ label, ...changeset }) => {
+            const changesets = [makeChangeset(changeset)]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            // Check for friendly labels instead of raw API values
-            expect(wrapper.text()).toContain("First revision")
-            expect(wrapper.text()).toContain("Modified")
-            expect(wrapper.text()).toContain("Unchanged")
-            expect(wrapper.text()).toContain("Expanded")
+            expect(wrapper.find("td .comparison-result").text()).toBe(label)
         })
 
         it("shows dash when comparison_result is null", () => {
             const changesets = [makeChangeset({ comparison_result: null, error: "some error" })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            expect(wrapper.text()).toContain("—")
+            expect(wrapper.find("tbody tr td:nth-child(2)").text()).toBe("—")
         })
     })
 
@@ -100,10 +93,8 @@ describe("ChangesetSummaryTable", () => {
             const changesets = [makeChangeset({ comparison_result: "initial", record_operation: null })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            // Should have a dash in the snapshot column
-            const cells = wrapper.findAll("td")
-            const hasEmDash = cells.some((cell) => cell.text().includes("—"))
-            expect(hasEmDash).toBe(true)
+            const snapshotCell = wrapper.find("tbody tr td:nth-child(3)")
+            expect(snapshotCell.text()).toBe("—")
         })
     })
 
@@ -181,6 +172,7 @@ describe("ChangesetSummaryTable", () => {
             const changesets = [makeChangeset({ error: null })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
+            expect(wrapper.find("tbody tr td:nth-child(5)").text()).toBe("")
             expect(wrapper.text()).not.toContain("null")
         })
     })
@@ -190,6 +182,7 @@ describe("ChangesetSummaryTable", () => {
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets: [] } })
 
             expect(wrapper.find("table").exists()).toBe(true)
+            expect(wrapper.findAll("tbody tr")).toHaveLength(0)
         })
 
         it("truncates changeset hash to 7 characters", () => {
