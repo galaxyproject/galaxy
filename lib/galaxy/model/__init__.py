@@ -198,7 +198,10 @@ from galaxy.schema.states import (
 from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.tool_util.output_checker import AnyJobMessage
+from galaxy.tool_util.output_checker import (
+    AnyJobMessage,
+    without_tool_output,
+)
 from galaxy.tool_util_models.sample_sheet import (
     SampleSheetColumnDefinitions,
     SampleSheetRow,
@@ -607,6 +610,10 @@ def cached_id(galaxy_model_object):
     return galaxy_model_object.id
 
 
+# Tool output of jobs decrypting protected inputs may contain decrypted data.
+PROTECTED_TOOL_STREAM = "Tool output is not stored for jobs on encrypted datasets."
+
+
 class JobLike:
     job_messages: Mapped[list[AnyJobMessage] | None]
     tool_id: str | None
@@ -663,6 +670,10 @@ class JobLike:
                 )
             return galaxy.util.shrink_and_unicodify(stream)
 
+        if getattr(self, "protection_scheme", None):
+            tool_stdout = tool_stderr = PROTECTED_TOOL_STREAM
+            if job_messages is not None:
+                job_messages = without_tool_output(job_messages)
         self.tool_stdout = shrink_and_unicodify("tool_stdout", tool_stdout)
         self.tool_stderr = shrink_and_unicodify("tool_stderr", tool_stderr)
         if job_stdout is not None:
@@ -1698,6 +1709,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     destination_params: Mapped[dict[str, Any] | None] = mapped_column(MutableJSONType)
     object_store_id: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     working_directory: Mapped[str | None] = mapped_column(String(1024))
+    # Set when the job decrypts protected inputs, see galaxy.managers.dataset_protection.
+    protection_scheme: Mapped[str | None] = mapped_column(String(32))
     imported: Mapped[bool | None] = mapped_column(default=False, index=True)
     handler: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[str | None] = mapped_column(String(255))
@@ -4821,6 +4834,9 @@ class Dataset(Base, StorableObject, Serializable):
     )
     hashes: Mapped[list["DatasetHash"]] = relationship(back_populates="dataset")
     sources: Mapped[list["DatasetSource"]] = relationship(back_populates="dataset")
+    protection_grants: Mapped[list["DatasetProtectionGrant"]] = relationship(
+        back_populates="dataset", cascade="all, delete-orphan"
+    )
     history_associations: Mapped[list["HistoryDatasetAssociation"]] = relationship(back_populates="dataset")
     library_associations: Mapped[list["LibraryDatasetDatasetAssociation"]] = relationship(
         primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
@@ -13119,6 +13135,35 @@ class DatasetStorageOperationRunItem(Base):
     bytes_processed: Mapped[int] = mapped_column(BigInteger, default=0)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+
+
+class DatasetProtectionGrant(Base):
+    """
+    Server-managed authorization for a user to compute on a protected (encrypted) dataset.
+
+    The scheme-specific ``grant_data`` holds bearer capabilities (e.g. Crypt4GH headers
+    sealed to a compute key), so rows are never serialized, copied, exported or imported.
+    """
+
+    __tablename__ = "dataset_protection_grant"
+    __table_args__ = (UniqueConstraint("user_id", "dataset_id", "scheme"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"), index=True)
+    scheme: Mapped[str] = mapped_column(String(32))
+    key_ref: Mapped[str] = mapped_column(String(255))
+    expires_at: Mapped[datetime] = mapped_column()
+    grant_data: Mapped[dict[str, Any]] = mapped_column(JSONType)
+    source: Mapped[str] = mapped_column(String(64))
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+
+    user: Mapped["User"] = relationship()
+    dataset: Mapped["Dataset"] = relationship(back_populates="protection_grants")
+
+    def is_expired(self, margin: timedelta = timedelta(0)) -> bool:
+        return self.expires_at <= now() + margin
 
 
 class UserCredentials(Base):

@@ -16,7 +16,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.datatypes import sniff
+from galaxy.datatypes.crypt4gh import (
+    Crypt4GH,
+    keeps_encryption,
+)
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
     base,
@@ -52,6 +55,16 @@ from galaxy.util.hash_util import memory_bound_hexdigest
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+def ensure_datatype_change_keeps_encryption(dataset_instance: DatasetInstance, target_datatype: Any) -> None:
+    if keeps_encryption(dataset_instance.datatype, target_datatype):
+        return
+    if isinstance(dataset_instance.datatype, Crypt4GH):
+        message = "This dataset is encrypted, its datatype can only be changed to another encrypted datatype."
+    else:
+        message = "This dataset is not encrypted, its datatype can't be changed to an encrypted datatype."
+    raise exceptions.RequestParameterInvalidException(message)
 
 
 class DatasetManager(
@@ -560,8 +573,7 @@ class DatasetAssociationManager(
         self.ensure_can_change_datatype(dataset_assoc)
         self.ensure_can_set_metadata(dataset_assoc)
         assert dataset_assoc.dataset
-        path = dataset_assoc.dataset.get_file_name()
-        datatype = sniff.guess_ext(path, self.app.datatypes_registry.sniff_order)
+        datatype = self.app.datatypes_registry.redetect_ext(dataset_assoc)
         self.app.datatypes_registry.change_datatype(dataset_assoc, datatype)
         session.commit()
         self.set_metadata(trans, dataset_assoc)
@@ -909,6 +921,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
             raise exceptions.RequestParameterInvalidException("The target datatype does not exist.")
         if not target_datatype.is_datatype_change_allowed():
             raise exceptions.RequestParameterInvalidException("The target datatype does not allow datatype changes.")
+        ensure_datatype_change_keeps_encryption(item, target_datatype)
         if not item.ok_to_edit_metadata():
             raise exceptions.RequestParameterInvalidException(
                 "Dataset metadata could not be updated because it is used as input or output of a running job."

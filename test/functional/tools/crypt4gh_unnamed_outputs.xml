@@ -1,0 +1,18 @@
+<!-- Test tool for Crypt4GH support: tools writing unnamed outputs can't use encrypted datasets. -->
+<tool id="crypt4gh_unnamed_outputs" name="crypt4gh_unnamed_outputs" version="1.0.0" profile="24.0">
+    <description>copies its input and declares unnamed outputs</description>
+    <command><![CDATA[
+cat '$input1' > '$output1' &&
+cp '$galaxy_json' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="galaxy_json">{"__unnamed_outputs": [{"destination": {"type": "hdas"}, "elements": []}]}
+</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt"/>
+    </outputs>
+</tool>

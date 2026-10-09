@@ -38,8 +38,13 @@ except Exception:
     METADATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "metadata")
     EXPORT_STORE_DIRECTORY = os.path.join(METADATA_DIRECTORY, "outputs_populated")
     os.makedirs(EXPORT_STORE_DIRECTORY, exist_ok=True)
-    with open(os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt"), "w") as out:
-        out.write(traceback.format_exc())
+    traceback_path = os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt")
+    # Don't overwrite a traceback from a setup step that ran before the tool
+    # (e.g. remote_tool_eval.py) — that failure is the root cause and should be
+    # surfaced to the user, not masked by the secondary metadata-collection failure.
+    if not os.path.exists(traceback_path):
+        with open(traceback_path, "w") as out:
+            out.write(traceback.format_exc())
     raise
 """
 
@@ -88,6 +93,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         tool=None,
         job: galaxy.model.Job | None = None,
         link_data_only: bool = False,
+        protection_plan: str | None = None,
         kwds=None,
     ):
         """Setup files needed for external metadata collection.
@@ -170,6 +176,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         tool=None,
         job: galaxy.model.Job | None = None,
         link_data_only: bool = False,
+        protection_plan: str | None = None,
         kwds=None,
     ):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
@@ -227,6 +234,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "max_discovered_files": max_discovered_files,
             "outputs": outputs,
             "change_datatype_actions": job.get_change_datatype_actions(),
+            # Path of the plan of protected jobs on the compute host, their outputs must be encrypted.
+            "protection_plan": protection_plan,
         }
 
         # export model objects and object store configuration for extended metadata also.

@@ -33,5 +33,6 @@ Galaxy Deployment & Administration
    db_migration
    useful_scripts
    ga4gh
+   crypt4gh
    options
    migrating_to_gunicorn

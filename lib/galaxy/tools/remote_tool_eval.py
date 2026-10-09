@@ -10,7 +10,12 @@ from typing import (
 
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
-from galaxy.job_execution.compute_environment import SharedComputeEnvironment
+from galaxy.job_execution.compute_environment import (
+    ComputeEnvironment,
+    ProtectedInputsComputeEnvironment,
+    SharedComputeEnvironment,
+)
+from galaxy.job_execution.protection import ProtectionPlan
 from galaxy.job_execution.setup import JobIO
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.metadata.set_metadata import (
@@ -117,7 +122,13 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
     tool_evaluator = evaluation.RemoteToolEvaluator(
         app=app, tool=tool, job=job_io.job, local_working_directory=working_directory
     )
-    tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
+    compute_environment: ComputeEnvironment = SharedComputeEnvironment(job_io=job_io, job=job_io.job)
+    if job_io.protection_plan_path:
+        # Inputs were decrypted before this script ran, point the tool at them.
+        compute_environment = ProtectedInputsComputeEnvironment(
+            compute_environment, ProtectionPlan.read(job_io.protection_plan_path)
+        )
+    tool_evaluator.set_compute_environment(compute_environment=compute_environment)
     with open(os.path.join(working_directory, "tool_script.sh"), "a") as out:
         command_line, version_command_line, extra_filenames, environment_variables, *_ = tool_evaluator.build()
         out.write(f"{version_command_line or ''}{command_line}")

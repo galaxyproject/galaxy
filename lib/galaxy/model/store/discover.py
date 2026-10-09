@@ -50,6 +50,7 @@ if TYPE_CHECKING:
         DatasetCollector,
         ToolMetadataDatasetCollector,
     )
+    from galaxy.job_execution.protection.outputs import OutputProtector
     from galaxy.model import DatasetInstance
     from galaxy.model.dataset_collections.builder import CollectionBuilder
     from galaxy.model.dataset_collections.structure import UninitializedTree
@@ -115,6 +116,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     discovered_file_count: int
 
     allows_external_output_paths: bool = False
+    # Set for jobs reading protected datasets, protects outputs before they are persisted.
+    output_protector: Optional["OutputProtector"] = None
 
     def get_job(self) -> galaxy.model.Job | None:
         return getattr(self, "job", None)
@@ -296,6 +299,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             ensure_path_in_directory(filename, self.job_working_directory)
         if extra_files:
             extra_files = safe_path_from_directory(extra_files, self.job_working_directory)
+        if self.output_protector:
+            self.output_protector.protect(primary_data, filename, extra_files, link_data=link_data)
         # Move data from temp location to dataset location
         if not link_data:
             dataset = primary_data.dataset
@@ -322,10 +327,15 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
         self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
-    @staticmethod
-    def set_datasets_metadata(datasets, datasets_attributes=None, overwrite: bool = True):
+    def set_datasets_metadata(self, datasets, datasets_attributes=None, overwrite: bool = True):
         datasets_attributes = datasets_attributes or [{} for _ in datasets]
         for primary_data, dataset_attributes in zip(datasets, datasets_attributes):
+            if self.output_protector and (protected_ext := self.output_protector.protected_ext(primary_data)):
+                # The data is encrypted now: keep the protected datatype.
+                dataset_attributes = {
+                    **self.output_protector.without_tool_metadata(dataset_attributes),
+                    "ext": protected_ext,
+                }
             # add tool/metadata provided information
             if dataset_attributes:
                 # TODO: discover_files should produce a match that encorporates this -
@@ -535,12 +545,24 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         output_name: str,
     ) -> None:
         assert self.object_store
+        outputs: list[tuple[DatasetInstance, str | None, bool, str | None]] = []
         for dataset, path, link_data_only, extra_file in zip(datasets, paths, link_data, extra_files):
-            assert dataset.dataset
             if path and not link_data_only:
                 ensure_path_in_directory(path, self.job_working_directory)
             if extra_file:
                 extra_file = safe_path_from_directory(extra_file, self.job_working_directory)
+            outputs.append((dataset, path, link_data_only, extra_file))
+        if self.output_protector:
+            # Protect the whole chunk first, concurrently: each file takes a request to the key service.
+            to_protect: list[tuple[DatasetInstance, str, str | None, bool]] = []
+            for dataset, path, link_data_only, extra_file in outputs:
+                if path:
+                    to_protect.append((dataset, path, extra_file, link_data_only))
+                else:
+                    self.output_protector.record_deferred(dataset)
+            self.output_protector.protect_all(to_protect)
+        for dataset, path, link_data_only, extra_file in outputs:
+            assert dataset.dataset
             object_store_id = self.override_object_store_id(output_name)
             if object_store_id:
                 dataset.dataset.object_store_id = object_store_id

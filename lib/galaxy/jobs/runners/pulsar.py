@@ -45,6 +45,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -568,6 +569,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         remote_container = None
 
         fail_or_resubmit = False
+        fail_message: str | None = None
         try:
             client = self.get_client_from_wrapper(job_wrapper)
             assert job_wrapper.tool is not None
@@ -591,7 +593,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             try:
                 job_prepare_ret = job_wrapper.prepare(**prepare_kwds)
             except Exception as e:
-                if isinstance(e, ParameterValueError):
+                if isinstance(e, (ParameterValueError, ProtectionError)):
                     log.info("parameter validation error preparing job %d: %s", job_wrapper.job_id, unicodify(e))
                 else:
                     log.exception("failure preparing job %d", job_wrapper.job_id)
@@ -658,6 +660,11 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         except PulsarClientTransportError:
             log.exception("failure running job %d, Pulsar connection failed", job_wrapper.job_id)
             fail_or_resubmit = True
+        except ProtectionError as e:
+            # The destination can't run jobs decrypting data, tell the user why.
+            log.info("protected job %d refused: %s", job_wrapper.job_id, unicodify(e))
+            fail_message = str(e)
+            fail_or_resubmit = True
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -666,6 +673,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         fail_or_resubmit = fail_or_resubmit or not command_line
         if fail_or_resubmit:
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+            if fail_message:
+                job_state.fail_message = fail_message
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container

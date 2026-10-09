@@ -49,6 +49,7 @@ def finishing_job(tmp_path, request):
     wrapper.tool.stdio_regexes = []
     wrapper.tool.stdio_exit_codes = []
     wrapper.check_tool_output = MethodType(JobWrapper.check_tool_output, wrapper)
+    wrapper.setup_failure = MethodType(JobWrapper.setup_failure, wrapper)
     wrapper.fail.side_effect = MethodType(JobWrapper.fail, wrapper)
     state = InMemoryJobState(wrapper, wrapper.job_destination)
     runner = object.__new__(BaseJobRunner)

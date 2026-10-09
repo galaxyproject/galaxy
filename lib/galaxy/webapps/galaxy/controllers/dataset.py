@@ -12,12 +12,12 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.datatypes.crypt4gh import keeps_encryption
 from galaxy.datatypes.data import DatatypeConverterNotFoundException
 from galaxy.datatypes.display_applications.util import (
     decode_dataset_user,
     encode_dataset_user,
 )
-from galaxy.datatypes.sniff import guess_ext
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     MessageException,
@@ -166,7 +166,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ldatatypes = [
                 (dtype_name, dtype_name)
                 for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items()
-                if dtype_value.is_datatype_change_allowed()
+                if dtype_value.is_datatype_change_allowed() and keeps_encryption(data.datatype, dtype_value)
             ]
             ldatatypes.sort()
 
@@ -379,8 +379,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 else:
                     # we can't detect datatype if the dataset is not on disk
                     self.hda_manager.ensure_dataset_on_disk(trans, data)
-                    path = data.dataset.get_file_name()
-                    datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
+                    datatype = trans.app.datatypes_registry.redetect_ext(data)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.commit()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(

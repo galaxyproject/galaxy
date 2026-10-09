@@ -55,10 +55,20 @@ from galaxy.exceptions import (
 )
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.job_execution.compute_environment import SharedComputeEnvironment
+from galaxy.job_execution.compute_environment import (
+    ProtectedInputsComputeEnvironment,
+    SharedComputeEnvironment,
+)
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
+)
+from galaxy.job_execution.protection import (
+    PLAN_FILENAME,
+    ProtectionDestination,
+    ProtectionError,
+    ProtectionPlan,
+    RecryptorSettings,
 )
 from galaxy.job_execution.setup import (
     ensure_configs_directory,
@@ -141,6 +151,8 @@ log = logging.getLogger(__name__)
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = "/bin/bash"
+# Written by remote_tool_eval.py when it fails, before the tool runs.
+REMOTE_TOOL_EVAL_FAILURE_FILE = os.path.join("metadata", "outputs_populated", "traceback.txt")
 DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
@@ -1046,6 +1058,8 @@ class MinimalJobWrapper(HasResourceParameters):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
         self.__working_directory = None
+        # Set while preparing jobs that decrypt protected inputs: where the compute host finds the plan.
+        self.protection_plan_path: str | None = None
         if use_persisted_destination:
             self.set_cached_job_destination(JobDestination(from_job=job))
 
@@ -1173,6 +1187,9 @@ class MinimalJobWrapper(HasResourceParameters):
     @property
     def cleanup_job(self):
         """Remove the job after it is complete, should return "always", "onsuccess", or "never"."""
+        if self.get_job().protection_scheme:
+            # The job directory may hold decrypted data, never keep it around.
+            return "always"
         return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
     @property
@@ -1310,6 +1327,8 @@ class MinimalJobWrapper(HasResourceParameters):
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
+        if protection_plan := self._authorize_protected_job(job, compute_environment):
+            compute_environment = ProtectedInputsComputeEnvironment(compute_environment, protection_plan)
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
         (
             self.command_line,
@@ -1318,7 +1337,16 @@ class MinimalJobWrapper(HasResourceParameters):
             self.environment_variables,
             self.interactivetools,
         ) = tool_evaluator.build()
-        if tool_evaluator.use_cached_job and job.user and job.tool_id and not tool_evaluator.consumes_names:
+        if protection_plan:
+            self.extra_filenames.append(self._write_protection_plan(protection_plan))
+        if (
+            tool_evaluator.use_cached_job
+            and job.user
+            and job.tool_id
+            and not tool_evaluator.consumes_names
+            # Outputs of protected jobs are encrypted for the job's user, never reuse them.
+            and not job.protection_scheme
+        ):
             # search again, now we know tool doesn't require name match
             param_dump = {p.name: p.value for p in job.parameters if not p.name.startswith("__")}
             assert self.tool
@@ -1409,15 +1437,106 @@ class MinimalJobWrapper(HasResourceParameters):
             return
 
         jwd = JobWorkingDirectory(job, self.object_store)
-        base = jwd.cleared_contents_base()
-        date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        arc_dir = os.path.join(base, date_str)
-        shutil.move(self.working_directory, arc_dir)
+        if job.protection_scheme:
+            # An interrupted protected job may have left decrypted data behind, never keep it.
+            if jwd.delete():
+                log.debug("(%s) Previous working directory of protected job deleted", self.job_id)
+            else:
+                log.error(
+                    "(%s) Could not delete the previous working directory %s of a protected job",
+                    self.job_id,
+                    self.working_directory,
+                )
+        else:
+            base = jwd.cleared_contents_base()
+            date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            arc_dir = os.path.join(base, date_str)
+            shutil.move(self.working_directory, arc_dir)
+            log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
         self._setup_working_directory(job=job)
         # Flush so the working_directory column survives the sa_session.refresh()
         # that mark_as_resubmitted() performs at the end of the resubmit flow.
         self.sa_session.flush()
-        log.debug("(%s) Previous working directory moved to %s", self.job_id, arc_dir)
+
+    def _authorize_protected_job(self, job: Job, compute_environment) -> ProtectionPlan | None:
+        """Refuse jobs that may not decrypt their inputs, plan the decryption of the others."""
+        protection = self.app.dataset_protection
+        job.protection_scheme = None
+        self.protection_plan_path = None
+        if not protection.enabled or not protection.has_protected_inputs(job):
+            # Most jobs: don't look at their parameters and destination.
+            return None
+        assert self.tool
+        plan = protection.authorize_job(
+            job,
+            self.tool,
+            self.tool.get_param_values(job),
+            self._protection_destination,
+            compute_environment,
+        )
+        if plan:
+            job.protection_scheme = plan.scheme
+            # Where the command line finds the plan on the compute host.
+            self.protection_plan_path = os.path.join(compute_environment.config_directory(), PLAN_FILENAME)
+            self.job_io.protection_plan_path = self.protection_plan_path
+        return plan
+
+    def setup_failure(self) -> str | None:
+        """Why a step running before the tool failed, if one did: the tool never ran."""
+        if self.get_job().protection_scheme and (
+            protection_failure := self.app.dataset_protection.setup_failure(self.working_directory)
+        ):
+            return protection_failure
+        eval_traceback_path = os.path.join(self.working_directory, REMOTE_TOOL_EVAL_FAILURE_FILE)
+        if not os.path.exists(eval_traceback_path):
+            return None
+        with open(eval_traceback_path) as tb:
+            eval_traceback_lines = tb.read().strip().splitlines()
+        # The full traceback is already part of job_stderr, only surface the final exception line.
+        return eval_traceback_lines[-1] if eval_traceback_lines else "unknown error"
+
+    def _write_protection_plan(self, plan: ProtectionPlan) -> str:
+        path = os.path.join(self.working_directory, "configs", PLAN_FILENAME)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        plan.write(path)
+        return path
+
+    def _protection_destination(self) -> ProtectionDestination:
+        recryptor_url = self.get_destination_configuration("crypt4gh_recryptor_url")
+        recryptor = None
+        if recryptor_url:
+            recryptor = RecryptorSettings(
+                url=recryptor_url,
+                timeout=float(self.get_destination_configuration("crypt4gh_recryptor_timeout", 30)),
+                ca_cert=self.get_destination_configuration("crypt4gh_recryptor_ca_cert"),
+                client_cert=self.get_destination_configuration("crypt4gh_recryptor_client_cert"),
+                client_key=self.get_destination_configuration("crypt4gh_recryptor_client_key"),
+                verbose_errors=util.asbool(
+                    self.get_destination_configuration("crypt4gh_recryptor_verbose_errors", False)
+                ),
+            )
+        is_pulsar = self._runs_on_pulsar()
+        return ProtectionDestination(
+            metadata_strategy=self.metadata_strategy or self.app.config.metadata_strategy,
+            # Like the job handler: tools with parallelism are split into tasks, except on Pulsar.
+            has_tasks=bool(self.can_split()) and not is_pulsar,
+            is_pulsar=is_pulsar,
+            remote_metadata=util.asbool(self.job_destination.params.get("remote_metadata", False)),
+            rewrite_parameters=util.asbool(self.job_destination.params.get("rewrite_parameters", False)),
+            recryptor=recryptor,
+            walltime=self.app.job_config.limits.walltime_delta,
+        )
+
+    def _runs_on_pulsar(self) -> bool:
+        """Whether the destination's runner plugin is a Pulsar runner, whatever its id in the job configuration."""
+        from galaxy.jobs.runners.pulsar import PulsarJobRunner
+
+        dispatcher = getattr(self.app.job_manager.job_handler, "dispatcher", None)
+        runner = dispatcher.job_runners.get(self.job_destination.runner) if dispatcher else None
+        if runner is None:
+            # Pulsar destinations have more requirements, don't guess.
+            raise ProtectionError(f"Can't find the job runner of destination '{self.job_destination.id}'.")
+        return isinstance(runner, PulsarJobRunner)
 
     def default_compute_environment(self, job=None):
         if not job:
@@ -1510,7 +1629,13 @@ class MinimalJobWrapper(HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             try:
-                if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
+                if (
+                    self.outputs_to_working_directory
+                    and not self.__link_file_check()
+                    and working_directory_exists
+                    # Outputs of protected jobs are only stored once encrypted, what the tool wrote may be plaintext.
+                    and not job.protection_scheme
+                ):
                     for dataset_path in self.job_io.get_output_fnames():
                         try:
                             shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1519,6 +1644,16 @@ class MinimalJobWrapper(HasResourceParameters):
                             log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
             except Exception as e:
                 log.exception(str(e))
+            if job.protection_scheme:
+                try:
+                    if protection_error := self.app.dataset_protection.fail_job(job, self.working_directory):
+                        # Keep why the job failed, the protection errors are a consequence of it.
+                        message = f"{message} {protection_error}" if message else protection_error
+                except Exception:
+                    log.exception(
+                        "(%s) fail(): Could not remove the outputs of a failed protected job", self.get_id_tag()
+                    )
+                self.sa_session.flush()
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -2036,12 +2171,14 @@ class MinimalJobWrapper(HasResourceParameters):
         dataset.blurb = "done"
         dataset.peek = "no peek"
         dataset.info = dataset.info or ""
-        if context["stdout"].strip():
-            # Ensure white space between entries
-            dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-        if context["stderr"].strip():
-            # Ensure white space between entries
-            dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
+        # Tool output of protected jobs may contain decrypted data, keep it out of the dataset info.
+        if not job.protection_scheme:
+            if context["stdout"].strip():
+                # Ensure white space between entries
+                dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
+            if context["stderr"].strip():
+                # Ensure white space between entries
+                dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
         self.__update_output(job, dataset)
         if not purged:
@@ -2162,6 +2299,21 @@ class MinimalJobWrapper(HasResourceParameters):
             # could also mean that a job was broken up into tasks and one of
             # the tasks failed. So include the stderr, stdout, and exit code:
             return fail()
+
+        if job.protection_scheme and (
+            setup_failure := self.app.dataset_protection.setup_failure(self.working_directory)
+        ):
+            # The tool never ran, there are no outputs to collect. Runners only staging back
+            # outputs_populated (Pulsar with remote extended metadata) don't see missing tool streams.
+            return self.fail(
+                f"Job setup failed: {setup_failure}",
+                tool_stdout="",
+                tool_stderr="",
+                exit_code=tool_exit_code,
+                job_stdout=job_stdout,
+                job_stderr=job_stderr,
+                job_metrics_directory=job_metrics_directory,
+            )
 
         extended_metadata = self.external_output_metadata.extended
 
@@ -2304,6 +2456,15 @@ class MinimalJobWrapper(HasResourceParameters):
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = Dataset.states.OK
+
+        if job.protection_scheme and (
+            protection_error := self.app.dataset_protection.finish_job(job, self.working_directory)
+        ):
+            log.warning("(%s) Protected job failed: %s", self.get_id_tag(), protection_error)
+            final_job_state = job.states.ERROR
+            job.info = protection_error
+            for dataset_assoc in output_dataset_associations:
+                dataset_assoc.dataset.info = protection_error
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -2698,6 +2859,7 @@ class MinimalJobWrapper(HasResourceParameters):
             max_discovered_files=self.app.config.max_discovered_files,
             validate_outputs=self.validate_outputs,
             link_data_only=self.__link_file_check(),
+            protection_plan=self.protection_plan_path,
             **kwds,
         )
         if resolve_metadata_dependencies:

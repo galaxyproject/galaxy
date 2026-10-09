@@ -289,6 +289,19 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
                 "reverse",
             }, f"Expected forward/reverse but got {identifiers} for '{element.element_identifier}'"
 
+    def test_remote_tool_eval_failure_surfaced_as_job_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.run_tool("cheetah_problem_unbound_var", inputs={}, history_id=history_id)
+            job_id = response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+            job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert job_details["state"] == "error"
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=response["outputs"][0]["id"], assert_ok=False
+            )
+            assert "Job setup failed" in output["misc_info"]
+            assert "Error occurred while building command line" in output["misc_info"]
+
     def test_purge_while_job_running(self):
         # pass extra_sleep, since templating the command line will fail if the output
         # is deleted before remote_tool_eval runs.
