@@ -69,8 +69,6 @@ _dist:
 dist: clean _dist
 
 _setup-mypy-venv: setup-venv
-	# Still resolved from lib/galaxy/dependencies/ during migration; future
-	# home is a repository-level requirements/ directory.
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
 _mypy:
@@ -79,8 +77,6 @@ _mypy:
 mypy: _setup-mypy-venv _mypy
 
 _setup-lint-venv: setup-venv
-	# Still resolved from lib/galaxy/dependencies/ during migration; future
-	# home is a repository-level requirements/ directory.
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
 _lint:

@@ -30,11 +30,11 @@ Resolve manifest conflicts first, then regenerate the lock with the pinned uv
 version and review the dependency diff. Do not hand-edit the lock or run an
 unrelated broad upgrade in a source-move change.
 
-This PR retains the existing `lib/` sources and package source symlinks.
-Moving source ownership into package directories is a separate change.
+Python sources live under `lib/`; package source directories link to their
+owned modules there.
 A root dev sync installs development tools and third-party dependencies;
 use a package-scoped command to install the relevant workspace members.
-Normal Galaxy startup continues to use the existing `run.sh` bootstrap.
+Start Galaxy with `./run.sh`.
 
 Here is an example workflow that syncs the shared development environment
 once from the repository root and then runs tests for a specific package:
@@ -42,7 +42,7 @@ once from the repository root and then runs tests for a specific package:
     $ git clone https://github.com/galaxyproject/galaxy.git
     $ cd galaxy
     $ uv sync --locked --group dev
-    $ uv run --locked --package galaxy-util pytest packages/util/tests
+    $ uv run --locked --package galaxy-util --group dev pytest packages/util/tests
 
 `uv lock --check` verifies the lock is up to date without modifying it.
 
@@ -70,9 +70,7 @@ The ``Makefile`` can also be used for typechecking.
     $ make _mypy  # a shortcut to just run mypy on an existing updated environment
 
 This is equivalent to syncing the package environment and then adding
-Galaxy's type checking dependencies to it. During the workspace migration
-those still live in ``lib/galaxy/dependencies/`` (future home:
-a repository-level ``requirements/`` directory):
+Galaxy's type checking dependencies from ``lib/galaxy/dependencies/``:
 
     $ uv sync --locked --package galaxy-auth --all-extras
     $ uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
