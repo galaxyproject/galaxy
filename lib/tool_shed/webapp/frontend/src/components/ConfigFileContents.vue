@@ -17,7 +17,7 @@ async function copyContents() {
 function downloadContents() {
     try {
         downloadTextFile(props.name, props.contents)
-    } catch (e) {
+    } catch {
         notify("Your browser does not allow this operation")
     }
 }

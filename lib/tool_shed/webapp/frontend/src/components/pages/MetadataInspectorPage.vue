@@ -104,13 +104,13 @@ function onResetComplete() {
                             <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
                         </GTab>
                         <GTab title="Tool History">
-                            <ToolHistoryTab :metadata="repositoryMetadata" @goToRevision="goToRevision" />
+                            <ToolHistoryTab :metadata="repositoryMetadata" @go-to-revision="goToRevision" />
                         </GTab>
                         <GTab title="Raw JSON">
                             <OverviewTab :metadata="repositoryMetadata" />
                         </GTab>
                         <GTab v-if="canManage" title="Reset Metadata">
-                            <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
+                            <ResetMetadataTab :repository-id="repositoryId" @reset-complete="onResetComplete" />
                         </GTab>
                     </GTabs>
                 </section>

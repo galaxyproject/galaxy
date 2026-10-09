@@ -99,24 +99,26 @@ const chunkUrl = computed(() => {
 
 function processChunk(chunk: TabularChunk) {
     // parsedChunk is a 2d array of strings
-    let parsedChunk = [];
+    let parsedChunk: string[][];
     try {
         parsedChunk = parse(chunk.ck_data, { delimiter: delimiter.value, relax_quotes: true });
     } catch {
         // If this blows up it's likely data in a comment or header line
         // (e.g. VCF files) so just split it by newline first then parse
         // each line individually.
-        parsedChunk = chunk.ck_data.trim().split("\n");
-        parsedChunk = parsedChunk.map((line) => {
-            try {
-                const parsedLine = parse(line, { delimiter: delimiter.value })[0];
-                return parsedLine || [line];
-            } catch {
-                // Failing lines get passed through intact for row-level
-                // rendering/parsing.
-                return [line];
-            }
-        });
+        parsedChunk = chunk.ck_data
+            .trim()
+            .split("\n")
+            .map((line) => {
+                try {
+                    const parsedLine = parse(line, { delimiter: delimiter.value })[0];
+                    return parsedLine || [line];
+                } catch {
+                    // Failing lines get passed through intact for row-level
+                    // rendering/parsing.
+                    return [line];
+                }
+            });
     }
     parsedChunk.forEach((row: string[], index: number) => {
         if (index >= (chunk.data_line_offset || 0)) {

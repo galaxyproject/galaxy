@@ -222,6 +222,18 @@ describe("PageEditorView", () => {
             expect(mockPush).not.toHaveBeenCalled();
             expect(wrapper.text()).toContain("Could not save notebook");
         });
+
+        it("titles the editor with the history name", () => {
+            expect(wrapper.findComponent(MarkdownEditor).props("title")).toBe("History: Test History");
+        });
+    });
+
+    it("falls back to the entity name when the history isn't loaded", async () => {
+        setupLoadedPage("unknown-history");
+        const wrapper = mountComponent({ pageId: PAGE_ID, historyId: "unknown-history" });
+        await flushPromises();
+
+        expect(wrapper.findComponent(MarkdownEditor).props("title")).toBe("Galaxy Notebook");
     });
 
     describe("Editor view (standalone mode)", () => {
