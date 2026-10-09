@@ -44,3 +44,4 @@ class TestCollectionSheet(SeleniumTestCase):
         sheet = self.components.collection_sheet
         sheet.error.wait_for_visible()
         sheet.loading.assert_absent()
+        self.screenshot("collection_sheet_load_error")
