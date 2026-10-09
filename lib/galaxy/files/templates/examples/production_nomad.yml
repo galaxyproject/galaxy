@@ -1,0 +1,8 @@
+- id: nomad
+  version: 0
+  name: NOMAD
+  description: |
+      Browse and import public data from [NOMAD](https://nomad-lab.eu), a materials science repository.
+  configuration:
+      type: nomad
+      base_url: https://nomad-lab.eu/prod/v1

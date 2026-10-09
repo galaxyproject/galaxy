@@ -63,6 +63,7 @@ FileSourceTemplateType = Literal[
     "commoncrawl",
     "gitlab",
     "arc",
+    "nomad",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -642,6 +643,18 @@ class ARCFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class NomadFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["nomad"]
+    base_url: str | TemplateExpansion
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class NomadFileSourceConfiguration(StrictModel):
+    type: Literal["nomad"]
+    base_url: str
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -671,7 +684,8 @@ FileSourceTemplateConfiguration = Annotated[
     | CKANFileSourceTemplateConfiguration
     | CommonCrawlFileSourceTemplateConfiguration
     | GitLabFileSourceTemplateConfiguration
-    | ARCFileSourceTemplateConfiguration,
+    | ARCFileSourceTemplateConfiguration
+    | NomadFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -704,7 +718,8 @@ FileSourceConfiguration = Annotated[
     | CKANFileSourceConfiguration
     | CommonCrawlFileSourceConfiguration
     | GitLabFileSourceConfiguration
-    | ARCFileSourceConfiguration,
+    | ARCFileSourceConfiguration
+    | NomadFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -798,6 +813,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "commoncrawl": CommonCrawlFileSourceConfiguration,
     "gitlab": GitLabFileSourceConfiguration,
     "arc": ARCFileSourceConfiguration,
+    "nomad": NomadFileSourceConfiguration,
 }
 
 
