@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
+import { statusMessage } from "@/utils/simple-error";
 
 /** Data populator traverses raw server responses **/
 export class Services {
@@ -15,7 +16,8 @@ export class Services {
                 .catch((e) => {
                     let errorMessage = "Request failed.";
                     if (e.response) {
-                        errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+                        errorMessage =
+                            e.response.data.err_msg || statusMessage(e.response.status, e.response.statusText ?? "");
                     }
                     reject(errorMessage);
                 });
