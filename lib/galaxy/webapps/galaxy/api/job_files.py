@@ -134,9 +134,14 @@ class FastAPIJobFiles:
                 raise exceptions.RequestParameterInvalidException("Client disconnected during job files upload.")
             for key, value in fields.items():
                 params.setdefault(key, value)
+            if query_auth:
+                # The path was authorized before the body was read; only the job can have finished since.
+                await anyio.to_thread.run_sync(self.manager.assert_job_active, job_id)
+            else:
+                await anyio.to_thread.run_sync(
+                    self.manager.authorize_write, job_id, params.get("path"), params.get("job_key")
+                )
             path = params.get("path")
-            # With query auth this re-checks the job is still active after the (possibly long) upload.
-            await anyio.to_thread.run_sync(self.manager.authorize_write, job_id, path, params.get("job_key"))
             assert path
             if "__file_path" in params:
                 source_path = await anyio.to_thread.run_sync(self.manager.nginx_upload_path, params["__file_path"])

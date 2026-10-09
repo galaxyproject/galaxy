@@ -102,8 +102,11 @@ def test_completed_job(manager, security, job, state):
     job_id, job_key = _keys(security)
     path = os.path.join(_working_directory(job), "out")
     assert manager.authorize_write(job_id, path, job_key)
-    # The endpoint re-authorizes after the body arrives, so a job that finished mid-upload is rejected.
+    manager.assert_job_active(job_id)
+    # The endpoint re-checks the job after the body arrives, so a job that finished mid-upload is rejected.
     job.state = state
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.assert_job_active(job_id)
     with pytest.raises(exceptions.ItemAccessibilityException):
         manager.authorize_write(job_id, path, job_key)
     with pytest.raises(exceptions.ItemAccessibilityException):

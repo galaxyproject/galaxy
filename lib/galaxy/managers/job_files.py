@@ -69,6 +69,10 @@ class JobFilesManager:
             return os.path.dirname(dataset_path)
         raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
+    def assert_job_active(self, encoded_job_id: str) -> None:
+        """Check that a job whose write was already authorized is still queued or running."""
+        self._active_job(self._security.decode_id(encoded_job_id))
+
     def nginx_upload_path(self, file_path: str) -> str:
         upload_store = self._config.nginx_upload_job_files_store
         if not upload_store:
@@ -110,6 +114,9 @@ class JobFilesManager:
         job_id = self._security.decode_id(encoded_job_id)
         if not util.safe_str_cmp(job_key, self._security.encode_id(job_id, kind="jobs_files")):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
+        return self._active_job(job_id), path
+
+    def _active_job(self, job_id: int) -> Job:
         job = self._sa_session.get(Job, job_id)
         if not job:
             raise exceptions.ObjectNotFound("Job not found.")
@@ -117,7 +124,7 @@ class JobFilesManager:
             raise exceptions.ItemAccessibilityException(
                 "Attempting to read or modify the files of a job that has already completed."
             )
-        return job, path
+        return job
 
     def _output_dataset_path(self, job: Job, path: str) -> str | None:
         """Return the file of the output dataset that ``path`` is, or is an extra file of."""
