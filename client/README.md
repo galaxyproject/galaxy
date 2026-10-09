@@ -506,24 +506,24 @@ expect(wrapper.text()).toContain("new");
 
 The following test files demonstrate specific patterns well and can serve as references:
 
-| Pattern                       | Example File                                                            | What It Demonstrates                                                                  |
-| ----------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **API mocking basics**        | `src/api/client/serverMock.test.ts`                                     | Core useServerMock patterns: query params, path params, status codes, typed responses |
-| **Multiple HTTP methods**     | `src/composables/userToolCredentials.test.ts`                           | GET, POST, PUT, DELETE in one test; query param filtering; 204 empty responses        |
-| **Conditional API responses** | `src/composables/taskMonitor.test.ts`                                   | Switch statement pattern for different task states (PENDING, SUCCESS, FAILURE)        |
-| **Paginated API responses**   | `src/stores/collectionElementsStore.test.ts`                            | Dynamic response generation based on offset/limit query params                        |
-| **API error handling**        | `src/components/History/Export/HistoryExport.test.ts`                   | 4XX/5XX error responses with err_code and err_msg                                     |
-| **Config composable mock**    | `src/entry/analysis/modules/Login.test.ts`                              | Using setMockConfig() helper to customize Galaxy configuration                        |
-| **Config mock (simple)**      | `src/components/Citation/CitationsList.test.ts`                         | Basic vi.mock pattern for useConfig                                                   |
-| **Shared YAML**               | `src/components/Collections/pairing.test.ts`                            | Defining YAML specifications that can be shared between frontend and backend          |
-| **Stub with methods**         | `src/components/Workflow/Editor/Index.test.ts`                          | Stubbing components with methods and `expose` for template refs                       |
-| **Stub with factory**         | `src/components/Tool/ToolForm.test.js`                                  | MockCurrentHistory() factory for configurable stubs                                   |
-| **Selective stubbing**        | `src/components/History/Content/ContentItem.test.js`                    | Mix of stubbed (`true`) and rendered (`false`) components                             |
-| **Named slots**               | `src/components/Popper/Popper.test.js`                                  | Testing multiple named slots with HTML string content                                 |
-| **Multiple slots**            | `src/components/Form/FormCardSticky.test.js`                            | Testing buttons, default, and footer slots together                                   |
-| **Scoped slots mock**         | `src/components/Visualizations/DisplayApplications.test.js`             | Mocking provider component with $scopedSlots                                          |
-| **Slots in stubs**            | `src/components/Markdown/Editor/Configurations/ConfigureHeader.test.js` | Stub templates that include slot definitions                                          |
-| **Test data factory**         | `tests/test-data/index.ts`                                              | getFakeRegisteredUser() pattern for reusable mock data                                |
+| Pattern                     | Example File                                                            | What It Demonstrates                                                                  |
+| --------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **API mocking basics**      | `src/api/client/serverMock.test.ts`                                     | Core useServerMock patterns: query params, path params, status codes, typed responses |
+| **Multiple HTTP methods**   | `src/composables/userToolCredentials.test.ts`                           | GET, POST, PUT, DELETE in one test; query param filtering; 204 empty responses        |
+| **Task monitoring**         | `src/composables/taskMonitor.test.ts`                                   | Task states, failure reasons, and request errors                                      |
+| **Paginated API responses** | `src/stores/collectionElementsStore.test.ts`                            | Dynamic response generation based on offset/limit query params                        |
+| **API error handling**      | `src/components/History/Export/HistoryExport.test.ts`                   | 4XX/5XX error responses with err_code and err_msg                                     |
+| **Config composable mock**  | `src/entry/analysis/modules/Login.test.ts`                              | Using setMockConfig() helper to customize Galaxy configuration                        |
+| **Config mock (simple)**    | `src/components/Citation/CitationsList.test.ts`                         | Basic vi.mock pattern for useConfig                                                   |
+| **Shared YAML**             | `src/components/Collections/pairing.test.ts`                            | Defining YAML specifications that can be shared between frontend and backend          |
+| **Stub with methods**       | `src/components/Workflow/Editor/Index.test.ts`                          | Stubbing components with methods and `expose` for template refs                       |
+| **Stub with factory**       | `src/components/Tool/ToolForm.test.js`                                  | MockCurrentHistory() factory for configurable stubs                                   |
+| **Selective stubbing**      | `src/components/History/Content/ContentItem.test.js`                    | Mix of stubbed (`true`) and rendered (`false`) components                             |
+| **Named slots**             | `src/components/Popper/Popper.test.js`                                  | Testing multiple named slots with HTML string content                                 |
+| **Multiple slots**          | `src/components/Form/FormCardSticky.test.js`                            | Testing buttons, default, and footer slots together                                   |
+| **Scoped slots mock**       | `src/components/Visualizations/DisplayApplications.test.js`             | Mocking provider component with $scopedSlots                                          |
+| **Slots in stubs**          | `src/components/Markdown/Editor/Configurations/ConfigureHeader.test.js` | Stub templates that include slot definitions                                          |
+| **Test data factory**       | `tests/test-data/index.ts`                                              | getFakeRegisteredUser() pattern for reusable mock data                                |
 
 #### Best Practices Summary
 
