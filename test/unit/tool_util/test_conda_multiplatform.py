@@ -64,6 +64,18 @@ if argv[:1] == ["create"]:
         prefix = os.path.join(os.path.dirname(here), "envs", argv[argv.index("--name") + 1])
     os.makedirs(os.path.join(prefix, "conda-meta"), exist_ok=True)
     open(os.path.join(prefix, "conda-meta", "history"), "w").close()
+    for rel in ("bin/tool", "share/note.txt"):
+        os.makedirs(os.path.dirname(os.path.join(prefix, rel)), exist_ok=True)
+        with open(os.path.join(prefix, rel), "w") as fh:
+            fh.write("content")
+    record = {{"name": "pkg", "paths_data": {{"paths": [
+        {{"_path": "bin/tool", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
+        {{"_path": "share/note.txt", "file_mode": "text", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
+        {{"_path": "bin/gone", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
+        {{"_path": "bin/plain", "path_type": "hardlink"}},
+    ]}}}}
+    with open(os.path.join(prefix, "conda-meta", "pkg-1.0-0.json"), "w") as fh:
+        json.dump(record, fh)
     sys.exit(0)
 sys.exit(0)
 """
@@ -96,6 +108,51 @@ class FakeConda:
 
     def creates(self) -> List[Dict[str, Any]]:
         return [c for c in self.calls("create")]
+
+
+FAKE_SIGNER = """\
+#!{python}
+import json, os, sys
+here = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(here, "signer.log"), "a") as fh:
+    fh.write(json.dumps(sys.argv[1:]) + "\\n")
+if os.path.exists(os.path.join(here, "fail_sign")):
+    sys.stderr.write("fake signer error\\n")
+    sys.exit(1)
+sys.exit(0)
+"""
+
+
+class FakeSigner:
+    def __init__(self, base: str) -> None:
+        self.dir = os.path.join(base, "signer")
+        os.makedirs(self.dir)
+        self.exec = os.path.join(self.dir, "rcodesign")
+        with open(self.exec, "w") as fh:
+            fh.write(FAKE_SIGNER.format(python=sys.executable))
+        os.chmod(self.exec, os.stat(self.exec).st_mode | stat.S_IEXEC)
+
+    def fail(self) -> None:
+        open(os.path.join(self.dir, "fail_sign"), "w").close()
+
+    def calls(self) -> List[List[str]]:
+        path = os.path.join(self.dir, "signer.log")
+        if not os.path.exists(path):
+            return []
+        with open(path) as fh:
+            return [json.loads(line) for line in fh if line.strip()]
+
+
+@pytest.fixture(autouse=True)
+def no_signer_on_path(monkeypatch, tmp_path) -> None:
+    empty = tmp_path / "emptybin"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", f"{empty}:/usr/bin:/bin")
+
+
+@pytest.fixture
+def fake_signer(tmp_path) -> FakeSigner:
+    return FakeSigner(str(tmp_path))
 
 
 @pytest.fixture
@@ -221,8 +278,10 @@ def test_foreign_base_failure_is_not_fatal(fake_conda: FakeConda, tmp_path) -> N
     assert not os.path.exists(os.path.join(fake_conda.prefix, "platforms", "linux-aarch64", "conda-meta", "history"))
 
 
-def test_environment_creation_per_platform(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64")
+def test_environment_creation_per_platform(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    resolver = make_resolver(
+        fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec
+    )
     context = resolver.conda_context
     n_before = len(fake_conda.creates())
     targets = [CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7")]
@@ -319,8 +378,10 @@ def test_merged_environment_per_platform(fake_conda: FakeConda, tmp_path) -> Non
     assert "/platforms/linux-aarch64/bin/activate" in foreign[0].shell_commands()
 
 
-def test_platforms_for_requirements(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64")
+def test_platforms_for_requirements(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    resolver = make_resolver(
+        fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec
+    )
     dm = resolver.dependency_manager
     context = resolver.conda_context
     install_conda_target(CondaTarget("samtools", version="1.9"), context)
@@ -358,3 +419,80 @@ def test_extra_env_per_call(fake_conda: FakeConda) -> None:
     assert fake_conda.creates()[-1]["CONDARC"] == context.condarc_override
     assert context.exec_create(["--name", "y"]) == 0
     assert fake_conda.creates()[-1]["CONDA_SUBDIR"] is None
+
+
+def env_binary(fake: FakeConda, subdir: str, env_name: str) -> str:
+    return os.path.join(fake.prefix, "platforms", subdir, "envs", env_name, "bin", "tool")
+
+
+def test_osx_signs_only_patched_binaries(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path, caplog) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec)
+    base_signed = fake_signer.calls()
+    base = os.path.join(fake_conda.prefix, "platforms", "osx-arm64")
+    assert base_signed == [["sign", os.path.join(base, "bin", "tool")]]
+    with caplog.at_level("INFO"):
+        install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    calls = fake_signer.calls()[len(base_signed) :]
+    assert calls == [["sign", env_binary(fake_conda, "osx-arm64", "__samtools@1.9")]]
+    assert os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+    assert "Signed 1 files (0 failed)" in caplog.text
+
+
+def test_osx_64_is_signed_too(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="osx-64", codesign_exec=fake_signer.exec)
+    install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    assert ["sign", env_binary(fake_conda, "osx-64", "__samtools@1.9")] in fake_signer.calls()
+    assert os.path.exists(foreign_marker(fake_conda, "osx-64", "__samtools@1.9"))
+
+
+def test_nothing_signed_for_linux(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", codesign_exec=fake_signer.exec)
+    install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    assert fake_signer.calls() == []
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+
+
+def test_failing_signer_leaves_no_marker(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path, caplog) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=fake_signer.exec)
+    fake_signer.fail()
+    with caplog.at_level("INFO"):
+        assert install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context) == 0
+    assert os.path.isdir(os.path.join(fake_conda.prefix, "platforms", "osx-arm64", "envs", "__samtools@1.9"))
+    assert not os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+    assert "fake signer error" in caplog.text
+    assert "Signed 0 files (1 failed)" in caplog.text
+    assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="osx-arm64"), NullDependency)
+
+
+def test_no_signer_warns_once_and_leaves_no_osx_marker(fake_conda: FakeConda, tmp_path, caplog) -> None:
+    with caplog.at_level("WARNING"):
+        resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64")
+    warnings = [r for r in caplog.records if "No code signer found" in r.getMessage()]
+    assert len(warnings) == 1
+    assert "codesign_exec" in warnings[0].getMessage()
+    install_conda_target(CondaTarget("samtools", version="1.9"), resolver.conda_context)
+    assert not os.path.exists(foreign_marker(fake_conda, "osx-arm64", "__samtools@1.9"))
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", "__samtools@1.9"))
+    assert os.path.exists(os.path.join(fake_conda.prefix, "envs", "__samtools@1.9", PLATFORM_OK_MARKER))
+
+
+def test_no_warning_without_osx_platform(fake_conda: FakeConda, tmp_path, caplog) -> None:
+    with caplog.at_level("WARNING"):
+        make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    assert "No code signer found" not in caplog.text
+
+
+def test_signer_found_on_path(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path, monkeypatch, caplog) -> None:
+    monkeypatch.setenv("PATH", f"{fake_signer.dir}:/usr/bin:/bin")
+    with caplog.at_level("WARNING"):
+        resolver = make_resolver(fake_conda, tmp_path, platforms="osx-arm64")
+    assert resolver.conda_context.codesign_exec == fake_signer.exec
+    assert "No code signer found" not in caplog.text
+
+
+def test_codesign_exec_from_global_config(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    dependency_manager = make_dependency_manager(tmp_path, conda_codesign_exec=fake_signer.exec)
+    resolver = CondaDependencyResolver(dependency_manager, prefix=fake_conda.prefix, exec=fake_conda.exec)
+    assert resolver.conda_context.codesign_exec == fake_signer.exec

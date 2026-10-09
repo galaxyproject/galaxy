@@ -291,6 +291,27 @@ set, it creates the same environment for every foreign platform with ``CONDA_SUB
 records each success in a marker file. An environment that cannot be created for a foreign platform is logged and
 does not affect the native installation.
 
+Signing of macOS environments
+.............................
+
+Conda rewrites the install prefix inside Mach-O binaries and dylibs, which invalidates their code signature. Apple
+silicon refuses to run such files. Conda re-signs them only when it runs on macOS. For ``osx-64`` and ``osx-arm64``
+Galaxy therefore signs these files on the head node after each successful create, using ``rcodesign`` from the
+`apple-codesign <https://github.com/indygreg/apple-platform-rs>`_ project, which produces the same ad-hoc signature as
+``codesign -s -`` and runs on Linux. The files are taken from the ``conda-meta`` records of the environment: those
+with ``file_mode: binary`` and a ``prefix_placeholder``. Each is signed with ``rcodesign sign <file>``. The number of
+signed and failed files is logged. If a file cannot be signed, the environment is kept but is not marked as usable, so
+jobs do not resolve to it.
+
+``rcodesign`` is distributed as a static Linux binary on the
+`release page <https://github.com/indygreg/apple-platform-rs/releases>`_ (``x86_64-unknown-linux-musl`` or
+``aarch64-unknown-linux-musl``). Galaxy uses the first ``rcodesign`` on ``PATH``. Another signer or location is set
+with the ``codesign_exec`` resolver option or globally with ``conda_codesign_exec`` in ``galaxy.yml``; the program is
+called as ``<codesign_exec> sign <file>``.
+
+If no signer is available and an ``osx-*`` platform is configured, Galaxy logs one warning at startup. The macOS
+environments are then created but left unsigned and are not marked as usable. Linux platforms are not affected.
+
 Platform of a job destination
 .............................
 
@@ -354,9 +375,8 @@ Limits
   earlier exist for the native platform only, until they are installed again.
 * Packages that have no build for a platform cannot be installed there. Galaxy skips that platform for the tool and
   the tool routes to destinations of other platforms.
-* Environments for macOS that are cross-installed from Linux contain binaries without a valid ad-hoc signature.
-  Apple silicon requires one, so the binaries must be signed with ``codesign --force --sign -`` on first use on the
-  Mac.
+* Environments for macOS that are cross-installed from Linux are only usable once their patched binaries are signed,
+  see `Signing of macOS environments`_. Without a code signer Galaxy does not mark them as usable.
 * Windows platforms are not supported.
 * The metadata commands of a job run with the dependencies of the native platform.
 

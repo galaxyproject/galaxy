@@ -698,6 +698,15 @@ galaxy:
   # native platform.
   #conda_platforms: null
 
+  # Path of a code signer (rcodesign, from the apple-codesign project)
+  # used to ad-hoc sign the Mach-O files that conda patches when it
+  # creates environments for osx platforms (see conda_platforms) on a
+  # Linux host. It is called as "<conda_codesign_exec> sign <file>".
+  # Without it Galaxy uses rcodesign from PATH. If no signer is
+  # available, osx environments are left unsigned and are not marked
+  # usable, because Apple silicon refuses to run them.
+  #conda_codesign_exec: null
+
   # You must set this to true if conda_prefix and job_working_directory
   # are not on the same volume, or some conda dependencies will fail to
   # execute at job runtime. Conda will copy packages content instead of

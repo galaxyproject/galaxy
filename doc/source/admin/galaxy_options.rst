@@ -635,6 +635,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``conda_codesign_exec``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path of a code signer (rcodesign, from the apple-codesign project)
+    used to ad-hoc sign the Mach-O files that conda patches when it
+    creates environments for osx platforms (see conda_platforms) on a
+    Linux host. It is called as "<conda_codesign_exec> sign <file>".
+    Without it Galaxy uses rcodesign from PATH. If no signer is
+    available, osx environments are left unsigned and are not marked
+    usable, because Apple silicon refuses to run them.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``conda_copy_dependencies``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

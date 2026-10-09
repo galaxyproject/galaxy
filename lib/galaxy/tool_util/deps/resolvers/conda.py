@@ -99,6 +99,7 @@ class CondaDependencyResolver(
         "use_local": False,
         "platforms": None,
         "platform_overrides": None,
+        "codesign_exec": None,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
@@ -108,6 +109,9 @@ class CondaDependencyResolver(
     #                        global default is the ``conda_platforms`` config option. The native subdir is always
     #                        implicitly included. Foreign environments live in
     #                        <prefix>/platforms/<subdir>/envs/<env name>.
+    #   codesign_exec:       code signer used to ad-hoc sign the files conda patches in osx-* environments
+    #                        (``<codesign_exec> sign <file>``, as rcodesign), global default is the
+    #                        ``conda_codesign_exec`` config option, falls back to ``rcodesign`` on PATH.
     #   platform_overrides:  mapping subdir -> {environment variable: value} applied on top of the defaults
     #                        (CONDA_OVERRIDE_GLIBC=2.17 for linux-*, CONDA_OVERRIDE_OSX=11.0 for osx-*), as a dict
     #                        or a JSON string, e.g. {"linux-aarch64": {"CONDA_OVERRIDE_GLIBC": "2.28"}}.
@@ -161,7 +165,14 @@ class CondaDependencyResolver(
             use_local=use_local,
             platforms=platforms,
             platform_overrides=platform_overrides,
+            codesign_exec=get_option("codesign_exec"),
         )
+        if any(p.startswith("osx-") for p in conda_context.platforms) and not conda_context.codesign_exec:
+            log.warning(
+                "No code signer found (rcodesign is not on PATH and the codesign_exec option is not set): "
+                "conda environments for osx platforms will be left unsigned and are not marked usable. "
+                "Install rcodesign or set codesign_exec (conda_codesign_exec)."
+            )
         self.use_local = use_local
         self.ensure_channels = ensure_channels
 

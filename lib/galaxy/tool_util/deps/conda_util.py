@@ -1,4 +1,5 @@
 import functools
+import glob
 import hashlib
 import json
 import logging
@@ -7,6 +8,7 @@ import platform
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 import tempfile
 from collections.abc import (
@@ -59,7 +61,29 @@ DEFAULT_PLATFORM_OVERRIDES: dict[str, dict[str, str]] = {
 }
 
 
-def parse_platforms(platforms: Union[None, str, Iterable[str]]) -> list[str]:
+def patched_binary_files(prefix: str) -> list[str]:
+    """Existing files under ``prefix`` that conda patched, according to its conda-meta records."""
+    files: list[str] = []
+    for record_path in sorted(glob.glob(os.path.join(prefix, "conda-meta", "*.json"))):
+        try:
+            with open(record_path) as fh:
+                paths = json.load(fh).get("paths_data", {}).get("paths", [])
+        except (OSError, ValueError, AttributeError):
+            log.warning("Could not read conda package record '%s'", record_path, exc_info=True)
+            continue
+        for entry in paths:
+            if not isinstance(entry, dict) or entry.get("file_mode") != "binary" or "prefix_placeholder" not in entry:
+                continue
+            relative = entry.get("_path")
+            if not relative:
+                continue
+            path = os.path.join(prefix, str(relative))
+            if os.path.isfile(path) and path not in files:
+                files.append(path)
+    return files
+
+
+def parse_platforms(platforms: str | Iterable[str] | None) -> list[str]:
     """Normalize a comma separated string or a list of conda subdirs.
 
     Invalid entries are dropped with a warning, duplicates are removed
@@ -123,8 +147,9 @@ class CondaContext(installable.InstallableContext):
         use_path_exec: bool = USE_PATH_EXEC_DEFAULT,
         copy_dependencies: bool = False,
         use_local: bool = USE_LOCAL_DEFAULT,
-        platforms: Union[None, str, list[str]] = None,
-        platform_overrides: dict[str, dict[str, str | None]] = None,
+        platforms: str | list[str] | None = None,
+        platform_overrides: dict[str, dict[str, str | None]] | None = None,
+        codesign_exec: str | None = None,
     ) -> None:
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
@@ -157,6 +182,7 @@ class CondaContext(installable.InstallableContext):
         self.platforms: list[str] = parse_platforms(platforms)
         self.platform_overrides: dict[str, dict[str, str]] = platform_overrides or {}
         self._native_platform: str | None = None
+        self.codesign_exec: str | None = codesign_exec or which("rcodesign")
         self._reset_conda_properties()
 
     def _reset_conda_properties(self) -> None:
@@ -515,6 +541,37 @@ class CondaContext(installable.InstallableContext):
         except OSError:
             log.warning("Could not write platform marker in '%s'", env_path, exc_info=True)
 
+    def sign_platform_files(self, subdir: str, prefix: str) -> bool:
+        """Ad-hoc sign the Mach-O files conda rewrote in ``prefix`` (osx-* platforms only).
+
+        Conda patches the install prefix into binaries, which invalidates their code signature,
+        and only re-signs them when it runs on macOS. The files are taken from the conda-meta
+        records (binary files with a prefix placeholder). Returns False if the files could not
+        be signed (no signer configured, or the signer failed for at least one file).
+        """
+        if not subdir.startswith("osx-"):
+            return True
+        files = patched_binary_files(prefix)
+        if not self.codesign_exec:
+            if files:
+                log.warning("No code signer available, not signing %d files in '%s'", len(files), prefix)
+            return not files
+        signed = 0
+        failed = 0
+        for path in files:
+            try:
+                result = subprocess.run([self.codesign_exec, "sign", path], capture_output=True, text=True, check=False)
+                returncode, stderr = result.returncode, result.stderr
+            except OSError as e:
+                returncode, stderr = 1, str(e)
+            if returncode == 0:
+                signed += 1
+            else:
+                failed += 1
+                log.warning("Failed to sign '%s' (exit code %s):\n%s", path, returncode, stderr)
+        log.info("Signed %d files (%d failed) in '%s' for platform %s", signed, failed, prefix, subdir)
+        return failed == 0
+
     def ensure_platform_bases(self) -> None:
         """Create the conda base of every foreign platform that lacks one.
 
@@ -541,6 +598,8 @@ class CondaContext(installable.InstallableContext):
                             ret,
                             out.read(),
                         )
+                    elif not self.sign_platform_files(subdir, base):
+                        log.warning("Conda base for platform %s contains unsigned files", subdir)
             except Exception:
                 log.warning("Failed to create conda base for platform %s", subdir, exc_info=True)
 
@@ -568,8 +627,18 @@ class CondaContext(installable.InstallableContext):
                 log.warning("Failed to create conda environment %s for platform %s", env_name, subdir, exc_info=True)
                 ret, output = 1, ""
             if ret == 0:
-                self.mark_platform_env_ok(subdir, env_name)
-                results[subdir] = True
+                try:
+                    signed = self.sign_platform_files(subdir, env_path)
+                except Exception:
+                    log.warning("Failed to sign files of environment %s for %s", env_name, subdir, exc_info=True)
+                    signed = False
+                if signed:
+                    self.mark_platform_env_ok(subdir, env_name)
+                else:
+                    log.warning(
+                        "Environment %s for platform %s has unsigned files and is not marked usable", env_name, subdir
+                    )
+                results[subdir] = signed
             else:
                 log.warning(
                     "Could not create conda environment %s for platform %s (exit code %s):\n%s",
