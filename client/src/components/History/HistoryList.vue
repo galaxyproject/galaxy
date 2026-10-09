@@ -370,7 +370,7 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
             Toast.success(`${purge ? "Purged" : "Deleted"} ${totalSelected} histories.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to ${purge ? "purge" : "delete"} some histories.`);
         } finally {
             bulkPurgeLoading.value = false;
@@ -413,7 +413,7 @@ async function onBulkRestore() {
             Toast.success(`Restored ${totalSelected} histories.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to restore some histories.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;

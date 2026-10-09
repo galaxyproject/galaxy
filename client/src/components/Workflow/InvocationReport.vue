@@ -51,7 +51,7 @@ async function fetchReport() {
     try {
         const data = await fetchInvocationReport(props.invocationId);
         markdownConfig.value = data;
-    } catch (error) {
+    } catch {
         Toast.error("Failed to load invocation report.");
     }
 }

@@ -35,7 +35,7 @@ export function useToolExecutionJobs(toolExecutionId: Ref<string>) {
                 } else {
                     error.value = "No job associated with this tool execution.";
                 }
-            } catch (e) {
+            } catch {
                 error.value = "Failed to load tool execution details.";
             } finally {
                 loading.value = false;

@@ -122,8 +122,7 @@ class JobMetrics:
             if configured_plugin is not None:
                 safety = configured_plugin.safety(metric_name)
             elif metric_plugin in self.plugin_classes:
-                plugin_class = self.plugin_classes[metric_plugin]
-                safety = plugin_class.default_safety
+                safety = self.plugin_classes[metric_plugin].safety(metric_name)
             else:
                 safety = DEFAULT_SAFETY
             return DictifiableMetric(

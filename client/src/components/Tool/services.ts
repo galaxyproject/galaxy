@@ -37,7 +37,7 @@ export async function updateToolFormData(payload: UpdateToolFormDataRequest): Pr
 
 /** Tools data request helper **/
 export async function getToolFormData(payload: GetToolFormDataRequest): Promise<ToolFormConfig> {
-    let url = "";
+    let url: string;
     const data: Record<string, string> = {};
 
     // build request url and collect request data
@@ -53,9 +53,15 @@ export async function getToolFormData(payload: GetToolFormDataRequest): Promise<
             }
         }
     }
-    payload.history_id && (data["history_id"] = payload.history_id);
-    payload.tool_version && (data["tool_version"] = payload.tool_version);
-    payload.tool_uuid && (data["tool_uuid"] = payload.tool_uuid);
+    if (payload.history_id) {
+        data["history_id"] = payload.history_id;
+    }
+    if (payload.tool_version) {
+        data["tool_version"] = payload.tool_version;
+    }
+    if (payload.tool_uuid) {
+        data["tool_uuid"] = payload.tool_uuid;
+    }
 
     // attach data to request url
     if (Object.entries(data).length != 0) {

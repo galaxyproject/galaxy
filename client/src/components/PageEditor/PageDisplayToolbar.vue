@@ -54,7 +54,7 @@ async function handleSave() {
     try {
         await pageEditorStore.savePage();
         changesIndicator.value?.flashSavedIndicator();
-    } catch (error) {
+    } catch {
         // Error is already handled in the store and displayed in parent(s)
     }
 }

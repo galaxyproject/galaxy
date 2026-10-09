@@ -65,7 +65,7 @@ export async function copyAndNotify(value: string, notification: string) {
     try {
         await writeToClipboard(value)
         notify(notification)
-    } catch (e) {
+    } catch {
         notify("Your browser did not allow copying to the clipboard.", "danger")
     }
 }

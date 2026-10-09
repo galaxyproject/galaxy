@@ -16,6 +16,26 @@
         document.getElementById("gtn-container").style.visibility = "visible";
     }
 
+    function buttonify(el, activate) {
+        el.addEventListener("click", activate);
+        if (el.tagName.toLowerCase() === "a") {
+            return;
+        }
+        // GTN renders tool and workflow buttons as spans, which are not focusable or keyboard operable on their own.
+        if (!el.hasAttribute("role")) {
+            el.setAttribute("role", "button");
+        }
+        if (!el.hasAttribute("tabindex")) {
+            el.setAttribute("tabindex", "0");
+        }
+        el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                activate();
+            }
+        });
+    }
+
     function getIframeUrl() {
         let loc;
         try {
@@ -126,6 +146,26 @@
                     if (!gtnEmbed.contentDocument) {
                         return;
                     }
+                    // Sites like Zenodo refuse to be framed, so links leaving the GTN open in a new tab.
+                    gtnEmbed.contentDocument.addEventListener("click", (e) => {
+                        const link = e.target.closest("a[href]");
+                        if (!link || link.closest("[data-tool],[data-workflow]")) {
+                            return;
+                        }
+                        let url;
+                        try {
+                            url = new URL(link.getAttribute("href"), link.baseURI);
+                        } catch (err) {
+                            return;
+                        }
+                        if (url.protocol !== "http:" && url.protocol !== "https:") {
+                            return;
+                        }
+                        if (url.origin !== window.location.origin || !url.pathname.startsWith("/training-material/")) {
+                            link.setAttribute("target", "_blank");
+                            link.relList.add("noopener", "noreferrer");
+                        }
+                    });
                     // Add the class to the entire GTN page
                     document
                         .getElementById("gtn-embed")
@@ -138,15 +178,9 @@
 
                     // Buttonify
                     gtnToolElements.forEach(function (el) {
-                        el.addEventListener("click", function (e) {
-                            let target = e.target;
-
-                            // Sometimes we get the i or the strong, not the parent.
-                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
-                                target = e.target.parentElement;
-                            }
-
-                            tool_id = target.dataset.tool;
+                        buttonify(el, function () {
+                            // Tool titles can render as nested markup (e.g. <strong><code>), so read the bound element.
+                            const tool_id = el.dataset.tool;
 
                             if (tool_id === "upload1" || tool_id === "upload") {
                                 document.getElementById("tool-panel-upload-button").click();
@@ -163,15 +197,9 @@
 
                     // Buttonify
                     gtnWorkflowElements.forEach(function (el) {
-                        el.addEventListener("click", (e) => {
-                            let target = e.target;
-
-                            // Sometimes we get the i or the strong, not the parent.
-                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
-                                target = e.target.parentElement;
-                            }
-
-                            trs_url = target.dataset.workflow;
+                        buttonify(el, () => {
+                            // The click target can be nested markup inside the button, so read the bound element.
+                            const trs_url = el.dataset.workflow;
                             Galaxy.router.push({
                                 path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
                             });

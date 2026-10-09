@@ -14,7 +14,6 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-/* eslint-disable no-unused-vars */
 // Action types from backend - values are used in switch/case and icon maps
 export enum ActionType {
     TOOL_RUN = "tool_run",
@@ -27,7 +26,6 @@ export enum ActionType {
     INSERT_PAGE_SECTION = "insert_page_section",
     WORKFLOW_IMPORT = "workflow_import",
 }
-/* eslint-enable no-unused-vars */
 
 export interface ActionSuggestion {
     action_type: ActionType;

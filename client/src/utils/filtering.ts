@@ -865,7 +865,7 @@ export default class Filtering<T> {
      * @returns Parsed filterText string with added/removed filter
      */
     setFilterValue(filterText: string, newFilter: string, newVal: T) {
-        let updatedText = "";
+        let updatedText: string;
         const oldVal = this.getFilterValue(filterText, newFilter);
         let convVal = this.getConvertedValue(newFilter, newVal) as T;
         if (convVal == undefined && !Array.isArray(newVal)) {

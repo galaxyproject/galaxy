@@ -211,6 +211,10 @@ tox -e mulled
 pytest -m external_dependency_management test/unit/tool_util/
 ```
 
+Tests that also depend on a specific remote service (quay.io,
+depot.galaxyproject.org, GitHub) should additionally skip when it is down; see
+[Skipping Tests When a Remote Service Is Down](#remote_service_down).
+
 ### Continuous Integration
 
 The Python unit tests are run against each pull request to Galaxy using
@@ -1079,6 +1083,29 @@ def test_with_message_queue(self):
 | ``skip_if_github_workflow()`` | Not in GitHub Actions |
 | ``skip_unless_environ(var)`` | Environment variable set |
 
+``skip_unless_docker()`` and ``skip_unless_kubernetes()`` are built on
+``skip_unless_executable(name)``, which skips unless ``name`` is on ``PATH``.
+It and ``skip_unless_environ(var)`` live in ``galaxy.util.unittest_utils``;
+import them from there in any kind of test:
+
+```python
+from galaxy.util.unittest_utils import (
+    skip_unless_environ,
+    skip_unless_executable,
+)
+
+@skip_unless_executable("singularity")
+def test_docker_to_singularity(tmp_path):
+    ...
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+def test_real_azure_blob_store(tmp_path):
+    ...
+```
+
+For tests that depend on a remote service rather than a local tool or
+setting, see [Skipping Tests When a Remote Service Is Down](#remote_service_down).
+
 ### External Services
 
 Some integration tests require external services (databases, message queues,
@@ -1674,12 +1701,77 @@ These work anywhere a URL is accepted: ``stage_inputs`` jobs, fetch API targets,
 deferred datasets, and workflow inputs. Only use real external URLs when the test
 specifically validates remote-fetch behavior.
 
+{#remote_service_down}
+### Skipping Tests When a Remote Service Is Down
+
+A test that has to talk to a real remote service should skip, not fail, when
+that service is down. ``galaxy.util.unittest_utils`` provides decorators that
+request a site before the test runs and skip it unless the site answers with
+HTTP 200:
+
+| Decorator | Probes |
+|-----------|--------|
+| ``skip_if_github_down`` | ``https://github.com/`` |
+| ``skip_if_quay_down`` | ``https://quay.io/`` |
+| ``skip_if_galaxy_depot_down`` | ``https://depot.galaxyproject.org/`` |
+| ``skip_if_dockstore_down`` | ``https://dockstore.org/`` |
+| ``skip_if_workflowhub_down`` | ``https://workflowhub.eu/`` |
+| ``skip_if_toolshed_down`` | ``https://toolshed.g2.bx.psu.edu`` (the main Tool Shed) |
+| ``skip_if_site_down(url)`` | Any other ``url`` |
+
+The decorators work on unit, API, integration and Selenium tests alike, and
+can be stacked when a test needs several services:
+
+```python
+from galaxy.util.unittest_utils import (
+    skip_if_dockstore_down,
+    skip_if_github_down,
+    skip_if_site_down,
+)
+
+@skip_if_dockstore_down
+@skip_if_github_down
+def test_import_ga_workflow_with_trs_url_subworkflow():
+    ...
+
+@skip_if_site_down("https://bio.tools/")
+def test_api_content():
+    ...
+```
+
+To skip from setup code rather than a single test (e.g. an integration test
+class's ``handle_galaxy_config_kwds``), call ``raise_skip_if_site_down(url)``
+from the same module, as ``UsesShed.configure_shed`` in
+``galaxy_test/driver/uses_shed.py`` does. It raises ``unittest.SkipTest`` with
+the same message as the decorators. ``is_site_up(url)`` returns the probe
+result as a boolean if you need to decide something else.
+
+The probe is a single GET of that URL (for the per-service decorators, the
+site's front page), so it only catches a site that is unreachable or not
+answering 200; a slow or failing API behind a healthy front page still fails
+the test. Two tools cover that gap:
+
+- ``skip_if_site_down(url, unavailable_pattern=...)`` also skips the test if it
+  raises an exception whose message or HTTP response body matches the regular
+  expression. ``skip_if_workflowhub_down`` uses this to recognize the errors
+  Galaxy's TRS proxy reports when WorkflowHub, or Cloudflare in front of it,
+  is down or blocking CI runners.
+- ``skip_on_network_error`` skips the test if it raises a ``requests``
+  ``ConnectionError`` or ``Timeout``, without probing anything up front.
+
+These decorators are for outages of services a test cannot avoid. A test that
+fails intermittently for other reasons should be tracked as a transient failure
+instead (see [Handling Flaky Tests](#transient_failures)).
+
 {#transient_failures}
 ## Handling Flaky Tests
 
 Some tests fail intermittently due to race conditions, timing issues, or external
 dependencies. Galaxy provides infrastructure to track these "flaky" tests via
 GitHub issues and a test decorator.
+
+Failures caused by a remote service being down should be skipped instead; see
+[Skipping Tests When a Remote Service Is Down](#remote_service_down).
 
 ### Marking a Test as Transiently Failing
 

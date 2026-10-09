@@ -1,3 +1,14 @@
+import js from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
+import compat from "eslint-plugin-compat";
+import importX from "eslint-plugin-import-x";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import vue from "eslint-plugin-vue";
+import vuejsAccessibility from "eslint-plugin-vuejs-accessibility";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import vueParser from "vue-eslint-parser";
+
 const baseRules = {
     // Standard rules
     "no-console": "off",
@@ -114,94 +125,94 @@ const baseRules = {
         },
     ],
     "simple-import-sort/exports": "error",
-    "import/first": "error",
-    "import/newline-after-import": "error",
-    "import/no-duplicates": "error",
+    "import-x/first": "error",
+    "import-x/newline-after-import": "error",
+    "import-x/no-duplicates": "error",
+};
 
+const typeImportRules = {
     "@typescript-eslint/consistent-type-imports": [
         "error",
         { prefer: "type-imports", fixStyle: "inline-type-imports" },
     ],
-
     "@typescript-eslint/no-import-type-side-effects": "error",
 };
 
-const baseExtends = [
-    "eslint:recommended",
-    "plugin:compat/recommended",
-    "plugin:vue/vue3-recommended",
-    "plugin:vuejs-accessibility/recommended",
-];
-
-const basePlugins = ["simple-import-sort", "import"];
-
-module.exports = {
-    root: true,
-    extends: baseExtends,
-    env: {
-        browser: true,
-        node: true,
-        es6: true,
-    },
-    rules: baseRules,
-    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy", "packages/api-client"],
-    plugins: basePlugins,
-    overrides: [
-        {
-            files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
+export default defineConfig(
+    globalIgnores(["dist/**", "src/libs/**", "src/nls/**", "src/legacy/**", "packages/api-client/**"]),
+    {
+        files: ["**/*.{js,mjs,cjs,ts,tsx,vue}"],
+        extends: [
+            js.configs.recommended,
+            compat.configs["flat/recommended"],
+            ...vue.configs["flat/recommended"],
+            ...vuejsAccessibility.configs["flat/recommended"],
+        ],
+        plugins: {
+            "@typescript-eslint": tseslint.plugin,
+            "import-x": importX,
+            "simple-import-sort": simpleImportSort,
+        },
+        languageOptions: {
             globals: {
-                vi: "readonly",
-                describe: "readonly",
-                it: "readonly",
-                expect: "readonly",
-                beforeEach: "readonly",
-                afterEach: "readonly",
-                beforeAll: "readonly",
-                afterAll: "readonly",
-                test: "readonly",
+                ...globals.browser,
+                ...globals.node,
             },
         },
-        {
-            files: ["**/*.vue"],
-            parser: "vue-eslint-parser",
+        rules: baseRules,
+    },
+    {
+        files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
+        languageOptions: {
+            globals: globals.vitest,
+        },
+    },
+    {
+        files: ["**/*.vue"],
+        languageOptions: {
+            // Plugin flat configs set the parser from their own dependency, so a stale nested
+            // copy could win depending on order; pin the one we install.
+            parser: vueParser,
             parserOptions: {
-                parser: {
-                    js: "espree",
-                    ts: "@typescript-eslint/parser",
-                },
+                // The type-import rules need typescript-eslint's parser services, even in
+                // components whose script block is plain JS.
+                parser: tseslint.parser,
             },
         },
-        {
-            files: ["**/*.ts", "**/*.tsx"],
-            extends: [
-                ...baseExtends,
-                "plugin:@typescript-eslint/recommended",
-                // "plugin:@typescript-eslint/stylistic"  // TODO: work towards this
-            ],
-            rules: {
-                ...baseRules,
-                "@typescript-eslint/no-throw-literal": "error",
-                "@typescript-eslint/ban-ts-comment": "warn",
-                "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
-                "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
-            },
-            parser: "@typescript-eslint/parser",
+    },
+    {
+        files: ["**/*.ts", "**/*.tsx", "**/*.vue"],
+        rules: typeImportRules,
+    },
+    {
+        files: ["**/*.ts", "**/*.tsx"],
+        extends: [
+            tseslint.configs.recommended,
+            // tseslint.configs.stylistic,  // TODO: work towards this
+        ],
+        languageOptions: {
             parserOptions: {
                 ecmaFeatures: { jsx: true },
-                ecmaVersion: 2020,
-                sourceType: "module",
                 extraFileExtensions: [".vue"],
-                project: true,
-            },
-            plugins: [...basePlugins, "@typescript-eslint"],
-        },
-        {
-            // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
-            // components keep `.native` for vue-router 3's RouterLink roots.
-            files: ["**/packages/ui/src/**/*.vue"],
-            rules: {
-                "vue/no-deprecated-v-on-native-modifier": "off",
+                projectService: true,
             },
         },
-    ],
-};
+        rules: {
+            // The base rule can't see TS types; typescript-eslint's replacements handle these.
+            "no-throw-literal": "off",
+            "no-unused-vars": "off",
+            "@typescript-eslint/only-throw-error": "error",
+            "@typescript-eslint/ban-ts-comment": "warn",
+            "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
+        },
+    },
+    {
+        // galaxy-ui supports Vue 2.7 and 3 at once (the tool shed consumes it too), so its
+        // components keep `.native` for vue-router 3's RouterLink roots.
+        files: ["**/packages/ui/src/**/*.vue"],
+        rules: {
+            "vue/no-deprecated-v-on-native-modifier": "off",
+        },
+    },
+);

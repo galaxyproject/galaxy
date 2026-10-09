@@ -31,6 +31,7 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
         config["metadata_strategy"] = "directory"
         config["retry_metadata_internally"] = False
         config["cleanup_job"] = "never"
+        config["job_metrics"] = [{"type": "pulsar"}]
 
     def test_tool_eval_failure(self):
         with self.dataset_populator.test_history() as history_id:
@@ -84,6 +85,26 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
     def test_handler_metadata_runs_after_output_staging(self):
         """Exercise Pulsar output staging followed by handler-side metadata."""
         self._run_tool_test("metadata_columns")
+
+    def test_records_pulsar_version_metrics(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="ABC")
+            run_response = self.dataset_populator.run_tool(
+                "cat1", inputs={"input1": {"src": "hda", "id": dataset["id"]}}, history_id=history_id
+            )
+            job_id = run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            metrics = {
+                m["name"]: m["raw_value"]
+                for m in self.dataset_populator._get(f"/api/jobs/{job_id}/metrics", admin=True).json()
+                if m["plugin"] == "pulsar"
+            }
+        assert metrics["client_version"]
+        # pulsar-galaxy-lib 0.15.15 doesn't say where the target version came from.
+        assert metrics["target_version_source"] == "unreported"
+        # The embedded Pulsar is this client library, and it reports its version when the job finishes.
+        assert metrics["server_version"] == metrics["target_version"] == metrics["client_version"]
+        assert metrics["server_version_source"] == "status"
 
 
 instance = integration_util.integration_module_instance(TestEmbeddedPulsarIntegrationInstance)

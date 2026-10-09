@@ -31,8 +31,9 @@ from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
-from galaxy.util.unittest_utils import (
+from galaxy.util.unittest_utils import (  # noqa: F401 - skip_unless_environ re-exported
     _identity,
+    skip_unless_environ as skip_unless_environ,
     skip_unless_executable,
 )
 from galaxy_test.base.api import (
@@ -164,13 +165,6 @@ def skip_if_github_workflow():
         return _identity
 
     return pytest.mark.skip("This test is skipped for Github actions.")
-
-
-def skip_unless_environ(env_var):
-    if os.environ.get(env_var):
-        return _identity
-
-    return pytest.mark.skip(f"{env_var} must be set for this test")
 
 
 class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):

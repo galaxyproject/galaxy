@@ -95,7 +95,9 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
                 try {
                     await makePrivate(props.history.id, permissionResponse);
                 } catch (e) {
-                    throw new Error(errorMessageAsString(e || "Failed to update default permissions for history."));
+                    throw new Error(errorMessageAsString(e || "Failed to update default permissions for history."), {
+                        cause: e,
+                    });
                 }
             }
         }
