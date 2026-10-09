@@ -51,6 +51,10 @@ class GalaxyAppConfigurationAttributes:
     conda_use_local: bool
     conda_auto_install: bool
     conda_auto_init: bool
+    conda_platforms: str | None
+    conda_platforms_backfill: bool
+    conda_platforms_retry_days: int
+    conda_codesign_exec: str | None
     conda_copy_dependencies: bool
     local_conda_mapping_file: str
     modules_mapping_files: str

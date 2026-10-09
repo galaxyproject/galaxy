@@ -628,16 +628,16 @@
     sharing the conda_prefix (for example over NFS) can run jobs on
     all of them. The platform Galaxy itself runs on is always
     included. Environments for a foreign platform are created under
-    <conda_prefix>/platforms/<platform>/. A failure there is logged and
-    the installation on the native platform completes normally. Leave
-    unset to use only the native platform.
+    <conda_prefix>/platforms/<platform>/. A failure there is logged
+    and the installation on the native platform completes normally.
+    Leave unset to use only the native platform.
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``conda_platforms_backfill``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Create the missing environments of the platforms in
@@ -653,17 +653,17 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``conda_platforms_retry_days``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     A foreign environment that failed to be created is recorded in
-    <conda_prefix>/platforms/<platform>/envs/<environment name>.failed.
-    The backfill (see conda_platforms_backfill) leaves it alone until
-    the record is this many days old, so that a failing solve is not
-    repeated at every start and a transient failure is retried
-    eventually.
+    <conda_prefix>/platforms/<platform>/envs/<environment
+    name>.failed. The backfill (see conda_platforms_backfill) leaves
+    it alone until the record is this many days old, so that a failing
+    solve is not repeated at every start and a transient failure is
+    retried eventually.
 :Default: ``7``
 :Type: int
 
