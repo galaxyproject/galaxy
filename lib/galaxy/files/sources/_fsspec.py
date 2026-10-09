@@ -162,6 +162,9 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
 
             return paginated_entries, total_count
 
+        except MessageException:
+            # already a Galaxy error with its own status, such as a refused address
+            raise
         except PermissionError as e:
             raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
