@@ -1,6 +1,6 @@
 [project]
 name = "galaxy-workspace"
-version = "0.1.0"  # Not the real version, which is instead defined in packages/util/src/galaxy/version/__init__.py
+version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version/__init__.py
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = [
     {name = "Galaxy Contributors"},
@@ -204,9 +204,9 @@ line-length = 120
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
-  | packages/tool_shed/src/tool_shed/test/test_data/repos
-  | packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
-  | test/functional/tools/cwl_tools
+  | packages
+  | lib/tool_shed/test/test_data/repos
+  | lib/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
 )/
 '''
 
@@ -215,62 +215,11 @@ isort = true
 
 [tool.ruff]
 exclude = [
-    "packages/tool_shed/src/tool_shed/test/test_data/repos"
+    "lib/tool_shed/test/test_data/repos"
 ]
 line-length = 120
-src = [
-    "lib",
-    "packages/app/src",
-    "packages/auth/src",
-    "packages/config/src",
-    "packages/data/src",
-    "packages/files/src",
-    "packages/job_execution/src",
-    "packages/job_metrics/src",
-    "packages/navigation/src",
-    "packages/objectstore/src",
-    "packages/schema/src",
-    "packages/selenium/src",
-    "packages/test_api/src",
-    "packages/test_base/src",
-    "packages/test_driver/src",
-    "packages/test_selenium/src",
-    "packages/tool_shed/src",
-    "packages/tool_shed_schema/src",
-    "packages/tool_util/src",
-    "packages/tool_util_models/src",
-    "packages/tours/src",
-    "packages/util/src",
-    "packages/web_apps/src",
-    "packages/web_client/src",
-    "packages/web_framework/src",
-    "packages/web_stack/src",
-]
-namespace-packages = [
-    "packages/app/src/galaxy",
-    "packages/auth/src/galaxy",
-    "packages/config/src/galaxy",
-    "packages/data/src/galaxy",
-    "packages/files/src/galaxy",
-    "packages/job_execution/src/galaxy",
-    "packages/job_metrics/src/galaxy",
-    "packages/navigation/src/galaxy",
-    "packages/objectstore/src/galaxy",
-    "packages/schema/src/galaxy",
-    "packages/selenium/src/galaxy",
-    "packages/test_api/src/galaxy_test",
-    "packages/test_base/src/galaxy_test",
-    "packages/test_driver/src/galaxy_test",
-    "packages/test_selenium/src/galaxy_test",
-    "packages/tool_util/src/galaxy",
-    "packages/tool_util_models/src/galaxy",
-    "packages/tours/src/galaxy",
-    "packages/util/src/galaxy",
-    "packages/web_apps/src/galaxy",
-    "packages/web_client/src/galaxy",
-    "packages/web_framework/src/galaxy",
-    "packages/web_stack/src/galaxy",
-]
+src = ["lib"]
+namespace-packages = ["lib/galaxy"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
@@ -307,13 +256,12 @@ keep-runtime-typing = true
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
 # Don't check pyupgrade rules on generated files
-"packages/schema/src/galaxy/schema/bco/*" = ["UP"]
-"packages/schema/src/galaxy/schema/drs/*" = ["UP"]
-"packages/tool_shed_schema/src/tool_shed_client/schema/trs.py" = ["UP"]
-"packages/tool_shed_schema/src/tool_shed_client/schema/trs_service_info.py" = ["UP"]
+"lib/galaxy/schema/bco/*" = ["UP"]
+"lib/galaxy/schema/drs/*" = ["UP"]
+"lib/tool_shed_client/schema/trs.py" = ["UP"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
 
 [tool.uv]
-# Workaround for https://github.com/python/mypy/issues/13392 taken from https://github.com/astral-sh/uv/issues/3898
 # Migrated from packages/pyproject.toml during workspace unification (Phase 1).
 config-settings = { editable_mode = "compat" }
 constraint-dependencies = [

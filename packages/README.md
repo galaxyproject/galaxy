@@ -24,11 +24,17 @@ resolves to the root workspace and its environment.
 The exact uv version to use is pinned in `.uv-version` at the repository
 root. Use that version when syncing or regenerating the lock.
 
-The root `uv.lock` is the only workspace lockfile. Note that `*.lock` is
-currently matched by `.gitignore` (a rule aimed at Galaxy runtime lock
-files), so the lockfile lives as a local development artifact: regenerate
-it with the pinned uv version rather than hand-editing it, and never run an
+The root `uv.lock` is tracked and is the only workspace lockfile. The
+`.gitignore` exception for it keeps Galaxy runtime lock files ignored.
+Resolve manifest conflicts first, then regenerate the lock with the pinned uv
+version and review the dependency diff. Do not hand-edit the lock or run an
 unrelated broad upgrade in a source-move change.
+
+This PR retains the existing `lib/` sources and package source symlinks.
+Moving source ownership into package directories is a separate change.
+A root dev sync installs development tools and third-party dependencies;
+use a package-scoped command to install the relevant workspace members.
+Normal Galaxy startup continues to use the existing `run.sh` bootstrap.
 
 Here is an example workflow that syncs the shared development environment
 once from the repository root and then runs tests for a specific package:
