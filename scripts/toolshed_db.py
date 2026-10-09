@@ -6,7 +6,12 @@ import os
 import sys
 from argparse import ArgumentParser
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
+# Prefer installed workspace packages (galaxy-tool-shed); keep lib/ fallback
+# for lib/galaxy_test leftovers.
+try:
+    import tool_shed.webapp.model.migrations.dbscript  # noqa: F401
+except ImportError:
+    sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from tool_shed.webapp.model.migrations.dbscript import (
     CONFIG_FILE_ARG,

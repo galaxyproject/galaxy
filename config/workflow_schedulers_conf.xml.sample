@@ -1,1 +1,1 @@
-../lib/galaxy/config/sample/workflow_schedulers_conf.xml.sample
+../packages/config/src/galaxy/config/sample/workflow_schedulers_conf.xml.sample

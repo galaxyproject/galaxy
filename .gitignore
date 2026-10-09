@@ -210,3 +210,6 @@ test/evals/models.yaml
 # baseline file pairs back to the exact commit it came from.
 test/evals/results/*
 !test/evals/results/.gitkeep
+
+# Runtime state created during local startup (gravity/conda scratch)
+/data/

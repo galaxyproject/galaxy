@@ -43,11 +43,21 @@ if not os.path.exists(os.path.join(GALAXY_ROOT_DIR_, "run.sh")):
 else:
     GALAXY_ROOT_DIR = GALAXY_ROOT_DIR_
     GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR_, "lib")
+    # Prefer installed galaxy packages (uv workspace) over lib/ injection;
+    # galaxy.main_config now lives in packages/app. Keep lib/ as fallback
+    # only for lib/galaxy_test leftovers.
     try:
-        sys.path.insert(1, GALAXY_LIB_DIR)
-    except Exception:
-        log.exception("Failed to add Galaxy to sys.path")
-        raise
+        import galaxy.main_config  # noqa: F401
+    except ImportError:
+        # Drop the partially resolved `galaxy` namespace (if any) so the
+        # re-import below merges lib/ leftovers with installed workspace paths.
+        sys.modules.pop("galaxy.main_config", None)
+        sys.modules.pop("galaxy", None)
+        try:
+            sys.path.insert(1, GALAXY_LIB_DIR)
+        except Exception:
+            log.exception("Failed to add Galaxy to sys.path")
+            raise
 from galaxy.main_config import (
     absolute_config_path,
     config_is_ini,

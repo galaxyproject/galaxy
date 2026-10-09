@@ -4,7 +4,7 @@ Galaxy's Python code is type checked with [mypy](https://mypy.readthedocs.io/), 
 
 ## Running mypy
 
-Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks `lib/` and `test/` exactly as the "Python linting" CI job does; CI runs it on the oldest and newest supported Python versions. The "Test Galaxy packages" job also runs mypy separately inside each package under `packages/`.
+Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks `packages/*/src`, `packages/*/tests`, `lib/` and `test/` exactly as the "Python linting" CI job does; CI runs it on the oldest and newest supported Python versions. The "Test Galaxy packages" job also runs mypy separately inside each package under `packages/`.
 
 ## New code must be fully typed
 

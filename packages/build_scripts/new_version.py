@@ -13,6 +13,26 @@ PROJECT_DIRECTORY_NAME = os.path.basename(os.path.abspath(PROJECT_DIRECTORY))
 PROJECT_NAME = PROJECT_DIRECTORY_NAME.replace("_", "-")
 
 
+def _project_version_file(project_directory):
+    # pyproject.toml is canonical after the setup.cfg -> pyproject.toml migration;
+    # setup.cfg is kept as a fallback for packages that have not migrated yet.
+    for name in ("pyproject.toml", "setup.cfg"):
+        path = os.path.join(project_directory, name)
+        if os.path.exists(path):
+            return path
+    raise FileNotFoundError(f"No pyproject.toml or setup.cfg found in {project_directory}")
+
+
+def _set_version(text, new_version):
+    # Preserve the existing quoting style (pyproject.toml quotes the version,
+    # legacy setup.cfg did not).
+    def repl(match):
+        quote = match.group(1)
+        return f"version = {quote}{new_version}{quote}"
+
+    return re.sub(r'^version\s*=\s*("?).*', repl, text, count=1, flags=re.MULTILINE)
+
+
 def main(argv):
     version = argv[1]
     version_obj = Version(version)
@@ -50,22 +70,15 @@ def main(argv):
         with open(history_path, "w") as f:
             f.write(history)
 
-    setup_cfg_path = os.path.join(PROJECT_DIRECTORY, "setup.cfg")
-    with open(setup_cfg_path) as f:
-        setup_cfg = f.read()
+    project_file = _project_version_file(PROJECT_DIRECTORY)
+    with open(project_file) as f:
+        project_metadata = f.read()
     if not DEV_RELEASE:
-        setup_cfg = re.sub(r"^version = .*$", f"version = {new_version}.dev0", setup_cfg, count=1, flags=re.MULTILINE)
-    else:
-        setup_cfg = re.sub(
-            r"^version = .*$",
-            rf"version = {new_version}",
-            setup_cfg,
-            count=1,
-            flags=re.MULTILINE,
-        )
-    with open(setup_cfg_path, "w") as f:
-        f.write(setup_cfg)
-    shell(["git", "commit", "-m", f"Starting work on {PROJECT_NAME} {new_version}", "HISTORY.rst", setup_cfg_path])
+        new_version = f"{new_version}.dev0"
+    project_metadata = _set_version(project_metadata, new_version)
+    with open(project_file, "w") as f:
+        f.write(project_metadata)
+    shell(["git", "commit", "-m", f"Starting work on {PROJECT_NAME} {new_version}", "HISTORY.rst", project_file])
 
 
 def shell(cmds, **kwds):

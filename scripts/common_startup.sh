@@ -185,8 +185,68 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     exit 1
 fi
 
+# --- Phase 2 bootstrap preparation: two-stage install (unconditional closure first) ---
+# Stage 1 (unconditional closure): install local workspace members so that
+# `import galaxy.dependencies` (and its galaxy.util / galaxy.config imports)
+# can resolve from installed packages. Stage 2 (below) then evaluates
+# conditional deps from config via galaxy_bootstrap_python.
+# `galaxy.dependencies` now lives in packages/app (installed as galaxy-app);
+# every bootstrap python call below prefers installed packages but keeps a
+# PYTHONPATH=lib fallback for lib/galaxy_test leftovers.
+# Set GALAXY_WORKSPACE_SYNC=0 to skip Stage 1 (offline / externally managed env).
+: "${GALAXY_WORKSPACE_SYNC:=1}"
+
+# Run a python snippet using the environment's installed workspace packages.
+# There is no PYTHONPATH=lib fallback here: galaxy.dependencies/util/config all
+# moved to packages/*/src and are only importable once the workspace is synced
+# (or a released galaxy-app is installed). Missing setup must be reported, not
+# silently worked around with checkout source paths.
+galaxy_bootstrap_python() {
+    if python -c "import galaxy.dependencies" >/dev/null 2>&1; then
+        python "$@"
+    else
+        echo "ERROR: galaxy packages are not importable in the active environment." >&2
+        echo "Run 'uv sync --locked --inexact --package galaxy-app --all-extras' (or install released galaxy-app) before starting Galaxy." >&2
+        return 1
+    fi
+}
+
+sync_workspace_packages() {
+    [ "$GALAXY_WORKSPACE_SYNC" = "0" ] && return 0
+    if command -v uv >/dev/null 2>&1 && [ -f pyproject.toml ] && [ -f uv.lock ]; then
+        # Sync the SERVER distribution closure (web-apps pulls galaxy-app and
+        # every library member as editable installs). For the Tool Shed,
+        # galaxy-tool-shed is the server dist. Override with
+        # $GALAXY_SYNC_PACKAGE for custom profiles.
+        if [ "$GALAXY_CONDITIONAL_DEPENDENCIES_APP" = "tool_shed" ]; then
+            : "${GALAXY_SYNC_PACKAGE:=galaxy-tool-shed}"
+        else
+            : "${GALAXY_SYNC_PACKAGE:=galaxy-web-apps}"
+        fi
+        echo "Syncing Galaxy workspace (server closure: $GALAXY_SYNC_PACKAGE) with 'uv sync --locked --inexact --all-extras'..."
+        # --inexact is deliberate: an exact root sync would strip packages that
+        # later steps install (conditional provider SDKs, dev tools), and would
+        # remove member editables installed by earlier --package syncs.
+        if [ -n "$VIRTUAL_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
+            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" --active || echo "WARNING: workspace sync failed, environment may be missing Galaxy packages."
+        else
+            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" || echo "WARNING: workspace sync failed, environment may be missing Galaxy packages."
+        fi
+        return 0
+    fi
+    # Fallback when uv is unavailable: pip-install the minimal local closure
+    # needed to import galaxy.dependencies (galaxy-app plus galaxy.util + galaxy.config).
+    if [ -d packages/util ] && [ -d packages/config ]; then
+        echo "Installing local Galaxy workspace packages for bootstrap (galaxy-util, galaxy-config, galaxy-app)..."
+        # shellcheck disable=SC2086
+        ${PIP_CMD} install -e ./packages/util -e ./packages/config -e ./packages/app || echo "WARNING: local workspace install failed, continuing with PYTHONPATH=lib fallback."
+    fi
+}
+
+sync_workspace_packages
+
 : "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
-: "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
+: "${GALAXY_DEV_REQUIREMENTS:=./requirements/dev-requirements.txt}"
 # Which app's config decides the conditional dependencies to install. Set by the
 # launcher (run_tool_shed.sh exports tool_shed) since this script is shared.
 : "${GALAXY_CONDITIONAL_DEPENDENCIES_APP:=galaxy}"
@@ -214,13 +274,15 @@ if [ $FETCH_WHEELS -eq 1 ]; then
         set_galaxy_config_file_var
         conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
     fi
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
+    # Stage 2: evaluate conditional deps from installed workspace packages
+    # (galaxy_bootstrap_python keeps a PYTHONPATH=lib fallback for lib/galaxy_test leftovers).
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(galaxy_bootstrap_python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint packages/app/src/galaxy/dependencies/conditional-constraints.txt
     fi
 fi
 
@@ -256,7 +318,9 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         # Prebuilt install: pull the matching galaxy-web-client wheel from PyPI.
         # webapp.py picks it up via `import galaxy.web_client` and serves its
         # bundled dist/ directly -- no pnpm or staging required.
-        GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
+        # Installed galaxy.version (packages/util); galaxy_bootstrap_python
+        # keeps a PYTHONPATH=lib fallback for lib/galaxy_test leftovers.
+        GALAXY_WEB_CLIENT_VERSION=$(galaxy_bootstrap_python -c "from galaxy.version import VERSION; print(VERSION)")
         GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
         case "$GALAXY_WEB_CLIENT_VERSION" in
             *dev*|*rc*)
@@ -299,8 +363,9 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         fi
         # We need GALAXY_CONFIG_FILE here, ensure it's set.
         set_galaxy_config_file_var
-        # Set plugin path
-        GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
+        # Set plugin path (use installed workspace packages; config_parse.py
+        # itself also prefers installed packages with a lib/ fallback).
+        GALAXY_PLUGIN_PATH=$(galaxy_bootstrap_python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
         cd client
         # shellcheck disable=SC2086

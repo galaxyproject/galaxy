@@ -3,7 +3,12 @@ import os
 import pprint
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
+# Prefer installed workspace packages (galaxy-config/galaxy-util); keep lib/
+# fallback for lib/galaxy_test leftovers.
+try:
+    import galaxy.config  # noqa: F401
+except ImportError:
+    sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.util.properties import load_app_properties
 

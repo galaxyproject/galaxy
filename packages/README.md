@@ -30,11 +30,32 @@ Resolve manifest conflicts first, then regenerate the lock with the pinned uv
 version and review the dependency diff. Do not hand-edit the lock or run an
 unrelated broad upgrade in a source-move change.
 
-This PR retains the existing `lib/` sources and package source symlinks.
-Moving source ownership into package directories is a separate change.
-A root dev sync installs development tools and third-party dependencies;
-use a package-scoped command to install the relevant workspace members.
-Normal Galaxy startup continues to use the existing `run.sh` bootstrap.
+### Development profiles
+
+Every profile resolves from the single root workspace lock. Tooling-only
+requirement exports live in the repository-level `requirements/` directory;
+the runtime exports (`pinned-requirements.txt`, `conditional-requirements.txt`,
+`conditional-constraints.txt`) ship with the `galaxy-app` wheel and stay in
+`packages/app/src/galaxy/dependencies/`.
+
+| Profile | Setup | Notes |
+| --- | --- | --- |
+| App startup | `uv sync --locked --package galaxy-web-apps --all-extras` | Installs the editable server closure; startup uses an inexact sync to preserve additional dependencies. |
+| Backend tests | `uv sync --locked --package galaxy-web-apps --all-extras --group dev` | The `dev` group includes the `test` group. |
+| Tool Shed | `uv sync --locked --package galaxy-tool-shed --all-extras --group dev` | Installs the Tool Shed server closure; start with `run_tool_shed.sh`. |
+| Browser tests | covered by the `test` group | `playwright` + `pytest-playwright`, `selenium` + `axe-selenium-python`. |
+| Docs | covered by the `dev` group | Sphinx stack; docs CI installs `sphinxcontrib-simpleversioning` on top. |
+| Typecheck | `uv sync --locked --group typecheck` | Or install `requirements/pinned-typecheck-requirements.txt` into an existing environment. |
+| Lint | isolated environment, not a group | The pinned flake8/ruff tool set conflicts with the application resolve; build from `requirements/lint-requirements.txt`, frozen as `requirements/pinned-lint-requirements.txt` by `update_lint_requirements.sh`. |
+
+Member extras used by `packages/test.sh` and installable via
+`uv sync --locked --package <dist> --all-extras`:
+
+| Package | Extras |
+| --- | --- |
+| `galaxy-util` | `image-util`, `template`, `jstree`, `config-template` |
+| `galaxy-tool-util` | `cwl`, `mulled`, `edam` (plus `extended-assertions`, `test`) |
+| `galaxy-objectstore` | `irods`, `azure-blob`, `s3` (plus `all`, `test`) |
 
 Here is an example workflow that syncs the shared development environment
 once from the repository root and then runs tests for a specific package:
@@ -70,12 +91,11 @@ The ``Makefile`` can also be used for typechecking.
     $ make _mypy  # a shortcut to just run mypy on an existing updated environment
 
 This is equivalent to syncing the package environment and then adding
-Galaxy's type checking dependencies to it. During the workspace migration
-those still live in ``lib/galaxy/dependencies/`` (future home:
-a repository-level ``requirements/`` directory):
+Galaxy's type checking dependencies to it, which live in the
+repository-level ``requirements/`` directory:
 
     $ uv sync --locked --package galaxy-auth --all-extras
-    $ uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    $ uv pip install -r ../../requirements/pinned-typecheck-requirements.txt
     $ uv run --locked --package galaxy-auth mypy .
 
 The ``Makefile`` can also be used for linting.
@@ -88,7 +108,7 @@ This is equivalent to syncing the package environment and then adding
 Galaxy's linting dependencies to it.
 
     $ uv sync --locked --package galaxy-auth --all-extras
-    $ uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
+    $ uv pip install -r ../../requirements/pinned-lint-requirements.txt
     $ uv run --locked --package galaxy-auth ruff check .
 
 ## Isolated package checks

@@ -69,9 +69,9 @@ _dist:
 dist: clean _dist
 
 _setup-mypy-venv: setup-venv
-	# Still resolved from lib/galaxy/dependencies/ during migration; future
-	# home is a repository-level requirements/ directory.
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+	# Generated from the root workspace lock into the repository-level
+	# requirements/ directory (see `make update-dependencies`).
+	uv pip install -r ../../requirements/pinned-typecheck-requirements.txt
 
 _mypy:
 	uv run --locked --package $(UV_PACKAGE) mypy .
@@ -79,9 +79,9 @@ _mypy:
 mypy: _setup-mypy-venv _mypy
 
 _setup-lint-venv: setup-venv
-	# Still resolved from lib/galaxy/dependencies/ during migration; future
-	# home is a repository-level requirements/ directory.
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
+	# Frozen from requirements/lint-requirements.txt (kept out of the
+	# workspace resolution; see `make update-lint-requirements`).
+	uv pip install -r ../../requirements/pinned-lint-requirements.txt
 
 _lint:
 	uv run --locked --package $(UV_PACKAGE) ruff check .

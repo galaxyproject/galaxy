@@ -125,6 +125,38 @@ Documentation = "https://docs.galaxyproject.org/"
 Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
+# Development profiles, all resolved from the single root workspace lock:
+#
+# - App startup:   `uv sync --locked --package galaxy-web-apps --all-extras`.
+#   Startup uses --inexact to preserve separately installed conditional deps.
+# - Backend tests: add --group dev to the app command (`dev` includes `test`).
+# - Tool Shed:     `uv sync --locked --package galaxy-tool-shed --all-extras`;
+#   start with run_tool_shed.sh.
+# - Browser tests: covered by the `test` group (playwright + pytest-playwright,
+#   selenium + axe-selenium-python).
+# - Docs:          covered by the `dev` group (Sphinx stack); docs CI installs
+#   sphinxcontrib-simpleversioning on top.
+# - Typecheck:     `uv sync --locked --group typecheck`, or install
+#   requirements/pinned-typecheck-requirements.txt into an existing environment.
+# - Lint:          intentionally NOT a dependency group: the pinned flake8/ruff
+#   tool set has transitive requirements incompatible with the application
+#   resolve. It lives in an isolated environment built from
+#   requirements/lint-requirements.txt and frozen as
+#   requirements/pinned-lint-requirements.txt by update_lint_requirements.sh.
+#
+# Tooling-only requirement exports (dev, test, typecheck, lint) live in the
+# repository-level requirements/ directory and are regenerated from this
+# workspace's uv.lock by packages/app/src/galaxy/dependencies/update.sh
+# (`uv export --frozen --no-annotate --no-hashes`). The runtime exports
+# (pinned-requirements.txt, conditional-requirements.txt,
+# conditional-constraints.txt) ship inside the galaxy-app wheel and remain in
+# packages/app/src/galaxy/dependencies/.
+#
+# Member extras (installable via `uv sync --locked --package <dist> --all-extras`
+# or `uv pip install '.[...]'` in the package directory; used by packages/test.sh):
+#   galaxy-util        image-util, template, jstree, config-template
+#   galaxy-tool-util   cwl, mulled, edam (plus extended-assertions, test)
+#   galaxy-objectstore irods, azure-blob, s3 (plus all, test)
 [dependency-groups]
 test = [
     "aiocop",
@@ -204,9 +236,9 @@ line-length = 120
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
-  | packages
-  | lib/tool_shed/test/test_data/repos
-  | lib/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
+  | packages/tool_shed/src/tool_shed/test/test_data/repos
+  | packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
+  | test/functional/tools/cwl_tools
 )/
 '''
 
@@ -215,11 +247,62 @@ isort = true
 
 [tool.ruff]
 exclude = [
-    "lib/tool_shed/test/test_data/repos"
+    "packages/tool_shed/src/tool_shed/test/test_data/repos"
 ]
 line-length = 120
-src = ["lib"]
-namespace-packages = ["lib/galaxy"]
+src = [
+    "lib",
+    "packages/app/src",
+    "packages/auth/src",
+    "packages/config/src",
+    "packages/data/src",
+    "packages/files/src",
+    "packages/job_execution/src",
+    "packages/job_metrics/src",
+    "packages/navigation/src",
+    "packages/objectstore/src",
+    "packages/schema/src",
+    "packages/selenium/src",
+    "packages/test_api/src",
+    "packages/test_base/src",
+    "packages/test_driver/src",
+    "packages/test_selenium/src",
+    "packages/tool_shed/src",
+    "packages/tool_shed_schema/src",
+    "packages/tool_util/src",
+    "packages/tool_util_models/src",
+    "packages/tours/src",
+    "packages/util/src",
+    "packages/web_apps/src",
+    "packages/web_client/src",
+    "packages/web_framework/src",
+    "packages/web_stack/src",
+]
+namespace-packages = [
+    "packages/app/src/galaxy",
+    "packages/auth/src/galaxy",
+    "packages/config/src/galaxy",
+    "packages/data/src/galaxy",
+    "packages/files/src/galaxy",
+    "packages/job_execution/src/galaxy",
+    "packages/job_metrics/src/galaxy",
+    "packages/navigation/src/galaxy",
+    "packages/objectstore/src/galaxy",
+    "packages/schema/src/galaxy",
+    "packages/selenium/src/galaxy",
+    "packages/test_api/src/galaxy_test",
+    "packages/test_base/src/galaxy_test",
+    "packages/test_driver/src/galaxy_test",
+    "packages/test_selenium/src/galaxy_test",
+    "packages/tool_util/src/galaxy",
+    "packages/tool_util_models/src/galaxy",
+    "packages/tours/src/galaxy",
+    "packages/util/src/galaxy",
+    "packages/web_apps/src/galaxy",
+    "packages/web_client/src/galaxy",
+    "packages/web_framework/src/galaxy",
+    "packages/web_stack/src/galaxy",
+]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
@@ -256,12 +339,13 @@ keep-runtime-typing = true
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
 # Don't check pyupgrade rules on generated files
-"lib/galaxy/schema/bco/*" = ["UP"]
-"lib/galaxy/schema/drs/*" = ["UP"]
-"lib/tool_shed_client/schema/trs.py" = ["UP"]
-"lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
+"packages/schema/src/galaxy/schema/bco/*" = ["UP"]
+"packages/schema/src/galaxy/schema/drs/*" = ["UP"]
+"packages/tool_shed_schema/src/tool_shed_client/schema/trs.py" = ["UP"]
+"packages/tool_shed_schema/src/tool_shed_client/schema/trs_service_info.py" = ["UP"]
 
 [tool.uv]
+# Workaround for https://github.com/python/mypy/issues/13392 taken from https://github.com/astral-sh/uv/issues/3898
 # Migrated from packages/pyproject.toml during workspace unification (Phase 1).
 config-settings = { editable_mode = "compat" }
 constraint-dependencies = [

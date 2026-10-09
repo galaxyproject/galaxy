@@ -1328,7 +1328,7 @@ Access UI elements through ``self.components``, a hierarchical tree that mirrors
 Galaxy's UI structure. Components are defined in
 ``client/src/utils/navigation/navigation.yml`` and wrapped at runtime with
 driver-aware methods via the ``SmartComponent`` and ``SmartTarget`` classes
-(in ``lib/galaxy/selenium/smart_components.py``).
+(in ``packages/selenium/src/galaxy/selenium/smart_components.py``).
 
 ```python
 # Access nested components via attribute chain

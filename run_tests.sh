@@ -702,7 +702,7 @@ if [ -n "$generate_cwl_conformance_tests" ]; then
 fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$coverage_arg" = '--with-coverage' ]; then
-    coverage_arg="--cov-report xml --cov=lib"
+    coverage_arg="--cov-report xml --cov=packages --cov=lib"
 fi
 if [ -n "$marker" ]; then
     marker_args=(-m "$marker")

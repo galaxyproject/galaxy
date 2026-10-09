@@ -73,7 +73,7 @@ src/galaxy/web_client/client_build_hash.txt:
 	git rev-parse HEAD > src/galaxy/web_client/client_build_hash.txt
 
 _setup-mypy-venv: setup-venv
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+	uv pip install -r ../../requirements/pinned-typecheck-requirements.txt
 
 _mypy:
 	uv run mypy .

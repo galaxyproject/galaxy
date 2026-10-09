@@ -25,7 +25,18 @@ VERIFY_PACKAGES=(wheel packaging)
 
 BRANCH_CURR=$(git branch --show-current)
 
-: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
+# Canonical version file (packages path) with legacy lib/ fallback during migration.
+# NOTE: packages/util/src/galaxy/version is a symlink to lib/galaxy/version, so
+# both paths resolve to the same file; git tracks lib/galaxy/version/__init__.py.
+function galaxy_version_file() {
+    if [ -f packages/util/src/galaxy/version/__init__.py ]; then
+        echo packages/util/src/galaxy/version/__init__.py
+    else
+        echo lib/galaxy/version/__init__.py
+    fi
+}
+
+: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
 RELEASE_NEXT=
 RELEASE_CURR_MINOR=
 RELEASE_CURR_MINOR_NEXT=
@@ -422,12 +433,12 @@ function increment_minor() {
 
 
 function get_version_major() {
-    grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
+    grep '^VERSION_MAJOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
 }
 
 
 function get_version_minor() {
-    grep '^VERSION_MINOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/" | tr -d '[[:space:]]'
+    grep '^VERSION_MINOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/" | tr -d '[[:space:]]'
 }
 
 
@@ -447,8 +458,10 @@ function update_galaxy_version() {
     local key="$1"
     local val="$2"
     local match="${3:-.*}"
-    log "Updating lib/galaxy/version/__init__.py for ${key} = ${val}..."
-    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" lib/galaxy/version/__init__.py
+    local version_file
+    version_file="$(galaxy_version_file)"
+    log "Updating ${version_file} for ${key} = ${val}..."
+    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" "${version_file}"
 }
 
 
@@ -458,7 +471,7 @@ function packages_make_all() {
     (
         cd packages/
         for dir in *; do
-            [ ! -d "$dir" ] || [ ! -f "${dir}/setup.cfg" ] && continue
+            [ ! -d "$dir" ] || [ ! -f "${dir}/pyproject.toml" ] && continue
             # can't use log_exec here because we want to capture output
             echo + make -C "$dir" "$@" 1>&2
             make -C "$dir" "$@" >"${dir}/make-${1}.log" 2>&1

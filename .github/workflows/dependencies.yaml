@@ -20,6 +20,12 @@ jobs:
           python-version: '3.10'
       - name: Update dependencies
         run: make update-dependencies
+      - name: Verify regenerated requirements match the lock
+        # update.sh supports UV_CHECK=1 (uv lock --check + export --frozen into
+        # a temp dir diffed against the committed files). Running it right after
+        # the update guarantees the pull request only contains self-consistent
+        # artifacts; it fails if any export was not regenerated.
+        run: UV_CHECK=1 bash packages/app/src/galaxy/dependencies/update.sh
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:

@@ -51,7 +51,7 @@ jobs:
         run: |
           uv venv .venv
           . .venv/bin/activate
-          uv pip install -r requirements.txt -r packages/app/src/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
+          uv pip install -r requirements.txt -r requirements/dev-requirements.txt sphinxcontrib-simpleversioning
       - name: Add Google Analytics to doc/source/conf.py
         run: |
           sed -i -e "/html_theme_options = {/a\

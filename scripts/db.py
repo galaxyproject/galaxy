@@ -6,7 +6,12 @@ import os
 import sys
 from argparse import ArgumentParser
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
+# Prefer installed workspace packages (galaxy-data); keep lib/ fallback for
+# lib/galaxy_test leftovers.
+try:
+    import galaxy.model.migrations.dbscript  # noqa: F401
+except ImportError:
+    sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.migrations.dbscript import (
     CONFIG_FILE_ARG,
