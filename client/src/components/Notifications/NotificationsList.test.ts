@@ -1,12 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
-import { mergeObjectListsById } from "@/utils/utils";
 
 import { generateNotificationsList } from "./test-utils";
 
@@ -14,20 +14,19 @@ import NotificationsList from "./NotificationsList.vue";
 
 const localVue = getLocalVue(true);
 
-const { notifications: FAKE_NOTIFICATIONS, messageCount, sharedItemCount } = generateNotificationsList(10);
+enableAutoUnmount(afterEach);
 
-async function mountNotificationsList() {
+async function mountNotificationsList(notifications: UserNotification[]) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const notificationsStore = useNotificationsStore(pinia);
-    notificationsStore.notifications = mergeObjectListsById(FAKE_NOTIFICATIONS, []);
+    notificationsStore.notifications = notifications;
 
-    const wrapper = mount(NotificationsList as object, {
-        global: localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
+    const wrapper = mount(NotificationsList, {
+        global: {
+            ...withPlugins(localVue, pinia),
+            stubs: { ...localVue.stubs, FontAwesomeIcon: true },
         },
     });
 
@@ -37,28 +36,33 @@ async function mountNotificationsList() {
 
 describe("NotificationsList", () => {
     it("render and count unread notifications", async () => {
-        const wrapper = await mountNotificationsList();
+        const { notifications, messageCount, sharedItemCount } = generateNotificationsList(10);
+        const wrapper = await mountNotificationsList(notifications);
 
         expect(wrapper.findAll(".g-card")).toHaveLength(messageCount + sharedItemCount);
 
         const unreadNotification = wrapper.findAll(".unread-notification");
-        expect(unreadNotification).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length);
+        expect(unreadNotification).toHaveLength(notifications.filter((notification) => !notification.seen_time).length);
+        expect(unreadNotification).toHaveLength(6);
     });
 
     it("unread filter works", async () => {
-        const wrapper = await mountNotificationsList();
+        const { notifications } = generateNotificationsList(10);
+        const wrapper = await mountNotificationsList(notifications);
 
         const unreadFilter = wrapper.find("#show-unread-filter");
         expect(unreadFilter.exists()).toBe(true);
-        unreadFilter.trigger("click");
+        await unreadFilter.trigger("click");
 
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.findAll(".g-card")).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length);
+        expect(wrapper.findAll(".g-card")).toHaveLength(
+            notifications.filter((notification) => !notification.seen_time).length,
+        );
+        expect(wrapper.findAll(".g-card")).toHaveLength(6);
     });
 
     it("show no notifications message", async () => {
-        const wrapper = await mountNotificationsList();
+        const { notifications } = generateNotificationsList(10);
+        const wrapper = await mountNotificationsList(notifications);
         expect(wrapper.find("#no-notifications").exists()).toBe(false);
 
         const notificationsStore = useNotificationsStore();
