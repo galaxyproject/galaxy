@@ -1,30 +1,24 @@
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import type { MaybeRefOrGetter } from "@vueuse/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, nextTick, ref } from "vue";
 
 import { useRoundRobinSelector } from "@/composables/roundRobinSelector";
 
-vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 function mountWithComposable<T>(items: MaybeRefOrGetter<T[]>, pollInterval = 1000) {
-    const exposed = {
-        currentItem: ref<T | null>(null),
-        next: () => {},
-        stop: () => {},
-        start: () => {},
-    };
+    let selection!: ReturnType<typeof useRoundRobinSelector<T>>;
 
     const TestComponent = defineComponent({
         setup() {
-            const result = useRoundRobinSelector(items, pollInterval);
-            Object.assign(exposed, result);
-            return () => null; // no template/render needed
+            selection = useRoundRobinSelector(items, pollInterval);
+            return () => null;
         },
     });
 
     mount(TestComponent);
-    return exposed;
+    return selection;
 }
 
 function advanceTimersAndTick(ms: number) {
@@ -33,8 +27,13 @@ function advanceTimersAndTick(ms: number) {
 }
 
 describe("useRoundRobinSelector", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
     afterEach(() => {
         vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     it("initializes with the first item", async () => {
@@ -43,7 +42,7 @@ describe("useRoundRobinSelector", () => {
         expect(currentItem.value).toBe("a");
     });
 
-    it("cycles through items over time", async () => {
+    it("advances each polling interval and wraps to the first item", async () => {
         const { currentItem } = mountWithComposable(["x", "y", "z"]);
 
         await nextTick();
@@ -59,16 +58,16 @@ describe("useRoundRobinSelector", () => {
         expect(currentItem.value).toBe("x");
     });
 
-    it("can manually go to next item", async () => {
+    it("advances manually and wraps to the first item", async () => {
         const { currentItem, next } = mountWithComposable(["apple", "banana"]);
 
         await nextTick();
         expect(currentItem.value).toBe("apple");
 
-        next();
+        await next();
         expect(currentItem.value).toBe("banana");
 
-        next();
+        await next();
         expect(currentItem.value).toBe("apple");
     });
 
@@ -81,17 +80,17 @@ describe("useRoundRobinSelector", () => {
         stop();
         await advanceTimersAndTick(3000);
 
-        expect(currentItem.value).toBe("a"); // unchanged
+        expect(currentItem.value).toBe("a");
     });
 
-    it("handles empty list", async () => {
+    it("keeps the current item null when an empty list advances", async () => {
         const { currentItem, next } = mountWithComposable([]);
 
         await nextTick();
-        expect(currentItem.value).toBe(null);
+        expect(currentItem.value).toBeNull();
 
-        next();
-        expect(currentItem.value).toBe(null);
+        await next();
+        expect(currentItem.value).toBeNull();
     });
 
     it("resets to first item when items change", async () => {
@@ -103,15 +102,15 @@ describe("useRoundRobinSelector", () => {
         items.value = ["cherry", "date"];
         await nextTick();
         expect(currentItem.value).toBe("cherry");
-        next();
+        await next();
         expect(currentItem.value).toBe("date");
     });
 
-    it("starts interval when items are added", async () => {
+    it("starts polling when an empty list receives items", async () => {
         const items = ref<string[]>([]);
         const { currentItem, start } = mountWithComposable(items);
         await nextTick();
-        expect(currentItem.value).toBe(null);
+        expect(currentItem.value).toBeNull();
 
         items.value = ["a", "b"];
         start();
@@ -122,7 +121,7 @@ describe("useRoundRobinSelector", () => {
         expect(currentItem.value).toBe("b");
     });
 
-    it("stops interval when items are cleared", async () => {
+    it("clears the current item when the list becomes empty", async () => {
         const items = ref(["a", "b"]);
         const { currentItem } = mountWithComposable(items);
         await nextTick();
@@ -131,6 +130,6 @@ describe("useRoundRobinSelector", () => {
         items.value = [];
         await advanceTimersAndTick(1000);
 
-        expect(currentItem.value).toBe(null); // should not change
+        expect(currentItem.value).toBeNull();
     });
 });
