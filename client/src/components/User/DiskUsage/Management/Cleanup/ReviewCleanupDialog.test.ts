@@ -3,7 +3,8 @@ import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
-import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
+import { CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
+import { getFakeCleanableItem } from "./test-utils";
 
 import ReviewCleanupDialog from "./ReviewCleanupDialog.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -15,9 +16,9 @@ const DELETE_BUTTON = '[data-test-id="delete-button"]';
 const SELECT_ALL_CHECKBOX = '[data-test-id="select-all-checkbox"]';
 const AGREEMENT_CHECKBOX = '[data-test-id="agreement-checkbox"]';
 
-const EXPECTED_ITEMS: CleanableItem[] = [
-    { id: "1", name: "Item 1", size: 512, type: "dataset", update_time: new Date().toISOString() },
-    { id: "2", name: "Item 2", size: 512, type: "dataset", update_time: new Date().toISOString() },
+const EXPECTED_ITEMS = [
+    getFakeCleanableItem({ id: "1", name: "Item 1" }),
+    getFakeCleanableItem({ id: "2", name: "Item 2" }),
 ];
 const EXPECTED_TOTAL_ITEMS = EXPECTED_ITEMS.length;
 const FAKE_OPERATION: CleanupOperation = {
