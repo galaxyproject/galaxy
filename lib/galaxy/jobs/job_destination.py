@@ -14,6 +14,10 @@ if TYPE_CHECKING:
     from galaxy.model import Job
 
 
+class PlatformDependencyError(Exception):
+    """Tool requirements do not resolve for the conda platform of the job destination."""
+
+
 @dataclass(kw_only=True, eq=False)
 class JobDestination:
     """

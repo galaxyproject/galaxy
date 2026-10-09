@@ -68,7 +68,10 @@ from galaxy.job_execution.setup import (
     TOOL_PROVIDED_JOB_METADATA_KEYS,
     validate_working_directory_path,
 )
-from galaxy.jobs.job_destination import JobDestination
+from galaxy.jobs.job_destination import (
+    JobDestination,
+    PlatformDependencyError,
+)
 from galaxy.jobs.mapper import (
     JobMappingException,
     JobRunnerMapper,
@@ -1165,10 +1168,37 @@ class MinimalJobWrapper(HasResourceParameters):
     def dependency_shell_commands(self):
         """Shell fragment to inject dependencies."""
         if self._dependency_shell_commands is None:
-            self._dependency_shell_commands = self.tool.build_dependency_shell_commands(
-                job_directory=self.working_directory
-            )
+            platform = self.platform
+            if platform:
+                commands = self.tool.build_dependency_shell_commands(
+                    job_directory=self.working_directory, platform=platform
+                )
+                self._check_platform_dependencies(platform, commands)
+            else:
+                commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+            self._dependency_shell_commands = commands
         return self._dependency_shell_commands
+
+    @property
+    def platform(self) -> Optional[str]:
+        """Conda platform (subdir) set with the ``platform`` parameter of the job destination, if any.
+
+        The destination is assigned in the job handler (``__verify_job_ready``) before the runner
+        prepares the job and builds the command line.
+        """
+        return self.job_destination.params.get("platform") or None
+
+    def _check_platform_dependencies(self, platform: str, commands) -> None:
+        """Raise if the tool has package requirements that do not resolve for ``platform``."""
+        requirements = getattr(self.tool, "requirements", None)
+        packages = list(requirements.packages) if requirements else []
+        if packages and not commands:
+            missing = ", ".join(f"{r.name}={r.version}" if r.version else r.name for r in packages)
+            raise PlatformDependencyError(
+                f"Failed to resolve the tool requirements [{missing}] for platform '{platform}' on job "
+                f"destination '{self.job_destination.id}'. No conda environment for this platform is installed, "
+                "contact the Galaxy admin."
+            )
 
     @property
     def cleanup_job(self):

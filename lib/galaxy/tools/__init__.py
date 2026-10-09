@@ -2661,9 +2661,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 **kwds,
             )
 
-    def build_dependency_shell_commands(self, job_directory=None, metadata=False):
+    def build_dependency_shell_commands(self, job_directory=None, metadata=False, platform=None):
         """
         Return a list of commands to be run to populate the current environment to include this tools requirements.
+
+        ``platform`` is an optional conda subdir (for example ``linux-aarch64``) selecting the
+        conda environments of that platform, ``None`` uses the platform Galaxy runs on.
         """
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             requirements=self.requirements,
@@ -2673,6 +2676,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             preserve_python_environment=self.requires_galaxy_python_environment,
             metadata=metadata,
             tool_instance=self,
+            platform=platform,
         )
 
     @property

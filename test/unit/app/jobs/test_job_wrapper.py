@@ -7,6 +7,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from uuid import uuid4
+from unittest import mock
 
 from galaxy.app_unittest_utils.tools_support import (
     MockContext,
@@ -18,6 +19,10 @@ from galaxy.jobs import (
     TaskWrapper,
 )
 from galaxy.jobs.handler import BaseJobHandlerQueue
+from galaxy.jobs.job_destination import (
+    JobDestination,
+    PlatformDependencyError,
+)
 from galaxy.model import (
     Base,
     Job,
@@ -25,6 +30,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.objectstore import BaseObjectStore
+from galaxy.tool_util.deps.requirements import (
+    ToolRequirement,
+    ToolRequirements,
+)
 from galaxy.tools import ToolBox
 from galaxy.tools.parameters.basic import DirectoryUriToolParameter
 from galaxy.util import XML
@@ -104,6 +113,44 @@ class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
         return JobWrapper(self.job, self.queue)
 
 
+class TestJobWrapperPlatform(AbstractTestCases.BaseWrapperTestCase):
+    """The ``platform`` destination parameter reaches the dependency resolution."""
+
+    def _wrapper(self):
+        return JobWrapper(self.job, self.queue)
+
+    def _dependency_commands(self, params, requirements=None, commands=TEST_DEPENDENCIES_COMMANDS):
+        wrapper = self._wrapper()
+        tool = self.app.toolbox.get(TEST_TOOL_ID)
+        tool.requirements = requirements or ToolRequirements([])
+        tool.commands_to_return = commands
+        destination = JobDestination(id="dest", runner="local", params=params)
+        with mock.patch.object(JobWrapper, "job_destination", new=destination):
+            return wrapper.dependency_shell_commands, tool
+
+    def test_no_platform_param_keeps_call_unchanged(self):
+        commands, tool = self._dependency_commands({})
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+        assert list(tool.build_calls[0]) == ["job_directory"]
+
+    def test_platform_param_is_passed_to_the_tool(self):
+        _, tool = self._dependency_commands({"platform": "linux-aarch64"})
+        assert tool.build_calls[0]["platform"] == "linux-aarch64"
+
+    def test_unresolved_platform_fails_with_message(self):
+        requirements = ToolRequirements([ToolRequirement(name="bwa", version="0.7.17", type="package")])
+        with self.assertRaises(PlatformDependencyError) as ctx:
+            self._dependency_commands({"platform": "osx-arm64"}, requirements=requirements, commands=[])
+        message = str(ctx.value)
+        assert "osx-arm64" in message
+        assert "bwa=0.7.17" in message
+        assert "dest" in message
+
+    def test_unresolved_platform_without_requirements_is_fine(self):
+        commands, _ = self._dependency_commands({"platform": "osx-arm64"}, commands=[])
+        assert commands == []
+
+
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
     def setUp(self):
         super().setUp()
@@ -163,12 +210,19 @@ class MockTool:
 
     def params_from_strings(self, param_dict):
         return param_dict
+        self.requirements = ToolRequirements([])
+        self.commands_to_return = TEST_DEPENDENCIES_COMMANDS
+        self.build_calls: list[dict] = []
 
     def get_job_destination(self, params):
         return Bunch(runner="local", id="local", params={})
 
-    def build_dependency_shell_commands(self, job_directory):
-        return TEST_DEPENDENCIES_COMMANDS
+    def build_dependency_shell_commands(self, job_directory, platform=None):
+        call = {"job_directory": job_directory}
+        if platform is not None:
+            call["platform"] = platform
+        self.build_calls.append(call)
+        return self.commands_to_return
 
 
 class MockToolbox:
