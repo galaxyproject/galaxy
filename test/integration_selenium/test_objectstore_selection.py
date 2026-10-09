@@ -142,6 +142,34 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         details.badge_of_type(type="faster").wait_for_present()
         details.badge_of_type(type="more_stable").wait_for_present()
 
+    @selenium_test
+    @managed_history
+    def test_storage_run_dataset_popover_fits_window(self):
+        history_id = self.current_history_id()
+        hda = self.dataset_populator.new_dataset(history_id, name="a long dataset name " * 20, wait=True)
+        # The dataset is already in the target store, so the run skips it and lists it.
+        preview = self.dataset_populator.bulk_storage_operation_preview(
+            history_id,
+            {
+                "mode": "move",
+                "target_object_store_id": "high_performance",
+                "items": [{"id": hda["id"], "history_content_type": "dataset"}],
+            },
+        )
+        run = self.dataset_populator.bulk_storage_operation_execute(
+            history_id, {"snapshot_id": preview["snapshot_id"], "execution_policy": {"skip_ineligible": True}}
+        )["run"]
+        self.dataset_populator.wait_for_bulk_storage_operation_run(history_id, run["run_id"])
+        self.get(f"histories/{history_id}/storage/runs/{run['run_id']}")
+        self.hover_over(self.wait_for_selector_visible(f"#storage-run-item-dataset-{hda['id']}"))
+        self.wait_for_selector_visible(".popover #dataset-details")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        rect = self.execute_script(
+            "const r = document.querySelector('#dataset-details').closest('.popover').getBoundingClientRect();"
+            "return {left: r.left, right: r.right, width: r.width, viewport: window.innerWidth};"
+        )
+        assert rect["width"] <= 460 and rect["left"] >= 0 and rect["right"] <= rect["viewport"], rect
+
 
 class TestMultipleQuotasSeleniumIntegration(SeleniumIntegrationTestCase, ConfiguresObjectStores):
     dataset_populator: "SeleniumSessionDatasetPopulator"
