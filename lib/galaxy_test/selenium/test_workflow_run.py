@@ -844,6 +844,37 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_empty_text_default_among_static_restrictions(self):
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    default: ""
+    restrictions:
+      - {value: a, label: A}
+      - {value: "", label: Empty}
+steps:
+  echo:
+    tool_id: gx_text
+    in:
+      parameter:
+        source: text_param
+""")
+        select_field = self.components.workflow_run.input_select_field(label="text_param")
+        assert select_field.wait_for_present().text == "Empty"
+        # Choosing the empty option again must keep the form submittable.
+        self.select_set_value(select_field.wait_for_present(), "A")
+        self.select_set_value(select_field.wait_for_present(), "Empty")
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
+        invocation = self.workflow_populator.get_invocation(invocation_id)
+        assert invocation["input_step_parameters"]["text_param"]["parameter_value"] == ""
+
+    @selenium_test
+    @managed_history
     def test_execution_with_rules(self):
         history_id = self.workflow_run_and_submit(
             WORKFLOW_WITH_RULES_1,

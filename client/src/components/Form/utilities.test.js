@@ -137,6 +137,31 @@ describe("form component utilities", () => {
         expect(result).toEqual(null);
     });
 
+    it("accepts an empty string for a required select only when it is an allowed option", () => {
+        const index = {
+            choice: {
+                type: "select",
+                options: [
+                    ["A", "a", false],
+                    ["Empty", "", true],
+                ],
+            },
+            text: { type: "text" },
+        };
+        expect(validateInputs(index, { choice: "", text: "x" }, true)).toEqual(null);
+
+        index.choice.options = [["A", "a", false]];
+        expect(validateInputs(index, { choice: "", text: "x" }, true)).toEqual([
+            "choice",
+            "Please provide a value for this option.",
+        ]);
+
+        expect(validateInputs(index, { choice: "a", text: "" }, true)).toEqual([
+            "text",
+            "Please provide a value for this option.",
+        ]);
+    });
+
     it("test error matching", () => {
         const index = {
             input_a: {},
