@@ -1,14 +1,11 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import Index from "./Index.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 
-vi.mock("app");
-vi.mock("onload/loadConfig", () => ({
-    getAppRoot: vi.fn(() => "/"),
-}));
 vi.mock("../services", () => ({
     Services: class Services {
         async getInstalledRepositories() {
@@ -34,31 +31,57 @@ vi.mock("../services", () => ({
     },
 }));
 
+const SELECTORS = {
+    LOADING: "loading-span-stub",
+    INSTALLED_MESSAGE: ".installed-message",
+    REPOSITORY_NAME: ".name",
+    BADGE: ".badge",
+    COLUMN_HEADER: "thead th",
+};
+
+function mountInstalledList() {
+    const localVue = getLocalVue();
+    return mount(Index, {
+        props: { filter: "" },
+        global: {
+            ...localVue,
+            stubs: { ...localVue.stubs, RepositoryDetails: true, LoadingSpan: true },
+        },
+    });
+}
+
 describe("InstalledList", () => {
-    it("test installed list", async () => {
-        const localVue = getLocalVue();
-        const wrapper = mount(Index, {
-            props: {
-                filter: "",
-            },
-            stubs: {
-                RepositoryDetails: true,
-                GLink,
-                LoadingSpan: true,
-            },
-            global: localVue,
-        });
-        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repositories");
-        await wrapper.vm.$nextTick();
-        expect(wrapper.find(".installed-message").text()).toBe("2 repositories installed on this instance.");
-        const names = wrapper.findAll(".name");
+    it("shows a loading message until the installed repositories arrive", async () => {
+        const wrapper = mountInstalledList();
+
+        expect(wrapper.find(SELECTORS.LOADING).attributes("message")).toBe("Loading installed repositories");
+
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.LOADING).exists()).toBe(false);
+    });
+
+    it("lists the installed repositories and flags ones with a newer version", async () => {
+        const wrapper = mountInstalledList();
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.INSTALLED_MESSAGE).text()).toBe("2 repositories installed on this instance.");
+        const names = wrapper.findAll(SELECTORS.REPOSITORY_NAME);
         expect(names.length).toBe(2);
-        expect(names.at(0).text()).toBe("name_0");
-        expect(names.at(1).text()).toBe("name_1");
+        expect(nth(names, 0).text()).toBe("name_0");
+        expect(nth(names, 1).text()).toBe("name_1");
+
+        // The installation-progress toggle, then one link per repository.
         const links = wrapper.findAllComponents(GLink);
         expect(links.length).toBe(3);
-        const badge = links.at(1).find(".badge");
-        expect(badge.text()).toBe("Newer version available!");
-        expect(wrapper.findAll("thead th").map((th) => th.text())).toContain("Tool Shed");
+        expect(nth(links, 1).find(SELECTORS.BADGE).text()).toBe("Newer version available!");
+        expect(nth(links, 2).find(SELECTORS.BADGE).exists()).toBe(false);
+    });
+
+    it("adds a Tool Shed column when repositories come from more than one Tool Shed", async () => {
+        const wrapper = mountInstalledList();
+        await flushPromises();
+
+        expect(wrapper.findAll(SELECTORS.COLUMN_HEADER).map((th) => th.text())).toContain("Tool Shed");
     });
 });
