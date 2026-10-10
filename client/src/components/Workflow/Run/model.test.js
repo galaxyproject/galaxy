@@ -63,3 +63,60 @@ describe("WorkflowRunModel status", () => {
         expect(runModel.hasOpenToolSteps).toBe(false);
     });
 });
+
+describe("WorkflowRunModel inputs", () => {
+    function dataInputStep(stepIndex, outputConnections) {
+        return {
+            inputs: [],
+            output_connections: outputConnections,
+            step_index: stepIndex,
+            step_name: "Input dataset",
+            step_type: "data_input",
+        };
+    }
+
+    function toolStep(stepIndex, inputs) {
+        return {
+            inputs,
+            step_index: stepIndex,
+            step_name: "Concatenate datasets",
+            step_type: "tool",
+        };
+    }
+
+    it("lists every connection of a data input connected to several steps in its help", () => {
+        const connectionToCat = { input_step_index: 2, input_name: "input1", output_name: "output" };
+        const runModel = new WorkflowRunModel({
+            steps: [
+                dataInputStep(0, [connectionToCat]),
+                dataInputStep(1, [connectionToCat]),
+                toolStep(2, [{ name: "input1", type: "data", multiple: true, optional: false, help: "" }]),
+            ],
+        });
+
+        const input = runModel.parms[2].input1;
+        expect(input.type).toBe("hidden");
+        expect(input.help).toBe("Connected to 'output' from Step 1, Connected to 'output' from Step 2");
+        expect(input.step_linked).toEqual([
+            { index: "0", step_type: "data_input" },
+            { index: "1", step_type: "data_input" },
+        ]);
+    });
+
+    it("previews filled tool parameters collapsed but leaves empty required ones open", () => {
+        const runModel = new WorkflowRunModel({
+            steps: [
+                toolStep(0, [
+                    { name: "label", type: "text", optional: false, value: "sample" },
+                    { name: "threshold", type: "text", optional: false, value: "" },
+                ]),
+            ],
+        });
+
+        const { label, threshold } = runModel.parms[0];
+        expect(label.collapsible_value).toBe("sample");
+        expect(label.collapsible_preview).toBe(true);
+        expect(threshold.collapsible_value).toBeUndefined();
+        expect(threshold.collapsible_preview).toBeUndefined();
+    });
+});
