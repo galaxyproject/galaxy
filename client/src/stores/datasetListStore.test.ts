@@ -1,3 +1,4 @@
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,19 +11,14 @@ vi.mock("@/api/datasets");
 
 const mockLoadDatasets = vi.mocked(loadDatasets);
 
-function mockSummary(id: string, name = `dataset ${id}`): HDASummary {
-    return {
+function mockSummary(id: string, name = `dataset ${id}`) {
+    return getFakeDatasetSummary({
         id,
         name,
-        history_content_type: "dataset",
-        hid: 1,
         history_id: "h1",
-        deleted: false,
-        visible: true,
-        state: "ok",
         update_time: "2026-08-01T10:00:00.000Z",
         create_time: "2026-08-01T10:00:00.000Z",
-    } as HDASummary;
+    });
 }
 
 function mockResult(data: HistoryItemSummary[], totalMatches = data.length): LoadDatasetsResult {
