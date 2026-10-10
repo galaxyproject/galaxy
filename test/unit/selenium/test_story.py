@@ -4,6 +4,7 @@ import datetime
 import os
 import zipfile
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,22 @@ class FrozenDatetime(datetime.datetime):
     @classmethod
     def now(cls, tz=None):
         return cls(2026, 10, 1, 12, 0)
+
+
+class ImageCollector(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.images: list[dict[str, str | None]] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "img":
+            self.images.append(dict(attrs))
+
+
+def _images(html: str) -> list[dict[str, str | None]]:
+    collector = ImageCollector()
+    collector.feed(html)
+    return collector.images
 
 
 @pytest.fixture
@@ -106,6 +123,18 @@ class TestStoryArtifacts:
 
         html = open(os.path.join(story_dir, "story.html")).read()
         assert 'src="000_a.png"' in html
+
+    def test_markdown_significant_captions_and_labels_render_as_images(self, story_dir):
+        name = "000_a b#c?d%e(f).png"
+        _write_png(os.path.join(story_dir, name))
+        story = Story("T", "", story_dir)
+        story.add_screenshot(os.path.join(story_dir, name), "step 1] see [this \\ one")
+        story.finalize()
+
+        html = open(os.path.join(story_dir, "story.html")).read()
+        assert _images(html) == [{"alt": "step 1] see [this \\ one", "src": "000_a%20b%23c%3Fd%25e%28f%29.png"}]
+        with zipfile.ZipFile(f"{story_dir}.zip") as zf:
+            assert name in zf.namelist()
 
     def test_zip_is_written_beside_the_directory(self, story_dir):
         _write_png(os.path.join(story_dir, "000_a.png"))

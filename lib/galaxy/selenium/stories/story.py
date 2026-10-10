@@ -15,6 +15,7 @@ from typing import (
     Literal,
     TypedDict,
 )
+from urllib.parse import quote
 
 from galaxy.util.markdown_convert import (
     to_html,
@@ -69,6 +70,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 {body}
 </body>
 </html>"""
+
+
+def _escape_alt(text: str) -> str:
+    """Backslash-escape what would end markdown image alt text early."""
+    return text.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
 
 
 class StoryBase(ABC):
@@ -175,7 +181,7 @@ class Story(StoryBase):
                 caption = metadata.get("caption", "")
                 # Reference by basename so the document stays valid inside the zip.
                 lines.append(f"## {caption}\n")
-                lines.append(f"![{caption}]({os.path.basename(content)})\n")
+                lines.append(f"![{_escape_alt(caption)}]({quote(os.path.basename(content))})\n")
             else:
                 lines.append(content)
                 lines.append("\n")
