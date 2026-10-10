@@ -1,13 +1,17 @@
 /*
- * GENERATED from theme.css by scripts/generateTokens.mjs -- do not edit.
+ * Design tokens for galaxy-ui and the Galaxy client. This is the only file to
+ * hand-edit; run `pnpm --filter @galaxyproject/galaxy-ui build:tokens` to
+ * regenerate tokens.css (the plain `:root` form for consumers without
+ * Tailwind). A test fails if tokens.css is out of date.
  *
- * Consumers without Tailwind import this file so galaxy-ui components render
- * with real colors and spacing:
+ * Naming follows Tailwind and shadcn/ui wherever they have a name, so the
+ * same names work as CSS variables now and as Tailwind utilities later
+ * (`bg-primary`, `text-muted-foreground`, `text-sm`). Galaxy-only additions:
+ * `selected`, `highlight`, `inverse`.
  *
- *     import "@galaxyproject/galaxy-ui/tokens.css";
+ * Prefer the semantic names over raw palette shades in new code.
  */
-:root,
-.reset-theme-variables {
+@theme {
     /* palette */
     --color-blue-900: #040b21;
     --color-blue-800: #191f33;
