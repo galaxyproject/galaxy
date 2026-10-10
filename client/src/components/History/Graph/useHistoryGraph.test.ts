@@ -1,7 +1,8 @@
+import { runInTestScope } from "@tests/vitest/effectScope";
 import flushPromises from "flush-promises";
 import type * as PiniaModule from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type EffectScope, effectScope, nextTick, ref } from "vue";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick, ref } from "vue";
 
 import type * as MapperModule from "./historyGraphMapper";
 
@@ -75,14 +76,12 @@ const { useHistoryGraph: realUseHistoryGraph } = await import("./useHistoryGraph
 
 // Each test runs the composable inside its own effectScope so watchers from
 // earlier tests don't fire on shared mock state.
-let scope: EffectScope | null = null;
 function createHistoryGraph(
     historyId = ref("h1"),
     seedSrc = ref<string | undefined>(undefined),
     seedId = ref<string | undefined>(undefined),
 ) {
-    scope = effectScope();
-    return scope.run(() => realUseHistoryGraph(historyId, seedSrc, seedId))!;
+    return runInTestScope(() => realUseHistoryGraph(historyId, seedSrc, seedId));
 }
 
 function resetMocks() {
@@ -101,10 +100,6 @@ function resetMocks() {
 
 describe("useHistoryGraph", () => {
     beforeEach(resetMocks);
-    afterEach(() => {
-        scope?.stop();
-        scope = null;
-    });
 
     describe("projections", () => {
         it("returns empty arrays when no graph data is loaded", () => {

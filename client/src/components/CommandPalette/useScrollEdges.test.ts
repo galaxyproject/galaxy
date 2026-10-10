@@ -1,5 +1,6 @@
+import { runInTestScope } from "@tests/vitest/effectScope";
 import { describe, expect, it } from "vitest";
-import { effectScope, nextTick, ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import { useScrollEdges } from "./useScrollEdges";
 
@@ -19,8 +20,7 @@ function scrollTo(row: HTMLElement, left: number) {
 describe("useScrollEdges", () => {
     it("fades whichever edge hides content as the row scrolls", async () => {
         const row = makeRow(300, 100);
-        const scope = effectScope();
-        const edges = scope.run(() => useScrollEdges(ref(row)))!;
+        const edges = runInTestScope(() => useScrollEdges(ref(row)));
         await nextTick();
 
         scrollTo(row, 0);
@@ -31,7 +31,5 @@ describe("useScrollEdges", () => {
 
         scrollTo(row, 200);
         expect([edges.fadeStart.value, edges.fadeEnd.value]).toEqual([true, false]);
-
-        scope.stop();
     });
 });

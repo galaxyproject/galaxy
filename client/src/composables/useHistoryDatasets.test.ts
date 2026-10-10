@@ -1,8 +1,9 @@
 import { getFakeHistorySummary } from "@tests/test-data";
 import { getFakeDatasetSummary } from "@tests/test-data/datasets";
+import { runInTestScope } from "@tests/vitest/effectScope";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type EffectScope, effectScope, nextTick, ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -18,12 +19,8 @@ function buildFakeDataset(id: string, name: string) {
     return getFakeDatasetSummary({ id, name });
 }
 
-const scopes: EffectScope[] = [];
-
 function createHistoryDatasets(options: Parameters<typeof useHistoryDatasets>[0]) {
-    const scope = effectScope();
-    scopes.push(scope);
-    return scope.run(() => useHistoryDatasets(options))!;
+    return runInTestScope(() => useHistoryDatasets(options));
 }
 
 function respondWithDatasets(datasets: HDASummary[]) {
@@ -53,7 +50,6 @@ describe("useHistoryDatasets", () => {
     });
 
     afterEach(() => {
-        scopes.splice(0).forEach((scope) => scope.stop());
         vi.restoreAllMocks();
     });
 
