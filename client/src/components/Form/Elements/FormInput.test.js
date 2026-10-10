@@ -1,38 +1,45 @@
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import FormInput from "./FormInput.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
+
+function mountFormInput() {
+    return mount(FormInput, {
+        props: {
+            id: "input",
+            value: "initial_value",
+        },
+        global: getLocalVue(),
+    });
+}
 
 describe("FormInput", () => {
-    let wrapper;
-
-    beforeEach(() => {
-        wrapper = mount(FormInput, {
-            props: {
-                id: "input",
-                value: "initial_value",
-            },
-            global: localVue,
-        });
-    });
-
-    it("check initial value and value change", async () => {
+    it("shows its value in a text input and emits the edit", async () => {
+        const wrapper = mountFormInput();
         const input = wrapper.find("input");
         expect(input.element.value).toBe("initial_value");
+
         await input.setValue("new_value");
+
         expect(input.element.value).toBe("new_value");
         expect(emittedArg(wrapper, "input")).toBe("new_value");
     });
 
-    it("check switching to text area", async () => {
+    it("switches to a textarea that keeps the value and emits the edit", async () => {
+        const wrapper = mountFormInput();
+
         await wrapper.setProps({ area: true });
-        const input = wrapper.find("textarea");
-        expect(input.element.value).toBe("initial_value");
-        await input.setValue("new_value");
-        expect(input.element.value).toBe("new_value");
+
+        expect(wrapper.find("input").exists()).toBe(false);
+        const textarea = wrapper.find("textarea");
+        expect(textarea.element.value).toBe("initial_value");
+
+        await textarea.setValue("new_value");
+
+        expect(textarea.element.value).toBe("new_value");
         expect(emittedArg(wrapper, "input")).toBe("new_value");
     });
 });
