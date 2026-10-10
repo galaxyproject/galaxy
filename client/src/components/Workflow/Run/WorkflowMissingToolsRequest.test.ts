@@ -1,32 +1,29 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { getFakeAnonymousUser } from "@tests/test-data";
+import { type StoryMountOptions, type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AnyUser } from "@/api";
 import { submitToolInstallationRequest } from "@/api/notifications";
 import { clickModalButton } from "@/components/BaseComponents/test-utils";
-import { setMockConfig } from "@/composables/__mocks__/config";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
-import WorkflowMissingToolsRequest from "./WorkflowMissingToolsRequest.vue";
+import * as WorkflowMissingToolsRequestStories from "./WorkflowMissingToolsRequest.stories";
+
 import GModal from "@/components/BaseComponents/GModal.vue";
 
-vi.mock("@/composables/config");
-vi.mock("@/api/notifications");
+// Spied, not replaced: requests still reach the stories' handlers.
+vi.mock("@/api/notifications", { spy: true });
 
 const submitRequestMock = vi.mocked(submitToolInstallationRequest);
 
-const localVue = getLocalVue();
+const stories = composeStories(WorkflowMissingToolsRequestStories);
+const mountStory = useStoryMount();
 
-enableAutoUnmount(afterEach);
-
-const WORKFLOW_ID = "workflow-encoded-id-abc";
-
-const BWA_TOOL_ID = "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17";
-const MISSING_TOOL_IDS = [BWA_TOOL_ID, "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13"];
+const WORKFLOW_ID = stories.MissingTools.args.workflowId;
+const MISSING_TOOL_IDS = stories.MissingTools.args.missingToolIds!;
 
 // The requested-tool entries the component derives from MISSING_TOOL_IDS.
 const EXPECTED_REQUESTED_TOOLS = [
@@ -34,7 +31,7 @@ const EXPECTED_REQUESTED_TOOLS = [
     { tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/samtools", name: "samtools", requested_version: "1.13" },
 ];
 
-const SIXTY_TOOL_IDS = Array.from({ length: 60 }, (_, i) => `tool-${i}`);
+const SIXTY_TOOL_IDS = stories.OverRequestLimit.args.missingToolIds!;
 
 const SELECTORS = {
     ERROR_ALERT: ".alert-danger",
@@ -46,16 +43,10 @@ const SELECTORS = {
 
 const SEND_BUTTON_TEXT = "Send Request";
 
-async function mountWorkflowMissingToolsRequest({
-    missingToolIds = MISSING_TOOL_IDS,
-    currentUser = getFakeRegisteredUser(),
-}: { missingToolIds?: string[]; currentUser?: AnyUser } = {}) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser } } });
-    const wrapper = mount(WorkflowMissingToolsRequest, {
-        props: { missingToolIds, workflowId: WORKFLOW_ID },
-        global: withPlugins(localVue, pinia),
-        attachTo: document.body,
-    });
+/** Mounts a story once the config the button depends on has loaded. */
+async function mountRequest(story: StoryOf<typeof stories>, options?: StoryMountOptions) {
+    const wrapper = mountStory(story, options);
+    await vi.waitFor(() => expect(useConfigStore().isLoaded).toBe(true));
     await flushPromises();
     return wrapper;
 }
@@ -82,53 +73,50 @@ function sentRequest() {
 describe("WorkflowMissingToolsRequest", () => {
     beforeEach(() => {
         submitRequestMock.mockReset();
-        setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
     });
 
     describe("request button", () => {
         it("renders the request button when feature is enabled and user is authenticated", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.MissingTools);
 
             expect(wrapper.find(SELECTORS.REQUEST_BUTTON).text()).toBe("Request Installation (2 missing tools)");
         });
 
         it("uses singular 'tool' for a single missing tool ID", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ missingToolIds: [BWA_TOOL_ID] });
+            const wrapper = await mountRequest(stories.OneMissingTool);
 
             expect(wrapper.find(SELECTORS.REQUEST_BUTTON).text()).toBe("Request Installation (1 missing tool)");
         });
 
         it.each([
-            {
-                condition: "the feature flag is disabled",
-                config: { enable_notification_system: true, enable_tool_installation_request_form: false },
-            },
+            { condition: "the feature flag is disabled", story: stories.RequestFormOff },
             {
                 condition: "the notification system is off, which the request needs",
-                config: { enable_notification_system: false, enable_tool_installation_request_form: true },
+                story: stories.NotificationSystemOff,
             },
-        ])("does not render when $condition", async ({ config }) => {
-            setMockConfig(config);
-
-            const wrapper = await mountWorkflowMissingToolsRequest();
+        ])("does not render when $condition", async ({ story }) => {
+            const wrapper = await mountRequest(story);
 
             expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(false);
         });
 
         it("does not render when no tool IDs are provided", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ missingToolIds: [] });
+            const wrapper = await mountRequest(stories.MissingTools, { props: { missingToolIds: [] } });
 
             expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);
         });
 
         it("does not render when user is anonymous", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ currentUser: getFakeAnonymousUser() });
+            const wrapper = await mountRequest(stories.AnonymousVisitor);
 
             expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);
         });
 
         it("stops rendering when the current user becomes anonymous", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ currentUser: null });
+            const wrapper = await mountRequest(stories.MissingTools);
+            // A page that hasn't loaded the user yet still shows the button.
+            useUserStore().currentUser = null;
+            await flushPromises();
             expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(true);
 
             useUserStore().currentUser = getFakeAnonymousUser();
@@ -140,7 +128,7 @@ describe("WorkflowMissingToolsRequest", () => {
 
     describe("request modal", () => {
         it("modal body shows singular 'tool' and no truncation note for a single missing tool", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ missingToolIds: [BWA_TOOL_ID] });
+            const wrapper = await mountRequest(stories.OneMissingTool);
 
             await openRequestModal(wrapper);
 
@@ -150,7 +138,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("tells the submitter in the modal when the request will be truncated to 50 tools", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ missingToolIds: SIXTY_TOOL_IDS });
+            const wrapper = await mountRequest(stories.OverRequestLimit);
 
             await openRequestModal(wrapper);
 
@@ -158,7 +146,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("can cancel and then reopen the modal", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.MissingTools);
 
             await openRequestModal(wrapper);
             expect(wrapper.findComponent(GModal).props("show")).toBe(true);
@@ -173,7 +161,7 @@ describe("WorkflowMissingToolsRequest", () => {
 
     describe("sending the request", () => {
         it("calls submitToolInstallationRequest with correct payload on confirm", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.MissingTools);
 
             await sendRequest(wrapper);
 
@@ -185,7 +173,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("additional_remarks describes the workflow context without repeating the structured tool ids", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.MissingTools);
 
             await sendRequest(wrapper);
 
@@ -197,7 +185,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("caps the request at 50 tools and notes the truncation in the remarks", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ missingToolIds: SIXTY_TOOL_IDS });
+            const wrapper = await mountRequest(stories.OverRequestLimit);
 
             await sendRequest(wrapper);
 
@@ -213,7 +201,7 @@ describe("WorkflowMissingToolsRequest", () => {
                     resolveRequest = () => resolve();
                 }),
             );
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.MissingTools);
 
             await sendRequest(wrapper);
 
@@ -224,7 +212,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("shows success alert after successful request", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.MissingTools);
 
             await sendRequest(wrapper);
 
@@ -233,8 +221,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("shows the error inside the still-open dialog when submission fails", async () => {
-            submitRequestMock.mockRejectedValueOnce(new Error("Server error"));
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.RequestFails);
 
             await sendRequest(wrapper);
 
@@ -246,8 +233,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("clears the error when the dialog is cancelled after a failure", async () => {
-            submitRequestMock.mockRejectedValueOnce(new Error("Server error"));
-            const wrapper = await mountWorkflowMissingToolsRequest();
+            const wrapper = await mountRequest(stories.RequestFails);
             await sendRequest(wrapper);
             expect(wrapper.find(SELECTORS.ERROR_ALERT).exists()).toBe(true);
 
