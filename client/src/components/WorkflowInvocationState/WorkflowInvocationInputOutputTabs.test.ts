@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { nth } from "@tests/vitest/helpers";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -11,184 +11,104 @@ import invocationData from "../Workflow/test/json/invocation.json";
 
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 
+const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
-const selectors = {
-    parametersTable: "[data-description='input table']",
-    terminalInvocationOutput: "[data-description='terminal invocation output']",
-    terminalInvocationOutputItem: "[data-description='terminal invocation output item']",
-    nonTerminalInvocationOutput: "[data-description='non-terminal invocation output']",
-    nonTerminalInvocationOutputLoading: "[data-description='non-terminal invocation output loading']",
+const SELECTORS = {
+    PARAMETERS_TABLE: "[data-description='input table']",
+    TERMINAL_OUTPUT: "[data-description='terminal invocation output']",
+    TERMINAL_OUTPUT_ITEM: "[data-description='terminal invocation output item']",
+    NON_TERMINAL_OUTPUT: "[data-description='non-terminal invocation output']",
+    NON_TERMINAL_OUTPUT_LOADING: "[data-description='non-terminal invocation output loading']",
 };
 
-// Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
-vi.mock("@/stores/workflowStore", async () => {
-    const originalModule: any = await vi.importActual("@/stores/workflowStore");
-    return {
-        ...originalModule,
-        useWorkflowStore: () => ({
-            ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: vi.fn().mockImplementation(() => {
-                return {
-                    id: "workflow-id",
-                    name: "Test Workflow",
-                    version: 0,
-                };
-            }),
-            getFullWorkflowCached: vi.fn().mockImplementation(() => {
-                /** The actual outputs of the workflow invocation */
-                const testDatasetOutputLabels = Object.keys(invocationData.outputs);
-                const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);
+const INVOCATION = invocationData as WorkflowInvocationElementView;
+const DATA_INPUT = invocationData.inputs["0"];
+const PARAMETER_INPUT = invocationData.input_step_parameters["Workflow Input Parameter"];
+const DATASET_OUTPUT_LABELS = Object.keys(invocationData.outputs);
+const COLLECTION_OUTPUT_LABELS = Object.keys(invocationData.output_collections);
+const OUTPUT_LABELS = [...DATASET_OUTPUT_LABELS, ...COLLECTION_OUTPUT_LABELS];
 
-                return {
-                    id: "workflow-id",
-                    name: "Test Workflow",
-                    version: 0,
-                    steps: {
-                        "0": {
-                            workflow_outputs: testDatasetOutputLabels.map((label) => ({
-                                output_name: `output`,
-                                label,
-                                uuid: `uuid`,
-                            })),
-                        },
-                        "1": {
-                            workflow_outputs: testCollectionOutputsLabels.map((label) => ({
-                                output_name: `output`,
-                                label,
-                                uuid: `uuid`,
-                            })),
-                        },
-                    },
-                };
-            }),
-        }),
-    };
-});
+const WORKFLOW = { id: "workflow-id", name: "Test Workflow", version: 0 };
 
-/** Mount the WorkflowInvocationInputOutputTabs component with the given invocation
- * @param invocation The invocation data to be used
- * @param terminal Whether the invocation is terminal
- * @returns The mounted wrapper
+function workflowOutputsStep(labels: string[]) {
+    return { workflow_outputs: labels.map((label) => ({ output_name: "output", label, uuid: "uuid" })) };
+}
+
+/** The editor-style workflow marking the invocation's dataset and collection outputs as workflow outputs. */
+const FULL_WORKFLOW = {
+    ...WORKFLOW,
+    steps: {
+        "0": workflowOutputsStep(DATASET_OUTPUT_LABELS),
+        "1": workflowOutputsStep(COLLECTION_OUTPUT_LABELS),
+    },
+};
+
+/**
+ * Mounts the tabs for `invocation`, with `storedWorkflow` already in the workflow store
+ * under the invocation's `workflow_id` when given.
  */
-async function mountWorkflowInvocationInputOutputTabs(
+async function mountTabs(
     invocation: WorkflowInvocationElementView,
-    tab: "inputs" | "outputs" = "inputs",
-    terminal = true,
+    {
+        tab = "inputs",
+        terminal = true,
+        storedWorkflow,
+    }: { tab?: "inputs" | "outputs"; terminal?: boolean; storedWorkflow?: typeof WORKFLOW } = {},
 ) {
-    server.use(
-        http.get("/api/datasets/{dataset_id}", ({ response, params }) => {
-            // We need to use untyped here because this endpoint is not
-            // described in the OpenAPI spec due to its complexity for now.
-            return response.untyped(
-                HttpResponse.json({
-                    id: params.dataset_id,
-                }),
-            );
-        }),
-        http.get("/api/dataset_collections/{hdca_id}", ({ response, params }) => {
-            // We need to use untyped here because this endpoint is not
-            // described in the OpenAPI spec due to its complexity for now.
-            return response.untyped(
-                HttpResponse.json({
-                    id: params.hdca_id,
-                }),
-            );
-        }),
-    );
-
-    const wrapper = mount(WorkflowInvocationInputOutputTabs as object, {
-        props: {
-            invocation,
-            terminal,
-            tab,
-        },
-        stubs: {
-            // ParameterStep renders the actual parameters table (via GTable) from its
-            // `parameters` prop rather than a slot, so stubbing it would hide the very
-            // rows the "shows invocation inputs" test inspects.
-            ContentItem: true,
-        },
-        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+    const workflowsByInstanceId = storedWorkflow ? { [invocation.workflow_id]: storedWorkflow } : {};
+    const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        stubActions: false,
+        initialState: { workflowStore: { workflowsByInstanceId } },
+    });
+    const wrapper = mount(WorkflowInvocationInputOutputTabs, {
+        props: { invocation, tab, terminal },
+        global: withPlugins(localVue, pinia),
     });
     await flushPromises();
     return wrapper;
 }
 
+function expectOutputSections(wrapper: VueWrapper, { terminal }: { terminal: boolean }) {
+    const sections = wrapper.findAll(terminal ? SELECTORS.TERMINAL_OUTPUT : SELECTORS.NON_TERMINAL_OUTPUT);
+    expect(sections).toHaveLength(OUTPUT_LABELS.length);
+    OUTPUT_LABELS.forEach((label, index) => {
+        const section = nth(sections, index);
+        expect(section.text()).toContain(label);
+        expect(section.find(SELECTORS.TERMINAL_OUTPUT_ITEM).exists()).toBe(terminal);
+        expect(section.find(SELECTORS.NON_TERMINAL_OUTPUT_LOADING).exists()).toBe(!terminal);
+    });
+}
+
 describe("WorkflowInvocationInputOutputTabs", () => {
-    it("shows invocation inputs", async () => {
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(invocationData as WorkflowInvocationElementView);
+    it("lists the data inputs and parameters in the inputs table", async () => {
+        const wrapper = await mountTabs(INVOCATION);
 
-        /** The actual parameters are in the input_step_parameters field of the invocation data */
-        const testParameters = Object.values({ ...invocationData.input_step_parameters, ...invocationData.inputs });
-
-        // Test that the parameters table is displayed
-        const parametersTable = wrapper.find(selectors.parametersTable);
-        expect(parametersTable.exists()).toBe(true);
-
-        // Test that the parameters table has the correct number of rows
-        const tableParamValues = parametersTable.findAll("tbody tr");
-        expect(tableParamValues.length).toEqual(testParameters.length);
-
-        // Test that the parameters are displayed correctly
-        for (let i = 0; i < testParameters.length; i++) {
-            const testParameter = testParameters[i];
-            const tableRow = nth(tableParamValues, i);
-            expect(tableRow.find("td").text()).toEqual(testParameter?.label);
-            if (testParameter && "parameter_value" in testParameter) {
-                expect(nth(tableRow.findAll("td"), 1).text()).toEqual(testParameter.parameter_value.toString());
-            }
-        }
-
-        /** The actual inputs of the workflow invocation */
-        const testInputs = Object.values(invocationData.inputs);
-
-        // Test that the inputs are displayed
-        for (let i = 0; i < testInputs.length; i++) {
-            const testInput = testInputs[i];
-            expect(wrapper.find(`[data-label='${testInput?.label}']`).exists()).toBe(true);
-        }
+        const table = wrapper.find(SELECTORS.PARAMETERS_TABLE);
+        expect(table.exists()).toBe(true);
+        const rows = table.findAll("tbody tr");
+        expect(rows.map((row) => nth(row.findAll("td"), 0).text())).toEqual([DATA_INPUT.label, PARAMETER_INPUT.label]);
+        expect(nth(rows, 0).find(`[data-label='${DATA_INPUT.label}']`).exists()).toBe(true);
+        expect(nth(nth(rows, 1).findAll("td"), 1).text()).toBe(String(PARAMETER_INPUT.parameter_value));
     });
 
-    it("shows invocation outputs when invocation is terminal", async () => {
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(
-            invocationData as WorkflowInvocationElementView,
-            "outputs",
-        );
+    it("shows each invocation output with its history item when the invocation is terminal", async () => {
+        const wrapper = await mountTabs(INVOCATION, { tab: "outputs" });
 
-        testOutputsDisplayed(wrapper);
+        expectOutputSections(wrapper, { terminal: true });
     });
 
-    it("shows workflow output labels when invocation is not terminal", async () => {
-        const nonTerminalInvocation = {
-            ...invocationData,
-            outputs: {},
-            output_collections: {},
-        } as WorkflowInvocationElementView;
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(nonTerminalInvocation, "outputs", false);
+    it("shows the workflow output labels as not created yet when the invocation is not terminal", async () => {
+        server.use(http.untyped.get(`/api/workflows/${WORKFLOW.id}/download`, () => HttpResponse.json(FULL_WORKFLOW)));
+        const invocationWithoutOutputs = { ...INVOCATION, outputs: {}, output_collections: {} };
 
-        testOutputsDisplayed(wrapper, false);
+        const wrapper = await mountTabs(invocationWithoutOutputs, {
+            tab: "outputs",
+            terminal: false,
+            storedWorkflow: WORKFLOW,
+        });
+
+        expectOutputSections(wrapper, { terminal: false });
     });
-
-    function testOutputsDisplayed(wrapper: VueWrapper, terminal = true) {
-        /** The actual outputs of the workflow invocation */
-        const testDatasetOutputLabels = Object.keys(invocationData.outputs);
-        const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);
-        const expectedLabels = [...testDatasetOutputLabels, ...testCollectionOutputsLabels];
-
-        // Test that the invocation outputs are displayed
-        const invocationOutputs = wrapper.findAll(
-            terminal ? selectors.terminalInvocationOutput : selectors.nonTerminalInvocationOutput,
-        );
-        expect(invocationOutputs.length).toEqual(expectedLabels.length);
-
-        // Test that the output labels are shown
-        for (let i = 0; i < invocationOutputs.length; i++) {
-            const testOutput = nth(invocationOutputs, i);
-            const testLabel = expectedLabels[i];
-            expect(testOutput.text()).toContain(testLabel);
-            expect(testOutput.find(selectors.terminalInvocationOutputItem).exists()).toBe(terminal);
-            expect(testOutput.find(selectors.nonTerminalInvocationOutputLoading).exists()).toBe(!terminal);
-        }
-    }
 });
