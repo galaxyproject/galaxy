@@ -12,7 +12,6 @@ from galaxy.selenium.stories import (
     link_latest,
     NoopStory,
     run_directory,
-    runs,
     Story,
     story_for_run,
     write_story,
@@ -221,7 +220,7 @@ class TestStoryRuns:
         assert os.path.isdir(story.output_directory)
 
     def test_run_directories_are_unique_at_the_same_time(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(runs.datetime, "datetime", FrozenDatetime)
+        monkeypatch.setattr("galaxy.selenium.stories.runs.datetime.datetime", FrozenDatetime)
         first = run_directory(str(tmp_path), "test_example_")
         second = run_directory(str(tmp_path), "test_example_")
 
