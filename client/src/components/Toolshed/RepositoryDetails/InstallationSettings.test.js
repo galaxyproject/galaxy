@@ -1,109 +1,46 @@
 import "@/composables/__mocks__/filter";
 
-import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { emittedArg, nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import * as InstallationSettingsStories from "./InstallationSettings.stories";
 
 import InstallationSettings from "./InstallationSettings.vue";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: () => ({
-        config: {
-            install_tool_dependencies: true,
-            install_repository_dependencies: true,
-            install_resolver_dependencies: false,
-        },
-        isConfigLoaded: true,
-    }),
-}));
+const { ChecksEachConfiguredDependency, SeveralToolConfigs, WithToolPanel } =
+    composeStories(InstallationSettingsStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue();
-
-const { server, http } = useServerMock();
-
-async function mountInstallationSettings() {
-    const wrapper = mount(InstallationSettings, {
-        global: localVue,
-        props: {
-            repo: {
-                long_description: "long_description",
-                description: "description",
-                owner: "owner",
-                name: "name",
-            },
-            changesetRevision: "changesetRevision",
-            requiresPanel: true,
-            toolshedUrl: "toolshedUrl",
-            currentPanel: {},
-        },
-    });
-    await flushPromises();
-    return wrapper;
+async function install(wrapper) {
+    await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
+    return emittedArg(wrapper, "ok");
 }
 
-/** Each dependency checkbox's label, mapped to whether it is checked. */
-function dependencyOptions(wrapper) {
-    return Object.fromEntries(
-        wrapper
-            .findAll("input[type=checkbox]")
-            .map((checkbox) => [checkbox.element.closest("label").textContent.trim(), checkbox.element.checked]),
-    );
-}
-
+// Display and dependency defaults are exercised by the browser plays.
 describe("InstallationSettings", () => {
-    beforeEach(() => {
-        server.use(
-            http.get("/api/configuration/dynamic_tool_confs", ({ response }) => {
-                return response(200).json([]);
-            }),
-        );
-    });
-
     it("installs with the tool configuration picked from a named radio group", async () => {
-        server.use(
-            http.get("/api/configuration/dynamic_tool_confs", ({ response }) => {
-                return response(200).json([
-                    { config_filename: "first_conf.xml" },
-                    { config_filename: "second_conf.xml" },
-                ]);
-            }),
-        );
-        const wrapper = mount(InstallationSettings, {
-            props: {
-                repo: { name: "name", owner: "owner" },
-                changesetRevision: "changesetRevision",
-                requiresPanel: false,
-                toolshedUrl: "toolshedUrl",
-            },
-            global: localVue,
-        });
+        const wrapper = mountStory(SeveralToolConfigs).getComponent(InstallationSettings);
         await vi.waitFor(() => expect(wrapper.findAll("input[type=radio]").length).toBe(2));
         const group = wrapper.find("[role=radiogroup]");
         expect(wrapper.get(`#${group.attributes("aria-labelledby")}`).text()).toBe("Tool Configuration:");
         expect(group.element.parentElement.closest("fieldset")).toBeNull();
         expect(wrapper.get(`#${group.attributes("aria-describedby")}`).text()).toBe("Choose a tool configuration.");
         const radios = group.findAll("input[type=radio]");
-        expect(radios.map((radio) => radio.attributes("value"))).toEqual(["first_conf.xml", "second_conf.xml"]);
-        expect(radios[0].element.checked).toBe(true);
+        expect(radios.map((radio) => radio.attributes("value"))).toEqual([
+            "shed_tool_conf.xml",
+            "custom_shed_tool_conf.xml",
+        ]);
+        expect(nth(radios, 0).element.checked).toBe(true);
         expect(new Set(radios.map((radio) => radio.attributes("name"))).size).toBe(1);
-        await radios[1].setValue(true);
-        await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
-        expect(wrapper.emitted("ok")[0][0].shed_tool_conf).toBe("second_conf.xml");
+        await nth(radios, 1).setValue(true);
+        const request = await install(wrapper);
+        expect(request.shed_tool_conf).toBe("custom_shed_tool_conf.xml");
     });
 
     it("installs with the dependency choices made in the labelled checkboxes", async () => {
-        const wrapper = mount(InstallationSettings, {
-            props: {
-                repo: { name: "name", owner: "owner" },
-                changesetRevision: "changesetRevision",
-                requiresPanel: false,
-                toolshedUrl: "toolshedUrl",
-            },
-            global: localVue,
-        });
+        const wrapper = mountStory(ChecksEachConfiguredDependency).getComponent(InstallationSettings);
         const checkboxes = wrapper.findAll("input[type=checkbox]");
         expect(checkboxes.map((checkbox) => checkbox.element.closest("label")?.textContent.trim())).toEqual([
             "Install resolvable dependencies",
@@ -112,58 +49,25 @@ describe("InstallationSettings", () => {
         ]);
         expect(checkboxes.map((checkbox) => checkbox.element.checked)).toEqual([false, true, true]);
         await nth(checkboxes, 2).setValue(false);
-        await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
-        const request = emittedArg(wrapper, "ok");
+        const request = await install(wrapper);
         expect(request.install_resolver_dependencies).toBe(false);
         expect(request.install_repository_dependencies).toBe(true);
         expect(request.install_tool_dependencies).toBe(false);
     });
 
-    it("titles the dialog with the repository and shows its long description, owner and revision", async () => {
-        const wrapper = await mountInstallationSettings();
-
-        expect(wrapper.find(".g-modal-title").text()).toBe("Installing 'name'");
-        expect(wrapper.find(".description").text()).toBe("long_description");
-        expect(wrapper.find(".revision").text()).toBe("owner rev. changesetRevision");
-
-        const sectionInput = wrapper.get("#install-tool-section");
-        expect(wrapper.get('label[for="install-tool-section"]').text()).toBe("Target Section:");
-        expect(sectionInput.element.closest('[role="combobox"]')).not.toBeNull();
-    });
-
-    it("checks the dependency options the server configuration enables", async () => {
-        const wrapper = await mountInstallationSettings();
-
-        expect(dependencyOptions(wrapper)).toEqual({
-            "Install resolvable dependencies": false,
-            "Install repository dependencies": true,
-            "Install tool dependencies": true,
-        });
-    });
-
     describe("target section", () => {
         function mountWithSections() {
-            return mount(InstallationSettings, {
-                propsData: {
-                    repo: { name: "name", owner: "owner" },
-                    changesetRevision: "changesetRevision",
-                    requiresPanel: true,
-                    toolshedUrl: "toolshedUrl",
+            return mountStory(WithToolPanel, {
+                props: {
                     currentPanel: { mapping: { id: "mapping", name: "Mapping", tools: ["bwa"] } },
                 },
-                localVue,
-            });
+            }).getComponent(InstallationSettings);
         }
 
         async function pickSection(wrapper, label) {
             await wrapper.find(".multiselect__select").trigger("mousedown");
             const option = wrapper.findAll(".multiselect__option").find((element) => element.text() === label);
             await option.trigger("click");
-        }
-
-        async function install(wrapper) {
-            await wrapper.find(".g-modal-confirm-buttons button:last-child").trigger("click");
-            return wrapper.emitted("ok")[0][0];
         }
 
         it("installs into an existing section picked from the list", async () => {
