@@ -1,15 +1,9 @@
 import { GButton, GCollapse, GDropdownItem, GLink, GTab, GTabs } from "@galaxyproject/galaxy-ui"
-import { flushPromises, mount } from "@vue/test-utils"
-import { describe, expect, it, vi } from "vitest"
-import { defineComponent, ref } from "vue"
-import { createMemoryHistory, createRouter } from "vue-router"
+import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { createMemoryRouter } from "@/test-utils"
 
-function makeRouter() {
-    return createRouter({
-        history: createMemoryHistory(),
-        routes: [{ path: "/:any(.*)*", component: { template: "<div />" } }],
-    })
-}
+enableAutoUnmount(afterEach)
 
 /**
  * The galaxy-ui package ships raw source. The Galaxy client compiles it under
@@ -56,12 +50,11 @@ describe("galaxy-ui under Vue 3", () => {
     ])("emits one click per click from a router-linked %s", async (_name, component, props) => {
         // A RouterLink root gets the click listener by fallthrough onto its <a>
         const onClick = vi.fn()
-        const router = makeRouter()
         const wrapper = mount(component, {
             props,
             attrs: { onClick },
             slots: { default: "Go" },
-            global: { plugins: [router] },
+            global: { plugins: [createMemoryRouter()] },
         })
 
         await wrapper.find("a").trigger("click")
@@ -83,33 +76,37 @@ describe("galaxy-ui under Vue 3", () => {
     })
 })
 
-// Vue 2's value/input v-model only works where @vue/compat maps it; here it silently does nothing
+// Vue 2's value/input v-model only works where @vue/compat maps it; here it silently does nothing.
+// On plain Vue 3, v-model on a component compiles to the modelValue prop and update:modelValue listener.
 describe("galaxy-ui v-model under Vue 3", () => {
     it("binds the active tab both ways on GTabs", async () => {
-        const Parent = defineComponent({
-            components: { GTabs, GTab },
-            setup: () => ({ active: ref(1) }),
-            template: `<GTabs v-model="active"><GTab title="One">one</GTab><GTab title="Two">two</GTab></GTabs>`,
+        const wrapper = mount(GTabs, {
+            props: {
+                modelValue: 1,
+                "onUpdate:modelValue": (index: number) => wrapper.setProps({ modelValue: index }),
+            },
+            slots: { default: `<GTab title="One">one</GTab><GTab title="Two">two</GTab>` },
+            global: { components: { GTab } },
         })
-        const wrapper = mount(Parent)
         await flushPromises()
 
         expect(wrapper.get(".nav-link.active").text()).toBe("Two")
 
-        await wrapper.findAll(".nav-link")[0]!.trigger("click")
+        await wrapper.get(".nav-link").trigger("click")
 
-        expect((wrapper.vm as unknown as { active: number }).active).toBe(0)
+        expect(wrapper.emitted("update:modelValue")).toEqual([[0]])
+        expect(wrapper.get(".nav-link.active").text()).toBe("One")
     })
 
     it("opens GCollapse from its v-model", async () => {
-        const Parent = defineComponent({
-            components: { GCollapse },
-            setup: () => ({ open: ref(false) }),
-            template: `<GCollapse v-model="open">details</GCollapse>`,
+        const wrapper = mount(GCollapse, {
+            props: { modelValue: false },
+            slots: { default: "details" },
         })
-        const wrapper = mount(Parent)
         await flushPromises()
-        ;(wrapper.vm as unknown as { open: boolean }).open = true
+        expect(wrapper.classes()).not.toContain("g-collapse-open")
+
+        await wrapper.setProps({ modelValue: true })
         await flushPromises()
 
         expect(wrapper.classes()).toContain("g-collapse-open")
