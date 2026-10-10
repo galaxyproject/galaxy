@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// jsdom: DOMPurify doesn't sanitize correctly under happy-dom.
 import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";

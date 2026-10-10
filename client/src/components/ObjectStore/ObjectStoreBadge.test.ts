@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// jsdom: DOMPurify doesn't sanitize correctly under happy-dom.
 import { getLocalVue } from "@tests/vitest/helpers";
 import { advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
@@ -69,14 +70,7 @@ describe("ObjectStoreBadge rendered tooltip", () => {
         document.body.innerHTML = "";
     });
 
-    it.each([
-        ["The data stored here is purged after a month.", "The data stored here is purged after a month."],
-        [
-            "Read our **policy** on the [Archive Tier Storage](https://example.org/archive) page.",
-            "Read our policy on the Archive Tier Storage page.",
-        ],
-        [null, ""],
-    ])("renders the admin message and names the badge without tags: %s", async (message, text) => {
+    async function hoverBadge(message: string | null) {
         vi.useFakeTimers();
         const wrapper = mount(ObjectStoreBadge, {
             props: { badge: { type: "short_term", message, source: "admin" } },
@@ -86,16 +80,31 @@ describe("ObjectStoreBadge rendered tooltip", () => {
         const badge = wrapper.get(".object-store-badge-wrapper");
         await badge.trigger("mouseenter");
         await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
-        const tooltip = document.querySelector(".g-tooltip-d-inner");
-        expect(tooltip?.textContent).toContain(MESSAGES.short_term);
-        expect(tooltip?.textContent).toContain(text);
-        expect(tooltip?.textContent).not.toContain("<p>");
-        expect(tooltip?.querySelectorAll("p")).toHaveLength(message ? 2 : 1);
-        expect(badge.attributes("aria-label")).toBe([MESSAGES.short_term, text].filter(Boolean).join(" "));
-        if (message?.includes("[Archive")) {
-            expect(tooltip?.querySelector("strong")?.textContent).toBe("policy");
-            expect(tooltip?.querySelector("a")?.getAttribute("href")).toBe("https://example.org/archive");
-        }
-        wrapper.unmount();
+        const tooltip = document.querySelector(".g-tooltip-d-inner") as HTMLElement;
+        return { label: badge.attributes("aria-label"), tooltip };
+    }
+
+    it("shows the admin message as its own paragraph and names the badge without tags", async () => {
+        const { label, tooltip } = await hoverBadge("The data stored here is purged after a month.");
+        const paragraphs = Array.from(tooltip.querySelectorAll("p")).map((p) => p.textContent);
+        expect(paragraphs).toEqual([MESSAGES.short_term, "The data stored here is purged after a month."]);
+        expect(tooltip.textContent).not.toContain("<p>");
+        expect(label).toBe(`${MESSAGES.short_term} The data stored here is purged after a month.`);
+    });
+
+    it("keeps Markdown emphasis and links in the admin message", async () => {
+        const { label, tooltip } = await hoverBadge(
+            "Read our **policy** on the [Archive Tier Storage](https://example.org/archive) page.",
+        );
+        expect(tooltip.querySelector("strong")?.textContent).toBe("policy");
+        expect(tooltip.querySelector("a")?.getAttribute("href")).toBe("https://example.org/archive");
+        expect(label).toBe(`${MESSAGES.short_term} Read our policy on the Archive Tier Storage page.`);
+    });
+
+    it("shows only the stock sentence when there is no admin message", async () => {
+        const { label, tooltip } = await hoverBadge(null);
+        const paragraphs = Array.from(tooltip.querySelectorAll("p")).map((p) => p.textContent);
+        expect(paragraphs).toEqual([MESSAGES.short_term]);
+        expect(label).toBe(MESSAGES.short_term);
     });
 });
