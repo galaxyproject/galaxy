@@ -90,6 +90,10 @@ from galaxy.agents.base import (
     AgentType,
 )
 from galaxy.agents.error_analysis import ErrorAnalysisResult
+from galaxy.agents.gtn.search import (
+    FAQResult,
+    SearchResult,
+)
 from galaxy.agents.gtn_training import GTNSearchResponse
 from galaxy.agents.orchestrator import (
     AgentPlan,
@@ -100,7 +104,10 @@ from galaxy.agents.page_assistant import (
     SectionPatchEdit,
 )
 from galaxy.exceptions import ConfigurationError
-from galaxy.schema.agents import ConfidenceLevel
+from galaxy.schema.agents import (
+    ConfidenceLevel,
+    SourceCitation,
+)
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 
@@ -1283,6 +1290,181 @@ class TestAgentUnitMocked:
         assert "**Relevant FAQs:**" in content
         assert "How do I archive a history?" in content
         assert "**Relevant Tutorials:**" not in content
+
+    def _gtn_agent_with_retrieved(self, results):
+        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
+        agent.gtn_db = MagicMock()
+        agent.gtn_db.get_topics.return_value = ["transcriptomics"]
+        agent._retrieved = {}
+        agent._retrieved_by_url = {}
+        agent._record_retrieved(results)
+        return agent
+
+    _RNASEQ_RESULT = SearchResult(
+        id=1,
+        topic="transcriptomics",
+        tutorial="ref-based",
+        title="Reference-based RNA-Seq data analysis",
+        url="https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/ref-based/tutorial.html",
+        snippet="RNA-seq walkthrough",
+        score=9.1,
+        difficulty="Intermediate",
+        hands_on=True,
+        time_estimation="8h",
+    )
+    _ARCHIVE_RESULT = FAQResult(
+        id=2,
+        category="galaxy",
+        filename="histories_archive",
+        title="How do I archive a history?",
+        area="histories",
+        content="Histories can be archived...",
+        snippet="Histories can be archived...",
+        score=4.2,
+    )
+    _RNASEQ_TUTORIAL = _RNASEQ_RESULT.to_dict()
+    _ARCHIVE_FAQ = _ARCHIVE_RESULT.to_dict()
+
+    def test_gtn_verify_keeps_only_items_the_search_returned(self):
+        # The model echoes records back and sometimes rewrites their URLs or
+        # invents tutorials outright; only what the search returned survives,
+        # carrying the database's URL rather than the model's.
+        agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT, self._ARCHIVE_RESULT])
+        response_data = GTNSearchResponse(
+            tutorials=[
+                {**self._RNASEQ_TUTORIAL, "url": "https://training.galaxyproject.org/rna-seq-made-up/"},
+                {"title": "Invented tutorial", "url": "https://training.galaxyproject.org/topics/nope/"},
+            ],
+            faqs=[{"title": "Archive", "url": f"{self._ARCHIVE_FAQ['url']}/"}],
+            summary="Start with RNA-seq.",
+        )
+
+        verified = agent._verify_response(response_data)
+
+        assert verified.tutorials == [self._RNASEQ_TUTORIAL]
+        assert verified.faqs == [self._ARCHIVE_FAQ]
+        assert agent._build_sources(verified) == [
+            SourceCitation(
+                title="Reference-based RNA-Seq data analysis",
+                url=self._RNASEQ_TUTORIAL["url"],
+                source_type="gtn_tutorial",
+            ),
+            SourceCitation(
+                title="How do I archive a history?",
+                url=self._ARCHIVE_FAQ["url"],
+                source_type="gtn_faq",
+            ),
+        ]
+
+    def test_gtn_verify_unlinks_unretrieved_urls_in_prose(self):
+        agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])
+        tutorial_url = self._RNASEQ_TUTORIAL["url"]
+        response_data = GTNSearchResponse(
+            summary=(
+                f"Follow [the RNA-seq tutorial]({tutorial_url}) or "
+                "[this one](https://training.galaxyproject.org/training-material/topics/made-up/tutorials/x/tutorial.html). "
+                "Browse https://training.galaxyproject.org/training-material/topics/transcriptomics/. "
+                "Also see https://example.org/not-a-gtn-page."
+            ),
+            learning_path="Then try [proteomics](https://training.galaxyproject.org/training-material/topics/proteomics/)",
+            prerequisites=["Galaxy basics (http://169.254.169.254/latest/meta-data)"],
+        )
+
+        verified = agent._verify_response(response_data)
+
+        assert verified.summary == (
+            f"Follow [the RNA-seq tutorial]({tutorial_url}) or this one. "
+            "Browse https://training.galaxyproject.org/training-material/topics/transcriptomics/. "
+            "Also see ."
+        )
+        assert verified.learning_path == "Then try proteomics"
+        assert verified.prerequisites == ["Galaxy basics ()"]
+
+    @pytest.mark.asyncio
+    async def test_router_handoff_carries_sources(self):
+        router = QueryRouterAgent(self.deps)
+        source = SourceCitation(title="RNA-seq", url=self._RNASEQ_TUTORIAL["url"], source_type="gtn_tutorial")
+        handoff = router._serialize_handoff(
+            AgentResponse(
+                content="Try the RNA-seq tutorial.",
+                confidence=ConfidenceLevel.HIGH,
+                agent_type="gtn_training",
+                sources=[source],
+            ),
+            "gtn_training",
+        )
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = handoff
+            mock_run.return_value = mock_result
+
+            response = await router.process("How do I learn RNA-seq?")
+
+        assert response.agent_type == "gtn_training"
+        assert response.sources == [source]
+
+    def test_gtn_verify_unlinks_links_hidden_in_labels_and_odd_schemes(self):
+        agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])
+        response_data = GTNSearchResponse(
+            summary=(
+                "[<https://evil.example/x>](https://evil.example/x) "
+                "[shouty](HTTPS://EVIL.EXAMPLE/) "
+                "[relative](//evil.example/) "
+                "<https://evil.example/auto> <HTTPS://EVIL.EXAMPLE/AUTO>"
+            ),
+            total_time="2h; [details](https://evil.example/time)",
+        )
+
+        verified = agent._verify_response(response_data)
+
+        assert "evil" not in verified.summary.lower()
+        assert verified.summary == "<> shouty relative <> <>"
+        assert verified.total_time == "2h; details"
+
+    @pytest.mark.asyncio
+    async def test_gtn_text_fallback_unlinks_unverified_urls(self):
+        # When the model's structured output can't be parsed, its raw text is
+        # shown instead -- that path must not let fabricated links through.
+        with patch("galaxy.agents.gtn_training.GTNSearchDB") as mock_db_cls:
+            mock_db_cls.return_value.get_topics.return_value = ["transcriptomics"]
+            agent = GTNTrainingAgent(self.deps)
+        with (
+            patch.object(agent, "_supports_structured_output", return_value=True),
+            patch.object(agent, "_run_with_retry", new_callable=AsyncMock) as mock_run,
+            patch("galaxy.agents.gtn_training.extract_structured_output", return_value=None),
+            patch(
+                "galaxy.agents.gtn_training.extract_result_content",
+                return_value="See [this tutorial](https://training.galaxyproject.org/made-up/).",
+            ),
+        ):
+            mock_run.return_value = mock.Mock(spec=["output"])
+            response = await agent.process("How do I learn RNA-seq?")
+
+        assert response.metadata["method"] == "text_fallback"
+        assert response.content == "See this tutorial."
+
+    @pytest.mark.asyncio
+    async def test_workflow_orchestrator_combines_sources(self):
+        agent = WorkflowOrchestratorAgent(self.deps)
+        tutorial = SourceCitation(title="RNA-seq", url=self._RNASEQ_TUTORIAL["url"], source_type="gtn_tutorial")
+        faq = SourceCitation(title="Archive", url=self._ARCHIVE_FAQ["url"], source_type="gtn_faq")
+        responses = {
+            "gtn_training": AgentResponse(
+                content="Tutorials", confidence="high", agent_type="gtn_training", sources=[tutorial, faq]
+            ),
+            "history": AgentResponse(content="History", confidence="high", agent_type="history", sources=[tutorial]),
+        }
+
+        with (
+            patch.object(agent, "_get_agent_plan") as mock_get_plan,
+            patch.object(agent, "_execute_parallel", new_callable=AsyncMock) as mock_parallel,
+        ):
+            mock_get_plan.return_value = AgentPlan(agents=["gtn_training", "history"], sequential=False, reasoning="")
+            mock_parallel.return_value = responses
+            response = await agent.process("Find tutorials and check my history")
+
+        assert response.sources == [tutorial, faq]
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):

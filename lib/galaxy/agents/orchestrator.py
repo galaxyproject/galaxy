@@ -128,12 +128,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 responses = await self._execute_parallel(plan.agents, query, context)
 
             combined_content = self._combine_responses(responses, plan.reasoning)
+            sources = list({source.url: source for r in responses.values() for source in r.sources}.values())
 
             return self._build_response(
                 content=combined_content,
                 confidence=ConfidenceLevel.HIGH,
                 method="orchestrated",
                 query=query,
+                sources=sources,
                 agent_data={
                     "agents_used": plan.agents,
                     "execution_type": "sequential" if plan.sequential else "parallel",

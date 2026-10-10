@@ -60,6 +60,14 @@ class ActionSuggestion(BaseModel):
         return self
 
 
+class SourceCitation(BaseModel):
+    """A source an agent drew on, taken from what its tools returned rather than model-written text."""
+
+    title: str = Field(description="Title of the source")
+    url: str = Field(description="URL of the source")
+    source_type: str = Field(description="Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'")
+
+
 class AgentResponse(BaseModel):
     """Structured response from an AI agent."""
 
@@ -67,6 +75,7 @@ class AgentResponse(BaseModel):
     confidence: ConfidenceLevel = Field(description="Confidence in the response")
     agent_type: str = Field(description="Type of agent that generated this response")
     suggestions: list[ActionSuggestion] = Field(default_factory=list, description="Actionable suggestions")
+    sources: list[SourceCitation] = Field(default_factory=list, description="Verified sources behind the response")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     reasoning: str | None = Field(default=None, description="Explanation of the agent's reasoning")
 
