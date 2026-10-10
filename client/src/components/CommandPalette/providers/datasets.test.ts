@@ -1,7 +1,11 @@
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getFakeHistorySummary } from "@tests/test-data";
+import { getFakeCollectionSummary } from "@tests/test-data/collections";
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
+import { createPinia, disposePinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
-import type { HDASummary, HistorySummary } from "@/api";
+import type { HistoryItemSummary } from "@/api";
+import type * as datasetsApi from "@/api/datasets";
 import { loadDatasets, type LoadDatasetsOptions } from "@/api/datasets";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useDatasetListStore } from "@/stores/datasetListStore";
@@ -13,7 +17,7 @@ import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 vi.mock("@/api/datasets", async (importOriginal) => ({
-    ...(await importOriginal<Record<string, unknown>>()),
+    ...(await importOriginal<typeof datasetsApi>()),
     loadDatasets: vi.fn(),
 }));
 
@@ -28,25 +32,28 @@ vi.mock("@/composables/useRecentPaletteItems", () => ({
 }));
 
 const DATASETS_SCOPE: ScopeDefinition = { key: "d", label: "Datasets", providerId: "datasets" };
+const searchScopedDatasets = datasetsProvider.searchScoped;
+if (!searchScopedDatasets) {
+    throw new Error("The datasets provider must support scoped search");
+}
 
-function makeDataset(id: string, name: string, updateTime: string): HDASummary {
-    return {
+function makeDataset(id: string, name: string, updateTime: string) {
+    return getFakeDatasetSummary({
         id,
         name,
         extension: "txt",
-        history_content_type: "dataset",
         state: "ok",
         history_id: "history_1",
         update_time: updateTime,
         create_time: updateTime,
-    } as unknown as HDASummary;
+    });
 }
 
 const ALPHA = makeDataset("d1", "alpha reads", "2026-01-03T00:00:00");
 const BETA = makeDataset("d2", "beta reads", "2026-01-05T00:00:00");
 
 /** Serves the unfiltered "latest" list, and name-filters for search fetches */
-function mockLoadDatasets(all = [ALPHA, BETA]) {
+function mockLoadDatasets(all: HistoryItemSummary[] = [ALPHA, BETA]) {
     vi.mocked(loadDatasets).mockImplementation(async ({ search }: LoadDatasetsOptions) => {
         const data = search ? all.filter((dataset) => dataset.name?.includes(search)) : all;
         return { data, totalMatches: data.length };
@@ -55,7 +62,9 @@ function mockLoadDatasets(all = [ALPHA, BETA]) {
 
 describe("datasetsProvider", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        onTestFinished(() => disposePinia(pinia));
         vi.mocked(loadDatasets).mockReset();
         resetListRefreshTracking();
         recentEntries.length = 0;
@@ -65,7 +74,7 @@ describe("datasetsProvider", () => {
         mockLoadDatasets();
         recentEntries.push({ type: "dataset", id: "d1", name: "alpha reads", to: "/datasets/d1/preview" });
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        const sections = await searchScopedDatasets(DATASETS_SCOPE, "", makeCtx());
         expect(sections.map((s) => s.id)).toEqual(["recent", "latest"]);
         expect(sections[0]?.items.map((i) => i.id)).toEqual(["datasets:d1"]);
         // latest is update_time descending and skips what "Recent" already shows
@@ -75,7 +84,7 @@ describe("datasetsProvider", () => {
     it("maps a dataset to a preview link with extension and state", async () => {
         mockLoadDatasets();
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "alpha", makeCtx());
+        const sections = await searchScopedDatasets(DATASETS_SCOPE, "alpha", makeCtx());
         const items = sections.find((section) => section.id === "results")?.items ?? [];
 
         expect(items).toHaveLength(1);
@@ -87,9 +96,9 @@ describe("datasetsProvider", () => {
 
     it("appends the owning history name when it is already cached", async () => {
         mockLoadDatasets();
-        useHistoryStore().setHistory({ id: "history_1", name: "My analysis" } as HistorySummary);
+        useHistoryStore().setHistory(getFakeHistorySummary({ id: "history_1", name: "My analysis" }));
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "alpha", makeCtx());
+        const sections = await searchScopedDatasets(DATASETS_SCOPE, "alpha", makeCtx());
 
         expect(sections.at(-1)?.items[0]?.subtitle).toBe("txt · ok · My analysis");
     });
@@ -97,10 +106,10 @@ describe("datasetsProvider", () => {
     it("answers a scoped query from the store cache without a second request", async () => {
         mockLoadDatasets();
         // hydrate through the palette, the way opening the scope does
-        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        await searchScopedDatasets(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "beta", makeCtx());
+        const sections = await searchScopedDatasets(DATASETS_SCOPE, "beta", makeCtx());
 
         expect(sections.at(-1)?.items.map((i) => i.id)).toEqual(["datasets:d2"]);
         // the unfiltered fetch reported two matches and the cache holds both,
@@ -110,29 +119,29 @@ describe("datasetsProvider", () => {
 
     it("keeps searching locally instead of per keystroke once the cache is complete", async () => {
         mockLoadDatasets();
-        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        await searchScopedDatasets(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
         // queries without a single local match: the complete cache answers them
-        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
-        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zzz", makeCtx()));
+        await searchScopedDatasets(DATASETS_SCOPE, "zz", makeCtx());
+        const sections = renderedSections(await searchScopedDatasets(DATASETS_SCOPE, "zzz", makeCtx()));
 
         expect(sections).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
     });
 
     it("treats the cache as complete when the backend total also counts collections", async () => {
-        const collection = {
+        const collection = getFakeCollectionSummary({
             id: "c1",
             name: "paired list",
             history_content_type: "dataset_collection",
             update_time: "2026-01-04T00:00:00",
-        } as unknown as HDASummary;
+        });
         mockLoadDatasets([ALPHA, collection, BETA]);
-        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        await searchScopedDatasets(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
-        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx()));
+        const sections = renderedSections(await searchScopedDatasets(DATASETS_SCOPE, "zz", makeCtx()));
 
         expect(sections).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
@@ -140,12 +149,12 @@ describe("datasetsProvider", () => {
 
     it("refreshes the cached datasets in the background once they go stale", async () => {
         mockLoadDatasets();
-        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        await searchScopedDatasets(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
         // a later palette session, past the refresh interval
         resetListRefreshTracking();
-        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx()));
+        const sections = renderedSections(await searchScopedDatasets(DATASETS_SCOPE, "", makeCtx()));
 
         expect(sections[0]?.items.map((i) => i.id)).toEqual(["datasets:d2", "datasets:d1"]);
         expect(loadDatasets).toHaveBeenCalledTimes(1);
@@ -158,7 +167,7 @@ describe("datasetsProvider", () => {
         // cache cannot answer a query on its own
         vi.mocked(loadDatasets).mockImplementationOnce(async () => ({ data: [ALPHA, BETA], totalMatches: 30 }));
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "gamma", makeCtx());
+        const sections = await searchScopedDatasets(DATASETS_SCOPE, "gamma", makeCtx());
 
         expect(sections.at(-1)?.items.map((i) => i.id)).toEqual(["datasets:d3"]);
         expect(useDatasetListStore().getDatasetSummary("d3")).toBeDefined();
