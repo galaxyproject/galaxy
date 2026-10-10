@@ -1,4 +1,4 @@
-import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { BFormCheckbox } from "bootstrap-vue";
@@ -79,11 +79,7 @@ async function createWrapper(
     });
 
     const userStore = useUserStore();
-    if (userData) {
-        userStore.currentUser = userData;
-    } else {
-        userStore.currentUser = { isAnonymous: true, nice_total_disk_usage: "0 bytes", total_disk_usage: 0 };
-    }
+    userStore.currentUser = userData ?? getFakeAnonymousUser();
 
     const historyStore = useHistoryStore();
     vi.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");

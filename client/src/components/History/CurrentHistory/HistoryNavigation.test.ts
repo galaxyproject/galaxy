@@ -1,4 +1,4 @@
-import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import { createPinia } from "pinia";
@@ -31,7 +31,7 @@ describe("History Navigation", () => {
     });
 
     it("disables history creation and switching for anonymous users", () => {
-        const wrapper = createWrapper({ isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" });
+        const wrapper = createWrapper(getFakeAnonymousUser());
         const createButton = wrapper.get("[data-description='create new history']");
         const switchButton = wrapper.get("[data-description='switch to another history']");
         expect(createButton.attributes("disabled")).toBeDefined();
