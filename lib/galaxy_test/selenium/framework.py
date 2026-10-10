@@ -479,7 +479,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def setup_selenium(self):
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
-        # selenium_test replaces this per test; setup may screenshot before then.
+        # selenium_test assigns the real story; keep setup screenshots out of any earlier one.
         self.story = NoopStory()
         self.setup_driver_and_session()
         # Once the driver is allocated, any subsequent failure must still
