@@ -118,7 +118,14 @@ jobs:
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
         run: rm -Rf /usr/share/dotnet
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Configure apt
+        uses: './galaxy root/.github/actions/configure_apt'  # zizmor: ignore[self-repository] $/ fails to unpack this repo (dangling symlink)
       - name: Install packages
+        timeout-minutes: 20
         # ffmpeg: ffprobe needed by media datatypes
         # bubblewrap: exercises the expression-evaluation isolation sandbox integration test.
         # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs); allow them.
@@ -131,6 +138,7 @@ jobs:
         # https://github.com/medyagh/setup-minikube/issues/835
         run: sudo mkdir -p /etc/cni/net.d
       - name: Setup Minikube
+        timeout-minutes: 20
         uses: medyagh/setup-minikube@latest
         with:
           driver: none
@@ -138,10 +146,6 @@ jobs:
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v7.0.1
-        with:
-          path: 'galaxy root'
-          persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
@@ -154,6 +158,7 @@ jobs:
           name: mulled-resolution-cache-seed
           path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Install Apptainer's singularity
+        timeout-minutes: 20
         uses: './galaxy root/.github/actions/install_apptainer'
       - name: Run tests
         env:
