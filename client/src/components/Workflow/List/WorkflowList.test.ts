@@ -1,16 +1,21 @@
-import { createTestingPinia } from "@pinia/testing";
+import { createTestingPinia, type TestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { createTestRouter, getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
+import {
+    createTestRouter,
+    expectConfigurationRequest,
+    getLocalVue,
+    suppressBootstrapVueWarnings,
+    withPlugins,
+} from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { loadWorkflows } from "@/api/workflows";
+import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
-
-import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -21,117 +26,117 @@ vi.mock("@/api/workflows", () => ({
     loadWorkflows: vi.fn(),
 }));
 
-const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
+const mockedLoadWorkflows = vi.mocked(loadWorkflows);
 
 const localVue = getLocalVue();
 const router = createTestRouter();
 
-const FAKE_USER_ID = "fake_user_id";
 const FAKE_USERNAME = "fake_username";
-const FAKE_USER_EMAIL = "fake_user_email";
 const FAKE_USER = getFakeRegisteredUser({
-    id: FAKE_USER_ID,
-    email: FAKE_USER_EMAIL,
+    id: "fake_user_id",
+    email: "fake_user_email",
     username: FAKE_USERNAME,
 });
 
-async function mountWorkflowList() {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+const SELECTORS = {
+    WORKFLOW_CARD: ".workflow-card",
+    EMPTY_LIST: "#workflow-list-empty",
+    FILTER_INPUT: "#workflow-list-filter input",
+    SHOW_DELETED_BUTTON: "#show-deleted",
+};
+
+/** Workflows owned by the fake user, served as the list's only page. */
+function serveWorkflows(count: number, overrides: Partial<WorkflowSummary> = {}) {
+    const workflows = Array.from({ length: count }, (_, i) =>
+        getFakeWorkflowSummary({ id: `workflow-${i}`, name: `Workflow ${i}`, owner: FAKE_USERNAME, ...overrides }),
+    );
+    mockedLoadWorkflows.mockResolvedValue({ data: workflows, totalMatches: count });
+    return workflows;
+}
+
+/** Mounts the list before any user has loaded; the "my" list waits for one. */
+function mountWorkflowList(pinia: TestingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })) {
     setActivePinia(pinia);
+    const wrapper = mount(WorkflowList, { global: withPlugins(localVue, pinia, router) });
+    return { wrapper, userStore: useUserStore() };
+}
 
-    const wrapper = mount(WorkflowList as object, {
-        global: localVue,
-        pinia,
-        router,
-    });
-
-    const userStore = useUserStore();
+async function mountWorkflowListForUser() {
+    const { wrapper, userStore } = mountWorkflowList();
     userStore.currentUser = FAKE_USER;
-
     await flushPromises();
-
     return wrapper;
 }
+
+function filterText(wrapper: VueWrapper) {
+    return wrapper.find<HTMLInputElement>(SELECTORS.FILTER_INPUT).element.value;
+}
+
+enableAutoUnmount(afterEach);
 
 describe("WorkflowList", () => {
     beforeEach(() => {
         suppressBootstrapVueWarnings();
         vi.clearAllMocks();
-        // Mock the workflow counts endpoint used by workflow card badges
         server.use(
+            // Workflow card badges request their counts.
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 return response(200).json({});
             }),
-            // The tab bar reads useConfig(), and the configuration store fetches in its setup body
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({});
-            }),
+            // The tab bar reads useConfig(), and the configuration store fetches in its setup body.
+            expectConfigurationRequest(http, {}),
         );
     });
 
-    it("render empty workflow list", async () => {
-        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
-        const wrapper = await mountWorkflowList();
+    it("shows the empty-list message when there are no workflows", async () => {
+        serveWorkflows(0);
+        const wrapper = await mountWorkflowListForUser();
 
-        expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
-        expect(wrapper.find("#workflow-list-empty").exists()).toBe(true);
+        expect(wrapper.findAll(SELECTORS.WORKFLOW_CARD)).toHaveLength(0);
+        expect(wrapper.find(SELECTORS.EMPTY_LIST).exists()).toBe(true);
     });
 
-    it("render workflow list", async () => {
-        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
-        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 10 });
-        const wrapper = await mountWorkflowList();
+    it("renders a card for each workflow", async () => {
+        const workflows = serveWorkflows(10);
+        const wrapper = await mountWorkflowListForUser();
 
-        expect(wrapper.findAll(".workflow-card")).toHaveLength(10);
-        expect(wrapper.find("#workflow-list-empty").exists()).toBe(false);
+        expect(wrapper.findAll(SELECTORS.WORKFLOW_CARD)).toHaveLength(10);
+        expect(wrapper.find(SELECTORS.EMPTY_LIST).exists()).toBe(false);
 
-        const nonDeletedWorkflows = FAKE_WORKFLOWS.filter((w) => !w.deleted);
-        expect(wrapper.findAll(".workflow-card")).toHaveLength(nonDeletedWorkflows.length);
+        const nonDeletedWorkflows = workflows.filter((w) => !w.deleted);
+        expect(wrapper.findAll(SELECTORS.WORKFLOW_CARD)).toHaveLength(nonDeletedWorkflows.length);
     });
 
-    it("render own workflows when the user loads after the workflow list", async () => {
-        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 3);
-        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 3 });
-
-        const pinia = createTestingPinia({ createSpy: vi.fn });
-        setActivePinia(pinia);
-        const userStore = useUserStore();
-
-        const wrapper = mount(WorkflowList as object, { localVue, pinia, router });
+    it("renders own workflows when the user loads after the workflow list", async () => {
+        serveWorkflows(3);
+        const { wrapper, userStore } = mountWorkflowList(createTestingPinia({ createSpy: vi.fn }));
         await flushPromises();
-        expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
+
+        expect(wrapper.findAll(SELECTORS.WORKFLOW_CARD)).toHaveLength(0);
         expect(wrapper.findComponent(LoadingSpan).exists()).toBe(true);
-        expect(wrapper.find("#workflow-list-empty").exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.EMPTY_LIST).exists()).toBe(false);
 
         userStore.currentUser = FAKE_USER;
         await flushPromises();
 
-        expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
+        expect(wrapper.findAll(SELECTORS.WORKFLOW_CARD)).toHaveLength(3);
         expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
     });
 
-    it("toggle show deleted workflows", async () => {
-        const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
-        FAKE_WORKFLOWS.forEach((w) => (w.deleted = true));
-        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 10 });
-        const wrapper = await mountWorkflowList();
+    it("toggles the is:deleted filter with the show-deleted button", async () => {
+        serveWorkflows(10, { deleted: true });
+        const wrapper = await mountWorkflowListForUser();
 
-        expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
+        expect(filterText(wrapper)).toBe("");
+        expect(wrapper.find(SELECTORS.SHOW_DELETED_BUTTON).exists()).toBe(true);
 
-        const showDeletedButton = wrapper.find("#show-deleted");
-        expect(showDeletedButton.exists()).toBe(true);
-        showDeletedButton.trigger("click");
+        await wrapper.find(SELECTORS.SHOW_DELETED_BUTTON).trigger("click");
 
-        await wrapper.vm.$nextTick();
+        expect(filterText(wrapper)).toBe("is:deleted");
+        expect(wrapper.find(SELECTORS.SHOW_DELETED_BUTTON).exists()).toBe(true);
 
-        expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("is:deleted");
+        await wrapper.find(SELECTORS.SHOW_DELETED_BUTTON).trigger("click");
 
-        expect(showDeletedButton.exists()).toBe(true);
-        showDeletedButton.trigger("click");
-
-        await wrapper.vm.$nextTick();
-
-        expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");
-        await flushPromises();
+        expect(filterText(wrapper)).toBe("");
     });
 });
