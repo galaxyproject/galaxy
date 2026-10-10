@@ -6,9 +6,8 @@ import { useServerMock } from "@/api/client/__mocks__";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
-import { makeCtx, renderedSections } from "../test-utils";
+import { makeCtx, renderedSections, signIn } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { historiesProvider } from "./histories";
 import { resetListRefreshTracking } from "./refresh";
@@ -154,11 +153,6 @@ function mockHistoriesApi() {
         data: matching([ARCHIVED], search),
         total: 1,
     }));
-}
-
-function signIn(username = "me") {
-    const userStore = useUserStore();
-    userStore.currentUser = { id: "user-1", email: "me@example.org", username, isAnonymous: false } as never;
 }
 
 async function scopedSections(scope: ScopeDefinition, query = "") {

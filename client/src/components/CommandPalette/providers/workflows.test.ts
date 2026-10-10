@@ -5,9 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkflowSummary } from "@/api/workflows";
 import { loadWorkflows } from "@/api/workflows";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
-import { useUserStore } from "@/stores/userStore";
 
-import { makeCtx, renderedSections } from "../test-utils";
+import { makeCtx, renderedSections, signIn } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -88,11 +87,6 @@ function mockWorkflowsApi() {
         const matched = query ? data.filter((entry) => entry.name.toLowerCase().includes(query)) : data;
         return { data: matched, totalMatches: matched.length };
     });
-}
-
-function signIn(username = "me") {
-    const userStore = useUserStore();
-    userStore.currentUser = { id: "user-1", email: "me@example.org", username, isAnonymous: false } as never;
 }
 
 async function scopedSections(scope: ScopeDefinition, query = "") {
