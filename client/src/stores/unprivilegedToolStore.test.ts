@@ -1,4 +1,4 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
 import { http as mswHttp } from "msw";
 import { createPinia, setActivePinia } from "pinia";
@@ -66,7 +66,7 @@ it("does not query custom tools for an anonymous user", async () => {
         }),
     );
     const userStore = useUserStore();
-    userStore.currentUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
+    userStore.currentUser = getFakeAnonymousUser();
     const store = useUnprivilegedToolStore();
     await store.load(true);
     await flushPromises();

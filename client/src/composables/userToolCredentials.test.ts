@@ -1,4 +1,4 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { getFakeServiceCredentialGroup, getFakeUserServiceCredentials } from "@tests/test-data/userCredentials";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -184,7 +184,7 @@ describe("useUserToolCredentials", () => {
         });
 
         it("leaves credentials unfetched for an anonymous user", async () => {
-            userStore.currentUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
+            userStore.currentUser = getFakeAnonymousUser();
             const { checkUserCredentials, currentUserToolServices } = useUserToolCredentials(
                 TEST_TOOL_ID,
                 TEST_TOOL_VERSION,
