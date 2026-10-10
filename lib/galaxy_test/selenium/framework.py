@@ -542,16 +542,16 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         return interactor
 
     def write_screenshot_directory_file(self, label, content):
-        target = self._screenshots_directory_path(label, ".txt")
+        target = self._screenshot_path(label, ".txt")
         if target is None:
             return
 
         with open(target, "w") as f:
             f.write(content)
 
-    def _screenshots_directory_path(self, label, extension=".png") -> str | None:
+    def _screenshot_path(self, label, extension=".png"):
         if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
-            return None
+            return
         if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
             os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
         target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + extension)

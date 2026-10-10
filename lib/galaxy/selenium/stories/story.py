@@ -90,14 +90,9 @@ class StoryBase(ABC):
     def output_directory(self) -> str:
         """Directory story artifacts are written to."""
 
-    @property
     @abstractmethod
-    def screenshot_counter(self) -> int:
-        """Number of screenshots taken so far, used to order their filenames."""
-
-    @screenshot_counter.setter
-    @abstractmethod
-    def screenshot_counter(self, value: int) -> None: ...
+    def screenshot_path(self, label: str, extension: str = ".png") -> str | None:
+        """Reserve the next numbered screenshot path, or None when not collecting."""
 
     @abstractmethod
     def add_screenshot(self, screenshot_path: str, caption: str) -> None:
@@ -134,13 +129,10 @@ class Story(StoryBase):
     def output_directory(self) -> str:
         return self._output_directory
 
-    @property
-    def screenshot_counter(self) -> int:
-        return self._screenshot_counter
-
-    @screenshot_counter.setter
-    def screenshot_counter(self, value: int) -> None:
-        self._screenshot_counter = value
+    def screenshot_path(self, label: str, extension: str = ".png") -> str:
+        path = os.path.join(self.output_directory, f"{self._screenshot_counter:03d}_{label}{extension}")
+        self._screenshot_counter += 1
+        return path
 
     def add_screenshot(self, screenshot_path: str, caption: str) -> None:
         element_meta: ElementMetadata = {"caption": caption}
@@ -217,9 +209,6 @@ class Story(StoryBase):
 class NoopStory(StoryBase):
     """Null object used when story generation is off, so callers need no conditionals."""
 
-    def __init__(self) -> None:
-        self._screenshot_counter = 0
-
     @property
     def enabled(self) -> bool:
         return False
@@ -228,13 +217,8 @@ class NoopStory(StoryBase):
     def output_directory(self) -> str:
         return ""
 
-    @property
-    def screenshot_counter(self) -> int:
-        return self._screenshot_counter
-
-    @screenshot_counter.setter
-    def screenshot_counter(self, value: int) -> None:
-        self._screenshot_counter = value
+    def screenshot_path(self, label: str, extension: str = ".png") -> str | None:
+        return None
 
     def add_screenshot(self, screenshot_path: str, caption: str) -> None:
         pass

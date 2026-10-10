@@ -208,7 +208,8 @@ class TestStoryState:
     def test_reset_discards_collected_content(self, story_dir):
         story = Story("T", "", story_dir)
         story.add_documentation("from the failed attempt")
-        story.screenshot_counter = 7
+        assert story.screenshot_path("first") == os.path.join(story_dir, "000_first.png")
+        assert story.screenshot_path("second") == os.path.join(story_dir, "001_second.png")
         story.reset()
         story.add_documentation("from the retry")
         story.finalize()
@@ -216,7 +217,8 @@ class TestStoryState:
         markdown = open(os.path.join(story_dir, "story.md")).read()
         assert "from the failed attempt" not in markdown
         assert "from the retry" in markdown
-        assert story.screenshot_counter == 0
+        # Numbering starts over for the retry.
+        assert story.screenshot_path("first", ".txt") == os.path.join(story_dir, "000_first.txt")
 
 
 class TestNoopStory:
@@ -224,6 +226,7 @@ class TestNoopStory:
         monkeypatch.chdir(story_dir)
         story = NoopStory()
         story.add_documentation("ignored")
+        assert story.screenshot_path("a") is None
         story.add_screenshot("a.png", "ignored")
         story.reset()
         story.finalize()

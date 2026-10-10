@@ -53,40 +53,31 @@ class GalaxySeleniumContext(NavigatesGalaxy):
     def screenshot(self, label: str, caption: str | None = None):
         """Save a screenshot when an output path is configured and add it to the story.
 
-        The caption defaults to the label. Unlike failure snapshots, these images
-        are captured during successful runs too.
+        A story numbers its screenshots in its own directory; the usual screenshot
+        path then gets a copy. The caption defaults to the label. Unlike failure
+        snapshots, these images are captured during successful runs too.
         """
         target = self._screenshot_path(label)
-        if target is None:
-            return
+        story_target = self.story.screenshot_path(label)
+        if story_target is None:
+            if target is not None:
+                self.save_screenshot(target)
+            return target
 
-        self.save_screenshot(target)
-        if self.story.enabled:
-            screenshots_target = self._screenshots_directory_path(label)
-            if screenshots_target is not None:
-                # Copy rather than capture again - the page has moved on.
-                shutil.copyfile(target, screenshots_target)
-        self.story.add_screenshot(target, caption or label)
-        return target
+        self.save_screenshot(story_target)
+        if target is not None:
+            # Copy rather than capture again - the page has moved on.
+            shutil.copyfile(story_target, target)
+        self.story.add_screenshot(story_target, caption or label)
+        return story_target
 
     def document(self, markdown_content: str):
         """Add markdown narration to the story, interleaved with the screenshots."""
         self.story.add_documentation(markdown_content)
 
-    def _screenshot_path(self, label: str, extension=".png") -> str | None:
-        """Numbered path in the story directory when collecting a story, else the usual screenshot path."""
-        if self.story.enabled:
-            target = os.path.join(
-                self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}{extension}"
-            )
-            self.story.screenshot_counter += 1
-            return target
-
-        return self._screenshots_directory_path(label, extension)
-
     @abstractmethod
-    def _screenshots_directory_path(self, label: str, extension=".png") -> str | None:
-        """Path to store screenshots in outside a story, or None to skip them."""
+    def _screenshot_path(self, label: str, extension=".png") -> str | None:
+        """Path to store screenshots in."""
 
 
 class GalaxySeleniumContextImpl(GalaxySeleniumContext):
@@ -105,7 +96,7 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")
         self.target_url_from_selenium = from_dict.get("selenium_galaxy_url", self.url)
 
-    def _screenshots_directory_path(self, label, extension=".png"):
+    def _screenshot_path(self, label, extension=".png"):
         return label + extension
 
 
