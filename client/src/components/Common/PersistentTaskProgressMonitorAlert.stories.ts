@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeMonitoringData } from "@tests/test-data/monitoring";
+import { expect, fn, waitFor, within } from "storybook/test";
 import { h, markRaw, ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
@@ -89,11 +90,41 @@ const meta = {
     args: {
         monitorRequest: REMOTE_EXPORT,
         useMonitor: taskMonitor(),
+        onOnDismiss: fn(),
     },
 } satisfies Meta<typeof PersistentTaskProgressMonitorAlert>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+type PlayContext = Parameters<NonNullable<Story["play"]>>[0];
+
+/**
+ * A completed result's expiry, a day after the task started. Across a daylight-saving change
+ * the browser's clock reads that day as 23 or 25 hours.
+ */
+const EXPIRES_IN_A_DAY = "This result will expire in (1 day|about 2[345] hours)";
+
+/**
+ * Reads the alert's whole text, then `expiry` (a pattern) when given. A dismissible alert ends
+ * with its close button's "×". Info and success alerts are a `status`; danger and warning ones
+ * an `alert`.
+ */
+async function seeAlert(
+    { canvas, step }: PlayContext,
+    role: "status" | "alert",
+    text: string,
+    { dismissible = true, expiry }: { dismissible?: boolean; expiry?: string } = {},
+) {
+    let alert!: HTMLElement;
+    await step(`See "${text}"${expiry ? " and when the result expires" : ""}`, async () => {
+        alert = await canvas.findByRole(role);
+        const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pattern = `^${escaped}${expiry ? ` ${expiry}` : ""}${dismissible ? " ×" : ""}$`;
+        await expect(alert).toHaveTextContent(new RegExp(pattern));
+    });
+    return alert;
+}
 
 /** No task was started from this page, so there is nothing to show. */
 export const NoTaskStarted: Story = {};
@@ -101,17 +132,51 @@ export const NoTaskStarted: Story = {};
 export const InProgress: Story = {
     args: { useMonitor: taskMonitor({ isRunning: ref(true) }) },
     parameters: storedTask({ taskId: TASK_ID }),
+    play: async (context) => {
+        await seeAlert(context, "status", "Task is in progress. Please wait...", { dismissible: false });
+    },
 };
 
 export const Completed: Story = {
     args: { useMonitor: taskMonitor({ isCompleted: ref(true) }) },
     parameters: storedTask({ taskId: TASK_ID }),
+    play: async (context) => {
+        await seeAlert(context, "status", "Task completed successfully.", { expiry: EXPIRES_IN_A_DAY });
+        await context.step("See no download link for a task that isn't a download", async () => {
+            await expect(context.canvas.queryByRole("link")).not.toBeInTheDocument();
+        });
+    },
+};
+
+/** Closing a finished task's alert hides it and tells the page. */
+export const DismissesCompleted: Story = {
+    ...Completed,
+    play: async (context) => {
+        const alert = await seeAlert(context, "status", "Task completed successfully.", { expiry: EXPIRES_IN_A_DAY });
+        await context.step("Close the alert; it goes away", async () => {
+            await expect(context.args.onOnDismiss).not.toHaveBeenCalled();
+            await context.userEvent.click(within(alert).getByRole("button", { name: "Close" }));
+            await waitFor(() => expect(context.canvas.queryByRole("status")).not.toBeInTheDocument());
+            await expect(context.args.onOnDismiss).toHaveBeenCalledTimes(1);
+        });
+    },
 };
 
 /** A short-term storage result links to its download until it expires. */
 export const DownloadReady: Story = {
     args: { monitorRequest: DOWNLOAD_EXPORT, useMonitor: taskMonitor({ isCompleted: ref(true) }) },
     parameters: storedTask({ taskId: DOWNLOAD_REQUEST_ID }),
+    play: async (context) => {
+        const alert = await seeAlert(context, "status", "Task completed successfully. Download here", {
+            expiry: EXPIRES_IN_A_DAY,
+        });
+        await context.step("See the link to download the result", async () => {
+            await expect(within(alert).getByRole("link", { name: "Download here" })).toHaveAttribute(
+                "href",
+                `/api/short_term_storage/${DOWNLOAD_REQUEST_ID}`,
+            );
+        });
+    },
 };
 
 export const Failed: Story = {
@@ -122,10 +187,16 @@ export const Failed: Story = {
         }),
     },
     parameters: storedTask({ taskId: TASK_ID }),
+    play: async (context) => {
+        await seeAlert(context, "alert", "Task failed. Reason: The remote file source rejected the upload");
+    },
 };
 
 /** Started two days ago: the result is gone, even though the last status seen was running. */
 export const Expired: Story = {
     args: { useMonitor: taskMonitor({ isRunning: ref(true) }) },
     parameters: storedTask({ taskId: TASK_ID, startedAgo: 2 * DAY }),
+    play: async (context) => {
+        await seeAlert(context, "alert", "The export task has expired and the result is no longer available.");
+    },
 };
