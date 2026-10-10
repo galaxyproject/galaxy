@@ -1,21 +1,19 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { getFakePageDetails, getFakePageRevisionSummary } from "@tests/test-data/pages";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import type { Pinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
-import type { HistoryPageDetails, PageRevisionSummary } from "@/api/pages.js";
 import type GButton from "@/components/BaseComponents/GButton.vue";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import { PAGE_LABELS } from "../Page/constants.js";
 
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
-import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
 
 const localVue = getLocalVue();
-(ChangesIndicator as unknown as { name?: string }).name = "ChangesIndicator";
 
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
@@ -32,90 +30,78 @@ const SELECTORS = {
     EDIT_BUTTON: "[data-description='page edit button']",
     RENAME_BUTTON: "[data-description='page rename button']",
     RENAME_INPUT: "[data-description='galaxy notebook name input']",
+    RENAME_CONFIRM_BUTTON: ".g-modal-confirm-buttons .g-blue",
     PREVIEW_BUTTON: "[data-description='page preview button']",
 } as const;
 
-let pinia: Pinia;
+enableAutoUnmount(afterEach);
 
-function mountComponent(
-    propsData: {
-        labels: (typeof PAGE_LABELS)[keyof typeof PAGE_LABELS];
-        mode: "editor" | "display";
-    },
-    stubs: Record<string, object> = {},
-) {
-    return mount(PageDisplayToolbar as object, {
-        localVue,
-        propsData,
-        pinia,
-        stubs,
+/**
+ * Mounts the toolbar over a loaded "My Page" with two revisions. Its current title
+ * and content differ from the store's never-saved originals, so it starts dirty.
+ */
+function mountToolbar(mode: "editor" | "display", stubs: Record<string, object> = {}) {
+    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const store = usePageEditorStore();
+    store.isLoadingList = false;
+    store.isLoadingPage = false;
+    store.error = null;
+    store.currentPage = getFakePageDetails({
+        id: PAGE_ID,
+        history_id: HISTORY_ID,
+        title: "My Page",
+        content: "# Hello",
     });
+    store.currentContent = "# Hello";
+    store.currentTitle = "My Page";
+    store.revisions = [
+        getFakePageRevisionSummary({ id: "rev-1", page_id: PAGE_ID }),
+        getFakePageRevisionSummary({ id: "rev-2", page_id: PAGE_ID }),
+    ];
+
+    const wrapper = mount(PageDisplayToolbar, {
+        props: { labels: PAGE_LABELS.history, mode },
+        global: { ...withPlugins(localVue, pinia), stubs: { ...localVue.stubs, ...stubs } },
+    });
+    return { wrapper, store };
+}
+
+function mountEditorWithSavedIndicatorSpy() {
+    const flashSavedIndicator = vi.fn();
+    const mounted = mountToolbar("editor", {
+        ChangesIndicator: { template: "<div />", methods: { flashSavedIndicator } },
+    });
+    return { ...mounted, flashSavedIndicator };
 }
 
 describe("PageDisplayToolbar", () => {
-    function setupLoadedPage() {
-        const newStore = usePageEditorStore();
-        newStore.isLoadingList = false;
-        newStore.isLoadingPage = false;
-        newStore.error = null;
-        newStore.currentPage = {
-            id: PAGE_ID,
-            history_id: HISTORY_ID,
-            title: "My Page",
-            content: "# Hello",
-            update_time: "2024-01-01T00:00:00",
-        } as HistoryPageDetails;
-        newStore.currentContent = "# Hello";
-        newStore.currentTitle = "My Page";
-        newStore.revisions = [
-            { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            { id: "rev-2", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-        ] as PageRevisionSummary[];
-        return newStore;
-    }
-
-    let wrapper: VueWrapper;
-    let store: ReturnType<typeof usePageEditorStore>;
-
-    beforeEach(async () => {
-        pinia = createTestingPinia({ createSpy: vi.fn });
-        store = setupLoadedPage();
-        await flushPromises();
-        vi.clearAllMocks();
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
-        vi.restoreAllMocks();
-    });
-
     describe("editor mode", () => {
-        beforeEach(async () => {
-            wrapper = mountComponent({ labels: PAGE_LABELS.history, mode: "editor" });
-            await flushPromises();
-        });
+        it("shows the editor toolbar with the Edit button pressed", () => {
+            const { wrapper } = mountToolbar("editor");
 
-        it("shows edit toolbar with Edit button pressed", async () => {
             expect(wrapper.find(SELECTORS.EDITOR_TOOLBAR).exists()).toBe(true);
-
             expect(wrapper.findComponent<typeof GButton>(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
             expect(wrapper.findComponent<typeof GButton>(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
         });
 
-        it("shows rename button and page title in toolbar", () => {
+        it("shows the rename button and the page title", () => {
+            const { wrapper } = mountToolbar("editor");
+
             expect(wrapper.find(SELECTORS.RENAME_BUTTON).exists()).toBe(true);
             expect(wrapper.find(SELECTORS.TOOLBAR_TITLE).text()).toBe("My Page");
         });
 
-        it("shows 'Untitled Notebook' in title when currentTitle is empty", async () => {
+        it("shows the default title once the current title is cleared", async () => {
+            const { wrapper, store } = mountToolbar("editor");
+
             store.currentTitle = "";
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(wrapper.find(SELECTORS.TOOLBAR_TITLE).text()).toBe("Untitled Notebook");
         });
 
-        it("shows 'Unsaved' indicator when store.isDirty is true", async () => {
-            await wrapper.vm.$nextTick();
+        it("shows the Unsaved indicator while the page has unsaved changes", () => {
+            const { wrapper, store } = mountToolbar("editor");
 
             expect(store.isDirty).toBe(true);
             const unsaved = wrapper.find(SELECTORS.UNSAVED_INDICATOR);
@@ -123,124 +109,111 @@ describe("PageDisplayToolbar", () => {
             expect(unsaved.text()).toBe("Unsaved");
         });
 
-        it("save button is disabled when store.canSave is false", async () => {
+        it("disables the save button once nothing is left to save", async () => {
+            const { wrapper, store } = mountToolbar("editor");
+
             store.currentContent = "";
             store.currentTitle = "";
-            await wrapper.vm.$nextTick();
+            await nextTick();
 
             expect(store.canSave).toBe(false);
-            const saveBtn = wrapper.find(SELECTORS.SAVE_BUTTON);
-            expect(saveBtn.attributes("aria-disabled")).toBe("true");
+            expect(wrapper.find(SELECTORS.SAVE_BUTTON).attributes("aria-disabled")).toBe("true");
         });
 
-        it("shows Preview button in toolbar", () => {
-            const previewBtn = wrapper.find(SELECTORS.PREVIEW_BUTTON);
-            expect(previewBtn.exists()).toBe(true);
-            expect(previewBtn.text()).toContain("Preview");
+        it("labels the back button with the editor back label", () => {
+            const { wrapper } = mountToolbar("editor");
+
+            expect(wrapper.find(SELECTORS.BACK_BUTTON).text()).toContain(PAGE_LABELS.history.editorBackLabel);
         });
 
-        it("Preview button emits a preview event", async () => {
-            const previewBtn = wrapper.find(SELECTORS.PREVIEW_BUTTON);
-            await previewBtn.trigger("click");
+        it("emits back when the back button is clicked", async () => {
+            const { wrapper } = mountToolbar("editor");
 
-            expect(wrapper.emitted("preview")).toHaveLength(1);
-        });
-
-        it("rename button opens rename modal which renames the page", async () => {
-            expect(wrapper.find(SELECTORS.RENAME_BUTTON).exists()).toBe(true);
-
-            const renameBtn = wrapper.find(SELECTORS.RENAME_BUTTON);
-            await renameBtn.trigger("click");
-            await wrapper.vm.$nextTick();
-
-            const renameInput = wrapper.find(SELECTORS.RENAME_INPUT);
-            expect(renameInput.exists()).toBe(true);
-            expect((renameInput.element as HTMLInputElement).value).toBe("My Page");
-
-            (renameInput.element as HTMLInputElement).value = "Renamed Page";
-            await renameInput.trigger("input");
-
-            const renameBtnInModal = wrapper.find(".g-modal-confirm-buttons .g-blue");
-            await renameBtnInModal.trigger("click");
-            await wrapper.vm.$nextTick();
-
-            expect(store.updateTitle).toHaveBeenCalledWith("Renamed Page");
-        });
-
-        it("back button emits a back event", async () => {
-            const backBtn = wrapper.find(SELECTORS.BACK_BUTTON);
-            await backBtn.trigger("click");
+            await wrapper.find(SELECTORS.BACK_BUTTON).trigger("click");
 
             expect(wrapper.emitted("back")).toHaveLength(1);
         });
 
-        it("save button calls store.savePage", async () => {
-            const saveBtn = wrapper.find(SELECTORS.SAVE_BUTTON);
-            await saveBtn.trigger("click");
-            await flushPromises();
+        it("shows a Preview button", () => {
+            const { wrapper } = mountToolbar("editor");
 
-            expect(store.savePage).toHaveBeenCalled();
+            const previewButton = wrapper.find(SELECTORS.PREVIEW_BUTTON);
+            expect(previewButton.exists()).toBe(true);
+            expect(previewButton.text()).toContain("Preview");
         });
 
-        it("shows saved feedback after a successful save", async () => {
-            const flashSavedIndicator = vi.fn();
-            const saveWrapper = mountComponent(
-                { labels: PAGE_LABELS.history, mode: "editor" },
-                {
-                    ChangesIndicator: {
-                        template: "<div />",
-                        methods: { flashSavedIndicator },
-                    },
-                },
-            );
+        it("emits preview when the Preview button is clicked", async () => {
+            const { wrapper } = mountToolbar("editor");
 
-            await saveWrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
-            await flushPromises();
+            await wrapper.find(SELECTORS.PREVIEW_BUTTON).trigger("click");
 
-            expect(flashSavedIndicator).toHaveBeenCalledOnce();
-            saveWrapper.unmount();
+            expect(wrapper.emitted("preview")).toHaveLength(1);
         });
 
-        it("does not show saved feedback after a failed save", async () => {
-            const flashSavedIndicator = vi.fn();
-            const saveWrapper = mountComponent(
-                { labels: PAGE_LABELS.history, mode: "editor" },
-                {
-                    ChangesIndicator: {
-                        template: "<div />",
-                        methods: { flashSavedIndicator },
-                    },
-                },
-            );
-            vi.mocked(store.savePage).mockRejectedValue(new Error("save failed"));
+        it("renames the page through the rename modal", async () => {
+            const { wrapper, store } = mountToolbar("editor");
 
-            await saveWrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
-            await flushPromises();
+            await wrapper.find(SELECTORS.RENAME_BUTTON).trigger("click");
+            const renameInput = wrapper.find<HTMLInputElement>(SELECTORS.RENAME_INPUT);
+            expect(renameInput.exists()).toBe(true);
+            expect(renameInput.element.value).toBe("My Page");
 
-            expect(flashSavedIndicator).not.toHaveBeenCalled();
-            saveWrapper.unmount();
+            await renameInput.setValue("Renamed Page");
+            await wrapper.find(SELECTORS.RENAME_CONFIRM_BUTTON).trigger("click");
+
+            expect(store.updateTitle).toHaveBeenCalledWith("Renamed Page");
         });
 
-        it("back button text says whatever the label back button value is", () => {
-            const backBtn = wrapper.find(SELECTORS.BACK_BUTTON);
-            expect(backBtn.text()).toContain(PAGE_LABELS.history.editorBackLabel);
+        describe("saving", () => {
+            it("saves the page when the save button is clicked", async () => {
+                const { wrapper, store } = mountToolbar("editor");
+
+                await wrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
+                await flushPromises();
+
+                expect(store.savePage).toHaveBeenCalled();
+            });
+
+            it("flashes the saved indicator after a successful save", async () => {
+                const { wrapper, flashSavedIndicator } = mountEditorWithSavedIndicatorSpy();
+
+                await wrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
+                await flushPromises();
+
+                expect(flashSavedIndicator).toHaveBeenCalledOnce();
+            });
+
+            it("does not flash the saved indicator after a failed save", async () => {
+                const { wrapper, store, flashSavedIndicator } = mountEditorWithSavedIndicatorSpy();
+                vi.mocked(store.savePage).mockRejectedValue(new Error("save failed"));
+
+                await wrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
+                await flushPromises();
+
+                expect(flashSavedIndicator).not.toHaveBeenCalled();
+            });
         });
 
         describe("revisions", () => {
-            it("shows Revisions button in toolbar", () => {
-                const revBtn = wrapper.find(SELECTORS.REVISIONS_BUTTON);
-                expect(revBtn.exists()).toBe(true);
-                expect(revBtn.text()).toContain("Revisions");
+            it("shows a Revisions button", () => {
+                const { wrapper } = mountToolbar("editor");
+
+                const revisionsButton = wrapper.find(SELECTORS.REVISIONS_BUTTON);
+                expect(revisionsButton.exists()).toBe(true);
+                expect(revisionsButton.text()).toContain("Revisions");
             });
 
-            it("clicking Revisions button calls store.toggleRevisions", async () => {
-                const revBtn = wrapper.find(SELECTORS.REVISIONS_BUTTON);
-                await revBtn.trigger("click");
+            it("toggles the revisions panel when the Revisions button is clicked", async () => {
+                const { wrapper, store } = mountToolbar("editor");
+
+                await wrapper.find(SELECTORS.REVISIONS_BUTTON).trigger("click");
 
                 expect(store.toggleRevisions).toHaveBeenCalled();
             });
 
-            it("revision badge shows count when revisions loaded", () => {
+            it("shows the revision count in a badge", () => {
+                const { wrapper } = mountToolbar("editor");
+
                 const badge = wrapper.find(SELECTORS.REVISIONS_BADGE);
                 expect(badge.exists()).toBe(true);
                 expect(badge.text()).toBe("2");
@@ -249,22 +222,18 @@ describe("PageDisplayToolbar", () => {
     });
 
     describe("display mode", () => {
-        beforeEach(async () => {
-            wrapper = mountComponent({ labels: PAGE_LABELS.history, mode: "display" });
-            await flushPromises();
-        });
+        it("shows the display toolbar with the Preview button pressed", () => {
+            const { wrapper } = mountToolbar("display");
 
-        it("shows display toolbar with Preview button pressed", async () => {
             expect(wrapper.find(SELECTORS.DISPLAY_TOOLBAR).exists()).toBe(true);
-
             expect(wrapper.findComponent<typeof GButton>(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
             expect(wrapper.findComponent<typeof GButton>(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
         });
 
-        it("Edit button emits an edit event", async () => {
-            const editBtn = wrapper.find(SELECTORS.EDIT_BUTTON);
-            await editBtn.trigger("click");
-            await wrapper.vm.$nextTick();
+        it("emits edit when the Edit button is clicked", async () => {
+            const { wrapper } = mountToolbar("display");
+
+            await wrapper.find(SELECTORS.EDIT_BUTTON).trigger("click");
 
             expect(wrapper.emitted("edit")).toHaveLength(1);
         });
