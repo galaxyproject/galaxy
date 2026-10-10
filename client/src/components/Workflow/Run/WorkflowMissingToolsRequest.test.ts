@@ -12,8 +12,6 @@ import { useUserStore } from "@/stores/userStore";
 
 import * as WorkflowMissingToolsRequestStories from "./WorkflowMissingToolsRequest.stories";
 
-import GModal from "@/components/BaseComponents/GModal.vue";
-
 // Spied, not replaced: requests still reach the stories' handlers.
 vi.mock("@/api/notifications", { spy: true });
 
@@ -34,11 +32,8 @@ const EXPECTED_REQUESTED_TOOLS = [
 const SIXTY_TOOL_IDS = stories.OverRequestLimit.args.missingToolIds!;
 
 const SELECTORS = {
-    ERROR_ALERT: ".alert-danger",
     REQUEST_BUTTON: "[data-testid='request-install-btn']",
     ROOT: ".workflow-missing-tools-request",
-    SUCCESS_ALERT: ".alert-success",
-    TRUNCATION_NOTE: "[data-testid='truncation-note']",
 };
 
 const SEND_BUTTON_TEXT = "Send Request";
@@ -76,18 +71,6 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     describe("request button", () => {
-        it("renders the request button when feature is enabled and user is authenticated", async () => {
-            const wrapper = await mountRequest(stories.MissingTools);
-
-            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).text()).toBe("Request Installation (2 missing tools)");
-        });
-
-        it("uses singular 'tool' for a single missing tool ID", async () => {
-            const wrapper = await mountRequest(stories.OneMissingTool);
-
-            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).text()).toBe("Request Installation (1 missing tool)");
-        });
-
         it.each([
             { condition: "the feature flag is disabled", story: stories.RequestFormOff },
             {
@@ -126,39 +109,6 @@ describe("WorkflowMissingToolsRequest", () => {
         });
     });
 
-    describe("request modal", () => {
-        it("modal body shows singular 'tool' and no truncation note for a single missing tool", async () => {
-            const wrapper = await mountRequest(stories.OneMissingTool);
-
-            await openRequestModal(wrapper);
-
-            const modal = wrapper.findComponent(GModal);
-            expect(modal.find("strong").text()).toBe("1 missing tool");
-            expect(modal.find(SELECTORS.TRUNCATION_NOTE).exists()).toBe(false);
-        });
-
-        it("tells the submitter in the modal when the request will be truncated to 50 tools", async () => {
-            const wrapper = await mountRequest(stories.OverRequestLimit);
-
-            await openRequestModal(wrapper);
-
-            expect(wrapper.find(SELECTORS.TRUNCATION_NOTE).text()).toContain("first 50 of the 60 missing tools");
-        });
-
-        it("can cancel and then reopen the modal", async () => {
-            const wrapper = await mountRequest(stories.MissingTools);
-
-            await openRequestModal(wrapper);
-            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-
-            await clickModalButton(wrapper, "Cancel");
-            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-
-            await openRequestModal(wrapper);
-            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-        });
-    });
-
     describe("sending the request", () => {
         it("calls submitToolInstallationRequest with correct payload on confirm", async () => {
             const wrapper = await mountRequest(stories.MissingTools);
@@ -194,53 +144,16 @@ describe("WorkflowMissingToolsRequest", () => {
             expect(additional_remarks).toContain("Only the first 50 of 60 missing tools");
         });
 
-        it("button is disabled while the submission is in-flight", async () => {
-            let resolveRequest!: () => void;
-            submitRequestMock.mockReturnValueOnce(
-                new Promise<void>((resolve) => {
-                    resolveRequest = () => resolve();
-                }),
-            );
-            const wrapper = await mountRequest(stories.MissingTools);
+        // A role can't tell a success alert from a danger one, so the plays leave variants here.
+        it.each([
+            { outcome: "a sent request", story: stories.MissingTools, variant: "success" },
+            { outcome: "a refused request", story: stories.RequestFails, variant: "danger" },
+        ])("shows $outcome as a $variant alert", async ({ story, variant }) => {
+            const wrapper = await mountRequest(story);
 
             await sendRequest(wrapper);
 
-            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).attributes("aria-disabled")).toBe("true");
-
-            resolveRequest();
-            await flushPromises();
-        });
-
-        it("shows success alert after successful request", async () => {
-            const wrapper = await mountRequest(stories.MissingTools);
-
-            await sendRequest(wrapper);
-
-            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(false);
-            expect(wrapper.find(SELECTORS.SUCCESS_ALERT).text()).toContain("Installation request sent");
-        });
-
-        it("shows the error inside the still-open dialog when submission fails", async () => {
-            const wrapper = await mountRequest(stories.RequestFails);
-
-            await sendRequest(wrapper);
-
-            // The open <dialog> makes the rest of the page inert, so the alert must live inside it.
-            const modal = wrapper.findComponent(GModal);
-            expect(modal.props("show")).toBe(true);
-            expect(modal.find(SELECTORS.ERROR_ALERT).text()).toContain("Server error");
-            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(true);
-        });
-
-        it("clears the error when the dialog is cancelled after a failure", async () => {
-            const wrapper = await mountRequest(stories.RequestFails);
-            await sendRequest(wrapper);
-            expect(wrapper.find(SELECTORS.ERROR_ALERT).exists()).toBe(true);
-
-            await clickModalButton(wrapper, "Cancel");
-
-            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-            expect(wrapper.find(SELECTORS.ERROR_ALERT).exists()).toBe(false);
+            expect(wrapper.find(`.alert-${variant}`).exists()).toBe(true);
         });
     });
 });
