@@ -1,93 +1,86 @@
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import ExportForm from "./ExportForm.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
+
+const EXPORT_BUTTON = ".export-button";
+const NAME_INPUT = "#name";
+
+const NAME = "export.tar.gz";
+const DIRECTORY = "gxfiles://";
+
+type ExportFormWrapper = ReturnType<typeof mountExportForm>;
+
+function mountExportForm(props: { clearInputAfterExport?: boolean } = {}) {
+    return mount(ExportForm, {
+        props,
+        global: getLocalVue(true),
+    });
+}
+
+async function fillInputs(wrapper: ExportFormWrapper, inputs: { name?: string; directory?: string }) {
+    if (inputs.name !== undefined) {
+        await wrapper.get(NAME_INPUT).setValue(inputs.name);
+    }
+    if (inputs.directory !== undefined) {
+        await wrapper.getComponent(FilesInput).vm.$emit("input", inputs.directory);
+    }
+}
+
+function exportButtonAriaDisabled(wrapper: ExportFormWrapper) {
+    return wrapper.get(EXPORT_BUTTON).attributes("aria-disabled");
+}
 
 describe("ExportForm.vue", () => {
-    let wrapper: any;
+    it.each([
+        { missing: "both inputs are", inputs: {} },
+        { missing: "the directory is", inputs: { name: NAME } },
+        { missing: "the name is", inputs: { directory: DIRECTORY } },
+    ])("disables export when $missing empty", async ({ inputs }) => {
+        const wrapper = mountExportForm();
 
-    beforeEach(async () => {
-        wrapper = mount(ExportForm as object, {
-            props: {},
-            global: localVue,
-        });
+        await fillInputs(wrapper, inputs);
+
+        expect(exportButtonAriaDisabled(wrapper)).toBe("true");
     });
 
-    it("should render a form with export button disabled because inputs are empty", async () => {
-        expectExportButtonDisabled();
+    it("enables export when the name and directory are both set", async () => {
+        const wrapper = mountExportForm();
+
+        await fillInputs(wrapper, { name: NAME, directory: DIRECTORY });
+
+        expect(exportButtonAriaDisabled(wrapper)).toBeUndefined();
     });
 
-    it("should render a form with export button disabled because directory is empty", async () => {
-        const newValue = "export.tar.gz";
-        await setNameInput(newValue);
+    it("localizes the export button text", () => {
+        const wrapper = mountExportForm();
 
-        expectExportButtonDisabled();
+        expect(wrapper.get(EXPORT_BUTTON).text()).toBeLocalizationOf("Export");
     });
 
-    it("should render a form with export button disabled because name is empty", async () => {
-        const newValue = "gxfiles://";
-        await setDirectoryInput(newValue);
+    it("emits the directory and name when export is clicked", async () => {
+        const wrapper = mountExportForm();
+        await fillInputs(wrapper, { name: NAME, directory: DIRECTORY });
+        expect(wrapper.emitted("export")).toBeUndefined();
 
-        expectExportButtonDisabled();
+        await wrapper.get(EXPORT_BUTTON).trigger("click");
+
+        expect(wrapper.emitted("export")).toEqual([[DIRECTORY, NAME]]);
     });
 
-    it("should allow export when all inputs are defined", async () => {
-        await setNameInput("export.tar.gz");
-        await setDirectoryInput("gxfiles://");
+    it("clears the inputs, disabling export, after export when clearInputAfterExport is set", async () => {
+        const wrapper = mountExportForm({ clearInputAfterExport: true });
+        await fillInputs(wrapper, { name: NAME, directory: DIRECTORY });
 
-        expectExportButtonEnabled();
+        await wrapper.get(EXPORT_BUTTON).trigger("click");
+
+        expect(wrapper.emitted("export")).toEqual([[DIRECTORY, NAME]]);
+        expect((wrapper.get(NAME_INPUT).element as HTMLInputElement).value).toBe("");
+        expect(wrapper.getComponent(FilesInput).props("value")).toBe("");
+        expect(exportButtonAriaDisabled(wrapper)).toBe("true");
     });
-
-    it("should localize button text", async () => {
-        const newLocal = wrapper.find(".export-button").text();
-        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
-        (expect(newLocal) as any).toBeLocalizationOf("Export");
-    });
-
-    it("should emit 'export' event with correct inputs on export button click", async () => {
-        await setNameInput("export.tar.gz");
-        await setDirectoryInput("gxfiles://");
-        expect(wrapper.emitted()).not.toHaveProperty("export");
-
-        await wrapper.find(".export-button").trigger("click");
-
-        expect(wrapper.emitted()).toHaveProperty("export");
-        expect(emittedArg(wrapper, "export")).toBe("gxfiles://");
-        expect(wrapper.emitted("export")[0][1]).toBe("export.tar.gz");
-    });
-
-    it("should clear the inputs (hence disabling export) after export when clearInputAfterExport is enabled", async () => {
-        await wrapper.setProps({
-            clearInputAfterExport: true,
-        });
-        await setNameInput("export.tar.gz");
-        await setDirectoryInput("gxfiles://");
-
-        await wrapper.find(".export-button").trigger("click");
-
-        expectExportButtonDisabled();
-    });
-
-    function expectExportButtonDisabled() {
-        expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeTruthy();
-    }
-
-    function expectExportButtonEnabled() {
-        expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeFalsy();
-    }
-
-    async function setNameInput(newValue: string) {
-        const nameInput = wrapper.find("#name");
-        await nameInput.setValue(newValue);
-    }
-
-    async function setDirectoryInput(newValue: string) {
-        await wrapper.findComponent(FilesInput).vm.$emit("input", newValue);
-    }
 });
