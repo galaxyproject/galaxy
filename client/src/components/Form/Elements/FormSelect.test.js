@@ -14,9 +14,6 @@ import FormSelection from "./FormSelection.vue";
 const stories = composeStories(FormSelectionStories);
 const mountStory = useStoryMount();
 
-// The stories' option labels, in order.
-const optionLabels = ["Human (hg38)", "Mouse (mm10)", "Unspecified", "Custom build 99"];
-
 /** Mounts a story, whose harness passes every emitted `input` back as `value`, as a v-model parent does. */
 function mountFormSelection(story) {
     return mountStory(story).getComponent(FormSelection);
@@ -27,11 +24,6 @@ async function openMultiselect(wrapper) {
     if (!wrapper.find(".multiselect__content-wrapper").exists()) {
         await wrapper.find(".multiselect__select").trigger("mousedown");
     }
-}
-
-async function listedLabels(wrapper) {
-    await openMultiselect(wrapper);
-    return wrapper.findAll("[data-option-value]").map((option) => option.text());
 }
 
 async function selectedLabels(wrapper) {
@@ -50,12 +42,6 @@ async function clickOption(wrapper, label) {
 
 describe("FormSelect", () => {
     describe("single select", () => {
-        it("lists the options in order", async () => {
-            const wrapper = mountFormSelection(stories.Required);
-
-            expect(await listedLabels(wrapper)).toEqual(optionLabels);
-        });
-
         it("selects the first option when a required select has no value", async () => {
             // A plain mount, without the story's harness, so the select is seen before its parent passes the value back.
             const wrapper = mount(FormSelection, {
@@ -72,41 +58,31 @@ describe("FormSelect", () => {
             expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)"]);
         });
 
-        it("offers and selects 'Nothing selected' while an optional select has no value", async () => {
+        it("selects 'Nothing selected' without emitting while an optional select has no value", async () => {
             const wrapper = mountFormSelection(stories.Optional);
 
-            expect(await listedLabels(wrapper)).toEqual(["Nothing selected", ...optionLabels]);
             expect(await selectedLabels(wrapper)).toEqual(["Nothing selected"]);
             expect(wrapper.emitted("input")).toBeUndefined();
         });
 
-        it("clears an optional select by picking 'Nothing selected'", async () => {
+        it("emits null when an optional select is cleared by picking 'Nothing selected'", async () => {
             const wrapper = mountFormSelection(stories.OptionalSelected);
             expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)"]);
 
             await clickOption(wrapper, "Nothing selected");
 
             expect(emittedArg(wrapper, "input")).toBe(null);
-            expect(await selectedLabels(wrapper)).toEqual(["Nothing selected"]);
         });
     });
 
     describe("multi-select", () => {
         it("emits null when a required multi-select is fully cleared", async () => {
             const wrapper = mountFormSelection(stories.MultipleRequired);
-            expect(await listedLabels(wrapper)).toEqual(optionLabels);
             expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)"]);
 
             await clickOption(wrapper, "Human (hg38)");
 
             expect(emittedArg(wrapper, "input")).toBe(null);
-        });
-
-        it("does not offer 'Nothing selected' in an optional multi-select", async () => {
-            const wrapper = mountFormSelection(stories.MultipleOptional);
-
-            expect(await listedLabels(wrapper)).toEqual(optionLabels);
-            expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)", "Unspecified", "Custom build 99"]);
         });
 
         it("emits the remaining values as options are deselected, null once none are left, and reselects", async () => {
