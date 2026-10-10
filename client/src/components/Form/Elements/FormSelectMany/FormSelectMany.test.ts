@@ -1,24 +1,24 @@
 import "./worker/__mocks__/selectMany";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { emittedArg, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SelectOption, SelectValue } from "./worker/selectMany";
 
 import FormSelectMany from "./FormSelectMany.vue";
 
-const pinia = createTestingPinia({ createSpy: vi.fn });
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
-vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
 
 function mountSelectMany(props: Partial<InstanceType<typeof FormSelectMany>["$props"]>) {
-    return mount(FormSelectMany as any, {
+    const global = withPlugins(getLocalVue(), createTestingPinia({ createSpy: vi.fn }));
+    return shallowMount(FormSelectMany, {
         props: { options: [], value: [], ...props },
-        pinia,
-        global: localVue,
+        global: { ...global, stubs: { ...global.stubs, BFormInput: false, GButton: false } },
     });
 }
 
@@ -36,314 +36,163 @@ const selectors = {
     useRegex: ".toggle-button.use-regex",
 } as const;
 
-function generateOptionsFromArrays(matrix: Array<Array<string>>): SelectOption[] {
-    const combineTwo = (a: string[], b: string[]) => {
-        const combined = [] as string[];
-
-        a.forEach((aValue) => {
-            b.forEach((bValue) => {
-                combined.push(`${aValue}${bValue}`);
-            });
-        });
-
-        return combined;
-    };
-
-    const combined = matrix.reduce((accumulator, current) => combineTwo(accumulator, current), [""]);
-
-    return combined.map((v) => ({ label: v, value: v }));
+function emailOptions(prefixes = ["foo", "bar", "baz"]): SelectOption[] {
+    return prefixes.flatMap((prefix) =>
+        [".com", ".org"].map((suffix) => {
+            const email = `${prefix}@galaxy${suffix}`;
+            return { label: email, value: email };
+        }),
+    );
 }
 
-/** gets the latest input event value and reflects it to props */
-async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
-    const emittedEvents = wrapper.emitted("input");
-
-    if (!emittedEvents) {
-        return undefined;
-    }
-
-    const latestValue = emittedEvents.at(-1)?.[0] as SelectValue[] | undefined;
-
-    if (latestValue === undefined) {
-        return undefined;
-    }
-
-    await wrapper.setProps({ ...wrapper.props(), value: latestValue });
-    return latestValue;
+// Model the parent applying the latest selection emitted by this controlled input.
+async function applyInput(wrapper: ReturnType<typeof mountSelectMany>) {
+    const value = emittedArg(wrapper, "input", -1) as SelectValue[];
+    await wrapper.setProps({ value });
+    return value;
 }
-
-// circumvent input debounce
-vi.useFakeTimers();
 
 async function search(wrapper: ReturnType<typeof mountSelectMany>, value: string) {
-    const searchInput = wrapper.find(selectors.search);
-    await searchInput.setValue(value);
-    vi.runAllTimers();
+    await wrapper.find(selectors.search).setValue(value);
+    await vi.runAllTimersAsync();
+}
+
+function labels(wrapper: ReturnType<typeof mountSelectMany>, selector: string) {
+    return wrapper.findAll(selector).map((option) => option.text());
 }
 
 describe("FormSelectMany", () => {
-    it("displays all options", async () => {
-        const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
+    it("displays all six options in their supplied order", () => {
+        const options = emailOptions();
         const wrapper = mountSelectMany({ options });
 
-        const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-        expect(unselectedOptions.length).toBe(6);
-
-        options.forEach((option, i) => {
-            expect(nth(unselectedOptions, i).text()).toBe(option.label);
-        });
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(6);
+        expect(labels(wrapper, selectors.unselectedOptions)).toEqual(options.map((option) => option.label));
     });
 
-    it("emits selected options", async () => {
-        const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
+    it("appends clicked options to the emitted selection", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions() });
 
-        const wrapper = mountSelectMany({ options });
+        await nth(wrapper.findAll(selectors.unselectedOptions), 0).trigger("click");
+        expect(await applyInput(wrapper)).toEqual(["foo@galaxy.com"]);
 
-        {
-            const firstOption = nth(wrapper.findAll(selectors.unselectedOptions), 0);
-            await firstOption.trigger("click");
-
-            const emitted = await emittedInput(wrapper);
-            expect(emitted).toEqual(["foo@galaxy.com"]);
-        }
-
-        {
-            const firstOption = nth(wrapper.findAll(selectors.unselectedOptions), 0);
-            await firstOption.trigger("click");
-
-            const emitted = await emittedInput(wrapper);
-            expect(emitted).toEqual(["foo@galaxy.com", "foo@galaxy.org"]);
-        }
+        await nth(wrapper.findAll(selectors.unselectedOptions), 0).trigger("click");
+        expect(await applyInput(wrapper)).toEqual(["foo@galaxy.com", "foo@galaxy.org"]);
     });
 
-    it("displays selected values in the selected column", async () => {
-        const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
+    it("moves selected values between columns when the parent applies an input event", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions(), value: ["foo@galaxy.com", "foo@galaxy.org"] });
 
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            expect(selectedOptions.length).toBe(2);
-            expect(nth(selectedOptions, 0).text()).toBe("foo@galaxy.com");
-            expect(nth(selectedOptions, 1).text()).toBe("foo@galaxy.org");
-
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            unselectedOptions.forEach((unselectedOption) => {
-                expect(unselectedOption.text()).not.toBe("foo@galaxy.com");
-                expect(unselectedOption.text()).not.toBe("foo@galaxy.org");
-            });
+        expect(labels(wrapper, selectors.selectedOptions)).toEqual(["foo@galaxy.com", "foo@galaxy.org"]);
+        for (const option of labels(wrapper, selectors.unselectedOptions)) {
+            expect(option).not.toBe("foo@galaxy.com");
+            expect(option).not.toBe("foo@galaxy.org");
         }
 
-        const firstOption = nth(wrapper.findAll(selectors.unselectedOptions), 0);
-        await firstOption.trigger("click");
-        const emitted = await emittedInput(wrapper);
+        await nth(wrapper.findAll(selectors.unselectedOptions), 0).trigger("click");
+        const emitted = await applyInput(wrapper);
 
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            expect(selectedOptions.length).toBe(3);
-            expect(nth(selectedOptions, 2).text()).toBe(nth(emitted, 2));
-
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            unselectedOptions.forEach((unselectedOption) => {
-                expect(unselectedOption.text()).not.toBe(nth(emitted, 2));
-            });
+        expect(wrapper.findAll(selectors.selectedOptions)).toHaveLength(3);
+        expect(nth(wrapper.findAll(selectors.selectedOptions), 2).text()).toBe(nth(emitted, 2));
+        for (const option of labels(wrapper, selectors.unselectedOptions)) {
+            expect(option).not.toBe(nth(emitted, 2));
         }
     });
 
-    it("shows the amount of selected options", async () => {
-        const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
+    it("updates both column counts after selecting another option", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions(), value: ["foo@galaxy.com", "foo@galaxy.org"] });
 
-        {
-            const selectedCount = wrapper.find(selectors.selectedCount);
-            const unselectedCount = wrapper.find(selectors.unselectedCount);
+        expect(wrapper.find(selectors.selectedCount).text()).toBe("(2)");
+        expect(wrapper.find(selectors.unselectedCount).text()).toBe("(4)");
 
-            expect(selectedCount.text()).toBe("(2)");
-            expect(unselectedCount.text()).toBe("(4)");
-        }
+        await nth(wrapper.findAll(selectors.unselectedOptions), 0).trigger("click");
+        await applyInput(wrapper);
 
-        const firstOption = nth(wrapper.findAll(selectors.unselectedOptions), 0);
-        await firstOption.trigger("click");
-        await emittedInput(wrapper);
-
-        {
-            const selectedCount = wrapper.find(selectors.selectedCount);
-            const unselectedCount = wrapper.find(selectors.unselectedCount);
-
-            expect(selectedCount.text()).toBe("(3)");
-            expect(unselectedCount.text()).toBe("(3)");
-        }
+        expect(wrapper.find(selectors.selectedCount).text()).toBe("(3)");
+        expect(wrapper.find(selectors.unselectedCount).text()).toBe("(3)");
     });
 
-    it("selects all options", async () => {
-        const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
+    it("selects all remaining options and then deselects all six", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions(), value: ["foo@galaxy.com", "foo@galaxy.org"] });
 
-        const selectAllButton = wrapper.find(selectors.selectAll);
-        await selectAllButton.trigger("click");
-        await emittedInput(wrapper);
+        await wrapper.find(selectors.selectAll).trigger("click");
+        await applyInput(wrapper);
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(0);
+        expect(wrapper.findAll(selectors.selectedOptions)).toHaveLength(6);
 
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-
-            expect(unselectedOptions.length).toBe(0);
-            expect(selectedOptions.length).toBe(6);
-        }
-
-        const deselectAllButton = wrapper.find(selectors.deselectAll);
-        await deselectAllButton.trigger("click");
-        await emittedInput(wrapper);
-
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-
-            expect(unselectedOptions.length).toBe(6);
-            expect(selectedOptions.length).toBe(0);
-        }
+        await wrapper.find(selectors.deselectAll).trigger("click");
+        await applyInput(wrapper);
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(6);
+        expect(wrapper.findAll(selectors.selectedOptions)).toHaveLength(0);
     });
 
-    it("filters options", async () => {
-        const options = generateOptionsFromArrays([["foo", "BAR", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options });
+    it("reapplies the search when case sensitivity and regex modes change", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions(["foo", "BAR", "baz"]) });
 
         await search(wrapper, "bar");
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(2);
+        expect(wrapper.find(selectors.unselectedCount).text()).toBe("(2)");
 
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(2);
-
-            const unselectedCount = wrapper.find(selectors.unselectedCount);
-            expect(unselectedCount.text()).toBe("(2)");
-        }
-
-        const caseSensitivityButton = wrapper.find(selectors.caseSensitivity);
-        await caseSensitivityButton.trigger("click");
-
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(0);
-        }
+        await wrapper.find(selectors.caseSensitivity).trigger("click");
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(0);
 
         await search(wrapper, "BAR");
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(2);
 
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(2);
-        }
-
-        const useRegexButton = wrapper.find(selectors.useRegex);
-        await useRegexButton.trigger("click");
-
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(2);
-        }
+        await wrapper.find(selectors.useRegex).trigger("click");
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(2);
 
         await search(wrapper, "^[a-z]+@");
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(4);
 
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(4);
-        }
-
-        await caseSensitivityButton.trigger("click");
-
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(6);
-        }
+        await wrapper.find(selectors.caseSensitivity).trigger("click");
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(6);
     });
 
-    it("selects filtered", async () => {
-        const options = generateOptionsFromArrays([["foo", "BAR", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options });
+    it("selects and deselects only the options matching the current search", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions(["foo", "BAR", "baz"]) });
 
         await search(wrapper, "bar");
-
-        const selectAllButton = wrapper.find(selectors.selectAll);
-        await selectAllButton.trigger("click");
-        await emittedInput(wrapper);
-
+        await wrapper.find(selectors.selectAll).trigger("click");
+        await applyInput(wrapper);
         await search(wrapper, "");
-
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            expect(selectedOptions.length).toBe(2);
-        }
+        expect(wrapper.findAll(selectors.selectedOptions)).toHaveLength(2);
 
         await search(wrapper, ".org");
-
-        const deselectAllButton = wrapper.find(selectors.deselectAll);
-        await deselectAllButton.trigger("click");
-        await emittedInput(wrapper);
-
+        await wrapper.find(selectors.deselectAll).trigger("click");
+        await applyInput(wrapper);
         await search(wrapper, "");
-
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            expect(selectedOptions.length).toBe(1);
-        }
+        expect(wrapper.findAll(selectors.selectedOptions)).toHaveLength(1);
     });
 
-    it("allows for highlighting ranges", async () => {
-        const options = generateOptionsFromArrays([["foo", "BAR", "baz", "bar"], ["@"], ["galaxy"], [".com", ".org"]]);
-        const wrapper = mountSelectMany({ options });
+    it("applies shift and control highlights before moving options between columns", async () => {
+        const wrapper = mountSelectMany({ options: emailOptions(["foo", "BAR", "baz", "bar"]) });
+        const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
 
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            await nth(unselectedOptions, 0).trigger("click", { shiftKey: true });
-            await nth(unselectedOptions, 7).trigger("click", { shiftKey: true });
+        await nth(unselectedOptions, 0).trigger("click", { shiftKey: true });
+        await nth(unselectedOptions, 7).trigger("click", { shiftKey: true });
+        expect(wrapper.findAll(selectors.unselectedHighlighted)).toHaveLength(8);
 
-            {
-                const highlightedOptions = wrapper.findAll(selectors.unselectedHighlighted);
-                expect(highlightedOptions.length).toBe(8);
-            }
+        await nth(unselectedOptions, 1).trigger("click", { ctrlKey: true });
+        await nth(unselectedOptions, 2).trigger("click", { ctrlKey: true });
+        expect(wrapper.findAll(selectors.unselectedHighlighted)).toHaveLength(6);
 
-            await nth(unselectedOptions, 1).trigger("click", { ctrlKey: true });
-            await nth(unselectedOptions, 2).trigger("click", { ctrlKey: true });
+        await wrapper.find(selectors.selectAll).trigger("click");
+        await applyInput(wrapper);
+        const selectedOptions = wrapper.findAll(selectors.selectedOptions);
+        expect(selectedOptions).toHaveLength(6);
 
-            {
-                const highlightedOptions = wrapper.findAll(selectors.unselectedHighlighted);
-                expect(highlightedOptions.length).toBe(6);
-            }
-        }
+        await nth(selectedOptions, 0).trigger("click", { shiftKey: true });
+        await nth(selectedOptions, 5).trigger("click", { shiftKey: true });
+        expect(wrapper.findAll(selectors.selectedHighlighted)).toHaveLength(6);
 
-        const selectAllButton = wrapper.find(selectors.selectAll);
-        await selectAllButton.trigger("click");
-        await emittedInput(wrapper);
+        await nth(selectedOptions, 2).trigger("click", { shiftKey: true, ctrlKey: true });
+        await nth(selectedOptions, 5).trigger("click", { shiftKey: true, ctrlKey: true });
+        expect(wrapper.findAll(selectors.selectedHighlighted)).toHaveLength(2);
 
-        {
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            expect(selectedOptions.length).toBe(6);
-
-            await nth(selectedOptions, 0).trigger("click", { shiftKey: true });
-            await nth(selectedOptions, 5).trigger("click", { shiftKey: true });
-
-            {
-                const highlightedOptions = wrapper.findAll(selectors.selectedHighlighted);
-                expect(highlightedOptions.length).toBe(6);
-            }
-
-            await nth(selectedOptions, 2).trigger("click", { shiftKey: true, ctrlKey: true });
-            await nth(selectedOptions, 5).trigger("click", { shiftKey: true, ctrlKey: true });
-
-            {
-                const highlightedOptions = wrapper.findAll(selectors.selectedHighlighted);
-                expect(highlightedOptions.length).toBe(2);
-            }
-        }
-
-        const deselectAllButton = wrapper.find(selectors.deselectAll);
-        await deselectAllButton.trigger("click");
-        await emittedInput(wrapper);
-
-        {
-            const unselectedOptions = wrapper.findAll(selectors.unselectedOptions);
-            expect(unselectedOptions.length).toBe(4);
-
-            const selectedOptions = wrapper.findAll(selectors.selectedOptions);
-            expect(selectedOptions.length).toBe(4);
-        }
+        await wrapper.find(selectors.deselectAll).trigger("click");
+        await applyInput(wrapper);
+        expect(wrapper.findAll(selectors.unselectedOptions)).toHaveLength(4);
+        expect(wrapper.findAll(selectors.selectedOptions)).toHaveLength(4);
     });
 });
