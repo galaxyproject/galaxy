@@ -36,7 +36,7 @@ def get_npns_roles(session):
     return session.scalars(stmt)
 
 
-def get_private_user_role(user, session):
+def get_private_user_role(user: User, session: galaxy_scoped_session) -> Role | None:
     """Return the user's private role, or None.
 
     A user is supposed to have exactly one private role. Databases in the wild

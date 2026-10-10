@@ -1,16 +1,9 @@
 name: Selenium tests
 on:
-  push:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/**'
-  pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - 'packages/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
 env:
   GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -19,28 +12,13 @@ env:
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
-  # TEMP: shake down SSE/notification system across full UI surface — revert before merge
-  GALAXY_CONFIG_OVERRIDE_ENABLE_NOTIFICATION_SYSTEM: '1'
-  GALAXY_CONFIG_OVERRIDE_ENABLE_SSE_HISTORY_UPDATES: '1'
-  GALAXY_CONFIG_OVERRIDE_ENABLE_SSE_ENTRY_POINT_UPDATES: '1'
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY: extended
+  GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY: 'true'
 permissions: {}
 jobs:
   build-client:
-    if: >-
-      github.event_name != 'push'
-      || github.repository_owner != 'galaxyproject'
-      || github.ref_name == 'dev'
-      || startsWith(github.ref_name, 'release_')
-    uses: ./.github/workflows/build_client.yaml
+    uses: $/.github/workflows/build_client.yaml
   test:
-    if: >-
-      github.event_name != 'push'
-      || github.repository_owner != 'galaxyproject'
-      || github.ref_name == 'dev'
-      || startsWith(github.ref_name, 'release_')
     name: Test
     needs: [build-client]
     runs-on: ubuntu-latest
@@ -59,10 +37,6 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - if: github.event_name == 'schedule'
-        run: |
-          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
-          echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy root'
@@ -96,3 +70,74 @@ jobs:
         with:
           name: Selenium debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'
+  report:
+    name: Report scheduled result
+    needs: [build-client, test]
+    # Manual runs may target feature branches and forks shouldn't open issues upstream.
+    if: >-
+      !cancelled()
+      && github.repository_owner == 'galaxyproject'
+      && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update, or close the tracking issue
+        uses: actions/github-script@v9
+        env:
+          BUILD_RESULT: ${{ needs.build-client.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        with:
+          script: |
+            const title = "Scheduled Selenium tests are failing";
+            const labels = ["area/testing/selenium", "kind/bug"];
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+            const failed = process.env.BUILD_RESULT !== "success" || process.env.TEST_RESULT !== "success";
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              ...repo,
+              state: "open",
+              labels: labels[0],
+              creator: "github-actions[bot]",
+              per_page: 100,
+            });
+            // Concurrent failing runs can each open an issue; a passing run closes all of them.
+            const tracking = openIssues.filter((issue) => issue.title === title);
+
+            if (failed) {
+              if (tracking.length) {
+                await github.rest.issues.createComment({
+                  ...repo,
+                  issue_number: tracking[0].number,
+                  body: `Still failing on ${context.sha}: ${runUrl} (attempt ${context.runAttempt})`,
+                });
+              } else {
+                await github.rest.issues.create({
+                  ...repo,
+                  title,
+                  labels,
+                  body: [
+                    `The weekly run of \`lib/galaxy_test/selenium\` on the Selenium backend failed on ${context.sha}: ${runUrl}`,
+                    "",
+                    "Pull requests run these tests under Playwright only, so this run is the only CI coverage of the Selenium backend and of tests marked `@selenium_only`.",
+                    "",
+                    "Later failures are added as comments here; the next passing run closes this issue.",
+                  ].join("\n"),
+                });
+              }
+            } else {
+              for (const issue of tracking) {
+                await github.rest.issues.createComment({
+                  ...repo,
+                  issue_number: issue.number,
+                  body: `Passing again on ${context.sha}: ${runUrl}`,
+                });
+                await github.rest.issues.update({
+                  ...repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "completed",
+                });
+              }
+            }

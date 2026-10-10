@@ -1,5 +1,9 @@
 import logging
 import os
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from mako.template import Template
 
@@ -16,10 +20,20 @@ from galaxy.util import (
 )
 from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revision
 
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model import Repository
+
 log = logging.getLogger(__name__)
 
 
-def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_path=None) -> dict[str, str]:
+def build_readme_files_dict(
+    app: "ToolShedApp",
+    repository: "Repository",
+    changeset_revision: str,
+    metadata: dict[str, Any],
+    tool_path: str | None = None,
+) -> dict[str, str]:
     """
     Return a dictionary of valid readme file name <-> readme file content pairs for all readme files defined in the received metadata.  Since the
     received changeset_revision (which is associated with the received metadata) may not be the latest installable changeset revision, the README
@@ -83,7 +97,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                     ctx = get_changectx_for_changeset(repo, changeset_revision)
                     if ctx:
                         fctx = get_file_context_from_ctx(ctx, readme_file_name)
-                        if fctx and fctx not in ["DELETED"]:
+                        if fctx is not None and fctx != "DELETED":
                             try:
                                 text = unicodify(fctx.data())
                                 readme_files_dict[readme_file_name] = basic_util.size_string(text)

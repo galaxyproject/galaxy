@@ -2274,7 +2274,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.command_palette_wait_for_open()
 
     def command_palette_toggle_with_shortcut(self) -> None:
-        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus."""
+        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus.
+
+        The palette component owns the shortcut listener and mounts only once the
+        client has loaded the configuration, which can land after the masthead is
+        up. Its ``<dialog>`` is in the DOM whenever the component is mounted, so
+        waiting for it means the key press has a listener to reach.
+        """
+        self.components.command_palette._.wait_for_present()
         self.press("k", modifiers=[self.platform_modifier_key()])
 
     def command_palette_wait_for_open(self) -> None:

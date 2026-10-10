@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PcGts xmlns="http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15">
+  <Metadata>
+    <Creator>Galaxy datatype test fixture</Creator>
+    <Created>2026-10-03T00:00:00Z</Created>
+    <LastChange>2026-10-03T00:00:00Z</LastChange>
+  </Metadata>
+  <Page imageFilename="sample.png" imageWidth="800" imageHeight="600">
+    <ReadingOrder>
+      <OrderedGroup id="reading_order">
+        <RegionRefIndexed index="0" regionRef="region_1"/>
+      </OrderedGroup>
+    </ReadingOrder>
+    <TextRegion id="region_1" type="paragraph">
+      <Coords points="50,50 750,50 750,120 50,120"/>
+      <TextLine id="line_1">
+        <Coords points="50,50 400,50 400,100 50,100"/>
+        <Baseline points="50,90 400,90"/>
+        <Word id="word_1">
+          <Coords points="50,50 180,50 180,100 50,100"/>
+          <TextEquiv conf="0.99"><Unicode>Hello</Unicode></TextEquiv>
+        </Word>
+        <Word id="word_2">
+          <Coords points="200,50 400,50 400,100 200,100"/>
+          <TextEquiv conf="0.98"><Unicode>Galaxy</Unicode></TextEquiv>
+        </Word>
+        <TextEquiv><Unicode>Hello Galaxy</Unicode></TextEquiv>
+      </TextLine>
+      <TextEquiv><Unicode>Hello Galaxy</Unicode></TextEquiv>
+    </TextRegion>
+  </Page>
+</PcGts>

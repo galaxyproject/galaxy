@@ -297,6 +297,21 @@ def test_production_aws_public_bucket():
     assert configuration_obj.bucket == "encode-public"
 
 
+def test_production_aws_public_bucket_strips_s3_scheme():
+    aws_public_bucket_template = _get_example_template("production_aws_public_bucket.yml")
+    configuration_obj = template_to_configuration(
+        aws_public_bucket_template,
+        {
+            "bucket": "s3://1000genomes/",
+        },
+        {},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, S3FSFileSourceConfiguration)
+    assert configuration_obj.bucket == "1000genomes"
+
+
 def test_production_github_oauth():
     github_template = _get_example_template("production_github.yml")
     assert github_template.variables is not None

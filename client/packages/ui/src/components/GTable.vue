@@ -4,6 +4,7 @@ import { FontAwesomeIcon, type FontAwesomeIconProps } from "@fortawesome/vue-fon
 import { computed, ref } from "vue";
 
 import { useUid } from "../composables/uid";
+import { vGTooltip } from "../directives/vGTooltip";
 import type {
     BootstrapSize,
     FieldAlignment,
@@ -461,7 +462,7 @@ const localItems = computed(() => {
         }
 
         // Compare values
-        let comparison = 0;
+        let comparison: number;
         if (typeof aVal === "string" && typeof bVal === "string") {
             comparison = aVal.localeCompare(bVal);
         } else if (typeof aVal === "number" && typeof bVal === "number") {

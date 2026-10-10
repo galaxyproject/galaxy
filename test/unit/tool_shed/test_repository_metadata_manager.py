@@ -180,7 +180,7 @@ def test_reset_metadata_fixes_tool_config_path(
     repo_path = new_repository.repo_path(app=shed_app)
     metadata_revision = new_repository.metadata_revisions[0]
     metadata = metadata_revision.metadata
-    assert "tools" in metadata
+    assert metadata
     tools = metadata["tools"]
     assert len(tools) >= 1
 
@@ -202,6 +202,7 @@ def test_reset_metadata_fixes_tool_config_path(
 
     # Verify corruption persisted
     metadata_revision = new_repository.metadata_revisions[0]
+    assert metadata_revision.metadata
     assert metadata_revision.metadata["tools"][0]["tool_config"] == corrupted_path
 
     # 3. Run reset_metadata with verbose=True to get before/after snapshots
@@ -247,6 +248,7 @@ def test_reset_metadata_fixes_tool_config_path(
     # 5. Verify tool_config is actually fixed in the database
     provides_repositories.sa_session.expire_all()
     metadata_revision = new_repository.metadata_revisions[0]
+    assert metadata_revision.metadata
     fixed_tool_config = metadata_revision.metadata["tools"][0]["tool_config"]
     assert fixed_tool_config != corrupted_path, "tool_config should have been fixed"
     assert fixed_tool_config.startswith(repo_path), (
@@ -272,7 +274,7 @@ def test_reset_metadata_dry_run_shows_visual_diff(
     repo_path = new_repository.repo_path(app=shed_app)
     metadata_revision = new_repository.metadata_revisions[0]
     metadata = metadata_revision.metadata
-    assert "tools" in metadata
+    assert metadata
     original_tool_config = metadata["tools"][0]["tool_config"]
     assert original_tool_config.startswith(repo_path)
 
@@ -287,6 +289,7 @@ def test_reset_metadata_dry_run_shows_visual_diff(
 
     # Verify corruption persisted
     metadata_revision = new_repository.metadata_revisions[0]
+    assert metadata_revision.metadata
     assert metadata_revision.metadata["tools"][0]["tool_config"] == corrupted_path
 
     # 3. Run reset_metadata with dry_run=True
@@ -328,6 +331,7 @@ def test_reset_metadata_dry_run_shows_visual_diff(
     # This is the key assertion - dry_run should not change anything
     provides_repositories.sa_session.expire_all()
     metadata_revision = new_repository.metadata_revisions[0]
+    assert metadata_revision.metadata
     db_tool_config = metadata_revision.metadata["tools"][0]["tool_config"]
     assert (
         db_tool_config == corrupted_path

@@ -20,11 +20,11 @@ describe("ManagePushAccess", () => {
             props: { repositoryId: "repository-id" },
             global: { stubs: { SelectUser: true } },
         })
-        const entries = wrapper.findAll(".q-item")
+        const entries = wrapper.findAll(".push-access-owner, .push-access-user")
         expect(entries[0].text()).toBe("devteam (owner)")
-        expect(entries[0].find(".q-icon").exists()).toBe(false)
+        expect(entries[0].find(".push-access-remove").exists()).toBe(false)
         expect(entries[1].text()).toContain("collaborator")
-        expect(entries[1].find(".q-icon").exists()).toBe(true)
+        expect(entries[1].find(".push-access-remove").exists()).toBe(true)
         expect(wrapper.text()).not.toContain("iuc")
     })
 })

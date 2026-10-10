@@ -28,7 +28,7 @@ const emit = defineEmits<{
 }>();
 
 const { currentUser } = storeToRefs(useUserStore());
-const { config, isConfigLoaded } = useConfig(false);
+const { config, isConfigLoaded } = useConfig();
 
 const permissionsChangeRequired = computed(() => {
     if (isShareableHistoryWithStatus(props.item)) {

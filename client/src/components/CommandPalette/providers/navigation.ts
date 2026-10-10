@@ -1,6 +1,6 @@
 import { faBell, faInfoCircle, faMapSigns, faPuzzlePiece, faUserCog } from "@fortawesome/free-solid-svg-icons";
 
-import { defaultActivities } from "@/stores/activitySetup";
+import { defaultActivities, isActivityAvailable } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
@@ -72,23 +72,14 @@ const EXTRA_DESTINATIONS: Gated<PaletteItem>[] = [
     },
 ];
 
-function activityAvailable(activityId: string, anonymous: boolean, ctx: PaletteContext): boolean {
+function isActivityOffered(activityId: string, anonymous: boolean, ctx: PaletteContext): boolean {
     if (EXCLUDED_ACTIVITY_IDS.includes(activityId)) {
         return false;
     }
     if (!anonymous && ctx.isAnonymous) {
         return false;
     }
-    if (activityId === "user-defined-tools" && !ctx.canUseUnprivilegedTools) {
-        return false;
-    }
-    if (activityId === "interactivetools" && !ctx.config.interactivetools_enable) {
-        return false;
-    }
-    if (activityId === "galaxyai" && !ctx.config.llm_api_configured) {
-        return false;
-    }
-    return true;
+    return isActivityAvailable(activityId, ctx);
 }
 
 /** Focuses a panel-type activity in the activity bar side panel */
@@ -100,7 +91,7 @@ function openActivityPanel(activityId: string) {
 
 function navigationItems(ctx: PaletteContext): PaletteItem[] {
     const activityItems = defaultActivities
-        .filter((activity) => activityAvailable(activity.id, activity.anonymous, ctx))
+        .filter((activity) => isActivityOffered(activity.id, activity.anonymous, ctx))
         .map((activity) => {
             const base = {
                 id: `navigation:${activity.id}`,

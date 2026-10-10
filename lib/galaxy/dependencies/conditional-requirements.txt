@@ -35,6 +35,7 @@ huggingface_hub
 omero-py #type: omero
 iiif-fsspec # type: iiif
 ipfsspec>=0.6.0 # type: ipfs
+fsspec-xrootd>=0.5.5 # type: xrootd
 fs-irods # type: irods, depends on python-irodsclient
 mavedb-fsspec>=0.1.0 # type: mavedb
 pybis==7.0.0rc1 # type: openbis, pinned pre-release required for openBIS 7 backend compatibility

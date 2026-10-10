@@ -217,7 +217,7 @@ function getPercentage(value: number, total: number) {
 
 function getCarbonEmissionsText(carbonEmissionsInGrams: number) {
     let adjustedCarbonEmissions = carbonEmissionsInGrams;
-    let unitMagnitude = "g";
+    let unitMagnitude: string;
 
     if (carbonEmissionsInGrams === 0) {
         return "0 g CO2e";
@@ -245,7 +245,7 @@ function getCarbonEmissionsText(carbonEmissionsInGrams: number) {
 
 function getEnergyNeededText(energyNeededInKiloWattHours: number) {
     let adjustedEnergyNeeded = energyNeededInKiloWattHours;
-    let unitMagnitude = "kW⋅h";
+    let unitMagnitude: string;
 
     if (energyNeededInKiloWattHours === 0) {
         return "0 kW⋅h";

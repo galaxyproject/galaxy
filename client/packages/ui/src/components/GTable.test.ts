@@ -31,7 +31,7 @@ function checkbox(element: Element | undefined) {
 }
 
 describe("GTable selection", () => {
-    it.each([undefined, "Select dataset"])("names selection checkboxes without the tooltip directive (%s)", (title) => {
+    it.each([undefined, "Select dataset"])("names the selection checkboxes (%s)", (title) => {
         const wrapper = mount(GTable as object, {
             props: {
                 items,
@@ -40,7 +40,6 @@ describe("GTable selection", () => {
                 showSelectAll: true,
                 selectCheckboxTitle: title,
             },
-            global: { directives: { "g-tooltip": {} } },
             attachTo: document.body,
         });
 

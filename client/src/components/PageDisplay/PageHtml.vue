@@ -48,7 +48,7 @@ export default {
             }
         },
         processItem(modelClass, modelId) {
-            let html = null;
+            let html;
             if (modelClass == "StoredWorkflow") {
                 const url = withPrefix(`/published/workflow?id=${modelId}`);
                 html = `<a href='${url}'>View Workflow<a>`;

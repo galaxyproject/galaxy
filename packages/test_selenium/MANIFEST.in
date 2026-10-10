@@ -1,0 +1,3 @@
+include src/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample
+include src/galaxy_test/selenium/jupyter/notebook_example_library.ipynb
+include src/galaxy_test/selenium/jupyter/notebook_example_testing.ipynb

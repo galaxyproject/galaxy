@@ -74,8 +74,8 @@ export function _guessNameForPair(
     reverseFilter: RegExp,
     willRemoveExtensions: boolean,
 ) {
-    let fwdName = fwd.name;
-    let revName = rev.name;
+    const fwdName = fwd.name;
+    const revName = rev.name;
     const fwdNameFilter = fwdName?.replace(forwardFilter, "");
     const revNameFilter = revName?.replace(reverseFilter, "");
     if (!fwdNameFilter || !revNameFilter || !fwdName || !revName) {
@@ -100,8 +100,6 @@ export function _guessNameForPair(
                 }
             }
             lcs = lcs.replace(extension, "");
-            fwdName = fwdName.replace(extension, "");
-            revName = revName.replace(extension, "");
         }
     }
     if (lcs.endsWith(".") || lcs.endsWith("_")) {
@@ -131,7 +129,7 @@ export function naiveStartingAndEndingLCS(s1: string, s2: string) {
     let fwdLCS = "";
     let revLCS = "";
     let i = 0;
-    let j = 0;
+    let j: number;
     while (i < s1.length && i < s2.length) {
         if (s1[i] !== s2[i]) {
             break;

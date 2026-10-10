@@ -83,7 +83,7 @@ const displayRows = computed(() => {
         const aValue = getSortableValue(a);
         const bValue = getSortableValue(b);
 
-        let comparison = 0;
+        let comparison: number;
         if (typeof aValue === "number" && typeof bValue === "number") {
             comparison = aValue - bValue;
         } else {

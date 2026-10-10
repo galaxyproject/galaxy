@@ -94,12 +94,24 @@ describe("GButton.vue loading", () => {
         expect(wrapper.element.tagName).toBe("BUTTON");
     });
 
-    it("drops the spinner and busy state once loading ends", () => {
-        const wrapper = mountGButton({});
+    it("drops the spinner and busy state and takes clicks again once loading ends", async () => {
+        const wrapper = mountGButton({ loading: true });
+        await wrapper.setProps({ loading: false } as object);
         const button = wrapper.get("button");
 
         expect(button.attributes("aria-busy")).toBeUndefined();
         expect(button.find('[data-icon="spinner"]').exists()).toBe(false);
+
+        await button.trigger("click");
+        expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+
+    // Loading is a wait, not an unavailable action, so the button keeps its colour.
+    it("does not look or announce itself as disabled while loading", () => {
+        const button = mountGButton({ loading: true }).get("button");
+
+        expect(button.classes()).not.toContain("g-disabled");
+        expect(button.attributes("aria-disabled")).toBeUndefined();
     });
 });
 

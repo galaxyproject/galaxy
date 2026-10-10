@@ -4,11 +4,14 @@ import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import ComponentShowcase from "@/components/ComponentShowcase.vue"
 import ComponentShowcaseExample from "@/components/ComponentShowcaseExample.vue"
+import { GButton, GCheckbox, GHeading, GLink, useToast } from "@galaxyproject/galaxy-ui"
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
 import LandingSearchBox from "@/components/LandingSearchBox.vue"
 import LandingInfoSections from "@/components/LandingInfoSections.vue"
+
+const { addToast } = useToast()
 
 // MetadataInspector components
 import ChangesetSummaryTable from "@/components/MetadataInspector/ChangesetSummaryTable.vue"
@@ -100,11 +103,54 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
     <page-container>
         This page is only meant for tool shed developers. It demonstrates common widgets and styles in isolation.
 
+        <component-showcase title="Galaxy UI (galaxy-ui package)">
+            <component-showcase-example title="GButton colors">
+                <GButton color="blue">Blue</GButton>
+                <GButton color="green">Green</GButton>
+                <GButton color="red">Red</GButton>
+                <GButton>Default</GButton>
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="GButton variants">
+                <GButton color="blue" outline>Outline</GButton>
+                <GButton color="blue" transparent>Transparent</GButton>
+                <GButton color="blue" pill>Pill</GButton>
+                <GButton color="blue" disabled disabled-title="Disabled example">Disabled</GButton>
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="GButton sizes">
+                <GButton color="blue" size="small">Small</GButton>
+                <GButton color="blue" size="medium">Medium</GButton>
+                <GButton color="blue" size="large">Large</GButton>
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="GHeading">
+                <GHeading h2 size="md" separator>Section heading</GHeading>
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="GLink">
+                <GLink href="https://galaxyproject.org">External link</GLink>
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="GCheckbox">
+                <GCheckbox>Labeled checkbox</GCheckbox>
+            </component-showcase-example>
+            <hr />
+            <component-showcase-example title="Toasts (notify)">
+                <GButton color="green" @click="addToast('Repository saved', { variant: 'success' })">Success</GButton>
+                <GButton color="blue" @click="addToast('Indexing started', { variant: 'info' })">Info</GButton>
+                <GButton color="orange" @click="addToast('Revision is outdated', { variant: 'warning' })">
+                    Warning
+                </GButton>
+                <GButton color="red" @click="addToast('Request failed', { variant: 'danger' })">Error</GButton>
+            </component-showcase-example>
+        </component-showcase>
+
         <component-showcase title="LoadingDiv">
             <component-showcase-example title="default">
                 <loading-div />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="with supplied message">
                 <loading-div message="I'm loading" />
             </component-showcase-example>
@@ -114,13 +160,13 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <component-showcase-example title="default error message">
                 <error-banner error="My Cool Error Message" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="long error message">
                 <error-banner
                     error="This is a very long error message that might wrap or cause layout issues in the UI, but should still be displayed correctly to the user with proper formatting and readability."
                 />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="error with special characters">
                 <error-banner error="Error: &lt;script&gt;alert('xss')&lt;/script&gt; & 'quotes' &amp; symbols" />
             </component-showcase-example>
@@ -160,7 +206,7 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
         </component-showcase>
 
         <!-- MetadataInspector Components -->
-        <div class="text-h5 q-my-lg">MetadataInspector Components</div>
+        <h2 class="metadata-inspector-heading">MetadataInspector Components</h2>
 
         <component-showcase title="ChangesetSummaryTable">
             <component-showcase-example
@@ -169,42 +215,42 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             >
                 <ChangesetSummaryTable :changesets="changesetsAllResults" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example
                 title="column_maker (API fixture)"
                 description="Real API response from column_maker test repo - 3 revisions with tools"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromColumnMaker" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example
                 title="bismark (API fixture)"
                 description="Real API response from bismark test repo - has tool dependencies and invalid_tools"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromBismark" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example
                 title="unchanged revisions (API fixture)"
                 description="Real API response showing 'Unchanged' change type - identical tool metadata between revisions"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromUnchanged" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example
                 title="subset (API fixture)"
                 description="Real API response showing 'Additive' change type - new tool added without modifying existing"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromSubset" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example
                 title="direct push (API fixture)"
                 description="Real API response showing 'New Record' operation - changeset pushed via hg without metadata"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromDirectPush" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="empty" description="No changesets">
                 <ChangesetSummaryTable :changesets="[]" />
             </component-showcase-example>
@@ -214,11 +260,11 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <component-showcase-example title="with changes (added, modified)">
                 <JsonDiffViewer :before="diffBefore" :after="diffAfter" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="no changes">
                 <JsonDiffViewer :before="diffIdentical" :after="diffIdentical" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="complex metadata diff">
                 <JsonDiffViewer
                     :before="resetMetadataPreview.repository_metadata_before"
@@ -235,11 +281,11 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
                     model-name="RepositoryRevisionMetadata"
                 />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="collapsed (deep=1)">
                 <MetadataJsonViewer v-if="sampleRevisionData" :data="sampleRevisionData" :deep="1" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="expanded (deep=4)">
                 <MetadataJsonViewer v-if="sampleRevisionData" :data="sampleRevisionData" :deep="4" />
             </component-showcase-example>
@@ -249,11 +295,11 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <component-showcase-example title="multi-revision repo (column_maker)">
                 <RevisionsTab :metadata="repositoryMetadataColumnMaker" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="with invalid tools (bismark)">
                 <RevisionsTab :metadata="repositoryMetadataBismark" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="empty metadata">
                 <RevisionsTab :metadata="null" />
             </component-showcase-example>
@@ -263,11 +309,11 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <component-showcase-example title="with revision selector">
                 <OverviewTab :metadata="repositoryMetadataColumnMaker" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="single revision">
                 <OverviewTab :metadata="singleRevisionMetadata" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="no metadata">
                 <OverviewTab :metadata="null" />
             </component-showcase-example>
@@ -277,14 +323,22 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <component-showcase-example title="single tool with version history (column_maker)">
                 <ToolHistoryTab :metadata="repositoryMetadataColumnMaker" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="multiple different tools (bismark)">
                 <ToolHistoryTab :metadata="repositoryMetadataBismark" />
             </component-showcase-example>
-            <q-separator />
+            <hr />
             <component-showcase-example title="no tools">
                 <ToolHistoryTab :metadata="null" />
             </component-showcase-example>
         </component-showcase>
     </page-container>
 </template>
+
+<style scoped>
+.metadata-inspector-heading {
+    margin-top: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+    font-size: 1.5rem;
+}
+</style>

@@ -17,24 +17,33 @@ if (props.message != null) {
 
 <template>
     <page-container>
-        <landing-search-box />
+        <template #header>
+            <landing-search-box />
+        </template>
 
-        <div class="landing-content">
-            <div class="row q-mt-lg q-col-gutter-lg justify-center">
-                <div class="col-12 col-md-4">
-                    <landing-info-sections />
-                </div>
-                <div class="col-12 col-md-5">
-                    <recently-created-repositories />
-                </div>
+        <div class="landing-columns">
+            <div class="landing-column-info">
+                <h2 class="shed-section-title">Get started</h2>
+                <landing-info-sections />
+            </div>
+            <div class="landing-column-recent">
+                <recently-created-repositories />
             </div>
         </div>
     </page-container>
 </template>
 
 <style scoped>
-.landing-content {
-    max-width: 1200px;
-    margin: 0 auto;
+.landing-columns {
+    display: grid;
+    gap: 2rem;
+    padding-top: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+    .landing-columns {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        align-items: start;
+    }
 }
 </style>

@@ -645,9 +645,8 @@ async function attemptCreate() {
     } else {
         listIdentifiers = pairedListIdentifiers();
     }
-    let confirmed: boolean | null = false;
     if (listIdentifiers.length == 0) {
-        confirmed = await confirm("Are you sure you want to create a list with no entries?", {
+        const confirmed = await confirm("Are you sure you want to create a list with no entries?", {
             title: "Create an empty list",
             okText: "Create",
         });
@@ -892,7 +891,7 @@ const context = {
 </script>
 
 <script lang="ts">
-// eslint-disable-next-line import/first
+// eslint-disable-next-line import-x/first
 import { components as VueComponents } from "./PairedOrUnpairedComponents";
 
 // defineExpose should work for exposing PairedDatasetCellComponent to AG Grid

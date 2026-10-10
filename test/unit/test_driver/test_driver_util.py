@@ -22,7 +22,7 @@ def _gx_app(new_file_path: str) -> Mock:
             enable_mcp_server=False,
             use_access_logging_middleware=False,
             tus_upload_store=None,
-            tus_upload_store_job_files=None,
+            job_files_tus_upload_dir=new_file_path,
             new_file_path=new_file_path,
             maximum_upload_file_size=1073741824,
         )

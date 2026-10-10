@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { faBug, faGear, faShieldHalved } from "@fortawesome/free-solid-svg-icons"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { GDropdownItemButton } from "@galaxyproject/galaxy-ui"
 import { computed } from "vue"
+import ActionMenu from "@/components/ActionMenu.vue"
 import { RevisionMetadata } from "@/schema"
 import { ToolShedApi } from "@/schema"
 import { notify, notifyOnCatch } from "@/util"
@@ -53,22 +57,14 @@ type Emits = {
 const emits = defineEmits<Emits>()
 </script>
 <template>
-    <q-fab
-        padding="sm"
-        class="q-px-md"
-        color="secondary"
-        text-color="primary"
-        icon="settings"
-        direction="up"
-        aria-label="Revision settings"
-    >
-        <q-fab-action
-            color="primary"
-            icon="history"
-            @click="setMalicious"
-            label="Mark as malicious"
-            v-if="!malicious"
-        />
-        <q-fab-action color="primary" icon="history" @click="unsetMalicious" label="Un-mark as malicious" v-else />
-    </q-fab>
+    <ActionMenu :icon="faGear" label="Revision settings" dropup>
+        <GDropdownItemButton v-if="!malicious" @click="setMalicious">
+            <FontAwesomeIcon :icon="faBug" fixed-width />
+            Mark as malicious
+        </GDropdownItemButton>
+        <GDropdownItemButton v-else @click="unsetMalicious">
+            <FontAwesomeIcon :icon="faShieldHalved" fixed-width />
+            Un-mark as malicious
+        </GDropdownItemButton>
+    </ActionMenu>
 </template>

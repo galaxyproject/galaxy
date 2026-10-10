@@ -15,7 +15,7 @@ export type Value = string[] | string | null;
  * @returns values: string[]
  */
 export function getAllValues(headOptions: Array<Option>): string[] {
-    let options = null;
+    let options: Array<Option> | undefined;
     const values: string[] = [];
     const stack: Array<Array<Option>> = [headOptions];
     while ((options = stack.pop())) {

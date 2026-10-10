@@ -246,7 +246,8 @@ def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
             if metadata is None:
                 continue
-            tools: list[dict[str, Any]] | None = metadata.metadata.get("tools")
+            raw_metadata = metadata.metadata or {}
+            tools: list[dict[str, Any]] | None = raw_metadata.get("tools")
             if not tools:
                 log.warning(f"Repository {owner}/{name}/{changehash} does not contain valid tools, skipping")
                 continue
@@ -268,7 +269,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
             else:
                 metadata_dict["tool_dependencies"] = {}
             if metadata.includes_tools:
-                metadata_dict["tools"] = metadata.metadata["tools"]
+                metadata_dict["tools"] = raw_metadata["tools"]
             all_metadata[f"{int(changeset)}:{changehash}"] = metadata_dict
     if repository_found:
         all_metadata["current_changeset"] = repository_found[0]
@@ -379,8 +380,9 @@ def get_install_info(
             repository_metadata_dict["url"] = web.url_for(
                 controller="repository_revisions", action="show", id=encoded_repository_metadata_id
             )
-            if "tools" in repository_metadata.metadata:
-                repository_metadata_dict["valid_tools"] = repository_metadata.metadata["tools"]
+            raw_metadata = repository_metadata.metadata
+            if raw_metadata and "tools" in raw_metadata:
+                repository_metadata_dict["valid_tools"] = raw_metadata["tools"]
             # Get the repo_info_dict for installing the repository.
             repo_info_dict: ExtraRepoInfo
             (
@@ -509,9 +511,12 @@ def get_repository_revision_metadata_dict(
         metadata_dict["repository_dependencies"] = get_all_dependencies(app, metadata, processed_dependency_links=[])
     else:
         metadata_dict["repository_dependencies"] = []
+    raw_metadata = metadata.metadata or {}
     if metadata.includes_tools:
-        metadata_dict["tools"] = metadata.metadata["tools"]
-    metadata_dict["invalid_tools"] = build_invalid_tools(metadata.metadata)
+        if not raw_metadata:
+            raise ValueError("Expected metadata to be present when includes_tools is True")
+        metadata_dict["tools"] = raw_metadata["tools"]
+    metadata_dict["invalid_tools"] = build_invalid_tools(raw_metadata)
     return metadata_dict
 
 
@@ -526,9 +531,9 @@ def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -
     encoded_repository_id = app.security.encode_id(repository.id)
     repository_metadata = get_repository_metadata_by_changeset_revision(app, encoded_repository_id, changeset_revision)
     if repository_metadata:
-        metadata = repository_metadata.metadata
-        if metadata:
-            return build_readme_files_dict(app, repository, changeset_revision, repository_metadata.metadata)
+        raw_metadata = repository_metadata.metadata
+        if raw_metadata:
+            return build_readme_files_dict(app, repository, changeset_revision, raw_metadata)
     return {}
 
 
@@ -814,7 +819,7 @@ def upload_tar_and_set_metadata(
                 if repository.metadata_revisions:
                     # A repository's metadata revisions are order descending by update_time, so the zeroth revision
                     # will be the tip just after an upload.
-                    metadata_dict = repository.metadata_revisions[0].metadata
+                    metadata_dict = repository.metadata_revisions[0].metadata or {}
                 else:
                     metadata_dict = {}
                 orphan_message = dd.generate_message_for_orphan_tool_dependencies(metadata_dict)

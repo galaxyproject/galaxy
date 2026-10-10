@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
+import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
 import LoadingDiv from "@/components/LoadingDiv.vue"
+import PageHeader from "@/components/PageHeader.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import RevisionSelect from "@/components/RevisionSelect.vue"
 import RepositoryTool from "@/components/RepositoryTool.vue"
@@ -112,9 +116,6 @@ const metadataByRevision = computed(() => {
 })
 
 const isUnknownRevision = computed(() => {
-    console.log(metadataByRevision.value)
-    console.log(currentRevision.value)
-    console.log(currentRevision.value in metadataByRevision.value)
     return currentRevision.value && metadataByRevision.value && !(currentRevision.value in metadataByRevision.value)
 })
 
@@ -166,7 +167,12 @@ watch(currentRevision, () => {
     }
 })
 
-const longDescription = computed(() => (repository.value?.long_description || repository.value?.description) as string)
+// The header carries the one-line description; the about card only repeats it when there is more to say
+const longDescription = computed(() => {
+    const long = repository.value?.long_description
+    return long && long !== repository.value?.description ? long : ""
+})
+const hasReadmes = computed(() => Object.keys(readmes.value).length > 0)
 const repositoryName = computed(() => repository.value?.name)
 const repositoryOwner = computed(() => repository.value?.owner)
 const deprecated = computed(() => repository.value?.deprecated || false)
@@ -179,117 +185,315 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
 </script>
 
 <template>
-    <q-page class="q-ma-lg">
-        <loading-div v-if="loading" />
-        <error-banner error="Failed to load repository" v-else-if="!repository"> </error-banner>
-        <q-card v-else>
-            <q-card-section horizontal class="row">
-                <q-card-section class="bg-primary text-white col-grow">
-                    <div class="text-h6">{{ repository.name }}</div>
-                    <div class="text-subtitle">
-                        <router-link
-                            class="text-white"
-                            style="text-decoration: none"
-                            :to="`/repositories_by_owner/${repository.owner}`"
-                            >{{ repository.owner }}</router-link
-                        >
-                    </div>
-                </q-card-section>
-                <q-card-section class="bg-primary">
-                    <repository-explore :repository="repository" :current-revision="currentRevision" />
-                    <repository-actions
-                        :repository-id="repository.id"
-                        :deprecated="deprecated"
-                        @update="onUpdate"
-                        @deprecate="onDeprecate"
-                        @undeprecate="onUndeprecate"
-                        v-if="canManage"
-                    >
-                    </repository-actions>
+    <div class="repository-page">
+        <loading-div v-if="loading" class="repository-status" />
+        <error-banner error="Failed to load repository" v-else-if="!repository" class="repository-status">
+        </error-banner>
+        <template v-else>
+            <page-header :title="repository.name" :subtitle="repository.description">
+                <template #eyebrow>
+                    <router-link class="repository-owner-link" :to="`/repositories_by_owner/${repository.owner}`">{{
+                        repository.owner
+                    }}</router-link>
+                </template>
+                <template #meta>
                     <repository-health
                         :last-updated="repository.update_time"
                         :installs="repository.times_downloaded"
                         :downloadable="latestRevisionDownloadable"
-                    >
-                    </repository-health>
-                </q-card-section>
-            </q-card-section>
-            <q-card-section>
-                <p class="description">
-                    {{ longDescription }}
-                </p>
-                <repository-links :repository="repository" :current-revision="currentRevision" v-if="repository" />
-            </q-card-section>
-            <q-separator />
-            <q-card-section>
-                <InstallingHowto
-                    v-if="repositoryName && repositoryOwner"
-                    :repository-name="repositoryName"
-                    :repository-owner="repositoryOwner"
-                />
-            </q-card-section>
-            <q-separator />
-            <q-card-section v-if="canManage">
-                <manage-push-access :repository-id="repositoryId"> </manage-push-access>
-            </q-card-section>
-            <q-separator />
-            <q-card-section v-if="empty">
-                This repository is empty.
-                <span v-if="canPush">
-                    Check out the
-                    <a :href="UPDATING_WITH_PLANEMO_URL">Planemo documentation on updating repositories</a>.
-                </span>
-            </q-card-section>
-            <q-card-section v-else>
-                <p v-if="repositoryMetadata">
-                    <revision-select :revisions="repositoryMetadata" v-model="currentRevision">
-                        <revision-actions
-                            :repository-id="repositoryId"
-                            :current-metadata="currentMetadata"
-                            v-if="currentMetadata && canManage"
+                    />
+                </template>
+                <template #actions>
+                    <div class="repository-header-actions">
+                        <repository-explore :repository="repository" :current-revision="currentRevision" />
+                        <repository-actions
+                            :repository-id="repository.id"
+                            :deprecated="deprecated"
                             @update="onUpdate"
-                        />
-                    </revision-select>
-                </p>
-                <q-banner inline-actions rounded class="bg-negative text-white" v-if="isUnknownRevision">
-                    <strong>The change log does not include revision {{ currentRevision }}.</strong>
-                </q-banner>
-                <div v-if="currentMetadata">
-                    <q-banner inline-actions rounded class="bg-negative text-white" v-if="malicious">
-                        <strong>This repository revision has been marked as malicious and cannot be installed.</strong>
-                    </q-banner>
-                    <p v-for="(content, key) of readmes" :key="key">
-                        <span v-html="content"></span>
-                    </p>
-                    <!-- <span class="repository-select-label text-h6 q-mr-lg">Tools</span> -->
-                    <q-list bordered class="rounded-borders" v-if="tools && tools.length > 0">
-                        <!-- style="max-width: 600px"> -->
-                        <q-item-label header>Tools</q-item-label>
-                        <repository-tool
-                            v-for="tool in tools"
-                            :key="tool.id"
-                            :tool="tool"
-                            :trs-tool-id="trsToolId(tool)"
-                            :changeset-revision="currentMetadata.changeset_revision"
-                        ></repository-tool>
-                    </q-list>
+                            @deprecate="onDeprecate"
+                            @undeprecate="onUndeprecate"
+                            v-if="canManage"
+                        >
+                        </repository-actions>
+                    </div>
+                </template>
+            </page-header>
 
-                    <q-list bordered class="rounded-borders q-mt-md" v-if="invalidTools && invalidTools.length > 0">
-                        <q-item-label header>Invalid Tools</q-item-label>
-                        <q-item v-for="invalidTool in invalidTools" :key="invalidTool.tool_config">
-                            <q-item-section>
-                                <q-item-label>
-                                    <q-icon name="error" color="negative" class="q-mr-xs" />
-                                    <code>{{ invalidTool.tool_config }}</code>
-                                </q-item-label>
-                                <q-item-label caption v-if="invalidTool.error_message">
-                                    {{ invalidTool.error_message }}
-                                </q-item-label>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
+            <div class="repository-body">
+                <div class="repository-main">
+                    <GAlert v-if="deprecated" variant="warning" class="repository-alert">
+                        <strong>This repository has been deprecated.</strong>
+                    </GAlert>
+
+                    <section class="repository-card shed-card" v-if="empty">
+                        <div class="shed-card-body">
+                            This repository is empty.
+                            <span v-if="canPush">
+                                Check out the
+                                <a :href="UPDATING_WITH_PLANEMO_URL">Planemo documentation on updating repositories</a>.
+                            </span>
+                        </div>
+                    </section>
+                    <template v-else>
+                        <section class="repository-card shed-card">
+                            <div v-if="repositoryMetadata" class="repository-revision-bar">
+                                <revision-select :revisions="repositoryMetadata" v-model="currentRevision">
+                                    <revision-actions
+                                        :repository-id="repositoryId"
+                                        :current-metadata="currentMetadata"
+                                        v-if="currentMetadata && canManage"
+                                        @update="onUpdate"
+                                    />
+                                </revision-select>
+                            </div>
+                            <div
+                                class="shed-card-body repository-revision-alerts"
+                                v-if="isUnknownRevision || malicious"
+                            >
+                                <GAlert v-if="isUnknownRevision" variant="danger">
+                                    <strong>The change log does not include revision {{ currentRevision }}.</strong>
+                                </GAlert>
+                                <GAlert v-if="currentMetadata && malicious" variant="danger">
+                                    <strong
+                                        >This repository revision has been marked as malicious and cannot be
+                                        installed.</strong
+                                    >
+                                </GAlert>
+                            </div>
+                            <template v-if="currentMetadata">
+                                <div class="repository-tools" v-if="tools && tools.length > 0">
+                                    <h2 class="repository-list-heading">
+                                        Tools <span class="repository-list-count">{{ tools.length }}</span>
+                                    </h2>
+                                    <ul class="repository-tools-list">
+                                        <repository-tool
+                                            v-for="tool in tools"
+                                            :key="tool.id"
+                                            :tool="tool"
+                                            :trs-tool-id="trsToolId(tool)"
+                                            :changeset-revision="currentMetadata.changeset_revision"
+                                        ></repository-tool>
+                                    </ul>
+                                </div>
+                                <p v-else class="shed-card-body repository-no-tools shed-muted">
+                                    This revision does not contain any valid tools.
+                                </p>
+                            </template>
+                        </section>
+
+                        <section
+                            class="repository-card repository-invalid-tools shed-card"
+                            v-if="currentMetadata && invalidTools && invalidTools.length > 0"
+                        >
+                            <h2 class="repository-list-heading">
+                                Invalid Tools <span class="repository-list-count">{{ invalidTools.length }}</span>
+                            </h2>
+                            <ul class="repository-invalid-tools-list">
+                                <li
+                                    class="invalid-tool-item"
+                                    v-for="invalidTool in invalidTools"
+                                    :key="invalidTool.tool_config"
+                                >
+                                    <div class="invalid-tool-name">
+                                        <FontAwesomeIcon :icon="faCircleExclamation" class="invalid-tool-icon" />
+                                        <code>{{ invalidTool.tool_config }}</code>
+                                    </div>
+                                    <div class="invalid-tool-message" v-if="invalidTool.error_message">
+                                        {{ invalidTool.error_message }}
+                                    </div>
+                                </li>
+                            </ul>
+                        </section>
+                    </template>
+
+                    <section
+                        class="repository-card shed-card"
+                        v-if="longDescription || (currentMetadata && hasReadmes)"
+                    >
+                        <div class="shed-card-body">
+                            <h2 class="shed-section-title">About</h2>
+                            <p v-if="longDescription" class="description">{{ longDescription }}</p>
+                            <template v-if="currentMetadata">
+                                <div v-for="(content, key) of readmes" :key="key" class="repository-readme-wrapper">
+                                    <span class="repository-readme" v-html="content"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </section>
                 </div>
-            </q-card-section>
-        </q-card>
-    </q-page>
+
+                <aside class="repository-aside">
+                    <section class="repository-card shed-card">
+                        <div class="shed-card-body">
+                            <InstallingHowto
+                                v-if="repositoryName && repositoryOwner"
+                                :repository-name="repositoryName"
+                                :repository-owner="repositoryOwner"
+                            />
+                        </div>
+                    </section>
+                    <section class="repository-card shed-card">
+                        <div class="shed-card-body">
+                            <h2 class="shed-section-title">Links</h2>
+                            <repository-links :repository="repository" :current-revision="currentRevision" />
+                        </div>
+                    </section>
+                    <section class="repository-card shed-card" v-if="canManage">
+                        <div class="shed-card-body">
+                            <manage-push-access :repository-id="repositoryId"> </manage-push-access>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </template>
+    </div>
 </template>
+
+<style scoped>
+.repository-status {
+    max-width: var(--shed-content-width);
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.repository-owner-link {
+    color: inherit;
+}
+
+.repository-header-actions {
+    display: flex;
+    align-items: center;
+}
+
+/* Round menu toggles read as glass buttons on the dark header */
+.repository-header-actions :deep(.action-menu-toggle) {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.repository-header-actions :deep(.action-menu-toggle:hover),
+.repository-header-actions :deep(.action-menu-toggle[aria-expanded="true"]) {
+    color: var(--color-galaxy-dark);
+    background-color: var(--shed-gold);
+}
+
+.repository-body {
+    display: grid;
+    gap: 1.5rem;
+    max-width: var(--shed-content-width);
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 3rem;
+}
+
+@media (min-width: 1024px) {
+    .repository-body {
+        grid-template-columns: minmax(0, 1fr) 22rem;
+        align-items: start;
+    }
+
+    .repository-aside {
+        position: sticky;
+        top: calc(var(--shed-masthead-height) + 1rem);
+    }
+}
+
+@media (max-width: 599px) {
+    .repository-body {
+        padding: 1.25rem 1rem 2rem;
+    }
+}
+
+.repository-main,
+.repository-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
+}
+
+.repository-card {
+    overflow: hidden;
+}
+
+.repository-alert {
+    margin: 0;
+}
+
+.repository-revision-bar {
+    padding: 0.85rem 1.25rem;
+    background: color-mix(in srgb, var(--shed-page-bg) 55%, white);
+    border-bottom: 1px solid var(--shed-border-subtle);
+}
+
+.repository-revision-alerts {
+    padding-bottom: 0;
+}
+
+.repository-no-tools {
+    margin: 0;
+}
+
+.repository-list-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 1rem 1.25rem 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.repository-list-count {
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: var(--shed-muted);
+    background: var(--color-ebony-clay-50, #dfe2ea);
+    border-radius: 999px;
+}
+
+.repository-tools-list,
+.repository-invalid-tools-list {
+    margin: 0;
+    padding: 0 0 0.25rem;
+    list-style: none;
+}
+
+.repository-invalid-tools {
+    border-left: 4px solid var(--color-red-500);
+}
+
+.invalid-tool-item {
+    padding: 0.75rem 1.25rem;
+}
+
+.invalid-tool-item + .invalid-tool-item {
+    border-top: 1px solid var(--shed-border-subtle);
+}
+
+.invalid-tool-icon {
+    margin-right: 0.4rem;
+    color: var(--color-red-600);
+}
+
+.invalid-tool-message {
+    margin-top: 0.3rem;
+    color: var(--shed-muted);
+    font-size: 0.88rem;
+}
+
+.description {
+    margin: 0 0 1rem;
+    white-space: pre-line;
+}
+
+/* Plain-text READMEs arrive with every space as &nbsp;, so long lines can't wrap -- scroll them */
+.repository-readme-wrapper {
+    overflow-x: auto;
+}
+
+.repository-readme-wrapper + .repository-readme-wrapper {
+    margin-top: 1rem;
+}
+</style>

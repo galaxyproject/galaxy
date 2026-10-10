@@ -10,7 +10,7 @@ import { useRoute, useRouter } from "vue-router";
 import draggable from "@/components/Common/SortableList";
 import { useConfig } from "@/composables/config";
 import { useActiveContext } from "@/composables/useActiveContext";
-import { convertDropData } from "@/stores/activitySetup";
+import { convertDropData, isActivityAvailable } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
 import { useChatStore } from "@/stores/chatStore";
@@ -133,28 +133,20 @@ const emit = defineEmits<{
 // activities from store
 const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
 
+/** The gates `isActivityAvailable` judges an activity by */
+const availability = computed(() => ({
+    canUseUnprivilegedTools: canUseUnprivilegedTools.value,
+    config: config.value,
+}));
+
 const activities = computed({
     get() {
-        return storeActivities.value.filter((activity) => {
-            if (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) {
-                return false;
-            }
-            if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
-                return false;
-            }
-            if (activity.id === "galaxyai" && !config.value?.llm_api_configured) {
-                return false;
-            }
-            return true;
-        });
+        return storeActivities.value.filter((activity) => isActivityAvailable(activity.id, availability.value));
     },
     set(newActivities: Activity[]) {
         // Find any filtered-out activities and add them back
         const filteredOut = storeActivities.value.filter(
-            (activity) =>
-                (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
-                (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
-                (activity.id === "galaxyai" && !config.value?.llm_api_configured),
+            (activity) => !isActivityAvailable(activity.id, availability.value),
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },

@@ -58,7 +58,7 @@ const props = withDefaults(defineProps<Props>(), {
     size: "medium",
 });
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const waiting = ref(false);
 

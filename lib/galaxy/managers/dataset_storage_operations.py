@@ -32,6 +32,7 @@ from galaxy.model import (
     DatasetStorageOperationSnapshot,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    HistoryItem,
     User,
 )
 from galaxy.model.orm.now import now
@@ -88,8 +89,6 @@ TERMINAL_RUN_STATES = {
     StorageOperationRunState.completed.value,
     StorageOperationRunState.failed.value,
 }
-
-StorageOperationContent = HistoryDatasetAssociation | HistoryDatasetCollectionAssociation
 
 
 @dataclass(frozen=True)
@@ -418,7 +417,7 @@ class DatasetStorageOperationManager:
         quota_agent: QuotaAgent,
         history_id: int,
         user: User,
-        contents: list[StorageOperationContent],
+        contents: list[HistoryItem],
         target_object_store_id: str,
         snapshot_ttl: timedelta = timedelta(days=UNUSED_SNAPSHOT_EXPIRES_AFTER_DAYS),
         query_based_selection: bool,
@@ -542,7 +541,7 @@ class DatasetStorageOperationPreviewBuilder:
         quota_agent: QuotaAgent,
         history_id: int,
         user: User,
-        contents: list[StorageOperationContent],
+        contents: list[HistoryItem],
         target_object_store_id: str,
         snapshot_ttl: timedelta,
         query_based_selection: bool,
@@ -745,9 +744,7 @@ class DatasetStorageOperationPreviewBuilder:
             return
         eligibility_reason_counts[reason_code] = eligibility_reason_counts.get(reason_code, 0) + count
 
-    def resolve_unique_datasets_from_contents(
-        self, contents: list[StorageOperationContent]
-    ) -> tuple[dict[int, Dataset], int]:
+    def resolve_unique_datasets_from_contents(self, contents: list[HistoryItem]) -> tuple[dict[int, Dataset], int]:
         unique_datasets: dict[int, Dataset] = {}
         expanded_leaf_count = 0
 

@@ -926,7 +926,7 @@ class User(Base, Dictifiable, RepresentById):
         collection_class=ordering_list("order_index"),
     )
     _preferences: Mapped[dict[str, "UserPreference"]] = relationship(collection_class=attribute_keyed_dict("name"))
-    values: Mapped[list["FormValues"]] = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
+    values: "Mapped[FormValues | None]" = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
     # Add type hint (will this work w/SA?)
     api_keys: Mapped[list["APIKeys"]] = relationship(
         back_populates="user",

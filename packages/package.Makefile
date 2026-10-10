@@ -5,7 +5,7 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 UPSTREAM?=galaxyproject
-SOURCE_DIR?=galaxy
+SOURCE_DIR?=src/galaxy
 BUILD_SCRIPTS_DIR=scripts
 DEV_RELEASE?=0
 VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
@@ -82,7 +82,7 @@ lint-dist:
 #_setup-format-venv: setup-venv
 #	uv pip install isort black
 #_isort:
-#	uv run isort --sp ../../.isort.cfg . 
+#	uv run isort --sp ../../.isort.cfg .
 #_black:
 #	uv run black --config ../pyproject.toml .
 #format: _setup-format-venv _isort _black

@@ -29,7 +29,9 @@ class TestComponentShowcase(PlaywrightTestCase):
     def _screenshot_component(self, component_name: str) -> None:
         """Take screenshot of a component card including header and all examples."""
         page = self._page
-        component = page.locator(".q-card").filter(has=page.locator(f".text-h6:has-text('{component_name}')"))
+        component = page.locator(".component-showcase").filter(
+            has=page.locator(f".component-showcase-title:has-text('{component_name}')")
+        )
         expect(component).to_be_visible()
         screenshot_name = component_name.replace(" ", "_")
         component.screenshot(path=self._get_screenshot_path(screenshot_name))

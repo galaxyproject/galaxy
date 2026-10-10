@@ -1,12 +1,13 @@
 import os
 
+from selenium.webdriver.common.by import By
+
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_library,
 )
 from .framework import (
     retry_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesLibraryAssertions,
@@ -121,10 +122,6 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
 
         self.assert_num_displayed_items_is(0)
 
-    # Fine test locally but the upload doesn't work in Docker compose. I'd think
-    # Galaxy must be running so that test-data/1.txt would work but it just doesn't
-    # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
-    @selenium_only("Fails in CI with KeyError: 'Name' - needs investigation")
     @selenium_test
     @requires_admin
     @requires_new_library
@@ -151,14 +148,12 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadAct
         self.assert_num_displayed_items_is(1)
 
         self.click_label("1.txt")
-        self.wait_for_visible(self.navigation.libraries.dataset.selectors.table)
-        elements = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
+        self.wait_for_visible(self.navigation.libraries.dataset.selectors.table_rows)
+        rows = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
         table_as_dict = {}
-        for element in elements:
-            row_values = element.text.split("\n")
-            key = row_values[0]
-            value = row_values[1]
-            table_as_dict[key] = value
+        for row in rows:
+            label_cell, value_cell = row.find_elements(By.CSS_SELECTOR, "td")
+            table_as_dict[label_cell.text] = value_cell.text
 
         assert table_as_dict["Name"] == "1.txt", table_as_dict
         assert table_as_dict["Genome build"] == "?", table_as_dict

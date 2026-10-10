@@ -215,8 +215,6 @@ async function mountForm(historyId = "history-1") {
     const wrapper = shallowMount(WorkflowExtractionForm as object, {
         propsData: { historyId },
         localVue,
-        // The auto-stub drops GFormInput's compatConfig, so compat would rewire its v-model to value/input.
-        stubs: { GFormInput: false },
     });
     await flushPromises();
     return wrapper;

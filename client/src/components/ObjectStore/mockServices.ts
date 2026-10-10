@@ -2,7 +2,6 @@ import { createTestingPinia } from "@pinia/testing";
 import { vi } from "vitest";
 
 // IMPORTANT: This import MUST come after the mock calls above for proper module hoisting
-// eslint-disable-next-line import/order
 import { getSelectableObjectStores } from "@/api/objectStores";
 
 vi.mock("@/api/objectStores");

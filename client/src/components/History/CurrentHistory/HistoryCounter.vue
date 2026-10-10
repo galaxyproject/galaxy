@@ -89,8 +89,7 @@ function onDashboard() {
 }
 
 function setFilter(filter: string) {
-    let newFilterText = "";
-    let settings = {};
+    let settings: Record<string, unknown>;
     if (filter == "") {
         settings = {
             deleted: false,
@@ -103,7 +102,7 @@ function setFilter(filter: string) {
             visible: filter === "visible" ? newVal : getCurrentFilterVal("visible"),
         };
     }
-    newFilterText = HistoryFilters.applyFiltersToText(settings, props.filterText);
+    const newFilterText = HistoryFilters.applyFiltersToText(settings, props.filterText);
     emit("update:filter-text", newFilterText);
 }
 

@@ -95,6 +95,10 @@ export const templateTypes: FileSourceTypesDetail = {
         message:
             "This is a read-only file repository plugin that connects to IIIF (International Image Interoperability Framework) sources. IIIF is a framework widely used by museums, libraries, and archives for delivering high-resolution image-based cultural heritage materials.",
     },
+    xrootd: {
+        icon: faNetworkWired,
+        message: "This file source supports browsing and importing files from an XRootD server, with optional uploads.",
+    },
     ipfs: {
         icon: faNetworkWired,
         message: "This is a read-only file source for browsing and importing IPFS files.",

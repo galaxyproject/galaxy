@@ -1577,6 +1577,9 @@ def headless_selenium():
         return False
 
     if GALAXY_TEST_SELENIUM_HEADLESS == "auto":
+        # Playwright picks its own browser and runs headless without a display.
+        if GALAXY_TEST_DRIVER_BACKEND == "playwright":
+            return True
         if (
             driver_factory.is_virtual_display_available()
             or driver_factory.get_local_browser(GALAXY_TEST_SELENIUM_BROWSER) == "CHROME"
