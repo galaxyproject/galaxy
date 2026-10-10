@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
+import { runInTestScope } from "@tests/vitest/effectScope";
 import { emittedArg, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { effectScope, nextTick, ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -14,22 +15,13 @@ import lintStepsData from "./test-data/lint_steps.json";
 import Lint from "./Lint.vue";
 
 enableAutoUnmount(afterEach);
-const lintScopes: ReturnType<typeof effectScope>[] = [];
-
-afterEach(() => {
-    for (const scope of lintScopes.splice(0)) {
-        scope.stop();
-    }
-});
 
 function mountLint() {
     // The historical fixture deliberately includes incomplete workflow steps.
     const steps = structuredClone(lintStepsData) as unknown as Steps;
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
-    const scope = effectScope();
-    lintScopes.push(scope);
-    const lintData = scope.run(() =>
+    const lintData = runInTestScope(() =>
         useLintData(
             ref("1"),
             ref(steps),
@@ -39,7 +31,7 @@ function mountLint() {
             ref("MIT"),
             ref([{ class: "Person", name: "Test Creator" }]),
         ),
-    )!;
+    );
     const wrapper = mount(Lint, {
         props: { lintData, steps, hasChanges: false },
         global: { ...withPlugins(getLocalVue(), pinia), provide: { workflowId: "mock-workflow" } },
