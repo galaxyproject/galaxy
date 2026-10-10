@@ -1,3 +1,4 @@
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,17 +30,16 @@ vi.mock("@/composables/useRecentPaletteItems", () => ({
 
 const DATASETS_SCOPE: ScopeDefinition = { key: "d", label: "Datasets", providerId: "datasets" };
 
-function makeDataset(id: string, name: string, updateTime: string): HDASummary {
-    return {
+function makeDataset(id: string, name: string, updateTime: string) {
+    return getFakeDatasetSummary({
         id,
         name,
         extension: "txt",
-        history_content_type: "dataset",
         state: "ok",
         history_id: "history_1",
         update_time: updateTime,
         create_time: updateTime,
-    } as unknown as HDASummary;
+    });
 }
 
 const ALPHA = makeDataset("d1", "alpha reads", "2026-01-03T00:00:00");
