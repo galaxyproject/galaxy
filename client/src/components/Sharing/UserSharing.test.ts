@@ -9,6 +9,7 @@ import { nextTick } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { ShareableHistoryWithStatus } from "@/api";
+import { clickModalButton } from "@/components/BaseComponents/test-utils";
 import { useUserStore } from "@/stores/userStore";
 
 import UserSharing from "./UserSharing.vue";
@@ -16,7 +17,6 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 
 const SELECTORS = {
     CANCEL_BUTTON: "button.cancel-sharing-with",
-    MODAL_BUTTON: ".g-modal-confirm-buttons button",
     SAVE_BUTTON: "button.submit-sharing-with",
     SHARED_EMAIL_TAG: ".remove_sharing_with",
 };
@@ -99,15 +99,6 @@ function sharingFormControls(wrapper: VueWrapper) {
 
 const FORM_HIDDEN = { emailSelector: false, saveButton: false, cancelButton: false };
 const FORM_SHOWN = { emailSelector: true, saveButton: true, cancelButton: true };
-
-async function clickModalButton(wrapper: VueWrapper, text: "Ok" | "Cancel") {
-    const button = wrapper.findAll(SELECTORS.MODAL_BUTTON).find((candidate) => candidate.text() === text);
-    if (!button) {
-        throw new Error(`no "${text}" button in the permissions modal`);
-    }
-    await button.trigger("click");
-    await flushPromises();
-}
 
 function sharedEmailTags(wrapper: VueWrapper) {
     return wrapper.findAll(SELECTORS.SHARED_EMAIL_TAG).map((tag) => tag.attributes("data-email"));
