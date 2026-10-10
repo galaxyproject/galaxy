@@ -1,49 +1,19 @@
 import { getFakeMonitoringData } from "@tests/test-data/monitoring";
+import { getFakeTaskMonitor } from "@tests/vitest/fakeTaskMonitor";
 import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import type { TaskMonitor } from "@/composables/genericTaskMonitor";
-import {
-    type MonitoringData,
-    type MonitoringRequest,
-    usePersistentProgressTaskMonitor,
-} from "@/composables/persistentProgressMonitor";
+import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 
-// Mocks for dependencies
 vi.mock("@vueuse/core", () => ({
     useLocalStorage: vi.fn().mockImplementation((key, initialValue) => ref(initialValue)),
     StorageSerializers: {
         object: {
             read: (value: string) => JSON.parse(value),
-            write: (value: any) => JSON.stringify(value),
+            write: (value: unknown) => JSON.stringify(value),
         },
     },
 }));
-
-function useMonitorMock(): TaskMonitor {
-    const isRunning = ref(false);
-    const taskStatus = ref();
-
-    return {
-        waitForTask: vi.fn().mockImplementation(() => {
-            isRunning.value = true;
-        }),
-        stopWaitingForTask: vi.fn(),
-        isRunning,
-        isCompleted: ref(false),
-        hasFailed: ref(false),
-        failureReason: ref(),
-        requestHasFailed: ref(false),
-        taskStatus,
-        expirationTime: 1000,
-        isFinalState: vi.fn(),
-        loadStatus(storedStatus) {
-            taskStatus.value = storedStatus;
-        },
-        fetchTaskStatus: vi.fn(),
-    };
-}
-const mockUseMonitor = useMonitorMock();
 
 const MOCK_REQUEST: MonitoringRequest = {
     source: "testSource",
@@ -56,42 +26,59 @@ const MOCK_REQUEST: MonitoringRequest = {
     description: "Test description",
 };
 
+const EXPIRATION_TIME = 1000;
+
 describe("usePersistentProgressTaskMonitor", () => {
-    it("should initialize with no monitoring data if none is provided or stored", () => {
-        const { hasMonitoringData } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor);
-        expect(hasMonitoringData.value).toBeFalsy();
+    it("has no monitoring data when none is provided or stored", () => {
+        const { hasMonitoringData } = usePersistentProgressTaskMonitor(
+            MOCK_REQUEST,
+            getFakeTaskMonitor({ expirationTime: EXPIRATION_TIME }),
+        );
+
+        expect(hasMonitoringData.value).toBe(false);
     });
 
-    it("should start monitoring with provided monitoring data", async () => {
-        const monitoringData: MonitoringData = getFakeMonitoringData(MOCK_REQUEST, {
-            taskId: "123",
+    it("starts waiting for the provided task and exposes the monitor's running state", async () => {
+        const isRunning = ref(false);
+        const waitForTask = vi.fn(async () => {
+            isRunning.value = true;
         });
+        const monitor = getFakeTaskMonitor({ expirationTime: EXPIRATION_TIME, isRunning, waitForTask });
+        const monitoringData = getFakeMonitoringData(MOCK_REQUEST, { taskId: "123" });
 
-        const { start, isRunning } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor, monitoringData);
-
+        const { start, isRunning: monitoredIsRunning } = usePersistentProgressTaskMonitor(
+            MOCK_REQUEST,
+            monitor,
+            monitoringData,
+        );
         await start();
-        expect(isRunning.value).toBeTruthy();
+
+        expect(waitForTask).toHaveBeenCalledWith("123");
+        expect(monitoredIsRunning.value).toBe(true);
     });
 
-    it("should throw an error if trying to start monitoring without monitoring data", async () => {
-        const { start } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor);
+    it("refuses to start without provided or stored monitoring data", async () => {
+        const { start } = usePersistentProgressTaskMonitor(
+            MOCK_REQUEST,
+            getFakeTaskMonitor({ expirationTime: EXPIRATION_TIME }),
+        );
+
         await expect(start()).rejects.toThrow(
             "No monitoring data provided or stored. Cannot start monitoring progress.",
         );
     });
 
-    it("should reset monitoring data", () => {
-        const monitoringData: MonitoringData = getFakeMonitoringData(MOCK_REQUEST, {
-            taskId: "123",
-        });
-
+    it("clears the monitoring data on reset", () => {
+        const monitoringData = getFakeMonitoringData(MOCK_REQUEST, { taskId: "123" });
         const { reset, hasMonitoringData } = usePersistentProgressTaskMonitor(
             MOCK_REQUEST,
-            mockUseMonitor,
+            getFakeTaskMonitor({ expirationTime: EXPIRATION_TIME }),
             monitoringData,
         );
-        expect(hasMonitoringData.value).toBeTruthy();
+        expect(hasMonitoringData.value).toBe(true);
+
         reset();
-        expect(hasMonitoringData.value).toBeFalsy();
+
+        expect(hasMonitoringData.value).toBe(false);
     });
 });
