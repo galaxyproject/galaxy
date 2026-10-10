@@ -1,85 +1,82 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
+import { useWorkflowStore } from "@/stores/workflowStore";
+
 import invocationData from "../Workflow/test/json/invocation.json";
 
+import InvocationGraph from "../Workflow/Invocation/Graph/InvocationGraph.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const localVue = getLocalVue();
 
-// Constants
-const workflowData = {
+const WORKFLOW = {
     id: "workflow-id",
     name: "Test Workflow",
     version: 0,
 };
-const selectors = {
-    gAlertStub: "g-alert-stub",
-};
-const alertMessages = {
-    unOwned: "Workflow is neither importable, nor owned by or shared with current user",
-    nonExistent: "No workflow found for this invocation.",
-};
+const UNOWNED_MESSAGE = "Workflow is neither importable, nor owned by or shared with current user";
 
-// Mock the workflow store to return the expected workflow data given the stored workflow ID
-vi.mock("@/stores/workflowStore", async () => {
-    const originalModule = await vi.importActual("@/stores/workflowStore");
-    return {
-        ...originalModule,
-        useWorkflowStore: () => ({
-            ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((workflowId) => {
-                if (["unowned-workflow", "nonexistant-workflow"].includes(workflowId)) {
-                    return undefined;
-                }
-                return workflowData;
-            }),
-            fetchWorkflowForInstanceId: vi.fn().mockImplementation((workflowId) => {
-                if (workflowId === "unowned-workflow") {
-                    throw new Error(alertMessages.unOwned);
-                }
-            }),
-        }),
-    };
-});
-
-describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
-    async function loadWrapper(invocationData) {
-        const propsData = {
+/**
+ * Mounts the overview for `invocationData`, with `storedWorkflow` already in the workflow store
+ * when given. Store actions stay stubbed, so a missing workflow is fetched by a spy that loads
+ * nothing unless `fetchError` makes it reject.
+ */
+async function mountOverview({ storedWorkflow = null, fetchError = null } = {}) {
+    const workflowsByInstanceId = storedWorkflow ? { [invocationData.workflow_id]: storedWorkflow } : {};
+    const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: { workflowStore: { workflowsByInstanceId } },
+    });
+    const workflowStore = useWorkflowStore(pinia);
+    if (fetchError) {
+        workflowStore.fetchWorkflowForInstanceId.mockRejectedValueOnce(fetchError);
+    }
+    const wrapper = shallowMount(WorkflowInvocationOverview, {
+        props: {
             invocation: invocationData,
             invocationAndJobTerminal: true,
-            invocationSchedulingTerminal: true,
             stepsJobsSummary: [],
-            jobStatesSummary: {},
-        };
-        const wrapper = shallowMount(WorkflowInvocationOverview, {
-            propsData,
-            global: localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-        });
-        await flushPromises();
-        return wrapper;
-    }
+        },
+        global: withPlugins(localVue, pinia),
+    });
+    await flushPromises();
+    return { wrapper, fetchWorkflow: workflowStore.fetchWorkflowForInstanceId };
+}
 
-    it("displays the workflow invocation graph for a valid workflow", async () => {
-        const wrapper = await loadWrapper(invocationData);
-        expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeTruthy();
+describe("WorkflowInvocationOverview", () => {
+    it("displays the invocation graph for a workflow already in the store", async () => {
+        const { wrapper, fetchWorkflow } = await mountOverview({ storedWorkflow: WORKFLOW });
+
+        const graph = wrapper.findComponent(InvocationGraph);
+        expect(graph.exists()).toBe(true);
+        expect(graph.attributes("data-description")).toBe("workflow invocation graph");
+        expect(graph.props("workflow")).toEqual(WORKFLOW);
+        expect(wrapper.findComponent(GAlert).exists()).toBe(false);
+        expect(fetchWorkflow).not.toHaveBeenCalled();
     });
 
-    it("displays an alert for an unowned workflow", async () => {
-        const wrapper = await loadWrapper({ ...invocationData, workflow_id: "unowned-workflow" });
-        expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
-        const alert = wrapper.find(selectors.gAlertStub);
-        expect(alert.text()).toContain(alertMessages.unOwned);
+    it("displays the fetch error in a danger alert when the workflow is not accessible", async () => {
+        const { wrapper, fetchWorkflow } = await mountOverview({ fetchError: new Error(UNOWNED_MESSAGE) });
+
+        expect(fetchWorkflow).toHaveBeenCalledWith(invocationData.workflow_id);
+        expect(wrapper.findComponent(InvocationGraph).exists()).toBe(false);
+        const alert = wrapper.findComponent(GAlert);
+        expect(alert.props("variant")).toBe("danger");
+        expect(alert.text()).toContain(UNOWNED_MESSAGE);
     });
 
-    it("displays an alert for a nonexistant workflow", async () => {
-        const wrapper = await loadWrapper({ ...invocationData, workflow_id: "nonexistant-workflow" });
-        expect(wrapper.find("[data-description='workflow invocation graph']").exists()).toBeFalsy();
-        const alert = wrapper.find(selectors.gAlertStub);
-        expect(alert.text()).toContain(alertMessages.nonExistent);
+    it("displays an info alert when fetching finds no workflow for the invocation", async () => {
+        const { wrapper, fetchWorkflow } = await mountOverview();
+
+        expect(fetchWorkflow).toHaveBeenCalledWith(invocationData.workflow_id);
+        expect(wrapper.findComponent(InvocationGraph).exists()).toBe(false);
+        const alert = wrapper.findComponent(GAlert);
+        expect(alert.props("variant")).toBe("info");
+        expect(alert.text()).toContain("No workflow found for this invocation.");
     });
 });
