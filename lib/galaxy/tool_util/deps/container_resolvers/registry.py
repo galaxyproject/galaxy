@@ -3,12 +3,6 @@
 import logging
 import re
 import threading
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
 
 import requests
 
@@ -31,11 +25,11 @@ _INDEX_TYPES = (
 )
 DOCKER_HUB_HOSTS = ("docker.io", "index.docker.io", "registry-1.docker.io")
 
-_cache: Dict[str, List[str]] = {}
+_cache: dict[str, list[str]] = {}
 _cache_lock = threading.Lock()
 
 
-def parse_image_reference(image_ref: str) -> Tuple[str, str, str]:
+def parse_image_reference(image_ref: str) -> tuple[str, str, str]:
     """Split an image reference into registry host, repository and tag or digest.
 
     >>> parse_image_reference("docker://python:3.12-alpine")
@@ -67,7 +61,7 @@ def parse_image_reference(image_ref: str) -> Tuple[str, str, str]:
     return host, repository, reference
 
 
-def _bearer_token(challenge: str, repository: str) -> Optional[str]:
+def _bearer_token(challenge: str, repository: str) -> str | None:
     params = dict(re.findall(r'(\w+)="([^"]*)"', challenge))
     realm = params.get("realm")
     if not realm:
@@ -81,7 +75,7 @@ def _bearer_token(challenge: str, repository: str) -> Optional[str]:
     return body.get("token") or body.get("access_token")
 
 
-def _get(url: str, headers: Dict[str, str], repository: str, state: Dict[str, str]) -> "requests.Response":
+def _get(url: str, headers: dict[str, str], repository: str, state: dict[str, str]) -> "requests.Response":
     if state.get("token"):
         headers = dict(headers, Authorization=f"Bearer {state['token']}")
     response = requests.get(url, headers=headers, timeout=REGISTRY_TIMEOUT)
@@ -96,10 +90,10 @@ def _get(url: str, headers: Dict[str, str], repository: str, state: Dict[str, st
     return response
 
 
-def _query_architectures(image_ref: str) -> List[str]:
+def _query_architectures(image_ref: str) -> list[str]:
     host, repository, reference = parse_image_reference(image_ref)
     base = f"https://{host}/v2/{repository}"
-    state: Dict[str, str] = {}
+    state: dict[str, str] = {}
     manifest_response = _get(f"{base}/manifests/{reference}", {"Accept": MANIFEST_ACCEPT}, repository, state)
     manifest = manifest_response.json()
     media_type = manifest.get("mediaType") or manifest_response.headers.get("Content-Type", "").split(";")[0]
@@ -120,7 +114,7 @@ def _query_architectures(image_ref: str) -> List[str]:
     return [arch]
 
 
-def registry_image_architectures(image_ref: str) -> Optional[List[str]]:
+def registry_image_architectures(image_ref: str) -> list[str] | None:
     """Architectures ``image_ref`` is published for, or ``None`` if the registry could not tell.
 
     Results are cached per reference for the lifetime of the process. Any error yields ``None``.
@@ -140,7 +134,7 @@ def registry_image_architectures(image_ref: str) -> Optional[List[str]]:
     return list(architectures)
 
 
-def missing_architecture(image_ref: str, platform: Optional[str]) -> Optional[List[str]]:
+def missing_architecture(image_ref: str, platform: str | None) -> list[str] | None:
     """Architectures that exist for ``image_ref`` when none matches ``platform``, otherwise ``None``.
 
     ``None`` is returned too when the platform has no known architecture or the registry cannot be queried, so
