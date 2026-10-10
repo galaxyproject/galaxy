@@ -1,8 +1,8 @@
 import { mount, flushPromises } from "@vue/test-utils"
 import { createPinia, setActivePinia } from "pinia"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { createMemoryHistory, createRouter } from "vue-router"
 import { useCategoriesStore } from "@/stores"
+import { createMemoryRouter } from "@/test-utils"
 import RepositoriesByCategories from "./RepositoriesByCategories.vue"
 
 describe("RepositoriesByCategories", () => {
@@ -20,13 +20,9 @@ describe("RepositoriesByCategories", () => {
                 { id: "c2", name: "Tool Dependency Packages", description: "Packages", repositories: 9 },
             ],
         })
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: [{ path: "/:any(.*)*", component: { template: "<div />" } }],
-        })
 
         const wrapper = mount(RepositoriesByCategories, {
-            global: { plugins: [router], stubs: { PageContainer: { template: "<div><slot /></div>" } } },
+            global: { plugins: [createMemoryRouter()], stubs: { PageContainer: { template: "<div><slot /></div>" } } },
         })
         await flushPromises()
 
