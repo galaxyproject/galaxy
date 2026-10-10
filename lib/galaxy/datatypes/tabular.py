@@ -1461,14 +1461,14 @@ class BaseCSV(TabularData):
                 try:
                     header_row = next(reader)
                     data_row = next(reader)
+                    # Count records, not physical lines inside quoted fields.
+                    data_lines = 1
                     for _ in reader:
-                        pass
+                        data_lines += 1
                 except StopIteration:
                     pass
                 except csv.Error as e:
                     raise Exception(f"CSV reader error - line {reader.line_num}: {e}")
-                else:
-                    data_lines = reader.line_num - 1
 
         # Guess column types
         for cell in data_row:

@@ -105,6 +105,8 @@
     </datatype>
     <datatype extension="parquet" type="galaxy.datatypes.binary:Parquet" display_in_upload="true">
       <converter file="parquet_to_csv_converter.xml" target_datatype="csv"/>
+      <converter file="parquet_to_tabular_converter.xml" target_datatype="tsv"/>
+      <converter file="parquet_to_tabular_converter.xml" target_datatype="tabular"/>
       <visualization plugin="atlas" />
     </datatype>
     <datatype extension="arrow" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="Apache Arrow IPC file format" description_url="https://arrow.apache.org/docs/format/Columnar.html#ipc-file-format"/>
@@ -133,6 +135,7 @@
     <datatype extension="geocsv" type="galaxy.datatypes.tabular:GeoCSV" description="CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields." description_url="https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#csv" />
     <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+      <converter file="tsv_to_parquet_converter.xml" target_datatype="parquet"/>
     </datatype>
     <datatype extension="intermine_tabular" type="galaxy.datatypes.tabular:TSV" subclass="true" display_in_upload="true">
       <display file="intermine/intermine_simple.xml"/>
@@ -594,6 +597,7 @@
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" auto_compressed_types="gz" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+      <converter file="tabular_to_parquet_converter.xml" target_datatype="parquet"/>
       <display file="minerva/tabular.xml"/>
     </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>

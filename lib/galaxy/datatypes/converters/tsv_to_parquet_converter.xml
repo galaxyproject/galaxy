@@ -1,0 +1,55 @@
+<!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
+<tool id="CONVERTER_tsv_to_parquet" name="Convert quoted TSV to Parquet" version="1.0.0" profile="19.05">
+    <requirements>
+        <requirement type="package" version="24.0.0">pyarrow</requirement>
+    </requirements>
+    <command><![CDATA[
+#if str($header_mode) in ('first', 'none')
+    #set $effective_header_mode = $header_mode
+#else
+    #set $effective_header_mode = 'first'
+#end if
+python '$__tool_directory__/tabular_to_parquet_converter.py' '$input' '$output' --input-format tsv --header-mode '$effective_header_mode'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="tsv" label="Quoted TSV file"/>
+        <param name="header_mode" type="select" label="Column names" optional="true">
+            <option value="first" selected="true">This file has a header row: use the first row as column names</option>
+            <option value="none">This file has no header row: generate column names (column1, column2, ...)</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="parquet"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="tsv" value="tabular_to_parquet_conv.tabular"/>
+            <param name="header_mode" value="first"/>
+            <output name="output" ftype="parquet" value="tabular_to_parquet_conv.parquet"/>
+        </test>
+    </tests>
+    <help>
+What it does
+------------
+Converts a quoted TSV file to Parquet format for efficient storage.
+
+The output Parquet file uses default compression setting.
+
+Usage Tips
+----------
+- By default TSV has a header; select "This file has no header row" for headerless TSV files.
+- Headerless inputs receive names column1, column2, etc.
+- Header names must be nonempty and unique; inconsistent row widths are rejected.
+- Empty cells are converted to null/None values in Parquet
+- Literal NA is preserved, not treated as null.
+- Entirely numeric columns are inferred as integers or floating-point values when
+  representable. Mixed columns and leading-zero identifiers retain their original text.
+- Float inference uses ordinary float64 approximation. If a column requires floats,
+  values with magnitude greater than 2^53, nonfinite values, and values that would
+  underflow to zero keep the entire column as text instead. Integer-only columns
+  can still use the full int64 range.
+- TSV quoting is decoded.
+- This conversion infers a new schema. It does not restore Parquet types or nested
+  values from a prior text export, and cannot distinguish empty strings from nulls.
+    </help>
+</tool>

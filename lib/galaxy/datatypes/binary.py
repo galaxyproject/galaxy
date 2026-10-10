@@ -4721,6 +4721,240 @@ class ICM(Binary):
         return False
 
 
+# Thrift compact protocol type ids
+_THRIFT_STOP = 0
+_THRIFT_BOOLEAN_TRUE = 1
+_THRIFT_BOOLEAN_FALSE = 2
+_THRIFT_BYTE = 3
+_THRIFT_I16 = 4
+_THRIFT_I32 = 5
+_THRIFT_I64 = 6
+_THRIFT_DOUBLE = 7
+_THRIFT_BINARY = 8
+_THRIFT_LIST = 9
+_THRIFT_SET = 10
+_THRIFT_MAP = 11
+_THRIFT_STRUCT = 12
+_THRIFT_UUID = 13
+_THRIFT_FIXED_WIDTH = {
+    _THRIFT_BOOLEAN_TRUE: 1,
+    _THRIFT_BOOLEAN_FALSE: 1,
+    _THRIFT_BYTE: 1,
+    _THRIFT_DOUBLE: 8,
+    _THRIFT_UUID: 16,
+}
+_THRIFT_VARINT_BYTES = {_THRIFT_I16: 3, _THRIFT_I32: 5, _THRIFT_I64: 10}
+
+# Parquet writers emit the schema and row count before the row groups, so a
+# bounded prefix of a large footer is enough to read them.
+_PARQUET_MAX_METADATA_BYTES = 16 * 1024 * 1024
+_PARQUET_MAX_DECODED_VALUES = 2_000_000
+_PARQUET_MAX_NESTING_DEPTH = 64
+
+
+def _check_thrift_element_type(element_type: int) -> None:
+    if element_type == _THRIFT_STOP or element_type > _THRIFT_UUID:
+        raise ValueError(f"Invalid Parquet metadata element type {element_type}")
+
+
+class _ParquetFooterDecoder:
+    """Decode the row count and schema of a Parquet ``FileMetaData`` footer.
+
+    Reads the Thrift compact protocol directly. Lengths and element counts are
+    checked against the remaining bytes before use, and the number of decoded
+    values and the nesting depth are capped, so malformed footers fail quickly.
+    """
+
+    def __init__(self, payload: bytes):
+        self._data = payload
+        self._pos = 0
+        self._budget = _PARQUET_MAX_DECODED_VALUES
+
+    def _count_value(self) -> None:
+        self._budget -= 1
+        if self._budget < 0:
+            raise ValueError("Parquet metadata contains too many values")
+
+    def _remaining(self) -> int:
+        return len(self._data) - self._pos
+
+    def _advance(self, size: int) -> int:
+        if size > self._remaining():
+            raise ValueError("Parquet metadata is truncated")
+        start = self._pos
+        self._pos += size
+        return start
+
+    def _byte(self) -> int:
+        return self._data[self._advance(1)]
+
+    def _varint(self, max_bytes: int) -> int:
+        result = 0
+        for shift in range(0, 7 * max_bytes, 7):
+            byte = self._byte()
+            result |= (byte & 0x7F) << shift
+            if not byte & 0x80:
+                return result
+        raise ValueError("Parquet metadata contains an oversized integer")
+
+    def _zigzag(self, max_bytes: int) -> int:
+        value = self._varint(max_bytes)
+        return (value >> 1) ^ -(value & 1)
+
+    def _binary(self) -> bytes:
+        start = self._advance(self._varint(5))
+        return self._data[start : self._pos]
+
+    def _field_header(self, last_field_id: int) -> tuple[int, int] | None:
+        header = self._byte()
+        field_type = header & 0x0F
+        if field_type == _THRIFT_STOP:
+            return None
+        self._count_value()
+        delta = header >> 4
+        field_id = last_field_id + delta if delta else self._zigzag(3)
+        return field_id, field_type
+
+    def _list_header(self) -> tuple[int, int]:
+        header = self._byte()
+        element_type = header & 0x0F
+        size = header >> 4
+        if size == 15:
+            size = self._varint(5)
+        if size:
+            _check_thrift_element_type(element_type)
+        # Every element occupies at least one byte.
+        if size > self._remaining():
+            raise ValueError("Parquet metadata is truncated")
+        return element_type, size
+
+    def _skip(self, value_type: int, depth: int, in_container: bool = False) -> None:
+        if depth > _PARQUET_MAX_NESTING_DEPTH:
+            raise ValueError("Parquet metadata is nested too deeply")
+        self._count_value()
+        if value_type in (_THRIFT_BOOLEAN_TRUE, _THRIFT_BOOLEAN_FALSE):
+            # Struct fields carry booleans in the field header, container elements in one byte.
+            if in_container:
+                self._advance(1)
+        elif value_type in _THRIFT_FIXED_WIDTH:
+            self._advance(_THRIFT_FIXED_WIDTH[value_type])
+        elif value_type in _THRIFT_VARINT_BYTES:
+            self._varint(_THRIFT_VARINT_BYTES[value_type])
+        elif value_type == _THRIFT_BINARY:
+            self._advance(self._varint(5))
+        elif value_type == _THRIFT_STRUCT:
+            field_id = 0
+            while (header := self._field_header(field_id)) is not None:
+                field_id, field_type = header
+                self._skip(field_type, depth + 1)
+        elif value_type in (_THRIFT_LIST, _THRIFT_SET):
+            element_type, size = self._list_header()
+            if element_type in _THRIFT_FIXED_WIDTH:
+                self._advance(size * _THRIFT_FIXED_WIDTH[element_type])
+            else:
+                for _ in range(size):
+                    self._skip(element_type, depth + 1, in_container=True)
+        elif value_type == _THRIFT_MAP:
+            size = self._varint(5)
+            if size:
+                key_value_types = self._byte()
+                key_type, item_type = key_value_types >> 4, key_value_types & 0x0F
+                _check_thrift_element_type(key_type)
+                _check_thrift_element_type(item_type)
+                if 2 * size > self._remaining():
+                    raise ValueError("Parquet metadata is truncated")
+                for _ in range(size):
+                    self._skip(key_type, depth + 1, in_container=True)
+                    self._skip(item_type, depth + 1, in_container=True)
+        else:
+            raise ValueError(f"Invalid Parquet metadata type {value_type}")
+
+    def _schema_element(self) -> tuple[str, int]:
+        name = None
+        num_children = 0
+        field_id = 0
+        while (header := self._field_header(field_id)) is not None:
+            field_id, field_type = header
+            if field_id == 4 and field_type == _THRIFT_BINARY:
+                name = self._binary().decode("utf-8", errors="replace")
+            elif field_id == 5 and field_type == _THRIFT_I32:
+                num_children = self._zigzag(5)
+            else:
+                self._skip(field_type, 2)
+        if name is None:
+            raise ValueError("Parquet schema element has no name")
+        return name, num_children
+
+    def file_metadata(self) -> tuple[int, list[tuple[str, int]]]:
+        """Return the row count and the flattened schema as ``(name, num_children)`` pairs."""
+        num_rows = None
+        schema = None
+        field_id = 0
+        while num_rows is None or schema is None:
+            header = self._field_header(field_id)
+            if header is None:
+                raise ValueError("Parquet metadata has no schema or row count")
+            field_id, field_type = header
+            if field_id == 2 and field_type == _THRIFT_LIST:
+                element_type, size = self._list_header()
+                if size and element_type != _THRIFT_STRUCT:
+                    raise ValueError("Parquet schema is not a list of structs")
+                schema = []
+                for _ in range(size):
+                    self._count_value()
+                    schema.append(self._schema_element())
+            elif field_id == 3 and field_type == _THRIFT_I64:
+                num_rows = self._zigzag(10)
+                if num_rows < 0:
+                    raise ValueError("Parquet metadata has a negative row count")
+            else:
+                self._skip(field_type, 1)
+        return num_rows, schema
+
+
+def _read_parquet_file_metadata(payload: bytes) -> tuple[int, list[str]]:
+    """Extract row count and top-level column names from Parquet metadata."""
+    num_rows, schema = _ParquetFooterDecoder(payload).file_metadata()
+    if not schema:
+        return num_rows, []
+    column_names = []
+    stack = [schema[0]]
+    for name, num_children in schema[1:]:
+        while stack and stack[-1][1] <= 0:
+            stack.pop()
+        current_depth = len(stack)
+        if stack:
+            parent_name, remaining = stack[-1]
+            stack[-1] = (parent_name, remaining - 1)
+        if current_depth == 1:
+            column_names.append(name)
+        if num_children > 0:
+            stack.append((name, num_children))
+    return num_rows, column_names
+
+
+def _read_parquet_footer_metadata(filename: str) -> bytes:
+    with open(filename, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        file_size = f.tell()
+        if file_size < 8:
+            raise ValueError("File too small to contain a parquet footer")
+
+        f.seek(-8, os.SEEK_END)
+        footer = f.read(8)
+        metadata_len = struct.unpack("<I", footer[:4])[0]
+        metadata_start = file_size - 8 - metadata_len
+        if metadata_start < 0:
+            raise ValueError("Invalid parquet metadata length in footer")
+
+        f.seek(metadata_start, os.SEEK_SET)
+        read_len = min(metadata_len, _PARQUET_MAX_METADATA_BYTES)
+        metadata = f.read(read_len)
+        if len(metadata) != read_len:
+            raise ValueError("Could not read complete parquet metadata payload")
+        return metadata
+
+
 @build_sniff_from_prefix
 class Parquet(Binary):
     """
@@ -4735,6 +4969,34 @@ class Parquet(Binary):
     False
     """
 
+    MetadataElement(
+        name="columns",
+        default=0,
+        desc="Number of columns",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=0,
+    )
+    MetadataElement(
+        name="column_names",
+        default=[],
+        desc="Column names",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=[],
+    )
+    MetadataElement(
+        name="data_lines",
+        default=0,
+        desc="Number of data lines",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=0,
+    )
+
     file_ext = "parquet"
 
     def __init__(self, **kwd):
@@ -4743,6 +5005,33 @@ class Parquet(Binary):
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith_bytes(self._magic)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if not os.path.isfile(dataset.get_file_name()):
+            return
+        try:
+            footer_metadata = _read_parquet_footer_metadata(dataset.get_file_name())
+            line_count, column_names = _read_parquet_file_metadata(footer_metadata)
+            dataset.metadata.column_names = column_names
+            dataset.metadata.columns = len(column_names)
+            dataset.metadata.data_lines = line_count
+        except Exception:
+            pass
+
+    def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Parquet data"
+            column_count = dataset.metadata.columns
+            line_count = dataset.metadata.data_lines
+            if column_count > 0 or line_count > 0:
+                col_label = "column" if column_count <= 1 else "columns"
+                line_label = "line" if line_count <= 1 else "lines"
+                dataset.blurb = f"{util.commaify(str(column_count))} {col_label}, {util.commaify(str(line_count))} {line_label}, {nice_size(dataset.get_size())}"
+            else:
+                dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
 
 class BafTar(CompressedArchive):
