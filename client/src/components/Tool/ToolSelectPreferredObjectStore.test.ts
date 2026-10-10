@@ -22,14 +22,8 @@ async function mountSelector(story: StoryOf<typeof stories>) {
     return wrapper.findComponent(ToolSelectPreferredObjectStore);
 }
 
+// The listed options are covered by the OffersEachStorageLocation play function.
 describe("ToolSelectPreferredObjectStore.vue", () => {
-    it("lists the Galaxy default option and each selectable storage location", async () => {
-        const selector = await mountSelector(stories.UsesDefaults);
-
-        expect(selector.findAll(SELECTION.option_cards.selector)).toHaveLength(3);
-        expect(selector.find(SELECTION.option_card({ object_store_id: "__null__" }).selector).exists()).toBe(true);
-    });
-
     it.each([
         { story: "UsesDefaults", selected: "object_store_1", emitted: "object_store_1" },
         { story: "PreferredStorage", selected: "__null__", emitted: null },
