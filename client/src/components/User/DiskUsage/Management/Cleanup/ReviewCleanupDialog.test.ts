@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type GModal from "@/components/BaseComponents/GModal.vue";
+import { clickModalButton } from "@/components/BaseComponents/test-utils";
 
 import { CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 import { getFakeCleanableItem, getFakeCleanupOperation } from "./test-utils";
@@ -107,8 +108,7 @@ describe("ReviewCleanupDialog.vue", () => {
 
         const confirmationModal = wrapper.getComponent<typeof GModal>("#confirmation-modal");
         expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toBeFalsy();
-        confirmationModal.vm.$emit("ok");
-        await flushPromises();
+        await clickModalButton(confirmationModal, "Permanently delete");
         expect(wrapper.emitted("onConfirmCleanupSelectedItems")).toEqual([[EXPECTED_ITEMS]]);
     });
 });

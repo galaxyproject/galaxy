@@ -8,6 +8,7 @@ import { nextTick, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import type { ShareableHistoryWithStatus } from "@/api";
+import { clickModalButton } from "@/components/BaseComponents/test-utils";
 import { useUserStore } from "@/stores/userStore";
 
 import UserSharing from "./UserSharing.vue";
@@ -22,7 +23,6 @@ vi.mock("@/composables/config", () => ({
 
 const SELECTORS = {
     CANCEL_BUTTON: "button.cancel-sharing-with",
-    MODAL_BUTTON: ".g-modal-confirm-buttons button",
     SAVE_BUTTON: "button.submit-sharing-with",
     SHARED_EMAIL_TAG: ".remove_sharing_with",
 };
@@ -82,15 +82,6 @@ async function addCandidateEmail(wrapper: VueWrapper, email: string) {
     multiselect.vm.$emit("search-change", email);
     multiselect.vm.$emit("close");
     await nextTick();
-}
-
-async function clickModalButton(wrapper: VueWrapper, text: "Ok" | "Cancel") {
-    const button = wrapper.findAll(SELECTORS.MODAL_BUTTON).find((candidate) => candidate.text() === text);
-    if (!button) {
-        throw new Error(`no "${text}" button in the permissions modal`);
-    }
-    await button.trigger("click");
-    await flushPromises();
 }
 
 function sharedEmailTags(wrapper: VueWrapper) {
