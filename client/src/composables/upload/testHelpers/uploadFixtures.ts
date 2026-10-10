@@ -2,8 +2,10 @@ import type { UploadCollectionConfig } from "@/composables/upload/collectionType
 import type {
     LibraryDatasetUploadItem,
     LocalFileUploadItem,
+    NewUploadItem,
     PastedContentUploadItem,
     RemoteFileUploadItem,
+    UploadState,
     UrlUploadItem,
 } from "@/composables/upload/uploadItemTypes";
 
@@ -102,6 +104,22 @@ export function makeCollectionConfig(overrides: Partial<UploadCollectionConfig> 
         type: "list",
         historyId: "hist_1",
         hideSourceItems: false,
+        ...overrides,
+    };
+}
+
+/** Adds the queue tracking state that turns a new upload item into a queued `UploadItem`. */
+export function withUploadState<T extends NewUploadItem>(
+    item: T,
+    overrides: Partial<UploadState> = {},
+): T & UploadState {
+    return {
+        ...item,
+        id: "upload-1",
+        status: "queued",
+        progress: 0,
+        createdAt: 0,
+        datasetIds: [],
         ...overrides,
     };
 }
