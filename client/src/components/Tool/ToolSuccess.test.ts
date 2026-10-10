@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { advanceTimersAndFlush, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -116,10 +117,10 @@ describe("ToolSuccess", () => {
 
     describe("ToolSuccess recommendations", () => {
         it.each([
-            ["anonymous", { isAnonymous: true }, true, true],
+            ["anonymous", getFakeAnonymousUser(), true, true],
             ["unloaded", null, true, true],
-            ["registered", { id: "user-id", email: "user@example.org" }, true, true],
-            ["disabled", { id: "user-id", email: "user@example.org" }, false, false],
+            ["registered", getFakeRegisteredUser({ id: "user-id", email: "user@example.org" }), true, true],
+            ["disabled", getFakeRegisteredUser({ id: "user-id", email: "user@example.org" }), false, false],
         ])("handles %s users/configuration", async (_label, currentUser, enabled, expected) => {
             vi.mocked(useConfig).mockReturnValue({
                 config: { value: { enable_tool_recommendations: enabled } },
