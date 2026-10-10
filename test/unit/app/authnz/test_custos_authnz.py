@@ -36,6 +36,9 @@ from galaxy.util.unittest import TestCase
 if TYPE_CHECKING:
     from sqlalchemy.orm import scoped_session
 
+# CustosAuthnz decodes ID tokens without verifying the signature, so any key works.
+TEST_ID_TOKEN_KEY = "test-id-token-signing-key-0123456"
+
 
 class TestCustosAuthnz(TestCase):
     _create_oauth2_session_called = False
@@ -115,7 +118,7 @@ class TestCustosAuthnz(TestCase):
         return unicodify(
             jwt.encode(
                 {"nonce": self.test_nonce_hash, "aud": "test-client-id"},
-                key="",
+                key=TEST_ID_TOKEN_KEY,
                 algorithm="HS256",
             )
         )
@@ -444,7 +447,7 @@ class TestCustosAuthnz(TestCase):
                     "sub": self.test_sub,
                     "aud": "test-client-id",
                 },
-                key="",
+                key=TEST_ID_TOKEN_KEY,
                 algorithm="HS256",
             )
         )

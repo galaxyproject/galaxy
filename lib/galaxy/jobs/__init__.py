@@ -24,6 +24,7 @@ from json import loads
 from typing import (
     Any,
     Callable,
+    cast,
     Optional,
     TYPE_CHECKING,
 )
@@ -37,6 +38,7 @@ from sqlalchemy import (
     select,
     update,
 )
+from sqlalchemy.engine import CursorResult
 
 from galaxy import (
     model,
@@ -1780,7 +1782,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # Not committed here: the row lock taken by this update is held until enqueue()
         # commits, so a concurrent job deletion cannot land between queueing and
         # update_output_states() and have its dataset state and info overwritten.
-        result = self.sa_session.execute(update_stmt)
+        result = cast(CursorResult, self.sa_session.execute(update_stmt))  # type: ignore[redundant-cast, unused-ignore]
         state_updated = result.rowcount > 0
         if state_updated:
             self.sa_session.refresh(job)

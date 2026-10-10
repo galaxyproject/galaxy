@@ -72,8 +72,8 @@ import yaml
 from bioblend.galaxyclient import GalaxyClient
 from gxformat2 import (
     convert_and_import_workflow,
-    ImporterGalaxyInterface,
 )
+from gxformat2.interface import ImporterGalaxyInterface
 from gxformat2.yaml import ordered_load
 from pydantic import (
     BaseModel,
@@ -2422,20 +2422,13 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+        JsonSchemaValidator.validate_using_vendored_schema(bco, expected_schema_version)
 
     def get_ro_crate(self, invocation_id, include_files=False):
         crate_response = self.download_invocation_to_store(
             invocation_id=invocation_id, include_files=include_files, extension="rocrate.zip"
         )
         return ROCrate(crate_response)
-
-    def validate_invocation_crate_directory(self, crate_directory):
-        # TODO: where can a ro_crate be extracted
-        metadata_json_path = crate_directory / "ro-crate-metadata.json"
-        with metadata_json_path.open() as f:
-            metadata_json = json.load(f)
-            assert metadata_json["@context"] == "https://w3id.org/ro/crate/1.1/context"
 
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"

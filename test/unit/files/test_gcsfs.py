@@ -2,7 +2,14 @@ import os
 
 import pytest
 
-from ._util import assert_simple_file_realize
+from ._util import (
+    assert_realizes_contains,
+    configured_file_sources,
+    find,
+    list_dir,
+    list_root,
+    user_context_fixture,
+)
 
 try:
     from fs_gcsfs import GCSFS
@@ -20,6 +27,10 @@ skip_if_no_gcsfs_libs = pytest.mark.skipif(
 
 @skip_if_no_gcsfs_libs
 def test_file_source():
-    assert_simple_file_realize(
-        FILE_SOURCES_CONF, recursive=False, filename="README", contents="1000genomes", contains=True
-    )
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    root = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    assert find(root, class_="Directory", name="iris")
+    iris = list_dir(file_sources, "gxfiles://test1/iris", recursive=False, user_context=user_context)
+    assert find(iris, class_="File", name="iris.csv")
+    assert_realizes_contains(file_sources, "gxfiles://test1/iris/iris.csv", "Iris-setosa", user_context=user_context)
