@@ -516,8 +516,8 @@ The following test files demonstrate specific patterns well and can serve as ref
 | **Config composable mock**  | `src/entry/analysis/modules/Login.test.ts`                              | Using setMockConfig() helper to customize Galaxy configuration                        |
 | **Config mock (simple)**    | `src/components/Citation/CitationsList.test.ts`                         | Basic vi.mock pattern for useConfig                                                   |
 | **Shared YAML**             | `src/components/Collections/pairing.test.ts`                            | Defining YAML specifications that can be shared between frontend and backend          |
-| **Stub with methods**       | `src/components/Workflow/Editor/Index.test.ts`                          | Stubbing components with methods and `expose` for template refs                       |
-| **Stub with factory**       | `src/components/Tool/ToolForm.test.js`                                  | MockCurrentHistory() factory for configurable stubs                                   |
+| **Stub with methods**       | `src/components/Workflow/Editor/Index.test.ts`                          | Stubbing components with methods called through template refs                         |
+| **Stub with factory**       | `src/components/Tool/ToolForm.test.ts`                                  | MockCurrentHistory() factory for configurable stubs                                   |
 | **Selective stubbing**      | `src/components/History/Content/ContentItem.test.js`                    | Mix of stubbed (`true`) and rendered (`false`) components                             |
 | **Named slots**             | `src/components/Popper/Popper.test.js`                                  | Testing multiple named slots with HTML string content                                 |
 | **Multiple slots**          | `src/components/Form/FormCardSticky.test.js`                            | Testing buttons, default, and footer slots together                                   |
