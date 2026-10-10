@@ -23,29 +23,17 @@ function renderedBadges(wrapper: VueWrapper) {
     }));
 }
 
-function drawnAt(size: string) {
-    return expect.arrayContaining([`fa-${size}`]);
-}
-
+// What each badge shows and its tooltip are covered by the play functions.
 describe("ObjectStoreBadges", () => {
-    it("renders every badge at the default lg size when no size is given", () => {
-        const wrapper = mountStory(stories.DefaultSize);
+    it.each([
+        ["DefaultSize", "lg"],
+        ["DoubleSize", "2x"],
+    ] as const)("passes each badge's full data down in %s, drawn at %s", (story, size) => {
+        const wrapper = mountStory(stories[story]);
 
         expect(wrapper.find(BADGE_LIST).exists()).toBe(true);
-        expect(renderedBadges(wrapper)).toEqual([
-            { badge: badges[0], size: "lg", iconClasses: drawnAt("lg") },
-            { badge: badges[1], size: "lg", iconClasses: drawnAt("lg") },
-        ]);
-    });
-
-    it("passes an explicit size to every badge", () => {
-        const wrapper = mountStory(stories.DoubleSize);
-
-        expect(wrapper.find(BADGE_LIST).exists()).toBe(true);
-        expect(renderedBadges(wrapper)).toEqual([
-            { badge: badges[0], size: "2x", iconClasses: drawnAt("2x") },
-            { badge: badges[1], size: "2x", iconClasses: drawnAt("2x") },
-        ]);
+        const drawn = { size, iconClasses: expect.arrayContaining([`fa-${size}`]) };
+        expect(renderedBadges(wrapper)).toEqual(badges.map((badge) => ({ badge, ...drawn })));
     });
 
     it("should pass along whether badges are interactive", async () => {
