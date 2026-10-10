@@ -1,31 +1,25 @@
 import "@/composables/__mocks__/filter";
 
-import { createTestingPinia } from "@pinia/testing";
+import { composeStories } from "@storybook/vue3-vite";
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
+
+import * as FormSelectionStories from "./FormSelection.stories";
 
 import FormSelect from "./FormSelect.vue";
 import FormSelection from "./FormSelection.vue";
 
-const localVue = getLocalVue(true);
+const stories = composeStories(FormSelectionStories);
+const mountStory = useStoryMount();
 
-const options = [
-    ["label_1", "value_1"],
-    ["label_2", "value_2"],
-    ["label_3", ""],
-    ["label_4", 99],
-];
-const optionLabels = ["label_1", "label_2", "label_3", "label_4"];
+// The stories' option labels, in order.
+const optionLabels = ["Human (hg38)", "Mouse (mm10)", "Unspecified", "Custom build 99"];
 
-function mountFormSelection(propsData) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
-
-    return mount(FormSelection, {
-        global: localVue,
-        propsData: { options, ...propsData },
-        pinia,
-    });
+/** Mounts a story, whose harness passes every emitted `input` back as `value`, as a v-model parent does. */
+function mountFormSelection(story) {
+    return mountStory(story).getComponent(FormSelection);
 }
 
 /** vue-multiselect renders its option list only while open, and picking a single option closes it. */
@@ -57,24 +51,29 @@ async function clickOption(wrapper, label) {
 describe("FormSelect", () => {
     describe("single select", () => {
         it("lists the options in order", async () => {
-            const wrapper = mountFormSelection();
+            const wrapper = mountFormSelection(stories.Required);
 
             expect(await listedLabels(wrapper)).toEqual(optionLabels);
         });
 
         it("selects the first option when a required select has no value", async () => {
-            const wrapper = mountFormSelection();
+            // A plain mount, without the story's harness, so the select is seen before its parent passes the value back.
+            const wrapper = mount(FormSelection, {
+                global: getLocalVue(),
+                props: stories.Required.args,
+            });
+            onTestFinished(() => wrapper.unmount());
 
-            expect(emittedArg(wrapper, "input")).toBe("value_1");
+            expect(emittedArg(wrapper, "input")).toBe("hg38");
             expect(await selectedLabels(wrapper)).toEqual([]);
 
-            await wrapper.setProps({ value: "value_1" });
+            await wrapper.setProps({ value: "hg38" });
 
-            expect(await selectedLabels(wrapper)).toEqual(["label_1"]);
+            expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)"]);
         });
 
         it("offers and selects 'Nothing selected' while an optional select has no value", async () => {
-            const wrapper = mountFormSelection({ optional: true });
+            const wrapper = mountFormSelection(stories.Optional);
 
             expect(await listedLabels(wrapper)).toEqual(["Nothing selected", ...optionLabels]);
             expect(await selectedLabels(wrapper)).toEqual(["Nothing selected"]);
@@ -82,71 +81,67 @@ describe("FormSelect", () => {
         });
 
         it("clears an optional select by picking 'Nothing selected'", async () => {
-            const wrapper = mountFormSelection({ optional: true });
-            await wrapper.setProps({ value: "value_1" });
-            expect(await selectedLabels(wrapper)).toEqual(["label_1"]);
+            const wrapper = mountFormSelection(stories.OptionalSelected);
+            expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)"]);
 
             await clickOption(wrapper, "Nothing selected");
 
             expect(emittedArg(wrapper, "input")).toBe(null);
-            await wrapper.setProps({ value: null });
             expect(await selectedLabels(wrapper)).toEqual(["Nothing selected"]);
         });
     });
 
     describe("multi-select", () => {
         it("emits null when a required multi-select is fully cleared", async () => {
-            const wrapper = mountFormSelection({ optional: false, multiple: true, value: ["value_1"] });
-            expect(await selectedLabels(wrapper)).toEqual(["label_1"]);
+            const wrapper = mountFormSelection(stories.MultipleRequired);
+            expect(await listedLabels(wrapper)).toEqual(optionLabels);
+            expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)"]);
 
-            await clickOption(wrapper, "label_1");
+            await clickOption(wrapper, "Human (hg38)");
 
             expect(emittedArg(wrapper, "input")).toBe(null);
         });
 
         it("does not offer 'Nothing selected' in an optional multi-select", async () => {
-            const wrapper = mountFormSelection({ optional: true, multiple: true, value: ["value_1", "", 99] });
+            const wrapper = mountFormSelection(stories.MultipleOptional);
 
             expect(await listedLabels(wrapper)).toEqual(optionLabels);
+            expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)", "Unspecified", "Custom build 99"]);
         });
 
         it("emits the remaining values as options are deselected, null once none are left, and reselects", async () => {
-            const wrapper = mountFormSelection({ optional: true, multiple: true, value: ["value_1", "", 99] });
-            expect(await selectedLabels(wrapper)).toEqual(["label_1", "label_3", "label_4"]);
+            const wrapper = mountFormSelection(stories.MultipleOptional);
+            expect(await selectedLabels(wrapper)).toEqual(["Human (hg38)", "Unspecified", "Custom build 99"]);
 
-            await clickOption(wrapper, "label_1");
-            const withoutFirst = emittedArg(wrapper, "input");
-            expect(withoutFirst).toEqual(["", 99]);
-            await wrapper.setProps({ value: withoutFirst });
+            await clickOption(wrapper, "Human (hg38)");
+            expect(emittedArg(wrapper, "input")).toEqual(["", 99]);
 
-            await clickOption(wrapper, "label_3");
-            const onlyNumeric = emittedArg(wrapper, "input", 1);
-            expect(onlyNumeric).toEqual([99]);
-            await wrapper.setProps({ value: onlyNumeric });
+            await clickOption(wrapper, "Unspecified");
+            expect(emittedArg(wrapper, "input", 1)).toEqual([99]);
 
-            await clickOption(wrapper, "label_4");
-            const cleared = emittedArg(wrapper, "input", 2);
-            expect(cleared).toBe(null);
-            await wrapper.setProps({ value: cleared });
+            await clickOption(wrapper, "Custom build 99");
+            expect(emittedArg(wrapper, "input", 2)).toBe(null);
 
-            await clickOption(wrapper, "label_1");
-            expect(emittedArg(wrapper, "input", 3)).toEqual(["value_1"]);
+            await clickOption(wrapper, "Human (hg38)");
+            expect(emittedArg(wrapper, "input", 3)).toEqual(["hg38"]);
         });
     });
 });
 
 describe("FormSelect accessible names", () => {
     it("does not name the search input after its id", () => {
-        const wrapper = mountFormSelection();
+        const wrapper = mountFormSelection(stories.Required);
         const input = wrapper.find("input.multiselect__input");
         expect(input.exists()).toBe(true);
         expect(input.attributes("aria-label")).toBeUndefined();
     });
 
     it("gives each instance its own default id", () => {
-        const formSelectOptions = [{ label: "label_1", value: "value_1" }];
+        // FormSelection passes its own id, so mount FormSelect itself to reach the default
+        const options = [{ label: "label_1", value: "value_1" }];
         const ids = [0, 1].map(() => {
-            const wrapper = mount(FormSelect, { global: localVue, props: { options: formSelectOptions } });
+            const wrapper = mount(FormSelect, { global: getLocalVue(true), props: { options } });
+            onTestFinished(() => wrapper.unmount());
             return wrapper.find("input.multiselect__input").attributes("id");
         });
         expect(ids[0]).toMatch(/^form-select-/);
