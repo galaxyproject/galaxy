@@ -7,17 +7,23 @@ mysql, …); the SQLite single-file path is the typical use case
 (shippable on CVMFS) but nothing about the schema is sqlite-specific.
 """
 
+import functools
 import gzip
 import json
 import logging
 import os
+import threading
 from collections.abc import (
     Callable,
     Iterator,
 )
+from contextlib import nullcontext
 from datetime import datetime
 from typing import (
     Any,
+    Concatenate,
+    ParamSpec,
+    TypeVar,
 )
 
 from sqlalchemy import (
@@ -49,6 +55,38 @@ from .interface import (
 )
 
 log = logging.getLogger(__name__)
+
+# How long a SQLite connection waits for another connection's write lock
+# before failing with "database is locked". Python's default of 5 seconds is
+# too short when a commit is slow (network or FUSE filesystems) and several
+# processes write the same store, e.g. web workers self-healing missing tools.
+SQLITE_BUSY_TIMEOUT_SECONDS = 60
+
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def _serialized_write(
+    method: "Callable[Concatenate[SqlAlchemyToolSourceStore, _P], _R]",
+) -> "Callable[Concatenate[SqlAlchemyToolSourceStore, _P], _R]":
+    """Run a mutating store method under the store's in-process write lock.
+
+    SQLite allows a single writer per database. Writers in other threads of
+    this process (the populator's parse workers) would otherwise queue inside
+    SQLite and fail once the busy timeout expires behind slow commits; the
+    lock makes them queue here instead, without a deadline. It also makes
+    the read-modify-write in :meth:`SqlAlchemyToolSourceStore.update_index_entry`
+    atomic with respect to other threads.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self: "SqlAlchemyToolSourceStore", *args: _P.args, **kwargs: _P.kwargs) -> _R:
+        with self._write_lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
 
 # Independent SQLAlchemy metadata — a tool source bundle has nothing to
 # do with the Galaxy ORM and must be openable without booting Galaxy.
@@ -116,7 +154,12 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
         self._ensure_sqlite_parent_directory(url)
 
-        self._engine = create_engine(url, future=True)
+        is_sqlite = make_url(url).drivername.split("+")[0] == "sqlite"
+        # Re-entrant: update_index_entry calls store_index while holding it.
+        # Server databases handle concurrent writers themselves.
+        self._write_lock: threading.RLock | nullcontext[None] = threading.RLock() if is_sqlite else nullcontext()
+        connect_args = {"timeout": SQLITE_BUSY_TIMEOUT_SECONDS} if is_sqlite else {}
+        self._engine = create_engine(url, future=True, connect_args=connect_args)
         if not read_only and not self._is_remote_engine():
             # Only auto-create schema on local/file backends. For shared
             # databases the operator should manage migrations explicitly
@@ -156,6 +199,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     # --- ToolSourceStore: per-source ops --------------------------------
 
+    @_serialized_write
     def store(self, tool_source: StoredToolSource) -> str:
         """Store a source; one row per ``source_path``, path-less sources
         deduplicate on content hash (see :class:`_ToolSourceRow`)."""
@@ -217,6 +261,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             )
             return row is not None
 
+    @_serialized_write
     def delete(self, hash: str) -> bool:
         """Delete all rows carrying this hash (one per source path)."""
         self._ensure_writable()
@@ -275,6 +320,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     # --- ToolSourceStore: index ops -------------------------------------
 
+    @_serialized_write
     def store_index(self, index: ToolIndex) -> None:
         self._ensure_writable()
         payload = {"schema_hash": INDEX_SCHEMA_HASH, "index": index.model_dump(mode="json")}
@@ -312,6 +358,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             log.error(f"Failed to decode tool index from store {self.url}: {e}")
             return None
 
+    @_serialized_write
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         self._ensure_writable()
         index = self.load_index() or ToolIndex()
