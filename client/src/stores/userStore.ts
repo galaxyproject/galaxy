@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 
 import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { useHashedUserId } from "@/composables/hashedUserId";
+import { useKeyedCache } from "@/composables/keyedCache";
 import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
@@ -11,6 +12,7 @@ import {
     addFavoriteEdamTopicQuery,
     addFavoriteTagQuery,
     addFavoriteToolQuery,
+    decodeIdById,
     type FavoriteOrderEntry,
     type FavoriteSummary,
     getCurrentUser,
@@ -95,6 +97,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentPreferences.value = null;
         recentTools.value = [];
         loadPromise = null;
+        decodedIdCache.value = {};
     }
 
     const isAdmin = computed(() => {
@@ -359,6 +362,19 @@ export const useUserStore = defineStore("userStore", () => {
         return normalized;
     }
 
+    async function fetchdecodedIdById(params: { id: string }) {
+        if (isAdmin.value) {
+            return await decodeIdById(params.id);
+        }
+        return null;
+    }
+
+    const { getItemById: getDecodedId, storedItems: decodedIdCache } = useKeyedCache<number | null>(
+        fetchdecodedIdById,
+        // Only fetch a decoded id if the current user is known and the item is undefined (not yet cached).
+        () => (item?: number | null) => currentUser.value !== null && item === undefined,
+    );
+
     return {
         currentUser,
         currentPreferences,
@@ -367,6 +383,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentTheme,
         currentFavorites,
         currentListViewPreferences,
+        getDecodedId,
         hasSeenUploadHelp,
         historyPanelWidth,
         chatPanelWidth,

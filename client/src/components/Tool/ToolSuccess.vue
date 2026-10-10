@@ -1,16 +1,24 @@
 <script setup lang="ts">
+import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
+import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 import { useConfig } from "@/composables/config";
+import { useJobDetails } from "@/composables/jobDetails";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useJobStore } from "@/stores/jobStore";
 
 import LoadingSpan from "../LoadingSpan.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
-import ToolSuccessMessage from "./ToolSuccessMessage.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import DetailBlock from "@/components/Common/DetailBlock.vue";
 import Webhook from "@/components/Common/Webhook.vue";
+import JobHeader from "@/components/JobInformation/JobHeader.vue";
+import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import ToolSuccessOutputs from "@/components/Tool/ToolSuccessOutputs.vue";
+import ToolSuccessToc from "@/components/Tool/ToolSuccessToc.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 const { config } = useConfig(true);
@@ -21,26 +29,93 @@ const router = useRouter();
 const jobDef = computed(() => latestResponse.value?.jobDef);
 const jobResponse = computed(() => latestResponse.value?.jobResponse);
 const showRecommendation = computed(() => config.value.enable_tool_recommendations);
-const toolName = computed(() => latestResponse.value?.toolName);
+const nJobs = computed(() => (jobResponse.value && jobResponse.value.jobs ? jobResponse.value.jobs.length : 0));
 
 // no data means that no tool was run in this session i.e. no data in the store
 if (!latestResponse.value || Object.keys(latestResponse.value).length === 0) {
     router.push(`/`);
 }
+
+const currentIndex = ref(0);
+// BPagination is 1-indexed; bridge to the 0-indexed currentIndex.
+const paginationPage = computed<number>({
+    get: () => currentIndex.value + 1,
+    set: (val: number) => {
+        currentIndex.value = val - 1;
+    },
+});
+
+watch(jobResponse, () => {
+    currentIndex.value = 0;
+});
+
+const viewedJobId = computed(
+    () => jobResponse.value?.jobs?.[currentIndex.value]?.id ?? jobResponse.value?.jobs?.[0]?.id,
+);
+const { job: viewedJob } = useJobDetails(viewedJobId);
+
+const webhook = ref<InstanceType<typeof Webhook> | null>(null);
+const webhookId = computed(() => webhook.value?.webhookId ?? null);
+
+const jobInformationCollapsed = useUserLocalStorage("job-information-collapsed", false);
+const toolSuccessOutputsCollapsed = useUserLocalStorage("tool-success-outputs-collapsed", false);
 </script>
 
 <template>
-    <section>
-        <GAlert v-if="!jobResponse" variant="info" show>
-            <LoadingSpan message="Waiting on data" />
-        </GAlert>
-        <div v-else>
-            <div v-if="jobResponse?.produces_entry_points">
-                <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
+    <GAlert v-if="!jobResponse">
+        <LoadingSpan message="Waiting on data" />
+    </GAlert>
+    <div v-else>
+        <template v-if="viewedJobId">
+            <JobHeader :job-id="viewedJobId" :job="viewedJob" animate-success>
+                <template v-slot:pagination>
+                    <BPagination
+                        v-if="nJobs > 1"
+                        v-model="paginationPage"
+                        :total-rows="nJobs"
+                        :per-page="1"
+                        size="sm"
+                        :limit="3"
+                        first-number
+                        last-number
+                        hide-goto-end-buttons
+                        class="mb-0 unselectable" />
+                </template>
+            </JobHeader>
+
+            <ToolSuccessToc
+                v-model:job-information-collapsed="jobInformationCollapsed"
+                v-model:tool-success-outputs-collapsed="toolSuccessOutputsCollapsed"
+                :job-response="jobResponse"
+                :job-def="jobDef"
+                :webhook-id="webhookId"
+                :show-recommendation="showRecommendation" />
+
+            <div v-if="jobResponse.produces_entry_points" id="tool-entry-points">
+                <ToolEntryPoints :job-id="viewedJobId" :job="viewedJob" />
             </div>
-            <ToolSuccessMessage :job-response="jobResponse" :tool-name="toolName || '...'" />
-            <Webhook v-if="jobDef" type="tool" :tool-id="jobDef.tool_id || undefined" />
-            <ToolRecommendation v-if="showRecommendation && jobDef?.tool_id" :tool-id="jobDef.tool_id" />
+
+            <div id="job-execution-details">
+                <JobInformation
+                    v-model:collapsed="jobInformationCollapsed"
+                    :job-id="viewedJobId"
+                    collapsible
+                    include-view-full-details-button />
+            </div>
+        </template>
+
+        <div id="tool-run-outputs">
+            <ToolSuccessOutputs v-model:collapsed="toolSuccessOutputsCollapsed" :job-response="jobResponse" />
         </div>
-    </section>
+
+        <div id="tool-success-webhook">
+            <DetailBlock v-if="jobDef" v-show="webhookId" :header-icon="faLightbulb" title="Before You Go">
+                <Webhook ref="webhook" type="tool" :tool-id="jobDef.tool_id || undefined" />
+            </DetailBlock>
+        </div>
+
+        <div v-if="showRecommendation && jobDef?.tool_id" id="tool-recommendation">
+            <ToolRecommendation :tool-id="jobDef.tool_id" />
+        </div>
+    </div>
 </template>

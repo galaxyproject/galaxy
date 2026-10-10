@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { BCard } from "bootstrap-vue";
-import { computed, toRef, watch } from "vue";
+import { computed, toRef } from "vue";
 
-import { useJobStore } from "@/stores/jobStore";
+import { useJobDetails } from "@/composables/jobDetails";
 
 import { useMappingJobs } from "./handlesMappingJobs";
 
@@ -19,32 +19,17 @@ const props = withDefaults(defineProps<ToolStdProps>(), {
     implicitCollectionJobsId: undefined,
 });
 
-const jobStore = useJobStore();
-
 const jobIdRef = toRef(props, "jobId");
 const implicitCollectionJobsIdRef = toRef(props, "implicitCollectionJobsId");
 
 const { selectJobOptions, selectedJob, targetJobId } = useMappingJobs(jobIdRef, implicitCollectionJobsIdRef);
 
-async function init() {
-    if (targetJobId.value) {
-        jobStore.fetchJob({ id: targetJobId.value });
-    }
-}
-
-watch(
-    targetJobId,
-    () => {
-        init();
-    },
-    { immediate: true },
-);
+const { job } = useJobDetails(targetJobId, { poll: false });
 
 const jobContent = computed(() => {
     let content: string | null | undefined;
     if (targetJobId.value) {
-        const job = jobStore.getJob(targetJobId.value);
-        content = job && job[props.name];
+        content = job.value?.[props.name];
     }
     if (!content && props.name == "tool_stdout") {
         content = "*No Standard Output Available*";

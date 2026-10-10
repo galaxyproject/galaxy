@@ -1,7 +1,12 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
+import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
+
+const { server, http } = useServerMock();
 
 describe("userStore", () => {
     beforeEach(() => {
@@ -54,6 +59,74 @@ describe("userStore", () => {
 
             userStore.clearRecentTools();
             expect(userStore.recentTools).toEqual([]);
+        });
+    });
+
+    describe("getDecodedId", () => {
+        let callCount = 0;
+
+        beforeEach(() => {
+            server.use(
+                http.get("/api/configuration/decode/{encoded_id}", ({ response }) => {
+                    callCount++;
+                    return response(200).json({ decoded_id: 123 });
+                }),
+            );
+        });
+        afterEach(() => {
+            callCount = 0;
+        });
+
+        it("returns null and does not fetch for a non-admin user", async () => {
+            const userStore = useUserStore();
+            userStore.currentUser = getFakeRegisteredUser({ is_admin: false });
+
+            expect(userStore.getDecodedId("abc")).toBeNull();
+            await flushPromises();
+            expect(callCount).toBe(0);
+        });
+
+        it("decodes and caches the id for an admin user", async () => {
+            const userStore = useUserStore();
+            userStore.currentUser = getFakeRegisteredUser({ is_admin: true });
+
+            expect(userStore.getDecodedId("abc")).toBeNull(); // not yet resolved
+            await flushPromises();
+            expect(callCount).toBe(1);
+            expect(userStore.getDecodedId("abc")).toBe(123);
+
+            // Second read for the same id should hit the cache, not trigger another fetch
+            await flushPromises();
+            expect(callCount).toBe(1);
+        });
+
+        it("retries once the current user becomes known, instead of setting the ID prematurely", async () => {
+            const userStore = useUserStore();
+            // currentUser starts as `null` (not yet loaded), `isAdmin = false`, but this
+            // must not be treated as a confirmed "not admin" and cached as such.
+            expect(userStore.currentUser).toBeNull();
+            expect(userStore.getDecodedId("abc")).toBeNull();
+            await flushPromises();
+            expect(callCount).toBe(0); // never fetched while the user is unknown
+
+            // The user loads in and turns out to be an admin.
+            userStore.currentUser = getFakeRegisteredUser({ is_admin: true });
+            expect(userStore.getDecodedId("abc")).toBeNull(); // not yet resolved
+            await flushPromises();
+            expect(callCount).toBe(1);
+            expect(userStore.getDecodedId("abc")).toBe(123);
+        });
+
+        it("clears cached decoded ids on $reset so a new user doesn't see a stale result", async () => {
+            const userStore = useUserStore();
+            userStore.currentUser = getFakeRegisteredUser({ is_admin: true });
+            userStore.getDecodedId("abc");
+            await flushPromises();
+            expect(userStore.getDecodedId("abc")).toBe(123);
+
+            userStore.$reset();
+
+            expect(userStore.getDecodedId("abc")).toBeNull();
         });
     });
 });

@@ -38,8 +38,10 @@ describe.each([
     function mountElement(toolId?: string) {
         const pinia = createTestingPinia({ createSpy: vi.fn });
         // The testing store stubs fetchJob, so stand in for the job it would have loaded.
+        // `useJobDetails` reads the passive `getCachedJob` getter, not `getJob` (which also
+        // triggers a fetch on a cache miss).
         // @ts-expect-error: getters are only writable on a testing store
-        useJobStore(pinia).getJob = () => (toolId ? ({ tool_id: toolId } as ShowFullJobResponse) : null);
+        useJobStore(pinia).getCachedJob = () => (toolId ? ({ tool_id: toolId } as ShowFullJobResponse) : null);
         wrapper = mount(component as object, {
             props: { jobId: "job_id", title: "Job" },
             global: {

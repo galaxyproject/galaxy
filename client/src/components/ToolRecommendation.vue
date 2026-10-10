@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faForward } from "@fortawesome/free-solid-svg-icons";
 import * as d3 from "d3";
 import { nextTick, onMounted, ref } from "vue";
 
@@ -10,6 +11,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { getShortToolId } from "@/utils/tool";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import DetailBlock from "@/components/Common/DetailBlock.vue";
 
 /** Vertical space to give each leaf row, so the tree stays readable regardless of the
  * container's measured height (which may be 0 before the SVG has any content). */
@@ -238,24 +240,26 @@ onMounted(() => {
 </script>
 
 <template>
-    <GAlert v-if="errorMessage" variant="warning" show>
-        Tool recommendations could not be loaded: {{ errorMessage }}
-    </GAlert>
-    <div v-else aria-labelledby="tool-recommendation-heading">
-        <div v-if="deprecated" class="warningmessagelarge">
-            <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
-            You have used {{ getShortToolId(props.toolId) }} tool. {{ deprecatedMessage }}
-        </div>
-        <template v-else-if="showMessage">
-            <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
-            <div>
-                You have used {{ getShortToolId(props.toolId) }} tool. For further analysis, you could try using the
-                following/recommended tools. The recommended tools are shown in the decreasing order of their scores
-                predicted using machine learning analysis on workflows. Therefore, tools at the top may be more useful
-                than the ones at the bottom. Please click on one of the following/recommended tools to open its
-                definition.
+    <DetailBlock :header-icon="faForward" title="Tool Recommendation">
+        <GAlert v-if="errorMessage" variant="warning" show>
+            Tool recommendations could not be loaded: {{ errorMessage }}
+        </GAlert>
+        <div v-else aria-labelledby="tool-recommendation-heading">
+            <div v-if="deprecated" class="warningmessagelarge">
+                <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
+                You have used {{ getShortToolId(props.toolId) }} tool. {{ deprecatedMessage }}
             </div>
-            <div ref="toolRecommendation" class="ui-tool-recommendation"></div>
-        </template>
-    </div>
+            <template v-else-if="showMessage">
+                <h2 id="tool-recommendation-heading" class="h-sm">Try one of these recommended next steps</h2>
+                <p>
+                    You have used <code>{{ getShortToolId(props.toolId) }}</code> tool. For further analysis, you could
+                    try using the following/recommended tools. The recommended tools are shown in the decreasing order
+                    of their scores predicted using machine learning analysis on workflows. Therefore, tools at the top
+                    may be more useful than the ones at the bottom. Please click on one of the following/recommended
+                    tools to open its definition.
+                </p>
+                <div ref="toolRecommendation" class="ui-tool-recommendation"></div>
+            </template>
+        </div>
+    </DetailBlock>
 </template>

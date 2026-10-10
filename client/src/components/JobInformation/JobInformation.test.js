@@ -15,6 +15,10 @@ import JobInformation from "./JobInformation.vue";
 
 vi.mock("app");
 
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+}));
+
 const JOB_ID = "test_id";
 
 const localVue = getLocalVue();
@@ -75,13 +79,16 @@ describe("JobInformation/JobInformation.vue", () => {
         // table should exist
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
-        // should contain 10 rows
-        expect(rows.length).toBe(10);
+        // should contain 7 rows
+        expect(rows.length).toBe(6);
+        const codeRows = wrapper.findAll(".code-row");
+        // should contain 3 code rows
+        expect(codeRows.length).toBe(3);
     });
 
     it("stdout and stderr should be rendered", async () => {
         ["stdout", "stderr"].forEach((std) => {
-            const label = jobInfoTable.find("#" + std);
+            const label = wrapper.find("#" + std);
             const value = label.find(".code");
             expect(value.text()).toBe(std);
         });
@@ -111,7 +118,7 @@ describe("JobInformation/JobInformation.vue", () => {
         wrapper = mount(JobInformation, {
             propsData: { jobId: JOB_ID },
             localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
         await flushPromises();
 
@@ -126,11 +133,11 @@ describe("JobInformation/JobInformation.vue", () => {
         const rendered_entries = [
             { id: "galaxy-tool-id", backend_key: "tool_id" },
             { id: "galaxy-tool-version", backend_key: "tool_version" },
-            { id: "encoded-job-id", backend_key: "id" },
             { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
         ];
         verifyValues(rendered_entries, jobInfoTable, jobResponse);
         expect(wrapper.find('td[data-description="galaxy-job-state"]').exists()).toBe(true);
+        expect(wrapper.find("#encoded-job-id").text()).toContain(JOB_ID);
     });
 });
 
@@ -151,7 +158,7 @@ describe("JobInformation/JobInformation.vue invocation lookup", () => {
         const wrapper = mount(JobInformation, {
             propsData: { jobId: JOB_ID },
             localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
         await flushPromises();
 
