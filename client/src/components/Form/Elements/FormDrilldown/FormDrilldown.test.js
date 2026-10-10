@@ -18,58 +18,61 @@ const OPTIONS = [
     { name: "b", value: "b", options: [{ name: "ba", value: "ba", options: [] }] },
 ];
 
-function mountDrilldown(multiple, value) {
+function mountDrilldown({ multiple, value }) {
     return mount(FormDrilldown, {
-        propsData: { id: "dd", value, options: OPTIONS, multiple },
-        localVue,
+        props: { id: "dd", value, options: OPTIONS, multiple },
+        global: localVue,
     });
 }
 
 async function toggle(wrapper, name, checked) {
-    const input = wrapper.find(`#drilldown-option-${name}`);
-    await input.setValue(checked);
+    await wrapper.get(`#drilldown-option-${name}`).setValue(checked);
 }
 
 describe("FormDrilldown", () => {
     it("submits only the chosen option when it has descendants", async () => {
-        const wrapper = mountDrilldown(true, []);
+        const wrapper = mountDrilldown({ multiple: true, value: [] });
         await toggle(wrapper, "a", true);
+
         expect(emittedArg(wrapper, "input")).toEqual(["a"]);
     });
 
     it("keeps other selections when adding one", async () => {
-        const wrapper = mountDrilldown(true, ["ba"]);
+        const wrapper = mountDrilldown({ multiple: true, value: ["ba"] });
         await toggle(wrapper, "ab", true);
+
         expect(emittedArg(wrapper, "input")).toEqual(["ba", "ab"]);
     });
 
-    it("removes only the deselected option", async () => {
-        const wrapper = mountDrilldown(true, ["a", "aa"]);
+    it("removes only the deselected option, keeping its selected descendants", async () => {
+        const wrapper = mountDrilldown({ multiple: true, value: ["a", "aa"] });
         await toggle(wrapper, "a", false);
+
         expect(emittedArg(wrapper, "input")).toEqual(["aa"]);
     });
 
-    it("emits a bare value when not multiple", async () => {
-        const wrapper = mountDrilldown(false, null);
+    it("emits the chosen value alone when not multiple", async () => {
+        const wrapper = mountDrilldown({ multiple: false, value: null });
         await toggle(wrapper, "aba", true);
+
         expect(emittedArg(wrapper, "input")).toBe("aba");
     });
 
     it("checks the options in the current value", () => {
-        const wrapper = mountDrilldown(true, ["aa", "ba"]);
+        const wrapper = mountDrilldown({ multiple: true, value: ["aa", "ba"] });
         expect(wrapper.find("#drilldown-option-aa").element.checked).toBe(true);
         expect(wrapper.find("#drilldown-option-ba").element.checked).toBe(true);
         expect(wrapper.find("#drilldown-option-ab").element.checked).toBe(false);
     });
 
     it("selects every value from select all", async () => {
-        const wrapper = mountDrilldown(true, []);
+        const wrapper = mountDrilldown({ multiple: true, value: [] });
         await wrapper.find(".select-all-checkbox input").setValue(true);
         expect([...emittedArg(wrapper, "input")].sort()).toEqual(["a", "aa", "ab", "aba", "b", "ba"]);
     });
 
     it("clears the value from select all", async () => {
-        const wrapper = mountDrilldown(true, ["a", "aa", "ab", "aba", "b", "ba"]);
+        const wrapper = mountDrilldown({ multiple: true, value: ["a", "aa", "ab", "aba", "b", "ba"] });
         const selectAll = wrapper.find(".select-all-checkbox input");
         expect(selectAll.element.checked).toBe(true);
         await selectAll.setValue(false);
@@ -77,12 +80,12 @@ describe("FormDrilldown", () => {
     });
 
     it("marks select all as partly checked when some values are selected", () => {
-        const wrapper = mountDrilldown(true, ["aa"]);
+        const wrapper = mountDrilldown({ multiple: true, value: ["aa"] });
         expect(wrapper.find(".select-all-checkbox input").element.indeterminate).toBe(true);
     });
 
     it("gives single-select radios one shared name for keyboard navigation", () => {
-        const wrapper = mountDrilldown(false, "ab");
+        const wrapper = mountDrilldown({ multiple: false, value: "ab" });
         const radios = wrapper.findAll("input[type=radio]");
         expect(radios.length).toBe(6);
         const names = new Set(radios.map((radio) => radio.attributes("name")));
