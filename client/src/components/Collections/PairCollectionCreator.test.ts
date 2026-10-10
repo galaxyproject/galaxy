@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -28,20 +29,8 @@ beforeEach(() => {
     );
 });
 
-function buildFakeDataset(id: string, hid: number, name: string, overrides: object = {}): HDASummary {
-    return {
-        id,
-        hid,
-        name,
-        history_content_type: "dataset",
-        deleted: false,
-        purged: false,
-        visible: true,
-        state: "ok",
-        extension: "txt",
-        history_id: "history-1",
-        ...overrides,
-    } as unknown as HDASummary;
+function buildFakeDataset(id: string, hid: number, name: string, overrides: Partial<HDASummary> = {}) {
+    return getFakeDatasetSummary({ id, hid, name, ...overrides });
 }
 
 async function mountCreator(initialElements: HDASummary[]) {

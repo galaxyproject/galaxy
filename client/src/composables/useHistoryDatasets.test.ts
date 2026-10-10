@@ -1,4 +1,5 @@
 import { getFakeHistorySummary } from "@tests/test-data";
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type EffectScope, effectScope, nextTick, ref } from "vue";
@@ -13,27 +14,8 @@ import { useHistoryDatasets } from "./useHistoryDatasets";
 
 const { server, http } = useServerMock();
 
-function buildFakeDataset(id: string, name: string): HDASummary {
-    return {
-        id,
-        dataset_id: id,
-        url: `/api/histories/history-1/contents/${id}`,
-        name,
-        history_content_type: "dataset",
-        deleted: false,
-        visible: true,
-        state: "ok",
-        extension: "txt",
-        create_time: "2024-01-01T00:00:00",
-        update_time: "2024-01-01T00:00:00",
-        history_id: "history-1",
-        hid: 1,
-        type_id: "dataset",
-        type: "file",
-        tags: [],
-        genome_build: null,
-        purged: false,
-    };
+function buildFakeDataset(id: string, name: string) {
+    return getFakeDatasetSummary({ id, name });
 }
 
 const scopes: EffectScope[] = [];
