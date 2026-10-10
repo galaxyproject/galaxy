@@ -1,14 +1,18 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it } from "vitest";
+
+import * as ExportFormStories from "./ExportForm.stories";
 
 import ExportForm from "./ExportForm.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
-enableAutoUnmount(afterEach);
+const stories = composeStories(ExportFormStories);
+const mountStory = useStoryMount();
 
 const EXPORT_BUTTON = ".export-button";
 const NAME_INPUT = "#name";
+const DIRECTORY_DESCRIPTION = "#fieldset-directory .form-text";
 
 const NAME = "export.tar.gz";
 const DIRECTORY = "gxfiles://";
@@ -16,10 +20,7 @@ const DIRECTORY = "gxfiles://";
 type ExportFormWrapper = ReturnType<typeof mountExportForm>;
 
 function mountExportForm(props: { clearInputAfterExport?: boolean } = {}) {
-    return mount(ExportForm, {
-        props,
-        global: getLocalVue(true),
-    });
+    return mountStory(stories.HistoryArchive, { props, instrumentLocalization: true }).findComponent(ExportForm);
 }
 
 async function fillInputs(wrapper: ExportFormWrapper, inputs: { name?: string; directory?: string }) {
@@ -36,6 +37,15 @@ function exportButtonAriaDisabled(wrapper: ExportFormWrapper) {
 }
 
 describe("ExportForm.vue", () => {
+    it.each([
+        { story: stories.HistoryArchive, what: "history archive" },
+        { story: stories.History, what: "history" },
+    ])("asks for a repository to export the $what to", ({ story, what }) => {
+        const wrapper = mountStory(story);
+
+        expect(wrapper.get(DIRECTORY_DESCRIPTION).text()).toBe(`Select a 'repository' to export ${what} to.`);
+    });
+
     it.each([
         { missing: "both inputs are", inputs: {} },
         { missing: "the directory is", inputs: { name: NAME } },
