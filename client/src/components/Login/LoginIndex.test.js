@@ -1,44 +1,44 @@
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import MountTarget from "./LoginIndex.vue";
+import LoginIndex from "./LoginIndex.vue";
 
 const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
 
 const SELECTORS = {
-    REGISTER_TOGGLE: "[id=register-toggle]",
+    CARD_HEADER: ".card-header",
+    REGISTER_TOGGLE: "#register-toggle",
     REGISTRATION_DISABLED: "[data-description='registration disabled message']",
 };
 
-describe("LoginIndex", () => {
-    let wrapper;
+function mountLoginIndex() {
+    return mount(LoginIndex, {
+        props: {
+            allowUserCreation: false,
+            sessionCsrfToken: "sessionCsrfToken",
+        },
+        global: localVue,
+    });
+}
 
-    beforeEach(() => {
-        wrapper = mount(MountTarget, {
-            props: {
-                allowUserCreation: false,
-                sessionCsrfToken: "sessionCsrfToken",
-            },
-            global: localVue,
-            router,
-        });
+describe("LoginIndex", () => {
+    it("asks the user to log in and says registration is disabled when user creation is off", () => {
+        const wrapper = mountLoginIndex();
+
+        expect(wrapper.find(SELECTORS.CARD_HEADER).text()).toBe("Welcome to Galaxy, please log in");
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.REGISTER_TOGGLE).exists()).toBe(false);
     });
 
-    it("switching between register and login", async () => {
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Welcome to Galaxy, please log in");
-
-        const missingToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE); // TODO: Never appears because of the GLink change
-        expect(missingToggle.exists()).toBeFalsy();
-        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
+    it("replaces the disabled message with a register link once user creation is allowed", async () => {
+        const wrapper = mountLoginIndex();
 
         await wrapper.setProps({ allowUserCreation: true });
-        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeFalsy();
-        // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
-        //       Currentlly, we confirm its existence by checking the fact that the disabled message is not there.
-        // const registerToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE);
-        // expect(registerToggle.exists()).toBeTruthy();
+
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBe(false);
+        const registerToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE);
+        expect(registerToggle.text()).toBe("Register here.");
+        expect(registerToggle.attributes("href")).toBe("/register/start");
     });
 });
