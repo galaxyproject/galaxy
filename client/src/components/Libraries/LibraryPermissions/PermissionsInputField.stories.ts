@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import { expect, within } from "storybook/test";
 
 import { http } from "@/api/client/__mocks__/http";
 
@@ -39,6 +40,22 @@ export const NoRolesChosen: Story = {
         initial_value: [],
         alert: "User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>.",
     },
+    play: async ({ canvas, step }) => {
+        await step("See the note on who can access the library, its key words in bold", async () => {
+            const note = await canvas.findByRole("status");
+            await expect(note).toHaveTextContent(
+                /^User with any of these roles can access this library\. If there are no access roles set on the library it is considered unrestricted\.$/,
+            );
+            await expect(
+                within(note)
+                    .getAllByRole("strong")
+                    .map((bold) => bold.textContent),
+            ).toEqual(["any", "unrestricted"]);
+        });
+    },
+
+    // TODO a11y: color-contrast (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
 
 /** The manage picker with two roles already granted. */
@@ -50,4 +67,7 @@ export const RolesChosen: Story = {
         initial_value: ROLES.slice(1).map(({ id, name }) => ({ id, name })),
         alert: "User with <strong>any</strong> of these roles can manage this library.",
     },
+
+    // TODO a11y: tabindex (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
