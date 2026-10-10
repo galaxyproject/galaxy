@@ -1,63 +1,45 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeDatasetSummary } from "@tests/test-data/datasets";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HDASummary } from "@/api";
-import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
+
+import * as PairCollectionCreatorStories from "./PairCollectionCreator.stories";
+import { changeHistory } from "./test-utils";
 
 import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
-import PairCollectionCreator from "./PairCollectionCreator.vue";
 
 vi.mock("@/composables/toast");
 
 const toastError = vi.mocked(Toast.error);
 
-const localVue = getLocalVue(true);
+const stories = composeStories(PairCollectionCreatorStories);
+const mountStory = useStoryMount();
 
-const { server, http } = useServerMock();
+const [FORWARD, REVERSE] = stories.ReadPairInHistory.args.history as [HDASummary, HDASummary];
+
 beforeEach(() => {
     vi.clearAllMocks();
-    server.use(
-        http.get("/api/configuration", ({ response }) => response(200).json({})),
-        http.get("/api/genomes", ({ response }) => response(200).json([])),
-    );
 });
 
-function buildFakeDataset(id: string, hid: number, name: string, overrides: Partial<HDASummary> = {}) {
-    return getFakeDatasetSummary({ id, hid, name, ...overrides });
-}
-
-async function mountCreator(initialElements: HDASummary[]) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
-    setActivePinia(pinia);
-
-    const wrapper = mount(PairCollectionCreator, {
-        props: {
-            historyId: "history-1",
-            initialElements,
-            mode: "modal",
-        },
-        global: withPlugins(localVue, pinia),
-    });
-
+async function mountCreator() {
+    const wrapper = mountStory(stories.ReadPairInHistory);
     await flushPromises();
     return wrapper;
 }
 
 /** The forward/reverse slots as ids - an empty slot renders no view at all. */
-function pairedIds(wrapper: ReturnType<typeof mount>): string[] {
+function pairedIds(wrapper: VueWrapper): string[] {
     return wrapper
         .findAllComponents(FixedIdentifierDatasetCollectionElementView)
         .map((slot) => (slot.props("element") as HDASummary).id);
 }
 
-async function clickDataset(wrapper: ReturnType<typeof mount>, id: string) {
+async function clickDataset(wrapper: VueWrapper, id: string) {
     const view = wrapper
         .findAllComponents(DatasetCollectionElementView)
         .find((candidate) => (candidate.props("element") as HDASummary).id === id);
@@ -67,49 +49,47 @@ async function clickDataset(wrapper: ReturnType<typeof mount>, id: string) {
 
 describe("PairCollectionCreator", () => {
     it("keeps both sides of the pair when initialElements changes", async () => {
-        const wrapper = await mountCreator([buildFakeDataset("a", 1, "one"), buildFakeDataset("b", 2, "two")]);
+        const wrapper = await mountCreator();
 
-        await clickDataset(wrapper, "a");
-        await clickDataset(wrapper, "b");
-        expect(pairedIds(wrapper)).toEqual(["a", "b"]);
+        await clickDataset(wrapper, FORWARD.id);
+        await clickDataset(wrapper, REVERSE.id);
+        expect(pairedIds(wrapper)).toEqual([FORWARD.id, REVERSE.id]);
 
         // same datasets, new prop identity (e.g. a history poll tick)
-        await wrapper.setProps({ initialElements: [buildFakeDataset("a", 1, "one"), buildFakeDataset("b", 2, "two")] });
-        await flushPromises();
+        await changeHistory(wrapper, "Refresh history");
 
-        expect(pairedIds(wrapper)).toEqual(["a", "b"]);
+        expect(pairedIds(wrapper)).toEqual([FORWARD.id, REVERSE.id]);
         expect(toastError).not.toHaveBeenCalled();
     });
 
     it("empties the slot whose dataset left the history and says it was removed", async () => {
-        const a = buildFakeDataset("a", 1, "one");
-        const wrapper = await mountCreator([a, buildFakeDataset("b", 2, "two")]);
+        const wrapper = await mountCreator();
 
-        await clickDataset(wrapper, "a");
-        await clickDataset(wrapper, "b");
+        await clickDataset(wrapper, FORWARD.id);
+        await clickDataset(wrapper, REVERSE.id);
 
-        await wrapper.setProps({ initialElements: [a] });
-        await flushPromises();
+        await changeHistory(wrapper, `Delete ${REVERSE.name}`);
 
-        expect(pairedIds(wrapper)).toEqual(["a"]);
+        expect(pairedIds(wrapper)).toEqual([FORWARD.id]);
         expect(toastError).toHaveBeenCalledTimes(1);
-        expect(toastError).toHaveBeenCalledWith("2: two has been removed from the collection", "Invalid element");
+        expect(toastError).toHaveBeenCalledWith(
+            "2: SRR1553425_2 has been removed from the collection",
+            "Invalid element",
+        );
     });
 
     it("empties the slot whose dataset is no longer usable and says why", async () => {
-        const a = buildFakeDataset("a", 1, "one");
-        const wrapper = await mountCreator([a, buildFakeDataset("b", 2, "two")]);
+        const wrapper = await mountCreator();
 
-        await clickDataset(wrapper, "a");
-        await clickDataset(wrapper, "b");
+        await clickDataset(wrapper, FORWARD.id);
+        await clickDataset(wrapper, REVERSE.id);
 
-        await wrapper.setProps({ initialElements: [a, buildFakeDataset("b", 2, "two", { state: "error" })] });
-        await flushPromises();
+        await changeHistory(wrapper, `Fail ${REVERSE.name}`);
 
-        expect(pairedIds(wrapper)).toEqual(["a"]);
+        expect(pairedIds(wrapper)).toEqual([FORWARD.id]);
         expect(toastError).toHaveBeenCalledTimes(1);
         expect(toastError).toHaveBeenCalledWith(
-            "2: two has errored, is paused, or is not accessible and is not a valid element for this collection",
+            "2: SRR1553425_2 has errored, is paused, or is not accessible and is not a valid element for this collection",
             "Invalid element",
         );
     });
