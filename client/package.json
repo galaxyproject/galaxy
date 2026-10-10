@@ -187,7 +187,8 @@
     "test:coverage": "vitest run --coverage",
     "eslint-precommit": "eslint --quiet src packages/ui/src",
     "eslint": "eslint src packages/ui/src",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "check-style-imports": "node scripts/check-style-imports.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
