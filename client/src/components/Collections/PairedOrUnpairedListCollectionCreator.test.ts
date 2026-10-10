@@ -42,7 +42,6 @@ const mountStory = useStoryMount();
 
 const [FORWARD, REVERSE] = stories.ReadPairInHistory.args.history as [HDASummary, HDASummary];
 const [NEXT_RUN_FORWARD] = stories.ReadPairInHistory.args.arriving as [HDASummary];
-const [FORWARD_UPLOAD, REVERSE_UPLOAD] = stories.ReadPairStillUploading.args.arriving as [HDASummary, HDASummary];
 const [AWAITING_FORWARD, CONTROL_FORWARD, CONTROL_REVERSE] = stories.ForwardReadsAwaitingMate.args.history as [
     HDASummary,
     HDASummary,
@@ -76,24 +75,13 @@ function gridContext(wrapper: VueWrapper) {
     };
 }
 
+// Pairing on open and as mates arrive, click-pairing, the toasts' text and discarding are played in
+// the stories through the real grid. What stays here: the unlink click the browser drops, the pairing
+// store state no user sees, row ids, toast variants, and the dismiss link Selenium selects by its
+// `data-description`.
 describe("PairedOrUnpairedListCollectionCreator", () => {
-    it("auto-pairs two elements whose names match a common filter (illumina _1/_2) on mount", async () => {
-        const wrapper = await mountCreator(stories.ReadPairInHistory);
-
-        expect(gridRowIds(wrapper)).toEqual([pairRow(FORWARD)]);
-    });
-
-    it("auto-pairs mates that arrive in separate history updates", async () => {
-        const wrapper = await mountCreator(stories.ReadPairStillUploading);
-        await changeHistory(wrapper, `Add ${FORWARD_UPLOAD.name}`);
-        expect(gridRowIds(wrapper)).toEqual([singleRow(FORWARD_UPLOAD)]);
-
-        await changeHistory(wrapper, `Add ${REVERSE_UPLOAD.name}`);
-
-        expect(gridRowIds(wrapper)).toEqual([pairRow(FORWARD_UPLOAD)]);
-    });
-
     it("does not re-pair mates the user unpaired when another element arrives", async () => {
+        // The unlink icon does nothing in the browser (BUGS_FOUND), so this calls its callback.
         const wrapper = await mountCreator(stories.ReadPairInHistory);
         expect(gridRowIds(wrapper)).toEqual([pairRow(FORWARD)]);
 
