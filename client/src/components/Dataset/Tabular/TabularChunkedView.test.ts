@@ -1,7 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { VisibleIntersectionObserver } from "@tests/vitest/visibleIntersectionObserver";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import axios from "axios";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import TabularChunkedView from "./TabularChunkedView.vue";
 
@@ -10,19 +11,10 @@ vi.mock("@/onload/loadConfig", () => ({
     getAppRoot: () => "/",
 }));
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
+afterEach(() => vi.unstubAllGlobals());
 
 const EOF_CHUNK = { data: { ck_data: "", offset: 0, data_line_offset: 0 } };
-
-// jsdom has no IntersectionObserver; report every observed element as visible.
-class VisibleIntersectionObserver {
-    constructor(private callback: IntersectionObserverCallback) {}
-    observe(target: Element) {
-        this.callback([{ isIntersecting: true, time: 1, target } as IntersectionObserverEntry], this as never);
-    }
-    unobserve() {}
-    disconnect() {}
-}
 
 function mountChunkedView(fileExt: string, ckData?: string) {
     if (ckData !== undefined) {
@@ -31,8 +23,8 @@ function mountChunkedView(fileExt: string, ckData?: string) {
         });
     }
     return shallowMount(TabularChunkedView as object, {
-        localVue,
-        propsData: {
+        global: getLocalVue(),
+        props: {
             options: {
                 id: "dataset-id",
                 file_ext: fileExt,
@@ -54,16 +46,13 @@ describe("TabularChunkedView", () => {
         vi.mocked(axios.get).mockReset().mockResolvedValue(EOF_CHUNK);
     });
 
-    it("hides the table header for generic tabular datasets", () => {
-        const wrapper = mountChunkedView("tabular");
+    it.each([
+        { fileExt: "tabular", hideHeader: true },
+        { fileExt: "csv", hideHeader: false },
+    ])("sets hideHeader to $hideHeader for $fileExt datasets", ({ fileExt, hideHeader }) => {
+        const wrapper = mountChunkedView(fileExt);
 
-        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(true);
-    });
-
-    it("keeps the table header for CSV datasets", () => {
-        const wrapper = mountChunkedView("csv");
-
-        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(false);
+        expect(wrapper.findComponent({ name: "GTable" }).props("hideHeader")).toBe(hideHeader);
     });
 
     it("loads chunks until the end of the dataset while the view is not filled", async () => {
@@ -77,6 +66,7 @@ describe("TabularChunkedView", () => {
             vi.mocked(axios.get).mock.calls.map(([, config]) => (config?.params as { offset: number }).offset),
         ).toEqual([0, 8, 12]);
         await vi.waitFor(() => expect(wrapper.findComponent({ name: "GTable" }).props("items")).toHaveLength(3));
+        // Wait beyond the infinite-scroll retry interval to verify that the terminal state stops fetching.
         await new Promise((resolve) => setTimeout(resolve, 250));
         expect(axios.get).toHaveBeenCalledTimes(3);
     });
@@ -86,6 +76,7 @@ describe("TabularChunkedView", () => {
         const wrapper = mountChunkedView("tabular");
 
         await vi.waitFor(() => expect(wrapper.text()).toContain("chunk request failed"));
+        // Wait beyond the infinite-scroll retry interval to verify that the terminal state stops fetching.
         await new Promise((resolve) => setTimeout(resolve, 250));
         expect(axios.get).toHaveBeenCalledTimes(1);
     });
