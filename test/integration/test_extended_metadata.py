@@ -56,6 +56,7 @@ TEST_TOOL_IDS = [
     "all_output_types",
     "discover_sort_by",
     "discover_unknown_ext",
+    "discover_format_tokens",
     "create_directory_index",
 ]
 
