@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth, suppressDebugConsole } from "@tests/vitest/helpers";
+import { getLocalVue, nth, suppressDebugConsole, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { h } from "vue";
+import { h, nextTick } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -14,6 +13,7 @@ import sampleRunData1 from "./testdata/run1.json";
 
 import WorkflowRunForm from "./WorkflowRunForm.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import FormCard from "@/components/Form/FormCard.vue";
 
 vi.mock("./services", () => ({
     invokeWorkflow: vi.fn(),
@@ -33,30 +33,35 @@ vi.mock("@/components/Common/ButtonSpinner.vue", () => stub("ButtonSpinner", ["d
 vi.mock("@/components/Workflow/Run/OnCompleteActions.vue", () => stub("OnCompleteActions", ["value"]));
 vi.mock("@/components/Workflow/Run/WorkflowCredentials.vue", () => stub("WorkflowCredentials", ["toolIdentifiers"]));
 
-const globalConfig = getLocalVue();
+const localVue = getLocalVue();
 
-const HISTORY_ID = "8f7a155755f10e73";
+// run1.json has input steps 0 and 4 and tool steps 1-3.
+const RUN1_WORKFLOW_ID = "ebab00128497f9d7";
+const RUN1_HISTORY_ID = "8f7a155755f10e73";
+// The only stored history, so the store falls back to it as the current one.
+const CURRENT_HISTORY_ID = "current_history_id";
 
-function mountForm(canMutateCurrentHistory = true) {
+const SELECTORS = {
+    FORM: ".workflow-expanded-form",
+    IMMUTABLE_HISTORY_WARNING: ".alert-warning",
+};
+
+function mountForm({ canMutateCurrentHistory = true } = {}) {
     const pinia = createTestingPinia({
         createSpy: vi.fn,
         initialState: {
             userStore: { currentUser: { id: "user_id" } },
             historyStore: {
-                storedHistories: { current_history_id: { id: "current_history_id", name: "Current" } },
+                storedHistories: { [CURRENT_HISTORY_ID]: { id: CURRENT_HISTORY_ID, name: "Current" } },
             },
         },
     });
-    setActivePinia(pinia);
-    return mount(WorkflowRunForm as object, {
+    return mount(WorkflowRunForm, {
         props: {
-            model: new WorkflowRunModel(JSON.parse(JSON.stringify(sampleRunData1))),
+            model: new WorkflowRunModel(structuredClone(sampleRunData1)),
             canMutateCurrentHistory,
         },
-        global: {
-            ...globalConfig,
-            plugins: [...(globalConfig.plugins ?? []), pinia],
-        },
+        global: withPlugins(localVue, pinia),
     });
 }
 
@@ -67,7 +72,12 @@ function findStep(wrapper: VueWrapper, index: string) {
     ].find((step) => step.props("model").index === index)!;
 }
 
-function run(wrapper: VueWrapper) {
+function findCardForm(wrapper: VueWrapper, title: string) {
+    const card = wrapper.findAllComponents(FormCard).find((formCard) => formCard.props("title") === title)!;
+    return card.findComponent({ name: "FormDisplay" });
+}
+
+function clickRun(wrapper: VueWrapper) {
     wrapper.findComponent({ name: "ButtonSpinner" }).vm.$emit("onClick");
     return flushPromises();
 }
@@ -81,24 +91,30 @@ describe("WorkflowRunForm", () => {
 
     it("renders a form per workflow step", () => {
         const wrapper = mountForm();
+
         const toolSteps = wrapper.findAllComponents({ name: "WorkflowRunDefaultStep" });
         const inputSteps = wrapper.findAllComponents({ name: "WorkflowRunInputStep" });
         expect(toolSteps.map((step) => step.props("model").index)).toEqual(["1", "2", "3"]);
         expect(inputSteps.map((step) => step.props("model").index)).toEqual(["0", "4"]);
-        expect(nth(toolSteps, 0).props("historyId")).toBe("current_history_id");
+        expect(nth(toolSteps, 0).props("historyId")).toBe(CURRENT_HISTORY_ID);
         expect(nth(inputSteps, 0).props("validationScrollTo")).toEqual([]);
     });
 
-    it("renders nothing without a current history", async () => {
+    it("stops rendering when the current history goes away", async () => {
         const wrapper = mountForm();
+        expect(wrapper.find(SELECTORS.FORM).exists()).toBe(true);
+
         useHistoryStore().storedHistories = {};
-        await wrapper.vm.$nextTick();
-        expect(wrapper.find(".workflow-expanded-form").exists()).toBe(false);
+        await nextTick();
+
+        expect(wrapper.find(SELECTORS.FORM).exists()).toBe(false);
     });
 
-    it("switches to the simple form", async () => {
+    it("asks to switch to the simple form", async () => {
         const wrapper = mountForm();
+
         await wrapper.findComponent(GButton).trigger("click");
+
         expect(wrapper.emitted("showSimple")).toHaveLength(1);
     });
 
@@ -108,8 +124,10 @@ describe("WorkflowRunForm", () => {
             input: null,
             "seed_source|seed": "${wf_param}",
         });
-        nth(wrapper.findAllComponents({ name: "FormDisplay" }), 0).vm.$emit("onChange", { wf_param: "42" });
-        await wrapper.vm.$nextTick();
+
+        findCardForm(wrapper, "Workflow Parameters").vm.$emit("onChange", { wf_param: "42" });
+        await nextTick();
+
         expect(findStep(wrapper, "3").props("replaceParams")).toEqual({ input: null, "seed_source|seed": "42" });
     });
 
@@ -120,12 +138,14 @@ describe("WorkflowRunForm", () => {
         findStep(wrapper, "3").vm.$emit("onChange", "3", { num_lines: "5", input: { values: [] } });
         wrapper.findComponent({ name: "FormElement" }).vm.$emit("input", true);
         wrapper.findComponent({ name: "OnCompleteActions" }).vm.$emit("input", [{ send_notification: {} }]);
-        await wrapper.vm.$nextTick();
+        await nextTick();
         expect(wrapper.findComponent({ name: "FormElement" }).props("value")).toBe(true);
-        await run(wrapper);
-        expect(invokeWorkflow).toHaveBeenCalledWith("ebab00128497f9d7", {
+
+        await clickRun(wrapper);
+
+        expect(invokeWorkflow).toHaveBeenCalledWith(RUN1_WORKFLOW_ID, {
             new_history_name: null,
-            history_id: HISTORY_ID,
+            history_id: RUN1_HISTORY_ID,
             resource_params: undefined,
             replacement_params: {},
             use_cached_job: true,
@@ -140,17 +160,20 @@ describe("WorkflowRunForm", () => {
         expect(wrapper.emitted("submissionSuccess")).toEqual([[[{ id: "invocation_id" }]]]);
     });
 
-    it("sends results to a new history when requested", async () => {
-        const wrapper = mountForm(false);
-        const button = wrapper.findComponent({ name: "ButtonSpinner" });
-        expect(wrapper.find(".alert-warning").exists()).toBe(true);
-        expect(button.props("disabled")).toBe(true);
-        nth(wrapper.findAllComponents({ name: "FormDisplay" }), 1).vm.$emit("onChange", { "new_history|name": "New" });
-        await wrapper.vm.$nextTick();
-        expect(button.props("disabled")).toBe(false);
-        await run(wrapper);
+    it("sends results to a new history when the current one is immutable", async () => {
+        const wrapper = mountForm({ canMutateCurrentHistory: false });
+        const runButton = wrapper.findComponent({ name: "ButtonSpinner" });
+        expect(wrapper.find(SELECTORS.IMMUTABLE_HISTORY_WARNING).exists()).toBe(true);
+        expect(runButton.props("disabled")).toBe(true);
+
+        findCardForm(wrapper, "History Options").vm.$emit("onChange", { "new_history|name": "New" });
+        await nextTick();
+        expect(runButton.props("disabled")).toBe(false);
+
+        await clickRun(wrapper);
+
         expect(invokeWorkflow).toHaveBeenCalledWith(
-            "ebab00128497f9d7",
+            RUN1_WORKFLOW_ID,
             expect.objectContaining({ new_history_name: "New", history_id: null }),
         );
     });
@@ -159,7 +182,9 @@ describe("WorkflowRunForm", () => {
         const wrapper = mountForm();
         findStep(wrapper, "0").vm.$emit("onValidation", "0", null);
         findStep(wrapper, "3").vm.$emit("onValidation", "3", ["num_lines", "Required"]);
-        await run(wrapper);
+
+        await clickRun(wrapper);
+
         expect(invokeWorkflow).not.toHaveBeenCalled();
         expect(findStep(wrapper, "3").props("validationScrollTo")).toEqual(["num_lines", "Required"]);
         expect(findStep(wrapper, "0").props("validationScrollTo")).toEqual([]);
@@ -170,7 +195,9 @@ describe("WorkflowRunForm", () => {
             response: { data: { err_data: { 3: { num_lines: "Invalid value" } } } },
         });
         const wrapper = mountForm();
-        await run(wrapper);
+
+        await clickRun(wrapper);
+
         expect(findStep(wrapper, "3").props("validationScrollTo")).toEqual(["num_lines", "Invalid value"]);
         expect(wrapper.emitted("submissionError")).toBeUndefined();
     });
@@ -179,7 +206,9 @@ describe("WorkflowRunForm", () => {
         const error = new Error("Server unavailable");
         vi.mocked(invokeWorkflow).mockRejectedValue(error);
         const wrapper = mountForm();
-        await run(wrapper);
+
+        await clickRun(wrapper);
+
         expect(wrapper.emitted("submissionError")).toEqual([[error]]);
     });
 });
