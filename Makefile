@@ -249,6 +249,9 @@ release-create-point: release-create ## Create a point release
 mypy:
 	cd lib && mypy . ../test
 
+ty:
+	uvx --with tox-uv tox -e ty
+
 .PHONY: help
 
 help:

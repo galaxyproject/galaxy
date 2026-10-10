@@ -181,7 +181,7 @@ Run tests from the package directory::
     uv run pytest tests/seleniumtests/test_has_driver.py::TestElementFinding -v
 
     # Type checking
-    make mypy
+    make ty
 
 .. warning::
     Always run pytest from the package directory (``packages/selenium/``), not from the
@@ -318,7 +318,7 @@ Always use ``uv run`` from the package directory::
     uv run pytest tests/seleniumtests/test_has_driver.py -v
 
     # Type checking
-    make mypy
+    make ty
 
     # Linting
     uv run ruff check .
