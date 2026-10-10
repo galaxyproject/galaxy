@@ -1,5 +1,6 @@
 import { emittedArg } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import axios from "axios";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -185,5 +186,18 @@ describe("what counts as a change to the visualization", () => {
         await settle();
         expect(emittedArg(wrapper, "change").visualization_title).toBe("renamed");
         expect(wrapper.emitted("saved")).toEqual([[true]]);
+    });
+});
+
+describe("a plugin that cannot be loaded", () => {
+    it("shows why the visualization is not available instead of the frame", async () => {
+        vi.mocked(axios.get).mockRejectedValueOnce(new Error("Request failed with status code 404"));
+        const wrapper = mountFrame({ name: "missing" });
+        await flushPromises();
+        expect(wrapper.find("iframe").exists()).toBe(false);
+        expect(wrapper.text()).toBe(
+            "Visualization 'missing' not available: Error: Request failed with status code 404.",
+        );
+        expect(wrapper.emitted("load")).toBeFalsy();
     });
 });
