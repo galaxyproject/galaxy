@@ -1,28 +1,18 @@
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { emittedArg } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it } from "vitest";
+
+import * as FormDrilldownStories from "./FormDrilldown.stories";
 
 import FormDrilldown from "./FormDrilldown.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(FormDrilldownStories);
+const mountStory = useStoryMount();
 
-const OPTIONS = [
-    {
-        name: "a",
-        value: "a",
-        options: [
-            { name: "aa", value: "aa", options: [] },
-            { name: "ab", value: "ab", options: [{ name: "aba", value: "aba", options: [] }] },
-        ],
-    },
-    { name: "b", value: "b", options: [{ name: "ba", value: "ba", options: [] }] },
-];
-
-function mountDrilldown({ multiple, value }) {
-    return mount(FormDrilldown, {
-        props: { id: "dd", value, options: OPTIONS, multiple },
-        global: localVue,
-    });
+/** Mounts a story, whose harness passes every emitted `input` back as `value`, as a v-model parent does. */
+function mountDrilldown(story) {
+    return mountStory(story).getComponent(FormDrilldown);
 }
 
 async function toggle(wrapper, name, checked) {
@@ -31,30 +21,30 @@ async function toggle(wrapper, name, checked) {
 
 describe("FormDrilldown", () => {
     it("submits only the chosen option when it has descendants", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: [] });
-        await toggle(wrapper, "a", true);
+        const wrapper = mountDrilldown(stories.NothingSelected);
+        await toggle(wrapper, "Bacteria", true);
 
-        expect(emittedArg(wrapper, "input")).toEqual(["a"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["bacteria"]);
     });
 
     it("keeps other selections when adding one", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["ba"] });
-        await toggle(wrapper, "ab", true);
+        const wrapper = mountDrilldown(stories.NestedOptionSelected);
+        await toggle(wrapper, "Proteobacteria", true);
 
-        expect(emittedArg(wrapper, "input")).toEqual(["ba", "ab"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["euryarchaeota", "proteobacteria"]);
     });
 
     it("removes only the deselected option, keeping its selected descendants", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["a", "aa"] });
-        await toggle(wrapper, "a", false);
+        const wrapper = mountDrilldown(stories.ParentAndChildSelected);
+        await toggle(wrapper, "Bacteria", false);
 
-        expect(emittedArg(wrapper, "input")).toEqual(["aa"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["firmicutes"]);
     });
 
     it("emits the chosen value alone when not multiple", async () => {
-        const wrapper = mountDrilldown({ multiple: false, value: null });
-        await toggle(wrapper, "aba", true);
+        const wrapper = mountDrilldown(stories.SingleChoice);
+        await toggle(wrapper, "Escherichia", true);
 
-        expect(emittedArg(wrapper, "input")).toBe("aba");
+        expect(emittedArg(wrapper, "input")).toBe("escherichia");
     });
 });
