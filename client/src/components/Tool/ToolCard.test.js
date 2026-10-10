@@ -10,10 +10,8 @@ const stories = composeStories(ToolCardStories);
 const mountStory = useStoryMount();
 
 const SELECTORS = {
-    TITLE: "h1",
     DESCRIPTION: "span[itemprop='description']",
     OPTIONS_DROPDOWN: ".tool-dropdown",
-    OPTION: ".dropdown-item",
     BACKDROP: ".portlet-backdrop",
     NEWER_VERSION_BADGE: "[data-description='newer tool version']",
     RUN_TOOL_BUTTON: "[data-description='run tool button']",
@@ -27,19 +25,16 @@ async function mountToolCard(story, options) {
 }
 
 describe("ToolCard", () => {
-    it("shows the tool's title and description", async () => {
+    it("marks up the tool's description", async () => {
         const wrapper = await mountToolCard(stories.LatestVersion);
 
-        expect(wrapper.find(SELECTORS.TITLE).text()).toBe("FastQC");
         expect(wrapper.find(SELECTORS.DESCRIPTION).text()).toBe("Read Quality reports");
     });
 
-    it("offers an admin five tool options", async () => {
+    it("titles the tool options menu", async () => {
         const wrapper = await mountToolCard(stories.LatestVersion);
 
-        const options = wrapper.find(SELECTORS.OPTIONS_DROPDOWN);
-        expect(options.attributes("title")).toBe("Options");
-        expect(options.findAll(SELECTORS.OPTION)).toHaveLength(5);
+        expect(wrapper.find(SELECTORS.OPTIONS_DROPDOWN).attributes("title")).toBe("Options");
     });
 
     it("covers the card with a backdrop while disabled", async () => {
@@ -51,14 +46,11 @@ describe("ToolCard", () => {
         expect(wrapper.findAll(SELECTORS.BACKDROP)).toHaveLength(1);
     });
 
-    it("shows a newer version badge that navigates to the latest version", async () => {
+    it("navigates to the latest version from the newer version badge", async () => {
         const router = createTestRouter();
         const wrapper = await mountToolCard(stories.NewerVersionAvailable, { router });
 
-        const badge = wrapper.find(SELECTORS.NEWER_VERSION_BADGE);
-        expect(badge.text()).toBe("Newer version available");
-
-        await badge.trigger("click");
+        await wrapper.find(SELECTORS.NEWER_VERSION_BADGE).trigger("click");
         await flushPromises();
 
         expect(router.currentRoute.value.fullPath).toBe(
@@ -77,15 +69,5 @@ describe("ToolCard", () => {
             expect(toggle.attributes("aria-expanded")).toBe("true");
             await toggle.trigger("keydown", { key: "Escape" });
         }
-    });
-
-    it.each([
-        { scenario: "the latest version in its lineage", story: "LatestVersion" },
-        { scenario: "a single-version tool", story: "SingleVersion" },
-    ])("shows no newer version badge for $scenario", async ({ story }) => {
-        const wrapper = await mountToolCard(stories[story]);
-        expect(wrapper.find(SELECTORS.TITLE).text()).toBe("FastQC");
-
-        expect(wrapper.find(SELECTORS.NEWER_VERSION_BADGE).exists()).toBe(false);
     });
 });

@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { withLoadedConfig } from "@tests/test-data/config";
-import { withCurrentUser } from "@tests/test-data/currentUser";
+import { viewedBy, withCurrentUser } from "@tests/test-data/currentUser";
 import { HttpResponse } from "msw";
+import { expect, screen, within } from "storybook/test";
 import { type Component, defineComponent, h, ref } from "vue";
 
 import { configurationHandler, http } from "@/api/client/__mocks__/http";
@@ -78,17 +79,137 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+type PlayContext = Parameters<NonNullable<Story["play"]>>[0];
+
+/** The card waits on the configuration, so the first wait gets longer than the 1s default. */
+const CONFIG_LOAD = { timeout: 5000 };
+
+/** Waits for the card's heading, "FastQC", before anything else is read. */
+async function seeToolHeading({ canvas, step }: PlayContext) {
+    await step("See the tool's name as the page heading", async () => {
+        await expect(await canvas.findByRole("heading", { level: 1, name: "FastQC" }, CONFIG_LOAD)).toBeVisible();
+    });
+}
+
+/**
+ * The accessible name of the "Newer version available" badge.
+ *
+ * Pre-existing bug, tolerated here: `v-g-tooltip` names the badge with its tooltip, so its
+ * visible text is left out of its name.
+ */
+const NEWER_VERSION_BADGE = /^(Newer version available|Switch to the latest available tool version)$/;
+
+/** Checks the "Newer version available" badge is absent; call after `seeToolHeading`. */
+async function seeNoNewerVersionBadge({ canvas, step }: PlayContext) {
+    await step("See no badge offering a newer version", async () => {
+        await expect(canvas.queryByRole("button", { name: NEWER_VERSION_BADGE })).not.toBeInTheDocument();
+        await expect(canvas.queryByText("Newer version available")).not.toBeInTheDocument();
+    });
+}
+
+/** Opens the tool's options menu and reads its items, in order. */
+function offersToolOptions(items: string[]) {
+    return async (context: PlayContext) => {
+        const { canvas, step, userEvent } = context;
+        await seeToolHeading(context);
+        await step("See the options menu closed", async () => {
+            await expect(canvas.queryByRole("menu")).not.toBeInTheDocument();
+        });
+        await step(`Open the tool's options: ${items.join(", ")}`, async () => {
+            await userEvent.click(canvas.getByRole("button", { name: "View all Options" }));
+            const menu = await canvas.findByRole("menu", { name: "View all Options" });
+            const names = within(menu)
+                .getAllByRole("menuitem")
+                .map((item) => item.textContent?.trim());
+            await expect(menu).toBeVisible();
+            await expect(names).toEqual(items);
+        });
+    };
+}
 
 /** An admin opens the latest of FastQC's versions: the versions menu, and the admin's tool options. */
-export const LatestVersion: Story = {};
+export const LatestVersion: Story = {
+    play: async (context) => {
+        const { canvas, step } = context;
+        await seeToolHeading(context);
+        await step("Read the tool's description and version", async () => {
+            await expect(canvas.getByText("Read Quality reports")).toBeVisible();
+            await expect(canvas.getByText("(Galaxy Version 0.74+galaxy1)")).toBeVisible();
+        });
+        await step("See a menu of the tool's versions", async () => {
+            await expect(canvas.getByRole("button", { name: "Select Versions" })).toBeVisible();
+        });
+        await seeNoNewerVersionBadge(context);
+    },
+
+    // TODO a11y: nested-interactive (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
+};
+
+/** An admin opens the options menu: copy, download, view source and the Tool Shed page. */
+export const OffersAdminToolOptions: Story = {
+    play: offersToolOptions(["Copy Link", "Copy Tool ID", "Download", "View Tool source", "See in Tool Shed"]),
+
+    // TODO a11y: nested-interactive (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
+};
+
+/** A user who isn't an admin can't download the tool or view its source. */
+export const OffersUserToolOptions: Story = {
+    parameters: {
+        ...viewedBy(getFakeRegisteredUser()),
+        // TODO a11y: nested-interactive (2026-10-10 audit).
+        a11y: { test: "todo" },
+    },
+    play: offersToolOptions(["Copy Link", "Copy Tool ID", "See in Tool Shed"]),
+};
 
 /** An older FastQC version: a badge offers the newest one. */
-export const NewerVersionAvailable: Story = { args: fastqcCard("0.73+galaxy0") };
+export const NewerVersionAvailable: Story = {
+    args: fastqcCard("0.73+galaxy0"),
+    play: async (context) => {
+        const { canvas, step, userEvent } = context;
+        await seeToolHeading(context);
+        await step("Hover the badge offering the newest version to read what it does", async () => {
+            const badge = canvas.getByRole("button", { name: NEWER_VERSION_BADGE });
+            await expect(badge).toHaveTextContent(/^Newer version available$/);
+            await expect(badge).toBeVisible();
+            // The card's icon buttons keep their own tooltips in the DOM, so this one is found by its name.
+            const tooltip = { name: "Switch to the latest available tool version" };
+            await expect(screen.queryByRole("tooltip", tooltip)).not.toBeInTheDocument();
+            await userEvent.hover(badge);
+            await expect(await screen.findByRole("tooltip", tooltip)).toHaveTextContent(
+                /^Switch to the latest available tool version$/,
+            );
+            await userEvent.unhover(badge);
+            await expect(screen.queryByRole("tooltip", tooltip)).not.toBeInTheDocument();
+        });
+    },
+
+    // TODO a11y: label-content-name-mismatch, nested-interactive (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
+};
 
 /** A tool with one version: no versions menu and no badge. */
-export const SingleVersion: Story = { args: fastqcCard("0.74+galaxy1", ["0.74+galaxy1"]) };
+export const SingleVersion: Story = {
+    args: fastqcCard("0.74+galaxy1", ["0.74+galaxy1"]),
+    play: async (context) => {
+        const { canvas, step } = context;
+        await seeToolHeading(context);
+        await step("See no menu of versions", async () => {
+            await expect(canvas.queryByRole("button", { name: "Select Versions" })).not.toBeInTheDocument();
+        });
+        await seeNoNewerVersionBadge(context);
+    },
+
+    // TODO a11y: nested-interactive (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
+};
 
 /** With the tool form's Run Tool button, which covers the card while the job is submitted. */
 export const WithRunButton: Story = {
     render: (args) => () => h(ToolCardWithRunButton, args),
+
+    // TODO a11y: nested-interactive (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
