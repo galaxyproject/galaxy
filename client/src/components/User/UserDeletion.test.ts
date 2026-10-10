@@ -1,51 +1,55 @@
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { clickModalButton } from "@/components/BaseComponents/test-utils";
-import { useUserStore } from "@/stores/userStore";
 import { userLogoutClient } from "@/utils/logout";
 
-import UserDeletion from "./UserDeletion.vue";
+import * as UserDeletionStories from "./UserDeletion.stories";
 
 vi.mock("@/utils/logout", () => ({
     userLogoutClient: vi.fn(),
 }));
 
-const localVue = getLocalVue();
+const stories = composeStories(UserDeletionStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
 
-enableAutoUnmount(afterEach);
-
-const TEST_USER_ID = "myTestUserId";
-const TEST_EMAIL = `${TEST_USER_ID}@test.com`;
+// The signed-in user in the stories.
+const TEST_USER_ID = "f2db41e1fa331b3e";
+const TEST_EMAIL = "alice@example.org";
 const DELETE_BUTTON_TEXT = "Delete Account Permanently";
 
 const SELECTORS = {
     DELETE_BUTTON: "button.g-red",
     EMAIL_INPUT: "#name-input",
+    ERROR_ALERT: ".alert-danger",
     MODAL: "#modal-user-deletion",
     WARNING: ".alert-warning",
 };
 
-async function mountUserDeletion() {
-    const pinia = createPinia();
-    useUserStore(pinia).currentUser = getFakeRegisteredUser({ email: TEST_EMAIL, id: TEST_USER_ID });
-
-    const wrapper = mount(UserDeletion, {
-        global: withPlugins(localVue, pinia),
-    });
+async function mountUserDeletion(story: StoryOf<typeof stories> = stories.AwaitingConfirmation) {
+    const wrapper = mountStory(story);
     await flushPromises();
-
     return wrapper;
 }
 
 async function enterEmail(wrapper: VueWrapper, email: string) {
     await wrapper.find(SELECTORS.EMAIL_INPUT).setValue(email);
+}
+
+/** Records the ids of users the dialog asks Galaxy to delete; the story still answers. */
+function recordDeletedUserIds() {
+    const deletedUserIds: string[] = [];
+    server.use(
+        http.delete("/api/users/{user_id}", ({ params }) => {
+            deletedUserIds.push(params.user_id);
+        }),
+    );
+    return deletedUserIds;
 }
 
 describe("UserDeletion.vue", () => {
@@ -87,19 +91,26 @@ describe("UserDeletion.vue", () => {
     });
 
     it("deletes the current user's account and logs out when deletion is confirmed", async () => {
-        const deletedUserIds: string[] = [];
-        server.use(
-            http.delete("/api/users/{user_id}", ({ params, response }) => {
-                deletedUserIds.push(params.user_id);
-                return response(200).json(getFakeRegisteredUser({ deleted: true }));
-            }),
-        );
         const wrapper = await mountUserDeletion();
+        const deletedUserIds = recordDeletedUserIds();
         await enterEmail(wrapper, TEST_EMAIL);
 
         await clickModalButton(wrapper, DELETE_BUTTON_TEXT);
 
         expect(deletedUserIds).toEqual([TEST_USER_ID]);
         expect(userLogoutClient).toHaveBeenCalledOnce();
+    });
+
+    it("shows an error in the dialog and stays logged in when Galaxy refuses the deletion", async () => {
+        const wrapper = await mountUserDeletion(stories.SelfDeletionNotAllowed);
+        const deletedUserIds = recordDeletedUserIds();
+        await enterEmail(wrapper, TEST_EMAIL);
+
+        await clickModalButton(wrapper, DELETE_BUTTON_TEXT);
+
+        expect(deletedUserIds).toEqual([TEST_USER_ID]);
+        expect(wrapper.find(`${SELECTORS.MODAL} ${SELECTORS.ERROR_ALERT}`).text()).not.toBe("");
+        expect(wrapper.find(SELECTORS.EMAIL_INPUT).exists()).toBe(true);
+        expect(userLogoutClient).not.toHaveBeenCalled();
     });
 });
