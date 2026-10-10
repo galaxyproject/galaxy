@@ -496,9 +496,22 @@ the architecture of the server and looks up the images of other platforms in the
 A ``docker://`` reference of the explicit ``explicit_singularity`` resolver is pulled by the node at run time and
 therefore has the architecture of the node.
 
-The image has to exist for the architecture in the registry. BioContainers publishes ``linux/arm64`` images for part of
-the bioconda packages. Platform routing does not check whether an image exists: a tool without package requirements, or
-with a container, goes to the first destination.
+Before a pull for a platform with a known architecture, Galaxy reads the manifest of the image from the registry
+(manifest list or index, or the config of a single manifest) and refuses to pull when the architecture is missing. The
+resolver then yields no container for that destination and the next resolver is tried; the log names the image and the
+architectures it is published for. This check is necessary because ``--arch`` on an image without a variant for that
+architecture does not fail: Apptainer writes an image labelled for the requested architecture that contains the binaries
+of another one, which the node rejects. If the registry cannot be reached or does not answer, Galaxy logs this at debug
+level and pulls without the check. The check applies to the ``mulled_singularity`` and ``cached_explicit_singularity``
+resolvers and to the ``docker://`` references of ``explicit_singularity``.
+
+BioContainers on quay.io currently publishes images for ``amd64`` only, as single manifests without manifest lists.
+Container-based tools on ``arm64`` nodes need images from elsewhere, for example multi-architecture images from Docker
+Hub declared in the tool as ``<container type="docker">python:3.12-alpine</container>``, or images built by the site.
+To have such an explicit image cached per platform on the Galaxy server and pulled with ``--arch``, list
+``cached_explicit_singularity`` in the ``container_resolvers`` configuration before ``explicit_singularity``, which hands
+the ``docker://`` reference to the node instead. Platform routing does not check whether an image exists: a tool without
+package requirements, or with a container, goes to the first destination.
 
 Limits
 ......

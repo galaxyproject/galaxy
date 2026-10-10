@@ -21,6 +21,7 @@ from .oci_arch import (
     destination_platform,
     pull_arch,
 )
+from .registry import missing_architecture
 from ..container_classes import SingularityContainer
 from ..requirements import ContainerDescription
 
@@ -69,6 +70,7 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
         a correct container. We use singularity here to fetch docker containers,
         hence the container_description hack here.
         """
+        platform = destination_platform(kwds.get("destination_info"))
         for container_description in tool_info.container_descriptions:
             if container_description.type == "docker":
                 desc_dict = container_description.to_dict()
@@ -76,6 +78,8 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
                 desc_dict["identifier"] = f"docker://{container_description.identifier}"
                 container_description = container_description.from_dict(desc_dict)
             if self._container_type_enabled(container_description, enabled_container_types):
+                if platform and missing_architecture(container_description.identifier, platform):
+                    return None
                 return container_description
 
         return None
@@ -176,6 +180,8 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                     job_info=None,
                     container_description=container_description,
                 )
+                if missing_architecture(container_description.identifier, platform):
+                    return None
                 command = container.build_singularity_pull_command(cache_path=cache_path, arch=pull_arch(platform))
                 shell(command)
                 cache_directory.invalidate_cache()

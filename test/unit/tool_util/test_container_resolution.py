@@ -36,6 +36,11 @@ SINGULARITY_IMAGES = (
 )
 
 
+@pytest.fixture(autouse=True)
+def no_registry_queries(mocker):
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.registry.registry_image_architectures", return_value=None)
+
+
 @pytest.fixture
 def appinfo() -> AppInfo:
     return AppInfo(

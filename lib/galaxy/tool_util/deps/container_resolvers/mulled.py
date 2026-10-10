@@ -36,6 +36,7 @@ from .oci_arch import (
     destination_platform,
     pull_arch,
 )
+from .registry import missing_architecture
 from ..conda_util import CondaTarget
 from ..container_classes import (
     Container,
@@ -651,8 +652,10 @@ class MulledDockerContainerResolver(CliContainerResolver):
                     None,
                     container_description,
                 )
+                if platform and missing_architecture(container_description.identifier, platform):
+                    return None
                 self.pull(container, **platform_kwds)
-            if not self.auto_install:
+            if not self.auto_install or platform:
                 container_description = (
                     self.cached_container_description(
                         targets,
