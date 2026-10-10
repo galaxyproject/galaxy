@@ -68,7 +68,10 @@ from galaxy.job_execution.setup import (
     TOOL_PROVIDED_JOB_METADATA_KEYS,
     validate_working_directory_path,
 )
-from galaxy.jobs.job_destination import JobDestination
+from galaxy.jobs.job_destination import (
+    JobDestination,
+    PlatformDependencyError,
+)
 from galaxy.jobs.mapper import (
     JobMappingException,
     JobRunnerMapper,
@@ -99,6 +102,8 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.deps.containers import ALL_CONTAINER_TYPES
+from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -1165,10 +1170,53 @@ class MinimalJobWrapper(HasResourceParameters):
     def dependency_shell_commands(self):
         """Shell fragment to inject dependencies."""
         if self._dependency_shell_commands is None:
-            self._dependency_shell_commands = self.tool.build_dependency_shell_commands(
-                job_directory=self.working_directory
-            )
+            platform = self.platform
+            if platform:
+                commands = self.tool.build_dependency_shell_commands(
+                    job_directory=self.working_directory, platform=platform
+                )
+                self._check_platform_dependencies(platform)
+            else:
+                commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+            self._dependency_shell_commands = commands
         return self._dependency_shell_commands
+
+    @property
+    def platform(self) -> str | None:
+        """Conda platform (subdir) set with the ``platform`` parameter of the job destination, if any.
+
+        The destination is assigned in the job handler (``__verify_job_ready``) before the runner
+        prepares the job and builds the command line.
+        """
+        return self.job_destination.params.get("platform") or None
+
+    def _destination_runs_container(self) -> bool:
+        """Whether the job destination enables a container type (``docker_enabled``, ``singularity_enabled``)."""
+        params = self.job_destination.params
+        return any(util.asbool(params.get(f"{c_type}_enabled", False)) for c_type in ALL_CONTAINER_TYPES)
+
+    def _check_platform_dependencies(self, platform: str) -> None:
+        """Raise if package requirements of the tool do not resolve for ``platform``.
+
+        Jobs on a container destination are not checked, their software comes from the container.
+        """
+        if self._destination_runs_container():
+            return
+        tool_requirements = getattr(self.tool, "requirements", None)
+        packages = list(tool_requirements.packages) if tool_requirements else []
+        if not packages:
+            return
+        resolved = self.app.toolbox.dependency_manager.requirements_to_dependencies(
+            tool_requirements, platform=platform, return_null=True
+        )
+        unresolved = [r for r in packages if r not in resolved or isinstance(resolved[r], NullDependency)]
+        if unresolved:
+            missing = ", ".join(f"{r.name}={r.version}" if r.version else r.name for r in unresolved)
+            raise PlatformDependencyError(
+                f"Failed to resolve the tool requirements [{missing}] for platform '{platform}' on job "
+                f"destination '{self.job_destination.id}'. No conda environment for this platform is installed, "
+                "contact the Galaxy admin."
+            )
 
     @property
     def cleanup_job(self):
@@ -2506,6 +2554,12 @@ class MinimalJobWrapper(HasResourceParameters):
             for metric_name, metric_value in properties.items():
                 if metric_value is not None:
                     has_metrics.add_metric(plugin, metric_name, metric_value)
+        actual_platform = per_plugin_properties.get("core", {}).get("platform")
+        if actual_platform and self.platform and actual_platform != self.platform:
+            log.warning(
+                f"Job {self.job_id} ran on platform {actual_platform} but destination "
+                f"{job.destination_id} requests platform {self.platform}"
+            )
 
     def get_output_sizes(self):
         sizes = []

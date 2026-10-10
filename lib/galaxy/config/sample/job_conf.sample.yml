@@ -887,6 +887,50 @@ execution:
         - https://gxy.io/tpv/db-latest.yml
         # - config/tpv_rules_local.yml
 
+    # Heterogeneous clusters: the conda resolver option "platforms" (or the
+    # global conda_platforms option) keeps conda environments for several
+    # platforms below one conda_prefix. The "platform" destination parameter
+    # makes jobs on a destination use the environments of that platform, so
+    # nodes of a different architecture need no configuration of their own.
+    # A job fails with a message naming the platform and the requirements if
+    # its tool has no environment for the platform of its destination.
+    slurm_x86:
+      runner: slurm
+      # The cli runner's Slurm plugin (job_plugin: Slurm) ignores native_specification and uses job_partition: x86.
+      native_specification: '-p x86'
+      platform: linux-64
+    slurm_arm:
+      runner: slurm
+      native_specification: '-p arm'
+      platform: linux-aarch64
+    pulsar_mac:
+      runner: pulsar_rest
+      url: https://mac-pulsar.example.org:8913/
+      platform: osx-arm64
+      # Galaxy resolves the dependencies of this platform on the head node and the job script activates the shared
+      # environments, Pulsar's default of resolving them remotely would ignore the platform.
+      dependency_resolution: local
+    platform_router:
+      runner: dynamic
+      type: python
+      function: route_by_platform
+      # Rule function route_by_platform in a module of the rules_module
+      # (galaxy.jobs.rules by default, lib/galaxy/jobs/rules/platform_rules.py):
+      #
+      #     from galaxy.jobs.platform_routing import platform_destination
+      #
+      #     def route_by_platform(app, tool, job):
+      #         # First destination, in this order, whose platform has the
+      #         # environments of the tool. Tools without package requirements
+      #         # get the first one. The platform of each destination is read
+      #         # from its "platform" parameter. Raises JobMappingException,
+      #         # failing the job, if none matches; pass default="slurm_x86"
+      #         # to fall back to a destination instead.
+      #         return platform_destination(app, tool, job, ["slurm_x86", "slurm_arm", "pulsar_mac"])
+      #
+      # A mapping of destination id to platform can be passed instead of the
+      # list: {"slurm_x86": "linux-64", "slurm_arm": "linux-aarch64"}
+
     docker_dispatch:
       runner: dynamic
       # Follow dynamic destination type will send all tool's that

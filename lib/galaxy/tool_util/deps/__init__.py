@@ -201,7 +201,12 @@ class DependencyManager:
     def precache(self):
         return string_as_bool(self.get_app_option("precache_dependencies", True))
 
-    def dependency_shell_commands(self, requirements: ToolRequirements, **kwds: Any) -> list[str]:
+    def dependency_shell_commands(
+        self, requirements: ToolRequirements, platform: str | None = None, **kwds: Any
+    ) -> list[str]:
+        """Shell commands activating the dependencies, optionally for a conda ``platform`` (subdir)."""
+        if platform:
+            kwds["platform"] = platform
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
         return [
@@ -210,15 +215,21 @@ class DependencyManager:
             if not isinstance(dependency, ContainerDependency)
         ]
 
-    def requirements_to_dependencies(self, requirements, **kwds):
+    def requirements_to_dependencies(self, requirements, platform: str | None = None, **kwds):
         """
         Takes a list of requirements and returns a dictionary
         with requirements as key and dependencies as value caching
         these on the tool instance if supplied.
+
+        ``platform`` is an optional conda subdir (e.g. linux-aarch64) that is passed on
+        to the resolvers, resolvers without platform support ignore it.
         """
+        if platform:
+            kwds["platform"] = platform
         requirement_to_dependency = self._requirements_to_dependencies_dict(requirements, **kwds)
 
-        if "tool_instance" in kwds:
+        if "tool_instance" in kwds and not platform:
+            # The cached dependencies describe the native platform, a platform specific run must not replace them.
             kwds["tool_instance"].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
 
         return requirement_to_dependency
@@ -246,8 +257,18 @@ class DependencyManager:
 
         tool_info = ToolInfo(**tool_info_kwds)
 
+        foreign_platform = bool(kwds.get("platform")) and not self._is_native_conda_platform(kwds["platform"])
+
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
+                continue
+
+            if (
+                foreign_platform
+                and not isinstance(resolver, ContainerResolver)
+                and not getattr(resolver, "supports_platforms", False)
+            ):
+                # Only resolvers that know about platforms can resolve for another platform than Galaxy runs on.
                 continue
 
             if resolver_type is not None and resolver.resolver_type != resolver_type:
@@ -327,6 +348,61 @@ class DependencyManager:
                         requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
+
+    def _is_native_conda_platform(self, platform: str) -> bool:
+        """Whether ``platform`` is the platform Galaxy runs on, True if no conda resolver can tell."""
+        for resolver in self.dependency_resolvers:
+            conda_context = getattr(resolver, "conda_context", None)
+            if conda_context is None or getattr(resolver, "resolver_type", None) != "conda":
+                continue
+            try:
+                return conda_context.is_native_platform(platform)
+            except Exception:
+                return False
+        return True
+
+    def configured_conda_platforms(self) -> list[str]:
+        """Conda platforms (native first) configured with ``conda_platforms``, empty if there are none."""
+        result: list[str] = []
+        for resolver in self.dependency_resolvers:
+            conda_context = getattr(resolver, "conda_context", None)
+            if conda_context is None or getattr(resolver, "resolver_type", None) != "conda" or resolver.disabled:
+                continue
+            for platform in conda_context.configured_platforms:
+                if platform not in result:
+                    result.append(platform)
+        return result
+
+    def conda_auto_install_enabled(self) -> bool:
+        """Whether an enabled, writable conda resolver installs missing environments at job time."""
+        return any(
+            getattr(resolver, "resolver_type", None) == "conda"
+            and not resolver.disabled
+            and not resolver.read_only
+            and getattr(resolver, "auto_install", False)
+            for resolver in self.dependency_resolvers
+        )
+
+    def platforms_for_requirements(self, requirements: ToolRequirements) -> list[str]:
+        """Configured conda platforms (native first) on which all requirements are available.
+
+        Only filesystem checks are made. Empty if no conda platforms are configured.
+        """
+        result: list[str] = []
+        for resolver in self.dependency_resolvers:
+            if getattr(resolver, "resolver_type", None) != "conda":
+                continue
+            for platform in resolver.platforms_for_requirements(requirements):
+                if platform not in result:
+                    result.append(platform)
+        return result
+
+    def start_background_tasks(self):
+        """Start the background work of the resolvers that have some (called by job handler processes)."""
+        for resolver in self.dependency_resolvers:
+            start = getattr(resolver, "start_background_tasks", None)
+            if start is not None:
+                start()
 
     def uses_tool_shed_dependencies(self):
         return any(isinstance(r, ToolShedPackageDependencyResolver) for r in self.dependency_resolvers)
@@ -414,7 +490,7 @@ class CachedDependencyManager(DependencyManager):
                 return
         [dep.build_cache(hashed_dependencies_dir) for dep in cacheable_dependencies]
 
-    def dependency_shell_commands(self, requirements, **kwds):
+    def dependency_shell_commands(self, requirements, platform: str | None = None, **kwds):
         """
         Runs a set of requirements through the dependency resolvers and returns
         a list of commands required to activate the dependencies. If dependencies
@@ -422,6 +498,8 @@ class CachedDependencyManager(DependencyManager):
         If cached environment exists or is successfully created, will generate
         commands to activate it.
         """
+        if platform:
+            kwds["platform"] = platform
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
@@ -468,11 +546,23 @@ class NullDependencyManager(DependencyManager):
         self._destination_for_container_type = {}
         self.default_base_path = None
 
+    def start_background_tasks(self):
+        pass
+
     def uses_tool_shed_dependencies(self):
         return False
 
-    def dependency_shell_commands(self, requirements, **kwds):
+    def dependency_shell_commands(self, requirements, platform=None, **kwds):
         return []
+
+    def platforms_for_requirements(self, requirements):
+        return []
+
+    def configured_conda_platforms(self):
+        return []
+
+    def conda_auto_install_enabled(self):
+        return False
 
     def find_dep(self, name, version=None, type="package", **kwds):
         return NullDependency(version=version, name=name)

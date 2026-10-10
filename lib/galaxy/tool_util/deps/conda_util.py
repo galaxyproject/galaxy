@@ -1,4 +1,9 @@
+import ast
+import contextlib
+import datetime
+import errno
 import functools
+import glob
 import hashlib
 import json
 import logging
@@ -7,8 +12,11 @@ import platform
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 import tempfile
+import threading
+import time
 from collections.abc import (
     Callable,
     Iterable,
@@ -19,6 +27,11 @@ from typing import (
     TYPE_CHECKING,
 )
 
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None  # type: ignore[assignment]
+
 from packaging.version import Version
 
 from galaxy.tool_util.version import parse_version
@@ -28,6 +41,10 @@ from galaxy.util import (
     listify,
     smart_str,
     which,
+)
+from galaxy.util.filelock import (
+    FileLock,
+    FileLockException,
 )
 from . import installable
 
@@ -48,6 +65,64 @@ USE_PATH_EXEC_DEFAULT = False
 CONDA_PACKAGE_SPECS = ("conda>=23.7.0", "conda-libmamba-solver", "pyopenssl>=22.1.0")
 CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
+PLATFORMS_DIRECTORY_NAME = "platforms"
+PLATFORM_OK_MARKER = ".galaxy-conda-platform-ok"
+PLATFORM_FAILED_SUFFIX = ".failed"
+PLATFORM_LOCK_TIMEOUT = 300
+DEFAULT_PLATFORMS_RETRY_DAYS = 7
+LOCKS_DIRECTORY_NAME = ".locks"
+# Environment name prefixes of the environments Galaxy creates: "__name@version" and "mulled-v1-<hash>"
+GALAXY_ENV_NAME_PREFIXES = ("__", "mulled-v1-")
+PLATFORM_SUBDIR_PATTERN = re.compile(r"^[a-z0-9]+-[a-z0-9_]+$")
+# Virtual package overrides that let conda solve for a platform other than
+# the one it is running on.
+DEFAULT_PLATFORM_OVERRIDES: dict[str, dict[str, str]] = {
+    "linux": {"CONDA_OVERRIDE_GLIBC": "2.17"},
+    "osx": {"CONDA_OVERRIDE_OSX": "11.0"},
+}
+
+
+def patched_binary_files(prefix: str) -> list[str]:
+    """Existing files under ``prefix`` that conda patched, according to its conda-meta records."""
+    files: list[str] = []
+    for record_path in sorted(glob.glob(os.path.join(prefix, "conda-meta", "*.json"))):
+        try:
+            with open(record_path) as fh:
+                paths = json.load(fh).get("paths_data", {}).get("paths", [])
+        except (OSError, ValueError, AttributeError):
+            log.warning("Could not read conda package record '%s'", record_path, exc_info=True)
+            continue
+        for entry in paths:
+            if not isinstance(entry, dict) or entry.get("file_mode") != "binary" or "prefix_placeholder" not in entry:
+                continue
+            relative = entry.get("_path")
+            if not relative:
+                continue
+            path = os.path.join(prefix, str(relative))
+            if os.path.isfile(path) and path not in files:
+                files.append(path)
+    return files
+
+
+def parse_platforms(platforms: str | Iterable[str] | None) -> list[str]:
+    """Normalize a comma separated string or a list of conda subdirs.
+
+    Invalid entries are dropped with a warning, duplicates are removed
+    while keeping the order.
+    """
+    result: list[str] = []
+    items = [platforms] if isinstance(platforms, str) else list(platforms or [])
+    for item in items:
+        for platform_ in str(item).split(","):
+            platform_ = platform_.strip()
+            if not platform_:
+                continue
+            if not PLATFORM_SUBDIR_PATTERN.match(platform_):
+                log.warning("Ignoring invalid conda platform '%s'", platform_)
+                continue
+            if platform_ not in result:
+                result.append(platform_)
+    return result
 
 
 def conda_link() -> str:
@@ -78,6 +153,122 @@ def find_conda_prefix() -> str:
     return os.path.join(home, "miniforge3")
 
 
+MACHO_MAGICS = frozenset(
+    (
+        b"\xfe\xed\xfa\xce",  # 32-bit big-endian
+        b"\xfe\xed\xfa\xcf",  # 64-bit big-endian
+        b"\xce\xfa\xed\xfe",  # 32-bit little-endian
+        b"\xcf\xfa\xed\xfe",  # 64-bit little-endian
+        b"\xca\xfe\xba\xbe",  # fat binary
+        b"\xbe\xba\xfe\xca",  # fat binary, byte-swapped
+    )
+)
+
+
+def is_macho(path: str) -> bool:
+    """True if the file at ``path`` starts with a Mach-O (or fat binary) magic number."""
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(4) in MACHO_MAGICS
+    except OSError:
+        return False
+
+
+_thread_locks: dict[str, threading.Lock] = {}
+_thread_locks_guard = threading.Lock()
+
+
+def _thread_lock_for(path: str) -> threading.Lock:
+    with _thread_locks_guard:
+        lock = _thread_locks.get(path)
+        if lock is None:
+            lock = _thread_locks[path] = threading.Lock()
+        return lock
+
+
+@contextlib.contextmanager
+def _env_lock(path: str, timeout: int | float) -> Iterator[bool]:
+    """Exclusive lock on ``path``, yields False if it could not be taken within ``timeout`` seconds.
+
+    Two locks are needed. ``fcntl.lockf`` locks belong to the process, so two threads of one process would
+    both acquire them, and Galaxy job runners install dependencies from several worker threads. A per-path
+    :class:`threading.Lock` therefore serializes the threads of this process, and the file lock serializes
+    other processes and hosts sharing the file system. The thread lock is taken first, the file lock second,
+    and both are released in reverse order. ``timeout`` covers the wait for both together.
+    """
+    thread_lock = _thread_lock_for(os.path.abspath(path))
+    deadline = time.monotonic() + timeout
+    if not thread_lock.acquire(timeout=max(0.0, timeout)):
+        yield False
+        return
+    try:
+        with _file_lock(path, max(0.0, deadline - time.monotonic())) as locked:
+            yield locked
+    finally:
+        thread_lock.release()
+
+
+@contextlib.contextmanager
+def _file_lock(path: str, timeout: int | float) -> Iterator[bool]:
+    """Exclusive file lock on ``path`` (the cross-process part of :func:`_env_lock`).
+
+    On POSIX this is an ``fcntl.lockf`` byte-range lock, which the kernel releases when the holding process
+    dies, so a killed process (or one that ends while a daemon thread is installing) cannot leave a stale
+    lock behind. The lock file is persistent and never removed, deleting it would race with other lockers.
+    Without ``fcntl`` the file-creation based :class:`FileLock` is used.
+    """
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError:
+        log.warning("Could not create the directory of lock file %s", path, exc_info=True)
+        yield False
+        return
+    if fcntl is None:
+        file_lock = FileLock(path, timeout=timeout)
+        try:
+            file_lock.acquire()
+        except FileLockException:
+            yield False
+            return
+        except OSError:
+            log.warning("Could not take lock %s", path, exc_info=True)
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            file_lock.release()
+        return
+    try:
+        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o666)
+    except OSError:
+        log.warning("Could not open lock file %s", path, exc_info=True)
+        yield False
+        return
+    try:
+        deadline = time.monotonic() + timeout
+        locked = False
+        while True:
+            try:
+                fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                locked = True
+                break
+            except OSError as e:
+                if e.errno not in (errno.EACCES, errno.EAGAIN):
+                    log.warning("Could not take lock %s", path, exc_info=True)
+                    break
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(min(0.2, max(0.0, deadline - time.monotonic())))
+        try:
+            yield locked
+        finally:
+            if locked:
+                fcntl.lockf(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
 class CondaContext(installable.InstallableContext):
     installable_description = "Conda"
     _conda_build_available: bool | None
@@ -95,6 +286,10 @@ class CondaContext(installable.InstallableContext):
         use_path_exec: bool = USE_PATH_EXEC_DEFAULT,
         copy_dependencies: bool = False,
         use_local: bool = USE_LOCAL_DEFAULT,
+        platforms: str | list[str] | None = None,
+        platform_overrides: dict[str, dict[str, str | None]] | None = None,
+        codesign_exec: str | None = None,
+        platforms_retry_days: int | float = DEFAULT_PLATFORMS_RETRY_DAYS,
     ) -> None:
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
@@ -124,6 +319,12 @@ class CondaContext(installable.InstallableContext):
             self.conda_exec = self._bin("conda")
         self.ensure_channels: list[str] = listify(ensure_channels)
         self.use_local = use_local
+        self.platforms: list[str] = parse_platforms(platforms)
+        self.platform_overrides: dict[str, dict[str, str]] = platform_overrides or {}
+        self.platforms_retry_days = platforms_retry_days
+        self._native_platform: str | None = None
+        self._native_platform_failed = False
+        self.codesign_exec: str | None = codesign_exec or which("rcodesign")
         self._reset_conda_properties()
 
     def _reset_conda_properties(self) -> None:
@@ -236,9 +437,17 @@ class CondaContext(installable.InstallableContext):
             )
             return False
 
-    def exec_command(self, operation: str, args: list[str], stdout_path: str | None = None) -> int:
+    def exec_command(
+        self,
+        operation: str,
+        args: list[str],
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
         """
         Execute the requested command.
+
+        ``extra_env`` holds additional environment variables for this call only.
 
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -249,6 +458,8 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
+        if extra_env:
+            env.update(extra_env)
         cmd_string = shlex.join(cmd)
         kwds: dict[str, Any] = {}
         conda_exec_home: str | None = None
@@ -284,7 +495,13 @@ class CondaContext(installable.InstallableContext):
             return True
         return any(match["version"] == version for match in out)
 
-    def exec_create(self, args: Iterable[str], allow_local: bool = True, stdout_path: str | None = None) -> int:
+    def exec_create(
+        self,
+        args: Iterable[str],
+        allow_local: bool = True,
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -300,7 +517,7 @@ class CondaContext(installable.InstallableContext):
             create_args.extend(self._solver_args)
             create_args.extend(self._override_channels_args)
             create_args.extend(args)
-            ret = self.exec_command("create", create_args, stdout_path=stdout_path)
+            ret = self.exec_command("create", create_args, stdout_path=stdout_path, extra_env=extra_env)
             if ret == 0:
                 break
         return ret
@@ -315,7 +532,13 @@ class CondaContext(installable.InstallableContext):
         remove_args.extend(args)
         return self.exec_command("env remove", remove_args)
 
-    def exec_install(self, args: Iterable[str], allow_local: bool = True, stdout_path: str | None = None) -> int:
+    def exec_install(
+        self,
+        args: Iterable[str],
+        allow_local: bool = True,
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -331,7 +554,7 @@ class CondaContext(installable.InstallableContext):
             install_args.extend(self._solver_args)
             install_args.extend(self._override_channels_args)
             install_args.extend(args)
-            ret = self.exec_command("install", install_args, stdout_path=stdout_path)
+            ret = self.exec_command("install", install_args, stdout_path=stdout_path, extra_env=extra_env)
             if ret == 0:
                 break
         if ret == 0:
@@ -384,6 +607,374 @@ class CondaContext(installable.InstallableContext):
     @property
     def envs_path(self) -> str:
         return os.path.join(self.conda_prefix, "envs")
+
+    @property
+    def native_platform(self) -> str:
+        """The conda subdir of the machine conda runs on (cached)."""
+        if self._native_platform is None:
+            if self._native_platform_failed:
+                raise RuntimeError("The native conda platform could not be determined")
+            try:
+                self._native_platform = self.conda_info()["platform"]
+            except Exception:
+                # Remembered, so that routing does not run "conda info" again on every call.
+                self._native_platform_failed = True
+                log.exception("Could not determine the native conda platform, ignoring configured platforms")
+                raise
+        assert isinstance(self._native_platform, str)
+        return self._native_platform
+
+    @property
+    def foreign_platforms(self) -> list[str]:
+        """Configured platforms other than the native one."""
+        if not self.platforms:
+            return []
+        try:
+            native = self.native_platform
+        except Exception:
+            return []
+        return [p for p in self.platforms if p != native]
+
+    @property
+    def configured_platforms(self) -> list[str]:
+        """The native platform followed by the configured foreign platforms."""
+        if not self.platforms:
+            return []
+        try:
+            return [self.native_platform] + self.foreign_platforms
+        except Exception:
+            return []
+
+    def is_native_platform(self, subdir: str | None) -> bool:
+        return not subdir or subdir == self.native_platform
+
+    def platform_prefix(self, subdir: str) -> str:
+        """Conda base for ``subdir``: ``conda_prefix`` if native, else ``<conda_prefix>/platforms/<subdir>``."""
+        if self.is_native_platform(subdir):
+            return self.conda_prefix
+        return os.path.join(self.conda_prefix, PLATFORMS_DIRECTORY_NAME, subdir)
+
+    def platform_env_path(self, subdir: str, env_name: str) -> str:
+        return os.path.join(self.platform_prefix(subdir), "envs", env_name)
+
+    def platform_activate(self, subdir: str | None) -> str:
+        if not subdir or self.is_native_platform(subdir):
+            return self.activate
+        return os.path.join(self.platform_prefix(subdir), "bin", "activate")
+
+    def platform_env_vars(self, subdir: str) -> dict[str, str]:
+        """Environment variables for solving for ``subdir`` from another platform.
+
+        Defaults set the glibc (linux-*) or macOS (osx-*) virtual package version;
+        ``platform_overrides`` ({subdir: {variable: value}}) is applied on top.
+        """
+        env = {"CONDA_SUBDIR": subdir}
+        env.update(DEFAULT_PLATFORM_OVERRIDES.get(subdir.split("-", 1)[0], {}))
+        env.update({str(k): str(v) for k, v in (self.platform_overrides.get(subdir) or {}).items()})
+        return env
+
+    def platform_has_env(self, subdir: str, env_name: str) -> bool:
+        """Cheap filesystem check, a foreign environment counts once its base exists and its marker is written."""
+        if self.is_native_platform(subdir):
+            return self.has_env(env_name)
+        if not os.path.isfile(self.platform_activate(subdir)):
+            return False
+        return os.path.isfile(os.path.join(self.platform_env_path(subdir, env_name), PLATFORM_OK_MARKER))
+
+    def mark_platform_env_ok(self, subdir: str, env_name: str) -> bool:
+        """Write the marker that makes a foreign environment usable, False if that is not possible."""
+        env_path = self.platform_env_path(subdir, env_name)
+        if not os.path.isfile(self.platform_activate(subdir)):
+            log.warning("Conda base of platform %s is missing, not marking environment %s", subdir, env_name)
+            return False
+        if not os.path.isdir(env_path):
+            return False
+        try:
+            with open(os.path.join(env_path, PLATFORM_OK_MARKER), "w"):
+                pass
+        except OSError:
+            log.warning("Could not write platform marker in '%s'", env_path, exc_info=True)
+            return False
+        return True
+
+    def platform_failure_path(self, subdir: str, env_name: str) -> str:
+        """Record of a failed foreign create, next to (not inside) the environment directory."""
+        return self.platform_env_path(subdir, env_name) + PLATFORM_FAILED_SUFFIX
+
+    def record_platform_failure(self, subdir: str, env_name: str, message: str) -> None:
+        path = self.platform_failure_path(subdir, env_name)
+        tail = "\n".join(str(message).strip().splitlines()[-20:])
+        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as fh:
+                fh.write(f"{timestamp}\n{tail}\n")
+        except OSError:
+            log.warning("Could not write platform failure record '%s'", path, exc_info=True)
+
+    def clear_platform_failure(self, subdir: str, env_name: str) -> None:
+        with contextlib.suppress(OSError):
+            os.remove(self.platform_failure_path(subdir, env_name))
+
+    def platform_failure_is_fresh(self, subdir: str, env_name: str) -> bool:
+        """True if a failure record exists that is younger than ``platforms_retry_days``."""
+        try:
+            age = time.time() - os.path.getmtime(self.platform_failure_path(subdir, env_name))
+        except OSError:
+            return False
+        return age < self.platforms_retry_days * 86400
+
+    @contextlib.contextmanager
+    def env_lock(self, env_name: str, timeout: int | float | None = None) -> Iterator[bool]:
+        """Lock for all creation work on ``env_name`` (native and foreign), yields False if it could not be taken.
+
+        The lock file is ``<conda_prefix>/.locks/<env_name>.lock``, outside of ``envs`` where the
+        environment name pattern would pick it up as an environment.
+        """
+        if timeout is None:
+            timeout = PLATFORM_LOCK_TIMEOUT
+        lock_path = os.path.join(self.conda_prefix, LOCKS_DIRECTORY_NAME, f"{env_name}.lock")
+        with _env_lock(lock_path, timeout) as locked:
+            if not locked:
+                log.warning(
+                    "Timed out waiting for the lock of conda environment %s (lock file %s)", env_name, lock_path
+                )
+            yield locked
+
+    def sign_platform_files(self, subdir: str, prefix: str) -> bool:
+        """Ad-hoc sign the Mach-O files conda rewrote in ``prefix`` (osx-* platforms only).
+
+        Conda patches the install prefix into binaries, which invalidates their code signature,
+        and only re-signs them when it runs on macOS. The files are taken from the conda-meta
+        records (binary files with a prefix placeholder) and only those with a Mach-O magic number
+        are signed. Returns False if the files could not
+        be signed (no signer configured, or the signer failed for at least one file).
+        """
+        if not subdir.startswith("osx-"):
+            return True
+        patched = patched_binary_files(prefix)
+        files = [path for path in patched if is_macho(path)]
+        skipped = len(patched) - len(files)
+        log.debug("Skipping %d patched files that are not Mach-O in '%s'", skipped, prefix)
+        if not self.codesign_exec:
+            if files:
+                log.warning("No code signer available, not signing %d files in '%s'", len(files), prefix)
+            return not files
+        signed = 0
+        failed = 0
+        for path in files:
+            try:
+                result = subprocess.run([self.codesign_exec, "sign", path], capture_output=True, text=True, check=False)
+                returncode, stderr = result.returncode, result.stderr
+            except OSError as e:
+                returncode, stderr = 1, str(e)
+            if returncode == 0:
+                signed += 1
+            else:
+                failed += 1
+                log.warning("Failed to sign '%s' (exit code %s):\n%s", path, returncode, stderr)
+        log.info(
+            "Signed %d Mach-O files for %s (%d patched files were not Mach-O)%s",
+            signed,
+            subdir,
+            skipped,
+            f", {failed} failed" if failed else "",
+        )
+        return failed == 0
+
+    def ensure_platform_bases(self) -> None:
+        """Create the conda base of every foreign platform that lacks one.
+
+        Failures are logged and never raised.
+        """
+        for subdir in self.foreign_platforms:
+            base = self.platform_prefix(subdir)
+            if os.path.exists(os.path.join(base, "conda-meta", "history")):
+                continue
+            log.info("Creating conda base for platform %s in %s, this may take several minutes.", subdir, base)
+            try:
+                os.makedirs(os.path.dirname(base), exist_ok=True)
+                args = ["--yes", "--platform", subdir, "-p", base]
+                args.extend(self._override_channels_args)
+                args.extend(["conda", "python"])
+                with tempfile.NamedTemporaryFile("r", suffix=".log") as out:
+                    ret = self.exec_command(
+                        "create", args, stdout_path=out.name, extra_env=self.platform_env_vars(subdir)
+                    )
+                    if ret != 0:
+                        log.warning(
+                            "Failed to create conda base for platform %s (exit code %s):\n%s",
+                            subdir,
+                            ret,
+                            out.read(),
+                        )
+                    elif not self.sign_platform_files(subdir, base):
+                        log.warning("Conda base for platform %s contains unsigned files", subdir)
+            except Exception:
+                log.warning("Failed to create conda base for platform %s", subdir, exc_info=True)
+
+    def create_platform_environments(
+        self,
+        env_name: str,
+        specs: Iterable[str],
+        allow_local: bool = True,
+        platforms: Iterable[str] | None = None,
+    ) -> dict[str, bool]:
+        """Create ``env_name`` on the foreign platforms that do not have it yet.
+
+        The caller holds :meth:`env_lock` of ``env_name``. Platforms that already have the
+        environment are skipped (and reported as successful). A failure is logged as a warning,
+        recorded in a failure file and does not raise. Returns {subdir: success}.
+        """
+        specs = list(specs)
+        results: dict[str, bool] = {}
+        for subdir in self.foreign_platforms if platforms is None else list(platforms):
+            if self.platform_has_env(subdir, env_name):
+                results[subdir] = True
+                continue
+            env_path = self.platform_env_path(subdir, env_name)
+            existed_before = os.path.exists(env_path)
+            try:
+                with tempfile.NamedTemporaryFile("r", suffix=".log") as out:
+                    ret = self.exec_create(
+                        ["--platform", subdir, "-p", env_path] + specs,
+                        allow_local=allow_local,
+                        stdout_path=out.name,
+                        extra_env=self.platform_env_vars(subdir),
+                    )
+                    output = out.read()
+            except Exception:
+                log.warning("Failed to create conda environment %s for platform %s", env_name, subdir, exc_info=True)
+                ret, output = 1, "exception while running conda, see the Galaxy log"
+            if ret == 0:
+                try:
+                    signed = self.sign_platform_files(subdir, env_path)
+                except Exception:
+                    log.warning("Failed to sign files of environment %s for %s", env_name, subdir, exc_info=True)
+                    signed = False
+                if signed and self.mark_platform_env_ok(subdir, env_name):
+                    self.clear_platform_failure(subdir, env_name)
+                    results[subdir] = True
+                else:
+                    log.warning(
+                        "Environment %s for platform %s has unsigned files or no usable base and is not marked usable",
+                        env_name,
+                        subdir,
+                    )
+                    self.record_platform_failure(subdir, env_name, "unsigned files or missing platform base")
+                    results[subdir] = False
+            else:
+                log.warning(
+                    "Could not create conda environment %s for platform %s (exit code %s):\n%s",
+                    env_name,
+                    subdir,
+                    ret,
+                    output,
+                )
+                if not existed_before:
+                    shutil.rmtree(env_path, ignore_errors=True)
+                self.record_platform_failure(subdir, env_name, output)
+                results[subdir] = False
+        return results
+
+    def remove_platform_environments(self, env_name: str) -> None:
+        if not env_name or not env_name.strip() or env_name in (".", "..") or os.sep in env_name:
+            log.warning("Not removing platform environments for invalid environment name '%s'", env_name)
+            return
+        for subdir in self.foreign_platforms:
+            shutil.rmtree(self.platform_env_path(subdir, env_name), ignore_errors=True)
+            self.clear_platform_failure(subdir, env_name)
+
+    def native_env_specs(self, env_name: str) -> list[str]:
+        """Package specs the native environment ``env_name`` was created from.
+
+        Taken from the explicit specs of the first transaction in ``conda-meta/history``
+        (``# update specs:`` line, written by conda for the create command), which also covers
+        merged ``mulled-v1-<hash>`` environments whose name cannot be reversed. Without such a line
+        a ``__name@version`` environment name gives the single spec. Empty if neither works.
+        """
+        history = os.path.join(self.env_path(env_name), "conda-meta", "history")
+        try:
+            with open(history) as fh:
+                for line in fh:
+                    if not line.startswith("# update specs:"):
+                        continue
+                    try:
+                        specs = ast.literal_eval(line.split(":", 1)[1].strip())
+                    except (ValueError, SyntaxError):
+                        break
+                    if isinstance(specs, (list, tuple)) and specs and all(isinstance(x, str) and x for x in specs):
+                        return list(specs)
+                    break
+        except OSError:
+            pass
+        versioned = VERSIONED_ENV_DIR_NAME.match(env_name)
+        if versioned:
+            name, version = versioned.group(1), versioned.group(2)
+            return [f"{name}=*" if version == "_uv_" else f"{name}={version}"]
+        return []
+
+    def backfill_platform_environments(self, allow_local: bool = True) -> dict[str, int]:
+        """Create the missing foreign copies of the native environments.
+
+        Only environments with a name Galaxy gives them are considered. A platform with a failure
+        record younger than ``platforms_retry_days`` is left alone. Each environment is handled
+        under its :meth:`env_lock`. Returns counts of what happened.
+        """
+        counts = dict(environments=0, created=0, failed=0, present=0, recently_failed=0, without_specs=0)
+        foreign = self.foreign_platforms
+        if not foreign:
+            return counts
+        try:
+            names = sorted(
+                n
+                for n in os.listdir(self.envs_path)
+                if n.startswith(GALAXY_ENV_NAME_PREFIXES) and os.path.isdir(self.env_path(n))
+            )
+        except OSError:
+            return counts
+        log.info(
+            "Starting backfill of conda environments for platforms %s (%d native environments)", foreign, len(names)
+        )
+        for env_name in names:
+            counts["environments"] += 1
+            try:
+                with self.env_lock(env_name) as locked:
+                    if not locked or not self.has_env(env_name):
+                        continue
+                    missing = []
+                    for subdir in foreign:
+                        if self.platform_has_env(subdir, env_name):
+                            counts["present"] += 1
+                        elif self.platform_failure_is_fresh(subdir, env_name):
+                            counts["recently_failed"] += 1
+                        else:
+                            missing.append(subdir)
+                    if not missing:
+                        continue
+                    specs = self.native_env_specs(env_name)
+                    if not specs:
+                        log.warning("Cannot derive the package specs of conda environment %s, skipping it", env_name)
+                        counts["without_specs"] += 1
+                        continue
+                    results = self.create_platform_environments(env_name, specs, allow_local, platforms=missing)
+                    counts["created"] += sum(1 for ok in results.values() if ok)
+                    counts["failed"] += sum(1 for ok in results.values() if not ok)
+            except Exception:
+                log.warning("Backfill of conda environment %s failed", env_name, exc_info=True)
+                counts["failed"] += 1
+        log.info(
+            "Finished backfill of conda environments for platforms %s: %d environments checked, %d created, "
+            "%d failed, %d already present, %d skipped after a recent failure, %d without known specs",
+            foreign,
+            counts["environments"],
+            counts["created"],
+            counts["failed"],
+            counts["present"],
+            counts["recently_failed"],
+            counts["without_specs"],
+        )
+        return counts
 
     def has_env(self, env_name: str) -> bool:
         env_path = self.env_path(env_name)
@@ -551,6 +1142,31 @@ def install_conda(conda_context: CondaContext, force_conda_build: bool = False) 
     return conda_context.exec_install(package_targets, allow_local=False)
 
 
+def _create_on_all_platforms(
+    conda_context: CondaContext,
+    env_name: str,
+    native_create_args: list[str],
+    specs: list[str],
+    allow_local: bool = True,
+) -> int:
+    """Create the named environment natively, then on each configured foreign platform.
+
+    Without configured platforms this is the plain native create. Otherwise both steps run under the
+    lock of the environment, so that concurrent installs do not create or delete the same directories.
+    Only the native exit code is returned, foreign failures are logged and recorded.
+    """
+    if not conda_context.platforms:
+        return conda_context.exec_create(native_create_args, allow_local=allow_local)
+    with conda_context.env_lock(env_name) as locked:
+        if not locked:
+            # Native install as before, the backfill adds the foreign copies later.
+            return conda_context.exec_create(native_create_args, allow_local=allow_local)
+        ret = 0 if conda_context.has_env(env_name) else conda_context.exec_create(native_create_args, allow_local)
+        if ret == 0:
+            conda_context.create_platform_environments(env_name, specs, allow_local=allow_local)
+    return ret
+
+
 def install_conda_targets(
     conda_targets: Iterable[CondaTarget],
     conda_context: CondaContext,
@@ -565,9 +1181,9 @@ def install_conda_targets(
             "--name",
             env_name,  # environment for package
         ]
-        for conda_target in conda_targets:
-            create_args.append(conda_target.package_specifier)
-        return conda_context.exec_create(create_args, allow_local=allow_local)
+        specs = [conda_target.package_specifier for conda_target in conda_targets]
+        create_args.extend(specs)
+        return _create_on_all_platforms(conda_context, env_name, create_args, specs, allow_local)
     else:
         return conda_context.exec_install([t.package_specifier for t in conda_targets], allow_local=allow_local)
 
@@ -584,7 +1200,9 @@ def install_conda_target(conda_target: CondaTarget, conda_context: CondaContext,
             conda_target.install_environment,  # environment for package
             conda_target.package_specifier,
         ]
-        return conda_context.exec_create(create_args)
+        return _create_on_all_platforms(
+            conda_context, conda_target.install_environment, create_args, [conda_target.package_specifier]
+        )
     else:
         return conda_context.exec_install([conda_target.package_specifier])
 
@@ -753,6 +1371,7 @@ __all__ = (
     "CondaContext",
     "CondaTarget",
     "install_conda",
+    "parse_platforms",
     "install_conda_target",
     "requirements_to_conda_targets",
     "split_version_build",
