@@ -1,104 +1,59 @@
-import { createTestingPinia } from "@pinia/testing";
-import { runInTestScope } from "@tests/vitest/effectScope";
-import { emittedArg, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
-import { setActivePinia } from "pinia";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { nextTick, ref } from "vue";
+import { composeStories } from "@storybook/vue3-vite";
+import { emittedArg } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-import { useLintData } from "./modules/useLinting";
+import * as LintStories from "./Lint.stories";
 import lintStepsData from "./test-data/lint_steps.json";
 
 import Lint from "./Lint.vue";
 
-enableAutoUnmount(afterEach);
+const stories = composeStories(LintStories);
+const mountStory = useStoryMount();
 
-function mountLint() {
-    // The historical fixture deliberately includes incomplete workflow steps.
-    const steps = structuredClone(lintStepsData) as unknown as Steps;
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
-    const lintData = runInTestScope(() =>
-        useLintData(
-            ref("1"),
-            ref(steps),
-            ref(testDatatypesMapper),
-            ref("workflow annotation"),
-            ref(null),
-            ref("MIT"),
-            ref([{ class: "Person", name: "Test Creator" }]),
-        ),
-    );
-    const wrapper = mount(Lint, {
-        props: { lintData, steps, hasChanges: false },
-        global: { ...withPlugins(getLocalVue(), pinia), provide: { workflowId: "mock-workflow" } },
-    });
-    const stepStore = useWorkflowStepStore("mock-workflow");
-    Object.values(steps).forEach((step) => stepStore.addStep(step));
-    return { wrapper, stepStore };
-}
-
+// What the review lists, and its fix-all link, are checked in the stories' play functions. The
+// actions a fix emits have no visible result here, and a store edit on a live mount isn't a story.
 describe("Lint", () => {
-    it("shows four passing checks, five warnings, and the warning links in order", async () => {
-        const { wrapper } = mountLint();
-        await nextTick();
-        /** Passing: 4
-         * - Critical: Has unique labels;
-         * - Non-critical: Has annotation, creator and license
-         */
-        const numLintChecksPassing = 4;
-        const checked = wrapper.findAll("[data-description='lint okay section']");
-        expect(checked.length).toBe(numLintChecksPassing);
-
-        /** Failing: 5
-         * - Critical: untypedParameters, disconnectedInputs, missingMetadata, unlabeledOutputs
-         * - Non-critical: No readme
-         */
-        const numLintChecksFailing = 5;
-        const unchecked = wrapper.findAll("[data-description='lint warning section']");
-        expect(unchecked.length).toBe(numLintChecksFailing);
-
-        const links = wrapper.findAll("[data-description='autofix item link']");
-        // Only the autofix-able issues have links
-        expect(links.length).toBeGreaterThanOrEqual(4);
-
-        // Check the order of warnings as they appear in the rendered output
-        expect(nth(links, 0).text().toLowerCase()).toContain("untyped_parameter");
-        expect(nth(links, 1).text().toLowerCase()).toContain("step label: input_label");
-        expect(nth(links, 2).text().toLowerCase()).toContain("data input: missing an annotation");
-        expect(nth(links, 3).text().toLowerCase()).toContain("step label: output");
-
-        // Only 1 non-critical, attribute-related issue
-        const attributeLink = wrapper.findAll("[data-description='attribute link']");
-        expect(attributeLink.length).toBe(1);
-        expect(nth(attributeLink, 0).text().toLowerCase()).toContain("provide readme for your workflow");
-    });
-
     it("emits parameter extraction, input extraction, and unlabeled-output removal actions", async () => {
-        const { wrapper } = mountLint();
+        const wrapper = mountStory(stories.InputDisconnected);
         const autoFixButton = wrapper.find("[data-description='auto fix lint issues']");
         expect(autoFixButton.exists()).toBe(true);
         await autoFixButton.trigger("click");
-        expect(wrapper.emitted("onRefactor")).toHaveLength(1);
-        expect(emittedArg(wrapper, "onRefactor")).toMatchObject([
+        const lint = wrapper.getComponent(Lint);
+        expect(lint.emitted("onRefactor")).toHaveLength(1);
+        expect(emittedArg(lint, "onRefactor")).toMatchObject([
             { action_type: "extract_untyped_parameter", name: "untyped_parameter" },
             { action_type: "extract_input" },
             { action_type: "remove_unlabeled_workflow_outputs" },
         ]);
     });
 
-    it("retains the autofix actions after removing the connected data input", async () => {
-        const { wrapper, stepStore } = mountLint();
-        stepStore.removeStep(0);
+    it("leaves input extraction out of the autofix actions while the data input is connected", async () => {
+        const wrapper = mountStory(stories.InputConnected);
+        await wrapper.get("[data-description='auto fix lint issues']").trigger("click");
+        const lint = wrapper.getComponent(Lint);
+        expect(lint.emitted("onRefactor")).toHaveLength(1);
+        expect(emittedArg(lint, "onRefactor")).toMatchObject([
+            { action_type: "extract_untyped_parameter", name: "untyped_parameter" },
+            { action_type: "remove_unlabeled_workflow_outputs" },
+        ]);
+    });
+
+    it("adds input extraction to the autofix actions once the connected data input is removed", async () => {
+        const wrapper = mountStory(stories.InputConnected);
+        expect(wrapper.get("[data-description='linting connected']").attributes("data-lint-status")).toBe("ok");
+        useWorkflowStepStore(stories.InputConnected.args.workflowId!).removeStep(0);
         await nextTick();
         const autoFixButton = wrapper.find("[data-description='auto fix lint issues']");
         expect(autoFixButton.exists()).toBe(true);
         await autoFixButton.trigger("click");
-        expect(wrapper.emitted("onRefactor")).toHaveLength(1);
-        expect(emittedArg(wrapper, "onRefactor")).toMatchObject([
+        const lint = wrapper.getComponent(Lint);
+        expect(lint.emitted("onRefactor")).toHaveLength(1);
+        expect(emittedArg(lint, "onRefactor")).toMatchObject([
             { action_type: "extract_untyped_parameter", name: "untyped_parameter" },
             { action_type: "extract_input" },
             { action_type: "remove_unlabeled_workflow_outputs" },
@@ -108,9 +63,6 @@ describe("Lint", () => {
 
 describe("Lint conditional gates", () => {
     async function mountLint(when: string | undefined, inputConnections: Record<string, unknown>): Promise<VueWrapper> {
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        setActivePinia(pinia);
-
         const gatedSteps = {
             ...(structuredClone(lintStepsData) as unknown as Steps),
             3: {
@@ -128,19 +80,9 @@ describe("Lint conditional gates", () => {
                 when,
             },
         } as unknown as Steps;
-        const gatedStepsRef = ref(gatedSteps);
-
-        const wrapper = mount(Lint as object, {
-            props: {
-                lintData: runInTestScope(() => useLintData(ref("1"), gatedStepsRef, ref(testDatatypesMapper))),
-                steps: gatedSteps,
-                hasChanges: false,
-            },
-            global: { ...withPlugins(getLocalVue(), pinia), provide: { workflowId: "mock-workflow" } },
+        const wrapper = mountStory(stories.InputConnected, {
+            props: { steps: gatedSteps, workflowId: "gated-workflow" },
         });
-
-        const stepStore = useWorkflowStepStore("mock-workflow");
-        Object.values(gatedSteps).map((step) => stepStore.addStep(step));
         await nextTick();
         return wrapper;
     }
