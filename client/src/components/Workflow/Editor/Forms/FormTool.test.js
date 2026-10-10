@@ -1,102 +1,55 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { useConfigStore } from "@/stores/configurationStore";
+
+import * as FormToolStories from "./FormTool.stories";
 
 import FormTool from "./FormTool.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 
-vi.mock("@/api/schema", () => ({}));
-setupMockConfig({ enable_tool_source_display: false });
+const stories = composeStories(FormToolStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue();
-
-const { server, http } = useServerMock();
-
-enableAutoUnmount(afterEach);
-
-function textInput() {
-    return { name: "input", label: "input", type: "text", value: "value" };
-}
-
-function rulesInput() {
-    return {
-        name: "rules",
-        label: "rules",
-        type: "rules",
-        value: {
-            mapping: [{ type: "list_identifiers", columns: [1] }],
-            rules: [{ type: "add_column_metadata", value: "identifier0" }],
-        },
-    };
-}
-
-async function mountFormTool(inputs = [textInput()]) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    const wrapper = mount(FormTool, {
-        props: {
-            id: "input",
-            datatypes: [],
-            step: {
-                id: 0,
-                config_form: {
-                    id: "tool_id+1.0",
-                    name: "tool_name",
-                    version: "1.0",
-                    description: "description",
-                    inputs,
-                    help: "help_text",
-                    help_format: "restructuredtext",
-                    versions: ["1.0", "2.0", "3.0"],
-                    citations: false,
-                },
-                outputs: [],
-                inputs: [],
-                post_job_actions: {},
-            },
-        },
-        global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
-        stubs: {
-            ToolFooter: { template: "<div>tool-footer</div>" },
-        },
-    });
+/** Mounts a story once the configuration the tool card reads has loaded. */
+async function mountFormTool(story) {
+    const wrapper = mountStory(story);
+    await vi.waitFor(() => expect(useConfigStore().isLoaded).toBe(true));
     await flushPromises();
     return wrapper;
 }
 
 describe("FormTool", () => {
-    beforeEach(() => {
-        server.use(
-            http.get("/api/configuration", ({ response }) => {
-                return response(200).json({});
-            }),
-            http.untyped.get("/api/webhooks", () => {
-                return HttpResponse.json([]);
-            }),
-        );
-    });
-
     it("emits the picked version's tool id and version when switching versions", async () => {
-        const wrapper = await mountFormTool();
+        const wrapper = await mountFormTool(stories.OlderToolVersion);
 
         const versionItems = wrapper.findAll(".tool-versions .dropdown-item");
-        expect(versionItems.map((item) => item.text())).toEqual(["Switch to 3.0", "Switch to 2.0", "Selected 1.0"]);
-        const [switchTo3, switchTo2] = versionItems;
+        expect(versionItems.map((item) => item.text())).toEqual([
+            "Switch to 0.74+galaxy1",
+            "Switch to 0.73+galaxy0",
+            "Selected 0.72+galaxy1",
+        ]);
+        const [switchToLatest, switchToMiddle] = versionItems;
+        const emitted = () => wrapper.getComponent(FormTool).emitted("onSetData");
 
-        await switchTo2.trigger("click");
-        expect(wrapper.emitted("onSetData")[0][1]).toMatchObject({ tool_version: "2.0", tool_id: "tool_id+2.0" });
+        await switchToMiddle.trigger("click");
+        expect(emitted()[0][1]).toMatchObject({
+            tool_version: "0.73+galaxy0",
+            tool_id: "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73+galaxy0",
+        });
 
-        await switchTo3.trigger("click");
-        expect(wrapper.emitted("onSetData")[1][1]).toMatchObject({ tool_version: "3.0", tool_id: "tool_id+3.0" });
+        await switchToLatest.trigger("click");
+        expect(emitted()[1][1]).toMatchObject({
+            tool_version: "0.74+galaxy1",
+            tool_id: "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy1",
+        });
     });
 
     describe("with a rules input", () => {
         async function mountedInputs() {
-            const wrapper = await mountFormTool([textInput(), rulesInput()]);
+            const wrapper = await mountFormTool(stories.RulesParameter);
             const [text, rules] = wrapper.findComponent(FormDisplay).props("inputs");
             return { text, rules };
         }

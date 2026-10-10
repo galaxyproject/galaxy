@@ -1,8 +1,8 @@
+import type { Decorator } from "@storybook/vue3-vite";
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { reactive, toRefs } from "vue";
-
+import { h, reactive, toRefs } from "vue";
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { InputTerminalSource, NewStep, Steps } from "@/stores/workflowStepStore";
-
 import _advancedSteps from "./test-data/parameter_steps.json";
 import _simpleSteps from "./test-data/simple_steps.json";
 
@@ -11,6 +11,7 @@ const _mockOffset = toRefs(reactive({ top: 0, left: 0, bottom: 10, right: 10, wi
 export const mockOffset: UseElementBoundingReturn = { ..._mockOffset, update: () => {} };
 
 export const simpleSteps = _simpleSteps as Steps;
+
 export const advancedSteps = _advancedSteps as Steps;
 
 /** Creates a mock step position for testing (satisfies UseElementBoundingReturn shape) */
@@ -57,4 +58,14 @@ export function createTestStep(
         workflow_outputs: [],
         when: options.when,
     };
+}
+
+/** As the workflow editor does, provides the stores of workflow `workflowId` that its step forms and nodes read. */
+export function withWorkflowStores(workflowId: string): Decorator {
+    return (story) => ({
+        setup() {
+            provideScopedWorkflowStores(workflowId);
+            return () => h(story());
+        },
+    });
 }
