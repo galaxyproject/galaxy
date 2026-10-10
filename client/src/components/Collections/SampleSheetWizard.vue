@@ -485,7 +485,10 @@ async function download() {
                     <FontAwesomeIcon size="xl" :icon="faUpload" />
                     Already have a completed workbook? Upload it here.
                 </BLink>
-                <HiddenWorkbookUploadInput ref="uploadRef" @onFileUpload="onFileUpload" />
+                <HiddenWorkbookUploadInput
+                    ref="uploadRef"
+                    data-description="sample sheet workbook file input"
+                    @onFileUpload="onFileUpload" />
             </div>
         </div>
     </GenericWizard>
