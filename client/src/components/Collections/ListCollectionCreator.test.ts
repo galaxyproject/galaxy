@@ -56,8 +56,10 @@ async function selectIntoList(wrapper: VueWrapper, datasets: HDASummary[]) {
     }
 }
 
+// The list's order and the toasts' text are checked in the stories' play functions. Which objects
+// the list holds isn't visible, and a role can't tell an error toast from a warning, so those stay.
 describe("ListCollectionCreator", () => {
-    it("keeps the user's list when initialElements changes, re-projected onto the rebuilt elements", async () => {
+    it("holds the creator's working copies, not the props, after initialElements changes", async () => {
         const wrapper = await mountCreator();
 
         await selectIntoList(wrapper, [TREATED, CONTROL]);
@@ -73,35 +75,24 @@ describe("ListCollectionCreator", () => {
         // the user's order survives, holding the creator's working copies rather than the props
         expect(inListIds(wrapper)).toEqual([TREATED.id, CONTROL.id]);
         expect(toRaw(inListElements(wrapper)[0])).not.toBe(toRaw(refreshed[1]));
-        expect(toastError).not.toHaveBeenCalled();
     });
 
-    it("drops a dataset that left the history and says it was removed from the collection", async () => {
-        const wrapper = await mountCreator();
-
-        await selectIntoList(wrapper, [CONTROL, TREATED]);
-        expect(inListIds(wrapper)).toEqual([CONTROL.id, TREATED.id]);
-
-        await changeHistory(wrapper, `Delete ${TREATED.name}`);
-
-        expect(inListIds(wrapper)).toEqual([CONTROL.id]);
-        expect(toastError).toHaveBeenCalledTimes(1);
-        expect(toastError).toHaveBeenCalledWith("2: treated has been removed from the collection", "Invalid element");
-    });
-
-    it("drops a dataset that is still there but no longer usable and says why", async () => {
-        const wrapper = await mountCreator();
-
-        await selectIntoList(wrapper, [CONTROL, TREATED]);
-        expect(inListIds(wrapper)).toEqual([CONTROL.id, TREATED.id]);
-
-        await changeHistory(wrapper, `Fail ${TREATED.name}`);
-
-        expect(inListIds(wrapper)).toEqual([CONTROL.id]);
-        expect(toastError).toHaveBeenCalledTimes(1);
-        expect(toastError).toHaveBeenCalledWith(
+    it.each([
+        ["left the history", `Delete ${TREATED.name}`, "2: treated has been removed from the collection"],
+        [
+            "is no longer usable",
+            `Fail ${TREATED.name}`,
             "2: treated has errored, is paused, or is not accessible and is not a valid element for this collection",
-            "Invalid element",
-        );
+        ],
+    ])("raises an error when a dataset in the list %s", async (_change, historyChange, message) => {
+        const wrapper = await mountCreator();
+
+        await selectIntoList(wrapper, [CONTROL, TREATED]);
+        expect(inListIds(wrapper)).toEqual([CONTROL.id, TREATED.id]);
+
+        await changeHistory(wrapper, historyChange);
+
+        expect(toastError).toHaveBeenCalledTimes(1);
+        expect(toastError).toHaveBeenCalledWith(message, "Invalid element");
     });
 });
