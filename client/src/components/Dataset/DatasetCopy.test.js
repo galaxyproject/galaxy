@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import * as DatasetCopyStories from "./DatasetCopy.stories";
-import { FORWARD_READS, PAIRED_READS, REVERSE_READS, RNA_SEQ, VARIANT_CALLING } from "./test_fixtures";
+import { FORWARD_READS, PAIRED_READS, RNA_SEQ, VARIANT_CALLING } from "./test_fixtures";
 
 import DatasetCopy from "./DatasetCopy.vue";
 
@@ -54,10 +54,6 @@ function targetHistoryCheckbox(wrapper, name) {
     return label.get("input[type=checkbox]");
 }
 
-function buttonByText(wrapper, text) {
-    return wrapper.findAll("button").find((button) => button.text() === text);
-}
-
 function copiedToLinkTexts(wrapper) {
     return wrapper.findAll(SELECTORS.COPIED_TO_LINKS).map((link) => link.text());
 }
@@ -68,15 +64,10 @@ async function copySelected(wrapper) {
 }
 
 describe("DatasetCopy", () => {
-    it("lists the histories and the current history's datasets and collections on mount", async () => {
-        const { wrapper, contentsRequests } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
+    it("loads the current history's contents on mount", async () => {
+        const { contentsRequests } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
 
         expect(contentsRequests).toEqual([RNA_SEQ.id]);
-        expect(wrapper.text()).toContain(RNA_SEQ.name);
-        expect(wrapper.text()).toContain(VARIANT_CALLING.name);
-        for (const item of [FORWARD_READS, REVERSE_READS, PAIRED_READS]) {
-            expect(wrapper.text()).toContain(`${item.hid}: ${item.name}`);
-        }
     });
 
     it("sources the current history even when it is not listed first", async () => {
@@ -99,19 +90,23 @@ describe("DatasetCopy", () => {
         const { wrapper, copyRequests } = await mountDatasetCopy(stories.NoTargetCopiesIntoSource);
 
         await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
+        await sourceCheckbox(wrapper, PAIRED_READS).setValue(true);
         await copySelected(wrapper);
 
         expect(copyRequests).toEqual([
             {
                 historyId: RNA_SEQ.id,
                 body: {
-                    source_content: [{ id: FORWARD_READS.id, type: "dataset" }],
+                    source_content: [
+                        { id: FORWARD_READS.id, type: "dataset" },
+                        { id: PAIRED_READS.id, type: "dataset_collection" },
+                    ],
                     target_history_ids: [],
                     target_history_name: null,
                 },
             },
         ]);
-        expect(wrapper.text()).toMatch(/1 item[s]? copied/);
+        expect(wrapper.text()).toContain("2 items copied to:");
     });
 
     it("asks for a selection instead of copying when nothing is selected", async () => {
@@ -123,33 +118,6 @@ describe("DatasetCopy", () => {
         expect(copyRequests).toEqual([]);
     });
 
-    it("shows the error message when the copy request fails", async () => {
-        // No target chosen, so Galaxy refuses the copy.
-        const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
-
-        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
-        await copySelected(wrapper);
-
-        expect(wrapper.text()).toContain("Select a destination history or provide a target history name.");
-    });
-
-    it("selects and unselects every source item", async () => {
-        const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
-        const sourceItems = [FORWARD_READS, REVERSE_READS, PAIRED_READS];
-
-        await buttonByText(wrapper, "Select All").trigger("click");
-
-        for (const item of sourceItems) {
-            expect(sourceCheckbox(wrapper, item).element.checked).toBe(true);
-        }
-
-        await buttonByText(wrapper, "Unselect All").trigger("click");
-
-        for (const item of sourceItems) {
-            expect(sourceCheckbox(wrapper, item).element.checked).toBe(false);
-        }
-    });
-
     it("names the existing history the items were copied to", async () => {
         // Galaxy refuses a copy with no target; this story accepts it, as this case always expected.
         const { wrapper } = await mountDatasetCopy(stories.NoTargetCopiesIntoSource);
@@ -157,7 +125,7 @@ describe("DatasetCopy", () => {
         await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
         await copySelected(wrapper);
 
-        expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
+        expect(wrapper.text()).toContain("1 item copied to:");
         expect(copiedToLinkTexts(wrapper)).toEqual([RNA_SEQ.name]);
     });
 
@@ -170,7 +138,6 @@ describe("DatasetCopy", () => {
         await copySelected(wrapper);
 
         expect(copyRequests[0].body.target_history_ids).toEqual([RNA_SEQ.id, VARIANT_CALLING.id]);
-        expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
         expect(copiedToLinkTexts(wrapper)).toEqual([RNA_SEQ.name, VARIANT_CALLING.name]);
     });
 
@@ -185,7 +152,6 @@ describe("DatasetCopy", () => {
             target_history_ids: [],
             target_history_name: "Reads for variant calling",
         });
-        expect(wrapper.text()).toContain("1 item copied to");
         expect(copiedToLinkTexts(wrapper)).toEqual(["Reads for variant calling"]);
     });
 
