@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount, shallowMount, type VueWrapper } from "@vue/test-utils";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as VueRouter from "vue-router";
 
 import {
     extractWorkflowByIds,
@@ -24,7 +25,7 @@ import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.
 import WorkflowExtractionMessages from "./WorkflowExtraction/WorkflowExtractionMessages.vue";
 import WorkflowExtractionForm from "./WorkflowExtractionForm.vue";
 
-// ── Mocks ────────────────────────────────────────────────────────────────────
+enableAutoUnmount(afterEach);
 
 // Mutable route query so individual tests can drive the `from_page` branch.
 const mockRoute = vi.hoisted(() => ({ query: {} as Record<string, string> }));
@@ -41,7 +42,7 @@ vi.mock("@/api/pages", () => ({
 vi.mock("@/composables/toast");
 
 vi.mock("vue-router", async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>;
+    const actual = await importOriginal<typeof VueRouter>();
     return {
         ...actual,
         useRoute: () => mockRoute,
@@ -61,9 +62,9 @@ vi.mock("@/stores/historyStore", () => ({
     }),
 }));
 
-// ── Fixtures ─────────────────────────────────────────────────────────────────
+type ApiOutput = NonNullable<WorkflowExtractionJob["outputs"]>[number];
 
-const TOOL_OUTPUT = {
+const TOOL_OUTPUT: ApiOutput = {
     id: "ds-1",
     hid: 1,
     name: "output1",
@@ -72,7 +73,7 @@ const TOOL_OUTPUT = {
     deleted: false,
     exposed: false,
     output_name: "out_file1",
-} as NonNullable<WorkflowExtractionJob["outputs"]>[number];
+};
 
 const TOOL_JOB: WorkflowExtractionJob = {
     id: "job-tool-1",
@@ -91,16 +92,6 @@ const MAPPED_TOOL_JOB: WorkflowExtractionJob = {
     id: "job-tool-2",
     implicit_collection_jobs_id: "icj-1",
     implicit_collection_jobs_size: 4,
-};
-
-const MAPPED_TOOL_JOB_2: WorkflowExtractionJob = {
-    ...MAPPED_TOOL_JOB,
-    id: "job-tool-3",
-};
-
-const TOOL_JOB_WITH_NON_WORKFLOW_OUTPUT: WorkflowExtractionJob = {
-    ...TOOL_JOB,
-    outputs: [{ ...TOOL_OUTPUT, output_name: undefined } as NonNullable<WorkflowExtractionJob["outputs"]>[number]],
 };
 
 const INPUT_JOB: WorkflowExtractionJob = {
@@ -132,7 +123,7 @@ function summary(jobs: WorkflowExtractionJob[], warnings: string[] = []): Workfl
 /** Second input sharing INPUT_JOB's output name ("myfile.txt") → colliding newName. */
 const INPUT_JOB_DUP: WorkflowExtractionJob = {
     ...INPUT_JOB,
-    outputs: [{ ...INPUT_JOB.outputs![0], id: "ds-3" } as NonNullable<WorkflowExtractionJob["outputs"]>[number]],
+    outputs: [{ ...nth(INPUT_JOB.outputs, 0), id: "ds-3" }],
 };
 
 /** Two tool jobs whose exposed outputs default to the same label ("shared"). */
@@ -202,50 +193,55 @@ const SUMMARY_WITH_DUPLICATE_OUTPUT_NAMES = summary([TOOL_JOB_OUT_A, TOOL_JOB_OU
 const SEEDED_SUMMARY = summary([SEEDED_TOOL_JOB, UNSEEDED_TOOL_JOB, SEEDED_INPUT_JOB]);
 const SEEDED_MAPPED_SUMMARY = summary([SEEDED_MAPPED_TOOL_JOB, UNSEEDED_MAPPED_TOOL_JOB]);
 const SUMMARY_WITH_MAPPED_JOB = summary([MAPPED_TOOL_JOB]);
-const SUMMARY_WITH_DUPLICATE_MAPPED_JOBS = summary([MAPPED_TOOL_JOB, MAPPED_TOOL_JOB_2]);
-const SUMMARY_WITH_PLAIN_AND_MAPPED_JOBS = summary([TOOL_JOB, MAPPED_TOOL_JOB]);
-const SUMMARY_EMPTY = summary([]);
-const SUMMARY_WITH_WARNINGS = summary([TOOL_JOB], ["Tool version mismatch"]);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const localVue = getLocalVue();
+type FormWrapper = VueWrapper<InstanceType<typeof WorkflowExtractionForm>>;
 
 async function mountForm(historyId = "history-1") {
-    const wrapper = shallowMount(WorkflowExtractionForm as object, {
+    const wrapper = shallowMount(WorkflowExtractionForm, {
         propsData: { historyId },
-        localVue,
+        global: getLocalVue(),
     });
     await flushPromises();
     return wrapper;
 }
 
 /** Set the workflow name by simulating GFormInput's `update:modelValue` event (v-model). */
-async function setWorkflowName(wrapper: ReturnType<typeof shallowMount>, name: string) {
+async function setWorkflowName(wrapper: FormWrapper, name: string) {
     wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", name);
     await wrapper.vm.$nextTick();
 }
 
 /** Click the Create Workflow button. */
-async function clickCreateButton(wrapper: ReturnType<typeof shallowMount>) {
+async function clickCreateButton(wrapper: FormWrapper) {
     wrapper.findComponent(GButton).vm.$emit("click");
     await flushPromises();
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+function card(wrapper: FormWrapper, index: number) {
+    return nth(wrapper.findAllComponents(WorkflowExtractionCard), index);
+}
+
+async function applyRename(wrapper: FormWrapper, name: string) {
+    await wrapper.getComponent(RenameModal).props("renameAction")(name);
+    await wrapper.vm.$nextTick();
+}
+
+function submittedPayload() {
+    return nth(vi.mocked(extractWorkflowByIds).mock.calls, 0)[0];
+}
 
 describe("WorkflowExtractionForm", () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        vi.resetAllMocks();
         mockRoute.query = {};
     });
 
     describe("loading state", () => {
         it("shows loading spinner while fetching", () => {
             vi.mocked(extractWorkflowFromHistory).mockReturnValue(new Promise(() => {}));
-            const wrapper = shallowMount(WorkflowExtractionForm as object, {
+            const wrapper = shallowMount(WorkflowExtractionForm, {
                 propsData: { historyId: "history-1" },
-                localVue,
+                global: getLocalVue(),
             });
             expect(wrapper.findComponent(LoadingSpan).exists()).toBe(true);
         });
@@ -259,7 +255,7 @@ describe("WorkflowExtractionForm", () => {
 
     describe("empty history", () => {
         beforeEach(() => {
-            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_EMPTY);
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([]));
         });
 
         it("shows no-workflow message", async () => {
@@ -286,12 +282,12 @@ describe("WorkflowExtractionForm", () => {
 
         it("auto-populates newName for input jobs from output name", async () => {
             const wrapper = await mountForm();
-            const inputCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 1);
+            const inputCard = card(wrapper, 1);
             expect(inputJobOf(inputCard).newName).toBe("myfile.txt");
         });
 
         it("passes warnings to WorkflowExtractionMessages", async () => {
-            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_WARNINGS);
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([TOOL_JOB], ["Tool version mismatch"]));
             const wrapper = await mountForm();
             expect(wrapper.findComponent(WorkflowExtractionMessages).props("warnings")).toEqual([
                 "Tool version mismatch",
@@ -334,14 +330,14 @@ describe("WorkflowExtractionForm", () => {
 
         it("opens RenameModal when rename is emitted from an input card", async () => {
             const wrapper = await mountForm();
-            nth(wrapper.findAllComponents(WorkflowExtractionCard), 1).vm.$emit("rename");
+            card(wrapper, 1).vm.$emit("rename");
             await flushPromises();
             expect(wrapper.findComponent(RenameModal).exists()).toBe(true);
         });
 
         it("closes RenameModal when the modal emits close", async () => {
             const wrapper = await mountForm();
-            nth(wrapper.findAllComponents(WorkflowExtractionCard), 1).vm.$emit("rename");
+            card(wrapper, 1).vm.$emit("rename");
             await flushPromises();
             wrapper.findComponent(RenameModal).vm.$emit("close");
             await flushPromises();
@@ -359,7 +355,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).toEqual(
                 expect.objectContaining({
                     workflow_name: "Extracted WF",
@@ -377,7 +373,7 @@ describe("WorkflowExtractionForm", () => {
         it("submits output_labels only after an output is starred", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            nth(wrapper.findAllComponents(WorkflowExtractionCard), 0).vm.$emit("toggle-output", 0);
+            card(wrapper, 0).vm.$emit("toggle-output", 0);
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).toHaveBeenCalledWith(
@@ -390,37 +386,37 @@ describe("WorkflowExtractionForm", () => {
         it("does not submit starred outputs from unchecked tool rows", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            const toolCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
+            const toolCard = card(wrapper, 0);
             toolCard.vm.$emit("toggle-output", 0);
             toolCard.vm.$emit("select");
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).not.toHaveProperty("output_labels");
             expect(payload).toEqual(expect.objectContaining({ job_ids: [] }));
         });
 
         it("does not submit output labels for outputs without a workflow-visible output name", async () => {
-            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([TOOL_JOB_WITH_NON_WORKFLOW_OUTPUT]));
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(
+                summary([{ ...TOOL_JOB, outputs: [{ ...TOOL_OUTPUT, output_name: undefined }] }]),
+            );
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            nth(wrapper.findAllComponents(WorkflowExtractionCard), 0).vm.$emit("toggle-output", 0);
+            card(wrapper, 0).vm.$emit("toggle-output", 0);
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).not.toHaveProperty("output_labels");
         });
 
         it("does not submit a starred output with an empty label", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
-            const toolCard = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
+            const toolCard = card(wrapper, 0);
             toolCard.vm.$emit("toggle-output", 0);
             toolCard.vm.$emit("rename-output", 0);
             await flushPromises();
-            const renameAction = wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void;
-            renameAction("");
-            await wrapper.vm.$nextTick();
+            await applyRename(wrapper, "");
             await clickCreateButton(wrapper);
             expect(extractWorkflowByIds).not.toHaveBeenCalled();
         });
@@ -439,7 +435,9 @@ describe("WorkflowExtractionForm", () => {
         });
 
         it("dedupes ICJ ids when two cards share an ICJ", async () => {
-            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_DUPLICATE_MAPPED_JOBS);
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(
+                summary([MAPPED_TOOL_JOB, { ...MAPPED_TOOL_JOB, id: "job-tool-3" }]),
+            );
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
@@ -452,7 +450,7 @@ describe("WorkflowExtractionForm", () => {
         });
 
         it("mixes plain and mapped job buckets correctly", async () => {
-            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_PLAIN_AND_MAPPED_JOBS);
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([TOOL_JOB, MAPPED_TOOL_JOB]));
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
@@ -516,12 +514,8 @@ describe("WorkflowExtractionForm", () => {
     });
 
     describe("uniqueness validation", () => {
-        function disabledReason(wrapper: ReturnType<typeof shallowMount>): string {
-            return wrapper.findComponent(GButton).props("disabledTitle") as string;
-        }
-
-        function card(wrapper: ReturnType<typeof shallowMount>, index: number) {
-            return nth(wrapper.findAllComponents(WorkflowExtractionCard), index);
+        function disabledReason(wrapper: FormWrapper): string {
+            return wrapper.getComponent(GButton).props("disabledTitle") ?? "";
         }
 
         it("de-duplicates colliding input names so the UI reflects what will be created", async () => {
@@ -543,18 +537,16 @@ describe("WorkflowExtractionForm", () => {
             // Cards start as ["myfile.txt", "myfile.txt (2)"]; rename the 2nd back onto the 1st.
             card(wrapper, 1).vm.$emit("rename");
             await flushPromises();
-            (wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void)("myfile.txt");
-            await wrapper.vm.$nextTick();
+            await applyRename(wrapper, "myfile.txt");
 
             expect(inputJobOf(card(wrapper, 1)).newName).toBe("myfile.txt (2)");
             expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
         });
 
-        async function renameOutputVia(wrapper: ReturnType<typeof shallowMount>, index: number, label: string) {
+        async function renameOutputVia(wrapper: FormWrapper, index: number, label: string) {
             card(wrapper, index).vm.$emit("rename-output", 0);
             await flushPromises();
-            (wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void)(label);
-            await wrapper.vm.$nextTick();
+            await applyRename(wrapper, label);
         }
 
         it("disables submit when two exposed outputs share a label, re-enables after relabel", async () => {
@@ -609,15 +601,10 @@ describe("WorkflowExtractionForm", () => {
     });
 
     describe("step labels", () => {
-        function card(wrapper: ReturnType<typeof shallowMount>, index: number) {
-            return nth(wrapper.findAllComponents(WorkflowExtractionCard), index);
-        }
-
-        async function labelStepVia(wrapper: ReturnType<typeof shallowMount>, index: number, label: string) {
+        async function labelStepVia(wrapper: FormWrapper, index: number, label: string) {
             card(wrapper, index).vm.$emit("label-step");
             await flushPromises();
-            (wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void)(label);
-            await wrapper.vm.$nextTick();
+            await applyRename(wrapper, label);
         }
 
         beforeEach(() => {
@@ -655,7 +642,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).not.toHaveProperty("step_labels");
         });
 
@@ -667,7 +654,7 @@ describe("WorkflowExtractionForm", () => {
             card(wrapper, 0).vm.$emit("clear-step-label");
             await wrapper.vm.$nextTick();
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).not.toHaveProperty("step_labels");
         });
 
@@ -706,7 +693,7 @@ describe("WorkflowExtractionForm", () => {
 
         it("pre-stars referenced (exposed) outputs", async () => {
             const wrapper = await mountForm();
-            const seededTool = nth(wrapper.findAllComponents(WorkflowExtractionCard), 0);
+            const seededTool = card(wrapper, 0);
             expect(nth(seededTool.props("job").outputs, 0).exposed).toBe(true);
         });
 
@@ -715,7 +702,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).toEqual(
                 expect.objectContaining({
                     job_ids: ["job-tool-1"], // seeded tool only; unseeded excluded
@@ -729,7 +716,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "From Notebook");
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload.from_page_id).toBe("page-1");
         });
 
@@ -756,7 +743,7 @@ describe("WorkflowExtractionForm", () => {
             expect(nth(cards, 1).props("job").checked).toBe(false); // unseeded mapped (backend checked=true)
             await setWorkflowName(wrapper, "From Notebook Mapped");
             await clickCreateButton(wrapper);
-            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            const payload = submittedPayload();
             expect(payload).toEqual(
                 expect.objectContaining({
                     job_ids: [],
@@ -778,9 +765,9 @@ describe("WorkflowExtractionForm", () => {
 
 describe("WorkflowExtractionCard seed_warning", () => {
     function cardBadges(job: WorkflowExtractionJob): Array<{ id: string; title?: string }> {
-        const wrapper = shallowMount(WorkflowExtractionCard as object, {
+        const wrapper = shallowMount(WorkflowExtractionCard, {
             propsData: { job: toExtractionRow(job) },
-            localVue,
+            global: getLocalVue(),
         });
         return wrapper.getComponent(GCard).props("badges") ?? [];
     }
@@ -801,11 +788,12 @@ describe("WorkflowExtractionCard seed_warning", () => {
 describe("WorkflowExtractionCard step label clear", () => {
     it("emits clear-step-label when GCard's clear-title button is clicked", async () => {
         const job = { ...toExtractionRow(TOOL_JOB), stepLabel: "concatenate" };
-        const wrapper = mount(WorkflowExtractionCard as object, {
+        const wrapper = mount(WorkflowExtractionCard, {
             propsData: { job },
-            localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-            stubs: { GenericHistoryItem: true },
+            global: {
+                ...withPlugins(getLocalVue(), createTestingPinia({ createSpy: vi.fn })),
+                stubs: { GenericHistoryItem: true },
+            },
         });
         await wrapper.find(".g-card-clear-title").trigger("click");
         expect(wrapper.emitted("clear-step-label")).toHaveLength(1);
