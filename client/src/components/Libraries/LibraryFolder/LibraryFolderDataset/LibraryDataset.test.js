@@ -1,4 +1,5 @@
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -14,36 +15,12 @@ import unrestrictedDatasetResponse from "./testData/unrestrictedDataset.json";
 
 import LibraryDataset from "./LibraryDataset.vue";
 
-vi.mock("app");
-vi.mock("onload/loadConfig", () => ({
-    getAppRoot: vi.fn(() => "/"),
-}));
-
 const FOLDER_ID = "test_folder_id";
 const UNRESTRICTED_DATASET_ID = "unrestricted_dataset_id";
 const RESTRICTED_DATASET_ID = "restricted_dataset_id";
 const CANNOT_MODIFY_DATASET_ID = "cannot_modify_dataset_id";
 const CANNOT_MANAGE_DATASET_ID = "cannot_manage_dataset_id";
 const EXPECTED_DATASET_DATA = unrestrictedDatasetResponse;
-
-// setup() (not an options-API `render() { this.$slots }` method) -- the latter gets
-// routed through Vue compat's legacy `with(this)` render-context wrapping
-// (RENDER_FUNCTION compat), which breaks a hand-built component like this.
-const mockDatatypesProvider = {
-    setup(_props, { slots }) {
-        return () => slots.default?.({ loading: false, item: ["xml"] });
-    },
-};
-const mockFailedDatatypesProvider = {
-    setup(_props, { slots }) {
-        return () => slots.default?.({ loading: false, item: [], error: "unavailable" });
-    },
-};
-const mockDbKeyProvider = {
-    setup(_props, { slots }) {
-        return () => slots.default?.({ loading: false, item: ["?"] });
-    },
-};
 
 const responseMap = new Map([
     [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
@@ -54,141 +31,146 @@ const responseMap = new Map([
 
 vi.mock("../services", () => ({
     Services: class Services {
-        async getDataset(datasetID, onError) {
-            return responseMap.get(datasetID);
+        async getDataset(datasetId) {
+            return responseMap.get(datasetId);
         }
-        async updateDataset(datasetID, data, onSucess, onError) {
+        async updateDataset(_datasetId, data) {
             return data;
         }
     },
 }));
 
-const MODIFY_BUTTON = '[data-test-id="modify-btn"]';
-const AUTO_DETECT_BUTTON = '[data-test-id="auto-detect-btn"]';
-const PERMISSIONS_BUTTON = '[data-test-id="permissions-btn"]';
-const UNRESTRICTED_MESSAGE = '[data-test-id="unrestricted-msg"]';
-const DATASET_TABLE = '[data-test-id="dataset-table"]';
-const PEEK_VIEW = '[data-test-id="peek-view"]';
+const SELECTORS = {
+    MODIFY_BUTTON: '[data-test-id="modify-btn"]',
+    AUTO_DETECT_BUTTON: '[data-test-id="auto-detect-btn"]',
+    PERMISSIONS_BUTTON: '[data-test-id="permissions-btn"]',
+    UNRESTRICTED_MESSAGE: '[data-test-id="unrestricted-msg"]',
+    DATASET_TABLE: '[data-test-id="dataset-table"]',
+    PEEK_VIEW: '[data-test-id="peek-view"]',
+};
 
-async function mountLibraryDatasetWrapper(
-    localVue,
-    router,
-    expectDatasetId,
-    isAdmin = false,
-    datatypesProvider = mockDatatypesProvider,
-) {
-    const pinia = createPinia();
-    const propsData = {
-        dataset_id: expectDatasetId,
-        folder_id: FOLDER_ID,
-    };
-    const wrapper = mount(LibraryDataset, {
-        global: localVue,
-        router,
-        propsData,
-        stubs: {
-            DatatypesProvider: datatypesProvider,
-            DbKeyProvider: mockDbKeyProvider,
+/** The dataset fields the details table lists, read off the unrestricted dataset */
+const TABLE_FIELDS = [
+    "name",
+    "file_ext",
+    "genome_build",
+    "file_size",
+    "update_time",
+    "date_uploaded",
+    "uploaded_by",
+    "misc_blurb",
+    "misc_info",
+    "uuid",
+];
+
+// setup() (not an options-API `render() { this.$slots }` method) -- the latter gets
+// routed through Vue compat's legacy `with(this)` render-context wrapping
+// (RENDER_FUNCTION compat), which breaks a hand-built component like this.
+function loadedProviderStub(item, error) {
+    return {
+        setup(_props, { slots }) {
+            return () => slots.default?.({ loading: false, item, error });
         },
-        pinia,
+    };
+}
+
+const localVue = getLocalVue();
+
+async function mountLibraryDataset(
+    datasetId,
+    { isAdmin = false, datatypesProvider = loadedProviderStub(["xml"]) } = {},
+) {
+    const wrapper = mount(LibraryDataset, {
+        props: {
+            dataset_id: datasetId,
+            folder_id: FOLDER_ID,
+        },
+        global: {
+            ...withPlugins(localVue, createPinia()),
+            stubs: {
+                ...localVue.stubs,
+                DatatypesProvider: datatypesProvider,
+                DbKeyProvider: loadedProviderStub(["?"]),
+            },
+        },
     });
-    const userStore = useUserStore();
-    userStore.currentUser = { is_admin: isAdmin };
+    useUserStore().currentUser = getFakeRegisteredUser({ is_admin: isAdmin });
     await flushPromises();
     return wrapper;
 }
 
-describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () => {
-    const localVue = getLocalVue();
-    const router = injectTestRouter(localVue);
+describe("LibraryDataset", () => {
+    it("shows the modify, auto-detect and permissions buttons to an admin", async () => {
+        const wrapper = await mountLibraryDataset(UNRESTRICTED_DATASET_ID, { isAdmin: true });
 
-    it("should display all buttons when user is Admin", async () => {
-        const isAdmin = true;
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID, isAdmin);
-
-        expect(wrapper.find(MODIFY_BUTTON).exists()).toBe(true);
-        expect(wrapper.find(AUTO_DETECT_BUTTON).exists()).toBe(true);
-        expect(wrapper.find(PERMISSIONS_BUTTON).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.MODIFY_BUTTON).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.AUTO_DETECT_BUTTON).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.PERMISSIONS_BUTTON).exists()).toBe(true);
     });
 
-    it("should not display 'Modify' and 'Auto-detect datatype' buttons when user cannot modify dataset", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, CANNOT_MODIFY_DATASET_ID);
+    it("hides the modify and auto-detect buttons when the user cannot modify the dataset", async () => {
+        const wrapper = await mountLibraryDataset(CANNOT_MODIFY_DATASET_ID);
 
-        expect(wrapper.find(MODIFY_BUTTON).exists()).toBe(false);
-        expect(wrapper.find(AUTO_DETECT_BUTTON).exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.MODIFY_BUTTON).exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.AUTO_DETECT_BUTTON).exists()).toBe(false);
     });
 
-    it("should not display 'Permissions' button when user is not an administrator", async () => {
-        const isAdmin = false;
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, CANNOT_MANAGE_DATASET_ID, isAdmin);
+    it("hides the permissions button from a user who is not an admin", async () => {
+        const wrapper = await mountLibraryDataset(CANNOT_MANAGE_DATASET_ID, { isAdmin: false });
 
-        expect(wrapper.find(PERMISSIONS_BUTTON).exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.PERMISSIONS_BUTTON).exists()).toBe(false);
     });
 
-    it("should display unrestricted dataset message when dataset is unrestricted", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
+    it("says an unrestricted dataset is unrestricted", async () => {
+        const wrapper = await mountLibraryDataset(UNRESTRICTED_DATASET_ID);
 
-        expect(wrapper.find(UNRESTRICTED_MESSAGE).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.UNRESTRICTED_MESSAGE).exists()).toBe(true);
     });
 
-    it("should not display unrestricted dataset message when dataset is restricted", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, RESTRICTED_DATASET_ID);
+    it("omits the unrestricted message for a restricted dataset", async () => {
+        const wrapper = await mountLibraryDataset(RESTRICTED_DATASET_ID);
 
-        expect(wrapper.find(UNRESTRICTED_MESSAGE).exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.UNRESTRICTED_MESSAGE).exists()).toBe(false);
     });
 
-    it("should display dataset details in the table", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
-        const table = wrapper.find(DATASET_TABLE);
-        const tableHtml = table.html();
+    it("lists the dataset details in the table", async () => {
+        const wrapper = await mountLibraryDataset(UNRESTRICTED_DATASET_ID);
 
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.name);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.file_ext);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.genome_build);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.file_size);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.update_time);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.date_uploaded);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.uploaded_by);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.misc_blurb);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.misc_info);
-        expect(tableHtml).toContain(EXPECTED_DATASET_DATA.uuid);
+        const tableHtml = wrapper.find(SELECTORS.DATASET_TABLE).html();
+        for (const field of TABLE_FIELDS) {
+            expect(tableHtml).toContain(EXPECTED_DATASET_DATA[field]);
+        }
     });
 
-    it("should display dataset peek content", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
-        const peek = wrapper.find(PEEK_VIEW);
+    it("shows the dataset peek", async () => {
+        const wrapper = await mountLibraryDataset(UNRESTRICTED_DATASET_ID);
 
-        expect(peek.text()).toBe(EXPECTED_DATASET_DATA.peek);
+        expect(wrapper.find(SELECTORS.PEEK_VIEW).text()).toBe(EXPECTED_DATASET_DATA.peek);
     });
 
     it("renders the dataset peek through v-sanitize-html", async () => {
         vi.mocked(sanitizeHtml).mockClear();
-        await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
+
+        await mountLibraryDataset(UNRESTRICTED_DATASET_ID);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(EXPECTED_DATASET_DATA.peek, "default");
     });
 
-    it("should display input fields when `Modify` button is clicked", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
-        const modify_button = wrapper.find(MODIFY_BUTTON);
+    it("turns the table into input fields when Modify is clicked", async () => {
+        const wrapper = await mountLibraryDataset(UNRESTRICTED_DATASET_ID);
+        expect(wrapper.find(SELECTORS.DATASET_TABLE).html()).not.toContain("<input");
 
-        expect(wrapper.find(DATASET_TABLE).html()).not.toContain("<input");
-
-        await modify_button.trigger("click");
+        await wrapper.find(SELECTORS.MODIFY_BUTTON).trigger("click");
         await flushPromises();
 
-        expect(wrapper.find(DATASET_TABLE).html()).toContain("<input");
+        expect(wrapper.find(SELECTORS.DATASET_TABLE).html()).toContain("<input");
     });
 
     it("shows the current datatype and a load error when datatypes fail to load", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(
-            localVue,
-            router,
-            UNRESTRICTED_DATASET_ID,
-            false,
-            mockFailedDatatypesProvider,
-        );
-        await wrapper.find(MODIFY_BUTTON).trigger("click");
+        const wrapper = await mountLibraryDataset(UNRESTRICTED_DATASET_ID, {
+            datatypesProvider: loadedProviderStub([], "unavailable"),
+        });
+        await wrapper.find(SELECTORS.MODIFY_BUTTON).trigger("click");
         await flushPromises();
 
         const error = wrapper.find('[data-test-id="datatypes-error"]');
