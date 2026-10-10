@@ -23,12 +23,15 @@ const props = withDefaults(
         id?: string;
         /** adjusts the visual appearance of the search value */
         validator?: (option: string) => boolean;
+        /** renders the suggestions below the input in the page flow instead of as an overlay */
+        listInFlow?: boolean;
     }>(),
     {
         maxShownOptions: 50,
         placeholder: "type to search",
         id: () => useUid("headless-multiselect-").value,
         validator: () => () => true,
+        listInFlow: false,
     },
 );
 
@@ -102,6 +105,12 @@ const trimmedOptions = computed(() => {
 
 /** the option which will be added when the `Enter` key is pressed */
 const highlightedOption = ref(0);
+
+const activeDescendant = computed(() =>
+    trimmedOptions.value[highlightedOption.value] !== undefined
+        ? `${props.id}-option-${highlightedOption.value}`
+        : undefined,
+);
 
 watch(
     () => trimmedSearchValue.value,
@@ -183,6 +192,8 @@ function onOptionKey(event: KeyboardEvent, index: number) {
     } else if (event.key === "ArrowDown") {
         getOptionWithId(index + 1)?.focus();
     } else if (event.key === "Escape") {
+        // keep Escape from also cancelling a parent <dialog>
+        event.preventDefault();
         close();
     }
 }
@@ -196,25 +207,36 @@ function onMouseDownInside() {
  * Closes the popup when focus leaves this component.
  * Since this component uses a Teleport, it relies on a custom `data-parent-id` attribute
  * to determine if the element is a child of this component.
+ * In the page flow the list stays open and closes on a click outside instead.
  */
 function onFocusOut(e: FocusEvent) {
+    // closing on mousedown would shift the page under the pointer before the click lands
+    if (props.listInFlow) {
+        return;
+    }
+
     const newTarget = e.relatedTarget as HTMLElement | null;
 
     // Delay until after click completes
     requestAnimationFrame(() => {
-        if (!mouseDownInside.value) {
-            if (!newTarget || newTarget.getAttribute("data-parent-id") !== props.id) {
-                close(false);
-            }
+        // a keyboard open removes the focused toggle button (no relatedTarget) before focusing the input
+        if (!mouseDownInside.value && !isOwnElement(newTarget) && !isOwnElement(document.activeElement)) {
+            close(false);
         }
         mouseDownInside.value = false;
     });
 }
 
+function isOwnElement(element: Element | null) {
+    return element?.getAttribute("data-parent-id") === props.id;
+}
+
 /** emulates tab behavior, because options list is teleported to the app layer */
 function onCloseButtonTab(event: KeyboardEvent) {
-    if (!event.shiftKey) {
-        getOptionWithId(0)?.focus();
+    const first = event.shiftKey ? null : getOptionWithId(0);
+    // without suggestions there is no option to move to, so keep the native Tab
+    if (first) {
+        first.focus();
         event.preventDefault();
     }
 }
@@ -240,6 +262,11 @@ function getNextFocusableElement() {
  * so this component is not continuous in the DOM
  */
 function onOptionTab(event: KeyboardEvent, index: number) {
+    // in the page flow the options follow the close button, so the native Tab order is right
+    if (props.listInFlow) {
+        return;
+    }
+
     if (index === 0 && event.shiftKey) {
         closeButton.value?.focus();
         event.preventDefault();
@@ -284,7 +311,13 @@ whenever(isOpen, async () => {
 onClickOutside(
     root,
     () => {
-        if (isOpen.value) {
+        if (!isOpen.value) {
+            return;
+        }
+        if (props.listInFlow) {
+            // let the click reach its target, e.g. a dialog reading its own bounds, before the layout shrinks
+            setTimeout(() => close(false));
+        } else {
             close(false);
         }
     },
@@ -302,23 +335,25 @@ onClickOutside(
                 v-model="searchValue"
                 aria-autocomplete="list"
                 :aria-label="props.placeholder"
-                role="searchbox"
+                role="combobox"
                 aria-haspopup="listbox"
                 type="text"
-                :aria-invalid="props.validator(trimmedSearchValue)"
-                :aria-owns="`${props.id}-options`"
-                :aria-activedescendant="`${props.id}-options`"
+                :aria-invalid="searchValueValid ? undefined : 'true'"
+                aria-expanded="true"
+                :aria-controls="`${props.id}-options`"
+                :aria-activedescendant="activeDescendant"
                 :data-parent-id="props.id"
                 :placeholder="props.placeholder"
                 @keydown.up="onInputUp"
                 @keydown.down="onInputDown"
                 @keydown.enter="onInputEnter"
-                @keydown.escape="close(true)" />
+                @keydown.escape.prevent="close(true)" />
             <button
                 ref="closeButton"
                 :data-parent-id="props.id"
                 title="close"
                 @click="close(true)"
+                @keydown.escape.prevent="close(true)"
                 @keydown.tab="onCloseButtonTab">
                 <FontAwesomeIcon :icon="faChevronUp" />
             </button>
@@ -328,13 +363,13 @@ onClickOutside(
             <FontAwesomeIcon :icon="faTags" />
         </button>
 
-        <Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
+        <Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`" :disabled="props.listInFlow">
             <div
                 :id="`${props.id}-options`"
                 tabindex="-1"
-                aria-expanded="true"
                 role="listbox"
                 class="headless-multiselect__options"
+                :class="{ 'headless-multiselect__options--in-flow': props.listInFlow }"
                 :style="{
                     '--top': `${bounds.top.value}px`,
                     '--left': `${bounds.left.value}px`,
@@ -458,6 +493,14 @@ onClickOutside(
     border-bottom-right-radius: 4px;
 
     background-color: $white;
+
+    &.headless-multiselect__options--in-flow {
+        position: static;
+        transform: none;
+        width: auto;
+        max-height: 300px;
+        overflow-y: auto;
+    }
 
     .headless-multiselect__option {
         padding: 0.4rem 0.5rem;

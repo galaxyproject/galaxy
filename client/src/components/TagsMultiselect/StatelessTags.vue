@@ -22,6 +22,7 @@ interface StatelessTagsProps {
     maxVisibleTags?: number;
     placeholder?: string;
     inline?: boolean;
+    listInFlow?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
     useToggleLink: true,
     maxVisibleTags: 5,
     placeholder: "Add Tags",
+    listInFlow: false,
 });
 
 const emit = defineEmits<{
@@ -140,6 +142,7 @@ function onTagClicked(tag: string) {
                 :selected="props.value"
                 :placeholder="props.placeholder"
                 :validator="(x) => !!isValid(x)"
+                :list-in-flow="props.listInFlow"
                 @addOption="onAddTag"
                 @input="onInput"
                 @selected="(tag: string) => userTagsStore.onTagUsed(tag)" />

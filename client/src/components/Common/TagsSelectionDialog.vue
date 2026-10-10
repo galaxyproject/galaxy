@@ -56,6 +56,6 @@ function resetTags() {
         ok-disabled-title="Please select at least one tag"
         @ok="onOk"
         @cancel="onCancel">
-        <StatelessTags :value="tags" @input="onTagsChange($event)" />
+        <StatelessTags :value="tags" list-in-flow @input="onTagsChange($event)" />
     </GModal>
 </template>

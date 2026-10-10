@@ -66,6 +66,11 @@ describe("HeadlessMultiselect", () => {
         await keyPress(wrapper.find(selectors.input), "Escape");
     }
 
+    async function nextAnimationFrame() {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await nextTick();
+    }
+
     // The options popup is teleported to `#app`, so it's no longer a
     // descendant of `wrapper.element` -- query the DOM directly for it.
     function findAllOptions() {
@@ -106,6 +111,82 @@ describe("HeadlessMultiselect", () => {
             await close(wrapper);
             const button = wrapper.find(selectors.openButton);
             expect(button.element).toBe(document.activeElement);
+        });
+
+        it("stays open when opened from the keyboard", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.element).toBe(document.activeElement);
+
+            // the open button is removed while focused, so focusout fires without a relatedTarget
+            wrapper.element.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
+            await nextAnimationFrame();
+
+            expect(findAllOptions().length).toBe(sampleOptions.length);
+            await close(wrapper);
+        });
+
+        it("closes when focus moves outside", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            (input.element as HTMLInputElement).blur();
+            wrapper.element.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
+            await nextAnimationFrame();
+
+            expect(findAllOptions().length).toBe(0);
+        });
+
+        it("keeps Escape in the input from reaching a parent dialog", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            input.element.dispatchEvent(event);
+            await nextTick();
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(findAllOptions().length).toBe(0);
+        });
+
+        it("keeps Escape on an option from reaching a parent dialog", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            await open(wrapper);
+            const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            nth(findAllOptions(), 0).element.dispatchEvent(event);
+            await nextTick();
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(findAllOptions().length).toBe(0);
+        });
+
+        it("keeps Escape on the close button from reaching a parent dialog", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            await open(wrapper);
+            const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            wrapper.find("fieldset button").element.dispatchEvent(event);
+            await nextTick();
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(wrapper.find(selectors.input).exists()).toBe(false);
         });
     });
 
@@ -214,6 +295,216 @@ describe("HeadlessMultiselect", () => {
             await input.setValue("invalid");
             expect(() => new DOMWrapper(document.body).get(selectors.invalid)).not.toThrow();
             await close(wrapper);
+        });
+    });
+
+    describe("as a combobox", () => {
+        it("reports the listbox it controls", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.attributes("role")).toBe("combobox");
+            expect(input.attributes("aria-expanded")).toBe("true");
+            expect(input.attributes("aria-controls")).toBe("tags-options");
+            expect(document.getElementById("tags-options")?.getAttribute("role")).toBe("listbox");
+            await close(wrapper);
+        });
+
+        it("marks only an invalid search value as invalid", async () => {
+            const wrapper = mountWithProps({
+                options: sampleOptions,
+                selected: [] as string[],
+                validator: (value: string) => value !== "invalid",
+            });
+
+            const input = await open(wrapper);
+            await input.setValue("valid");
+            expect(input.attributes("aria-invalid")).not.toBe("true");
+
+            await input.setValue("invalid");
+            expect(input.attributes("aria-invalid")).toBe("true");
+            await close(wrapper);
+        });
+
+        it("points to the highlighted option", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.attributes("aria-activedescendant")).toBe("tags-option-0");
+
+            await keyPress(input, "ArrowDown");
+            expect(input.attributes("aria-activedescendant")).toBe("tags-option-1");
+            await close(wrapper);
+        });
+
+        it("points to no option when there are none", async () => {
+            const wrapper = mountWithProps({
+                options: [] as string[],
+                selected: [] as string[],
+            });
+
+            const input = await open(wrapper);
+            expect(input.attributes("aria-activedescendant")).toBeUndefined();
+            await close(wrapper);
+        });
+    });
+
+    describe("when pressing Tab on the close button", () => {
+        function tabOnCloseButton(wrapper: ReturnType<typeof mountWithProps>) {
+            const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+            wrapper.find("fieldset button").element.dispatchEvent(event);
+            return event;
+        }
+
+        it("moves focus to the first suggestion", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            const event = tabOnCloseButton(wrapper);
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(document.activeElement?.id).toBe("tags-option-0");
+            await close(wrapper);
+        });
+
+        it("keeps the native Tab when there are no suggestions", async () => {
+            const wrapper = mountWithProps({
+                options: [] as string[],
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            const event = tabOnCloseButton(wrapper);
+
+            expect(event.defaultPrevented).toBe(false);
+            await close(wrapper);
+        });
+    });
+
+    describe("with the suggestions in the page flow", () => {
+        it("teleports the suggestions out of the editor by default", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            expect(document.getElementById("tags-options")).not.toBeNull();
+            expect(wrapper.find("#tags-options").exists()).toBe(false);
+            await close(wrapper);
+        });
+
+        it("renders the suggestions inside the editor", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+
+            const listbox = wrapper.find("#tags-options");
+            expect(listbox.exists()).toBe(true);
+            expect(listbox.classes()).toContain("headless-multiselect__options--in-flow");
+            expect(wrapper.findAll(selectors.option)).toHaveLength(sampleOptions.length);
+            await close(wrapper);
+        });
+
+        it("keeps the native Tab on the last suggestion", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+
+            const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+            wrapper.find(`#tags-option-${sampleOptions.length - 1}`).element.dispatchEvent(event);
+
+            expect(event.defaultPrevented).toBe(false);
+            await close(wrapper);
+        });
+
+        function addOutsideButton() {
+            const button = document.createElement("button");
+            appRoot.appendChild(button);
+            return button;
+        }
+
+        function focusOutTo(wrapper: ReturnType<typeof mountWithProps>, target: HTMLElement) {
+            wrapper.element.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: target }));
+            target.focus();
+        }
+
+        it("keeps the suggestions open when focus leaves (mouse down or Tab)", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+
+            focusOutTo(wrapper, addOutsideButton());
+            await nextAnimationFrame();
+
+            expect(wrapper.find("#tags-options").exists()).toBe(true);
+            await close(wrapper);
+        });
+
+        it("closes on a click outside only after the click is delivered", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+            // onClickOutside skips clicks within the same task as the opening click
+            await new Promise((resolve) => setTimeout(resolve));
+            const button = addOutsideButton();
+            let clicked = false;
+            button.addEventListener("click", () => {
+                clicked = true;
+            });
+
+            button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+            await nextTick();
+
+            expect(clicked).toBe(true);
+            expect(wrapper.find("#tags-options").exists()).toBe(true);
+
+            await new Promise((resolve) => setTimeout(resolve));
+            await nextTick();
+            expect(wrapper.find("#tags-options").exists()).toBe(false);
+        });
+
+        it("still closes the overlay when focus moves to an outside button", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+            });
+            await open(wrapper);
+
+            focusOutTo(wrapper, addOutsideButton());
+            await nextAnimationFrame();
+
+            expect(document.getElementById("tags-options")).toBeNull();
         });
     });
 

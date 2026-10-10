@@ -84,6 +84,12 @@ describe("Tag", () => {
         expect(tag.emitted("click")).toBeFalsy();
     });
 
+    it("names its delete button after the tag", () => {
+        const tag = mountWithProps({ option: "my_tag", editable: true });
+
+        expect(tag.find(".tag-delete-button").attributes("aria-label")).toBe("Remove tag my_tag");
+    });
+
     it("displays named tags bold", () => {
         {
             const wrapper = mountWithProps({ option: "my_tag" });
