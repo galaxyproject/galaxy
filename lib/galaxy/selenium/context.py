@@ -20,18 +20,8 @@ class GalaxySeleniumContext(NavigatesGalaxy):
     url: str
     target_url_from_selenium: str
     configured_driver: ConfiguredDriver
-    _story: StoryBase | None = None
-
-    @property
-    def story(self) -> StoryBase:
-        """Story being collected. A null object unless one has been assigned."""
-        if self._story is None:
-            self._story = NoopStory()
-        return self._story
-
-    @story.setter
-    def story(self, story: StoryBase) -> None:
-        self._story = story
+    # Story being collected; the stateless null object unless one is assigned.
+    story: StoryBase = NoopStory()
 
     @property
     def _driver_impl(self):
