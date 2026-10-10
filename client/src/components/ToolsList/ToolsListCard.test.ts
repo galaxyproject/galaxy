@@ -1,10 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
+import type { AnyUser } from "@/api";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -28,7 +30,7 @@ const localVue = getLocalVue();
 
 function mountCard(options?: {
     attachTo?: HTMLElement;
-    currentUser?: any;
+    currentUser?: AnyUser;
     favorites?: { tools: string[]; tags: string[]; edam_operations: string[]; edam_topics: string[] };
     propsData?: Record<string, unknown>;
 }) {
@@ -59,12 +61,7 @@ function mountCard(options?: {
             },
         },
     };
-    userStore.currentUser =
-        options?.currentUser ??
-        ({
-            id: "anonymous",
-            isAnonymous: true,
-        } as any);
+    userStore.currentUser = options?.currentUser ?? getFakeAnonymousUser();
     userStore.currentPreferences = {
         favorites: options?.favorites ?? { tools: [], tags: [], edam_operations: [], edam_topics: [] },
     };
@@ -147,12 +144,11 @@ describe("ToolsListCard", () => {
         expect(wrapper.emitted("apply-filter")).toEqual([["tag", "collection_ops"]]);
     });
 
-    const SIGNED_IN_USER = {
+    const SIGNED_IN_USER = getFakeRegisteredUser({
         id: "user-id",
         username: "test-user",
         email: "test@example.org",
-        isAnonymous: false,
-    } as any;
+    });
 
     it("adds and removes favorite tags for signed-in users", async () => {
         const { wrapper } = mountCard({
@@ -193,7 +189,7 @@ describe("ToolsListCard", () => {
         "removes a favorite $label entry for signed-in users",
         async ({ favorites, selector, visibleSectionLabel, action, actionArg }) => {
             const { wrapper } = mountCard({ currentUser: SIGNED_IN_USER, favorites });
-            const userStore = useUserStore() as any;
+            const userStore = useUserStore();
             expect(wrapper.text()).toContain(visibleSectionLabel);
             await wrapper.find(selector).trigger("click");
             expect(userStore[action]).toHaveBeenCalledWith(actionArg);
@@ -220,10 +216,7 @@ describe("ToolsListCard", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(pinia);
         const userStore = useUserStore();
-        userStore.currentUser = {
-            id: "anonymous",
-            isAnonymous: true,
-        } as any;
+        userStore.currentUser = getFakeAnonymousUser();
         userStore.currentPreferences = {
             favorites: { tools: [], tags: [], edam_operations: [], edam_topics: [] },
         };

@@ -1,11 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AnonymousUser, AnyUser } from "@/api";
+import type { AnyUser } from "@/api";
 import { submitToolInstallationRequest } from "@/api/notifications";
 import { clickModalButton } from "@/components/BaseComponents/test-utils";
 import { setMockConfig } from "@/composables/__mocks__/config";
@@ -35,8 +35,6 @@ const EXPECTED_REQUESTED_TOOLS = [
 ];
 
 const SIXTY_TOOL_IDS = Array.from({ length: 60 }, (_, i) => `tool-${i}`);
-
-const ANONYMOUS_USER: AnonymousUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
 
 const SELECTORS = {
     ERROR_ALERT: ".alert-danger",
@@ -124,7 +122,7 @@ describe("WorkflowMissingToolsRequest", () => {
         });
 
         it("does not render when user is anonymous", async () => {
-            const wrapper = await mountWorkflowMissingToolsRequest({ currentUser: ANONYMOUS_USER });
+            const wrapper = await mountWorkflowMissingToolsRequest({ currentUser: getFakeAnonymousUser() });
 
             expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);
         });
@@ -133,7 +131,7 @@ describe("WorkflowMissingToolsRequest", () => {
             const wrapper = await mountWorkflowMissingToolsRequest({ currentUser: null });
             expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(true);
 
-            useUserStore().currentUser = ANONYMOUS_USER;
+            useUserStore().currentUser = getFakeAnonymousUser();
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);

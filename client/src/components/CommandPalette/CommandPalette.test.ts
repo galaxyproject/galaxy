@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeAnonymousUser } from "@tests/test-data";
 import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -243,7 +244,7 @@ describe("CommandPalette", () => {
 
     /** Turns the current user into a visitor without an account */
     function browseAnonymously() {
-        useUserStore().currentUser = { id: "anon", isAnonymous: true } as never;
+        useUserStore().currentUser = getFakeAnonymousUser();
     }
 
     it("shows actions and navigation sections for an empty query", () => {

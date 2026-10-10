@@ -1,4 +1,4 @@
-import type { HistorySummary, HistorySummaryExtended, RegisteredUser } from "@/api";
+import type { AnonymousUser, HistorySummary, HistorySummaryExtended, RegisteredUser } from "@/api";
 
 export function getFakeRegisteredUser(data: Partial<RegisteredUser> = {}): RegisteredUser {
     return {
@@ -13,6 +13,16 @@ export function getFakeRegisteredUser(data: Partial<RegisteredUser> = {}): Regis
         is_admin: false,
         preferences: {},
         quota: "default",
+        ...data,
+    };
+}
+
+/** A visitor with a session but no account: a non-null user without an email. */
+export function getFakeAnonymousUser(data: Partial<AnonymousUser> = {}): AnonymousUser {
+    return {
+        isAnonymous: true,
+        total_disk_usage: 0,
+        nice_total_disk_usage: "0.0 bytes",
         ...data,
     };
 }
