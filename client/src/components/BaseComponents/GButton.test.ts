@@ -1,50 +1,62 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
+import type { Router } from "vue-router";
+
+import { createMemoryRouter } from "./test-utils";
 
 import GButton from "./GButton.vue";
 
 const localVue = getLocalVue(true);
 
-function mountGButton(props: object) {
-    return mount(GButton as object, { propsData: props, localVue });
+function mountGButton(props: object, router?: Router) {
+    return mount(GButton, { props, global: router ? withPlugins(localVue, router) : localVue });
 }
 
-describe("GButton.vue", () => {
+describe("GButton.vue titles", () => {
     it("uses the regular title when enabled", () => {
-        const wrapper = mountGButton({ title: "Click me" });
-        const button = wrapper.get("button");
+        const button = mountGButton({ title: "Click me" }).get("button");
 
         expect(button.attributes("title")).toBe("Click me");
         expect(button.attributes("data-title")).toBe("Click me");
     });
 
     it("uses the disabled title when disabled", () => {
-        const wrapper = mountGButton({
+        const button = mountGButton({
             disabled: true,
             title: "Click me",
             disabledTitle: "Cannot click right now",
-        });
-        const button = wrapper.get("button");
+        }).get("button");
 
         expect(button.attributes("title")).toBe("Cannot click right now");
         expect(button.attributes("data-title")).toBe("Cannot click right now");
     });
 
     it("falls back to the regular title when disabled without a disabled title", () => {
-        const wrapper = mountGButton({ disabled: true, title: "Click me" });
-        const button = wrapper.get("button");
+        const button = mountGButton({ disabled: true, title: "Click me" }).get("button");
 
         expect(button.attributes("title")).toBe("Click me");
+        expect(button.attributes("data-title")).toBe("Click me");
     });
 
+    // A styled tooltip replaces the native title. RouterLink runs in Vue 3 mode, where a
+    // `false` attribute renders as the string "false" instead of being dropped.
+    it("leaves the native title off a router link with a tooltip", () => {
+        const wrapper = mountGButton(
+            { to: "/pages/create", title: "Create a page", tooltip: true },
+            createMemoryRouter(),
+        );
+
+        expect(wrapper.get("a").attributes("title")).toBeUndefined();
+    });
+});
+
+describe("GButton.vue disabled", () => {
     // A disabled button must stay hoverable so the (disabled) title can surface its
     // tooltip. We mark it disabled via aria-disabled and a JS click guard rather than
     // the native `disabled` attribute (which would suppress hover events).
     it("remains hoverable when disabled", () => {
-        const wrapper = mountGButton({ disabled: true, disabledTitle: "Nope" });
-        const button = wrapper.get("button");
+        const button = mountGButton({ disabled: true, disabledTitle: "Nope" }).get("button");
 
         expect(button.attributes("aria-disabled")).toBe("true");
         expect(button.attributes("disabled")).toBeUndefined();
@@ -69,8 +81,7 @@ describe("GButton.vue", () => {
 
 describe("GButton.vue loading", () => {
     it("shows a spinner and marks itself busy while loading", () => {
-        const wrapper = mountGButton({ loading: true });
-        const button = wrapper.get("button");
+        const button = mountGButton({ loading: true }).get("button");
 
         expect(button.attributes("aria-busy")).toBe("true");
         expect(button.find('[data-icon="spinner"]').exists()).toBe(true);
@@ -85,18 +96,14 @@ describe("GButton.vue loading", () => {
     });
 
     it("renders a loading router-link button as a plain button so it cannot navigate", () => {
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create", loading: true },
-            localVue,
-            router: routerWithRoutes(),
-        });
+        const wrapper = mountGButton({ to: "/pages/create", loading: true }, createMemoryRouter());
 
         expect(wrapper.element.tagName).toBe("BUTTON");
     });
 
     it("drops the spinner and busy state and takes clicks again once loading ends", async () => {
         const wrapper = mountGButton({ loading: true });
-        await wrapper.setProps({ loading: false } as object);
+        await wrapper.setProps({ loading: false });
         const button = wrapper.get("button");
 
         expect(button.attributes("aria-busy")).toBeUndefined();
@@ -119,7 +126,7 @@ describe("GButton.vue click propagation", () => {
     // A native disabled button dispatches no click at all, so nothing reaches clickable
     // ancestors. GButton renders `aria-disabled` instead of the native attribute, so the
     // guard in `onClick` has to stop the event itself.
-    function mountInClickableParent(props: object) {
+    function mountInClickableParent(buttonProps: object) {
         const onParentClick = vi.fn();
 
         const wrapper = mount(
@@ -128,11 +135,11 @@ describe("GButton.vue click propagation", () => {
                 props: ["buttonProps"],
                 template: `<div @click="onParentClick"><GButton v-bind="buttonProps">Click me</GButton></div>`,
                 methods: { onParentClick },
-            } as object,
-            { propsData: { buttonProps: props }, localVue },
+            },
+            { props: { buttonProps }, global: localVue },
         );
 
-        return { wrapper, onParentClick, button: wrapper.getComponent(GButton as object) };
+        return { onParentClick, button: wrapper.getComponent(GButton) };
     }
 
     it("does not bubble a click to clickable ancestors when disabled", async () => {
@@ -154,56 +161,18 @@ describe("GButton.vue click propagation", () => {
     });
 });
 
-const RouteStub = { render: () => null };
+describe("GButton.vue click per root element", () => {
+    // A router link gets the click listener on its rendered anchor by fallthrough,
+    // alongside RouterLink's own navigation handler; the plain roots bind the same
+    // single listener directly.
+    it.each([
+        { root: "router-link", element: "a", props: { to: "/pages/create" }, withRouter: true },
+        { root: "plain button", element: "button", props: {}, withRouter: false },
+        { root: "plain anchor", element: "a", props: { href: "https://example.org" }, withRouter: false },
+    ])("emits click exactly once from a $root root", async ({ element, props, withRouter }) => {
+        const wrapper = mountGButton(props, withRouter ? createMemoryRouter() : undefined);
 
-function routerWithRoutes(paths = ["/", "/pages/create"], base?: string) {
-    return createRouter({
-        history: createMemoryHistory(base),
-        routes: paths.map((path) => ({ path, component: RouteStub })),
-    });
-}
-
-describe("GButton.vue router-link root", () => {
-    // A styled tooltip replaces the native title. RouterLink runs in Vue 3 mode, where a
-    // `false` attribute renders as the string "false" instead of being dropped.
-    it("leaves the native title off a router link with a tooltip", () => {
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create", title: "Create a page", tooltip: true },
-            localVue,
-            router: routerWithRoutes(),
-        });
-
-        expect(wrapper.get("a").attributes("title")).toBeUndefined();
-    });
-
-    // The click listener reaches the RouterLink's rendered anchor by fallthrough, alongside
-    // RouterLink's own navigation handler.
-    it("emits click exactly once from a router-link root", async () => {
-        const router = routerWithRoutes();
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create" },
-            localVue,
-            router,
-        });
-
-        await wrapper.trigger("click");
-
-        expect(wrapper.emitted("click")).toHaveLength(1);
-    });
-
-    // The plain roots bind the same single listener directly.
-    it("emits click exactly once from a plain button root", async () => {
-        const wrapper = mountGButton({});
-
-        await wrapper.get("button").trigger("click");
-
-        expect(wrapper.emitted("click")).toHaveLength(1);
-    });
-
-    it("emits click exactly once from a plain anchor root", async () => {
-        const wrapper = mountGButton({ href: "https://example.org" });
-
-        await wrapper.get("a").trigger("click");
+        await wrapper.get(element).trigger("click");
 
         expect(wrapper.emitted("click")).toHaveLength(1);
     });
@@ -214,40 +183,28 @@ describe("GButton.vue disabled navigation", () => {
     // reliable no-op in vue-router, so a disabled GButton renders as a plain button
     // instead and has no navigation behaviour to suppress.
     it("renders an enabled router-link button as an anchor", () => {
-        const router = routerWithRoutes();
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create" },
-            localVue,
-            router,
-        });
+        const wrapper = mountGButton({ to: "/pages/create" }, createMemoryRouter());
 
         expect(wrapper.element.tagName).toBe("A");
     });
 
     it("renders a disabled router-link button as a plain button", () => {
-        const router = routerWithRoutes();
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create", disabled: true, disabledTitle: "Nope" },
-            localVue,
-            router,
-        });
+        const wrapper = mountGButton(
+            { to: "/pages/create", disabled: true, disabledTitle: "Nope" },
+            createMemoryRouter(),
+        );
 
         expect(wrapper.element.tagName).toBe("BUTTON");
     });
 
     it("does not navigate when a disabled router-link button is clicked", async () => {
-        const router = routerWithRoutes(["/start", "/pages/create"]);
+        const router = createMemoryRouter({ paths: ["/start", "/pages/create"] });
         await router.push("/start?keep=me");
-        const routeBeforeClick = router.currentRoute.value.fullPath;
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create", disabled: true },
-            localVue,
-            router,
-        });
+        const wrapper = mountGButton({ to: "/pages/create", disabled: true }, router);
 
         await wrapper.trigger("click");
 
-        expect(router.currentRoute.value.fullPath).toBe(routeBeforeClick);
+        expect(router.currentRoute.value.fullPath).toBe("/start?keep=me");
     });
 });
 
@@ -255,12 +212,7 @@ describe("GButton.vue link targets", () => {
     // Galaxy can be served under a URL prefix, so a router link's href has to come from
     // the router, which knows the base -- open-in-new-tab and copy-link use it as is.
     it("renders a router link's href with the router base", () => {
-        const router = routerWithRoutes(["/", "/pages/create"], "/galaxypf/");
-        const wrapper = mount(GButton as object, {
-            propsData: { to: "/pages/create" },
-            localVue,
-            router,
-        });
+        const wrapper = mountGButton({ to: "/pages/create" }, createMemoryRouter({ base: "/galaxypf/" }));
 
         expect(wrapper.get("a").attributes("href")).toBe("/galaxypf/pages/create");
     });
