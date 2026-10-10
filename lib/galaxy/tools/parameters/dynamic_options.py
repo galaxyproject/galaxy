@@ -925,6 +925,10 @@ class DynamicOptions:
     def get_field_by_name_for_value(self, field_name, value, trans, other_values):
         """
         Get contents of field by name for specified value.
+
+        Each selected value resolves to a single entry. If multiple entries share a value
+        the first one wins; joining their fields would produce invalid values such as
+        comma separated paths.
         """
         rval = []
         if isinstance(field_name, int):
@@ -935,8 +939,18 @@ class DynamicOptions:
         if not isinstance(value, list):
             value = [value]
         for val in value:
-            for fields in self.get_fields_by_value(val, trans, other_values):
-                rval.append(fields[field_index])
+            matching_fields = self.get_fields_by_value(val, trans, other_values)
+            if not matching_fields:
+                continue
+            if len(matching_fields) > 1:
+                log.warning(
+                    "Found %d entries with value '%s' for field '%s', using the first one: %s",
+                    len(matching_fields),
+                    val,
+                    field_name,
+                    matching_fields[0],
+                )
+            rval.append(matching_fields[0][field_index])
         return rval
 
     def get_options(self, trans, other_values) -> Sequence[ParameterOption]:

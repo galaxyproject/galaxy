@@ -237,8 +237,7 @@ class DataManager:
             self.repo_info,
             options,
         )
-        for data_table_name in updated_data_tables:
-            self._reload(data_table_name)
+        self._reload(updated_data_tables)
 
     def write_bundle(
         self,
@@ -255,10 +254,20 @@ class DataManager:
     def _data_manager_path(self) -> str:
         return self.data_managers.app.config.galaxy_data_manager_data_path
 
-    def _reload(self, data_table_name: str) -> None:
-        self.data_managers.app.queue_worker.send_control_task(
-            "reload_tool_data_tables", noop_self=True, kwargs={"table_name": data_table_name}
-        )
+    def _reload(self, data_table_names: list[str]) -> None:
+        if not data_table_names:
+            return
+        # New entries were appended to the in-memory tables, reload them so that
+        # this process resolves duplicate values in the same (config) order as
+        # the processes reloading the tables through the control task.
+        try:
+            self.data_managers.app.tool_data_tables.reload_tables(table_names=data_table_names)
+        except Exception:
+            log.exception("Failed to reload data tables %s after running data manager '%s'", data_table_names, self.id)
+        for data_table_name in data_table_names:
+            self.data_managers.app.queue_worker.send_control_task(
+                "reload_tool_data_tables", noop_self=True, kwargs={"table_name": data_table_name}
+            )
 
     @property
     def repo_info(self) -> Optional[RepoInfo]:
