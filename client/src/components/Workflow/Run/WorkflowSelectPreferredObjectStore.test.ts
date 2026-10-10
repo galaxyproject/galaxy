@@ -2,9 +2,9 @@ import "@tests/vitest/mockHelpPopovers";
 
 import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
@@ -14,45 +14,43 @@ import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectS
 setupSelectableMock();
 setupMockConfig({});
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 
-function mountComponent() {
-    const wrapper = mount(WorkflowSelectPreferredObjectStore as object, {
-        props: { invocationPreferredObjectStoreId: null },
-        global: localVue,
+const SELECTION = ROOT_COMPONENT.preferences.object_store_selection;
+const SELECTION_ERROR = ".object-store-selection-error";
+
+async function mountComponent(invocationPreferredObjectStoreId: string | null = null) {
+    const wrapper = mount(WorkflowSelectPreferredObjectStore, {
+        props: { invocationPreferredObjectStoreId },
+        global: getLocalVue(true),
     });
+    await flushPromises();
     return wrapper;
 }
 
-const PREFERENCES = ROOT_COMPONENT.preferences;
-
 describe("WorkflowSelectPreferredObjectStore.vue", () => {
-    it("update preferred object store on selection", async () => {
-        const wrapper = mountComponent();
+    it("lists the Galaxy default option and each selectable storage location", async () => {
+        const wrapper = await mountComponent();
 
-        await flushPromises();
-        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_cards.selector);
-        expect(els.length).toBe(3);
-
-        const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_card({ object_store_id: "__null__" }).selector,
-        );
-
-        expect(galaxyDefaultOption.exists()).toBeTruthy();
-
-        const objectStoreOptionButton = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_card_select({ object_store_id: "object_store_1" })
-                .selector,
-        );
-
-        expect(objectStoreOptionButton.exists()).toBeTruthy();
-
-        await objectStoreOptionButton.trigger("click");
-        await flushPromises();
-
-        const errorEl = wrapper.find(".object-store-selection-error");
-        expect(errorEl.exists()).toBeFalsy();
-
-        expect(wrapper.emitted("updated")?.[0]?.[1]).toBeFalsy();
+        expect(wrapper.findAll(SELECTION.option_cards.selector)).toHaveLength(3);
+        expect(wrapper.find(SELECTION.option_card({ object_store_id: "__null__" }).selector).exists()).toBe(true);
     });
+
+    it.each([
+        { preferred: null, selected: "object_store_1", emitted: "object_store_1" },
+        { preferred: "object_store_1", selected: "__null__", emitted: null },
+    ])(
+        "emits $emitted when $selected is selected while $preferred is preferred",
+        async ({ preferred, selected, emitted }) => {
+            const wrapper = await mountComponent(preferred);
+            const selectButton = wrapper.find(SELECTION.option_card_select({ object_store_id: selected }).selector);
+            expect(selectButton.exists()).toBe(true);
+
+            await selectButton.trigger("click");
+            await flushPromises();
+
+            expect(wrapper.find(SELECTION_ERROR).exists()).toBe(false);
+            expect(wrapper.emitted("updated")).toEqual([[emitted]]);
+        },
+    );
 });
