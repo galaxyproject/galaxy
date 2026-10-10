@@ -1114,3 +1114,117 @@ def test_backfill_option_from_global_config(fake_conda: FakeConda, tmp_path) -> 
     )
     resolver = CondaDependencyResolver(dependency_manager, prefix=fake_conda.prefix, exec=fake_conda.exec)
     assert resolver._backfill_thread is None
+
+
+def test_foreign_resolve_with_auto_install_creates_native_and_foreign(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    env_name = "__samtools@1.9"
+    assert not resolver.conda_context.has_env(env_name)
+    n_before = len(fake_conda.creates())
+    dep = resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64")
+    assert not isinstance(dep, NullDependency)
+    assert dep.activate == os.path.join(fake_conda.prefix, "platforms", "linux-aarch64", "bin", "activate")
+    assert dep.environment_path == foreign_env(fake_conda, "linux-aarch64", env_name)
+    assert resolver.conda_context.has_env(env_name)
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", env_name))
+    creates = fake_conda.creates()[n_before:]
+    assert len(creates) == 2
+    assert "--platform" not in creates[0]["argv"] and creates[1]["CONDA_SUBDIR"] == "linux-aarch64"
+    # a second request finds the environment and does not call conda
+    n_calls = len(fake_conda.calls())
+    assert not isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+    assert len(fake_conda.calls()) == n_calls
+
+
+def test_foreign_resolve_all_with_auto_install_creates_the_merged_environment(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    deps = resolver.resolve_all(ToolRequirements([req("a"), req("b")]), platform="linux-aarch64")
+    assert len(deps) == 2
+    assert all(d.platform == "linux-aarch64" for d in deps)
+    assert all(os.path.exists(os.path.join(d.environment_path, PLATFORM_OK_MARKER)) for d in deps)
+
+
+def test_foreign_resolve_does_not_retry_a_fresh_failure(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    context = resolver.conda_context
+    context.record_platform_failure("linux-aarch64", "__samtools@1.9", "solver error")
+    assert context.platform_failure_is_fresh("linux-aarch64", "__samtools@1.9")
+    n_calls = len(fake_conda.calls())
+    assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+    assert resolver.resolve_all(ToolRequirements([req("samtools", "1.9")]), platform="linux-aarch64") == []
+    assert len(fake_conda.calls()) == n_calls
+    assert not context.has_env("__samtools@1.9")
+
+
+def test_foreign_resolve_retries_an_old_failure(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    context = resolver.conda_context
+    context.record_platform_failure("linux-aarch64", "__samtools@1.9", "solver error")
+    old = time.time() - 30 * 86400
+    os.utime(context.platform_failure_path("linux-aarch64", "__samtools@1.9"), (old, old))
+    assert not isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+
+
+def test_failed_on_demand_create_gives_null_dependency_and_records_the_failure(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    fake_conda.fail_for("linux-aarch64")
+    assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+    assert resolver.conda_context.platform_failure_is_fresh("linux-aarch64", "__samtools@1.9")
+    n_creates = len(fake_conda.creates())
+    assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+    assert len(fake_conda.creates()) == n_creates
+
+
+def test_foreign_resolve_without_auto_install_does_not_call_conda(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=False)
+    n_calls = len(fake_conda.calls())
+    assert isinstance(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"), NullDependency)
+    assert resolver.resolve_all(ToolRequirements([req("a"), req("b")]), platform="linux-aarch64") == []
+    assert len(fake_conda.calls()) == n_calls
+
+
+def test_foreign_resolve_with_install_false_does_not_call_conda(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    n_calls = len(fake_conda.calls())
+    dep = resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64", install=False)
+    assert isinstance(dep, NullDependency)
+    assert len(fake_conda.calls()) == n_calls
+
+
+def test_foreign_resolve_waits_for_a_native_install_in_progress(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    context = resolver.conda_context
+    env_name = "__samtools@1.9"
+    holds_lock = threading.Event()
+    finish_install = threading.Event()
+    result: List[Any] = []
+
+    def native_install() -> None:
+        with context.env_lock(env_name) as locked:
+            assert locked
+            holds_lock.set()
+            assert finish_install.wait(10)
+            assert context.exec_create(["--name", env_name, "samtools=1.9"]) == 0
+            context.create_platform_environments(env_name, ["samtools=1.9"])
+
+    def foreign_request() -> None:
+        result.append(resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64"))
+
+    t1 = threading.Thread(target=native_install)
+    t1.start()
+    assert holds_lock.wait(10)
+    n_creates = len(fake_conda.creates())
+    t2 = threading.Thread(target=foreign_request)
+    t2.start()
+    t2.join(0.5)
+    assert t2.is_alive()
+    assert result == []
+    assert len(fake_conda.creates()) == n_creates
+    finish_install.set()
+    t1.join(10)
+    t2.join(10)
+    assert not t1.is_alive() and not t2.is_alive()
+    assert len(result) == 1 and not isinstance(result[0], NullDependency)
+    assert result[0].environment_path == foreign_env(fake_conda, "linux-aarch64", env_name)
+    # the waiting request created nothing on its own: one native and one foreign create in total
+    assert len(fake_conda.creates()) == n_creates + 2

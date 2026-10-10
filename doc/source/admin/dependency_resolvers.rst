@@ -321,6 +321,40 @@ for each other. The operating system releases the lock when the holding process 
 stale lock behind, and the lock file stays in place. A foreign copy that already exists is not created again. A
 foreign environment counts as installed once its marker is written and the Conda base of its platform exists.
 
+With ``auto_install`` on, a request for a foreign platform whose environment is missing creates the environment on
+demand. The request takes the lock of the environment, so it waits for a native install of the same requirement set that
+is in progress, finds the native environment present and creates only the missing foreign copy. A Pulsar with a
+platform per manager relies on this, because its first job on an arm manager can arrive while the first job on an x86
+manager is still installing. A request does not retry a foreign create whose ``.failed`` file is younger than
+``platforms_retry_days`` and resolves to nothing instead. Without ``auto_install`` a missing foreign environment
+resolves to nothing.
+
+Two deployment modes
+....................
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 43 43
+
+   * -
+     - Mode 1: Galaxy resolves
+     - Mode 2: Pulsar resolves
+   * - Platform list
+     - ``conda_platforms`` in ``galaxy.yml``
+     - ``platforms`` in the conda resolver of the Pulsar ``dependency_resolvers_conf.xml``
+   * - Platform of a job
+     - ``platform`` parameter of the destination, or the routing helper
+     - ``platform`` of the Pulsar manager
+   * - Selection
+     - The destination, which can be chosen by ``platform_destination``
+     - Galaxy selects the manager through the URL ``.../managers/<name>/`` and sends only the requirements
+   * - Conda prefix
+     - Shared between the Galaxy head and the compute nodes
+     - Local to the Pulsar server, the Galaxy head needs no shared file system
+   * - Destination types
+     - Slurm, CLI, local, and Pulsar with ``dependency_resolution: local``
+     - Pulsar with ``dependency_resolution: remote``
+
 Backfill of existing environments
 .................................
 
@@ -432,8 +466,9 @@ have to be installed beforehand (admin dependency API or UI), otherwise the func
 Limits
 ......
 
-* Foreign environments are created when a requirement set is installed while the option is set. Environments installed
-  earlier receive their foreign copies from the backfill, which needs ``auto_install``.
+* Foreign environments are created when a requirement set is installed while the option is set, or on demand by a
+  request for the foreign platform. Both need ``auto_install``. Without it, environments installed earlier lack their
+  foreign copies until they are installed again.
 * Packages that have no build for a platform cannot be installed there. Galaxy skips that platform for the tool and
   the tool routes to destinations of other platforms.
 * Environments for macOS that are cross-installed from Linux are only usable once their patched binaries are signed,

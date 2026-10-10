@@ -354,26 +354,31 @@ class CondaDependencyResolver(
 
         platform = self._requested_foreign_platform(kwds)
         if platform is not None:
-            # Foreign environments are populated when the native environment is installed.
+            # Foreign environments are created together with the native install, or here on demand.
             if platform is False:
                 return []
-            for capitalized_package_names in (True, False):
-                env = self.merged_environment_name(conda_targets, capitalized_package_names)
-                if self.conda_context.platform_has_env(platform, env):
-                    return [
-                        MergedCondaDependency(
-                            self.conda_context,
-                            self.conda_context.platform_env_path(platform, env),
-                            exact=not self.versionless or requirement.version is None,
-                            name=requirement.name,
-                            version=requirement.version,
-                            preserve_python_environment=preserve_python_environment,
-                            dependency_resolver=self,
-                            platform=platform,
-                        )
-                        for requirement in requirements
-                    ]
-            return []
+            env = self._foreign_environment(
+                platform,
+                [self.merged_environment_name(conda_targets, c) for c in (True, False)],
+                self.merged_environment_name(conda_targets),
+                conda_targets,
+                kwds,
+            )
+            if env is None:
+                return []
+            return [
+                MergedCondaDependency(
+                    self.conda_context,
+                    self.conda_context.platform_env_path(platform, env),
+                    exact=not self.versionless or requirement.version is None,
+                    name=requirement.name,
+                    version=requirement.version,
+                    preserve_python_environment=preserve_python_environment,
+                    dependency_resolver=self,
+                    platform=platform,
+                )
+                for requirement in requirements
+            ]
 
         for capitalized_package_names in (True, False):
             env = self.merged_environment_name(conda_targets, capitalized_package_names)
@@ -435,22 +440,28 @@ class CondaDependencyResolver(
 
         platform = self._requested_foreign_platform(kwds)
         if platform is not None:
-            # Foreign environments are populated when the native environment is installed.
+            # Foreign environments are created together with the native install, or here on demand.
             if platform is False:
                 return NullDependency(version=version, name=name)
-            for env_name in (conda_target.install_environment, conda_target.capitalized_install_environment):
-                if self.conda_context.platform_has_env(platform, env_name):
-                    return MergedCondaDependency(
-                        self.conda_context,
-                        self.conda_context.platform_env_path(platform, env_name),
-                        exact,
-                        name,
-                        version,
-                        preserve_python_environment=kwds.get("preserve_python_environment", False),
-                        dependency_resolver=self,
-                        platform=platform,
-                    )
-            return NullDependency(version=version, name=name)
+            env_name = self._foreign_environment(
+                platform,
+                [conda_target.install_environment, conda_target.capitalized_install_environment],
+                conda_target.install_environment,
+                [conda_target],
+                kwds,
+            )
+            if env_name is None:
+                return NullDependency(version=version, name=name)
+            return MergedCondaDependency(
+                self.conda_context,
+                self.conda_context.platform_env_path(platform, env_name),
+                exact,
+                name,
+                version,
+                preserve_python_environment=kwds.get("preserve_python_environment", False),
+                dependency_resolver=self,
+                platform=platform,
+            )
 
         is_installed = is_conda_target_installed(conda_target, conda_context=self.conda_context)
 
@@ -489,6 +500,33 @@ class CondaDependencyResolver(
             preserve_python_environment=preserve_python_environment,
             dependency_resolver=self,
         )
+
+    def _foreign_environment(
+        self, platform: str, env_names: List[str], new_env_name: str, conda_targets: List[CondaTarget], kwds
+    ) -> Optional[str]:
+        """Name of the first of ``env_names`` that is usable on the foreign ``platform``, None if there is none.
+
+        A missing environment is created on demand as ``new_env_name`` when auto install is on and the caller does not
+        pass ``install=False``. The creation goes through the same locked path as the native auto
+        install (:func:`install_conda_targets`), so a native install of the same environment that is
+        in progress is waited for instead of repeated, an existing native environment is kept and only the
+        missing foreign copies are created. A foreign create that failed within the retry window is not
+        repeated.
+        """
+        for env_name in env_names:
+            if self.conda_context.platform_has_env(platform, env_name):
+                return env_name
+        if self.read_only or not self.auto_install or kwds.get("install", None) is False:
+            return None
+        env_name = new_env_name
+        if any(self.conda_context.platform_failure_is_fresh(platform, name) for name in env_names):
+            log.debug("Not retrying the recently failed conda environment %s for platform %s", env_name, platform)
+            return None
+        log.debug("Installing conda environment %s for platform %s on demand", env_name, platform)
+        if install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env_name) != 0:
+            cleanup_failed_install_of_environment(env_name, conda_context=self.conda_context)
+            return None
+        return env_name if self.conda_context.platform_has_env(platform, env_name) else None
 
     def _requested_foreign_platform(self, kwds):
         """Interpret the ``platform`` keyword of a resolve call.
