@@ -1,4 +1,5 @@
 import json
+import stat
 from datetime import (
     datetime,
     timezone,
@@ -21,6 +22,9 @@ from galaxy.tools.source_store.manifest import (
     tool_snapshot,
     write_manifest,
 )
+from galaxy.util import RW_R__R__
+
+RW_R_____ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP
 
 
 def _index(source_hash: str = "source-a") -> ToolIndex:
@@ -95,6 +99,24 @@ def test_write_manifest_uses_database_name_sidecar(tmp_path, monkeypatch):
     assert payload["cohort"] == "v1"
     assert payload["producer"]["git_revision"] is None
     assert payload["tool_snapshot"]["digest"] == tool_snapshot(_index()).digest
+
+
+def test_write_manifest_matches_database_permissions(tmp_path):
+    database_path = tmp_path / "sources.sqlite"
+    database_path.touch()
+    database_path.chmod(RW_R_____)
+
+    path = write_manifest(f"sqlite:///{database_path}", build_manifest("cvmfs_main", _index()))
+
+    assert path is not None
+    assert stat.S_IMODE(path.stat().st_mode) == RW_R_____
+
+
+def test_write_manifest_without_database_is_world_readable(tmp_path):
+    path = write_manifest(f"sqlite:///{tmp_path / 'sources.sqlite'}", build_manifest("cvmfs_main", _index()))
+
+    assert path is not None
+    assert stat.S_IMODE(path.stat().st_mode) == RW_R__R__
 
 
 def test_atomic_replace_failure_preserves_prior_manifest(tmp_path, monkeypatch):

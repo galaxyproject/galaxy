@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import stat
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 from sqlalchemy.engine import make_url
 
+from galaxy.util import RW_R__R__
 from galaxy.version import VERSION
 from .index import (
     INDEX_SCHEMA_HASH,
@@ -261,6 +263,12 @@ def write_manifest(url: str, manifest: ToolSourceStoreManifest) -> Path | None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
+        # NamedTemporaryFile creates the file 0600; publish it with the same
+        # permissions as the database it describes so consumers that can read
+        # the store (e.g. CVMFS clients) can read the sidecar too.
+        database_path = Path(str(manifest_path).removesuffix(".manifest.json"))
+        mode = stat.S_IMODE(database_path.stat().st_mode) if database_path.exists() else RW_R__R__
+        os.chmod(temporary_path, mode)
         os.replace(temporary_path, manifest_path)
     except Exception:
         if temporary_path is not None:
