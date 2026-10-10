@@ -6,34 +6,21 @@ import FormOptionalText from "./FormOptionalText.vue";
 
 const localVue = getLocalVue();
 
-describe("FormOptionalText", () => {
-    const mountFormOptionalText = async (props) =>
-        await mount(FormOptionalText, {
-            props: props,
-            global: localVue,
-        });
+const SELECTORS = {
+    SWITCH: "input[type='checkbox']",
+    TEXT_INPUT: "input[type='text']",
+};
 
-    it("should display existing values", async () => {
-        const v = "somevalue";
-        const wrapper = await mountFormOptionalText({ value: v });
-        const el = wrapper.find("input");
-        expect(el.element.checked).toEqual(true);
-        const elText = wrapper.find("input[type='text']");
-        expect(elText.element.value).toEqual(v);
-        await el.setValue(false);
-        expect(emittedArg(wrapper, "input")).toEqual(null);
-        await wrapper.setProps({ value: emittedArg(wrapper, "input") });
-        expect(el.element.checked).toBe(false);
-        expect(wrapper.find("input[type=text]").exists()).toBe(false);
-        await el.setValue(true);
-        expect(emittedArg(wrapper, "input", 1)).toEqual("");
-        await wrapper.setProps({ value: emittedArg(wrapper, "input", 1) });
-        expect(el.element.checked).toBe(true);
-        expect(wrapper.find("input[type=text]").element.value).toBe("");
+function mountFormOptionalText(value) {
+    return mount(FormOptionalText, {
+        props: { value },
+        global: localVue,
     });
+}
 
+describe("FormOptionalText", () => {
     it("names an optional input and keeps its label associated after toggling", async () => {
-        const wrapper = await mountFormOptionalText({ value: "hg38" });
+        const wrapper = mountFormOptionalText("hg38");
         const label = wrapper.find("label.sr-only");
         expect(label.text()).toBe("Optional value");
         expect(label.attributes("for")).toBe(wrapper.find("input[type=text]").attributes("id"));
@@ -46,18 +33,45 @@ describe("FormOptionalText", () => {
     });
 
     it("renders the optional toggle as a switch on the ui-switch label", async () => {
-        const wrapper = await mountFormOptionalText({ value: null });
+        const wrapper = mountFormOptionalText(null);
         const toggle = wrapper.find("label.ui-switch");
         expect(toggle.text()).toBe("Set value for this optional select field?");
         expect(toggle.find("input[type=checkbox]").attributes("role")).toBe("switch");
     });
 
-    it("should initialize with null if value does not exist", async () => {
-        const v = null;
-        const wrapper = await mountFormOptionalText({ value: v });
-        const el = wrapper.find("input");
-        expect(el.element.checked).toEqual(false);
+    it("switches on and shows an existing value", () => {
+        const wrapper = mountFormOptionalText("somevalue");
+
+        expect(wrapper.find(SELECTORS.SWITCH).element.checked).toBe(true);
+        expect(wrapper.find(SELECTORS.TEXT_INPUT).element.value).toBe("somevalue");
+    });
+
+    it("emits null when switched off and an empty string when switched back on", async () => {
+        const wrapper = mountFormOptionalText("somevalue");
+        const toggle = wrapper.find(SELECTORS.SWITCH);
+
+        await toggle.setValue(false);
+        expect(emittedArg(wrapper, "input", 0)).toBeNull();
+        await wrapper.setProps({ value: null });
+        expect(toggle.element.checked).toBe(false);
+        expect(wrapper.find(SELECTORS.TEXT_INPUT).exists()).toBe(false);
+
+        await toggle.setValue(true);
+        expect(emittedArg(wrapper, "input", 1)).toBe("");
         await wrapper.setProps({ value: "" });
-        expect(el.element.checked).toEqual(true);
+        expect(toggle.element.checked).toBe(true);
+        expect(wrapper.find(SELECTORS.TEXT_INPUT).element.value).toBe("");
+    });
+
+    it("starts switched off for a null value and switches on once a value is set", async () => {
+        const wrapper = mountFormOptionalText(null);
+        const toggle = wrapper.find(SELECTORS.SWITCH);
+        expect(toggle.element.checked).toBe(false);
+        expect(wrapper.find(SELECTORS.TEXT_INPUT).exists()).toBe(false);
+
+        await wrapper.setProps({ value: "" });
+
+        expect(toggle.element.checked).toBe(true);
+        expect(wrapper.find(SELECTORS.TEXT_INPUT).exists()).toBe(true);
     });
 });
