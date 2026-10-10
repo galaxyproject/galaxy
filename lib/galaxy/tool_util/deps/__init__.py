@@ -397,12 +397,12 @@ class DependencyManager:
                     result.append(platform)
         return result
 
-    def platforms_with_failed_install(self, requirements: ToolRequirements) -> List[str]:
+    def platforms_with_failed_install(self, requirements: ToolRequirements) -> list[str]:
         """Configured conda platforms with a fresh failed-install record for the requirements.
 
         Only filesystem checks are made. Empty if no conda platforms are configured.
         """
-        result: List[str] = []
+        result: list[str] = []
         for resolver in self.dependency_resolvers:
             if getattr(resolver, "resolver_type", None) != "conda":
                 continue

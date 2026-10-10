@@ -1172,7 +1172,7 @@ def _create_on_all_platforms(
     native_create_args: list[str],
     specs: list[str],
     allow_local: bool = True,
-    platform: Optional[str] = None,
+    platform: str | None = None,
 ) -> int:
     """Create the named environment on the native platform and on each configured foreign platform.
 
@@ -1251,7 +1251,7 @@ def install_conda_targets(
     conda_context: CondaContext,
     env_name: str | None = None,
     allow_local: bool = True,
-    platform: Optional[str] = None,
+    platform: str | None = None,
 ) -> int:
     """
     Return the process exit code (i.e. 0 in case of success).
