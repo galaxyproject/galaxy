@@ -6,8 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
-import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
-import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import { makeUrlItem, withUploadState } from "@/composables/upload/testHelpers/uploadFixtures";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import UploadFileRow from "./UploadFileRow.vue";
@@ -34,10 +33,6 @@ const HISTORY: HistorySummary = {
     url: "/api/histories/hist-a",
 };
 
-function urlRowItem<T extends NewUploadItem>(item: T) {
-    return { ...item, id: "upload-1", status: "queued" as const, progress: 0, createdAt: 0 };
-}
-
 describe("UploadFileRow source URL", () => {
     it("renders the source URL from the item display info", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
@@ -47,7 +42,7 @@ describe("UploadFileRow source URL", () => {
         historyStore.setCurrentHistoryId(HISTORY.id);
 
         const wrapper = mount(UploadFileRow as object, {
-            propsData: { file: urlRowItem(makeUrlItem()) },
+            propsData: { file: withUploadState(makeUrlItem()) },
             localVue,
             pinia,
             router,
