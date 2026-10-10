@@ -1,97 +1,58 @@
-import { nth } from "@tests/vitest/helpers";
-import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { SINGULAR_DATA_URI, SINGULAR_FILE_URI, SINGULAR_LIST_URI } from "./testData/uriData";
-import { type DataUri, type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
+import { type DataUri, isDataUriCollection, isDataUriCollectionElementCollection } from "./types";
 
 import FormDataUri from "./FormDataUri.vue";
 
+enableAutoUnmount(afterEach);
+
 const SELECTORS = {
-    URI_ELEMENT_FILE: "[data-description='uri element file']",
-    URI_ELEMENT_COLLECTION: "[data-description='uri element collection']",
-    URI_LOCATION: "[data-description='uri location']",
-    URI_IDENTIFIER: "[data-description='uri element identifier']",
-    URI_ELEMENT_EXT: "[data-description='uri element ext']",
+    file: "[data-description='uri element file']",
+    collection: "[data-description='uri element collection']",
+    location: "[data-description='uri location']",
+    identifier: "[data-description='uri element identifier']",
 };
 
-function initWrapper(value: DataUri) {
-    const wrapper = mount(FormDataUri as object, {
-        props: {
-            value,
-        },
-    });
-    flushPromises();
-    return wrapper;
-}
-
-function assertLocationIsFound(wrapper: VueWrapper | DOMWrapper<Element>, uriData: DataUri | DataUriCollectionElement) {
-    if (!("location" in uriData)) {
-        throw new Error("The DataUri type does not have a url property");
-    }
-
-    expect(wrapper.find(SELECTORS.URI_LOCATION).text()).toBe(uriData.location);
-}
-
-function assertIdentifierIsFound(
-    wrapper: VueWrapper | DOMWrapper<Element>,
-    uriData: DataUri | DataUriCollectionElement,
-    hasIdentifier = false,
-    expectIdentifier = "File",
-) {
-    if (hasIdentifier) {
-        if (!("identifier" in uriData)) {
-            throw new Error("The DataUri type is not a DataUriCollectionElement");
-        }
-        expect(wrapper.find(SELECTORS.URI_IDENTIFIER).text()).toBe((uriData as DataUriCollectionElement).identifier);
-    } else {
-        expect(wrapper.find(SELECTORS.URI_IDENTIFIER).text()).toBe(expectIdentifier);
-    }
+function mountDataUri(value: DataUri) {
+    // Render the recursive URI elements: their file labels and locations are the behavior under test.
+    return mount(FormDataUri, { props: { value }, global: getLocalVue() });
 }
 
 describe("FormDataUri", () => {
-    it("renders a singular data input correctly", () => {
-        const wrapper = initWrapper(SINGULAR_DATA_URI);
-        expect(wrapper.findAll(SELECTORS.URI_ELEMENT_FILE).length).toBe(1);
-
-        assertLocationIsFound(wrapper, SINGULAR_DATA_URI);
-        assertIdentifierIsFound(wrapper, SINGULAR_DATA_URI, false, "Data");
-    });
-
-    it("renders a singular file input correctly", () => {
-        const wrapper = initWrapper(SINGULAR_FILE_URI);
-        expect(wrapper.findAll(SELECTORS.URI_ELEMENT_FILE).length).toBe(1);
-
-        assertLocationIsFound(wrapper, SINGULAR_FILE_URI);
-        assertIdentifierIsFound(wrapper, SINGULAR_FILE_URI);
-    });
-
-    it("renders a singular list input correctly", () => {
-        const testUriDataCollection = SINGULAR_LIST_URI;
-
-        const wrapper = initWrapper(testUriDataCollection);
-
-        if (!("elements" in testUriDataCollection)) {
-            throw new Error("The `DataUri` type is not `DataUriCollection`");
+    it.each([
+        { name: "data", value: SINGULAR_DATA_URI, identifier: "Data" },
+        { name: "file", value: SINGULAR_FILE_URI, identifier: "File" },
+    ])("renders a singular $name URI with its default label and location", ({ value, identifier }) => {
+        if (!("location" in value)) {
+            throw new Error("The singular URI fixture must include a location");
         }
-        expect(wrapper.findAll(SELECTORS.URI_ELEMENT_COLLECTION).length).toBe(1);
+        const wrapper = mountDataUri(value);
 
-        const collectionElements = wrapper.findAll(SELECTORS.URI_ELEMENT_FILE);
-        expect(collectionElements.length).toBe(testUriDataCollection.elements.length);
+        expect(wrapper.findAll(SELECTORS.file)).toHaveLength(1);
+        expect(wrapper.find(SELECTORS.location).text()).toBe(value.location);
+        expect(wrapper.find(SELECTORS.identifier).text()).toBe(identifier);
+    });
 
-        for (let i = 0; i < collectionElements.length; i++) {
-            const element = nth(collectionElements, i);
-            const expectedElement = testUriDataCollection.elements[i];
-            if (!expectedElement) {
-                throw new Error("No element found");
+    it("renders list elements in fixture order with their identifiers and locations", () => {
+        if (!isDataUriCollection(SINGULAR_LIST_URI)) {
+            throw new Error("The list URI fixture must be a collection");
+        }
+        const wrapper = mountDataUri(SINGULAR_LIST_URI);
+        const files = wrapper.findAll(SELECTORS.file);
+
+        expect(wrapper.findAll(SELECTORS.collection)).toHaveLength(1);
+        expect(files).toHaveLength(SINGULAR_LIST_URI.elements.length);
+        SINGULAR_LIST_URI.elements.forEach((expected, index) => {
+            expect(isDataUriCollectionElementCollection(expected)).toBe(false);
+            if (isDataUriCollectionElementCollection(expected)) {
+                throw new Error("The list URI fixture must contain files");
             }
-
-            expect(isDataUriCollectionElementCollection(expectedElement)).toBe(false);
-
-            assertLocationIsFound(element, expectedElement);
-
-            assertIdentifierIsFound(element, expectedElement, true);
-        }
+            const file = nth(files, index);
+            expect(file.find(SELECTORS.location).text()).toBe(expected.location);
+            expect(file.find(SELECTORS.identifier).text()).toBe(expected.identifier);
+        });
     });
 });
