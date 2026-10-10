@@ -13048,6 +13048,24 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class AdminSetting(Base):
+    """
+    A site-wide setting saved from the Admin panel.
+
+    One row per key. The code that reads a setting owns its key and documents it;
+    Admin panel extensions declare which keys their forms write.
+    """
+
+    __tablename__ = "admin_setting"
+
+    key: Mapped[str] = mapped_column(String(255), primary_key=True)
+    # A JSON scalar: bool, int, float, str or null, as validated by the declaring extension.
+    value: Mapped[Any] = mapped_column(MutableJSONType)
+    create_time: Mapped[datetime | None] = mapped_column(default=now)
+    update_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id", ondelete="SET NULL"), index=True)
+
+
 class CeleryUserActiveTask(Base):
     """
     Tracks actively executing Celery tasks per user for concurrency limiting.
