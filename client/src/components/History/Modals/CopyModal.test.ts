@@ -1,9 +1,9 @@
 import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
 import { emittedArg, getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -13,15 +13,16 @@ import CopyModal from "./CopyModal.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
+afterEach(() => vi.restoreAllMocks());
 
 const fakeHistory = getFakeHistorySummary({ id: "history_1", name: "My History" });
-// history with an explicit owner id
 const ownedHistory = { ...fakeHistory, user_id: "owner_id" };
 const fakeOwner = getFakeRegisteredUser({ id: "owner_id" });
 const otherUser = getFakeRegisteredUser({ id: "other_user" });
 
 function createWrapper(history: HistorySummary = fakeHistory, userData = fakeOwner, showModal = true) {
+    const localVue = getLocalVue();
     const pinia = createPinia();
     const wrapper = shallowMount(CopyModal, {
         props: { history, showModal },
@@ -35,8 +36,6 @@ function createWrapper(history: HistorySummary = fakeHistory, userData = fakeOwn
 }
 
 describe("CopyModal", () => {
-    beforeEach(() => vi.clearAllMocks());
-
     it("sets modal title from history name", () => {
         const { wrapper } = createWrapper();
         expect(wrapper.findComponent(GModal).props("title")).toBe("Copying History: My History");

@@ -1,7 +1,9 @@
+import { getFakePageDetails, getFakePageSummary } from "@tests/test-data/pages";
+import { deferred } from "@tests/vitest/deferred";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createPageFromTitle, loadPages, type PageSummary } from "@/api/pages";
+import { createPageFromTitle, loadPages, type LoadPagesResult, type PageSummary } from "@/api/pages";
 import { usePageStore } from "@/stores/pageStore";
 
 vi.mock("@/api/pages", () => ({
@@ -10,10 +12,10 @@ vi.mock("@/api/pages", () => ({
 }));
 
 function mockPage(id: string, title = `Page ${id}`): PageSummary {
-    return { id, title } as PageSummary;
+    return getFakePageSummary({ id, title });
 }
 
-function mockResult(pages: PageSummary[], totalMatches = pages.length) {
+function mockResult(pages: PageSummary[], totalMatches = pages.length): LoadPagesResult {
     return { data: pages, totalMatches };
 }
 
@@ -111,12 +113,8 @@ describe("usePageStore", () => {
         });
 
         it("deduplicates identical concurrent requests", async () => {
-            let resolvePages: (value: { data: PageSummary[]; totalMatches: number }) => void = () => undefined;
-            vi.mocked(loadPages).mockReturnValue(
-                new Promise((resolve) => {
-                    resolvePages = resolve;
-                }),
-            );
+            const response = deferred<LoadPagesResult>();
+            vi.mocked(loadPages).mockReturnValue(response.promise);
 
             const first = pageStore.fetchPages("my");
             const second = pageStore.fetchPages("my");
@@ -124,10 +122,11 @@ describe("usePageStore", () => {
             expect(loadPages).toHaveBeenCalledTimes(1);
             expect(pageStore.isLoading("my")).toBe(true);
 
-            resolvePages(mockResult([mockPage("a")]));
+            response.resolve(mockResult([mockPage("a")]));
             const [firstPages, secondPages] = await Promise.all([first, second]);
 
-            expect(firstPages).toEqual(secondPages);
+            expect(secondPages).toBe(firstPages);
+            expect(firstPages.map((page) => page.id)).toEqual(["a"]);
             expect(loadPages).toHaveBeenCalledTimes(1);
             expect(pageStore.isLoading("my")).toBe(false);
         });
@@ -225,8 +224,9 @@ describe("usePageStore", () => {
 
     describe("createMarkdownPage", () => {
         it("creates a markdown page, ahead of the cached ones", async () => {
-            vi.mocked(createPageFromTitle).mockResolvedValue(mockPage("page-1", "My New Page") as never);
-            // a cache the `r:` scope would consider complete must still show the new page
+            vi.mocked(createPageFromTitle).mockResolvedValue(
+                getFakePageDetails({ id: "page-1", title: "My New Page" }),
+            );
             pageStore.savePages("my", [mockPage("page-0")]);
 
             const page = await pageStore.createMarkdownPage("My New Page");

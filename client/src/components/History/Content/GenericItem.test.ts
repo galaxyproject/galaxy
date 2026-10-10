@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { VisibleIntersectionObserver } from "@tests/vitest/visibleIntersectionObserver";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,15 +21,6 @@ vi.mock("@/api/datasetCollections");
 setupSelectableMock();
 
 const localVue = getLocalVue();
-
-class VisibleIntersectionObserver {
-    constructor(private callback: IntersectionObserverCallback) {}
-    observe(target: Element) {
-        this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], this as never);
-    }
-    unobserve() {}
-    disconnect() {}
-}
 
 describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     let wrapper: VueWrapper;

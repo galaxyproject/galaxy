@@ -181,6 +181,19 @@ terminal this starts for executing Vitest tests.
 
 ### Testing Best Practices and Patterns
 
+#### Readable Test Scenarios
+
+Name each test after the behavior and the condition that produces it. Keep setup,
+the action, and assertions together so the scenario can be understood without
+tracing unrelated requests or mutable fixtures. Split independent success and
+failure scenarios into separate tests or use
+[`it.each`](https://vitest.dev/api/test#test-each) to test combinations.
+
+Use helpers to remove repeated domain setup, while keeping the scenario's inputs
+and expected results visible in the test. Reuse existing test-data factories
+before adding new ones. Extract a shared helper when multiple files need the same
+setup; keep a short, single-use arrangement inline.
+
 #### Test File Structure
 
 Test files should be placed adjacent to the code they test with a `.test.ts` or `.test.js` extension:
@@ -275,16 +288,23 @@ beforeEach(() => {
 });
 ```
 
-For untyped responses (endpoints not in OpenAPI spec):
+For response shapes not covered by the generated OpenAPI schema, use
+`response.untyped(...)`:
 
 ```typescript
+import { beforeEach } from "vitest";
+
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-server.use(
-    http.get("/api/configuration", ({ response }) => {
-        return response.untyped(HttpResponse.json({ enable_feature: true }));
-    }),
-);
+const { server, http } = useServerMock();
+
+beforeEach(() => {
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response.untyped(HttpResponse.json({ enable_feature: true }));
+        }),
+    );
+});
 ```
 
 See the [MSW documentation](https://mswjs.io/docs/) for advanced usage patterns.
@@ -370,6 +390,8 @@ it("emits update on change", async () => {
 });
 ```
 
+**Mounted GModal**: Click its footer buttons with `clickModalButton(wrapper, "Ok")` from `@/components/BaseComponents/test-utils`. GModal emits `ok`/`cancel` when its native dialog closes, so a synthetic `vm.$emit("cancel")` leaves the dialog open and a later close emits `cancel` again. Emitting on GModal is fine only when `shallowMount` stubs it.
+
 #### Pinia Store Testing
 
 **Setup for Component Tests**:
@@ -387,6 +409,8 @@ const wrapper = shallowMount(MyComponent, { localVue, pinia });
 const userStore = useUserStore();
 userStore.currentUser = getFakeRegisteredUser();
 ```
+
+`createTestingPinia({ initialState })` is keyed by the `defineStore` id, which may differ from the composable name (`useUserStore` is `"userStore"`). A wrong key is silently ignored, and so is state a setup store doesn't return, like `historyStore`'s `storedCurrentHistoryId`. `setCurrentHistoryId` alone is ignored too until that history is stored; `seedCurrentHistory(history, pinia)` from `@/stores/testUtils` does both.
 
 **Isolated Store Tests**:
 
@@ -408,7 +432,14 @@ describe("useMyStore", () => {
 
 #### Composable Testing
 
-Test composables by mounting a minimal component that uses them:
+Call composables directly when they only calculate or render values and do not
+require component lifecycle hooks or injection. If one creates watchers or
+computeds, call it through `runInTestScope(() => useMyComposable())` from
+`@tests/vitest/effectScope` so its effects stop when the test finishes, even on
+failure.
+
+For composables that require lifecycle hooks or a component context, mount a
+minimal component that uses them:
 
 ```typescript
 import { mount } from "@vue/test-utils";
@@ -435,24 +466,28 @@ it("computes result correctly", () => {
 
 #### Mocking Modules and Composables
 
-Mock at file level before imports are resolved:
+Mock at file level before imports are resolved. For configuration, use the ref-backed `__mocks__/config` (or seed `configurationStore` through `createTestingPinia({ initialState })`); a `useConfig` mock returning a plain object reads as undefined in templates:
 
 ```typescript
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: { enable_feature: true },
-        isConfigLoaded: true,
-    })),
-}));
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 
+vi.mock("@/composables/config");
 vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({ params: { id: "123" } })),
 }));
+
+beforeEach(() => {
+    resetMockConfig();
+    setMockConfig({ enable_feature: true });
+});
 ```
 
 #### Async Operations
 
-Always use `flushPromises()` after operations that trigger API calls or state updates:
+Await the promise returned by the operation under test when it exposes one.
+For mounted components whose lifecycle or event handlers start API calls without
+returning their promises, use `flushPromises()` before asserting the resulting
+state:
 
 ```typescript
 import flushPromises from "flush-promises";
@@ -479,24 +514,24 @@ expect(wrapper.text()).toContain("new");
 
 The following test files demonstrate specific patterns well and can serve as references:
 
-| Pattern                       | Example File                                                            | What It Demonstrates                                                                  |
-| ----------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **API mocking basics**        | `src/api/client/serverMock.test.ts`                                     | Core useServerMock patterns: query params, path params, status codes, typed responses |
-| **Multiple HTTP methods**     | `src/composables/userToolCredentials.test.ts`                           | GET, POST, PUT, DELETE in one test; query param filtering; 204 empty responses        |
-| **Conditional API responses** | `src/composables/taskMonitor.test.ts`                                   | Switch statement pattern for different task states (PENDING, SUCCESS, FAILURE)        |
-| **Paginated API responses**   | `src/stores/collectionElementsStore.test.ts`                            | Dynamic response generation based on offset/limit query params                        |
-| **API error handling**        | `src/components/History/Export/HistoryExport.test.ts`                   | 4XX/5XX error responses with err_code and err_msg                                     |
-| **Config composable mock**    | `src/entry/analysis/modules/Login.test.ts`                              | Using setMockConfig() helper to customize Galaxy configuration                        |
-| **Config mock (simple)**      | `src/components/Citation/CitationsList.test.ts`                         | Basic vi.mock pattern for useConfig                                                   |
-| **Shared YAML**               | `src/components/Collections/pairing.test.ts`                            | Defining YAML specifications that can be shared between frontend and backend          |
-| **Stub with methods**         | `src/components/Workflow/Editor/Index.test.ts`                          | Stubbing components with methods and `expose` for template refs                       |
-| **Stub with factory**         | `src/components/Tool/ToolForm.test.js`                                  | MockCurrentHistory() factory for configurable stubs                                   |
-| **Selective stubbing**        | `src/components/History/Content/ContentItem.test.js`                    | Mix of stubbed (`true`) and rendered (`false`) components                             |
-| **Named slots**               | `src/components/Popper/Popper.test.js`                                  | Testing multiple named slots with HTML string content                                 |
-| **Multiple slots**            | `src/components/Form/FormCardSticky.test.js`                            | Testing buttons, default, and footer slots together                                   |
-| **Scoped slots mock**         | `src/components/Visualizations/DisplayApplications.test.js`             | Mocking provider component with $scopedSlots                                          |
-| **Slots in stubs**            | `src/components/Markdown/Editor/Configurations/ConfigureHeader.test.js` | Stub templates that include slot definitions                                          |
-| **Test data factory**         | `tests/test-data/index.ts`                                              | getFakeRegisteredUser() pattern for reusable mock data                                |
+| Pattern                     | Example File                                                            | What It Demonstrates                                                                  |
+| --------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **API mocking basics**      | `src/api/client/serverMock.test.ts`                                     | Core useServerMock patterns: query params, path params, status codes, typed responses |
+| **Multiple HTTP methods**   | `src/composables/userToolCredentials.test.ts`                           | GET, POST, PUT, DELETE in one test; query param filtering; 204 empty responses        |
+| **Task monitoring**         | `src/composables/taskMonitor.test.ts`                                   | Task states, failure reasons, and request errors                                      |
+| **Paginated API responses** | `src/stores/collectionElementsStore.test.ts`                            | Dynamic response generation based on offset/limit query params                        |
+| **API error handling**      | `src/components/History/Export/HistoryExport.test.ts`                   | 4XX/5XX error responses with err_code and err_msg                                     |
+| **Config composable mock**  | `src/entry/analysis/modules/Login.test.ts`                              | Using setMockConfig() helper to customize Galaxy configuration                        |
+| **Config mock (simple)**    | `src/components/Citation/CitationsList.test.ts`                         | Basic vi.mock pattern for useConfig                                                   |
+| **Shared YAML**             | `src/components/Collections/pairing.test.ts`                            | Defining YAML specifications that can be shared between frontend and backend          |
+| **Stub with methods**       | `src/components/Workflow/Editor/Index.test.ts`                          | Stubbing components with methods called through template refs                         |
+| **Stub with factory**       | `src/components/Tool/ToolForm.test.ts`                                  | MockCurrentHistory() factory for configurable stubs                                   |
+| **Selective stubbing**      | `src/components/History/Content/ContentItem.test.js`                    | Mix of stubbed (`true`) and rendered (`false`) components                             |
+| **Named slots**             | `src/components/Popper/Popper.test.js`                                  | Testing multiple named slots with HTML string content                                 |
+| **Multiple slots**          | `src/components/Form/FormCardSticky.test.js`                            | Testing buttons, default, and footer slots together                                   |
+| **Scoped slots mock**       | `src/components/Visualizations/DisplayApplications.test.js`             | Mocking provider component with $scopedSlots                                          |
+| **Slots in stubs**          | `src/components/Markdown/Editor/Configurations/ConfigureHeader.test.js` | Stub templates that include slot definitions                                          |
+| **Test data factory**       | `tests/test-data/index.ts`                                              | getFakeRegisteredUser() pattern for reusable mock data                                |
 
 #### Best Practices Summary
 

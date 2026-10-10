@@ -1,17 +1,18 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
+import QuotaUsageBar from "./QuotaUsageBar.vue";
 import QuotaUsageSummary from "./QuotaUsageSummary.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 
 const QUOTA_1_BYTES = 654846535;
 const QUOTA_2_BYTES = 68468436;
 
-const FAKE_QUOTA_USAGES_LIST: QuotaUsage[] = [
+const MIXED_QUOTAS: QuotaUsage[] = [
     toQuotaUsage({
         quota_source_label: "source 1",
         quota_bytes: QUOTA_1_BYTES,
@@ -30,27 +31,28 @@ const FAKE_QUOTA_USAGES_LIST: QuotaUsage[] = [
 ];
 
 function mountQuotaUsageSummaryWith(quotaUsages: QuotaUsage[]) {
-    const wrapper = shallowMount(QuotaUsageSummary as object, { props: { quotaUsages }, localVue });
-    return wrapper;
+    return shallowMount(QuotaUsageSummary, { props: { quotaUsages }, global: getLocalVue(true) });
 }
 
-describe("QuotaUsageSummary.vue", () => {
-    it("should calculate the total amount of quotas without the unlimited", () => {
-        const wrapper = mountQuotaUsageSummaryWith(FAKE_QUOTA_USAGES_LIST);
+describe("QuotaUsageSummary", () => {
+    it("sums finite quotas and excludes the unlimited source", () => {
+        const wrapper = mountQuotaUsageSummaryWith(MIXED_QUOTAS);
         const expectedTotalBytes = QUOTA_1_BYTES + QUOTA_2_BYTES;
-        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
-        expect((wrapper.vm as any).totalQuotaInBytes).toBe(expectedTotalBytes);
+        expect(wrapper.vm.totalQuotaInBytes).toBe(expectedTotalBytes);
+        expect(wrapper.get("h2 b").text()).toBe("723.3 MB");
+        expect(wrapper.get("h2").text()).toContain("of total disk quota");
     });
 
-    it("should display a quota bar for each quota", () => {
-        const wrapper = mountQuotaUsageSummaryWith(FAKE_QUOTA_USAGES_LIST);
-        const expectedNumberOfBars = FAKE_QUOTA_USAGES_LIST.length;
+    it("passes each finite or unlimited quota to its bar", () => {
+        const wrapper = mountQuotaUsageSummaryWith(MIXED_QUOTAS);
+        const expectedNumberOfBars = MIXED_QUOTAS.length;
 
-        expect(wrapper.findAll(".quota-usage-bar").length).toBe(expectedNumberOfBars);
+        expect(wrapper.findAll(".quota-usage-bar")).toHaveLength(expectedNumberOfBars);
+        expect(wrapper.findAllComponents(QuotaUsageBar).map((bar) => bar.props("quotaUsage"))).toEqual(MIXED_QUOTAS);
     });
 
-    it("should display `unlimited` quota when all sources are unlimited", async () => {
-        const FAKE_UNLIMITED_QUOTA_USAGES: QuotaUsage[] = [
+    it("shows unlimited total quota when every source is unlimited", () => {
+        const unlimitedQuotas: QuotaUsage[] = [
             toQuotaUsage({
                 quota_source_label: "Unlimited source 1",
                 quota_bytes: undefined,
@@ -62,8 +64,8 @@ describe("QuotaUsageSummary.vue", () => {
                 total_disk_usage: QUOTA_2_BYTES,
             }),
         ];
-        const wrapper = mountQuotaUsageSummaryWith(FAKE_UNLIMITED_QUOTA_USAGES);
-        const summaryText = wrapper.find("h2").text();
+        const wrapper = mountQuotaUsageSummaryWith(unlimitedQuotas);
+        const summaryText = wrapper.get("h2").text();
         expect(summaryText).toContain("unlimited");
     });
 });

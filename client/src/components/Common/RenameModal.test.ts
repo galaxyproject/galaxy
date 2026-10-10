@@ -1,11 +1,12 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { DOMWrapper, mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkflowSummary } from "@/api/workflows";
+import { clickModalButton } from "@/components/BaseComponents/test-utils";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
-import { Toast } from "@/composables/toast";
+import { raisedToasts } from "@/composables/__mocks__/toast";
 
 import RenameModal from "./RenameModal.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -18,22 +19,28 @@ vi.mock("@/composables/toast");
 
 const localVue = getLocalVue();
 
+enableAutoUnmount(afterEach);
+
 const WORKFLOW_ID = "workflow-abc123";
 const WORKFLOW_NAME = "My Test Workflow";
-const INPUT_SELECTOR = "[data-description='workflow name input']";
+const NAME_INPUT = "[data-description='workflow name input']";
 
-async function mountRenameModal(name = WORKFLOW_NAME) {
-    const wrapper = mount(RenameModal as object, {
-        localVue,
-        propsData: {
-            name,
+async function mountRenameModal() {
+    const wrapper = mount(RenameModal, {
+        props: {
+            name: WORKFLOW_NAME,
             itemType: "workflow",
             renameAction: (newName: string) => updateWorkflow(WORKFLOW_ID, { name: newName }),
         },
-        attachTo: document.body,
+        global: localVue,
     });
     await flushPromises();
     return wrapper;
+}
+
+async function renameTo(wrapper: VueWrapper, newName: string) {
+    await wrapper.find(NAME_INPUT).setValue(newName);
+    await clickModalButton(wrapper, "Rename");
 }
 
 describe("RenameModal tested for renaming workflows", () => {
@@ -41,43 +48,37 @@ describe("RenameModal tested for renaming workflows", () => {
         vi.clearAllMocks();
     });
 
-    afterEach(() => {
-        document.body.innerHTML = "";
-    });
-
     it("calls updateWorkflow with the new name and emits close on confirm", async () => {
         vi.mocked(updateWorkflow).mockResolvedValue({} as WorkflowSummary);
-
         const wrapper = await mountRenameModal();
 
-        await new DOMWrapper(document.body).find(INPUT_SELECTOR).setValue("Renamed Workflow");
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await renameTo(wrapper, "Renamed Workflow");
 
-        expect(updateWorkflow).toHaveBeenCalledWith(WORKFLOW_ID, { name: "Renamed Workflow" });
-        expect(wrapper.emitted("close")).toBeTruthy();
+        expect(updateWorkflow).toHaveBeenCalledExactlyOnceWith(WORKFLOW_ID, { name: "Renamed Workflow" });
+        expect(raisedToasts()).toEqual([{ variant: "success", message: "Workflow renamed" }]);
+        expect(wrapper.emitted("close")).toEqual([[]]);
     });
 
-    it("shows toast error and emits close when update fails, preserving original name on reopen", async () => {
+    it("shows an error toast and still emits close when the update fails", async () => {
         vi.mocked(updateWorkflow).mockRejectedValue(new Error("Server error"));
-
         const wrapper = await mountRenameModal();
 
-        await new DOMWrapper(document.body).find(INPUT_SELECTOR).setValue("Attempted New Name");
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        await renameTo(wrapper, "Attempted New Name");
 
-        expect(Toast.error).toHaveBeenCalled();
-        expect(updateWorkflow).toHaveBeenCalledWith(WORKFLOW_ID, { name: "Attempted New Name" });
-        // close is always emitted (in finally), so the parent can dismiss the modal
-        expect(wrapper.emitted("close")).toBeTruthy();
+        expect(updateWorkflow).toHaveBeenCalledExactlyOnceWith(WORKFLOW_ID, { name: "Attempted New Name" });
+        expect(raisedToasts()).toEqual([{ variant: "error", message: "Server error" }]);
+        expect(wrapper.emitted("close")).toEqual([[]]);
+    });
 
-        // Simulate parent closing and reopening the modal (destroys old instance)
-        wrapper.unmount();
-        await mountRenameModal();
-        expect((new DOMWrapper(document.body).find(INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
-            WORKFLOW_NAME,
-        );
+    it("starts from the original name when reopened after a failed update", async () => {
+        vi.mocked(updateWorkflow).mockRejectedValue(new Error("Server error"));
+        const failed = await mountRenameModal();
+        await renameTo(failed, "Attempted New Name");
+        failed.unmount();
+
+        const reopened = await mountRenameModal();
+
+        expect((reopened.find(NAME_INPUT).element as HTMLInputElement).value).toBe(WORKFLOW_NAME);
     });
 
     it("keeps ok button disabled when name is unchanged", async () => {

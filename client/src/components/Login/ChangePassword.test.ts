@@ -1,101 +1,79 @@
-import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-import MountTarget from "./ChangePassword.vue";
+import ChangePassword from "./ChangePassword.vue";
 
-const mockSafePath = vi.fn();
-vi.mock("utils/redirect", () => ({
-    withPrefix: mockSafePath,
-}));
-
-const localVue = getLocalVue(true);
-const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
-interface PostRequest {
-    url: string;
-    data: Record<string, unknown>;
+/** Records the bodies posted to the legacy password change endpoint. */
+function capturePasswordChanges() {
+    const bodies: Record<string, unknown>[] = [];
+    server.use(
+        http.untyped.post("/user/change_password", async ({ request }) => {
+            bodies.push((await request.json()) as Record<string, unknown>);
+            return HttpResponse.json({});
+        }),
+    );
+    return bodies;
 }
 
-let postRequests: PostRequest[] = [];
+async function mountChangePassword(props: Record<string, string> = {}) {
+    const router = createTestRouter();
+    // Start away from home, so the redirect after a successful change is observable.
+    await router.push("/change-password");
+    const wrapper = mount(ChangePassword, {
+        props: { messageText: "message_text", messageVariant: "message_variant", ...props },
+        global: withPlugins(getLocalVue(), router),
+    });
+    return { wrapper, router };
+}
+
+async function submit(wrapper: VueWrapper) {
+    await wrapper.find("button[type='submit']").trigger("submit");
+    await flushPromises();
+}
 
 describe("ChangePassword", () => {
-    let wrapper: VueWrapper;
+    it("renders the change password card with the message it was given", async () => {
+        const { wrapper } = await mountChangePassword();
 
-    beforeEach(async () => {
-        postRequests = [];
-        server.use(
-            http.untyped.post(/.*/, async ({ request }) => {
-                const data = (await request.json()) as Record<string, unknown>;
-                postRequests.push({ url: request.url, data });
-                return HttpResponse.json({});
-            }),
-        );
-        // Navigate to a different route to avoid NavigationDuplicated error
-        // when the component calls router.push("/") on successful submit
-        await router.push("/change-password").catch(() => {});
-        wrapper = mount(MountTarget as object, {
-            props: {
-                messageText: "message_text",
-                messageVariant: "message_variant",
-            },
-            global: localVue,
-        });
+        expect(wrapper.find(".card-header").text()).toBe("Change your password");
+        expect(wrapper.find(".alert").text()).toBe("message_text");
     });
 
-    it("basics", async () => {
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Change your password");
+    it("posts the new password and its confirmation, then goes home", async () => {
+        const changes = capturePasswordChanges();
+        const { wrapper, router } = await mountChangePassword();
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
+        expect(nth(inputs, 0).attributes("type")).toBe("password");
+        expect(nth(inputs, 1).attributes("type")).toBe("password");
+        await nth(inputs, 0).setValue("test_first_pwd");
+        await nth(inputs, 1).setValue("test_second_pwd");
+        await submit(wrapper);
 
-        const firstPwdField = nth(inputs, 0);
-        expect(firstPwdField.attributes("type")).toBe("password");
-
-        await firstPwdField.setValue("test_first_pwd");
-
-        const secondPwdField = nth(inputs, 1);
-        expect(secondPwdField.attributes("type")).toBe("password");
-
-        await secondPwdField.setValue("test_second_pwd");
-
-        const submitButton = wrapper.find("button[type='submit']");
-
-        await submitButton.trigger("submit");
-        await flushPromises();
-
-        expect(postRequests.length).toBe(1);
-        expect(postRequests[0]?.data.password).toBe("test_first_pwd");
-        expect(postRequests[0]?.data.confirm).toBe("test_second_pwd");
+        expect(changes).toHaveLength(1);
+        expect(changes[0]).toMatchObject({ password: "test_first_pwd", confirm: "test_second_pwd" });
+        expect(router.currentRoute.value.path).toBe("/");
     });
 
-    it("props", async () => {
-        await wrapper.setProps({
-            token: "test_token",
-            expiredUser: "expired_user",
-        });
+    it("posts the reset token, the expired user's id and their current password", async () => {
+        const changes = capturePasswordChanges();
+        const { wrapper, router } = await mountChangePassword({ token: "test_token", expiredUser: "expired_user" });
 
-        const input = wrapper.find("input");
-        expect(input.attributes("type")).toBe("password");
+        const currentPassword = wrapper.find("input");
+        expect(currentPassword.attributes("type")).toBe("password");
+        await currentPassword.setValue("current_password");
+        await submit(wrapper);
 
-        await input.setValue("current_password");
-
-        const submitButton = wrapper.find("button[type='submit']");
-
-        await submitButton.trigger("submit");
-        await flushPromises();
-
-        expect(postRequests.length).toBe(1);
-        expect(postRequests[0]?.data.token).toBe("test_token");
-        expect(postRequests[0]?.data.id).toBe("expired_user");
-        expect(postRequests[0]?.data.current).toBe("current_password");
-
-        const alert = wrapper.find(".alert");
-        expect(alert.text()).toBe("message_text");
+        expect(changes).toHaveLength(1);
+        expect(changes[0]).toMatchObject({ token: "test_token", id: "expired_user", current: "current_password" });
+        expect(wrapper.find(".alert").text()).toBe("message_text");
+        expect(router.currentRoute.value.path).toBe("/");
     });
 });

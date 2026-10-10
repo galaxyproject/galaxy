@@ -1,8 +1,15 @@
+import { getFakePageDetails, getFakePageSummary } from "@tests/test-data/pages";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { HistoryPageDetails, HistoryPageSummary } from "@/api/pages";
+import type {
+    HistoryPageDetails,
+    HistoryPageSummary,
+    PageRevisionDetails,
+    PageRevisionSummary,
+    UpdateHistoryPagePayload,
+} from "@/api/pages";
 
 import { usePageEditorStore } from "./pageEditorStore";
 
@@ -10,56 +17,44 @@ const TEST_HISTORY_ID = "abc123historyid";
 const TEST_PAGE_ID = "def456pageid";
 const TEST_REVISION_ID = "rev789revisionid";
 
-const TEST_PAGE_SUMMARY: HistoryPageSummary = {
-    id: TEST_PAGE_ID,
-    history_id: TEST_HISTORY_ID,
-    title: "My Analysis Notes",
-    slug: null,
-    source_invocation_id: null,
-    published: false,
-    importable: false,
-    deleted: false,
-    latest_revision_id: TEST_REVISION_ID,
-    revision_ids: [TEST_REVISION_ID],
-    create_time: "2025-06-15T10:30:00Z",
-    update_time: "2025-06-15T12:45:00Z",
-    username: "test",
-    email_hash: "",
-    author_deleted: false,
-    model_class: "Page",
-    tags: [],
-};
-
-const TEST_PAGE_DETAILS: HistoryPageDetails = {
-    ...TEST_PAGE_SUMMARY,
-    content: "# Analysis\n\nSome markdown content here.",
-    content_editor: "# Analysis\n\nSome markdown content here.",
-    content_format: "markdown" as const,
-    edit_source: "user",
-    annotation: null,
-};
+const TEST_PAGE_SUMMARY = getFakePageSummary();
+const TEST_PAGE_DETAILS = getFakePageDetails();
 
 const { server, http } = useServerMock();
 
-/** Set up default successful handlers for all page endpoints. */
-function useDefaultHandlers() {
-    server.use(
-        http.get("/api/pages", ({ response }: any) => {
-            return response(200).json([TEST_PAGE_SUMMARY]);
-        }) as any,
-        http.get("/api/pages/{id}", ({ response }: any) => {
-            return response(200).json(TEST_PAGE_DETAILS);
-        }) as any,
-        http.post("/api/pages", ({ response }: any) => {
-            return response(200).json(TEST_PAGE_DETAILS);
-        }) as any,
-        http.put("/api/pages/{id}", ({ response }: any) => {
-            return response(200).json(TEST_PAGE_DETAILS);
-        }) as any,
-        http.delete("/api/pages/{id}", ({ response }: any) => {
-            return response(204).empty();
-        }) as any,
-    );
+function createHistoryEditorStore() {
+    const store = usePageEditorStore();
+    store.setCurrentContext(TEST_HISTORY_ID);
+    return store;
+}
+
+function createRevisionSummary(overrides: Partial<PageRevisionSummary> = {}): PageRevisionSummary {
+    return {
+        id: "rev-1",
+        page_id: TEST_PAGE_ID,
+        edit_source: "user",
+        create_time: "2025-01-01",
+        update_time: "2025-01-01",
+        ...overrides,
+    };
+}
+
+function createRevisionDetails(overrides: Partial<PageRevisionDetails> = {}): PageRevisionDetails {
+    return {
+        ...createRevisionSummary(),
+        content: "",
+        content_editor: "",
+        content_format: "markdown",
+        ...overrides,
+    };
+}
+
+function pageListHandler(pages: HistoryPageSummary[] = [TEST_PAGE_SUMMARY]) {
+    return http.get("/api/pages", ({ response }) => response(200).json(pages));
+}
+
+function pageDetailsHandler(page: HistoryPageDetails = TEST_PAGE_DETAILS) {
+    return http.get("/api/pages/{id}", ({ response }) => response(200).json(page));
 }
 
 describe("usePageEditorStore", () => {
@@ -67,7 +62,7 @@ describe("usePageEditorStore", () => {
         setActivePinia(createPinia());
     });
 
-    describe("computed properties", () => {
+    describe("page availability and unsaved changes", () => {
         it("hasPages is false when empty", () => {
             const store = usePageEditorStore();
             expect(store.hasPages).toBe(false);
@@ -102,9 +97,8 @@ describe("usePageEditorStore", () => {
         });
 
         it("isDirty is false when content reverted to original", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(pageDetailsHandler());
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             const originalContent = store.currentContent;
 
@@ -134,7 +128,7 @@ describe("usePageEditorStore", () => {
 
     describe("loadPages", () => {
         it("sets historyId and populates pages on success", async () => {
-            useDefaultHandlers();
+            server.use(pageListHandler());
             const store = usePageEditorStore();
 
             await store.loadPages(TEST_HISTORY_ID);
@@ -144,7 +138,7 @@ describe("usePageEditorStore", () => {
         });
 
         it("sets isLoadingList during load", async () => {
-            useDefaultHandlers();
+            server.use(pageListHandler());
             const store = usePageEditorStore();
 
             const promise = store.loadPages(TEST_HISTORY_ID);
@@ -156,9 +150,9 @@ describe("usePageEditorStore", () => {
 
         it("sets error on API failure", async () => {
             server.use(
-                http.get("/api/pages", ({ response }: any) => {
+                http.get("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
 
@@ -170,20 +164,16 @@ describe("usePageEditorStore", () => {
 
         it("clears previous error on new load", async () => {
             server.use(
-                http.get("/api/pages", ({ response }: any) => {
+                http.get("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
 
             await store.loadPages(TEST_HISTORY_ID);
             expect(store.error).toBeTruthy();
 
-            server.use(
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([]);
-                }) as any,
-            );
+            server.use(pageListHandler([]));
 
             await store.loadPages(TEST_HISTORY_ID);
             expect(store.error).toBeNull();
@@ -201,9 +191,8 @@ describe("usePageEditorStore", () => {
         });
 
         it("populates currentPage and content on success", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(pageDetailsHandler());
+            const store = createHistoryEditorStore();
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -212,10 +201,9 @@ describe("usePageEditorStore", () => {
             expect(store.currentTitle).toBe(TEST_PAGE_DETAILS.title);
         });
 
-        it("sets originalContent to match currentContent", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+        it("starts with no unsaved changes after loading a page", async () => {
+            server.use(pageDetailsHandler());
+            const store = createHistoryEditorStore();
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -223,9 +211,8 @@ describe("usePageEditorStore", () => {
         });
 
         it("sets isLoadingPage during load", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(pageDetailsHandler());
+            const store = createHistoryEditorStore();
 
             const promise = store.loadPageById(TEST_PAGE_ID);
             expect(store.isLoadingPage).toBe(true);
@@ -236,12 +223,11 @@ describe("usePageEditorStore", () => {
 
         it("sets error on API failure", async () => {
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
+                http.get("/api/pages/{id}", ({ response }) => {
                     return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -260,9 +246,11 @@ describe("usePageEditorStore", () => {
         });
 
         it("creates page, sets as current, refreshes list", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(
+                pageListHandler(),
+                http.post("/api/pages", ({ response }) => response(200).json(TEST_PAGE_DETAILS)),
+            );
+            const store = createHistoryEditorStore();
 
             const result = await store.createPage({ title: "New Page" });
 
@@ -275,9 +263,11 @@ describe("usePageEditorStore", () => {
         });
 
         it("sets isLoadingPage during creation", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(
+                pageListHandler(),
+                http.post("/api/pages", ({ response }) => response(200).json(TEST_PAGE_DETAILS)),
+            );
+            const store = createHistoryEditorStore();
 
             const promise = store.createPage();
             expect(store.isLoadingPage).toBe(true);
@@ -288,12 +278,11 @@ describe("usePageEditorStore", () => {
 
         it("sets error and rethrows on failure", async () => {
             server.use(
-                http.post("/api/pages", ({ response }: any) => {
+                http.post("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "Cannot create page", err_code: 400 }, { status: 400 });
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
 
             await expect(store.createPage()).rejects.toThrow();
             expect(store.error).toBeTruthy();
@@ -305,12 +294,11 @@ describe("usePageEditorStore", () => {
         it("does nothing if not dirty", async () => {
             const modifiedDetails = { ...TEST_PAGE_DETAILS, update_time: "2099-01-01T00:00:00Z" };
             server.use(
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response(200).json(modifiedDetails);
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             store.currentPage = TEST_PAGE_DETAILS;
 
             await store.savePage();
@@ -321,8 +309,7 @@ describe("usePageEditorStore", () => {
         });
 
         it("does nothing if no currentPage", async () => {
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             store.updateContent("dirty");
 
             await store.savePage();
@@ -334,13 +321,13 @@ describe("usePageEditorStore", () => {
 
         it("saves in standalone mode without historyId", async () => {
             server.use(
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response(200).json({
                         ...TEST_PAGE_DETAILS,
                         content: "dirty",
                         edit_source: "user",
                     });
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
             store.mode = "standalone";
@@ -360,15 +347,12 @@ describe("usePageEditorStore", () => {
                 update_time: "2025-06-16T09:00:00Z",
             };
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                pageDetailsHandler(),
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response(200).json(updatedDetails);
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.isDirty).toBe(false);
 
@@ -392,16 +376,13 @@ describe("usePageEditorStore", () => {
                 update_time: "2025-06-16T09:00:00Z",
             };
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.put("/api/pages/{id}", async ({ response }: any) => {
+                pageDetailsHandler(),
+                http.put("/api/pages/{id}", async ({ response }) => {
                     await saveCanFinish;
                     return response(200).json(updatedDetails);
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("submitted content");
 
@@ -416,15 +397,12 @@ describe("usePageEditorStore", () => {
 
         it("sets isSaving during save", async () => {
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
+                pageDetailsHandler(),
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.put("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("new content");
 
@@ -437,15 +415,12 @@ describe("usePageEditorStore", () => {
 
         it("sets error and rethrows on failure", async () => {
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                pageDetailsHandler(),
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response("4XX").json({ err_msg: "Page is deleted", err_code: 400 }, { status: 400 });
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("new content");
 
@@ -462,15 +437,12 @@ describe("usePageEditorStore", () => {
                 update_time: "2025-06-16T10:00:00Z",
             };
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.put("/api/pages/{id}", ({ response }: any) => {
+                pageDetailsHandler(),
+                http.put("/api/pages/{id}", ({ response }) => {
                     return response(200).json(updatedDetails);
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("");
             expect(store.isDirty).toBe(true);
@@ -485,8 +457,7 @@ describe("usePageEditorStore", () => {
 
     describe("deleteCurrentPage", () => {
         it("does nothing if no currentPage", async () => {
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
 
             await store.deleteCurrentPage();
 
@@ -504,26 +475,17 @@ describe("usePageEditorStore", () => {
 
         it("clears current state and refreshes list on success", async () => {
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([TEST_PAGE_SUMMARY]);
-                }) as any,
-                http.delete("/api/pages/{id}", ({ response }: any) => {
+                pageDetailsHandler(),
+                pageListHandler(),
+                http.delete("/api/pages/{id}", ({ response }) => {
                     return response(204).empty();
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.currentPage).not.toBeNull();
 
-            server.use(
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([]);
-                }) as any,
-            );
+            server.use(pageListHandler([]));
 
             await store.deleteCurrentPage();
 
@@ -536,12 +498,11 @@ describe("usePageEditorStore", () => {
 
         it("sets error and rethrows on failure", async () => {
             server.use(
-                http.delete("/api/pages/{id}", ({ response }: any) => {
+                http.delete("/api/pages/{id}", ({ response }) => {
                     return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             store.currentPage = TEST_PAGE_DETAILS;
 
             await expect(store.deleteCurrentPage()).rejects.toThrow();
@@ -551,7 +512,7 @@ describe("usePageEditorStore", () => {
 
     describe("resolveCurrentPage", () => {
         it("returns stored ID when page still exists", async () => {
-            useDefaultHandlers();
+            server.use(pageListHandler());
             const store = usePageEditorStore();
             store.setCurrentPageId(TEST_HISTORY_ID, TEST_PAGE_ID);
 
@@ -570,11 +531,7 @@ describe("usePageEditorStore", () => {
                 id: "newer-page",
                 update_time: "2025-06-15T12:45:00Z",
             };
-            server.use(
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([older, newer]);
-                }) as any,
-            );
+            server.use(pageListHandler([older, newer]));
             const store = usePageEditorStore();
 
             const result = await store.resolveCurrentPage(TEST_HISTORY_ID);
@@ -588,12 +545,10 @@ describe("usePageEditorStore", () => {
                 id: "created-page",
             };
             server.use(
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([]);
-                }) as any,
-                http.post("/api/pages", ({ response }: any) => {
+                pageListHandler([]),
+                http.post("/api/pages", ({ response }) => {
                     return response(200).json(createdPage);
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
 
@@ -607,11 +562,7 @@ describe("usePageEditorStore", () => {
                 ...TEST_PAGE_SUMMARY,
                 id: "fresh-page",
             };
-            server.use(
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([freshPage]);
-                }) as any,
-            );
+            server.use(pageListHandler([freshPage]));
             const store = usePageEditorStore();
             store.setCurrentPageId(TEST_HISTORY_ID, "deleted-page");
 
@@ -623,9 +574,8 @@ describe("usePageEditorStore", () => {
 
     describe("currentPageId tracking", () => {
         it("loadPageById updates stored current ID", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(pageDetailsHandler());
+            const store = createHistoryEditorStore();
 
             await store.loadPageById(TEST_PAGE_ID);
 
@@ -634,18 +584,13 @@ describe("usePageEditorStore", () => {
 
         it("deleteCurrentPage clears stored ID", async () => {
             server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(TEST_PAGE_DETAILS);
-                }) as any,
-                http.get("/api/pages", ({ response }: any) => {
-                    return response(200).json([]);
-                }) as any,
-                http.delete("/api/pages/{id}", ({ response }: any) => {
+                pageDetailsHandler(),
+                pageListHandler([]),
+                http.delete("/api/pages/{id}", ({ response }) => {
                     return response(204).empty();
-                }) as any,
+                }),
             );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.getCurrentPageId(TEST_HISTORY_ID)).toBe(TEST_PAGE_ID);
 
@@ -654,7 +599,7 @@ describe("usePageEditorStore", () => {
             expect(store.getCurrentPageId(TEST_HISTORY_ID)).toBeNull();
         });
 
-        it("setCurrentPageId and clearCurrentPageId work correctly", () => {
+        it("remembers page IDs per history and clears only the requested history", () => {
             const store = usePageEditorStore();
 
             store.setCurrentPageId("h1", "p1");
@@ -670,7 +615,7 @@ describe("usePageEditorStore", () => {
         });
     });
 
-    describe("synchronous actions", () => {
+    describe("editing and resetting page state", () => {
         it("updateContent updates currentContent", () => {
             const store = usePageEditorStore();
             store.updateContent("hello world");
@@ -689,13 +634,8 @@ describe("usePageEditorStore", () => {
                 content: "original content",
                 content_editor: "original content",
             };
-            server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(pageWithContent);
-                }) as any,
-            );
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(pageDetailsHandler(pageWithContent));
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             expect(store.currentContent).toBe("original content");
 
@@ -709,9 +649,8 @@ describe("usePageEditorStore", () => {
         });
 
         it("clearCurrentPage resets current page state", async () => {
-            useDefaultHandlers();
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            server.use(pageDetailsHandler());
+            const store = createHistoryEditorStore();
             await store.loadPageById(TEST_PAGE_ID);
             store.updateContent("modified");
             expect(store.currentPage).not.toBeNull();
@@ -726,8 +665,7 @@ describe("usePageEditorStore", () => {
         });
 
         it("clearCurrentPage does not affect pages list or historyId", () => {
-            const store = usePageEditorStore();
-            store.setCurrentContext(TEST_HISTORY_ID);
+            const store = createHistoryEditorStore();
             store.pages = [TEST_PAGE_SUMMARY];
             store.currentPage = TEST_PAGE_DETAILS;
 
@@ -738,7 +676,7 @@ describe("usePageEditorStore", () => {
         });
 
         it("$reset resets all state including mode", async () => {
-            useDefaultHandlers();
+            server.use(pageListHandler(), pageDetailsHandler());
             const store = usePageEditorStore();
             store.mode = "standalone";
             await store.loadPages(TEST_HISTORY_ID);
@@ -781,16 +719,12 @@ describe("usePageEditorStore", () => {
             expect(store.revisionViewMode).toBe("preview");
         });
 
-        it("clearRevisionState resets to 'preview'", () => {
+        it("clearing the page returns the revision view to preview", () => {
             const store = usePageEditorStore();
             store.revisionViewMode = "changes_current";
 
-            store.$patch({ showRevisions: true });
-            store.clearSelectedRevision();
-            // clearSelectedRevision resets it; set it again to test clearRevisionState
-            store.revisionViewMode = "changes_current";
+            store.showRevisions = true;
 
-            // clearRevisionState is called indirectly via clearCurrentPage
             store.clearCurrentPage();
 
             expect(store.revisionViewMode).toBe("preview");
@@ -806,114 +740,56 @@ describe("usePageEditorStore", () => {
         });
     });
 
-    describe("isNewestRevision / isOldestRevision", () => {
-        it("isNewestRevision true when selected is first in desc-sorted revisions", () => {
+    describe("revision navigation boundaries", () => {
+        it("marks the first revision in newest-first order as newest", () => {
             const store = usePageEditorStore();
             store.$patch({
                 revisions: [
-                    {
-                        id: "rev-2",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-02",
-                        update_time: "2025-01-02",
-                    },
-                    {
-                        id: "rev-1",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-01",
-                        update_time: "2025-01-01",
-                    },
+                    createRevisionSummary({ id: "rev-2", create_time: "2025-01-02", update_time: "2025-01-02" }),
+                    createRevisionSummary(),
                 ],
             });
-            store.selectedRevision = {
+            store.selectedRevision = createRevisionDetails({
                 id: "rev-2",
-                page_id: TEST_PAGE_ID,
-                content: "",
-                content_format: "markdown",
-                edit_source: "user",
                 create_time: "2025-01-02",
                 update_time: "2025-01-02",
-            } as any;
+            });
             expect(store.isNewestRevision).toBe(true);
             expect(store.isOldestRevision).toBe(false);
         });
 
-        it("isOldestRevision true when selected is last in desc-sorted revisions", () => {
+        it("marks the last revision in newest-first order as oldest", () => {
             const store = usePageEditorStore();
             store.$patch({
                 revisions: [
-                    {
-                        id: "rev-2",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-02",
-                        update_time: "2025-01-02",
-                    },
-                    {
-                        id: "rev-1",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-01",
-                        update_time: "2025-01-01",
-                    },
+                    createRevisionSummary({ id: "rev-2", create_time: "2025-01-02", update_time: "2025-01-02" }),
+                    createRevisionSummary(),
                 ],
             });
-            store.selectedRevision = {
-                id: "rev-1",
-                page_id: TEST_PAGE_ID,
-                content: "",
-                content_format: "markdown",
-                edit_source: "user",
-                create_time: "2025-01-01",
-                update_time: "2025-01-01",
-            } as any;
+            store.selectedRevision = createRevisionDetails();
             expect(store.isNewestRevision).toBe(false);
             expect(store.isOldestRevision).toBe(true);
         });
 
-        it("both false when selected is a middle revision", () => {
+        it("marks a middle revision as neither newest nor oldest", () => {
             const store = usePageEditorStore();
             store.$patch({
                 revisions: [
-                    {
-                        id: "rev-3",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-03",
-                        update_time: "2025-01-03",
-                    },
-                    {
-                        id: "rev-2",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-02",
-                        update_time: "2025-01-02",
-                    },
-                    {
-                        id: "rev-1",
-                        page_id: TEST_PAGE_ID,
-                        edit_source: "user",
-                        create_time: "2025-01-01",
-                        update_time: "2025-01-01",
-                    },
+                    createRevisionSummary({ id: "rev-3", create_time: "2025-01-03", update_time: "2025-01-03" }),
+                    createRevisionSummary({ id: "rev-2", create_time: "2025-01-02", update_time: "2025-01-02" }),
+                    createRevisionSummary(),
                 ],
             });
-            store.selectedRevision = {
+            store.selectedRevision = createRevisionDetails({
                 id: "rev-2",
-                page_id: TEST_PAGE_ID,
-                content: "",
-                content_format: "markdown",
-                edit_source: "user",
                 create_time: "2025-01-02",
                 update_time: "2025-01-02",
-            } as any;
+            });
             expect(store.isNewestRevision).toBe(false);
             expect(store.isOldestRevision).toBe(false);
         });
 
-        it("both false when no selectedRevision", () => {
+        it("marks neither boundary when no revision is selected", () => {
             const store = usePageEditorStore();
             expect(store.isNewestRevision).toBe(false);
             expect(store.isOldestRevision).toBe(false);
@@ -923,34 +799,32 @@ describe("usePageEditorStore", () => {
     describe("previousRevisionContent", () => {
         it("is set after loadRevision when predecessor exists", async () => {
             const revSummaries = [
-                {
-                    id: "rev-2",
-                    page_id: TEST_PAGE_ID,
-                    edit_source: "user",
-                    create_time: "2025-01-02",
-                    update_time: "2025-01-02",
-                },
-                {
-                    id: "rev-1",
-                    page_id: TEST_PAGE_ID,
-                    edit_source: "user",
-                    create_time: "2025-01-01",
-                    update_time: "2025-01-01",
-                },
+                createRevisionSummary({ id: "rev-2", create_time: "2025-01-02", update_time: "2025-01-02" }),
+                createRevisionSummary(),
             ];
-            const rev2Details = { ...revSummaries[0], content: "# V2", content_format: "markdown", title: "" };
-            const rev1Details = { ...revSummaries[1], content: "# V1", content_format: "markdown", title: "" };
+            const rev2Details = createRevisionDetails({
+                ...revSummaries[0],
+                content: "# V2",
+                content_editor: "# V2",
+                title: "",
+            });
+            const rev1Details = createRevisionDetails({
+                ...revSummaries[1],
+                content: "# V1",
+                content_editor: "# V1",
+                title: "",
+            });
             server.use(
-                http.get("/api/pages/{id}/revisions/{revision_id}", ({ params, response }: any) => {
+                http.get("/api/pages/{id}/revisions/{revision_id}", ({ params, response }) => {
                     if (params["revision_id"] === "rev-2") {
                         return response(200).json(rev2Details);
                     }
                     return response(200).json(rev1Details);
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
             store.currentPage = TEST_PAGE_DETAILS;
-            store.$patch({ revisions: revSummaries });
+            store.revisions = revSummaries;
 
             await store.loadRevision("rev-2");
 
@@ -959,24 +833,21 @@ describe("usePageEditorStore", () => {
         });
 
         it("is null when selected is the oldest (no predecessor)", async () => {
-            const revSummaries = [
-                {
-                    id: "rev-1",
-                    page_id: TEST_PAGE_ID,
-                    edit_source: "user",
-                    create_time: "2025-01-01",
-                    update_time: "2025-01-01",
-                },
-            ];
-            const rev1Details = { ...revSummaries[0], content: "# V1", content_format: "markdown", title: "" };
+            const revSummaries = [createRevisionSummary()];
+            const rev1Details = createRevisionDetails({
+                ...revSummaries[0],
+                content: "# V1",
+                content_editor: "# V1",
+                title: "",
+            });
             server.use(
-                http.get("/api/pages/{id}/revisions/{revision_id}", ({ response }: any) => {
+                http.get("/api/pages/{id}/revisions/{revision_id}", ({ response }) => {
                     return response(200).json(rev1Details);
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
             store.currentPage = TEST_PAGE_DETAILS;
-            store.$patch({ revisions: revSummaries });
+            store.revisions = revSummaries;
 
             await store.loadRevision("rev-1");
 
@@ -985,14 +856,14 @@ describe("usePageEditorStore", () => {
 
         it("is cleared by clearSelectedRevision", () => {
             const store = usePageEditorStore();
-            store.$patch({ previousRevisionContent: "old" } as any);
+            store.previousRevisionContent = "old";
             store.clearSelectedRevision();
             expect(store.previousRevisionContent).toBeNull();
         });
 
-        it("is cleared by clearRevisionState (via clearCurrentPage)", () => {
+        it("is cleared when the current page is cleared", () => {
             const store = usePageEditorStore();
-            store.$patch({ previousRevisionContent: "old" } as any);
+            store.previousRevisionContent = "old";
             store.clearCurrentPage();
             expect(store.previousRevisionContent).toBeNull();
         });
@@ -1005,11 +876,7 @@ describe("usePageEditorStore", () => {
         };
 
         it("loadPage loads a standalone page without historyId", async () => {
-            server.use(
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(STANDALONE_PAGE);
-                }) as any,
-            );
+            server.use(pageDetailsHandler(STANDALONE_PAGE));
             const store = usePageEditorStore();
             store.mode = "standalone";
 
@@ -1021,12 +888,12 @@ describe("usePageEditorStore", () => {
         });
 
         it("savePage in standalone mode defaults edit_source to user", async () => {
-            let capturedBody: any = null;
+            let capturedBody: UpdateHistoryPagePayload | undefined;
             server.use(
-                http.put("/api/pages/{id}", async ({ request, response }: any) => {
+                http.put("/api/pages/{id}", async ({ request, response }) => {
                     capturedBody = await request.json();
                     return response(200).json(STANDALONE_PAGE);
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
             store.mode = "standalone";
@@ -1035,30 +902,18 @@ describe("usePageEditorStore", () => {
 
             await store.savePage();
 
-            expect(capturedBody.edit_source).toBe("user");
+            expect(capturedBody?.edit_source).toBe("user");
         });
 
         it("loadRevisions works without historyId", async () => {
             const revisions = [
-                {
-                    id: "rev-1",
-                    page_id: TEST_PAGE_ID,
-                    edit_source: "user",
-                    create_time: "2025-01-01",
-                    update_time: "2025-01-01",
-                },
-                {
-                    id: "rev-2",
-                    page_id: TEST_PAGE_ID,
-                    edit_source: "user",
-                    create_time: "2025-01-02",
-                    update_time: "2025-01-02",
-                },
+                createRevisionSummary(),
+                createRevisionSummary({ id: "rev-2", create_time: "2025-01-02", update_time: "2025-01-02" }),
             ];
             server.use(
-                http.get("/api/pages/{id}/revisions", ({ response }: any) => {
+                http.get("/api/pages/{id}/revisions", ({ response }) => {
                     return response(200).json(revisions);
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
             store.mode = "standalone";
@@ -1071,23 +926,20 @@ describe("usePageEditorStore", () => {
         });
 
         it("restoreRevision works without historyId", async () => {
-            const restoredRevision = {
+            const restoredRevision = createRevisionDetails({
                 id: "rev-new",
-                page_id: TEST_PAGE_ID,
                 edit_source: "restore",
                 create_time: "2025-01-03",
                 update_time: "2025-01-03",
-            };
+            });
             server.use(
-                http.post("/api/pages/{id}/revisions/{revision_id}/revert", ({ response }: any) => {
+                http.post("/api/pages/{id}/revisions/{revision_id}/revert", ({ response }) => {
                     return response(200).json(restoredRevision);
-                }) as any,
-                http.get("/api/pages/{id}", ({ response }: any) => {
-                    return response(200).json(STANDALONE_PAGE);
-                }) as any,
-                http.get("/api/pages/{id}/revisions", ({ response }: any) => {
+                }),
+                pageDetailsHandler(STANDALONE_PAGE),
+                http.get("/api/pages/{id}/revisions", ({ response }) => {
                     return response(200).json([restoredRevision]);
-                }) as any,
+                }),
             );
             const store = usePageEditorStore();
             store.mode = "standalone";

@@ -1,40 +1,43 @@
-import { mount } from "@vue/test-utils";
+import { getFakeHistorySummary } from "@tests/test-data";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, getActivePinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { getActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, defineComponent, h } from "vue";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type {
     StepJobSummary,
-    WorkflowInvocation,
+    WorkflowInvocationCollectionView,
     WorkflowInvocationElementView,
     WorkflowJobMetric,
 } from "@/api/invocations";
 
 import { useInvocationStore } from "./invocationStore";
+import { setupTestPinia } from "./testUtils";
 
 const { server, http } = useServerMock();
+enableAutoUnmount(afterEach);
 
 function stepJobsSummaryResponse(states: Record<string, number>): StepJobSummary[] {
-    return [{ id: "step1", model: "ImplicitCollectionJobs", states } as unknown as StepJobSummary];
+    return [{ id: "step1", model: "ImplicitCollectionJobs", populated_state: "ok", states }];
 }
 
 function metricsResponse(jobIds: string[]): WorkflowJobMetric[] {
-    return jobIds.map(
-        (job_id) =>
-            ({
-                plugin: "core",
-                name: "runtime_seconds",
-                title: "Job Runtime",
-                value: `${job_id}-runtime`,
-                raw_value: "1",
-                job_id,
-            }) as unknown as WorkflowJobMetric,
-    );
+    return jobIds.map((job_id) => ({
+        plugin: "core",
+        name: "runtime_seconds",
+        title: "Job Runtime",
+        value: `${job_id}-runtime`,
+        raw_value: "1",
+        job_id,
+        step_index: 0,
+        step_label: null,
+        tool_id: "test-tool",
+    }));
 }
 
-function invocationResponse(id: string, updateTime: string): WorkflowInvocation {
+function invocationResponse(id: string, updateTime: string): WorkflowInvocationCollectionView {
     return {
         id,
         create_time: updateTime,
@@ -43,21 +46,33 @@ function invocationResponse(id: string, updateTime: string): WorkflowInvocation 
         history_id: `history-${id}`,
         workflow_id: `workflow-${id}`,
         model_class: "WorkflowInvocation",
-    } as unknown as WorkflowInvocation;
+    };
 }
 
 /** The element view served by `GET /api/invocations/{invocation_id}`, unlike the index's collection view. */
 function invocationDetailsResponse(id: string, updateTime: string): WorkflowInvocationElementView {
     return {
         ...invocationResponse(id, updateTime),
-        steps: [{ id: `step-${id}` }],
+        steps: [
+            {
+                id: `step-${id}`,
+                action: null,
+                jobs: [],
+                model_class: "WorkflowInvocationStep",
+                order_index: 0,
+                output_collections: {},
+                outputs: {},
+                update_time: updateTime,
+                workflow_step_id: "workflow-step1",
+            },
+        ],
         inputs: {},
         input_step_parameters: {},
         outputs: {},
         output_collections: {},
         output_values: {},
         messages: [],
-    } as unknown as WorkflowInvocationElementView;
+    };
 }
 
 describe("stores/invocationStore", () => {
@@ -65,7 +80,7 @@ describe("stores/invocationStore", () => {
     let metricsCallCount: number;
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
 
         stepJobsSummary = stepJobsSummaryResponse({ running: 1 });
         metricsCallCount = 0;
@@ -195,7 +210,7 @@ describe("stores/invocationStore", () => {
     });
 
     describe("fetchLatestInvocations", () => {
-        let invocations: WorkflowInvocation[];
+        let invocations: WorkflowInvocationCollectionView[];
         let invocationsCallCount: number;
         let requestedLimits: (string | null)[];
 
@@ -212,10 +227,10 @@ describe("stores/invocationStore", () => {
                 }),
                 // Requested by the grid's `getData` to populate the name caches.
                 http.get("/api/histories/{history_id}", ({ response, params }) => {
-                    return response(200).json({ id: params.history_id, name: "History" } as never);
+                    return response(200).json(getFakeHistorySummary({ id: params.history_id, name: "History" }));
                 }),
                 http.get("/api/workflows/{workflow_id}", ({ response, params }) => {
-                    return response(200).json({ id: params.workflow_id, name: "Workflow" } as never);
+                    return response.untyped(HttpResponse.json({ id: params.workflow_id, name: "Workflow" }));
                 }),
             );
         });
@@ -327,7 +342,10 @@ describe("stores/invocationStore", () => {
                 await flushPromises();
 
                 expect(requestedDetailIds).toEqual(["inv1"]);
-                expect(store.getInvocationById("inv1")).toHaveProperty("steps", [{ id: "step-inv1" }]);
+                expect(store.getInvocationById("inv1")).toHaveProperty(
+                    "steps",
+                    invocationDetailsResponse("inv1", "2026-08-01").steps,
+                );
             });
 
             it("does not refetch an invocation whose details are already cached", async () => {
@@ -350,8 +368,11 @@ describe("stores/invocationStore", () => {
                 await store.fetchLatestInvocations();
 
                 const invocation = store.latestInvocations.find((item) => item.id === "inv1");
-                expect(invocation).toHaveProperty("steps", [{ id: "step-inv1" }]);
-                expect(store.getInvocationById("inv1")).toHaveProperty("steps", [{ id: "step-inv1" }]);
+                expect(invocation).toHaveProperty("steps", invocationDetailsResponse("inv1", "2026-08-01").steps);
+                expect(store.getInvocationById("inv1")).toHaveProperty(
+                    "steps",
+                    invocationDetailsResponse("inv1", "2026-08-01").steps,
+                );
                 await flushPromises();
 
                 expect(requestedDetailIds).toEqual(["inv1"]);
@@ -377,7 +398,9 @@ describe("stores/invocationStore", () => {
 
         describe("while a component is viewing it", () => {
             let doneJobIds: string[];
-            let metricsDelayMs: number;
+            let holdFirstMetricsResponse: boolean;
+            let firstMetricsRequestStarted: Promise<void>;
+            let releaseFirstMetricsResponse: () => void;
 
             function mountRuntimeViewer() {
                 const RuntimeViewer = defineComponent({
@@ -400,19 +423,31 @@ describe("stores/invocationStore", () => {
 
             beforeEach(async () => {
                 doneJobIds = [];
-                metricsDelayMs = 0;
+                holdFirstMetricsResponse = false;
+                let signalFirstRequest: () => void;
+                firstMetricsRequestStarted = new Promise<void>((resolve) => {
+                    signalFirstRequest = resolve;
+                });
+                const firstResponseReleased = new Promise<void>((resolve) => {
+                    releaseFirstMetricsResponse = resolve;
+                });
                 server.use(
                     http.get("/api/invocations/{invocation_id}/metrics", async ({ response }) => {
                         metricsCallCount++;
                         const jobIds = [...doneJobIds];
-                        if (metricsDelayMs) {
-                            await new Promise((resolve) => setTimeout(resolve, metricsDelayMs));
+                        if (holdFirstMetricsResponse && metricsCallCount === 1) {
+                            signalFirstRequest();
+                            await firstResponseReleased;
                         }
                         return response(200).json(metricsResponse(jobIds));
                     }),
                 );
                 stepJobsSummary = stepJobsSummaryResponse({ running: 2 });
                 await useInvocationStore().fetchInvocationStepJobsSummaryForId({ id: "inv1" });
+            });
+
+            afterEach(() => {
+                releaseFirstMetricsResponse();
             });
 
             it("shows a job's runtime once it finishes", async () => {
@@ -429,9 +464,10 @@ describe("stores/invocationStore", () => {
             });
 
             it("shows a job's runtime when it finishes while a metrics fetch is in flight", async () => {
-                metricsDelayMs = 50;
+                holdFirstMetricsResponse = true;
                 const wrapper = mountRuntimeViewer();
-                await flushPromises();
+                await firstMetricsRequestStarted;
+                expect(wrapper.text()).toBe("N/A,N/A");
 
                 doneJobIds = ["job1"];
                 await pollStepJobsSummary({ running: 1, ok: 1 });
@@ -439,10 +475,10 @@ describe("stores/invocationStore", () => {
                 doneJobIds = ["job1", "job2"];
                 await pollStepJobsSummary({ ok: 2 });
 
-                await new Promise((resolve) => setTimeout(resolve, 4 * metricsDelayMs));
-                await flushPromises();
-
-                expect(wrapper.text()).toBe("job1-runtime,job2-runtime");
+                releaseFirstMetricsResponse();
+                await vi.waitFor(() => {
+                    expect(wrapper.text()).toBe("job1-runtime,job2-runtime");
+                });
             });
         });
     });

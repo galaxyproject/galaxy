@@ -1,3 +1,4 @@
+import { getFakeObjectStoreInstance } from "@tests/test-data/objectStores";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -5,8 +6,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
-
-import type { UserConcreteObjectStore } from "./types";
 
 import ObjectStoreInstanceDropdown from "./InstanceDropdown.vue";
 import ConfigurationInstanceDropdown from "@/components/ConfigTemplates/InstanceDropdown.vue";
@@ -23,25 +22,16 @@ vi.mock("@/stores/objectStoreTemplatesStore", () => ({
 
 const { server, http } = useServerMock();
 
-const OBJECT_STORE: UserConcreteObjectStore = {
+const OBJECT_STORE = getFakeObjectStoreInstance({
     uuid: "test-object-store-id",
-    name: "Test Object Store",
     description: null,
     template_id: "simple_variable",
-    template_version: 0,
-    active: true,
-    hidden: false,
-    purged: false,
-    private: false,
     object_store_id: null,
     device: null,
     object_expires_after_days: null,
-    badges: [],
-    quota: { enabled: false },
-    secrets: [],
     type: "disk",
     variables: null,
-};
+});
 
 describe("Object Store Instance Dropdown", () => {
     const localVue = getLocalVue(true);

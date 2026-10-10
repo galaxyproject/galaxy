@@ -5,7 +5,6 @@ import { eventBus } from "@/utils/eventBus";
 
 import { patchRouterPush } from "./router-push";
 
-// mock Galaxy object
 const { mockGalaxy } = vi.hoisted(() => ({
     mockGalaxy: {
         frame: {
@@ -33,19 +32,21 @@ function createPatchedRouter() {
     return router;
 }
 
-// router push handling tests
-describe("router push changes", () => {
+describe("patchRouterPush", () => {
     beforeEach(() => {
         mockGalaxy.frame.active = false;
         mockGalaxy.frame.add.mockClear();
     });
 
-    it("navigates when the window manager is inactive, even with a title", async () => {
+    it.each([
+        { name: "untitled", path: "/test/other", options: {} },
+        { name: "titled", path: "/test/something", options: { title: "test title" } },
+    ])("navigates to a $name route when the window manager is inactive", async ({ path, options }) => {
         const router = createPatchedRouter();
-        await router.push("/test/other");
-        expect(router.currentRoute.value.fullPath).toBe("/test/other");
-        await router.push("/test/something", { title: "test title" });
-        expect(router.currentRoute.value.fullPath).toBe("/test/something");
+
+        await router.push(path, options);
+
+        expect(router.currentRoute.value.fullPath).toBe(path);
         expect(mockGalaxy.frame.add).not.toHaveBeenCalled();
     });
 
@@ -59,13 +60,20 @@ describe("router push changes", () => {
         expect(router.currentRoute.value.fullPath).toBe("/test/start");
     });
 
-    it("navigates when the window manager is active but the route has no title or opts out", async () => {
+    it.each([
+        { name: "has no title", path: "/test/untitled", options: {} },
+        {
+            name: "opts out of the window manager",
+            path: "/test/optout",
+            options: { title: "test title", preventWindowManager: true },
+        },
+    ])("navigates when the window manager is active but the route $name", async ({ path, options }) => {
         const router = createPatchedRouter();
         mockGalaxy.frame.active = true;
-        await router.push("/test/untitled");
-        expect(router.currentRoute.value.fullPath).toBe("/test/untitled");
-        await router.push("/test/optout", { title: "test title", preventWindowManager: true });
-        expect(router.currentRoute.value.fullPath).toBe("/test/optout");
+
+        await router.push(path, options);
+
+        expect(router.currentRoute.value.fullPath).toBe(path);
         expect(mockGalaxy.frame.add).not.toHaveBeenCalled();
     });
 
@@ -73,10 +81,14 @@ describe("router push changes", () => {
         const router = createPatchedRouter();
         const listener = vi.fn();
         eventBus.on("router-push", listener);
-        await router.push("/test/same");
-        await router.push("/test/same");
-        eventBus.off("router-push", listener);
-        expect(listener).toHaveBeenCalledTimes(2);
+        try {
+            await router.push("/test/same");
+            await router.push("/test/same");
+
+            expect(listener).toHaveBeenCalledTimes(2);
+        } finally {
+            eventBus.off("router-push", listener);
+        }
     });
 
     it("adds a key to forced string routes", async () => {
@@ -89,7 +101,8 @@ describe("router push changes", () => {
     it("does not double the router base for forced object routes", async () => {
         const router = createPatchedRouter();
         await router.push({ path: "/collection/new_list", query: { advanced: "false" } }, { force: true });
-        const { fullPath, query } = router.currentRoute.value;
+        const { fullPath, path, query } = router.currentRoute.value;
+        expect(path).toBe("/collection/new_list");
         expect(fullPath).not.toContain("/galaxy");
         expect(fullPath).toContain("__vkey__");
         expect(query.advanced).toBe("false");

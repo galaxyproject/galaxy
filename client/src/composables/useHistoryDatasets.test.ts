@@ -1,45 +1,37 @@
-import { createTestingPinia } from "@pinia/testing";
+import { getFakeHistorySummary } from "@tests/test-data";
+import { getFakeDatasetSummary } from "@tests/test-data/datasets";
+import { runInTestScope } from "@tests/vitest/effectScope";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
-import type { AnyHistory, HDASummary } from "@/api";
+import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryDatasetsStore } from "@/stores/historyDatasetsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { setupTestPinia } from "@/stores/testUtils";
 
 import { useHistoryDatasets } from "./useHistoryDatasets";
 
 const { server, http } = useServerMock();
 
-function buildFakeDataset(id: string, name: string): HDASummary {
-    return {
-        id,
-        name,
-        history_content_type: "dataset",
-        deleted: false,
-        visible: true,
-        state: "ok",
-        extension: "txt",
-        create_time: "2024-01-01T00:00:00",
-        update_time: "2024-01-01T00:00:00",
-        history_id: "history-1",
-        hid: 1,
-        type_id: "dataset",
-        type: "file",
-        tags: [],
-        model_class: "HistoryDatasetAssociation",
-        genome_build: null,
-        purged: false,
-    } as unknown as HDASummary;
+function buildFakeDataset(id: string, name: string) {
+    return getFakeDatasetSummary({ id, name });
 }
 
-function buildFakeHistory(id: string, updateTime: string) {
-    return {
-        id,
-        name: `History ${id}`,
-        update_time: updateTime,
-    };
+function createHistoryDatasets(options: Parameters<typeof useHistoryDatasets>[0]) {
+    return runInTestScope(() => useHistoryDatasets(options));
+}
+
+function respondWithDatasets(datasets: HDASummary[]) {
+    const requestSpy = vi.fn();
+    server.use(
+        http.get("/api/histories/{history_id}/contents", ({ params, response }) => {
+            requestSpy(params.history_id);
+            return response(200).json(datasets);
+        }),
+    );
+    return requestSpy;
 }
 
 describe("useHistoryDatasets", () => {
@@ -47,28 +39,23 @@ describe("useHistoryDatasets", () => {
     const historyUpdateTime = "2024-01-01T12:00:00";
 
     beforeEach(() => {
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        setActivePinia(pinia);
+        setupTestPinia();
 
-        // Set up the history store with a mock history
         const historyStore = useHistoryStore();
-        historyStore.storedHistories[historyId] = buildFakeHistory(historyId, historyUpdateTime) as AnyHistory;
-
-        // Default API response
-        server.use(
-            http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                return response(200).json([]);
-            }),
-        );
+        historyStore.storedHistories[historyId] = getFakeHistorySummary({
+            id: historyId,
+            name: `History ${historyId}`,
+            update_time: historyUpdateTime,
+        });
     });
 
     afterEach(() => {
-        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     describe("initial state", () => {
-        it("should have empty datasets initially", () => {
-            const { datasets } = useHistoryDatasets({
+        it("starts with empty datasets before fetching", () => {
+            const { datasets } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -76,8 +63,8 @@ describe("useHistoryDatasets", () => {
             expect(datasets.value).toEqual([]);
         });
 
-        it("should not be fetching initially when immediate is false", () => {
-            const { isFetching } = useHistoryDatasets({
+        it("starts idle when immediate fetching is disabled", () => {
+            const { isFetching } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -85,8 +72,8 @@ describe("useHistoryDatasets", () => {
             expect(isFetching.value).toBe(false);
         });
 
-        it("should have no error initially", () => {
-            const { error } = useHistoryDatasets({
+        it("starts without an error", () => {
+            const { error } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -94,8 +81,8 @@ describe("useHistoryDatasets", () => {
             expect(error.value).toBeNull();
         });
 
-        it("should have initialFetchDone as false initially", () => {
-            const { initialFetchDone } = useHistoryDatasets({
+        it("starts with an unfinished initial fetch", () => {
+            const { initialFetchDone } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -103,8 +90,8 @@ describe("useHistoryDatasets", () => {
             expect(initialFetchDone.value).toBe(false);
         });
 
-        it("should provide the history from the store", () => {
-            const { history } = useHistoryDatasets({
+        it("provides the history from the store", () => {
+            const { history } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -115,15 +102,11 @@ describe("useHistoryDatasets", () => {
     });
 
     describe("immediate fetch", () => {
-        it("should fetch immediately when immediate is true (default)", async () => {
+        it("fetches immediately by default", async () => {
             const expectedDatasets = [buildFakeDataset("dataset-1", "Dataset 1")];
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    return response(200).json(expectedDatasets);
-                }),
-            );
+            respondWithDatasets(expectedDatasets);
 
-            const { datasets, initialFetchDone } = useHistoryDatasets({
+            const { datasets, initialFetchDone } = createHistoryDatasets({
                 historyId,
             });
 
@@ -133,16 +116,10 @@ describe("useHistoryDatasets", () => {
             expect(initialFetchDone.value).toBe(true);
         });
 
-        it("should not fetch immediately when immediate is false", async () => {
-            const fetchSpy = vi.fn();
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    fetchSpy();
-                    return response(200).json([]);
-                }),
-            );
+        it("does not fetch immediately when immediate is false", async () => {
+            const fetchSpy = respondWithDatasets([]);
 
-            useHistoryDatasets({
+            createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -152,16 +129,10 @@ describe("useHistoryDatasets", () => {
             expect(fetchSpy).not.toHaveBeenCalled();
         });
 
-        it("should not fetch immediately when enabled is false", async () => {
-            const fetchSpy = vi.fn();
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    fetchSpy();
-                    return response(200).json([]);
-                }),
-            );
+        it("does not fetch immediately when enabled is false", async () => {
+            const fetchSpy = respondWithDatasets([]);
 
-            useHistoryDatasets({
+            createHistoryDatasets({
                 historyId,
                 enabled: false,
                 immediate: true,
@@ -174,34 +145,25 @@ describe("useHistoryDatasets", () => {
     });
 
     describe("caching behavior", () => {
-        it("should cache datasets for the same scope", async () => {
+        it("reuses cached datasets without requesting the same scope again", async () => {
             const expectedDatasets = [buildFakeDataset("dataset-1", "Dataset 1")];
-            let fetchCount = 0;
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    fetchCount++;
-                    return response(200).json(expectedDatasets);
-                }),
-            );
+            const requestSpy = respondWithDatasets(expectedDatasets);
 
-            const { datasets, fetchDatasets } = useHistoryDatasets({
+            const { datasets, fetchDatasets } = createHistoryDatasets({
                 historyId,
             });
 
             await flushPromises();
-            expect(fetchCount).toBe(1);
+            expect(requestSpy).toHaveBeenCalledExactlyOnceWith(historyId);
             expect(datasets.value).toEqual(expectedDatasets);
 
-            // Fetch again with same scope - should use cache
             await fetchDatasets();
-            await flushPromises();
 
-            // The store's caching logic should prevent a second API call
-            // when scope hasn't changed
+            expect(requestSpy).toHaveBeenCalledTimes(1);
             expect(datasets.value).toEqual(expectedDatasets);
         });
 
-        it("should cache datasets per filter text", async () => {
+        it("switches cached results with the filter text", async () => {
             const datasetsNoFilter = [buildFakeDataset("dataset-1", "Dataset 1")];
             const datasetsWithFilter = [buildFakeDataset("dataset-2", "Dataset 2")];
 
@@ -217,7 +179,7 @@ describe("useHistoryDatasets", () => {
             );
 
             const filterText = ref("");
-            const { datasets } = useHistoryDatasets({
+            const { datasets } = createHistoryDatasets({
                 historyId,
                 filterText: () => filterText.value,
             });
@@ -225,7 +187,6 @@ describe("useHistoryDatasets", () => {
             await flushPromises();
             expect(datasets.value).toEqual(datasetsNoFilter);
 
-            // Change filter text
             filterText.value = "name:Dataset 2";
             await nextTick();
             await flushPromises();
@@ -235,13 +196,16 @@ describe("useHistoryDatasets", () => {
     });
 
     describe("watching scope changes", () => {
-        it("should refetch when historyId changes", async () => {
+        it("refetches when the history ID changes", async () => {
             const historyId2 = "history-2";
             const historyUpdateTime2 = "2024-01-02T12:00:00";
 
-            // Add second history to the store
             const historyStore = useHistoryStore();
-            historyStore.storedHistories[historyId2] = buildFakeHistory(historyId2, historyUpdateTime2) as AnyHistory;
+            historyStore.storedHistories[historyId2] = getFakeHistorySummary({
+                id: historyId2,
+                name: `History ${historyId2}`,
+                update_time: historyUpdateTime2,
+            });
 
             const datasets1 = [buildFakeDataset("dataset-1", "Dataset 1")];
             const datasets2 = [buildFakeDataset("dataset-2", "Dataset 2")];
@@ -256,14 +220,13 @@ describe("useHistoryDatasets", () => {
             );
 
             const currentHistoryId = ref(historyId);
-            const { datasets } = useHistoryDatasets({
+            const { datasets } = createHistoryDatasets({
                 historyId: () => currentHistoryId.value,
             });
 
             await flushPromises();
             expect(datasets.value).toEqual(datasets1);
 
-            // Change history ID
             currentHistoryId.value = historyId2;
             await nextTick();
             await flushPromises();
@@ -271,10 +234,8 @@ describe("useHistoryDatasets", () => {
             expect(datasets.value).toEqual(datasets2);
         });
 
-        it("should expose historyUpdateTime from the history store", async () => {
-            // This test verifies the composable correctly derives historyUpdateTime
-            // from the history store, which is used by the watcher
-            const { history } = useHistoryDatasets({
+        it("exposes the stored history update time without fetching", () => {
+            const { history } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -282,30 +243,22 @@ describe("useHistoryDatasets", () => {
             expect(history.value?.update_time).toBe(historyUpdateTime);
         });
 
-        it("should use the history update time from the store when fetching", async () => {
-            // This test verifies that the composable passes the correct historyUpdateTime
-            // to the store's fetch function, which is critical for cache invalidation
-            const receivedParams: { historyId?: string; updateTime?: string } = {};
+        it("passes the stored history ID and update time to the dataset store", async () => {
+            const requestSpy = respondWithDatasets([]);
+            const fetchSpy = vi.spyOn(useHistoryDatasetsStore(), "fetchDatasetsForFiltertext");
 
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ params, response }) => {
-                    receivedParams.historyId = params.history_id as string;
-                    return response(200).json([]);
-                }),
-            );
-
-            const { history } = useHistoryDatasets({
+            const { history } = createHistoryDatasets({
                 historyId,
             });
 
             await flushPromises();
 
-            // Verify the composable has access to the correct update time
             expect(history.value?.update_time).toBe(historyUpdateTime);
-            expect(receivedParams.historyId).toBe(historyId);
+            expect(requestSpy).toHaveBeenCalledExactlyOnceWith(historyId);
+            expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(historyId, historyUpdateTime, "");
         });
 
-        it("should refetch when filterText changes", async () => {
+        it("refetches when the filter text changes", async () => {
             const allDatasets = [buildFakeDataset("dataset-1", "Alpha"), buildFakeDataset("dataset-2", "Beta")];
             const filteredDatasets = [buildFakeDataset("dataset-1", "Alpha")];
 
@@ -321,7 +274,7 @@ describe("useHistoryDatasets", () => {
             );
 
             const filterText = ref("");
-            const { datasets } = useHistoryDatasets({
+            const { datasets } = createHistoryDatasets({
                 historyId,
                 filterText: () => filterText.value,
             });
@@ -329,7 +282,6 @@ describe("useHistoryDatasets", () => {
             await flushPromises();
             expect(datasets.value).toEqual(allDatasets);
 
-            // Change filter
             filterText.value = "name:Alpha";
             await nextTick();
             await flushPromises();
@@ -339,17 +291,11 @@ describe("useHistoryDatasets", () => {
     });
 
     describe("enabled option", () => {
-        it("should not fetch when enabled is false", async () => {
-            const fetchSpy = vi.fn();
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    fetchSpy();
-                    return response(200).json([]);
-                }),
-            );
+        it("does not fetch while a reactive enabled option is false", async () => {
+            const fetchSpy = respondWithDatasets([]);
 
             const enabled = ref(false);
-            useHistoryDatasets({
+            createHistoryDatasets({
                 historyId,
                 enabled: () => enabled.value,
             });
@@ -358,16 +304,12 @@ describe("useHistoryDatasets", () => {
             expect(fetchSpy).not.toHaveBeenCalled();
         });
 
-        it("should fetch when enabled becomes true", async () => {
+        it("fetches when the reactive enabled option becomes true", async () => {
             const expectedDatasets = [buildFakeDataset("dataset-1", "Dataset 1")];
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    return response(200).json(expectedDatasets);
-                }),
-            );
+            respondWithDatasets(expectedDatasets);
 
             const enabled = ref(false);
-            const { datasets, initialFetchDone } = useHistoryDatasets({
+            const { datasets, initialFetchDone } = createHistoryDatasets({
                 historyId,
                 enabled: () => enabled.value,
             });
@@ -376,7 +318,6 @@ describe("useHistoryDatasets", () => {
             expect(datasets.value).toEqual([]);
             expect(initialFetchDone.value).toBe(false);
 
-            // Enable fetching
             enabled.value = true;
             await nextTick();
             await flushPromises();
@@ -385,17 +326,11 @@ describe("useHistoryDatasets", () => {
             expect(initialFetchDone.value).toBe(true);
         });
 
-        it("should not trigger fetch on scope change when disabled", async () => {
-            const fetchSpy = vi.fn();
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    fetchSpy();
-                    return response(200).json([]);
-                }),
-            );
+        it("does not fetch after the filter changes while disabled", async () => {
+            const fetchSpy = respondWithDatasets([]);
 
             const filterText = ref("");
-            useHistoryDatasets({
+            createHistoryDatasets({
                 historyId,
                 filterText: () => filterText.value,
                 enabled: false,
@@ -404,7 +339,6 @@ describe("useHistoryDatasets", () => {
             await flushPromises();
             expect(fetchSpy).not.toHaveBeenCalled();
 
-            // Change filter while disabled
             filterText.value = "name:test";
             await nextTick();
             await flushPromises();
@@ -414,16 +348,16 @@ describe("useHistoryDatasets", () => {
     });
 
     describe("error handling", () => {
-        it("should set error when fetch fails", async () => {
+        it("reports a failed request and retains empty datasets", async () => {
             server.use(
                 http.get("/api/histories/{history_id}/contents", ({ response }) => {
                     return response("5XX").json({ err_msg: "Internal server error", err_code: 500 }, { status: 500 });
                 }),
             );
 
-            const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+            vi.spyOn(console, "error").mockImplementation(() => {});
 
-            const { error, datasets } = useHistoryDatasets({
+            const { error, datasets } = createHistoryDatasets({
                 historyId,
             });
 
@@ -431,18 +365,14 @@ describe("useHistoryDatasets", () => {
 
             expect(error.value).not.toBeNull();
             expect(datasets.value).toEqual([]);
-
-            consoleErrorSpy.mockRestore();
         });
 
-        it("should clear error on successful fetch after error", async () => {
-            let shouldFail = true;
+        it("clears a request error after fetching a different filter successfully", async () => {
             server.use(
                 http.get("/api/histories/{history_id}/contents", ({ request, response }) => {
                     const url = new URL(request.url);
                     const qParam = url.searchParams.get("q");
-                    // Fail only for initial fetch (no filter), succeed for filtered fetch
-                    if (shouldFail && (!qParam || !qParam.includes("name-contains"))) {
+                    if (!qParam || !qParam.includes("name-contains")) {
                         return response("5XX").json(
                             { err_msg: "Internal server error", err_code: 500 },
                             { status: 500 },
@@ -452,10 +382,10 @@ describe("useHistoryDatasets", () => {
                 }),
             );
 
-            const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+            vi.spyOn(console, "error").mockImplementation(() => {});
 
             const filterText = ref("");
-            const { error, datasets } = useHistoryDatasets({
+            const { error, datasets } = createHistoryDatasets({
                 historyId,
                 filterText: () => filterText.value,
             });
@@ -463,9 +393,6 @@ describe("useHistoryDatasets", () => {
             await flushPromises();
             expect(error.value).not.toBeNull();
 
-            // Now change filter text to trigger a new fetch with different scope
-            // This bypasses the store cache and allows a successful fetch
-            shouldFail = false;
             filterText.value = "name:test";
 
             await nextTick();
@@ -473,21 +400,15 @@ describe("useHistoryDatasets", () => {
 
             expect(error.value).toBeNull();
             expect(datasets.value).toHaveLength(1);
-
-            consoleErrorSpy.mockRestore();
         });
     });
 
     describe("manual fetch", () => {
-        it("should allow manual fetch via fetchDatasets", async () => {
+        it("fetches manually when immediate fetching is disabled", async () => {
             const expectedDatasets = [buildFakeDataset("dataset-1", "Dataset 1")];
-            server.use(
-                http.get("/api/histories/{history_id}/contents", ({ response }) => {
-                    return response(200).json(expectedDatasets);
-                }),
-            );
+            respondWithDatasets(expectedDatasets);
 
-            const { datasets, fetchDatasets, initialFetchDone } = useHistoryDatasets({
+            const { datasets, fetchDatasets, initialFetchDone } = createHistoryDatasets({
                 historyId,
                 immediate: false,
             });
@@ -496,7 +417,6 @@ describe("useHistoryDatasets", () => {
             expect(initialFetchDone.value).toBe(false);
 
             await fetchDatasets();
-            await flushPromises();
 
             expect(datasets.value).toEqual(expectedDatasets);
             expect(initialFetchDone.value).toBe(true);

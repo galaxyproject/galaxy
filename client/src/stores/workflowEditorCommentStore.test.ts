@@ -1,12 +1,13 @@
-import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setupTestPinia } from "./testUtils";
 import {
     type FrameWorkflowComment,
     type FreehandWorkflowComment,
     type MarkdownWorkflowComment,
     type TextWorkflowComment,
     useWorkflowCommentStore,
+    type WorkflowComment,
 } from "./workflowEditorCommentStore";
 
 const freehandComment: FreehandWorkflowComment = {
@@ -98,7 +99,7 @@ vi.mock("@/stores/workflowEditorStateStore", () => ({
 
 describe("workflowEditorCommentStore", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
     });
 
     it("computes the position and size of a freehand comment", () => {
@@ -112,37 +113,45 @@ describe("workflowEditorCommentStore", () => {
         expect(commentStore.comments[0]?.size).toEqual([990, 990]);
     });
 
-    it("validates comment data", () => {
-        const commentStore = useWorkflowCommentStore("mock-id");
+    describe.each<{
+        description: string;
+        data: Record<string, unknown>;
+        acceptedTypes: WorkflowComment["type"][];
+    }>([
+        {
+            description: "text without size",
+            data: { text: "Hello World" },
+            acceptedTypes: ["markdown"],
+        },
+        {
+            description: "empty data",
+            data: {},
+            acceptedTypes: [],
+        },
+        {
+            description: "text with size",
+            data: { text: "Hello World", size: 2 },
+            acceptedTypes: ["text", "markdown"],
+        },
+    ])("validating $description", ({ data, acceptedTypes }) => {
+        it.each([freehandComment, textComment, markdownComment, frameComment])(
+            "validates the data against the $type comment requirements",
+            (comment) => {
+                const commentStore = useWorkflowCommentStore("mock-id");
+                commentStore.addComments([freehandComment, textComment, markdownComment, frameComment]);
 
-        commentStore.addComments([freehandComment, textComment, markdownComment, frameComment]);
+                const changeData = () => commentStore.changeData(comment.id, data);
 
-        const testData = {
-            text: "Hello World",
-        };
-
-        expect(() => commentStore.changeData(0, testData)).toThrow(TypeError);
-        expect(() => commentStore.changeData(1, testData)).toThrow(TypeError);
-        expect(() => commentStore.changeData(2, testData)).not.toThrow();
-        expect(() => commentStore.changeData(3, testData)).toThrow(TypeError);
-
-        expect(() => commentStore.changeData(0, {})).toThrow(TypeError);
-        expect(() => commentStore.changeData(1, {})).toThrow(TypeError);
-        expect(() => commentStore.changeData(2, {})).toThrow(TypeError);
-        expect(() => commentStore.changeData(3, {})).toThrow(TypeError);
-
-        const duckTypedTestData = {
-            text: "Hello World",
-            size: 2,
-        };
-
-        expect(() => commentStore.changeData(0, duckTypedTestData)).toThrow(TypeError);
-        expect(() => commentStore.changeData(1, duckTypedTestData)).not.toThrow();
-        expect(() => commentStore.changeData(2, duckTypedTestData)).not.toThrow();
-        expect(() => commentStore.changeData(3, duckTypedTestData)).toThrow(TypeError);
+                if (acceptedTypes.includes(comment.type)) {
+                    expect(changeData).not.toThrow();
+                } else {
+                    expect(changeData).toThrow(TypeError);
+                }
+            },
+        );
     });
 
-    it("does not mutate input data", () => {
+    it("changes a stored comment color without mutating its input", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
         const comment: TextWorkflowComment = { ...textComment, id: 0, color: "pink" };
 
@@ -153,7 +162,7 @@ describe("workflowEditorCommentStore", () => {
         expect(comment.color).toBe("pink");
     });
 
-    it("implements reset", () => {
+    it("clears comments and creation metadata on reset", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
         commentStore.createComment({ ...textComment, id: 100 });
 
@@ -170,7 +179,7 @@ describe("workflowEditorCommentStore", () => {
         expect(commentStore.highestCommentId).toBe(-1);
     });
 
-    it("determines which comments are in what frames", () => {
+    it("assigns comments to their innermost enclosing frame", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
         commentStore.addComments([freehandComment, textComment, markdownComment, frameComment, frameCommentTwo]);
 
@@ -189,7 +198,7 @@ describe("workflowEditorCommentStore", () => {
         expect(frame?.child_comments).not.toContain(freehandComment.id);
     });
 
-    it("determines which steps are in what frames", () => {
+    it("assigns steps to their innermost enclosing frame", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
         commentStore.addComments([frameComment, frameCommentTwo]);
 
@@ -205,7 +214,7 @@ describe("workflowEditorCommentStore", () => {
         expect(frameTwo?.child_steps).not.toContain(0);
     });
 
-    it("keeps track of selected comments", () => {
+    it("tracks selected comments through selection, removal, toggling, and clearing", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
         commentStore.addComments([freehandComment, textComment, markdownComment, frameComment, frameCommentTwo]);
 

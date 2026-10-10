@@ -1,7 +1,9 @@
-// eslint-disable-next-line simple-import-sort/imports
+import { getFakeTool } from "@tests/test-data/tools";
+import { describe, expect, it } from "vitest";
+
 import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
-import { describe, expect, it } from "vitest";
+import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 
 import {
     countUniqueToolsInList,
@@ -11,17 +13,32 @@ import {
     filterTools,
     getValidPanelItems,
     getValidToolsInEachSection,
-    searchObjectsByKeys,
     type SearchCommonKeys,
+    searchObjectsByKeys,
 } from "./utilities";
-import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 
-describe("test helpers in tool searching utilities and panel handling", () => {
-    it("panel width determination", () => {
-        const widthA = determineWidth({ left: 10, right: 200 }, { left: 90 }, 20, 200, "right", 160);
-        expect(widthA).toBe(120);
-        const widthB = determineWidth({ left: 30, right: 250 }, { left: 60 }, 30, 500, "left", 180);
-        expect(widthB).toBe(340);
+describe("determineWidth", () => {
+    it.each([
+        {
+            side: "right" as const,
+            bounds: { left: 10, right: 200 },
+            handle: { left: 90 },
+            min: 20,
+            max: 200,
+            current: 160,
+            expected: 120,
+        },
+        {
+            side: "left" as const,
+            bounds: { left: 30, right: 250 },
+            handle: { left: 60 },
+            min: 30,
+            max: 500,
+            current: 180,
+            expected: 340,
+        },
+    ])("resizes the $side panel to $expected", ({ bounds, handle, min, max, side, current, expected }) => {
+        expect(determineWidth(bounds, handle, min, max, side, current)).toBe(expected);
     });
 });
 
@@ -39,26 +56,26 @@ const tempToolPanel = {
             id: "fasta/fastq",
             name: "FASTA/FASTQ",
         },
-    } as unknown as Record<string, ToolSection>,
+    } satisfies Record<string, ToolSection>,
 };
 const tempToolsList = {
     tools: {
-        "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2": {
+        "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2": getFakeTool({
             panel_section_name: "FASTA/FASTQ",
             description: "Extract UMI from fastq files",
             id: "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
             name: "UMI-tools extract",
-        },
-        umi_tools_reduplicate: {
+        }),
+        umi_tools_reduplicate: getFakeTool({
             panel_section_name: "FASTA/FASTQ",
             description: "Extract UMI from (fasta files)",
             id: "umi_tools_reduplicate",
             name: "UMI-tools reduplicate",
-        },
-    } as unknown as Record<string, Tool>,
+        }),
+    } satisfies Record<string, Tool>,
 };
 
-describe("test helpers in tool searching utilities", () => {
+describe("tool search and Whoosh queries", () => {
     // Intentionally did not import the `searchTools` function from the util file
     // to be able to test different key sort orders here.
     function searchToolsByKeys(
@@ -76,7 +93,7 @@ describe("test helpers in tool searching utilities", () => {
         return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
     }
 
-    it("test parsing helper that converts settings to whoosh query", async () => {
+    it("combines alternative name fields with required metadata clauses", () => {
         const settings = {
             name: "Filter",
             id: "__FILTER_FAILED_DATASETS__",
@@ -94,163 +111,168 @@ describe("test helpers in tool searching utilities", () => {
         );
     });
 
-    it("builds tag-only whoosh queries without an empty leading clause", async () => {
-        expect(createWhooshQuery({ tag: ["data cleanup"] })).toEqual('(tool_tags:("data cleanup"))');
-        expect(createWhooshQuery({ section: '"Get Data"' })).toEqual('(section:("Get Data"))');
+    it.each([
+        { name: "tag", settings: { tag: ["data cleanup"] }, expected: '(tool_tags:("data cleanup"))' },
+        { name: "section", settings: { section: '"Get Data"' }, expected: '(section:("Get Data"))' },
+    ])("builds a $name query without an empty leading clause", ({ settings, expected }) => {
+        expect(createWhooshQuery(settings)).toEqual(expected);
     });
 
-    it("counts versioned tools once when falling back to the full tools list", async () => {
+    it("counts versioned tools once when falling back to the full tools list", () => {
         const firstTool = toolsList[0]!;
         const toolsWithOlderVersion = [...toolsList, { ...firstTool, id: `${firstTool.id}/0.9`, version: "0.9" }];
         expect(countUniqueToolsInList(toolsWithOlderVersion)).toBe(toolsList.length);
     });
 
-    it("lowercases tag clauses to match the Whoosh field analyzer", async () => {
-        // Whoosh indexes tool_tags lowercased; lowercase the search clause too.
-        expect(createWhooshQuery({ tag: ["Get Data"] })).toEqual('(tool_tags:("get data"))');
-        expect(createWhooshQuery({ tag: ["Collection_Ops"] })).toEqual("(tool_tags:(collection_ops))");
+    it.each([
+        { tag: "Get Data", expected: '(tool_tags:("get data"))' },
+        { tag: "Collection_Ops", expected: "(tool_tags:(collection_ops))" },
+    ])("lowercases the '$tag' clause for the Whoosh analyzer", ({ tag, expected }) => {
+        expect(createWhooshQuery({ tag: [tag] })).toEqual(expected);
     });
 
-    it("escapes backslashes and quotes in quoted tag clauses", async () => {
+    it("escapes backslashes and quotes in quoted tag clauses", () => {
         // A tag containing both a backslash and a double quote must be escaped
         // so the resulting Whoosh phrase is well-formed (CodeQL: incomplete
         // string escaping). Backslash must be escaped before the quote.
         expect(createWhooshQuery({ tag: ['weird \\ "tag"'] })).toEqual('(tool_tags:("weird \\\\ \\"tag\\""))');
     });
 
-    it("test tool search helper that searches for tools given keys", async () => {
-        const searches: {
-            q: string;
-            expectedResults: string[];
-            keys: SearchCommonKeys;
-            tools: Tool[];
-            panel: Record<string, Tool | ToolSection>;
-        }[] = [
-            {
-                // description prioritized
-                q: "collection",
-                expectedResults: [
-                    "__FILTER_FAILED_DATASETS__",
-                    "__FILTER_EMPTY_DATASETS__",
-                    "__UNZIP_COLLECTION__",
-                    "__ZIP_COLLECTION__",
-                ],
-                keys: { description: 1, name: 0 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-            {
-                // name prioritized
-                q: "collection",
-                expectedResults: [
-                    "__UNZIP_COLLECTION__",
-                    "__ZIP_COLLECTION__",
-                    "__FILTER_FAILED_DATASETS__",
-                    "__FILTER_EMPTY_DATASETS__",
-                ],
-                keys: { description: 0, name: 1 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-            {
-                // whitespace precedes to ensure query.trim() works
-                q: " filter empty datasets",
-                expectedResults: ["__FILTER_EMPTY_DATASETS__"],
-                keys: { description: 1, name: 2, combined: 0 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-            {
-                // hyphenated tool-name is searchable
-                q: "uMi tools extract ",
-                expectedResults: ["toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2"],
-                keys: { description: 1, name: 2 },
-                tools: Object.values(tempToolsList.tools),
-                panel: tempToolPanel.default,
-            },
-            {
-                // parenthesis (and other chars) are searchable
-                q: "from FASTA:files",
-                expectedResults: ["umi_tools_reduplicate"],
-                keys: { description: 1, name: 2 },
-                tools: Object.values(tempToolsList.tools),
-                panel: tempToolPanel.default,
-            },
-            {
-                // id is not searchable if not identified by colon
-                q: "__ZIP_COLLECTION__",
-                expectedResults: [],
-                keys: { description: 1, name: 2 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-            {
-                // id is searchable if provided "id:"
-                q: "id:__ZIP_COLLECTION__",
-                expectedResults: ["__ZIP_COLLECTION__"],
-                keys: { description: 1, name: 2 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-            {
-                // id is searchable if provided "tool_id:"
-                q: "tool_id:umi_tools",
-                expectedResults: [
-                    "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
-                    "umi_tools_reduplicate",
-                ],
-                keys: { description: 1, name: 2 },
-                tools: Object.values(tempToolsList.tools),
-                panel: tempToolPanel.default,
-            },
-            {
-                // section is searchable if provided "section:"
-                q: "section:Lift-Over",
-                expectedResults: ["liftOver1"],
-                keys: { description: 1, name: 2 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-            // if at least couple words match, return results
-            {
-                q: "filter datasets",
-                expectedResults: ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"],
-                keys: { combined: 1, wordMatch: 0 },
-                tools: toolsList,
-                panel: toolsListInPanel,
-            },
-        ];
-        searches.forEach((search) => {
-            const { results } = searchToolsByKeys(search.tools, search.keys, search.q, search.panel);
-            expect(results).toEqual(search.expectedResults);
-        });
+    it.each<{
+        name: string;
+        q: string;
+        expectedResults: string[];
+        keys: SearchCommonKeys;
+        tools: Tool[];
+        panel: Record<string, Tool | ToolSection>;
+    }>([
+        {
+            name: "description before name",
+            q: "collection",
+            expectedResults: [
+                "__FILTER_FAILED_DATASETS__",
+                "__FILTER_EMPTY_DATASETS__",
+                "__UNZIP_COLLECTION__",
+                "__ZIP_COLLECTION__",
+            ],
+            keys: { description: 1, name: 0 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+        {
+            name: "name before description",
+            q: "collection",
+            expectedResults: [
+                "__UNZIP_COLLECTION__",
+                "__ZIP_COLLECTION__",
+                "__FILTER_FAILED_DATASETS__",
+                "__FILTER_EMPTY_DATASETS__",
+            ],
+            keys: { description: 0, name: 1 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+        {
+            name: "leading whitespace",
+            q: " filter empty datasets",
+            expectedResults: ["__FILTER_EMPTY_DATASETS__"],
+            keys: { description: 1, name: 2, combined: 0 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+        {
+            name: "hyphenated tool name",
+            q: "uMi tools extract ",
+            expectedResults: ["toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2"],
+            keys: { description: 1, name: 2 },
+            tools: Object.values(tempToolsList.tools),
+            panel: tempToolPanel.default,
+        },
+        {
+            name: "punctuation in descriptions",
+            q: "from FASTA:files",
+            expectedResults: ["umi_tools_reduplicate"],
+            keys: { description: 1, name: 2 },
+            tools: Object.values(tempToolsList.tools),
+            panel: tempToolPanel.default,
+        },
+        {
+            name: "unprefixed ID is not searchable",
+            q: "__ZIP_COLLECTION__",
+            expectedResults: [],
+            keys: { description: 1, name: 2 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+        {
+            name: "id: prefix",
+            q: "id:__ZIP_COLLECTION__",
+            expectedResults: ["__ZIP_COLLECTION__"],
+            keys: { description: 1, name: 2 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+        {
+            name: "tool_id: prefix",
+            q: "tool_id:umi_tools",
+            expectedResults: [
+                "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
+                "umi_tools_reduplicate",
+            ],
+            keys: { description: 1, name: 2 },
+            tools: Object.values(tempToolsList.tools),
+            panel: tempToolPanel.default,
+        },
+        {
+            name: "section: prefix",
+            q: "section:Lift-Over",
+            expectedResults: ["liftOver1"],
+            keys: { description: 1, name: 2 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+        {
+            name: "multiple matching words",
+            q: "filter datasets",
+            expectedResults: ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"],
+            keys: { combined: 1, wordMatch: 0 },
+            tools: toolsList,
+            panel: toolsListInPanel,
+        },
+    ])("searches '$q' with $name", (search) => {
+        const { results } = searchToolsByKeys(search.tools, search.keys, search.q, search.panel);
+        expect(results).toEqual(search.expectedResults);
     });
 
-    it("test tool fuzzy search", async () => {
-        const expectedResults = ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"];
-        const keys = { description: 1, name: 2, combined: 0 };
-        // Testing if just names work with DL search
-        const filterQueries = ["Fillter", "FILYER", " Fitler", " filtr"];
-        filterQueries.forEach((q) => {
-            const { results, closestTerm } = searchToolsByKeys(toolsList, keys, q, toolsListInPanel);
-            expect(results).toEqual(expectedResults);
-            expect(closestTerm).toEqual("filter");
-        });
-        // Testing if names and description function with DL search
-        let queries = ["datases from a collection", "from a colleection", "from a colleection"];
-        queries.forEach((q) => {
-            const { results } = searchToolsByKeys(toolsList, keys, q, toolsListInPanel);
-            expect(results).toEqual(expectedResults);
-        });
-        // Testing if different length queries correctly trigger changes in max DL distance
-        queries = ["datae", "ppasetsfrom", "datass from a cppollection"];
-        queries.forEach((q) => {
-            const { results } = searchToolsByKeys(toolsList, keys, q, toolsListInPanel);
-            expect(results).toEqual(expectedResults);
-        });
+    it.each(["Fillter", "FILYER", " Fitler", " filtr"])("corrects '%s' to the closest tool-name term", (query) => {
+        const { results, closestTerm } = searchToolsByKeys(
+            toolsList,
+            { description: 1, name: 2, combined: 0 },
+            query,
+            toolsListInPanel,
+        );
+        expect(results).toEqual(["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"]);
+        expect(closestTerm).toBe("filter");
     });
 
-    it("test tool filtering helpers on toolsList given list of ids", async () => {
+    it.each([
+        { name: "misspelled dataset name", query: "datases from a collection" },
+        { name: "misspelled description", query: "from a colleection" },
+        { name: "repeated description lookup", query: "from a colleection" },
+        { name: "short query", query: "datae" },
+        { name: "joined words", query: "ppasetsfrom" },
+        { name: "long query", query: "datass from a cppollection" },
+    ])("fuzzy-matches $name: '$query'", ({ query }) => {
+        const { results } = searchToolsByKeys(
+            toolsList,
+            { description: 1, name: 2, combined: 0 },
+            query,
+            toolsListInPanel,
+        );
+        expect(results).toEqual(["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"]);
+    });
+
+    it("filters result sections and tools to matching IDs", () => {
         const ids = ["__FILTER_FAILED_DATASETS__", "liftOver1"];
         // check length of first section from imported const toolsList
         const collectionOperationsSection = toolsListInPanel["collection_operations"] as ToolSection;
@@ -339,8 +361,8 @@ describe("getValidToolsInEachSection", () => {
                 model_class: "ToolSection",
                 id: "test_section",
                 name: "Test Section",
-                tools: ["tool_a", label as unknown as string, "tool_b"],
-            } as ToolSection,
+                tools: ["tool_a", label, "tool_b"],
+            },
         };
         const validIds = new Set(["tool_a"]);
         const entries = getValidToolsInEachSection(validIds, panel);
@@ -372,9 +394,9 @@ describe("getValidToolsInEachSection", () => {
                 id: "sec",
                 name: "Sec",
                 tools: ["tool_x", "tool_y"],
-            } as ToolSection,
+            },
         };
-        const originalTools = [...(panel["sec"] as ToolSection).tools!];
+        const originalTools = ["tool_x", "tool_y"];
         getValidToolsInEachSection(new Set(["tool_x"]), panel);
 
         // the original section should not be modified
@@ -432,15 +454,15 @@ describe("getValidPanelItems", () => {
     });
 
     it("keeps standalone Tool items when they are in validToolIdsInCurrentView", () => {
-        const standaloneTool = {
+        const standaloneTool = getFakeTool({
             model_class: "Tool",
             id: "standalone_tool",
             name: "Standalone",
             description: "A standalone tool",
-        } as unknown as Tool;
+        });
 
         const items: [string, ToolPanelItem][] = [
-            ["standalone_tool", standaloneTool as unknown as ToolSection],
+            ["standalone_tool", standaloneTool],
             [
                 "some_section",
                 {
@@ -448,7 +470,7 @@ describe("getValidPanelItems", () => {
                     id: "some_section",
                     name: "Some Section",
                     tools: ["standalone_tool"],
-                } as ToolSection,
+                },
             ],
         ];
 
@@ -483,7 +505,7 @@ describe("getValidPanelItems", () => {
         expect(result["testlabel1"]).toBeDefined();
     });
 
-    it("returns empty object when all sections are excluded or empty", () => {
+    it("retains only labels when no tools are valid", () => {
         const sectionEntries = getValidToolsInEachSection(new Set(), toolsListInPanel);
         const result = getValidPanelItems(sectionEntries, new Set());
 

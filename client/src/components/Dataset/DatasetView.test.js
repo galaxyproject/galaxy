@@ -1,10 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -31,9 +31,8 @@ vi.mock("@/stores/datatypeVisualizationsStore", () => ({
 }));
 
 const DATASET_ID = "dataset_id";
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
-// Mock dataset
 const mockDataset = {
     id: DATASET_ID,
     name: "Test Dataset",
@@ -47,11 +46,6 @@ const mockDataset = {
 
 const errorDataset = { ...mockDataset, state: "error" };
 const failedMetadataDataset = { ...mockDataset, state: "failed_metadata" };
-// Additional states to test
-const uploadingDataset = { ...mockDataset, state: "upload" };
-const runningDataset = { ...mockDataset, state: "running" };
-const pausedDataset = { ...mockDataset, state: "paused" };
-// Dataset with preferred visualization
 const h5Dataset = { ...mockDataset, file_ext: "h5" };
 
 function setupPinia(datasetStore) {
@@ -78,14 +72,9 @@ function setupPinia(datasetStore) {
     return pinia;
 }
 
-/**
- * Mount the DatasetView component with the specified tab and dataset options
- */
-async function mountDatasetView(tab = "preview", options = {}) {
+async function mountDatasetView(tab = "preview", { dataset = mockDataset } = {}) {
     const datasetStore = {
-        storedDatasets: {
-            [DATASET_ID]: options.dataset || mockDataset,
-        },
+        storedDatasets: dataset ? { [DATASET_ID]: { ...dataset } } : {},
     };
     const pinia = setupPinia(datasetStore);
 
@@ -98,9 +87,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
             datasetId: DATASET_ID,
             tab: tab,
         },
-        global: localVue,
-        pinia,
-        router,
+        global: withPlugins(getLocalVue(), pinia, router),
         attachTo: document.createElement("div"),
         stubs: {
             // Only shallow stub certain components
@@ -110,8 +97,13 @@ async function mountDatasetView(tab = "preview", options = {}) {
                 props: ["h1", "separator"],
             },
             BLink: {
-                template: "<a><slot></slot></a>",
+                template: '<a :href="to"><slot></slot></a>',
                 props: ["to"],
+            },
+            BNavItem: {
+                name: "BNavItem",
+                template: '<li><a :href="to"><slot></slot></a></li>',
+                props: ["to", "active"],
             },
             GTabs: {
                 template: '<div class="tabs-container"><slot></slot></div>',
@@ -144,49 +136,6 @@ async function mountDatasetView(tab = "preview", options = {}) {
     return wrapper;
 }
 
-/**
- * Mount the DatasetView component in loading state
- */
-async function mountLoadingDatasetView() {
-    const datasetStore = {
-        storedDatasets: {},
-    };
-    const pinia = setupPinia(datasetStore);
-
-    const router = createRouter({ history: createMemoryHistory(), routes: [] });
-    router.push = vi.fn();
-    router.replace = vi.fn();
-
-    // Never resolve the dataset fetch, so the view stays in its loading state
-    // for the duration of the test instead of racing flushPromises() to completion.
-    server.use(http.get("/api/datasets/:dataset_id", () => new Promise(() => {})));
-
-    const wrapper = mount(DatasetView, {
-        props: {
-            datasetId: DATASET_ID,
-        },
-        global: localVue,
-        pinia,
-        router,
-        stubs: {
-            Heading: true,
-            BLink: true,
-            GTabs: true,
-            GTab: true,
-        },
-        mocks: {
-            $store: {
-                state: {
-                    config: {},
-                },
-            },
-        },
-    });
-
-    await flushPromises();
-    return wrapper;
-}
-
 describe("DatasetView", () => {
     beforeEach(() => {
         class IO {
@@ -195,15 +144,17 @@ describe("DatasetView", () => {
             unobserve() {}
             disconnect() {}
         }
-        global.IntersectionObserver = IO;
-        global.MutationObserver = IO;
-        global.URL.createObjectURL = vi.fn(() => "blob:http://localhost/test-preview");
-        global.URL.revokeObjectURL = vi.fn();
+        vi.stubGlobal("IntersectionObserver", IO);
+        vi.stubGlobal("MutationObserver", IO);
+        vi.stubGlobal(
+            "URL",
+            class extends URL {
+                static createObjectURL = vi.fn(() => "blob:http://localhost/test-preview");
+                static revokeObjectURL = vi.fn();
+            },
+        );
         server.use(
-            http.get("/api/datasets/:dataset_id", ({ response }) => {
-                return response(200).json(mockDataset);
-            }),
-            http.get("/api/configuration", ({ response }) => response(200).json({})),
+            http.get("/api/configuration", ({ response }) => response.untyped(HttpResponse.json({}))),
             http.get("/api/plugins", ({ response }) => response(200).json([])),
             mswHttp.get("http://localhost/datasets/:dataset_id/display/", ({ request }) => {
                 expect(request.url).toContain("preview=True");
@@ -214,19 +165,12 @@ describe("DatasetView", () => {
                     },
                 });
             }),
-            http.untyped.get("/api/datatypes/types_and_mapping", () => {
-                // Return an empty mapping; tests don't depend on real datatype info,
-                // they just need the endpoint to not 404 so console.error stays quiet.
-                return new Response(
-                    JSON.stringify({
-                        datatypes: [],
-                        datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
-                    }),
-                    { headers: { "Content-Type": "application/json" } },
-                );
-            }),
-            http.get("/api/datatypes/{datatype}", ({ response }) => response(200).json({})),
+            http.get("/api/datatypes/{datatype}", ({ response }) => response.untyped(HttpResponse.json({}))),
         );
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     describe("Component mounting and basic functionality", () => {
@@ -256,41 +200,37 @@ describe("DatasetView", () => {
         });
 
         it("shows loading message when dataset is loading", async () => {
-            const wrapper = await mountLoadingDatasetView();
+            server.use(http.get("/api/datasets/{dataset_id}", () => new Promise(() => {})));
+            const wrapper = await mountDatasetView("preview", { dataset: null });
             expect(wrapper.find(".loading-message").exists()).toBe(true);
             expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
-            // `.dataset-view` only renders once loading finishes (it's the `v-else` branch
-            // of the same conditional the LoadingSpan is in), so it can't coexist with it.
             expect(wrapper.find(".dataset-view").exists()).toBe(false);
         });
 
         it("renders dataset information", async () => {
             const wrapper = await mountDatasetView();
 
-            // Check that the component mounted successfully with the expected data
             expect(wrapper.vm.$props.datasetId).toBe(DATASET_ID);
             expect(wrapper.vm.$props.tab).toBe("preview");
 
-            // Make sure we're properly passing the dataset to the component
             const datasetStore = wrapper.vm.$pinia.state.value.datasetStore;
             expect(datasetStore.storedDatasets[DATASET_ID]).toBeDefined();
             expect(datasetStore.storedDatasets[DATASET_ID].name).toBe("Test Dataset");
+            expect(wrapper.get(".dataset-name").text()).toBe("Test Dataset");
         });
     });
 
     describe("Tab navigation functionality", () => {
-        it("handles different tabs through props", async () => {
-            let wrapper = await mountDatasetView("details");
-            expect(wrapper.props().tab).toBe("details");
+        it.each([
+            { tab: "details", child: "DatasetDetails", dataset: mockDataset },
+            { tab: "visualize", child: "VisualizationsList", dataset: mockDataset },
+            { tab: "edit", child: "DatasetAttributes", dataset: mockDataset },
+            { tab: "error", child: "DatasetError", dataset: errorDataset },
+        ])("renders the $tab tab and its $child child", async ({ tab, child, dataset }) => {
+            const wrapper = await mountDatasetView(tab, { dataset });
 
-            wrapper = await mountDatasetView("visualize");
-            expect(wrapper.props().tab).toBe("visualize");
-
-            wrapper = await mountDatasetView("edit");
-            expect(wrapper.props().tab).toBe("edit");
-
-            wrapper = await mountDatasetView("error", { dataset: errorDataset });
-            expect(wrapper.props().tab).toBe("error");
+            expect(wrapper.props().tab).toBe(tab);
+            expect(wrapper.getComponent({ name: child }).props("datasetId")).toBe(DATASET_ID);
         });
 
         it("updates when tab prop changes", async () => {
@@ -318,49 +258,27 @@ describe("DatasetView", () => {
     });
 
     describe("Error state handling", () => {
-        it("shows error tab for datasets with error state", async () => {
-            const wrapper = await mountDatasetView("error", { dataset: errorDataset });
+        it.each([
+            { state: "error", dataset: errorDataset },
+            { state: "failed_metadata", dataset: failedMetadataDataset },
+        ])("keeps the error tab without redirecting for $state datasets", async ({ dataset }) => {
+            const wrapper = await mountDatasetView("error", { dataset });
 
-            const router = wrapper.vm.$router;
-            expect(router.replace).not.toHaveBeenCalled();
-
-            // Check that we're viewing the error tab
-            expect(wrapper.vm.$props.tab).toBe("error");
+            expect(wrapper.vm.$router.replace).not.toHaveBeenCalled();
+            expect(wrapper.props().tab).toBe("error");
+            expect(wrapper.getComponent({ name: "DatasetError" }).props("datasetId")).toBe(DATASET_ID);
         });
 
-        it("shows error tab for datasets with failed_metadata state", async () => {
-            const wrapper = await mountDatasetView("error", { dataset: failedMetadataDataset });
+        it.each(["upload", "running", "paused"])("mounts the preview tab for a %s dataset", async (state) => {
+            const wrapper = await mountDatasetView("preview", { dataset: { ...mockDataset, state } });
 
-            const router = wrapper.vm.$router;
-            expect(router.replace).not.toHaveBeenCalled();
-
-            // Check that we're viewing the error tab
-            expect(wrapper.vm.$props.tab).toBe("error");
-        });
-
-        it("handles datasets with different states appropriately", async () => {
-            // Test uploading state, make sure it doesn't blow up.
-            let wrapper = await mountDatasetView("preview", { dataset: uploadingDataset });
             expect(wrapper.exists()).toBe(true);
-            expect(wrapper.vm.$props.datasetId).toBe(DATASET_ID);
-            expect(wrapper.vm.$props.tab).toBe("preview");
-
-            // Test running state, make sure it doesn't blow up.
-            wrapper = await mountDatasetView("preview", { dataset: runningDataset });
-            expect(wrapper.exists()).toBe(true);
-            expect(wrapper.vm.$props.datasetId).toBe(DATASET_ID);
-            expect(wrapper.vm.$props.tab).toBe("preview");
-
-            // Test paused state, make sure it doesn't blow up.
-            wrapper = await mountDatasetView("preview", { dataset: pausedDataset });
-            expect(wrapper.exists()).toBe(true);
-            expect(wrapper.vm.$props.datasetId).toBe(DATASET_ID);
-            expect(wrapper.vm.$props.tab).toBe("preview");
+            expect(wrapper.props().datasetId).toBe(DATASET_ID);
+            expect(wrapper.props().tab).toBe("preview");
         });
 
         it.skip("uses preferred visualization for supported datatypes", async () => {
             const wrapper = await mountDatasetView("preview", { dataset: h5Dataset });
-            await flushPromises(); // Wait for preferred visualization check
 
             // Check that the preferredVisualization was set
             expect(wrapper.vm.preferredVisualization).toBe("h5web");
@@ -372,7 +290,6 @@ describe("DatasetView", () => {
 
         it("falls back to default preview for unsupported datatypes", async () => {
             const wrapper = await mountDatasetView("preview");
-            await flushPromises(); // Wait for preferred visualization check
 
             // No preferred visualization should be set. `getPreferredVisualization` falls
             // back to `null` (not `undefined`) when nothing is configured.
@@ -395,18 +312,20 @@ describe("DatasetView", () => {
             expect(wrapper.vm.$props.tab).toBe("details");
         });
 
-        it("formats tab URLs correctly", async () => {
-            const previewUrl = `/datasets/${DATASET_ID}`;
-            const detailsUrl = `/datasets/${DATASET_ID}/details`;
-            const visualizeUrl = `/datasets/${DATASET_ID}/visualize`;
-            const editUrl = `/datasets/${DATASET_ID}/edit`;
-            const errorUrl = `/datasets/${DATASET_ID}/error`;
+        it.each([
+            { label: "Preview", dataset: mockDataset, path: `/datasets/${DATASET_ID}/preview` },
+            { label: "Details", dataset: mockDataset, path: `/datasets/${DATASET_ID}/details` },
+            { label: "Visualize", dataset: mockDataset, path: `/datasets/${DATASET_ID}/visualize` },
+            { label: "Edit", dataset: mockDataset, path: `/datasets/${DATASET_ID}/edit` },
+            { label: "Error", dataset: errorDataset, path: `/datasets/${DATASET_ID}/error` },
+        ])("links the $label tab to $path", async ({ label, dataset, path }) => {
+            const wrapper = await mountDatasetView("preview", { dataset });
+            const navigationItem = wrapper
+                .findAllComponents({ name: "BNavItem" })
+                .find((item) => item.text() === label);
 
-            expect(previewUrl).toBe(`/datasets/${DATASET_ID}`);
-            expect(detailsUrl).toBe(`/datasets/${DATASET_ID}/details`);
-            expect(visualizeUrl).toBe(`/datasets/${DATASET_ID}/visualize`);
-            expect(editUrl).toBe(`/datasets/${DATASET_ID}/edit`);
-            expect(errorUrl).toBe(`/datasets/${DATASET_ID}/error`);
+            expect(navigationItem).toBeDefined();
+            expect(navigationItem.find("a").attributes("href")).toBe(path);
         });
     });
 

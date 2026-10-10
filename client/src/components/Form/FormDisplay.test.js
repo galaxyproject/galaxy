@@ -1,29 +1,19 @@
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { h } from "vue";
 
 import FormData from "./Elements/FormData/FormData.vue";
 import FormDisplay from "./FormDisplay.vue";
 
-const localVue = getLocalVue();
-
-vi.mock("./Elements/FormData/FormData.vue", () => ({
-    default: {
-        name: "FormData",
-        props: ["name"],
-        render: () => h("div"),
-    },
-}));
+enableAutoUnmount(afterEach);
 
 describe("FormDisplay", () => {
     let wrapper;
-    let propsData;
 
     beforeEach(() => {
-        propsData = {
+        const propsData = {
             id: "input",
             inputs: [
                 {
@@ -92,25 +82,14 @@ describe("FormDisplay", () => {
                     ],
                 },
             ],
-            errors: {},
-            validationScrollTo: [],
-            replaceParams: {},
-            prefix: "",
-            sustainRepeats: false,
-            sustainConditionals: false,
-            collapsedEnableText: "Enable",
-            collapsedDisableText: "Disable",
-            collapsedEnableIcon: faCaretSquareDown,
-            collapsedDisableIcon: faCaretSquareUp,
         };
         wrapper = mount(FormDisplay, {
             propsData,
-            global: localVue,
-            stubs: {},
+            global: getLocalVue(),
         });
     });
 
-    it("error highlighting", async () => {
+    it("replaces the highlighted validation error with a server error", async () => {
         await wrapper.setProps({
             validationScrollTo: ["text_name", "error_message"],
         });
@@ -122,7 +101,7 @@ describe("FormDisplay", () => {
         expect(error.text()).toEqual("error_message_2");
     });
 
-    it("parameter replacement", async () => {
+    it("replaces both a top-level value and an active conditional value", async () => {
         const textInput = wrapper.find("#text_name");
         const conditionalInput = wrapper.find("[id='conditional_section|conditional_leaf']");
         expect(textInput.element.value).toEqual("text_value");
@@ -137,7 +116,7 @@ describe("FormDisplay", () => {
         expect(conditionalInput.element.value).toEqual("conditional_leaf_value_new");
     });
 
-    it("conditional switch", async () => {
+    it("toggles conditional inputs and hides the switch when conditions are sustained", async () => {
         const conditionalBool = wrapper.find("[type='checkbox']");
         await conditionalBool.setValue(false);
         const conditionalInputUnchecked = wrapper.findAll("[id='conditional_section|conditional_leaf']");
@@ -152,7 +131,7 @@ describe("FormDisplay", () => {
         expect(conditionalBoolDisabled.length).toEqual(0);
     });
 
-    it("repeats", async () => {
+    it("inserts successive repeat blocks and shows their help", async () => {
         const repeatButton = wrapper.find("[data-description='repeat insert']");
         expect(repeatButton.text()).toBe("Insert Repeat Block");
         const repeatHelp = wrapper.find("[data-description='repeat help']").exists();
@@ -162,20 +141,29 @@ describe("FormDisplay", () => {
             expect(repeatBlocks).toBe(i);
             await repeatButton.trigger("click");
         }
+        expect(wrapper.findAll("[data-description='repeat block']")).toHaveLength(3);
     });
 
-    it("section", async () => {
+    it("renders section help", async () => {
         const sectionHelpText = wrapper.find("[data-description='section help']").text();
         expect(sectionHelpText).toBe("section help");
     });
+});
 
+describe("FormDisplay repeated dataset events", () => {
     it.each(["data", "data_collection"])(
         "relays pagination and search events from repeated %s inputs",
         async (type) => {
             const input = { type, name: "input2", options: {} };
-            wrapper.unmount();
-            wrapper = mount(FormDisplay, {
-                localVue,
+            const wrapper = mount(FormDisplay, {
+                global: getLocalVue(),
+                stubs: {
+                    FormData: {
+                        name: "FormData",
+                        props: ["name"],
+                        render: () => h("div"),
+                    },
+                },
                 propsData: {
                     prefix: "section",
                     inputs: [

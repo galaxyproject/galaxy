@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { deferred } from "@tests/vitest/deferred";
 import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -113,12 +114,6 @@ async function mountCuratedList(response: CuratedWorkflowsIndexResponse) {
 async function setFilterText(wrapper: Awaited<ReturnType<typeof mountList>>, text: string) {
     wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", text);
     await flushPromises();
-}
-
-function deferred<T>() {
-    let resolve: (value: T) => void = () => {};
-    const promise = new Promise<T>((res) => (resolve = res));
-    return { promise, resolve };
 }
 
 function iwcPage(ids: string[], totalMatches = ids.length): CuratedWorkflowsIndexResponse {

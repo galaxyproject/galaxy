@@ -2,92 +2,93 @@ import { describe, expect, it, vi } from "vitest";
 
 import { getRequiredLabels, getRequiredObject, hasValidLabel, hasValidName, hasValidObject } from "./requirements";
 
-vi.mock(
-    "./requirements.yml",
-    () => ({
-        default: {
-            history_dataset_id: ["tool_a", "tool_b"],
-            history_dataset_collection_id: ["tool_c"],
-            job_id: ["tool_d"],
-            none: ["tool_x", "tool_y"],
-        },
-    }),
-    { virtual: true },
-);
+vi.mock("./requirements.yml", () => ({
+    default: {
+        history_dataset_id: ["tool_a", "tool_b"],
+        history_dataset_collection_id: ["tool_c"],
+        job_id: ["tool_d"],
+        none: ["tool_x", "tool_y"],
+    },
+}));
+
+const WORKFLOW_LABELS = [
+    { type: "input", label: "A" },
+    { type: "output", label: "B" },
+    { type: "step", label: "S" },
+];
 
 describe("requirements utils", () => {
     describe("getRequiredObject", () => {
-        it("returns correct object type for known tool", () => {
-            expect(getRequiredObject("tool_a")).toBe("history_dataset_id");
-            expect(getRequiredObject("tool_c")).toBe("history_dataset_collection_id");
-            expect(getRequiredObject("tool_d")).toBe("job_id");
+        it.each([
+            ["tool_a", "history_dataset_id"],
+            ["tool_c", "history_dataset_collection_id"],
+            ["tool_d", "job_id"],
+        ])("returns the object type listed for %s", (name, objectType) => {
+            expect(getRequiredObject(name)).toBe(objectType);
         });
 
-        it("returns null for 'none' type", () => {
+        it("returns null for a tool listed under 'none'", () => {
             expect(getRequiredObject("tool_x")).toBeNull();
         });
 
-        it("returns null for unknown tool", () => {
-            expect(getRequiredObject("nonexistent_tool")).toBeNull();
-            expect(getRequiredObject(undefined)).toBeNull();
+        it.each([["nonexistent_tool"], [undefined]])("returns null for unknown tool %s", (name) => {
+            expect(getRequiredObject(name)).toBeNull();
         });
     });
 
     describe("getRequiredLabels", () => {
-        it("returns expected labels for known types", () => {
-            expect(getRequiredLabels(getRequiredObject("tool_a"))).toEqual(["input", "output"]);
-            expect(getRequiredLabels(getRequiredObject("tool_c"))).toEqual(["input", "output"]);
-            expect(getRequiredLabels(getRequiredObject("tool_d"))).toEqual(["step"]);
+        it.each([
+            ["history_dataset_id", ["input", "output"]],
+            ["history_dataset_collection_id", ["input", "output"]],
+            ["job_id", ["step"]],
+        ])("returns the label types required for %s", (objectType, labelTypes) => {
+            expect(getRequiredLabels(objectType)).toEqual(labelTypes);
         });
 
-        it("returns empty array for unknown or none", () => {
-            expect(getRequiredLabels(getRequiredObject("tool_x"))).toEqual([]);
-            expect(getRequiredLabels(getRequiredObject("nonexistent_tool"))).toEqual([]);
+        it("returns no label types when no object is required", () => {
+            expect(getRequiredLabels(null)).toEqual([]);
+        });
+
+        it("returns no label types for an object type without label requirements", () => {
+            expect(getRequiredLabels("history_id")).toEqual([]);
         });
     });
 
     describe("hasValidLabel", () => {
-        const labels = [
-            { type: "input", label: "A" },
-            { type: "output", label: "B" },
-            { type: "step", label: "S" },
-        ];
-
-        it("returns true when at least one required label is present", () => {
-            const args = { input: "A", output: "Wrong" };
-            expect(hasValidLabel("tool_a", args, labels)).toBe(true);
+        it("accepts arguments where exactly one required label matches a workflow label", () => {
+            expect(hasValidLabel("tool_a", { input: "A", output: "Wrong" }, WORKFLOW_LABELS)).toBe(true);
         });
 
-        it("returns false when none of the required labels are matched", () => {
-            const args = { input: "X", output: "Y" };
-            expect(hasValidLabel("tool_a", args, labels)).toBe(false);
+        it("rejects arguments where no required label matches a workflow label", () => {
+            expect(hasValidLabel("tool_a", { input: "X", output: "Y" }, WORKFLOW_LABELS)).toBe(false);
         });
 
-        it("returns true when no required labels for the tool", () => {
-            const args = {};
-            expect(hasValidLabel("tool_x", args, labels)).toBe(true);
+        it("rejects arguments where both input and output labels match workflow labels", () => {
+            expect(hasValidLabel("tool_a", { input: "A", output: "B" }, WORKFLOW_LABELS)).toBe(false);
         });
 
-        it("returns true when labels are undefined", () => {
-            const args = { step: "S" };
-            expect(hasValidLabel("tool_d", args, undefined)).toBe(true);
+        it.each([
+            ["a 'none' tool", "tool_x"],
+            ["an unknown tool", "nonexistent_tool"],
+        ])("accepts empty arguments for %s, which requires no labels", (_description, name) => {
+            expect(hasValidLabel(name, {}, WORKFLOW_LABELS)).toBe(true);
         });
 
-        it("returns true when requiredLabels is empty", () => {
-            const args = {};
-            expect(hasValidLabel("nonexistent_tool", args, labels)).toBe(true);
+        it("accepts any arguments when workflow labels are undefined", () => {
+            expect(hasValidLabel("tool_d", { step: "S" }, undefined)).toBe(true);
         });
     });
 
     describe("hasValidObject", () => {
-        it("returns true when required object is present", () => {
-            expect(hasValidObject("tool_a", { history_dataset_id: "abc" })).toBe(true);
-            expect(hasValidObject("tool_d", { job_id: "abc" })).toBe(true);
+        it.each([
+            ["tool_a", { history_dataset_id: "abc" }],
+            ["tool_d", { job_id: "abc" }],
+        ])("accepts %s when its required object is present", (name, args) => {
+            expect(hasValidObject(name, args)).toBe(true);
         });
 
-        it("returns false when required object is missing", () => {
-            expect(hasValidObject("tool_a", {})).toBe(false);
-            expect(hasValidObject("tool_d", {})).toBe(false);
+        it.each([["tool_a"], ["tool_d"]])("rejects %s when its required object is missing", (name) => {
+            expect(hasValidObject(name, {})).toBe(false);
         });
 
         it("accepts history_dataset_collection_id where history_dataset_id is required", () => {
@@ -100,15 +101,12 @@ describe("requirements utils", () => {
     });
 
     describe("hasValidName", () => {
-        it("returns true for known tools", () => {
-            expect(hasValidName("tool_a")).toBe(true);
-            expect(hasValidName("tool_c")).toBe(true);
-            expect(hasValidName("tool_x")).toBe(true);
+        it.each([["tool_a"], ["tool_c"], ["tool_x"]])("accepts listed tool %s", (name) => {
+            expect(hasValidName(name)).toBe(true);
         });
 
-        it("returns false for unknown tool or undefined", () => {
-            expect(hasValidName("some_unknown_tool")).toBe(false);
-            expect(hasValidName(undefined)).toBe(false);
+        it.each([["some_unknown_tool"], [undefined]])("rejects unknown tool %s", (name) => {
+            expect(hasValidName(name)).toBe(false);
         });
     });
 });

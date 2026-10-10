@@ -1,18 +1,16 @@
-import { expectConfigurationRequest, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { createTestingPinia } from "@pinia/testing";
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { createTestRouter, expectConfigurationRequest, getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import { useUserStore } from "@/stores/userStore";
 
 import ToolCard from "./ToolCard.vue";
 
 const { server, http } = useServerMock();
-
-vi.mock("@/api/schema");
 
 vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
     const { ref } = await import("vue");
@@ -21,101 +19,92 @@ vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
     };
 });
 
-const config = { enable_tool_source_display: false };
-setupMockConfig(config);
+setupMockConfig({ enable_tool_source_display: false });
 
-const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
+const SELECTORS = {
+    TITLE: "h1",
+    DESCRIPTION: "span[itemprop='description']",
+    OPTIONS_DROPDOWN: ".tool-dropdown",
+    OPTION: ".dropdown-item",
+    BACKDROP: ".portlet-backdrop",
+    NEWER_VERSION_BADGE: "[data-description='newer tool version']",
+};
+
+const ADMIN_USER = getFakeRegisteredUser({ is_admin: true });
+
+const TOOL_OPTIONS = {
+    id: "options.id",
+    name: "options.name",
+    version: "options.version",
+    versions: [],
+    sharable_url: "options.sharable_url",
+    help: "options.help",
+    help_format: "restructuredtext",
+    citations: false,
+};
+
+async function mountToolCard({ version = "version", options = {} } = {}) {
+    const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: ADMIN_USER } } });
+    const router = createTestRouter();
+    const wrapper = mount(ToolCard, {
+        props: {
+            id: "identifier",
+            version,
+            title: "title",
+            description: "description",
+            sustainVersion: false,
+            options: { ...TOOL_OPTIONS, ...options },
+            messageText: "messageText",
+            messageVariant: "warning",
+            disabled: false,
+        },
+        global: withPlugins(getLocalVue(), pinia, router),
+    });
+    await flushPromises();
+    return { wrapper, router };
+}
+
+enableAutoUnmount(afterEach);
 
 describe("ToolCard", () => {
-    let wrapper;
-    let userStore;
-
-    beforeEach(async () => {
-        if (router.currentRoute.value.fullPath !== "/") {
-            await router.push("/");
-        }
-
-        // some child component must be bypassing useConfig - so we need to explicitly
-        // stup the API endpoint also. If you can drop this without request problems in log,
-        // this hack can be removed.
+    beforeEach(() => {
         server.use(
+            // configurationStore's setup calls loadConfig() before @pinia/testing swaps its actions for spies
             expectConfigurationRequest(http, {}),
-            http.untyped.get("/api/webhooks", () => {
-                return HttpResponse.json([]);
-            }),
+            http.untyped.get("/api/webhooks", () => HttpResponse.json([])),
         );
-
-        const pinia = createPinia();
-
-        wrapper = mount(ToolCard, {
-            propsData: {
-                id: "identifier",
-                version: "version",
-                title: "title",
-                description: "description",
-                sustainVersion: false,
-                options: {
-                    id: "options.id",
-                    name: "options.name",
-                    version: "options.version",
-                    versions: [],
-                    sharable_url: "options.sharable_url",
-                    help: "options.help",
-                    help_format: "restructuredtext",
-                    citations: false,
-                },
-                messageText: "messageText",
-                messageVariant: "warning",
-                disabled: false,
-            },
-            localVue,
-            router,
-            pinia,
-        });
-        userStore = useUserStore();
-        userStore.currentUser = {
-            id: "user.id",
-            email: "user.email",
-            is_admin: true,
-            preferences: {},
-        };
-        await flushPromises();
     });
 
-    it("shows props", async () => {
-        const title = wrapper.find("h1");
-        expect(title.text()).toBe("title");
+    it("shows the tool's title and description", async () => {
+        const { wrapper } = await mountToolCard();
 
-        const description = wrapper.find("span[itemprop='description']");
-        expect(description.text()).toBe("description");
+        expect(wrapper.find(SELECTORS.TITLE).text()).toBe("title");
+        expect(wrapper.find(SELECTORS.DESCRIPTION).text()).toBe("description");
+    });
 
-        const dropdownHeader = wrapper.find(".tool-dropdown");
-        expect(dropdownHeader.attributes("title")).toBe("Options");
+    it("offers an admin five tool options", async () => {
+        const { wrapper } = await mountToolCard();
 
-        const dropdownItems = wrapper.findAll(".dropdown-item");
-        expect(dropdownItems.length).toBe(5);
+        expect(wrapper.find(SELECTORS.OPTIONS_DROPDOWN).attributes("title")).toBe("Options");
+        expect(wrapper.findAll(SELECTORS.OPTION)).toHaveLength(5);
+    });
 
-        const backdrop = wrapper.findAll(".portlet-backdrop");
-        expect(backdrop.length).toBe(0);
+    it("covers the card with a backdrop while disabled", async () => {
+        const { wrapper } = await mountToolCard();
+        expect(wrapper.findAll(SELECTORS.BACKDROP)).toHaveLength(0);
 
         await wrapper.setProps({ disabled: true });
-        const backdropActive = wrapper.findAll(".portlet-backdrop");
-        expect(backdropActive.length).toBe(1);
-        await flushPromises();
+
+        expect(wrapper.findAll(SELECTORS.BACKDROP)).toHaveLength(1);
     });
 
-    it("shows newer version badge when latest version is not active and navigates to the latest alias", async () => {
-        await wrapper.setProps({
+    it("shows a newer version badge that navigates to the latest version", async () => {
+        const { wrapper, router } = await mountToolCard({
             version: "1.0",
-            options: {
-                ...wrapper.props("options"),
-                version: "1.0",
-                versions: ["1.0", "2.0"],
-            },
+            options: { version: "1.0", versions: ["1.0", "2.0"] },
         });
 
-        const badge = wrapper.find("[data-description='newer tool version']");
+        const badge = wrapper.find(SELECTORS.NEWER_VERSION_BADGE);
         expect(badge.text()).toBe("Newer version available");
 
         await badge.trigger("click");
@@ -124,29 +113,12 @@ describe("ToolCard", () => {
         expect(router.currentRoute.value.fullPath).toBe("/?tool_id=identifier&version=latest");
     });
 
-    it("does not show newer version badge for the latest lineage version", async () => {
-        await wrapper.setProps({
-            version: "2.0",
-            options: {
-                ...wrapper.props("options"),
-                version: "2.0",
-                versions: ["1.0", "2.0"],
-            },
-        });
+    it.each([
+        { scenario: "the latest version in its lineage", version: "2.0", versions: ["1.0", "2.0"] },
+        { scenario: "a single-version tool", version: "1.0", versions: ["1.0"] },
+    ])("shows no newer version badge for $scenario", async ({ version, versions }) => {
+        const { wrapper } = await mountToolCard({ version, options: { version, versions } });
 
-        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
-    });
-
-    it("does not show newer version badge for single-version tools", async () => {
-        await wrapper.setProps({
-            version: "1.0",
-            options: {
-                ...wrapper.props("options"),
-                version: "1.0",
-                versions: ["1.0"],
-            },
-        });
-
-        expect(wrapper.find("[data-description='newer tool version']").exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.NEWER_VERSION_BADGE).exists()).toBe(false);
     });
 });

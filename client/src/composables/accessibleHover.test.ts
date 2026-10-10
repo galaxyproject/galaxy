@@ -1,5 +1,5 @@
 import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ref } from "vue";
 
@@ -7,19 +7,24 @@ import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 import { useAccessibleHover } from "./accessibleHover";
 
+enableAutoUnmount(afterEach);
+
 describe("useAccessibleHover", () => {
+    let element: HTMLButtonElement;
     beforeEach(() => {
         vi.useFakeTimers();
+        element = document.createElement("button");
+        document.body.appendChild(element);
     });
 
     afterEach(() => {
-        vi.runOnlyPendingTimers();
+        vi.clearAllTimers();
         vi.useRealTimers();
         vi.clearAllMocks();
-        document.body.innerHTML = "";
+        element.remove();
     });
 
-    function mountWithElement(element: HTMLElement, onEnter?: () => void, onExit?: () => void) {
+    function mountWithElement(onEnter?: () => void, onExit?: () => void) {
         const elementRef = ref<HTMLElement | null>(element);
 
         return mount({
@@ -33,12 +38,9 @@ describe("useAccessibleHover", () => {
         });
     }
 
-    test("delays hover enter", async () => {
-        const element = document.createElement("button");
-        document.body.appendChild(element);
-
+    test("enters on hover only after the tooltip delay", async () => {
         const onEnter = vi.fn();
-        const wrapper = mountWithElement(element, onEnter);
+        mountWithElement(onEnter);
 
         element.dispatchEvent(new Event("mouseenter"));
         expect(onEnter).not.toHaveBeenCalled();
@@ -48,17 +50,12 @@ describe("useAccessibleHover", () => {
 
         await advanceTooltipHoverDelay();
         expect(onEnter).toHaveBeenCalledTimes(1);
-
-        wrapper.unmount();
     });
 
     test("cancels delayed hover enter on mouseleave", async () => {
-        const element = document.createElement("button");
-        document.body.appendChild(element);
-
         const onEnter = vi.fn();
         const onExit = vi.fn();
-        const wrapper = mountWithElement(element, onEnter, onExit);
+        mountWithElement(onEnter, onExit);
 
         element.dispatchEvent(new Event("mouseenter"));
         await advanceTooltipHoverDelay(100);
@@ -67,20 +64,13 @@ describe("useAccessibleHover", () => {
 
         expect(onEnter).not.toHaveBeenCalled();
         expect(onExit).not.toHaveBeenCalled();
-
-        wrapper.unmount();
     });
 
-    test("shows immediately on focus", () => {
-        const element = document.createElement("button");
-        document.body.appendChild(element);
-
+    test("enters immediately on keyboard focus", () => {
         const onEnter = vi.fn();
-        const wrapper = mountWithElement(element, onEnter);
+        mountWithElement(onEnter);
 
         element.dispatchEvent(new Event("focus"));
         expect(onEnter).toHaveBeenCalledTimes(1);
-
-        wrapper.unmount();
     });
 });

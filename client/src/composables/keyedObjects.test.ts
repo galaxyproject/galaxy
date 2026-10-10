@@ -3,50 +3,33 @@ import { describe, expect, it } from "vitest";
 import { useKeyedObjects } from "./keyedObjects";
 
 describe("useKeyedObjects", () => {
-    it("returns the same id for the same object", () => {
+    it("keeps an object's key when its properties change", () => {
         const { keyObject } = useKeyedObjects();
+        const object: { a: number; b: number; c?: number } = { a: 1, b: 2 };
+        const originalKey = keyObject(object);
 
-        const obj = {
-            a: 1,
-            b: 2,
-        } as {
-            a: number;
-            b: number;
-            c?: number;
-        };
+        expect(keyObject(object)).toBe(originalKey);
 
-        const keyA = keyObject(obj);
-        expect(keyObject(obj)).toBe(keyA);
+        object.a += 5;
+        object.c = 6;
 
-        obj.a += 5;
-        obj["c"] = 6;
-
-        expect(keyObject(obj)).toBe(keyA);
+        expect(keyObject(object)).toBe(originalKey);
     });
 
-    it("returns different ids for different objects", () => {
+    it("assigns a distinct key to a structured clone", () => {
+        const { keyObject } = useKeyedObjects();
+        const original = { d: 3 };
+        const clone = structuredClone(original);
+
+        expect(keyObject(original)).not.toBe(keyObject(clone));
+    });
+
+    it.each([
+        { name: "objects with different properties", first: { a: 1 }, second: { b: 2 } },
+        { name: "two empty objects", first: {}, second: {} },
+    ])("assigns different keys to $name", ({ first, second }) => {
         const { keyObject } = useKeyedObjects();
 
-        const objA = {
-            a: 1,
-        };
-
-        const objB = {
-            b: 2,
-        };
-
-        const keyA = keyObject(objA);
-        const keyB = keyObject(objB);
-        expect(keyA).not.toBe(keyB);
-
-        const objD = {
-            d: 3,
-        };
-        const objE = structuredClone(objD);
-        const keyD = keyObject(objD);
-        const keyE = keyObject(objE);
-        expect(keyD).not.toBe(keyE);
-
-        expect(keyObject({})).not.toBe(keyObject({}));
+        expect(keyObject(first)).not.toBe(keyObject(second));
     });
 });
