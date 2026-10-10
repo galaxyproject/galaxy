@@ -1,8 +1,10 @@
+import os
 from subprocess import CalledProcessError
 
 import pytest
 
 from galaxy.tool_util.deps.container_classes import DOCKER_CONTAINER_TYPE
+from galaxy.tool_util.deps.container_resolvers.explicit import CachedExplicitSingularityContainerResolver
 from galaxy.tool_util.deps.container_resolvers.mulled import (
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
@@ -148,3 +150,71 @@ def test_cached_singularity_container_resolver_dir_mtime_cached(mocker):
         container_description.identifier
         == "/singularity/mulled/mulled-v2-fe8a3b846bc50d24e5df78fa0b562c43477fe9ce:9f946d13f673ab2903cb0da849ad42916d619d18-0"
     )
+
+
+def test_dir_mtime_cache_directory_listing_shared_across_registries(tmp_path, mocker):
+    cache_directory = tmp_path / "singularity"
+    cache_directory.mkdir()
+    for image in SINGULARITY_IMAGES:
+        (cache_directory / image).touch()
+    app_info = AppInfo(container_image_cache_path=str(tmp_path))
+    destination_info = {
+        "container_resolvers": [
+            {
+                "type": "cached_explicit_singularity",
+                "cache_directory": str(cache_directory),
+                "cache_directory_cacher_type": "dir_mtime",
+            },
+            {
+                "type": "cached_mulled_singularity",
+                "cache_directory": str(cache_directory),
+                "cache_directory_cacher_type": "dir_mtime",
+            },
+        ]
+    }
+    registries = [ContainerRegistry(app_info, destination_info=destination_info) for _ in range(2)]
+    cache_directories = []
+    for registry in registries:
+        explicit, mulled = registry.container_resolvers
+        assert isinstance(explicit, CachedExplicitSingularityContainerResolver)
+        assert isinstance(mulled, CachedMulledSingularityContainerResolver)
+        cache_directories.extend([explicit.cache_directory, mulled.cache_directory])
+    listdir = mocker.spy(os, "listdir")
+
+    def cache_listings():
+        return [call for call in listdir.call_args_list if call.args == (str(cache_directory),)]
+
+    tool_info = ToolInfo(requirements=[ToolRequirement(name="foo", version="1.0", type="package")])
+    for registry in registries:
+        container_description = registry.find_best_container_description(["singularity"], tool_info)
+        assert container_description
+        assert container_description.identifier == str(cache_directory / "foo:1.0--bar")
+    listings = [c.list_cached_mulled_images_from_path() for c in cache_directories]
+    assert len(cache_listings()) == 1
+    assert all(listing is listings[0] for listing in listings)
+
+    (cache_directory / "qux:3.0--0").touch()
+    mtime = os.stat(cache_directory).st_mtime + 10
+    os.utime(cache_directory, (mtime, mtime))
+    listings = [c.list_cached_mulled_images_from_path() for c in cache_directories]
+    assert len(cache_listings()) == 2
+    assert all(listing is listings[0] for listing in listings)
+    assert "qux:3.0--0" in [image.image_identifier for image in listings[0]]
+
+
+def test_cached_singularity_container_resolver_picks_newest_cached_image(tmp_path):
+    for image in ("foo:1.0--0", "bar:2.0--0", "foo:1.10--0", "foo:1.2--0", "bar:10.0--0", "foo:1.2--1"):
+        (tmp_path / image).touch()
+    resolver = CachedMulledSingularityContainerResolver(
+        app_info=AppInfo(container_image_cache_path=str(tmp_path)), cache_directory=str(tmp_path)
+    )
+
+    def resolve(name, version):
+        tool_info = ToolInfo(requirements=[ToolRequirement(name=name, version=version, type="package")])
+        container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+        assert container_description
+        return os.path.basename(container_description.identifier)
+
+    assert resolve("foo", None) == "foo:1.10--0"
+    assert resolve("foo", "1.2") == "foo:1.2--1"
+    assert resolve("bar", None) == "bar:10.0--0"
