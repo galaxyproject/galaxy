@@ -539,8 +539,37 @@ class TabularToolDataTable(ToolDataTable):
             )
             self.allow_duplicate_entries = False
             self._deduplicate_data()
+        # The value column identifies an entry, so a second row for the same value
+        # (e.g. a reference genome provided by both a local loc file and a mounted
+        # reference data repository) would only make lookups ambiguous. Keep the
+        # entry that was loaded first and ignore the incoming one.
+        value_index = self.columns["value"]
+        known_entries = {fields[value_index]: fields for fields in self.data}
+        entries = []
+        for fields in other_table.data:
+            value = fields[value_index]
+            known_fields = known_entries.get(value)
+            if known_fields is None:
+                known_entries[value] = fields
+                entries.append(fields)
+            elif known_fields != fields:
+                log.error(
+                    "Ignoring entry %s for data table '%s' loaded from %s: an entry with value '%s' is already registered (%s).",
+                    fields,
+                    self.name,
+                    list(other_table.filenames.keys()),
+                    value,
+                    known_fields,
+                )
+            else:
+                log.warning(
+                    "Ignoring duplicate entry %s for data table '%s' loaded from %s.",
+                    fields,
+                    self.name,
+                    list(other_table.filenames.keys()),
+                )
         # add data entries and return current data table version
-        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, **kwd)
+        return self.add_entries(entries, allow_duplicates=allow_duplicates, persist=persist, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -712,6 +741,20 @@ class TabularToolDataTable(ToolDataTable):
                     break
         return rval
 
+    def _tabular_filenames(self) -> List[str]:
+        """Return the index files that contain separated lines.
+
+        Files merged in from other table types, e.g. the config file of a refgenie
+        table with the same name, cannot hold tabular entries and must not be written to.
+        """
+        tabular = TabularToolDataTable.type_key
+        filenames = []
+        for name, info in self.filenames.items():
+            config_element = info.get("config_element")
+            if config_element is None or config_element.get("type", tabular) == tabular:
+                filenames.append(name)
+        return filenames
+
     # This method is used in tools, so need to keep its API stable
     def get_filename_for_source(self, source: EntrySource, default: Optional[str] = None) -> Optional[str]:
         source_repo_info: Optional[dict] = None
@@ -730,8 +773,8 @@ class TabularToolDataTable(ToolDataTable):
                 source_repo_info = source_repo_info_model.model_dump() if source_repo_info_model else None
         filename = default
         shared_fallback: Optional[str] = None
-        for name, value in self.filenames.items():
-            repo_info = value.get("tool_shed_repository")
+        for name in self._tabular_filenames():
+            repo_info = self.filenames[name].get("tool_shed_repository")
             if (not source_repo_info and not repo_info) or (
                 source_repo_info and repo_info and source_repo_info == repo_info
             ):
@@ -831,9 +874,7 @@ class TabularToolDataTable(ToolDataTable):
         """
         filename: Optional[str] = self.get_filename_for_source(None)
         if filename is None:
-            for name in self.filenames:
-                filename = name
-                break
+            filename = next(iter(self._tabular_filenames()), None)
         if filename is None:
             raise MessageException(f"Unable to determine filename for appending entries to data table '{self.name}'.")
         value_index = self.columns.get("value", 0)
@@ -875,19 +916,17 @@ class TabularToolDataTable(ToolDataTable):
     def _locate_filename(self, tool_data_file_path, entry_source, bundle_mode):
         if tool_data_file_path is not None:
             filename = tool_data_file_path
-            if os.path.realpath(filename) not in [os.path.realpath(n) for n in self.filenames]:
+            if os.path.realpath(filename) not in [os.path.realpath(n) for n in self._tabular_filenames()]:
                 raise MessageException(f"Path '{tool_data_file_path}' is not a known data table file path.")
         elif not bundle_mode:
             filename = self.get_filename_for_source(entry_source)
         else:
-            for name in self.filenames:
-                filename = name
-                break
+            filename = next(iter(self._tabular_filenames()), None)
         return filename
 
     def _remove_entry(self, values):
         # update every file
-        for filename in self.filenames:
+        for filename in self._tabular_filenames():
             if os.path.exists(filename):
                 values = self._replace_field_separators(values)
                 self.filter_file_fields(filename, values)
@@ -1167,10 +1206,8 @@ class ToolDataTableManager(Dictifiable):
                         table.name,
                         config_filename,
                     )
-                    self.data_tables[table.name].merge_tool_data_table(
-                        table, allow_duplicates=False
-                    )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
-                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                    # only merge content, do not persist to disk, ignore entries whose value is already present
+                    self.data_tables[table.name].merge_tool_data_table(table, allow_duplicates=False)
         return table_elems
 
     def from_elem(

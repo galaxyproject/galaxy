@@ -79,3 +79,26 @@ def test_get_options_handles_missing_name_column():
         ParameterOption("hg38", "hg38", False),
         ParameterOption("mm10", "mm10", False),
     ]
+
+
+def test_get_field_by_name_for_value_uses_first_entry_for_duplicate_values():
+    """Duplicate values must not be joined into a comma separated path."""
+    tool_param = Bunch(tool=Bunch(app=Bunch()))
+
+    opts = DynamicOptions(XML("<options/>"), tool_param)
+    opts.columns = {"value": 0, "name": 1, "path": 2}
+    opts.largest_index = 2
+    opts.file_fields = [
+        ["hg38", "Human (hg38)", "/local/hg38.fa"],
+        ["hg38", "Human (hg38)", "/idc/hg38.fa"],
+        ["mm10", "Mouse (mm10)", "/local/mm10.fa"],
+    ]
+
+    trans = WorkRequestContext(app=MockApp())
+    assert opts.get_field_by_name_for_value("path", "hg38", trans, {}) == ["/local/hg38.fa"]
+    # multiple selected values still resolve to one entry each
+    assert opts.get_field_by_name_for_value("path", ["hg38", "mm10"], trans, {}) == [
+        "/local/hg38.fa",
+        "/local/mm10.fa",
+    ]
+    assert opts.get_field_by_name_for_value("path", "unknown", trans, {}) == []
