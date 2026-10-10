@@ -1,10 +1,12 @@
 from collections.abc import Callable
 from typing import (
     Any,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes.data import Directory
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -38,6 +40,36 @@ CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, str | None], 
 InpDataCollectionsDictT = dict[str, HistoryDatasetCollectionAssociation | DatasetCollectionElement]
 
 
+def dataset_path(
+    dataset: DatasetInstance,
+    compute_environment: Optional["ComputeEnvironment"] = None,
+    io_type: Literal["input", "output"] = "input",
+) -> str | None:
+    """Return where a tool finds a dataset's data on disk.
+
+    This is the dataset's file, or for directory datatypes the folder holding
+    their content (the extra files path). It is ``None`` for a
+    deferred dataset that is passed to the tool as its source URI. YAML tools
+    get this as ``path`` and XML tools as ``$input.path``.
+    """
+    if dataset.has_deferred_data:
+        return None
+    is_output = io_type == "output"
+    if isinstance(dataset.datatype, Directory):
+        if compute_environment is None:
+            return dataset.extra_files_path
+        if is_output:
+            return compute_environment.output_extra_files_rewrite(dataset)
+        return compute_environment.input_extra_files_rewrite(dataset)
+    rewrite = None
+    if compute_environment is not None:
+        if is_output:
+            rewrite = compute_environment.output_path_rewrite(dataset)
+        else:
+            rewrite = compute_environment.input_path_rewrite(dataset)
+    return rewrite or dataset.get_file_name()
+
+
 def is_list_like(collection_type: str) -> bool:
     """Returns True if this collection type has array elements.
 
@@ -62,9 +94,15 @@ def setup_for_runtimeify(
     hda_references: list[HistoryDatasetAssociation] = []
 
     # Build lookup for individual datasets
-    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {
-        d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None
-    }
+    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {}
+    for i, d in enumerate(input_datasets.values()):
+        if d is None:
+            continue
+        hdas_by_id[d.id] = (d, i)
+        # The request names the original dataset when the job got an implicit conversion of it.
+        for assoc in getattr(d, "implicitly_converted_parent_datasets", None) or []:
+            if assoc.parent_hda is not None:
+                hdas_by_id.setdefault(assoc.parent_hda.id, (d, i))
 
     # Build separate lookups for HDCAs and DCEs
     hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
@@ -99,16 +137,20 @@ def setup_for_runtimeify(
         if not hda_entry:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")
         assert hda_entry.dataset is not None
+        is_directory = isinstance(hda_entry.datatype, Directory)
         properties: dict[str, Any] = {
-            "class": "File",
+            "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
             "format": hda_entry.extension,
-            "path": (
-                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
-            ),
-            "size": hda_entry.dataset.get_size(),
+            # A deferred dataset has no local file to measure.
+            "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
             "listing": [],
         }
+        if (path := dataset_path(hda_entry, compute_environment)) is not None:
+            properties["path"] = path
+        else:
+            # Not materialized: the tool consumes the source URI and there is no local path.
+            properties["location"] = hda_entry.deferred_source_uri
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         return DataInternalJson(**properties)
 

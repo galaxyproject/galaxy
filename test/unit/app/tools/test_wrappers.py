@@ -5,6 +5,10 @@ from unittest.mock import Mock
 
 import pytest
 
+from galaxy.datatypes.data import (
+    Directory,
+    Text,
+)
 from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
@@ -292,6 +296,48 @@ def test_dataset_false_extra_files_path():
         ),
     )
     assert wrapper.extra_files_path == new_files_path
+
+
+def _dataset_of_type(datatype, has_deferred_data=False):
+    dataset = MockDataset()
+    dataset.datatype = datatype
+    dataset.has_deferred_data = has_deferred_data
+    return cast(DatasetInstance, dataset)
+
+
+REWRITING_COMPUTE_ENVIRONMENT = cast(
+    ComputeEnvironment,
+    MockComputeEnvironment(
+        false_path="/job/inputs/dataset_123.dat", false_extra_files_path="/job/inputs/dataset_123_files"
+    ),
+)
+
+
+def test_dataset_path_of_a_file():
+    wrapper = DatasetFilenameWrapper(_dataset_of_type(Text()), compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    assert wrapper.path == "/job/inputs/dataset_123.dat"
+
+
+def test_dataset_path_of_a_directory_datatype():
+    wrapper = DatasetFilenameWrapper(_dataset_of_type(Directory()), compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    assert wrapper.path == "/job/inputs/dataset_123_files"
+
+
+def test_dataset_path_of_a_directory_output():
+    wrapper = DatasetFilenameWrapper(_dataset_of_type(Directory()), io_type="output")
+    assert wrapper.path == MOCK_DATASET_EXTRA_FILES_PATH
+
+
+def test_dataset_path_of_a_deferred_dataset_is_empty():
+    wrapper = DatasetFilenameWrapper(_dataset_of_type(Directory(), has_deferred_data=True))
+    assert wrapper.path == ""
+
+
+def test_dataset_path_of_a_missing_optional_input_is_empty():
+    registry = Mock()
+    registry.get_datatype_by_extension.return_value = Text()
+    wrapper = DatasetFilenameWrapper(None, datatypes_registry=registry)
+    assert wrapper.path == ""
 
 
 def _drilldown_parameter(tool):

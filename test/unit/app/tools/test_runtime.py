@@ -1,10 +1,21 @@
+from decimal import Decimal
+from typing import (
+    Any,
+    cast,
+)
+
 import pytest
 from pydantic import ValidationError
 
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetSource,
     HistoryDatasetAssociation,
+    ImplicitlyConvertedDatasetAssociation,
+    set_datatypes_registry,
 )
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
@@ -14,10 +25,12 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRecordRuntime,
     DataCollectionSampleSheetRuntime,
     DataInternalJson,
+    DataRequestInternalHda,
 )
 from galaxy.tools.runtime import (
     _validate_collection_runtime_dict,
     collection_to_runtime,
+    setup_for_runtimeify,
 )
 
 
@@ -244,3 +257,67 @@ def test_validate_collection_runtime_dict_rejects_unknown_nested():
     raw = {"class": "Collection", "name": "x", "collection_type": "list:banana", "tags": [], "elements": []}
     with pytest.raises(ValueError, match="Cannot build runtime model"):
         _validate_collection_runtime_dict(raw)
+
+
+class RewritingComputeEnvironment:
+    def input_path_rewrite(self, dataset):
+        return f"/job/inputs/dataset_{dataset.id}.dat"
+
+    def input_extra_files_rewrite(self, dataset):
+        return f"/job/inputs/dataset_{dataset.id}_files"
+
+
+def _adapt_input(extension, deferred_uri=None):
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
+    hda.id = 1
+    assert hda.dataset is not None
+    hda.dataset.file_size = Decimal(4)
+    if deferred_uri:
+        hda.dataset.state = Dataset.states.DEFERRED
+        hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
+    _, adapt_dataset, _ = setup_for_runtimeify(
+        cast(Any, None), cast(Any, RewritingComputeEnvironment()), {"input": hda}
+    )
+    return adapt_dataset(DataRequestInternalHda(src="hda", id=1))
+
+
+def test_adapt_dataset_file():
+    result = _adapt_input("txt")
+    assert result.class_ == "File"
+    assert result.path == "/job/inputs/dataset_1.dat"
+
+
+@pytest.mark.parametrize("extension", ["directory", "zarr", "ome_zarr"])
+def test_adapt_dataset_directory_datatypes(extension):
+    result = _adapt_input(extension)
+    assert result.class_ == "Directory"
+    assert result.path == "/job/inputs/dataset_1_files"
+    assert result.format == extension
+
+
+def test_adapt_dataset_deferred_input_has_location_and_no_path():
+    result = _adapt_input("directory", deferred_uri="https://example.org/data/folder")
+    assert result.class_ == "Directory"
+    assert result.location == "https://example.org/data/folder"
+    assert result.path is None
+
+
+def test_adapt_dataset_resolves_an_implicitly_converted_input():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    original = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="csv")
+    original.id = 1
+    converted = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension="tabular")
+    converted.id = 2
+    assert converted.dataset is not None
+    converted.dataset.file_size = Decimal(4)
+    ImplicitlyConvertedDatasetAssociation(parent=original, dataset=converted, file_type="tabular")
+
+    _, adapt_dataset, _ = setup_for_runtimeify(
+        cast(Any, None), cast(Any, RewritingComputeEnvironment()), {"input": converted}
+    )
+    # The request still names the dataset the user picked; the job runs on its conversion.
+    result = adapt_dataset(DataRequestInternalHda(src="hda", id=1))
+
+    assert result.format == "tabular"
+    assert result.path == "/job/inputs/dataset_2.dat"

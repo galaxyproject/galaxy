@@ -1,0 +1,46 @@
+<tool id="dataset_path" name="dataset_path" version="0.1.0" profile="26.2">
+    <!-- $input.path is the file, or the folder holding a directory dataset's content. -->
+    <command><![CDATA[
+if [ -d '$input.path' ]; then ls -A '$input.path'; else cat '$input.path'; fi > '$listing'
+#if $input.is_of_type("directory")
+    && mkdir -p '$output_directory.path'
+    && cp -r '$input.path'/. '$output_directory.path'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="txt,directory"/>
+    </inputs>
+    <outputs>
+        <data name="listing" format="txt"/>
+        <data name="output_directory" format="directory">
+            <filter>input.ext != "txt"</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input" value="simple_line.txt" ftype="txt"/>
+            <output name="listing" file="simple_line.txt"/>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="input" value="simple_directory" class="Directory" ftype="directory"/>
+            <output name="listing">
+                <assert_contents>
+                    <has_line line="a.txt"/>
+                    <has_line line="sub"/>
+                </assert_contents>
+            </output>
+            <output name="output_directory" ftype="directory">
+                <extra_files type="file" name="a.txt">
+                    <assert_contents>
+                        <has_text text="hello"/>
+                    </assert_contents>
+                </extra_files>
+                <extra_files type="file" name="sub/b.txt">
+                    <assert_contents>
+                        <has_text text="world"/>
+                    </assert_contents>
+                </extra_files>
+            </output>
+        </test>
+    </tests>
+</tool>

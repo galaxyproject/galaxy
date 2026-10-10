@@ -1,0 +1,42 @@
+class: GalaxyUserTool
+id: directory_or_file_user_defined
+version: "0.1"
+name: directory_or_file_user_defined
+description: reads a file or a directory dataset through the same path
+container: busybox
+shell_command: |
+  if [ -d '$(inputs.input1.path)' ]; then ls -A '$(inputs.input1.path)'; else cat '$(inputs.input1.path)'; fi > output.txt &&
+  echo 'class=$(inputs.input1.class)' >> output.txt
+inputs:
+  - name: input1
+    type: data
+    format: [txt, directory]
+outputs:
+  - name: output1
+    type: data
+    format: txt
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      input1:
+        class: File
+        path: simple_line.txt
+    outputs:
+      output1:
+        asserts:
+          has_line:
+            line: "class=File"
+  - inputs:
+      input1:
+        class: Directory
+        path: simple_directory
+        filetype: directory
+    outputs:
+      output1:
+        asserts:
+          - that: has_line
+            line: "a.txt"
+          - that: has_line
+            line: "sub"
+          - that: has_line
+            line: "class=Directory"
