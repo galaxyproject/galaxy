@@ -903,6 +903,9 @@ execution:
       runner: slurm
       native_specification: '-p arm'
       platform: linux-aarch64
+      # Optional. Singularity images are then cached per platform in
+      # <container_image_cache_path>/.../linux-aarch64/ and pulled with --arch arm64.
+      # singularity_enabled: true
     pulsar_mac:
       runner: pulsar_rest
       url: https://mac-pulsar.example.org:8913/

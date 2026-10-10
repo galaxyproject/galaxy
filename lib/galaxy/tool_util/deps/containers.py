@@ -174,7 +174,9 @@ class ContainerFinder:
 
         # Otherwise lets see if we can find container for the tool.
         container_registry = self._container_registry_for_destination(destination_info)
-        container_description = container_registry.find_best_container_description(enabled_container_types, tool_info)
+        container_description = container_registry.find_best_container_description(
+            enabled_container_types, tool_info, destination_info=destination_info
+        )
         container = __destination_container(container_description)
         if container:
             return container
@@ -368,6 +370,7 @@ class ContainerRegistry:
         install: bool = True,
         resolution_cache: ResolutionCache | None = None,
         session: Session | None = None,
+        destination_info: dict[str, Any] | None = None,
     ) -> ResolvedContainerDescription | None:
         resolution_cache = resolution_cache or self.get_resolution_cache()
         for i, container_resolver in enumerate(self.container_resolvers):
@@ -385,7 +388,12 @@ class ContainerRegistry:
                 continue
 
             container_description = container_resolver.resolve(
-                enabled_container_types, tool_info, install=install, resolution_cache=resolution_cache, session=session
+                enabled_container_types,
+                tool_info,
+                install=install,
+                resolution_cache=resolution_cache,
+                session=session,
+                destination_info=destination_info,
             )
             log.info(
                 f"Checking with container resolver [{container_resolver}] found description [{container_description}]"

@@ -574,18 +574,19 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         return self.get_singularity_target_kwds()
 
     def build_mulled_singularity_pull_command(
-        self, cache_directory: str, namespace: str = "biocontainers"
+        self, cache_directory: str, namespace: str = "biocontainers", arch: str | None = None
     ) -> list[str]:
         return singularity_util.pull_mulled_singularity_command(
             docker_image_identifier=self.container_id,
             cache_directory=cache_directory,
             namespace=namespace,
+            arch=arch,
             **self.get_singularity_target_kwds(),
         )
 
-    def build_singularity_pull_command(self, cache_path: str) -> list[str]:
+    def build_singularity_pull_command(self, cache_path: str, arch: str | None = None) -> list[str]:
         return singularity_util.pull_singularity_command(
-            image_identifier=self.container_id, cache_path=cache_path, **self.get_singularity_target_kwds()
+            image_identifier=self.container_id, cache_path=cache_path, arch=arch, **self.get_singularity_target_kwds()
         )
 
     def containerize_command(self, command: str) -> str:

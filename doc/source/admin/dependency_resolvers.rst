@@ -473,6 +473,33 @@ and later jobs of the tool can be routed to destinations of other platforms. Wit
 have to be installed beforehand (admin dependency API or UI), otherwise the function raises as described.
 ``DependencyManager.platforms_for_requirements`` is the underlying check. It consults only the file system.
 
+Containers
+..........
+
+Docker needs no configuration for heterogeneous clusters. The registry serves a manifest list and the Docker daemon of
+the node pulls the image of its own architecture.
+
+Singularity and Apptainer images are files, and Galaxy pulls them on the server into the image cache. A destination with a
+``platform`` parameter gets its images from a cache directory of that platform. The resolvers ``cached_mulled_singularity``,
+``mulled_singularity``, ``build_mulled_singularity`` and ``cached_explicit_singularity`` look up and store images in
+``<cache_directory>/<platform>/``, for example
+``<container_image_cache_path>/singularity/mulled/linux-aarch64/``, and create the directory on demand. Destinations
+without ``platform`` keep using ``<cache_directory>/``, so an existing cache stays valid. The job script of the
+destination runs the ``.sif`` file from the directory of its platform.
+
+When the architecture of the platform differs from the one of the Galaxy server, Galaxy pulls with
+``singularity build --arch <architecture>`` (the same option exists in Apptainer). The architectures are ``amd64`` for
+``linux-64`` and ``osx-64``, ``arm64`` for ``linux-aarch64`` and ``osx-arm64``, and ``ppc64le``, ``s390x`` and ``riscv64``
+for the platforms of the same name. If the installed binary does not know ``--arch``, Galaxy logs a warning and pulls
+without it, which yields the architecture of the server. The ``build_mulled_singularity`` resolver builds images only for
+the architecture of the server and looks up the images of other platforms in their directory without building.
+A ``docker://`` reference of the explicit ``explicit_singularity`` resolver is pulled by the node at run time and
+therefore has the architecture of the node.
+
+The image has to exist for the architecture in the registry. BioContainers publishes ``linux/arm64`` images for part of
+the bioconda packages. Platform routing does not check whether an image exists: a tool without package requirements, or
+with a container, goes to the first destination.
+
 Limits
 ......
 
