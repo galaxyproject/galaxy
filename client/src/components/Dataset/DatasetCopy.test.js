@@ -1,22 +1,18 @@
-import { getFakeHistorySummary } from "@tests/test-data";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { createPinia } from "pinia";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { seedCurrentHistory } from "@/stores/testUtils";
+
+import * as DatasetCopyStories from "./DatasetCopy.stories";
+import { FORWARD_READS, PAIRED_READS, REVERSE_READS, RNA_SEQ, VARIANT_CALLING } from "./test_fixtures";
 
 import DatasetCopy from "./DatasetCopy.vue";
 
+const stories = composeStories(DatasetCopyStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
-
-enableAutoUnmount(afterEach);
-
-const H1 = { id: "h1", name: "H1" };
-const H2 = { id: "h2", name: "H2" };
 
 const SELECTORS = {
     COPY_BUTTON: "[data-description='copy button']",
@@ -25,53 +21,31 @@ const SELECTORS = {
     COPIED_TO_LINKS: "[data-description='copy switch history']",
 };
 
-function dataset(id, hid, name) {
-    return { id, hid, name, history_content_type: "dataset" };
-}
-
-/** Serves the history list and the same contents for every history; returns the ids whose contents were requested. */
-function serveHistories(histories, contents) {
+/** Records the histories whose contents are requested and each copy request; the story still answers. */
+function recordRequests() {
     const contentsRequests = [];
-    server.use(
-        http.get("/api/histories", ({ response }) => response(200).json(histories)),
-        http.get("/api/histories/{history_id}/contents", ({ params, response }) => {
-            contentsRequests.push(params.history_id);
-            return response(200).json(contents);
-        }),
-    );
-    return contentsRequests;
-}
-
-/** Answers copy requests with the given target history ids; returns each request's source history and body. */
-function serveCopy(targetHistoryIds) {
     const copyRequests = [];
     server.use(
-        http.post("/api/histories/{history_id}/copy_contents", async ({ params, request, response }) => {
-            copyRequests.push({ historyId: params.history_id, body: await request.json() });
-            return response(200).json({ history_ids: targetHistoryIds });
+        http.get("/api/histories/{history_id}/contents", ({ params }) => {
+            contentsRequests.push(params.history_id);
+        }),
+        http.post("/api/histories/{history_id}/copy_contents", async ({ params, request }) => {
+            copyRequests.push({ historyId: params.history_id, body: await request.clone().json() });
         }),
     );
-    return copyRequests;
+    return { contentsRequests, copyRequests };
 }
 
-/** Mounts the copy form with `currentHistory`, if any, as the current history and waits for the source contents. */
-async function mountDatasetCopy({ currentHistory = H1 } = {}) {
-    const pinia = createPinia();
-    if (currentHistory) {
-        seedCurrentHistory(getFakeHistorySummary(currentHistory), pinia);
-    }
-    const wrapper = mount(DatasetCopy, {
-        global: {
-            ...withPlugins(localVue, pinia),
-            stubs: { ...localVue.stubs, RouterLink: { template: "<a><slot /></a>" } },
-        },
-    });
+/** Mounts a story and waits for the source history's contents. */
+async function mountDatasetCopy(story) {
+    const wrapper = mountStory(story);
+    const requests = recordRequests();
     await flushPromises();
-    return wrapper;
+    return { wrapper, ...requests };
 }
 
-function sourceCheckbox(wrapper, type, id) {
-    return wrapper.get(`input[data-description='copy ${type}|${id}']`);
+function sourceCheckbox(wrapper, item) {
+    return wrapper.get(`input[data-description='copy ${item.history_content_type}|${item.id}']`);
 }
 
 function targetHistoryCheckbox(wrapper, name) {
@@ -95,55 +69,43 @@ async function copySelected(wrapper) {
 
 describe("DatasetCopy", () => {
     it("lists the histories and the current history's datasets and collections on mount", async () => {
-        const contentsRequests = serveHistories(
-            [
-                { id: "h1", name: "History One" },
-                { id: "h2", name: "History Two" },
-            ],
-            [dataset("d1", 1, "A"), { id: "d2", hid: 2, name: "B", history_content_type: "collection" }],
-        );
+        const { wrapper, contentsRequests } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
 
-        const wrapper = await mountDatasetCopy();
-
-        expect(contentsRequests).toEqual(["h1"]);
-        expect(wrapper.text()).toContain("History One");
-        expect(wrapper.text()).toContain("History Two");
-        expect(wrapper.text()).toContain("1: A");
-        expect(wrapper.text()).toContain("2: B");
+        expect(contentsRequests).toEqual([RNA_SEQ.id]);
+        expect(wrapper.text()).toContain(RNA_SEQ.name);
+        expect(wrapper.text()).toContain(VARIANT_CALLING.name);
+        for (const item of [FORWARD_READS, REVERSE_READS, PAIRED_READS]) {
+            expect(wrapper.text()).toContain(`${item.hid}: ${item.name}`);
+        }
     });
 
     it("sources the current history even when it is not listed first", async () => {
-        const contentsRequests = serveHistories([H1, H2], [dataset("d1", 1, "X")]);
+        const { contentsRequests } = await mountDatasetCopy(stories.CurrentHistoryListedSecond);
 
-        await mountDatasetCopy({ currentHistory: H2 });
-
-        expect(contentsRequests).toEqual(["h2"]);
+        expect(contentsRequests).toEqual([VARIANT_CALLING.id]);
     });
 
     it.each([
-        ["is not listed", { id: "unlisted", name: "Unlisted" }],
-        ["is not known", null],
-    ])("falls back to the first listed history when the current history %s", async (_, currentHistory) => {
-        const contentsRequests = serveHistories([H1, H2], [dataset("d1", 1, "X")]);
+        ["is not listed", stories.CurrentHistoryNotListed],
+        ["is not known", stories.NoCurrentHistory],
+    ])("falls back to the first listed history when the current history %s", async (_, story) => {
+        const { contentsRequests } = await mountDatasetCopy(story);
 
-        await mountDatasetCopy({ currentHistory });
-
-        expect(contentsRequests).toEqual(["h1"]);
+        expect(contentsRequests).toEqual([RNA_SEQ.id]);
     });
 
     it("copies the selected items from the source history and reports success", async () => {
-        serveHistories([H1], [dataset("d1", 1, "X")]);
-        const copyRequests = serveCopy(["h1"]);
-        const wrapper = await mountDatasetCopy();
+        // Galaxy refuses a copy with no target; this story accepts it, as this case always expected.
+        const { wrapper, copyRequests } = await mountDatasetCopy(stories.NoTargetCopiesIntoSource);
 
-        await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
+        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
         await copySelected(wrapper);
 
         expect(copyRequests).toEqual([
             {
-                historyId: "h1",
+                historyId: RNA_SEQ.id,
                 body: {
-                    source_content: [{ id: "d1", type: "dataset" }],
+                    source_content: [{ id: FORWARD_READS.id, type: "dataset" }],
                     target_history_ids: [],
                     target_history_name: null,
                 },
@@ -153,9 +115,7 @@ describe("DatasetCopy", () => {
     });
 
     it("asks for a selection instead of copying when nothing is selected", async () => {
-        serveHistories([H1], []);
-        const copyRequests = serveCopy(["h1"]);
-        const wrapper = await mountDatasetCopy();
+        const { wrapper, copyRequests } = await mountDatasetCopy(stories.EmptyCurrentHistory);
 
         await copySelected(wrapper);
 
@@ -164,81 +124,75 @@ describe("DatasetCopy", () => {
     });
 
     it("shows the error message when the copy request fails", async () => {
-        serveHistories([H1], [dataset("d1", 1, "X")]);
-        server.use(
-            http.post("/api/histories/{history_id}/copy_contents", ({ response }) =>
-                response(500).json({ err_msg: "Copy failed" }),
-            ),
-        );
-        const wrapper = await mountDatasetCopy();
+        // No target chosen, so Galaxy refuses the copy.
+        const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
 
-        await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
+        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
         await copySelected(wrapper);
 
-        expect(wrapper.text()).toContain("Copy failed");
+        expect(wrapper.text()).toContain("Select a destination history or provide a target history name.");
     });
 
     it("selects and unselects every source item", async () => {
-        serveHistories([H1], [dataset("d1", 1, "X"), dataset("d2", 2, "Y")]);
-        const wrapper = await mountDatasetCopy();
+        const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
+        const sourceItems = [FORWARD_READS, REVERSE_READS, PAIRED_READS];
 
         await buttonByText(wrapper, "Select All").trigger("click");
 
-        expect(sourceCheckbox(wrapper, "dataset", "d1").element.checked).toBe(true);
-        expect(sourceCheckbox(wrapper, "dataset", "d2").element.checked).toBe(true);
+        for (const item of sourceItems) {
+            expect(sourceCheckbox(wrapper, item).element.checked).toBe(true);
+        }
 
         await buttonByText(wrapper, "Unselect All").trigger("click");
 
-        expect(sourceCheckbox(wrapper, "dataset", "d1").element.checked).toBe(false);
-        expect(sourceCheckbox(wrapper, "dataset", "d2").element.checked).toBe(false);
+        for (const item of sourceItems) {
+            expect(sourceCheckbox(wrapper, item).element.checked).toBe(false);
+        }
     });
 
     it("names the existing history the items were copied to", async () => {
-        serveHistories([H1], [dataset("d1", 1, "X")]);
-        serveCopy(["h1"]);
-        const wrapper = await mountDatasetCopy();
+        // Galaxy refuses a copy with no target; this story accepts it, as this case always expected.
+        const { wrapper } = await mountDatasetCopy(stories.NoTargetCopiesIntoSource);
 
-        await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
+        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
         await copySelected(wrapper);
 
         expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
-        expect(copiedToLinkTexts(wrapper)).toEqual(["H1"]);
+        expect(copiedToLinkTexts(wrapper)).toEqual([RNA_SEQ.name]);
     });
 
     it("copies to every checked target history and names each of them", async () => {
-        serveHistories([H1, H2], [dataset("d1", 1, "X")]);
-        const copyRequests = serveCopy(["h1", "h2"]);
-        const wrapper = await mountDatasetCopy();
+        const { wrapper, copyRequests } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
 
-        await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
-        await targetHistoryCheckbox(wrapper, "H1").setValue(true);
-        await targetHistoryCheckbox(wrapper, "H2").setValue(true);
+        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
+        await targetHistoryCheckbox(wrapper, RNA_SEQ.name).setValue(true);
+        await targetHistoryCheckbox(wrapper, VARIANT_CALLING.name).setValue(true);
         await copySelected(wrapper);
 
-        expect(copyRequests[0].body.target_history_ids).toEqual(["h1", "h2"]);
+        expect(copyRequests[0].body.target_history_ids).toEqual([RNA_SEQ.id, VARIANT_CALLING.id]);
         expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
-        expect(copiedToLinkTexts(wrapper)).toEqual(["H1", "H2"]);
+        expect(copiedToLinkTexts(wrapper)).toEqual([RNA_SEQ.name, VARIANT_CALLING.name]);
     });
 
     it("copies to a new history and names it in the success message", async () => {
-        serveHistories([H1], [dataset("d1", 1, "X")]);
-        const copyRequests = serveCopy(["h2"]);
-        const wrapper = await mountDatasetCopy();
+        const { wrapper, copyRequests } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
 
-        await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
-        await wrapper.get(SELECTORS.NEW_HISTORY_NAME).setValue("New History");
+        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
+        await wrapper.get(SELECTORS.NEW_HISTORY_NAME).setValue("Reads for variant calling");
         await copySelected(wrapper);
 
-        expect(copyRequests[0].body).toMatchObject({ target_history_ids: [], target_history_name: "New History" });
+        expect(copyRequests[0].body).toMatchObject({
+            target_history_ids: [],
+            target_history_name: "Reads for variant calling",
+        });
         expect(wrapper.text()).toContain("1 item copied to");
-        expect(copiedToLinkTexts(wrapper)).toEqual(["New History"]);
+        expect(copiedToLinkTexts(wrapper)).toEqual(["Reads for variant calling"]);
     });
 
     it("clears the target history selections when a new history name is typed", async () => {
-        serveHistories([H1], [dataset("d1", 1, "X")]);
-        const wrapper = await mountDatasetCopy();
-        await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
-        const targetCheckbox = targetHistoryCheckbox(wrapper, "H1");
+        const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
+        await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
+        const targetCheckbox = targetHistoryCheckbox(wrapper, VARIANT_CALLING.name);
         await targetCheckbox.setValue(true);
         expect(targetCheckbox.element.checked).toBe(true);
         const nameInput = wrapper.get(SELECTORS.NEW_HISTORY_NAME);
@@ -248,8 +202,7 @@ describe("DatasetCopy", () => {
     });
 
     it("labels the history search inputs with their visible captions", async () => {
-        serveHistories([H1], []);
-        const wrapper = await mountDatasetCopy();
+        const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
 
         const labels = wrapper.findAll(SELECTORS.HISTORY_SEARCH_INPUTS).map((input) => {
             expect(input.attributes("aria-label")).toBeUndefined();
@@ -260,28 +213,19 @@ describe("DatasetCopy", () => {
 });
 
 it("keeps the selection hook on the content checkbox input", async () => {
-    serveHistories([{ id: "h1", name: "H1" }], [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]);
-    const wrapper = await mountDatasetCopy();
-    await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
-    const checkbox = wrapper.get("[data-description='copy dataset|d1']");
+    const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
+    await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
+    const checkbox = wrapper.get(`[data-description='copy dataset|${FORWARD_READS.id}']`);
     expect(checkbox.element.tagName).toBe("INPUT");
     expect(checkbox.element.checked).toBe(true);
 });
 
 it("clears the new history name when a target history is checked", async () => {
-    serveHistories(
-        [
-            { id: "h1", name: "H1" },
-            { id: "h2", name: "H2" },
-        ],
-        [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
-    );
-    const wrapper = await mountDatasetCopy();
-    await sourceCheckbox(wrapper, "dataset", "d1").setValue(true);
-    const nameInput = wrapper.find("input[data-description='copy history name']");
+    const { wrapper } = await mountDatasetCopy(stories.CopyFromCurrentHistory);
+    await sourceCheckbox(wrapper, FORWARD_READS).setValue(true);
+    const nameInput = wrapper.find(SELECTORS.NEW_HISTORY_NAME);
     await nameInput.setValue("New History");
-    const targetCheckbox = wrapper.findAll("input[type='checkbox']").at(-1);
-    await targetCheckbox.setValue(true);
+    await targetHistoryCheckbox(wrapper, VARIANT_CALLING.name).setValue(true);
     expect(nameInput.element.value).toBe("");
-    expect(wrapper.vm.targetMultiSelections).toEqual({ h2: true });
+    expect(wrapper.getComponent(DatasetCopy).vm.targetMultiSelections).toEqual({ [VARIANT_CALLING.id]: true });
 });
