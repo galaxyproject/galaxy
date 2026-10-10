@@ -1,42 +1,27 @@
+import { composeStories } from "@storybook/vue3-vite";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ComponentPublicInstance } from "vue";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import type { Component, ComponentPublicInstance } from "vue";
+
+import * as ScrollListStories from "./ScrollList.stories";
 
 import ScrollList from "./ScrollList.vue";
 
-interface TestItem {
-    id: string;
-    name: string;
-}
+const stories = composeStories(ScrollListStories);
+const mountStory = useStoryMount();
 
-type LoaderResult = { items: TestItem[]; total: number };
-
-const TOTAL_ITEMS = 50;
-const BUFFER_SIZE = 5;
+const pageOfItems = stories.PagedFromLoader.args.loader!;
+const BUFFER_SIZE = stories.PagedFromLoader.args.limit!;
+const ITEM_NAME_PLURAL = stories.PagedFromLoader.args.namePlural;
+const TOTAL_ITEMS = stories.GivenItems.args.propItems!.length;
 const SCROLLS_TO_LOAD_ALL = Math.ceil(TOTAL_ITEMS / BUFFER_SIZE);
-const ITEM_NAME = "test item";
-const ITEM_NAME_PLURAL = "test items";
 
-const TEST_ITEM_DIV = "div[data-description='test item']";
+const LIST_ITEM = "[data-description='scroll list item']";
+const ADD_ITEM_BUTTON = "[data-description='add item button']";
 const LOAD_MORE_BUTTON = "[data-description='load more items button']";
-const TEST_ITEM_SLOT = `<template #default="{ item }"><div data-description="test item">Test {{ item.name }}</div></template>`;
-
-const TEST_ITEMS: TestItem[] = Array.from({ length: TOTAL_ITEMS }, (_, index) => ({
-    id: `item-${index}`,
-    name: `Item ${index + 1}`,
-}));
-
-/** ScrollList is generic, so vue-test-utils can't infer its props; declare the ones these tests read or set. */
-type ScrollListWrapper = VueWrapper<
-    ComponentPublicInstance<{
-        propItems?: TestItem[];
-        propTotalCount?: number;
-        adjustForTotalCountChanges?: boolean;
-        showCountInFooter?: boolean;
-    }>
->;
 
 /** The callback ScrollList registers with `useInfiniteScroll`, invoked when the list is scrolled to its end. */
 let onScrolledToEnd: (() => Promise<void>) | null = null;
@@ -49,11 +34,14 @@ vi.mock("@vueuse/core", async () => ({
     }),
 }));
 
-enableAutoUnmount(afterEach);
-
 beforeEach(() => {
     onScrolledToEnd = null;
 });
+
+/** ScrollList is generic, so vue-test-utils can't infer its props; declare the one these tests read. */
+function findScrollList(root: VueWrapper) {
+    return root.findComponent(ScrollList) as VueWrapper<ComponentPublicInstance<{ propItems?: unknown[] }>>;
+}
 
 async function scrollToEnd(times = 1) {
     for (let i = 0; i < times; i++) {
@@ -65,58 +53,25 @@ async function scrollToEnd(times = 1) {
     }
 }
 
-function mountScrollList(props: Record<string, unknown>): ScrollListWrapper {
-    const localVue = getLocalVue();
-    return mount(ScrollList as object, {
-        props: {
-            itemKey: (item: TestItem) => item.id,
-            name: ITEM_NAME,
-            namePlural: ITEM_NAME_PLURAL,
-            ...props,
-        },
-        slots: { item: TEST_ITEM_SLOT },
-        global: {
-            ...localVue,
-            stubs: { ...localVue.stubs, FontAwesomeIcon: true },
-        },
-    }) as ScrollListWrapper;
-}
-
-/** ScrollList keeps the loaded items itself. */
-function mountWithLocalLoader() {
-    const loader = vi.fn(
-        (offset: number, limit: number): Promise<LoaderResult> =>
-            Promise.resolve({ items: TEST_ITEMS.slice(offset, offset + limit), total: TOTAL_ITEMS }),
-    );
-    const wrapper = mountScrollList({ loader, limit: BUFFER_SIZE });
+/** ScrollList keeps the loaded items itself; `loader` spies on the story's pages. */
+function mountWithLocalLoader(story: StoryOf<typeof stories> = stories.PagedFromLoader) {
+    const loader = vi.fn(pageOfItems);
+    const wrapper = findScrollList(mountStory(story, { props: { loader } }));
     return { wrapper, loader };
 }
 
-/**
- * The parent owns the items, as a store would: each load appends a page to `propItems`, and
- * `propTotalCount` also counts items the parent added or removed since the previous load.
- */
-function mountWithStoreLoader() {
-    let expectedItemCount = 0;
-    const loader = vi.fn((offset: number, limit: number): Promise<LoaderResult> => {
-        const page = TEST_ITEMS.slice(offset, offset + limit);
-        const currentItems = wrapper.props().propItems ?? [];
-        const externalChanges = currentItems.length - expectedItemCount;
-        expectedItemCount = currentItems.length + page.length;
-        wrapper.setProps({
-            propItems: [...currentItems, ...page],
-            propTotalCount: TOTAL_ITEMS + externalChanges,
-        });
-        return Promise.resolve({ items: page, total: TOTAL_ITEMS });
-    });
-    const wrapper = mountScrollList({
+/** The story's store owns the items; `loader` spies on the pages it fetches. */
+function mountWithStoreLoader(props: { adjustForTotalCountChanges?: boolean } = {}) {
+    const loader = vi.fn(stories.StoreOwnedItems.args.fetchPage!);
+    const root = mountStory(stories.StoreOwnedItems, { props: { fetchPage: loader, ...props } });
+    return {
+        wrapper: findScrollList(root),
         loader,
-        limit: BUFFER_SIZE,
-        propItems: [],
-        propTotalCount: TOTAL_ITEMS,
-        adjustForTotalCountChanges: false,
-    });
-    return { wrapper, loader };
+        async addItemOutsideLoader() {
+            await root.get(ADD_ITEM_BUTTON).trigger("click");
+            await flushPromises();
+        },
+    };
 }
 
 function loadedText(loaded: number, total: number) {
@@ -125,11 +80,8 @@ function loadedText(loaded: number, total: number) {
 
 describe("ScrollList accessibility", () => {
     it("keeps footer messages out of the list and makes scrolling keyboard reachable", () => {
-        const wrapper = mount(ScrollList as object, {
-            props: { propItems: TEST_ITEMS.slice(0, 2), propTotalCount: 2, itemKey: (item: TestItem) => item.id },
-            slots: { item: TEST_ITEM_SLOT },
-            global: getLocalVue(),
-        });
+        const propItems = stories.GivenItems.args.propItems!.slice(0, 2);
+        const wrapper = mountStory(stories.GivenItems, { props: { propItems, propTotalCount: 2 } });
         expect(wrapper.get(".scroll-list").attributes("tabindex")).toBe("0");
         expect(wrapper.get("[role='list']").findAll("[role='listitem']")).toHaveLength(2);
         expect(wrapper.get(".list-end").element.closest("[role='list']")).toBeNull();
@@ -144,10 +96,10 @@ describe("ScrollList with local loader and data", () => {
         const { wrapper, loader } = mountWithLocalLoader();
 
         await scrollToEnd();
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(BUFFER_SIZE);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(BUFFER_SIZE);
 
         await scrollToEnd(2);
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(BUFFER_SIZE * 3);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(BUFFER_SIZE * 3);
         expect(loader).toHaveBeenCalledTimes(3);
     });
 
@@ -155,11 +107,11 @@ describe("ScrollList with local loader and data", () => {
         const { wrapper, loader } = mountWithLocalLoader();
 
         await scrollToEnd(SCROLLS_TO_LOAD_ALL);
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(TOTAL_ITEMS);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(TOTAL_ITEMS);
         expect(loader).toHaveBeenCalledTimes(SCROLLS_TO_LOAD_ALL);
 
         await scrollToEnd();
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(TOTAL_ITEMS);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(TOTAL_ITEMS);
         expect(loader).toHaveBeenCalledTimes(SCROLLS_TO_LOAD_ALL);
     });
 
@@ -178,7 +130,7 @@ describe("ScrollList with local loader and data", () => {
         await wrapper.find(LOAD_MORE_BUTTON).trigger("click");
         await flushPromises();
         expect(loader).toHaveBeenCalledTimes(3);
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(BUFFER_SIZE * 2);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(BUFFER_SIZE * 2);
     });
 
     it("shows the loaded and total counts with a Load More button while loading", async () => {
@@ -192,8 +144,14 @@ describe("ScrollList with local loader and data", () => {
         expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(true);
     });
 
+    // Toggling a prop on a live mount needs `setProps`, which remounts a composed story, so this mounts
+    // ScrollList directly with the story's args.
     it("replaces the Load More button with an all-loaded footer, showing the count when showCountInFooter is set", async () => {
-        const { wrapper } = mountWithLocalLoader();
+        const wrapper = mount(ScrollList as Component, {
+            props: { ...stories.PagedFromLoader.args },
+            global: getLocalVue(),
+        });
+        onTestFinished(() => wrapper.unmount());
 
         await scrollToEnd(SCROLLS_TO_LOAD_ALL);
         expect(wrapper.text()).toContain(`- All ${ITEM_NAME_PLURAL} loaded -`);
@@ -202,14 +160,22 @@ describe("ScrollList with local loader and data", () => {
         await wrapper.setProps({ showCountInFooter: true });
         expect(wrapper.text()).toContain(`- ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL} loaded -`);
     });
+
+    it("shows the item count in the all-loaded footer from mount", async () => {
+        const { wrapper } = mountWithLocalLoader(stories.CountInFooter);
+
+        await scrollToEnd(SCROLLS_TO_LOAD_ALL);
+        expect(wrapper.text()).toContain(`- ${TOTAL_ITEMS} ${ITEM_NAME_PLURAL} loaded -`);
+        expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(false);
+    });
 });
 
 describe("ScrollList with prop items and no loader", () => {
     it("renders all prop items and requests nothing more on scroll", async () => {
-        const wrapper = mountScrollList({ propItems: TEST_ITEMS, propTotalCount: TOTAL_ITEMS });
+        const wrapper = findScrollList(mountStory(stories.GivenItems));
 
         expect(wrapper.props().propItems).toHaveLength(TOTAL_ITEMS);
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(TOTAL_ITEMS);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(TOTAL_ITEMS);
         expect(wrapper.text()).toContain(`All ${ITEM_NAME_PLURAL} loaded`);
         expect(wrapper.find(LOAD_MORE_BUTTON).exists()).toBe(false);
 
@@ -224,41 +190,64 @@ describe("ScrollList with prop items and a store-backed loader", () => {
         expect(wrapper.props().propItems).toHaveLength(0);
 
         await scrollToEnd();
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(BUFFER_SIZE);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(BUFFER_SIZE);
         expect(wrapper.props().propItems).toHaveLength(BUFFER_SIZE);
         expect(loader).toHaveBeenCalledTimes(1);
 
         await scrollToEnd(2);
-        expect(wrapper.findAll(TEST_ITEM_DIV)).toHaveLength(BUFFER_SIZE * 3);
+        expect(wrapper.findAll(LIST_ITEM)).toHaveLength(BUFFER_SIZE * 3);
         expect(wrapper.props().propItems).toHaveLength(BUFFER_SIZE * 3);
         expect(loader).toHaveBeenCalledTimes(3);
     });
 
-    it("adjusts the total for items added outside the loader only when adjustForTotalCountChanges is set", async () => {
-        const { wrapper, loader } = mountWithStoreLoader();
+    it("adjusts the total for an item added outside the loader until the next load", async () => {
+        const { wrapper, loader, addItemOutsideLoader } = mountWithStoreLoader();
         expect(wrapper.text()).toContain(loadedText(0, TOTAL_ITEMS));
 
         await scrollToEnd();
         expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE, TOTAL_ITEMS));
         expect(loader).toHaveBeenCalledTimes(1);
 
-        // The parent adds an item without updating propTotalCount.
-        await wrapper.setProps({
-            propItems: [...(wrapper.props().propItems ?? []), { id: "extra-item", name: "Extra Item" }],
+        await addItemOutsideLoader();
+        expect(loader).toHaveBeenCalledTimes(1);
+        expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE + 1, TOTAL_ITEMS + 1));
+
+        // The next page's total already counts the added item.
+        await scrollToEnd();
+        expect(loader).toHaveBeenCalledTimes(2);
+        expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE * 2 + 1, TOTAL_ITEMS + 1));
+    });
+
+    // Toggling a prop on a live mount needs `setProps`, which remounts a composed story, so this mounts the
+    // story's harness directly. It passes `adjustForTotalCountChanges` through to ScrollList as an attr.
+    it("recomputes the total when adjustForTotalCountChanges is toggled on a live list", async () => {
+        const loader = vi.fn(stories.StoreOwnedItems.args.fetchPage!);
+        const root = mount(ScrollListStories.ScrollListWithStore as Component, {
+            props: { ...stories.StoreOwnedItems.args, fetchPage: loader, adjustForTotalCountChanges: false },
+            global: getLocalVue(),
         });
+        onTestFinished(() => root.unmount());
+        const wrapper = findScrollList(root);
+        expect(wrapper.text()).toContain(loadedText(0, TOTAL_ITEMS));
+
+        await scrollToEnd();
+        expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE, TOTAL_ITEMS));
+        expect(loader).toHaveBeenCalledTimes(1);
+
+        await root.get(ADD_ITEM_BUTTON).trigger("click");
+        await flushPromises();
         expect(loader).toHaveBeenCalledTimes(1);
         expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE + 1, TOTAL_ITEMS));
 
-        await wrapper.setProps({ adjustForTotalCountChanges: true });
+        await root.setProps({ adjustForTotalCountChanges: true });
         expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE + 1, TOTAL_ITEMS + 1));
 
-        // The next load picks up from the new offset and its total already includes the extra
-        // item, so the counts agree with or without the adjustment.
+        // The next page's total already counts the added item, so the counts agree with or without the adjustment.
         await scrollToEnd();
         expect(loader).toHaveBeenCalledTimes(2);
         expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE * 2 + 1, TOTAL_ITEMS + 1));
 
-        await wrapper.setProps({ adjustForTotalCountChanges: false });
+        await root.setProps({ adjustForTotalCountChanges: false });
         expect(wrapper.text()).toContain(loadedText(BUFFER_SIZE * 2 + 1, TOTAL_ITEMS + 1));
     });
 });
