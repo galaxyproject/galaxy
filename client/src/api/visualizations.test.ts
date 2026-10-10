@@ -1,3 +1,4 @@
+import { getFakeVisualizationSummary } from "@tests/test-data/visualizations";
 import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -6,23 +7,7 @@ import { loadVisualizations, type VisualizationSummary } from "./visualizations"
 
 const { server, http } = useServerMock();
 
-function mockVisualization(id: string, title: string): VisualizationSummary {
-    return {
-        id,
-        title,
-        type: "nvd3_bar",
-        annotation: null,
-        create_time: "2026-01-01T00:00:00",
-        update_time: "2026-01-02T00:00:00",
-        deleted: false,
-        importable: false,
-        published: false,
-        tags: [],
-        username: "test-user",
-    } as VisualizationSummary;
-}
-
-/** Captures the query parameters of the last intercepted index request. */
+/** Captures the query parameters of every intercepted index request. */
 function interceptIndex(visualizations: VisualizationSummary[], totalMatches = "0") {
     const queries: Record<string, string>[] = [];
 
@@ -39,23 +24,28 @@ function interceptIndex(visualizations: VisualizationSummary[], totalMatches = "
 
 describe("loadVisualizations", () => {
     it("requests own visualizations and returns the total matches header", async () => {
-        const expected = [mockVisualization("viz-1", "First"), mockVisualization("viz-2", "Second")];
+        const expected = [
+            getFakeVisualizationSummary({ id: "viz-1", title: "First" }),
+            getFakeVisualizationSummary({ id: "viz-2", title: "Second" }),
+        ];
         const queries = interceptIndex(expected, "17");
 
         const result = await loadVisualizations();
 
         expect(result.data).toEqual(expected);
         expect(result.totalMatches).toBe(17);
-        expect(queries[0]).toMatchObject({
-            limit: "24",
-            offset: "0",
-            search: "",
-            sort_by: "update_time",
-            sort_desc: "true",
-            show_own: "true",
-            show_published: "false",
-            show_shared: "false",
-        });
+        expect(queries).toEqual([
+            expect.objectContaining({
+                limit: "24",
+                offset: "0",
+                search: "",
+                sort_by: "update_time",
+                sort_desc: "true",
+                show_own: "true",
+                show_published: "false",
+                show_shared: "false",
+            }),
+        ]);
     });
 
     it("passes the explicit scope triplet and paging options through", async () => {
@@ -72,16 +62,18 @@ describe("loadVisualizations", () => {
             offset: 10,
         });
 
-        expect(queries[0]).toMatchObject({
-            limit: "5",
-            offset: "10",
-            search: "atac",
-            sort_by: "title",
-            sort_desc: "false",
-            show_own: "false",
-            show_published: "true",
-            show_shared: "true",
-        });
+        expect(queries).toEqual([
+            expect.objectContaining({
+                limit: "5",
+                offset: "10",
+                search: "atac",
+                sort_by: "title",
+                sort_desc: "false",
+                show_own: "false",
+                show_published: "true",
+                show_shared: "true",
+            }),
+        ]);
     });
 
     it("defaults the total matches to zero when the header is missing", async () => {
