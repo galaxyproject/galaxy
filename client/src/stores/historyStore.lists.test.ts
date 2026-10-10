@@ -1,10 +1,11 @@
-import { createPinia, setActivePinia } from "pinia";
+import { deferred } from "@tests/vitest/deferred";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AnyHistoryEntry } from "@/api/histories";
 
 import { sseMockFactory } from "./_testing/sseStoreSupport";
 import { useHistoryStore } from "./historyStore";
+import { setupTestPinia } from "./testUtils";
 
 const sseState = vi.hoisted(() => {
     return {
@@ -54,9 +55,15 @@ function resultOf(histories: AnyHistoryEntry[], total = histories.length) {
     return { data: histories, total };
 }
 
+type HistoryListResult = ReturnType<typeof resultOf>;
+
+function ids(histories: AnyHistoryEntry[]) {
+    return histories.map((history) => history.id);
+}
+
 describe("historyStore — cached history listings", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        setupTestPinia();
         vi.clearAllMocks();
         getSharedHistories.mockResolvedValue(resultOf([]));
         getPublishedHistories.mockResolvedValue(resultOf([]));
@@ -76,8 +83,8 @@ describe("historyStore — cached history listings", () => {
             sortBy: "update_time",
             sortDesc: true,
         });
-        expect(fetched.map((history) => history.id)).toEqual(["h1"]);
-        expect(store.sharedHistories.map((history) => history.id)).toEqual(["h1"]);
+        expect(ids(fetched)).toEqual(["h1"]);
+        expect(ids(store.sharedHistories)).toEqual(["h1"]);
         expect(store.getHistoryListTotal("shared")).toBe(12);
         expect(store.hasLoadedHistoryList("shared")).toBe(true);
     });
@@ -105,7 +112,7 @@ describe("historyStore — cached history listings", () => {
         await store.fetchHistoryList("archived");
 
         expect(getArchivedHistories).toHaveBeenCalledTimes(1);
-        expect(store.archivedHistories.map((history) => history.id)).toEqual(["a1"]);
+        expect(ids(store.archivedHistories)).toEqual(["a1"]);
     });
 
     it("sorts cached entries by update time, most recent first", async () => {
@@ -120,7 +127,7 @@ describe("historyStore — cached history listings", () => {
 
         await store.fetchHistoryList("published");
 
-        expect(store.publishedHistories.map((history) => history.id)).toEqual(["new", "mid", "old"]);
+        expect(ids(store.publishedHistories)).toEqual(["new", "mid", "old"]);
     });
 
     it("merges repeated fetches without duplicating ids", async () => {
@@ -151,7 +158,7 @@ describe("historyStore — cached history listings", () => {
 
         const fetched = await store.fetchHistoryList("published", { search: "rna", record: false });
 
-        expect(fetched.map((history) => history.id)).toEqual(["p1"]);
+        expect(ids(fetched)).toEqual(["p1"]);
         expect(store.listedHistories["p1"]?.name).toBe("Public");
         expect(store.listedHistoryIds.published).toEqual([]);
         expect(store.getHistoryListTotal("published")).toBe(0);
@@ -168,9 +175,7 @@ describe("historyStore — cached history listings", () => {
         await store.fetchHistoryList("shared");
         await store.fetchHistoryList("shared");
 
-        const cached = store.listedHistories["h1"] as AnyHistoryEntry & { owner?: string };
-        expect(cached.owner).toBe("someone");
-        expect(cached.name).toBe("One renamed");
+        expect(store.listedHistories["h1"]).toMatchObject({ owner: "someone", name: "One renamed" });
     });
 
     it("replaces the cached ids of a listing when asked to", async () => {
@@ -225,26 +230,22 @@ describe("historyStore — cached history listings", () => {
         const cached = await store.ensureHistoryListLoaded("shared");
 
         expect(getSharedHistories).toHaveBeenCalledTimes(1);
-        expect(cached.map((history) => history.id)).toEqual(["h1"]);
+        expect(ids(cached)).toEqual(["h1"]);
     });
 
     it("shares a running fetch instead of returning the still empty listing", async () => {
         const store = useHistoryStore();
-        let resolveFetch: (result: { data: AnyHistoryEntry[]; total: number }) => void = () => undefined;
-        getSharedHistories.mockReturnValue(
-            new Promise((resolve) => {
-                resolveFetch = resolve;
-            }),
-        );
+        const sharedResponse = deferred<HistoryListResult>();
+        getSharedHistories.mockReturnValue(sharedResponse.promise);
 
         const hydrating = store.ensureHistoryListLoaded("shared");
         const duringFetch = store.ensureHistoryListLoaded("shared");
-        resolveFetch(resultOf([mockHistory("h1", "One", "2026-01-01T00:00:00")]));
+        sharedResponse.resolve(resultOf([mockHistory("h1", "One", "2026-01-01T00:00:00")]));
         const [first, second] = await Promise.all([hydrating, duringFetch]);
 
         expect(getSharedHistories).toHaveBeenCalledTimes(1);
-        expect(first.map((history) => history.id)).toEqual(["h1"]);
-        expect(second.map((history) => history.id)).toEqual(["h1"]);
+        expect(ids(first)).toEqual(["h1"]);
+        expect(ids(second)).toEqual(["h1"]);
     });
 
     it("deduplicates identical concurrent fetches of a listing", async () => {
@@ -254,34 +255,29 @@ describe("historyStore — cached history listings", () => {
         const [first, second] = await Promise.all([store.fetchHistoryList("shared"), store.fetchHistoryList("shared")]);
 
         expect(getSharedHistories).toHaveBeenCalledTimes(1);
-        expect(first).toEqual(second);
+        expect(second).toBe(first);
+        expect(ids(first)).toEqual(["h1"]);
     });
 
     it("hydrates the canonical listing independently of a one-off search", async () => {
         const store = useHistoryStore();
-        let resolveSearch: (result: { data: AnyHistoryEntry[]; total: number }) => void = () => undefined;
-        let resolveCanonical: (result: { data: AnyHistoryEntry[]; total: number }) => void = () => undefined;
-        getSharedHistories.mockImplementation(({ search }: { search: string }) => {
-            return new Promise((resolve) => {
-                if (search) {
-                    resolveSearch = resolve;
-                } else {
-                    resolveCanonical = resolve;
-                }
-            });
-        });
+        const searchResponse = deferred<HistoryListResult>();
+        const canonicalResponse = deferred<HistoryListResult>();
+        getSharedHistories.mockImplementation(({ search }: { search: string }) =>
+            search ? searchResponse.promise : canonicalResponse.promise,
+        );
 
         const search = store.fetchHistoryList("shared", { search: "needle", record: false });
         const hydration = store.ensureHistoryListLoaded("shared");
 
         expect(getSharedHistories).toHaveBeenCalledTimes(2);
-        resolveSearch(resultOf([mockHistory("search-hit", "Needle", "2026-01-01T00:00:00")], 1));
-        resolveCanonical(resultOf([mockHistory("canonical-hit", "Latest", "2026-02-01T00:00:00")], 5));
+        searchResponse.resolve(resultOf([mockHistory("search-hit", "Needle", "2026-01-01T00:00:00")], 1));
+        canonicalResponse.resolve(resultOf([mockHistory("canonical-hit", "Latest", "2026-02-01T00:00:00")], 5));
         const [, canonical] = await Promise.all([search, hydration]);
 
-        expect(canonical.map((history) => history.id)).toEqual(["canonical-hit"]);
+        expect(ids(canonical)).toEqual(["canonical-hit"]);
         expect(store.listedHistoryIds.shared).toEqual(["canonical-hit"]);
-        expect(store.listedHistories["search-hit"]).toBeDefined();
+        expect(store.listedHistories["search-hit"]).toMatchObject({ name: "Needle" });
         expect(store.getHistoryListTotal("shared")).toBe(5);
         expect(store.hasLoadedHistoryList("shared")).toBe(true);
     });
