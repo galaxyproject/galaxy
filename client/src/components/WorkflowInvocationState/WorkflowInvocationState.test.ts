@@ -5,9 +5,14 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as InvocationStoreModule from "@/stores/invocationStore";
+import type * as WorkflowStoreModule from "@/stores/workflowStore";
+
 import invocationData from "../Workflow/test/json/invocation.json";
 
+import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const localVue = getLocalVue();
 
@@ -20,150 +25,71 @@ vi.mock("vue-router", async (importOriginal) => {
 });
 
 const selectors = {
-    invocationSummary: ".invocation-overview",
-    gAlertStub: "g-alert-stub",
-    spanElement: "span",
-    invocationDebugTab: ".invocation-debug-tab",
-    invocationReportTab: ".invocation-report-tab",
-    invocationExportTab: ".invocation-export-tab",
-    fullPageHeading: "anonymous-stub[h1='true']",
+    debugTab: ".invocation-debug-tab",
+    reportTab: ".invocation-report-tab",
+    exportTab: ".invocation-export-tab",
 };
 
-/** Invocation data to be expected in the store */
-const invocationById = {
-    [invocationData.id]: invocationData,
-    "not-fetched-invocation": null,
-    "non-terminal-id": {
-        ...invocationData,
-        id: "non-terminal-id",
-        state: "new",
-    },
-    "non-terminal-jobs": {
-        ...invocationData,
-        id: "non-terminal-jobs",
-    },
-    "non-terminal-populated-state": {
-        ...invocationData,
-        id: "non-terminal-populated-state",
-    },
-    "non-terminal-error-jobs": {
-        ...invocationData,
-        id: "non-terminal-error-jobs",
-    },
-    "terminal-error-jobs": {
-        ...invocationData,
-        id: "terminal-error-jobs",
-    },
-};
-
-// Jobs summary constants
-const invocationDataJobsSummary = {
+const terminalJobsSummary = {
     model: "WorkflowInvocation",
     states: {},
     populated_state: "ok",
 };
-const invocationJobsSummaryById = {
-    [invocationData.id]: invocationDataJobsSummary,
-    "not-fetched-invocation": null,
-    "non-terminal-id": invocationDataJobsSummary,
-    "non-terminal-jobs": {
-        ...invocationDataJobsSummary,
-        states: {
-            running: 1,
-        },
-    },
-    "non-terminal-populated-state": {
-        ...invocationDataJobsSummary,
-        populated_state: "new",
-    },
-    "non-terminal-error-jobs": {
-        ...invocationDataJobsSummary,
-        states: {
-            running: 1,
-            error: 1,
-        },
-    },
-    "terminal-error-jobs": {
-        ...invocationDataJobsSummary,
-        states: {
-            ok: 1,
-            error: 1,
-        },
-    },
-};
 
-// Mock functions that we'll export for assertions
-const mockFetchInvocationById = vi.fn().mockImplementation((fetchParams) => {
-    if (fetchParams.id === "error-invocation") {
-        throw new Error("User does not own specified item.");
-    }
-});
-const mockFetchInvocationJobsSummaryForId = vi.fn();
+const storedInvocations: Record<string, unknown> = {};
+const storedJobsSummaries: Record<string, unknown> = {};
+const fetchInvocationById = vi.fn();
+const fetchInvocationJobsSummaryForId = vi.fn();
 
-// Mock the invocation store to return the expected invocation data given the invocation ID
 vi.mock("@/stores/invocationStore", async () => {
-    const originalModule = await vi.importActual("@/stores/invocationStore");
+    const originalModule = await vi.importActual<typeof InvocationStoreModule>("@/stores/invocationStore");
     return {
         ...originalModule,
         useInvocationStore: () => ({
-            ...(originalModule as any).useInvocationStore(),
-            getInvocationById: vi.fn().mockImplementation((invocationId) => {
-                return invocationById[invocationId];
-            }),
-            getInvocationJobsSummaryById: vi.fn().mockImplementation((invocationId) => {
-                return invocationJobsSummaryById[invocationId];
-            }),
-            getInvocationStepJobsSummaryById: vi.fn().mockImplementation(() => {
-                return [
-                    {
-                        id: "job-id",
-                        model: "Job",
-                        populated_state: "ok",
-                        states: {
-                            ok: 1,
-                        },
-                    },
-                ];
-            }),
-            fetchInvocationById: mockFetchInvocationById,
-            fetchInvocationJobsSummaryForId: mockFetchInvocationJobsSummaryForId,
+            ...originalModule.useInvocationStore(),
+            getInvocationById: (invocationId: string) => storedInvocations[invocationId],
+            getInvocationJobsSummaryById: (invocationId: string) => storedJobsSummaries[invocationId],
+            getInvocationStepJobsSummaryById: () => [
+                { id: "job-id", model: "Job", populated_state: "ok", states: { ok: 1 } },
+            ],
+            fetchInvocationById,
+            fetchInvocationJobsSummaryForId,
         }),
     };
 });
 
-// Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
 vi.mock("@/stores/workflowStore", async () => {
-    const originalModule = await vi.importActual("@/stores/workflowStore");
+    const originalModule = await vi.importActual<typeof WorkflowStoreModule>("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
-            ...(originalModule as any).useWorkflowStore(),
-            getStoredWorkflowByInstanceId: vi.fn().mockImplementation(() => {
-                return {
-                    id: "workflow-id",
-                    name: "Test Workflow",
-                    version: 0,
-                };
-            }),
+            ...originalModule.useWorkflowStore(),
+            getStoredWorkflowByInstanceId: () => ({ id: "workflow-id", name: "Test Workflow", version: 0 }),
         }),
     };
 });
 
-/** Mount the WorkflowInvocationState component with the given invocation ID
- * @param invocationId The invocation ID to be passed as a prop
- * @param shallow Whether to use shallowMount or mount
- * @param fullPage Whether to render the header as well or just the invocation state tabs
- * @returns The mounted wrapper
- */
-async function mountWorkflowInvocationState(invocationId: string, isFullPage = false) {
+beforeEach(() => {
+    for (const id of Object.keys(storedInvocations)) {
+        delete storedInvocations[id];
+        delete storedJobsSummaries[id];
+    }
+    fetchInvocationById.mockReset();
+    fetchInvocationJobsSummaryForId.mockReset();
+});
+
+/** Puts a copy of the scheduled `invocationData` with `id` and `overrides`, plus its jobs summary, in the store */
+function storeInvocation(id: string, jobsSummary: object, overrides: object = {}) {
+    storedInvocations[id] = { ...invocationData, id, ...overrides };
+    storedJobsSummaries[id] = jobsSummary;
+}
+
+async function mountWorkflowInvocationState(invocationId: string, { isFullPage = false } = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = shallowMount(WorkflowInvocationState as object, {
-        props: {
-            invocationId,
-            isFullPage,
-        },
+        props: { invocationId, isFullPage },
         pinia,
         global: localVue,
     });
@@ -171,125 +97,118 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
     return wrapper;
 }
 
-describe("WorkflowInvocationState check invocation and job terminal states", () => {
-    beforeEach(() => {
-        mockFetchInvocationById.mockClear();
-        mockFetchInvocationJobsSummaryForId.mockClear();
-    });
+/** The terminal state the component reports to its overview */
+function overviewTerminalState(wrapper: VueWrapper) {
+    return wrapper.findComponent(WorkflowInvocationOverview).props("invocationAndJobTerminal");
+}
 
-    it("determines that invocation and job states are terminal with terminal invocation", async () => {
+describe("WorkflowInvocationState terminal state and polling", () => {
+    it("reports a scheduled invocation with terminal jobs as terminal and fetches it once without its jobs summary", async () => {
+        storeInvocation(invocationData.id, terminalJobsSummary);
+
         const wrapper = await mountWorkflowInvocationState(invocationData.id);
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
 
-        // Invocation is fetched once and the jobs summary isn't fetched at all for terminal invocations
-        assertInvocationFetched(1);
-        assertJobsSummaryFetched(0);
+        expect(overviewTerminalState(wrapper)).toBe(true);
+        expect(fetchInvocationById).toHaveBeenCalledTimes(1);
+        expect(fetchInvocationById).toHaveBeenCalledWith({ id: invocationData.id });
+        expect(fetchInvocationJobsSummaryForId).not.toHaveBeenCalled();
     });
 
-    it("determines that invocation and job states are not terminal with no fetched invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("not-fetched-invocation");
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+    it("polls a new invocation once after the initial fetch without fetching its jobs summary", async () => {
+        storeInvocation("non-terminal-id", terminalJobsSummary, { state: "new" });
 
-        // Invocation is fetched once and the jobs summary is then never fetched if the invocation is not in the store
-        assertInvocationFetched(1);
-        assertJobsSummaryFetched(0);
-
-        // expect there to be an alert for the missing invocation
-        const alert = wrapper.find(selectors.gAlertStub);
-        expect(alert.attributes("variant")).toBe("info");
-        const span = alert.find(selectors.spanElement);
-        expect(span.text()).toBe("Invocation not found.");
-    });
-
-    it("determines that invocation is not terminal with non-terminal state", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-id");
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the invocation is fetched for non-terminal invocations; once for the initial fetch and then for the polling
-        assertInvocationFetched(2);
-        assertJobsSummaryFetched(0);
+        expect(overviewTerminalState(wrapper)).toBe(false);
+        expect(fetchInvocationById).toHaveBeenCalledTimes(2);
+        expect(fetchInvocationJobsSummaryForId).not.toHaveBeenCalled();
     });
 
-    it("determines that job states are not terminal with non-terminal jobs but scheduled invocation", async () => {
+    it("polls only the jobs summary of a scheduled invocation with a running job", async () => {
+        storeInvocation("non-terminal-jobs", { ...terminalJobsSummary, states: { running: 1 } });
+
         const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
-        assertInvocationFetched(1);
-        assertJobsSummaryFetched(1);
+        expect(overviewTerminalState(wrapper)).toBe(false);
+        expect(fetchInvocationById).toHaveBeenCalledTimes(1);
+        expect(fetchInvocationJobsSummaryForId).toHaveBeenCalledTimes(1);
+        expect(fetchInvocationJobsSummaryForId).toHaveBeenCalledWith({ id: "non-terminal-jobs" });
     });
 
-    it("determines that job states are not terminal with non-terminal populated state for summary", async () => {
+    it("polls only the jobs summary of a scheduled invocation whose jobs are still being populated", async () => {
+        storeInvocation("non-terminal-populated-state", { ...terminalJobsSummary, populated_state: "new" });
+
         const wrapper = await mountWorkflowInvocationState("non-terminal-populated-state");
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
-        assertInvocationFetched(1);
-        assertJobsSummaryFetched(1);
+        expect(overviewTerminalState(wrapper)).toBe(false);
+        expect(fetchInvocationById).toHaveBeenCalledTimes(1);
+        expect(fetchInvocationJobsSummaryForId).toHaveBeenCalledTimes(1);
     });
 
-    it("determines that errored invocation fetches are handled correctly", async () => {
+    it("shows an info alert and fetches no jobs summary when the fetched invocation is not in the store", async () => {
+        storedInvocations["not-fetched-invocation"] = null;
+        storedJobsSummaries["not-fetched-invocation"] = null;
+
+        const wrapper = await mountWorkflowInvocationState("not-fetched-invocation");
+
+        expect(wrapper.findComponent(WorkflowInvocationOverview).exists()).toBe(false);
+        expect(fetchInvocationById).toHaveBeenCalledTimes(1);
+        expect(fetchInvocationJobsSummaryForId).not.toHaveBeenCalled();
+        const alert = wrapper.findComponent(GAlert);
+        expect(alert.attributes("variant")).toBe("info");
+        expect(alert.find("span").text()).toBe("Invocation not found.");
+    });
+
+    it("shows the error of a failed invocation fetch as a danger alert and fetches no jobs summary", async () => {
+        fetchInvocationById.mockImplementation(() => {
+            throw new Error("User does not own specified item.");
+        });
+
         const wrapper = await mountWorkflowInvocationState("error-invocation");
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Invocation is fetched once and the jobs summary isn't fetched at all for errored invocations
-        assertInvocationFetched(1);
-        assertJobsSummaryFetched(0);
-
-        // expect there to be an alert for the handled error
-        const alert = wrapper.find(selectors.gAlertStub);
+        expect(wrapper.findComponent(WorkflowInvocationOverview).exists()).toBe(false);
+        expect(fetchInvocationById).toHaveBeenCalledTimes(1);
+        expect(fetchInvocationJobsSummaryForId).not.toHaveBeenCalled();
+        const alert = wrapper.findComponent(GAlert);
         expect(alert.attributes("variant")).toBe("danger");
         expect(alert.text()).toBe("User does not own specified item.");
     });
 });
 
-describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state and header", () => {
-    it("for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-id", true);
-        const reportTab = wrapper.find(selectors.invocationReportTab);
-        expect(reportTab.attributes("disabled")).toBe("true");
-        const exportTab = wrapper.find(selectors.invocationExportTab);
-        expect(exportTab.attributes("disabled")).toBe("true");
+describe("WorkflowInvocationState full page tabs", () => {
+    it("disables the Report and Export tabs of a new invocation", async () => {
+        storeInvocation("non-terminal-id", terminalJobsSummary, { state: "new" });
+
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id", { isFullPage: true });
+
+        expect(wrapper.find(selectors.reportTab).attributes("disabled")).toBe("true");
+        expect(wrapper.find(selectors.exportTab).attributes("disabled")).toBe("true");
     });
-    it("for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id, true);
-        const reportTab = wrapper.find(selectors.invocationReportTab);
-        expect(reportTab.attributes("disabled")).toBeUndefined();
-        const exportTab = wrapper.find(selectors.invocationExportTab);
-        expect(exportTab.attributes("disabled")).toBeUndefined();
+
+    it("enables the Report and Export tabs of a scheduled invocation with terminal jobs", async () => {
+        storeInvocation(invocationData.id, terminalJobsSummary);
+
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, { isFullPage: true });
+
+        expect(wrapper.find(selectors.reportTab).attributes("disabled")).toBeUndefined();
+        expect(wrapper.find(selectors.exportTab).attributes("disabled")).toBeUndefined();
+    });
+
+    it("hides the Debug tab while an invocation with a failed job still has a running job", async () => {
+        storeInvocation("non-terminal-error-jobs", { ...terminalJobsSummary, states: { running: 1, error: 1 } });
+
+        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs", { isFullPage: true });
+
+        expect(overviewTerminalState(wrapper)).toBe(false);
+        expect(wrapper.find(selectors.debugTab).exists()).toBe(false);
+    });
+
+    it("shows the Debug tab once an invocation with a failed job is terminal", async () => {
+        storeInvocation("terminal-error-jobs", { ...terminalJobsSummary, states: { ok: 1, error: 1 } });
+
+        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs", { isFullPage: true });
+
+        expect(overviewTerminalState(wrapper)).toBe(true);
+        expect(wrapper.find(selectors.debugTab).exists()).toBe(true);
     });
 });
-
-describe("WorkflowInvocationState check 'Debug' tab", () => {
-    it("does not exist for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs", true);
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
-        expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(false);
-    });
-
-    it("exists for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs", true);
-        expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
-        expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(true);
-    });
-});
-
-/**
- * This is a somewhat hacky way to determine if the invocation and job states are terminal without
- * exposing the internals of the component. This is just to restore the previous behavior of the test
- * and it only uses the wrapper to check the props of the invocation summary component.
- */
-function isInvocationAndJobTerminal(wrapper: VueWrapper): boolean {
-    const invocationSummary = wrapper.find(selectors.invocationSummary);
-    return invocationSummary.exists() && invocationSummary.html().includes('invocationandjobterminal="true"');
-}
-
-/** Asserts that the invocation was fetched in the store the given number of times */
-function assertInvocationFetched(count = 1) {
-    expect(mockFetchInvocationById).toHaveBeenCalledTimes(count);
-}
-
-/** Asserts that the jobs summary was fetched in the store the given number of times */
-function assertJobsSummaryFetched(count = 1) {
-    expect(mockFetchInvocationJobsSummaryForId).toHaveBeenCalledTimes(count);
-}
