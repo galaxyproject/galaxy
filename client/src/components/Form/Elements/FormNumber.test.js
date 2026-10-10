@@ -1,186 +1,96 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import FormNumber from "./FormNumber.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
+
+function mountFormNumber(props) {
+    return shallowMount(FormNumber, {
+        props,
+        global: {
+            ...getLocalVue(),
+            stubs: { BRow: false, BCol: false, BFormInput: false, GAlert: false },
+        },
+    });
+}
+
+const NUMBER_INPUT = "input[type='number']";
+const RANGE_INPUT = "input[type='range']";
 
 describe("FormNumber", () => {
-    const mountFormNumber = async (props) =>
-        await mount(FormNumber, {
-            props: props,
-            global: localVue,
-        });
-
-    const getInput = async (wrapper) => await wrapper.find("input[type='number']");
-    const getInputRange = async (wrapper) => await wrapper.find("input[type='range']");
-    const getAlert = async (wrapper) => await wrapper.find(".alert");
-
-    it("renders a number input with appropriate type", async () => {
-        const wrapperFloat = await mountFormNumber({ value: 1, type: "float" });
-        const inputFloat = await getInput(wrapperFloat);
-        expect(inputFloat.exists()).toBe(true);
-        wrapperFloat.unmount();
-
-        const wrapperInteger = await mountFormNumber({ value: 1, type: "integer" });
-        const inputInteger = await getInput(wrapperInteger);
-        expect(inputInteger.exists()).toBe(true);
-        wrapperInteger.unmount();
+    it.each(["float", "integer"])("renders a number input for %s values", (type) => {
+        const wrapper = mountFormNumber({ value: 1, type });
+        expect(wrapper.find(NUMBER_INPUT).exists()).toBe(true);
     });
 
-    it("renders a range input only when both min and max are defined and max > min", async () => {
-        const assertRange = async (props, shouldExist) => {
-            const wrapper = await mountFormNumber(props);
-
-            const inputRange = await getInputRange(wrapper);
-            expect(inputRange.exists()).toBe(shouldExist);
-            wrapper.unmount();
-        };
-
-        const props = { value: 50, type: "float" };
-        // if min or max is not defined, range shouldn't be rendered
-        await assertRange(props, false);
-        props.min = 1;
-        await assertRange(props, false);
-        props.max = 100;
-        await assertRange(props, true);
-        // test usecase: range should be rendered on 0
-        props.min = 0;
-        await assertRange(props, true);
-        // test usecase: if max < min range shouldn't be rendered
-        props.max = -100;
-        await assertRange(props, false);
+    it.each([
+        { name: "no bounds", bounds: {}, hasRange: false },
+        { name: "only a minimum", bounds: { min: 1 }, hasRange: false },
+        { name: "increasing bounds", bounds: { min: 1, max: 100 }, hasRange: true },
+        { name: "a zero minimum", bounds: { min: 0, max: 100 }, hasRange: true },
+        { name: "a maximum below the minimum", bounds: { min: 0, max: -100 }, hasRange: false },
+    ])("renders a slider: $name", ({ bounds, hasRange }) => {
+        const wrapper = mountFormNumber({ value: 50, type: "float", ...bounds });
+        expect(wrapper.find(RANGE_INPUT).exists()).toBe(hasRange);
     });
 
-    it("shows an alert when the entered value is outside the defined min/max range", async () => {
-        const checkOutOfRangeAlert = async (number) => {
-            const props = { value: 50, type: "float", min: 10, max: 100 };
-            const wrapper = await mountFormNumber(props);
-            const input = await getInput(wrapper);
-            await input.setValue(number);
+    it.each([1, 0, -1, Number.MIN_VALUE, 110, Number.MAX_VALUE])(
+        "warns when %s is outside the range 10–100",
+        async (value) => {
+            const wrapper = mountFormNumber({ value: 50, type: "float", min: 10, max: 100 });
+            const input = wrapper.find(NUMBER_INPUT);
+            await input.setValue(value);
             await input.trigger("change");
-            const alert = await getAlert(wrapper);
-            expect(alert.exists()).toBeTruthy();
-            expect(alert.text().includes(`${number} is out`)).toBeTruthy();
-            wrapper.unmount();
-        };
 
-        const numberBiggerThanRange = [110, Number.MAX_VALUE];
-        const numberSmallerThanRange = [1, 0, -1, Number.MIN_VALUE];
+            const alert = wrapper.find(".alert");
+            expect(alert.exists()).toBe(true);
+            expect(alert.text()).toContain(`${value} is out`);
+        },
+    );
 
-        //alert should be shown
-        for (const value of numberSmallerThanRange) {
-            await checkOutOfRangeAlert(value);
-        }
-        for (const value of numberBiggerThanRange) {
-            await checkOutOfRangeAlert(value);
-        }
+    it("warns when a decimal point is entered into a bounded integer input", async () => {
+        const wrapper = mountFormNumber({ value: 50, type: "integer", min: 10, max: 100 });
+        await wrapper.find(NUMBER_INPUT).trigger("keypress", { key: "." });
+        expect(wrapper.find(".alert").exists()).toBe(true);
     });
 
-    it("shows a validation alert when entering a decimal for integer type", async () => {
-        const checkFractionsAlert = async (key) => {
-            const wrapper = await mountFormNumber(props);
-            const input = await getInput(wrapper);
-
-            await input.trigger("keypress", {
-                key: key,
-            });
-
-            await flushPromises();
-
-            const alert = await getAlert(wrapper);
-            expect(alert.exists()).toBeTruthy();
-            wrapper.unmount();
-        };
-
-        const props = { value: 50, type: "integer", min: 10, max: 100 };
-        const keys = ["."];
-
-        for (const key of keys) {
-            await checkFractionsAlert(key);
-        }
-    });
-
-    it("blocks '.' for integer type", async () => {
-        const integerWrapper = await mountFormNumber({ value: "", type: "integer" });
-        const integerInput = await getInput(integerWrapper);
-
-        const preventDefaultInteger = vi.fn();
-        await integerInput.trigger("keypress", {
-            key: ".",
-            preventDefault: preventDefaultInteger,
-        });
-
-        expect(preventDefaultInteger).toHaveBeenCalled();
-        integerWrapper.unmount();
-    });
-
-    it("allows '.' for float type", async () => {
-        const floatWrapper = await mountFormNumber({ value: "", type: "float" });
-        const floatInput = await getInput(floatWrapper);
-
-        const preventDefaultFloat = vi.fn();
-        await floatInput.trigger("keypress", {
-            key: ".",
-            preventDefault: preventDefaultFloat,
-        });
-
-        expect(preventDefaultFloat).not.toHaveBeenCalled();
-        floatWrapper.unmount();
-    });
-
-    it("allows typing '-' when negative numbers are permitted", async () => {
-        const props = { value: "", type: "float" };
-        const wrapper = await mountFormNumber(props);
-        const input = await getInput(wrapper);
-
-        const preventDefault = vi.fn();
-        await input.trigger("keypress", {
+    it.each([
+        { name: "decimal points in integer inputs", type: "integer", key: ".", bounds: {}, blocked: true },
+        { name: "decimal points in float inputs", type: "float", key: ".", bounds: {}, blocked: false },
+        { name: "minus signs without a minimum", type: "float", key: "-", bounds: {}, blocked: false },
+        {
+            name: "minus signs with a non-negative minimum",
+            type: "float",
             key: "-",
-            preventDefault,
-        });
-
-        expect(preventDefault).not.toHaveBeenCalled();
-        wrapper.unmount();
-    });
-
-    it("blocks typing '-' when min is non-negative", async () => {
-        const props = { value: "", type: "float", min: 0, max: 100 };
-        const wrapper = await mountFormNumber(props);
-        const input = await getInput(wrapper);
-
+            bounds: { min: 0, max: 100 },
+            blocked: true,
+        },
+    ])("validates $name", async ({ type, key, bounds, blocked }) => {
+        const wrapper = mountFormNumber({ value: "", type, ...bounds });
         const preventDefault = vi.fn();
-        await input.trigger("keypress", {
-            key: "-",
-            preventDefault,
-        });
+        await wrapper.find(NUMBER_INPUT).trigger("keypress", { key, preventDefault });
 
-        expect(preventDefault).toHaveBeenCalled();
-        wrapper.unmount();
+        if (blocked) {
+            expect(preventDefault).toHaveBeenCalled();
+        } else {
+            expect(preventDefault).not.toHaveBeenCalled();
+        }
     });
 
-    it("computes the correct step value based on float precision", async () => {
-        const expectStep = async (value, expectedStep) => {
-            const props = { value: value, type: "float", min: 0, max: 1 };
-            const wrapper = await mountFormNumber(props);
-            expect(wrapper.vm.step).toBe(expectedStep);
-        };
-
-        //minimum step 0.1 - maximum step 0.001
-        const testValues = [
-            { value: undefined, step: 0.1 },
-            { value: "", step: 0.1 },
-            { value: 0, step: 0.1 },
-            { value: 0.5, step: 0.1 },
-            { value: 0.55, step: 0.01 },
-            { value: 0.555, step: 0.001 },
-            { value: 0.5555, step: 0.001 },
-            { value: 25e-100, step: 0.001 },
-        ];
-        for (let index = 0; index < testValues.length; index++) {
-            expectStep(testValues[index].value, testValues[index].step);
-        }
+    it.each([
+        { name: "undefined", value: undefined, step: "0.1" },
+        { name: "empty string", value: "", step: "0.1" },
+        { name: "zero", value: 0, step: "0.1" },
+        { name: "one decimal place", value: 0.5, step: "0.1" },
+        { name: "two decimal places", value: 0.55, step: "0.01" },
+        { name: "three decimal places", value: 0.555, step: "0.001" },
+        { name: "four decimal places", value: 0.5555, step: "0.001" },
+        { name: "scientific notation", value: 25e-100, step: "0.001" },
+    ])("sets the rendered float step for $name", ({ value, step }) => {
+        const wrapper = mountFormNumber({ value, type: "float", min: 0, max: 1 });
+        expect(wrapper.find(NUMBER_INPUT).attributes("step")).toBe(step);
+        expect(wrapper.find(RANGE_INPUT).attributes("step")).toBe(step);
     });
 });
