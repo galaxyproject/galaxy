@@ -4,26 +4,21 @@ import { describe, expect, it } from "vitest";
 
 import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
 
-const localVue = getLocalVue();
-
 describe("ObjectStoreRestrictionSpan", () => {
-    let wrapper;
+    it.each([
+        { isPrivate: true, text: "private", explanation: "restricted to a single user" },
+        { isPrivate: false, text: "sharable", explanation: "allows standard Galaxy sharing features" },
+    ])(
+        "labels storage as $text and explains it on hover when isPrivate is $isPrivate",
+        ({ isPrivate, text, explanation }) => {
+            const wrapper = shallowMount(ObjectStoreRestrictionSpan, {
+                props: { isPrivate },
+                global: getLocalVue(),
+            });
 
-    it("should render info about private storage if isPrivate", () => {
-        wrapper = shallowMount(ObjectStoreRestrictionSpan, {
-            props: { isPrivate: true },
-            global: localVue,
-        });
-        expect(wrapper.find(".stored-how").text()).toMatch("private");
-        expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
-    });
-
-    it("should render info about unrestricted storage if not isPrivate", () => {
-        wrapper = shallowMount(ObjectStoreRestrictionSpan, {
-            props: { isPrivate: false },
-            global: localVue,
-        });
-        expect(wrapper.find(".stored-how").text()).toMatch("sharable");
-        expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
-    });
+            const span = wrapper.get(".stored-how");
+            expect(span.text()).toBe(text);
+            expect(span.attributes("title")).toContain(explanation);
+        },
+    );
 });
