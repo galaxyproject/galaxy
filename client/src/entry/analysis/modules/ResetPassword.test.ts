@@ -41,7 +41,7 @@ describe("ResetPassword", () => {
     it("renders the localized submit label", () => {
         const wrapper = mountResetPassword();
         const submitButton = wrapper.find("#reset-password");
-        (expect(submitButton.text()) as any).toBeLocalizationOf("Send password reset email");
+        expect(submitButton.text()).toBeLocalizationOf("Send password reset email");
     });
 
     it("uses native email validation", async () => {
