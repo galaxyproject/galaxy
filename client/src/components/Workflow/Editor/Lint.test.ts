@@ -1,5 +1,5 @@
 import { composeStories } from "@storybook/vue3-vite";
-import { emittedArg, nth } from "@tests/vitest/helpers";
+import { emittedArg } from "@tests/vitest/helpers";
 import { useStoryMount } from "@tests/vitest/stories";
 import type { VueWrapper } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
@@ -15,41 +15,9 @@ import Lint from "./Lint.vue";
 const stories = composeStories(LintStories);
 const mountStory = useStoryMount();
 
+// What the review lists, and its fix-all link, are checked in the stories' play functions. The
+// actions a fix emits have no visible result here, and a store edit on a live mount isn't a story.
 describe("Lint", () => {
-    it("shows four passing checks, five warnings, and the warning links in order", () => {
-        const wrapper = mountStory(stories.InputDisconnected);
-        /** Passing: 4
-         * - Critical: Has unique labels;
-         * - Non-critical: Has annotation, creator and license
-         */
-        const numLintChecksPassing = 4;
-        const checked = wrapper.findAll("[data-description='lint okay section']");
-        expect(checked.length).toBe(numLintChecksPassing);
-
-        /** Failing: 5
-         * - Critical: untypedParameters, disconnectedInputs, missingMetadata, unlabeledOutputs
-         * - Non-critical: No readme
-         */
-        const numLintChecksFailing = 5;
-        const unchecked = wrapper.findAll("[data-description='lint warning section']");
-        expect(unchecked.length).toBe(numLintChecksFailing);
-
-        const links = wrapper.findAll("[data-description='autofix item link']");
-        // Only the autofix-able issues have links
-        expect(links.length).toBeGreaterThanOrEqual(4);
-
-        // Check the order of warnings as they appear in the rendered output
-        expect(nth(links, 0).text().toLowerCase()).toContain("untyped_parameter");
-        expect(nth(links, 1).text().toLowerCase()).toContain("step label: input_label");
-        expect(nth(links, 2).text().toLowerCase()).toContain("data input: missing an annotation");
-        expect(nth(links, 3).text().toLowerCase()).toContain("step label: output");
-
-        // Only 1 non-critical, attribute-related issue
-        const attributeLink = wrapper.findAll("[data-description='attribute link']");
-        expect(attributeLink.length).toBe(1);
-        expect(nth(attributeLink, 0).text().toLowerCase()).toContain("provide readme for your workflow");
-    });
-
     it("emits parameter extraction, input extraction, and unlabeled-output removal actions", async () => {
         const wrapper = mountStory(stories.InputDisconnected);
         const autoFixButton = wrapper.find("[data-description='auto fix lint issues']");
