@@ -118,7 +118,12 @@ const message = computed<string>(() => {
             <FontAwesomeIcon v-if="badgeType == 'cloud'" :icon="faCloud" :class="neutral" />
         </FontAwesomeLayers>
     </component>
-    <GPopover :target="() => trigger" :interactive="interactive && !!message" triggers="hover" placement="top">
+    <GPopover
+        :target="() => trigger"
+        :interactive="interactive && !!message"
+        :aria-label="stockMessage"
+        triggers="hover"
+        placement="top">
         <p>{{ stockMessage }}</p>
         <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
     </GPopover>
@@ -131,6 +136,7 @@ button.object-store-badge-wrapper {
     background: none;
     color: inherit;
     line-height: inherit;
+    cursor: default;
 }
 
 .reduced-opacity {

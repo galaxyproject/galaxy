@@ -47,7 +47,7 @@ describe("vGTooltip", () => {
     }
 
     describe("HTML content", () => {
-        // DOMPurify misbehaves under happy-dom, so it passes content through here; E2E covers real sanitizing.
+        // DOMPurify misbehaves under happy-dom, so it passes content through, like the global sanitizeHtml mock.
         beforeEach(() => {
             vi.spyOn(purify, "sanitize").mockImplementation((html) => String(html));
         });

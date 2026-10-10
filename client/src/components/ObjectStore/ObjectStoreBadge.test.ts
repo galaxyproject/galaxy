@@ -87,7 +87,10 @@ describe("ObjectStoreBadge popover", () => {
         );
         expect(trigger.element.tagName).toBe("BUTTON");
         expect(trigger.attributes("aria-label")).toBe(MESSAGES.short_term);
+        expect(trigger.attributes("aria-haspopup")).toBe("dialog");
+        expect(trigger.attributes("aria-controls")).toBe(popover.id);
         expect(popover.getAttribute("role")).toBe("dialog");
+        expect(popover.getAttribute("aria-label")).toBe(MESSAGES.short_term);
         const paragraphs = Array.from(popover.querySelectorAll("p")).map((p) => p.textContent);
         expect(paragraphs).toEqual([MESSAGES.short_term, "Read our policy on the Archive Tier Storage page."]);
         expect(popover.textContent).not.toContain("<p>");
@@ -99,6 +102,7 @@ describe("ObjectStoreBadge popover", () => {
         const { trigger, popover } = await hoverBadge(null);
         expect(trigger.element.tagName).toBe("BUTTON");
         expect(popover.getAttribute("role")).toBe("tooltip");
+        expect(trigger.attributes("aria-describedby")).toBe(popover.id);
         const paragraphs = Array.from(popover.querySelectorAll("p")).map((p) => p.textContent);
         expect(paragraphs).toEqual([MESSAGES.short_term]);
     });
@@ -109,6 +113,7 @@ describe("ObjectStoreBadge popover", () => {
         expect(trigger.attributes("tabindex")).toBeUndefined();
         expect(trigger.attributes("aria-label")).toBe(MESSAGES.short_term);
         expect(popover.getAttribute("role")).toBe("tooltip");
+        expect(trigger.attributes("aria-describedby")).toBe(popover.id);
         expect(popover.textContent).toContain("The data stored here is purged after a month.");
     });
 });
