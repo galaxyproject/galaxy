@@ -9,7 +9,7 @@ import Multiselect from "vue-multiselect";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useEventStore } from "@/stores/eventStore";
-import { useHistoryStore } from "@/stores/historyStore";
+import { seedCurrentHistory } from "@/stores/testUtils";
 
 import SelectionField from "./SelectionField.vue";
 
@@ -45,14 +45,8 @@ function serveDatasets({ datasets = [DATASET], errorMessage = null } = {}) {
 
 /** Mounts a dataset selection field with `HISTORY_ID` as the current history. */
 function mountSelectionField(props = {}) {
-    const pinia = createTestingPinia({
-        createSpy: vi.fn,
-        stubActions: false,
-        initialState: {
-            historyStore: { storedHistories: { [HISTORY_ID]: getFakeHistorySummary({ id: HISTORY_ID }) } },
-        },
-    });
-    useHistoryStore(pinia).setCurrentHistoryId(HISTORY_ID);
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    seedCurrentHistory(getFakeHistorySummary({ id: HISTORY_ID }), pinia);
     const wrapper = mount(SelectionField, {
         global: withPlugins(localVue, pinia),
         props: { objectType: "history_dataset_id", ...props },
