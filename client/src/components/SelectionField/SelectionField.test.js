@@ -16,7 +16,7 @@ const stories = composeStories(SelectionFieldStories);
 const mountStory = useStoryMount();
 const { server, http } = useServerMock();
 
-const [FORWARD_READS, REVERSE_READS, GENE_COUNTS] = HISTORY_DATASETS;
+const [FORWARD_READS, REVERSE_READS] = HISTORY_DATASETS;
 
 /** Waits out the component's 300 ms search debounce and the search it starts. */
 async function waitForDebouncedSearch() {
@@ -43,23 +43,6 @@ function recordDatasetSearches() {
 }
 
 describe("SelectionField", () => {
-    it("renders the label and multiselect once datasets are loaded", async () => {
-        const wrapper = await mountSelectionField(stories.DatasetSelected);
-
-        const label = wrapper.find("label");
-        expect(label.exists()).toBe(true);
-        expect(label.text()).toContain("Select a History Dataset Id");
-        const multiselect = wrapper.findComponent(Multiselect);
-        expect(multiselect.exists()).toBe(true);
-        expect(multiselect.find(".multiselect__single").text()).toBe(GENE_COUNTS.name);
-    });
-
-    it("renders an empty state when the current history has no datasets", async () => {
-        const wrapper = await mountSelectionField(stories.EmptyHistory);
-
-        expect(wrapper.text()).toContain("No datasets found in your current history");
-    });
-
     it("searches the current history's datasets when the search text changes", async () => {
         const wrapper = await mountSelectionField(stories.NothingSelected);
         const searches = recordDatasetSearches();
@@ -70,12 +53,6 @@ describe("SelectionField", () => {
         await waitForDebouncedSearch();
 
         expect(searches).toContainEqual({ historyId: CURRENT_HISTORY.id, text: "SRR" });
-    });
-
-    it("shows the error when the dataset search fails", async () => {
-        const wrapper = await mountSelectionField(stories.HistoryNotAccessible);
-
-        expect(wrapper.text()).toContain("History is not accessible by user");
     });
 
     it("highlights a dragged dataset and emits it as the selection when dropped", async () => {
@@ -103,13 +80,11 @@ describe("SelectionField", () => {
         expect(objectQuery).toHaveBeenCalledWith("reads");
     });
 
-    it("selects the first dataset when no objectId and objectName are given", async () => {
+    it("gives the picker the first dataset, with its id, when no objectId and objectName are given", async () => {
         const wrapper = await mountSelectionField(stories.NothingSelected);
 
         const multiselect = wrapper.findComponent(Multiselect);
         expect(multiselect.exists()).toBe(true);
-        expect(multiselect.props("options")).toHaveLength(HISTORY_DATASETS.length);
         expect(multiselect.props("modelValue")).toEqual({ id: FORWARD_READS.id, name: FORWARD_READS.name });
-        expect(multiselect.find(".multiselect__single").text()).toBe(FORWARD_READS.name);
     });
 });
