@@ -13,6 +13,7 @@ from galaxy.files.uris import (
 )
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_validate_local_ip_access():
     assert validates_as_non_local("http://google.com", [])
     assert not validates_as_non_local("http://127.0.0.1/secrets.txt", [])
@@ -24,6 +25,7 @@ def test_validate_local_ip_access():
     )
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_validate():
     # Check the non local ip address checks from above...
     assert validates("http://google.com", False, [])
@@ -57,6 +59,7 @@ def test_validate_non_local_rejects_malformed_host(bad_url):
         validate_non_local(bad_url, [])
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_validate_non_local_strips_surrounding_whitespace():
     # Leading whitespace was already tolerated; trailing whitespace used to
     # slip through to getaddrinfo and raise an opaque error.
