@@ -1,23 +1,22 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeHistorySummary } from "@tests/test-data";
-import { getFakeDatasetSummary } from "@tests/test-data/datasets";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 import Multiselect from "vue-multiselect";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useEventStore } from "@/stores/eventStore";
-import { seedCurrentHistory } from "@/stores/testUtils";
+
+import * as SelectionFieldStories from "./SelectionField.stories";
+import { CURRENT_HISTORY, HISTORY_DATASETS } from "./test_fixtures";
 
 import SelectionField from "./SelectionField.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(SelectionFieldStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
 
-const HISTORY_ID = "history123";
-const DATASET = getFakeDatasetSummary({ id: "ds1", name: "Dataset A", history_id: HISTORY_ID });
+const [FORWARD_READS, REVERSE_READS, GENE_COUNTS] = HISTORY_DATASETS;
 
 /** Waits out the component's 300 ms search debounce and the search it starts. */
 async function waitForDebouncedSearch() {
@@ -25,110 +24,92 @@ async function waitForDebouncedSearch() {
     await flushPromises();
 }
 
-/**
- * Serves the current history's datasets search, answering with `datasets` or, when
- * `errorMessage` is given, a Galaxy error. Returns the query parameters of each request.
- */
-function serveDatasets({ datasets = [DATASET], errorMessage = null } = {}) {
+/** Mounts a story and waits for the field's first search. */
+async function mountSelectionField(story, options) {
+    const wrapper = mountStory(story, options);
+    await waitForDebouncedSearch();
+    return wrapper;
+}
+
+/** Records the query parameters of each dataset search; the story still answers. */
+function recordDatasetSearches() {
     const searches = [];
     server.use(
-        http.get("/api/datasets", ({ query, response }) => {
+        http.get("/api/datasets", ({ query }) => {
             searches.push({ historyId: query.get("history_id"), text: query.get("qv") });
-            if (errorMessage) {
-                return response("5XX").json({ err_msg: errorMessage, err_code: 500 }, { status: 500 });
-            }
-            return response(200).json(datasets);
         }),
     );
     return searches;
 }
 
-/** Mounts a dataset selection field with `HISTORY_ID` as the current history. */
-function mountSelectionField(props = {}) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    seedCurrentHistory(getFakeHistorySummary({ id: HISTORY_ID }), pinia);
-    const wrapper = mount(SelectionField, {
-        global: withPlugins(localVue, pinia),
-        props: { objectType: "history_dataset_id", ...props },
-    });
-    return { wrapper, eventStore: useEventStore(pinia) };
-}
-
 describe("SelectionField", () => {
     it("renders the label and multiselect once datasets are loaded", async () => {
-        serveDatasets();
-        const { wrapper } = mountSelectionField({ objectName: "My Dataset", objectId: "ds1" });
-        await waitForDebouncedSearch();
+        const wrapper = await mountSelectionField(stories.DatasetSelected);
 
         const label = wrapper.find("label");
         expect(label.exists()).toBe(true);
         expect(label.text()).toContain("Select a History Dataset Id");
-        expect(wrapper.findComponent(Multiselect).exists()).toBe(true);
+        const multiselect = wrapper.findComponent(Multiselect);
+        expect(multiselect.exists()).toBe(true);
+        expect(multiselect.find(".multiselect__single").text()).toBe(GENE_COUNTS.name);
     });
 
     it("renders an empty state when the current history has no datasets", async () => {
-        serveDatasets({ datasets: [] });
-        const { wrapper } = mountSelectionField();
-        await waitForDebouncedSearch();
+        const wrapper = await mountSelectionField(stories.EmptyHistory);
 
         expect(wrapper.text()).toContain("No datasets found in your current history");
     });
 
     it("searches the current history's datasets when the search text changes", async () => {
-        const searches = serveDatasets();
-        const { wrapper } = mountSelectionField();
-        await waitForDebouncedSearch();
+        const wrapper = await mountSelectionField(stories.NothingSelected);
+        const searches = recordDatasetSearches();
 
         const multiselect = wrapper.findComponent(Multiselect);
         expect(multiselect.exists()).toBe(true);
-        multiselect.vm.$emit("search-change", "abc");
+        multiselect.vm.$emit("search-change", "SRR");
         await waitForDebouncedSearch();
 
-        expect(searches).toContainEqual({ historyId: HISTORY_ID, text: "abc" });
+        expect(searches).toContainEqual({ historyId: CURRENT_HISTORY.id, text: "SRR" });
     });
 
     it("shows the error when the dataset search fails", async () => {
-        serveDatasets({ errorMessage: "Oops!" });
-        const { wrapper } = mountSelectionField();
-        await waitForDebouncedSearch();
+        const wrapper = await mountSelectionField(stories.HistoryNotAccessible);
 
-        expect(wrapper.text()).toContain("Oops!");
+        expect(wrapper.text()).toContain("History is not accessible by user");
     });
 
     it("highlights a dragged dataset and emits it as the selection when dropped", async () => {
-        serveDatasets();
-        const { wrapper, eventStore } = mountSelectionField();
-        await waitForDebouncedSearch();
-        eventStore.setDragData({ id: "item1", name: "Item One", history_content_type: "dataset" });
+        const wrapper = await mountSelectionField(stories.NothingSelected);
+        const dropZone = wrapper.find("[aria-roledescription='drop zone']");
+        useEventStore().setDragData(REVERSE_READS);
 
-        expect(wrapper.classes()).not.toContain("ui-dragover-success");
-        await wrapper.trigger("dragenter");
-        expect(wrapper.classes()).toContain("ui-dragover-success");
-        await wrapper.trigger("drop");
-        expect(wrapper.classes()).not.toContain("ui-dragover-success");
-        expect(wrapper.emitted("change")).toEqual([[{ id: "item1", name: "Item One" }]]);
+        expect(dropZone.classes()).not.toContain("ui-dragover-success");
+        await dropZone.trigger("dragenter");
+        expect(dropZone.classes()).toContain("ui-dragover-success");
+        await dropZone.trigger("drop");
+        expect(dropZone.classes()).not.toContain("ui-dragover-success");
+        expect(wrapper.getComponent(SelectionField).emitted("change")).toEqual([
+            [{ id: REVERSE_READS.id, name: REVERSE_READS.name }],
+        ]);
     });
 
     it("searches with the custom objectQuery function when provided", async () => {
-        const objectQuery = vi.fn(() => Promise.resolve([{ id: "custom1", name: "Custom Result" }]));
-        const { wrapper } = mountSelectionField({ objectQuery });
+        const objectQuery = vi.fn(stories.WorkflowLabels.args.objectQuery);
+        const wrapper = await mountSelectionField(stories.WorkflowLabels, { props: { objectQuery } });
+
+        wrapper.findComponent(Multiselect).vm.$emit("search-change", "reads");
         await waitForDebouncedSearch();
 
-        wrapper.findComponent(Multiselect).vm.$emit("search-change", "test");
-        await waitForDebouncedSearch();
-
-        expect(objectQuery).toHaveBeenCalledWith("test");
+        expect(objectQuery).toHaveBeenCalledWith("reads");
     });
 
     it("selects the first dataset when no objectId and objectName are given", async () => {
-        serveDatasets();
-        const { wrapper } = mountSelectionField({ objectId: "", objectName: "" });
-        await waitForDebouncedSearch();
+        const wrapper = await mountSelectionField(stories.NothingSelected);
 
         const multiselect = wrapper.findComponent(Multiselect);
         expect(multiselect.exists()).toBe(true);
-        expect(multiselect.props("options")).toHaveLength(1);
-        expect(multiselect.props("modelValue")).toEqual({ id: "ds1", name: "Dataset A" });
-        expect(multiselect.find(".multiselect__single").text()).toBe("Dataset A");
+        expect(multiselect.props("options")).toHaveLength(HISTORY_DATASETS.length);
+        expect(multiselect.props("modelValue")).toEqual({ id: FORWARD_READS.id, name: FORWARD_READS.name });
+        expect(multiselect.find(".multiselect__single").text()).toBe(FORWARD_READS.name);
     });
 });
