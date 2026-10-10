@@ -6,9 +6,8 @@ in Markdown and weasyprint. Both are optional: ``galaxy-util`` does not require
 either, and Galaxy itself treats weasyprint as a conditional dependency.
 """
 
-import os
-import shutil
 import tempfile
+from contextlib import ExitStack
 
 from galaxy.util.resources import resource_string
 from galaxy.util.sanitize_html import sanitize_html
@@ -25,16 +24,12 @@ except Exception:
     weasyprint = None
 
 
-def markdown_available() -> bool:
-    return markdown is not None
-
-
 def weasyprint_available() -> bool:
     return weasyprint is not None
 
 
 def to_html(basic_markdown: str) -> str:
-    if not markdown_available():
+    if markdown is None:
         raise ImportError("markdown is required for HTML conversion - install galaxy-util[markdown-convert]")
     # Allow data: urls so we can embed images.
     html = sanitize_html(markdown.markdown(basic_markdown, extensions=["tables"]), allow_data_urls=True)
@@ -53,17 +48,18 @@ def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None, director
         raise ImportError("weasyprint is required for PDF conversion")
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
-    directory_is_temp = directory is None
-    if directory is None:
-        directory = tempfile.mkdtemp("gxmarkdown")
-    index = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".html", dir=directory, encoding="utf-8", errors="xmlcharrefreplace", delete=False
-        ) as output_file:
-            index = output_file.name
-            output_file.write(as_html)
-        html = weasyprint.HTML(filename=index)
+    with ExitStack() as stack:
+        if directory is None:
+            directory = stack.enter_context(tempfile.TemporaryDirectory("gxmarkdown"))
+        # Deleted on exit, so a caller-owned directory is left as it was.
+        index = stack.enter_context(
+            tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", dir=directory, encoding="utf-8", errors="xmlcharrefreplace"
+            )
+        )
+        index.write(as_html)
+        index.flush()
+        html = weasyprint.HTML(filename=index.name)
         stylesheets = [weasyprint.CSS(string=resource_string(__name__, "markdown_export_base.css"))]
         for css_path in css_paths:
             with open(css_path) as f:
@@ -73,9 +69,3 @@ def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None, director
         # weasyprint ships no stubs, so pin the contract here rather than return Any.
         pdf: bytes = html.write_pdf(stylesheets=stylesheets)
         return pdf
-    finally:
-        if directory_is_temp:
-            shutil.rmtree(directory)
-        elif index is not None and os.path.exists(index):
-            # Caller owns the directory - do not leave the intermediate HTML behind.
-            os.unlink(index)
