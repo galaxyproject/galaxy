@@ -574,7 +574,8 @@ history_export_tasks:
     next_button: '.go-next-btn'
     back_button: '.go-back-btn'
     export_button: '.go-next-btn.btn-primary'
-    select_format: '[data-export-format="${format}"]'
+    # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
+    select_format: '[data-export-format="${format}"] .card-title'
     select_destination: '[data-history-export-destination="${destination}"]'
     exported_file_name: '#exported-file-name'
 
@@ -1080,7 +1081,8 @@ invocations:
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
-    export_output_format: '[data-export-format="${type}"]'
+    # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
+    export_output_format: '[data-export-format="${type}"] .card-title'
     export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
