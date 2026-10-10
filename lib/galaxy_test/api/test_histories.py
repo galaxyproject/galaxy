@@ -1057,9 +1057,10 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     def create(self, name: str) -> str:
         response_json = self._create_history(name)
         history_id = response_json["id"]
-        # History to share cannot be empty
+        # History to share cannot be empty, and its datasets must be accessible to the users it is shared with
         populator = DatasetPopulator(self.galaxy_interactor)
-        populator.new_dataset(history_id)
+        hda = populator.new_dataset(history_id, wait=True)
+        populator.make_dataset_public(history_id, hda["id"])
         return history_id
 
     def setUp(self):
@@ -1098,8 +1099,9 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     @requires_new_user
     def test_sharing_without_manage_permissions(self):
         history_id = self.dataset_populator.new_history()
-        hda = self.dataset_populator.new_dataset(history_id)
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
         hda_id = hda["id"]
+        self.dataset_populator.make_dataset_public(history_id, hda_id)
         owner_role_id = self.dataset_populator.user_private_role_id()
 
         with self._different_user():

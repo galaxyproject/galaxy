@@ -3107,13 +3107,13 @@ mapping:
 
       new_user_dataset_access_role_default_private:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
-          By default, users' data will be public, but setting this to true will cause
-          it to be private.  Does not affect existing users and data, only ones created
-          after this option is set.  Users may still change their default back to
-          public.
+          By default, users' data will be private. Setting this to false makes it public.
+          This only affects users created after the option is set; existing users and
+          data are unchanged. Users can change the default for their new histories in
+          their user preferences.
 
       expose_user_name:
         type: bool

@@ -688,6 +688,7 @@ interface Rootlibrariesfolder extends Component {
     import_dir_btn: SelectorTemplate;
     manage_dataset_permissions_btn: SelectorTemplate;
     make_private_btn: SelectorTemplate;
+    remove_restrictions_btn: SelectorTemplate;
     access_dataset_roles: SelectorTemplate;
     private_dataset_icon: SelectorTemplate;
     open_location_details_btn: SelectorTemplate;

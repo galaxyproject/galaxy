@@ -5109,16 +5109,16 @@ class Dataset(Base, StorableObject, Serializable):
         self.purged = True
 
     def get_access_roles(self, security_agent):
-        roles = []
-        for dp in self.actions:
-            if dp.action == security_agent.permitted_actions.DATASET_ACCESS.action:
-                roles.append(dp.role)
-        return roles
+        return self._roles_for_action(security_agent.permitted_actions.DATASET_ACCESS.action)
 
     def get_manage_permissions_roles(self, security_agent):
+        return self._roles_for_action(security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
+
+    def _roles_for_action(self, action):
+        # A dataset can hold several permission rows for the same action and role.
         roles = []
         for dp in self.actions:
-            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == action and dp.role not in roles:
                 roles.append(dp.role)
         return roles
 
