@@ -7,14 +7,14 @@ aiofile==3.8.8 ; python_full_version < '3.11'
 aiofile==3.12.3 ; python_full_version >= '3.11'
 aiofiles==25.1.0
 aiohappyeyeballs==2.7.1
-aiohttp==3.14.3
+aiohttp==3.14.4
 aioitertools==0.13.0
 aiosignal==1.4.0
 alembic==1.20.0
-amqp==5.4.0
+amqp==5.4.1
 annotated-doc==0.0.5
 annotated-types==0.8.0
-anthropic==1.11.0
+anthropic==1.13.0
 anyio==4.15.1
 apispec==6.10.0
 appdirs==1.4.4
@@ -31,8 +31,9 @@ bagit-profile==1.3.1
 bcrypt==5.0.0
 bdbag==1.8.0
 beaker==1.14.1
-beartype==0.22.9
-billiard==4.3.0
+beartype==0.22.9 ; python_full_version < '3.15'
+beartype==0.23.0rc2 ; python_full_version >= '3.15'
+billiard==4.3.1
 bioblend==1.9.0
 bleach==6.4.0
 boltons==26.2.0
@@ -40,7 +41,7 @@ boto==2.49.0
 botocore==1.43.106
 bx-python==0.15.1
 cachecontrol==0.14.4
-cachetools==7.2.0
+cachetools==7.2.1
 caio==0.9.25 ; python_full_version < '3.11'
 caio==0.12.9 ; python_full_version >= '3.11'
 celery==5.6.3
@@ -51,7 +52,7 @@ circus==0.19.0
 click==8.5.0
 click-didyoumean==0.3.1
 click-plugins==1.1.1.2
-click-repl==0.4.0
+click-repl==0.4.1
 cloudauthz==0.6.0
 colorama==0.4.6 ; sys_platform == 'win32'
 coloredlogs==15.0.1
@@ -62,13 +63,14 @@ cwl-upgrader==1.2.15
 cwl-utils==0.45
 cwltool==3.3.20260925135507
 cyclopts==4.25.3 ; python_full_version < '3.11'
-cyclopts==5.1.1 ; python_full_version >= '3.11'
+cyclopts==5.2.0 ; python_full_version >= '3.11'
 defusedxml==0.7.1
 deprecated==1.3.1 ; python_full_version < '3.12'
 deprecated==3.0.0 ; python_full_version >= '3.12'
 dictobj==0.4
 distro==1.9.0
-dnspython==2.8.0
+dnspython==2.8.0 ; python_full_version < '3.11'
+dnspython==2.9.0 ; python_full_version >= '3.11'
 docopt==0.6.2
 docstring-parser==0.18.0
 docutils==0.21.2 ; python_full_version < '3.11'
@@ -79,24 +81,25 @@ email-validator==2.3.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.1
 executing==2.2.1
-fastapi==0.142.2
-fastmcp==4.0.10
-fastmcp-slim==4.0.10
-filelock==4.0.9
+fastapi==0.143.0
+fastmcp==4.1.0
+fastmcp-slim==4.1.0
+filelock==4.1.0
 fissix==24.4.24
 frozenlist==1.8.0
 fs==2.4.16
 fsspec==2026.9.0
 future==1.0.0
-genai-prices==0.1.9
-google-api-core==2.40.0
-google-auth==2.59.1
+genai-prices==0.1.10
+google-api-core==2.42.0
+google-auth==2.61.0
 google-cloud-batch==0.22.4
-google-genai==2.28.0
+google-genai==2.29.0
 googleapis-common-protos==1.75.5
 gravity==1.2.4
 greenlet==3.5.6 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
-griffelib==2.3.0
+griffelib==2.3.0 ; python_full_version < '3.11'
+griffelib==2.3.2 ; python_full_version >= '3.11'
 grpcio==1.84.0
 grpcio-status==1.84.0
 gunicorn==26.2.0
@@ -116,8 +119,8 @@ importlib-metadata==9.0.1 ; python_full_version < '3.12'
 importlib-resources==7.1.0 ; python_full_version < '3.12'
 invoke==3.0.3
 isa-rwval==0.10.11
-isal==1.7.2 ; python_full_version < '3.13'
-isal==1.8.0 ; python_full_version >= '3.13'
+isal==1.7.2 ; python_full_version < '3.15'
+isal==1.8.0 ; python_full_version >= '3.15'
 isodate==0.7.2 ; python_full_version < '3.11'
 jaraco-classes==3.4.0
 jaraco-context==6.1.2
@@ -166,7 +169,7 @@ numpy==2.2.6 ; python_full_version < '3.11'
 numpy==2.4.6 ; python_full_version == '3.11.*'
 numpy==2.5.3 ; python_full_version >= '3.12'
 oauthlib==4.0.0
-openai==3.24.0
+openai==3.28.0
 openapi-pydantic==0.6.0
 openpyxl==3.1.5
 opentelemetry-api==1.44.0
@@ -178,36 +181,40 @@ opentelemetry-proto==1.44.0
 opentelemetry-sdk==1.44.0
 opentelemetry-semantic-conventions==0.65b0
 opentelemetry-util-http==0.65b0
-orjson==3.12.0
+orjson==3.13.0
 packaging==26.3
 paramiko==5.0.0
 parsley==1.3
 paste==3.10.1
 pathable==0.6.0
-pebble==5.2.0
+pebble==5.2.3
 pillow==12.3.0
 pkg-resources-backport==1.0.1
-platformdirs==4.12.2
+platformdirs==4.12.4
 prompt-toolkit==3.0.53
 propcache==0.5.4
 proto-plus==1.29.0
 protobuf==7.36.2
 prov==1.5.1
 psutil==7.2.2
-pulsar-galaxy-lib==0.15.15
+pulsar-galaxy-lib==0.15.16
 pulsar-relay-client==0.2.2
 py-key-value-aio==0.4.6
 pyasn1==0.6.4
 pyasn1-modules==0.4.2
-pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
-pycryptodome==3.23.0
-pydantic==2.13.5
-pydantic-ai==2.53.0
-pydantic-ai-slim==2.53.0
-pydantic-core==2.46.5
-pydantic-evals==2.53.0
+pycparser==3.11 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
+pycryptodome==3.24.0
+pydantic==2.14.0
+pydantic-ai==2.54.0 ; python_full_version < '3.11'
+pydantic-ai==2.55.0 ; python_full_version >= '3.11'
+pydantic-ai-slim==2.54.0 ; python_full_version < '3.11'
+pydantic-ai-slim==2.55.0 ; python_full_version >= '3.11'
+pydantic-core==2.50.0
+pydantic-evals==2.54.0 ; python_full_version < '3.11'
+pydantic-evals==2.55.0 ; python_full_version >= '3.11'
 pydantic-extra-types==2.11.1
-pydantic-graph==2.53.0
+pydantic-graph==2.54.0 ; python_full_version < '3.11'
+pydantic-graph==2.55.0 ; python_full_version >= '3.11'
 pydantic-settings==2.15.0
 pydantic-tes==0.4.0
 pydicom==3.0.2
@@ -227,9 +234,9 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.4
 python-magic==0.4.27
 python-multipart==0.0.32
-python-slugify==8.0.4
+python-slugify==9.1.3
 python3-openid==3.2.0
-pytz==2026.4
+pytz==2026.5
 pywin32==312 ; sys_platform == 'win32'
 pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
 pyyaml==6.0.3
@@ -250,7 +257,7 @@ rich-rst==2.2.0
 rocrate==0.14.2
 routes==2.5.1
 rpds-py==0.30.0 ; python_full_version < '3.11'
-rpds-py==2026.6.3 ; python_full_version >= '3.11'
+rpds-py==2026.9.1 ; python_full_version >= '3.11'
 ruamel-yaml==0.19.1
 s3fs==2026.9.0
 schema-salad==8.10.20260825112551
@@ -259,7 +266,7 @@ setuptools==84.0.0
 six==1.17.0
 slowapi==0.1.10
 sniffio==1.3.1
-social-auth-core==5.2.0
+social-auth-core==6.1.0
 sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.54
@@ -276,7 +283,7 @@ tifffile==2026.3.3 ; python_full_version == '3.11.*'
 tifffile==2026.9.20 ; python_full_version >= '3.12'
 tiktoken==0.14.0
 tinydb==4.9.0
-tomli==2.4.1 ; python_full_version < '3.11'
+tomli==2.5.0 ; python_full_version < '3.11'
 tornado==6.5.10
 tqdm==4.70.1
 truststore==0.10.4 ; sys_platform != 'emscripten'
@@ -284,16 +291,16 @@ tuspy==1.1.0
 tuspyserver==4.4.2
 typing-extensions==4.16.0
 typing-inspection==0.4.4
-tzdata==2026.4
+tzdata==2026.5
 tzlocal==5.4.4
 ubiquerg==0.9.3
-uncalled-for==0.4.0
+uncalled-for==0.4.1
 urllib3==2.8.0
 uvicorn==0.54.0
 uvloop==0.23.0
 vine==5.1.0
 watchfiles==1.3.0
-wcwidth==0.9.1
+wcwidth==0.9.2
 webencodings==0.6.1
 webob==1.8.11
 websockets==16.1.1
@@ -301,5 +308,5 @@ whoosh==2.7.4
 wrapt==2.5.0
 yacman==1.0.0
 yarl==1.25.1
-zipp==4.1.0 ; python_full_version < '3.12'
+zipp==4.1.1 ; python_full_version < '3.12'
 zipstream-new==1.1.8
