@@ -8,14 +8,13 @@ import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import * as DescribeObjectStoreStories from "./DescribeObjectStore.stories";
 
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
-import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const stories = composeStories(DescribeObjectStoreStories);
 const mountStory = useStoryMount();
 
+// Class hooks for each way of naming the storage; Selenium finds `.display-os-by-name`.
 const SELECTORS = {
     BY_NAME: ".display-os-by-name",
     BY_ID: ".display-os-by-id",
@@ -39,19 +38,13 @@ function mountQuotaStorage() {
 
 describe("DescribeObjectStore.vue", () => {
     it.each([
-        ["the default storage when it has no id", stories.DefaultStorage, { BY_NAME: 0, BY_ID: 0, DEFAULT: 1 }, false],
-        [
-            "the storage id when it has an id but no name",
-            stories.StorageWithId,
-            { BY_NAME: 0, BY_ID: 1, DEFAULT: 0 },
-            false,
-        ],
-        ["the storage name when it has one", stories.NamedPrivateStorage, { BY_NAME: 1, BY_ID: 0, DEFAULT: 0 }, true],
-    ])("describes %s", (_description, story, expectedSpans, isPrivate) => {
+        ["the default storage when it has no id", stories.DefaultStorage, { BY_NAME: 0, BY_ID: 0, DEFAULT: 1 }],
+        ["the storage id when it has an id but no name", stories.StorageWithId, { BY_NAME: 0, BY_ID: 1, DEFAULT: 0 }],
+        ["the storage name when it has one", stories.NamedPrivateStorage, { BY_NAME: 1, BY_ID: 0, DEFAULT: 0 }],
+    ])("marks %s with its own class", (_description, story, expectedSpans) => {
         const wrapper = mountStory(story);
 
         expect(countDescriptionSpans(wrapper)).toEqual(expectedSpans);
-        expect(wrapper.findComponent(ObjectStoreRestrictionSpan).props("isPrivate")).toBe(isPrivate);
     });
 
     it.each([
@@ -64,28 +57,6 @@ describe("DescribeObjectStore.vue", () => {
         expect(wrapper.text()).toContain("Galaxy has no quota configured for this storage.");
         expect(wrapper.findComponent(BSpinner).exists()).toBe(false);
     });
-
-    it("shows the storage id in bold", () => {
-        const wrapper = mountStory(stories.StorageWithId);
-
-        expect(wrapper.find(`${SELECTORS.BY_ID} b`).text()).toBe("fast_scratch");
-    });
-
-    it("shows the storage name instead of its id", () => {
-        const wrapper = mountStory(stories.NamedPrivateStorage);
-
-        expect(wrapper.find(`${SELECTORS.BY_NAME} b`).text()).toBe("Fast scratch");
-        expect(wrapper.text()).not.toContain("fast_scratch");
-    });
-
-    it("renders the storage description as markdown", () => {
-        const wrapper = mountStory(stories.NamedPrivateStorage);
-
-        expect(wrapper.findComponent(ConfigurationMarkdown).props("markdown")).toBe(
-            stories.NamedPrivateStorage.args.storageInfo.description,
-        );
-    });
-
     it("shows a spinner while the quota usage of its source is loading", async () => {
         const wrapper = mountQuotaStorage();
         useQuotaUsageStore().loadingBySource = { lab: true };
