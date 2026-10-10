@@ -1,46 +1,48 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
+import * as ConfigurationMarkdownStories from "./ConfigurationMarkdown.stories";
 
-const localVue = getLocalVue();
-
-function mountConfigurationMarkdown(markdown: string, admin: boolean) {
-    return shallowMount(ConfigurationMarkdown, { props: { markdown, admin }, global: localVue });
-}
+const stories = composeStories(ConfigurationMarkdownStories);
+const mountStory = useStoryMount();
 
 describe("ConfigurationMarkdown.vue", () => {
     beforeEach(() => {
         vi.mocked(sanitizeHtml).mockClear();
     });
 
-    it("converts the supplied configuration markup from markdown to HTML", () => {
-        const wrapper = mountConfigurationMarkdown("the *content*", true);
+    it.each([
+        { story: stories.AdminConfigured, author: "an admin" },
+        { story: stories.UserDefined, author: "a user" },
+    ])("converts configuration markup by $author from markdown to HTML", ({ story }) => {
+        const wrapper = mountStory(story);
 
-        expect(wrapper.html()).toContain("<em>content</em>");
+        expect(wrapper.html()).toContain("<em>not backed up</em>");
     });
 
     it("allows HTML in configuration markup explicitly set by the admin", () => {
-        const wrapper = mountConfigurationMarkdown("the <b>content</b>", true);
+        const wrapper = mountStory(stories.AdminConfigured);
 
-        expect(wrapper.html()).toContain("<b>content</b>");
+        expect(wrapper.html()).toContain("<b>Purged after 30 days.</b>");
     });
 
     it("escapes HTML in configuration markup not sourced from the admin", () => {
-        const wrapper = mountConfigurationMarkdown("the <b>content</b>", false);
+        const wrapper = mountStory(stories.UserDefined);
 
-        expect(wrapper.html()).not.toContain("<b>content</b>");
-        expect(wrapper.text()).toBe("the <b>content</b>");
+        expect(wrapper.html()).not.toContain("<b>Purged after 30 days.</b>");
+        expect(wrapper.text()).toBe(
+            'Scratch space, not backed up. <b>Purged after 30 days.</b> See the <a href="https://example.org" target="_blank">storage policy</a>.',
+        );
     });
 
     it("renders through v-sanitize-html with the links profile", () => {
-        mountConfigurationMarkdown('the <a href="https://example.org" target="_blank">link</a>', true);
+        mountStory(stories.AdminConfigured);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(
-            '<p>the <a href="https://example.org" target="_blank">link</a></p>\n',
+            '<p>Scratch space, <em>not backed up</em>. <b>Purged after 30 days.</b> See the <a href="https://example.org" target="_blank">storage policy</a>.</p>\n',
             "links",
         );
     });
