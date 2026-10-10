@@ -1,3 +1,4 @@
+import { getFakeVisualizationSummary } from "@tests/test-data/visualizations";
 import { createPinia, setActivePinia } from "pinia";
 import MockDate from "timezone-mock";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,20 +27,8 @@ vi.mock("@/composables/useRecentPaletteItems", () => ({
 
 const VISUALIZATION_SCOPE = { key: "v", label: "Visualizations", providerId: "visualizations" };
 
-function mockVisualization(id: string, title: string, type = "nvd3_bar"): VisualizationSummary {
-    return {
-        id,
-        title,
-        type,
-        annotation: null,
-        create_time: "2026-01-01T00:00:00",
-        update_time: "2026-01-02T00:00:00",
-        deleted: false,
-        importable: false,
-        published: false,
-        tags: [],
-        username: "test-user",
-    } as VisualizationSummary;
+function mockVisualization(id: string, title: string): VisualizationSummary {
+    return getFakeVisualizationSummary({ id, title });
 }
 
 function mockList(...visualizations: VisualizationSummary[]) {
