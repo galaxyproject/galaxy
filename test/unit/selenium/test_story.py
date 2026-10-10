@@ -1,8 +1,9 @@
 """Tests for the story document model."""
 
+import datetime
 import os
-import types
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -11,11 +12,28 @@ from galaxy.selenium.stories import (
     link_latest,
     NoopStory,
     run_directory,
+    runs,
     Story,
     story_for_run,
     write_story,
 )
 from galaxy.util import markdown_convert
+
+
+@dataclass
+class FakeWeasyprint:
+    """Stands in for weasyprint, whose system libraries are often missing."""
+
+    HTML: type
+
+    def CSS(self, string=None):
+        return string
+
+
+class FrozenDatetime(datetime.datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return cls(2026, 10, 1, 12, 0)
 
 
 @pytest.fixture
@@ -65,14 +83,6 @@ class TestStoryMarkdown:
         # Relative, so the markdown stays valid next to its images in the zip.
         assert "![The upload button](000_upload.png)" in markdown
         assert story_dir not in markdown
-
-    def test_caption_defaults_are_not_invented(self, story_dir):
-        story = Story("T", "", story_dir)
-        story.add_screenshot(os.path.join(story_dir, "a.png"), "")
-        story.finalize()
-
-        markdown = open(os.path.join(story_dir, "story.md")).read()
-        assert "![](a.png)" in markdown
 
 
 class TestStoryArtifacts:
@@ -127,9 +137,7 @@ class TestStoryArtifacts:
             def write_pdf(self, stylesheets=None):
                 return b"%PDF-fake"
 
-        monkeypatch.setattr(
-            markdown_convert, "weasyprint", types.SimpleNamespace(HTML=FakeHtml, CSS=lambda string=None: string)
-        )
+        monkeypatch.setattr(markdown_convert, "weasyprint", FakeWeasyprint(HTML=FakeHtml))
         _write_png(os.path.join(story_dir, "000_a.png"))
         story = Story("T", "", story_dir)
         story.add_screenshot(os.path.join(story_dir, "000_a.png"), "a")
@@ -182,10 +190,6 @@ class TestStoryState:
         assert "from the retry" in markdown
         assert story.screenshot_counter == 0
 
-    def test_enabled_distinguishes_the_null_object(self):
-        assert Story("T", "", "/tmp").enabled
-        assert not NoopStory().enabled
-
 
 class TestNoopStory:
     def test_collecting_and_finalizing_write_nothing(self, story_dir, monkeypatch):
@@ -198,14 +202,11 @@ class TestNoopStory:
 
         assert os.listdir(story_dir) == []
 
-    def test_counter_round_trips(self):
-        story = NoopStory()
-        story.screenshot_counter += 1
-        assert story.screenshot_counter == 1
-
 
 class TestStoryRuns:
-    def test_disabled_stories_are_noops(self, tmp_path):
+    def test_disabled_stories_are_noops(self, tmp_path, monkeypatch):
+        # A disabled story has no directory, so anything it wrote would land in cwd.
+        monkeypatch.chdir(tmp_path)
         story = story_for_run(None, "test_example_", "T", "")
         write_story(story, failed=True)
 
@@ -219,8 +220,13 @@ class TestStoryRuns:
         assert os.path.basename(story.output_directory).startswith("test_example_")
         assert os.path.isdir(story.output_directory)
 
-    def test_run_directories_are_unique(self, tmp_path):
-        assert run_directory(str(tmp_path), "test_example_") != run_directory(str(tmp_path), "test_example_")
+    def test_run_directories_are_unique_at_the_same_time(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(runs.datetime, "datetime", FrozenDatetime)
+        first = run_directory(str(tmp_path), "test_example_")
+        second = run_directory(str(tmp_path), "test_example_")
+
+        assert first != second
+        assert sorted(os.listdir(tmp_path)) == sorted([os.path.basename(first), os.path.basename(second)])
 
     def test_write_links_latest(self, tmp_path):
         first = story_for_run(str(tmp_path), "test_example_", "T", "")

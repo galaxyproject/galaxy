@@ -2,7 +2,7 @@
 
 import os
 import tempfile
-import types
+from dataclasses import dataclass
 
 import pytest
 
@@ -20,9 +20,19 @@ class FakeHtml:
             return f.read().encode("utf-8")
 
 
+@dataclass
+class FakeWeasyprint:
+    """Stands in for weasyprint, whose system libraries are often missing."""
+
+    HTML: type
+
+    def CSS(self, string=None):
+        return string
+
+
 @pytest.fixture
 def fake_weasyprint(monkeypatch):
-    fake = types.SimpleNamespace(HTML=FakeHtml, CSS=lambda string=None: string)
+    fake = FakeWeasyprint(HTML=FakeHtml)
     monkeypatch.setattr(markdown_util, "weasyprint", fake)
     return fake
 
