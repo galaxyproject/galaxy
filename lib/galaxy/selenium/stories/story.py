@@ -10,11 +10,8 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from dataclasses import dataclass
 from html import escape
-from typing import (
-    Literal,
-    TypedDict,
-)
 from urllib.parse import quote
 
 from galaxy.util.markdown_convert import (
@@ -25,15 +22,19 @@ from galaxy.util.markdown_convert import (
 
 log = logging.getLogger(__name__)
 
-ElementType = Literal["documentation", "screenshot"]
 
-
-class ElementMetadata(TypedDict, total=False):
+@dataclass(frozen=True)
+class Screenshot:
+    path: str
     caption: str
 
 
-# (type, content, metadata) - content is a screenshot path or a markdown fragment.
-StoryElement = tuple[ElementType, str, ElementMetadata]
+@dataclass(frozen=True)
+class Documentation:
+    markdown: str
+
+
+StoryElement = Screenshot | Documentation
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html>
@@ -135,11 +136,10 @@ class Story(StoryBase):
         return path
 
     def add_screenshot(self, screenshot_path: str, caption: str) -> None:
-        element_meta: ElementMetadata = {"caption": caption}
-        self.elements.append(("screenshot", screenshot_path, element_meta))
+        self.elements.append(Screenshot(screenshot_path, caption))
 
     def add_documentation(self, markdown_content: str) -> None:
-        self.elements.append(("documentation", markdown_content, {}))
+        self.elements.append(Documentation(markdown_content))
 
     def reset(self) -> None:
         self.elements = []
@@ -168,14 +168,13 @@ class Story(StoryBase):
             lines.append(self.description.strip())
             lines.append("\n")
 
-        for element_type, content, metadata in self.elements:
-            if element_type == "screenshot":
-                caption = metadata.get("caption", "")
+        for element in self.elements:
+            if isinstance(element, Screenshot):
                 # Reference by basename so the document stays valid inside the zip.
-                lines.append(f"## {caption}\n")
-                lines.append(f"![{_escape_alt(caption)}]({quote(os.path.basename(content))})\n")
+                lines.append(f"## {element.caption}\n")
+                lines.append(f"![{_escape_alt(element.caption)}]({quote(os.path.basename(element.path))})\n")
             else:
-                lines.append(content)
+                lines.append(element.markdown)
                 lines.append("\n")
 
         return "\n".join(lines)
@@ -196,9 +195,7 @@ class Story(StoryBase):
 
     def _create_zip(self, zip_path: str) -> None:
         """Archive documents and referenced screenshots, excluding discarded retries."""
-        referenced = dict.fromkeys(
-            os.path.basename(content) for element_type, content, _ in self.elements if element_type == "screenshot"
-        )
+        referenced = dict.fromkeys(os.path.basename(e.path) for e in self.elements if isinstance(e, Screenshot))
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for name in ["story.md", "story.html", "story.pdf", *referenced]:
                 path = os.path.join(self.output_directory, name)
