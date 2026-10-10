@@ -1,6 +1,11 @@
 import json
 import logging
 import time
+from typing import (
+    Any,
+    cast,
+    Union,
+)
 
 import jwt
 from jwt import InvalidTokenError
@@ -267,7 +272,8 @@ class PSAAuthnz(IdentityProvider):
         )
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
-        response = do_disconnect(backend, trans.user, association_id)
+        # Strategy.redirect() returns the URL itself, so a redirect comes back as a str.
+        response = cast(Union[str, dict[str, Any]], do_disconnect(backend, trans.user, association_id))
         if isinstance(response, str):
             return True, "", response
         return response.get("success", False), response.get("message", ""), ""
@@ -566,11 +572,13 @@ def _decode_access_token_helper(token_str: str, backend: OpenIdConnectAuth) -> d
     """
     signing_key = backend.find_valid_key(token_str)
     jwk = jwt.PyJWK(signing_key)
+    strategy = backend.strategy
+    assert hasattr(strategy, "config")
     decoded = jwt.decode(
         token_str,
         key=jwk,
         algorithms=[jwk.algorithm_name],
-        audience=backend.strategy.config["accepted_audiences"],
+        audience=strategy.config["accepted_audiences"],
         issuer=backend.id_token_issuer(),
         options={"verify_signature": True, "verify_exp": True, "verify_aud": True},
     )
