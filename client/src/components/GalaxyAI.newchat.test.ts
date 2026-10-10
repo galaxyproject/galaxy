@@ -1,16 +1,9 @@
+import { deferred } from "@tests/vitest/deferred";
 import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-    chatReply,
-    deferredResponse,
-    messageTexts,
-    mockGet,
-    mockPost,
-    mountChat,
-    sendMessage,
-} from "./GalaxyAI/test-utils";
+import { chatReply, messageTexts, mockGet, mockPost, mountChat, sendMessage } from "./GalaxyAI/test-utils";
 
 vi.mock("vue-router", () => ({
     useRoute: () => ({ path: "/", params: {}, query: {} }),
@@ -44,7 +37,7 @@ describe("GalaxyAI", () => {
     });
 
     it("resets an unsaved conversation when a new chat is requested mid-flight", async () => {
-        const reply = deferredResponse<ReturnType<typeof chatReply>>();
+        const reply = deferred<ReturnType<typeof chatReply>>();
         mockPost.mockReturnValue(reply.promise);
         const { wrapper, chatStore } = await mountChat();
 
@@ -70,8 +63,8 @@ describe("GalaxyAI", () => {
     });
 
     it("does not let a stale response clobber a newly started conversation", async () => {
-        const firstReply = deferredResponse<ReturnType<typeof chatReply>>();
-        const secondReply = deferredResponse<ReturnType<typeof chatReply>>();
+        const firstReply = deferred<ReturnType<typeof chatReply>>();
+        const secondReply = deferred<ReturnType<typeof chatReply>>();
         mockPost.mockReturnValueOnce(firstReply.promise).mockReturnValueOnce(secondReply.promise);
         const { wrapper, chatStore } = await mountChat();
 

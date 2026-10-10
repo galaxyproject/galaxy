@@ -1,10 +1,10 @@
+import { deferred } from "@tests/vitest/deferred";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
     ChatInputStub,
     chatReply,
-    deferredResponse,
     messageTexts,
     mockGet,
     mockPost,
@@ -70,7 +70,7 @@ describe("GalaxyAI route sync", () => {
         const { wrapper, chatStore } = await mountFreshChat();
 
         // the history refresh triggered by the new exchange id — left in flight
-        const historyLoad = deferredResponse<{ data: never[]; error: undefined }>();
+        const historyLoad = deferred<{ data: never[]; error: undefined }>();
         mockGet.mockReturnValueOnce(historyLoad.promise);
 
         await sendMessage(wrapper, "find me a mapper");

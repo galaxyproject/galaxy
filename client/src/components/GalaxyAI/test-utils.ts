@@ -111,12 +111,3 @@ export async function sendMessage(wrapper: VueWrapper, text: string) {
 export function chatReply(response: string, exchangeId: string) {
     return { data: { response, exchange_id: exchangeId }, error: undefined };
 }
-
-/** A request result the test settles later, through `resolve`. */
-export function deferredResponse<T>() {
-    let resolve!: (value: T) => void;
-    const promise = new Promise<T>((resolvePromise) => {
-        resolve = resolvePromise;
-    });
-    return { promise, resolve };
-}
