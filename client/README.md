@@ -466,7 +466,7 @@ it("computes result correctly", () => {
 
 #### Mocking Modules and Composables
 
-Mock at file level before imports are resolved. For configuration, use the ref-backed `__mocks__/config` (or seed `configurationStore` through `createTestingPinia({ initialState })`); a `useConfig` mock returning a plain object reads as undefined in templates:
+Mock at file level before imports are resolved. A `vi.mock` path must resolve to the module the code imports, or it silently mocks nothing; bare ids left over from Jest's module mapping, like `vi.mock("app")`, match no module here. For configuration, use the ref-backed `__mocks__/config` (or seed `configurationStore` through `createTestingPinia({ initialState })`); a `useConfig` mock returning a plain object reads as undefined in templates:
 
 ```typescript
 import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
