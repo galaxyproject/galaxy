@@ -1,57 +1,92 @@
 #!/bin/sh
 
-# This script installs uv if it's not already installed in the user account.
-# It then runs uv inside Galaxy's root directory, potentially updating
-# pyproject.toml and uv.lock, and the pinned requirements files.
-
+# Upgrade dependencies by default, export the existing lock with --export-only,
+# or verify the lock and its requirements exports without changes with --check.
 set -e
 
 this_directory="$(cd "$(dirname "$0")" > /dev/null && pwd)"
+workspace_root="$(cd "$this_directory/../../.." > /dev/null && pwd)"
+requirements_dir="$this_directory"
+cd "$workspace_root"
 
 usage() {
-    printf "Usage: %s: [-p pkg]\n" "${0##*/}" >&2
+    printf 'Usage: %s [-p pkg | --export-only | --check]\n' "${0##*/}" >&2
 }
 
+mode=upgrade
+[ "${UV_CHECK:-0}" = "1" ] && mode=check
 pkg=
-while getopts 'p:h' OPTION
-do
-    case $OPTION in
-        p) pkg="$OPTARG"
-           ;;
-        h) usage
-           exit 0
-           ;;
-        ?) usage
-           exit 2
-           ;;
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --check) mode=check ;;
+        --export-only) mode=export ;;
+        -p)
+            [ "$#" -ge 2 ] || { usage; exit 2; }
+            pkg="$2"
+            shift
+            ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage; exit 2 ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
+if [ -n "$pkg" ] && [ "$mode" != upgrade ]; then
+    usage
+    exit 2
+fi
 
-# Create a virtual environment in a tmp directory and install uv into it
-if command -v uv >/dev/null; then
+temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/galaxy_requirements.XXXXXXXXXX")"
+trap 'rm -rf "$temp_dir"' 0
+trap 'exit 1' HUP INT TERM
+
+# Match CI's toolchain, including when the caller has another uv installed.
+uv_version="$(awk '$1 == "uv" { print $2 }' .tool-versions)"
+[ -n "$uv_version" ] || { echo 'Missing uv pin in .tool-versions' >&2; exit 1; }
+if command -v uv >/dev/null && [ "$(uv --version | awk '{ print $2 }')" = "$uv_version" ]; then
     uv="$(command -v uv)"
 else
-    uv_venv=$(mktemp -d "${TMPDIR:-/tmp}/uv_venv.XXXXXXXXXX")
-    python3 -m venv "${uv_venv}"
-    "${uv_venv}/bin/python" -m pip install uv
-    uv="${uv_venv}/bin/uv"
+    if command -v uv >/dev/null; then
+        uv venv "$temp_dir/uv"
+        uv pip install --python "$temp_dir/uv/bin/python" "uv==$uv_version"
+    else
+        python3 -m venv "$temp_dir/uv"
+        "$temp_dir/uv/bin/python" -m pip install "uv==$uv_version"
+    fi
+    uv="$temp_dir/uv/bin/uv"
 fi
 
-# Run uv (this may update pyproject.toml and uv.lock).
-if [ -n "$pkg" ]; then
-    ${uv} lock --upgrade-package "$pkg"
+if [ "$mode" = upgrade ]; then
+    if [ -n "$pkg" ]; then
+        "$uv" lock --upgrade-package "$pkg"
+    else
+        "$uv" lock --upgrade
+    fi
 else
-    ${uv} lock --upgrade
+    "$uv" lock --check
 fi
 
-# Update pinned requirements files.
-UV_EXPORT_OPTIONS='--frozen --no-annotate --no-hashes'
-# shellcheck disable=SC2086
-${uv} export ${UV_EXPORT_OPTIONS} --no-dev > "$this_directory/pinned-requirements.txt"
-# shellcheck disable=SC2086
-${uv} export ${UV_EXPORT_OPTIONS} --only-group=test > "$this_directory/pinned-test-requirements.txt"
-# shellcheck disable=SC2086
-${uv} export ${UV_EXPORT_OPTIONS} --only-group=dev > "$this_directory/dev-requirements.txt"
-# shellcheck disable=SC2086
-${uv} export ${UV_EXPORT_OPTIONS} --only-group=typecheck > "$this_directory/pinned-typecheck-requirements.txt"
+export_requirements() {
+    destination="$1"
+    shift
+    file="${destination##*/}"
+    "$uv" export --locked --no-annotate --no-hashes "$@" > "$temp_dir/$file"
+    if [ "$mode" = check ]; then
+        if ! diff -u "$destination" "$temp_dir/$file"; then
+            echo 'Requirements exports differ from uv.lock; run lib/galaxy/dependencies/update.sh --export-only.' >&2
+            exit 1
+        fi
+    fi
+}
+
+# Generate all files before updating any checked-in export.
+export_requirements "$this_directory/pinned-requirements.txt" --no-dev
+export_requirements "$requirements_dir/pinned-test-requirements.txt" --only-group=test
+export_requirements "$requirements_dir/dev-requirements.txt" --only-group=dev
+export_requirements "$requirements_dir/pinned-typecheck-requirements.txt" --only-group=typecheck
+
+if [ "$mode" != check ]; then
+    cp "$temp_dir/pinned-requirements.txt" "$this_directory/pinned-requirements.txt"
+    for file in pinned-test-requirements.txt dev-requirements.txt pinned-typecheck-requirements.txt; do
+        cp "$temp_dir/$file" "$requirements_dir/$file"
+    done
+fi

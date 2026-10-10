@@ -7,7 +7,10 @@ from typing import (
 
 from pydantic import BaseModel
 from pydantic.annotated_handlers import GetCoreSchemaHandler
-from typing_extensions import override
+from typing_extensions import (
+    override,
+    TypeForm,
+)
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -21,7 +24,7 @@ ref_to_name: dict[str, str] = {}
 
 class GenericModel(BaseModel):
     @classmethod
-    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+    def model_parametrized_name(cls, params: tuple[TypeForm[Any], ...]) -> str:
         suffix = cls.__determine_suffix__(params)
         class_name = cls.__name__.split("Generic", 1)[-1]
         return f"{class_name}{suffix}"
@@ -33,7 +36,7 @@ class GenericModel(BaseModel):
         return result
 
     @classmethod
-    def __determine_suffix__(cls, params: tuple[type[Any], ...]) -> str:
+    def __determine_suffix__(cls, params: tuple[TypeForm[Any], ...]) -> str:
         suffix = "Incoming"
         if params[0] is EncodedDatabaseIdField:
             suffix = "Response"

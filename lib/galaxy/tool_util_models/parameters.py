@@ -48,6 +48,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic_extra_types.color import Color
 from typing_extensions import (
     Protocol,
+    TypeForm,
 )
 
 from ._base import ToolSourceBaseModel
@@ -1020,7 +1021,7 @@ def build_collection_model_for_type(collection_type: str) -> type[DataCollection
     model = create_model(
         safe_name,
         __base__=DataCollectionInternalJsonBase,
-        collection_type=(Literal[collection_type], ...),
+        collection_type=(cast(TypeForm[str], Literal[collection_type]), ...),
         elements=(elements_type, ...),
     )
 
@@ -1381,7 +1382,7 @@ AdaptedDataCollectionRequest = Annotated[
     AdaptedDataCollectionPromoteDatasetToCollectionRequest | AdaptedDataCollectionPromoteDatasetsToCollectionRequest,
     Field(discriminator="adapter_type"),
 ]
-AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)  # type: ignore[var-annotated]
+AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)
 
 
 class AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
@@ -1412,7 +1413,7 @@ AdaptedDataCollectionRequestInternal = Annotated[
     | AdaptedDataCollectionPromoteDatasetsToCollectionRequestInternal,
     Field(discriminator="adapter_type"),
 ]
-AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(AdaptedDataCollectionRequestInternal)  # type: ignore[var-annotated]
+AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(AdaptedDataCollectionRequestInternal)
 
 DataCollectionJobInternal = cast(type, DataCollectionRequestInternal | AdaptedDataCollectionRequestInternal)
 

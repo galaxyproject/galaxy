@@ -1,5 +1,5 @@
 [project]
-name = "galaxy"
+name = "galaxy-workspace"
 version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version/__init__.py
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = [
@@ -50,7 +50,8 @@ dependencies = [
     "ijson",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
     "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
-    "isal>=1.7.0",  # Python 3.13 support
+    "isal>=1.7.0",
+    "isal>=1.8.0; python_version >= '3.14'",  # Wheels for Python 3.14 and newer
     "jinja2",
     "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
     "lagom",
@@ -262,6 +263,8 @@ keep-runtime-typing = true
 "lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
 
 [tool.uv]
+# Build settings shared by workspace members.
+config-settings = { editable_mode = "compat" }
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949
@@ -271,3 +274,70 @@ default-groups = []
 extra-index-url = ["https://wheels.galaxyproject.org/simple"]
 index-strategy = "unsafe-best-match"
 package = false
+
+# Galaxy's index carries isal 1.8.0 wheels for Python 3.15 only. Select PyPI
+# explicitly on earlier Python versions so those wheels do not shadow PyPI's
+# wheels for the same release.
+[[tool.uv.index]]
+name = "isal-pypi"
+url = "https://pypi.org/simple"
+explicit = true
+
+[tool.uv.sources]
+isal = { index = "isal-pypi", marker = "python_version < '3.15'" }
+galaxy-auth = { workspace = true }
+galaxy-config = { workspace = true }
+galaxy-data = { workspace = true }
+galaxy-files = { workspace = true }
+galaxy-job-execution = { workspace = true }
+galaxy-job-metrics = { workspace = true }
+galaxy-navigation = { workspace = true }
+galaxy-objectstore = { workspace = true }
+galaxy-schema = { workspace = true }
+galaxy-selenium = { workspace = true }
+galaxy-test-api = { workspace = true }
+galaxy-test-base = { workspace = true }
+galaxy-test-driver = { workspace = true }
+galaxy-test-selenium = { workspace = true }
+galaxy-tool-shed = { workspace = true }
+galaxy-tool-shed-schema = { workspace = true }
+galaxy-tours = { workspace = true }
+galaxy-web-apps = { workspace = true }
+galaxy-web-client = { workspace = true }
+galaxy-web-framework = { workspace = true }
+galaxy-web-stack = { workspace = true }
+galaxy-util = { workspace = true }
+galaxy-tool-util-models = { workspace = true }
+galaxy-tool-util = { workspace = true }
+galaxy-app = { workspace = true }
+galaxy = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+  "packages/tool_util_models",
+  "packages/util",
+  "packages/config",
+  "packages/files",
+  "packages/job_metrics",
+  "packages/navigation",
+  "packages/objectstore",
+  "packages/schema",
+  "packages/tool_shed_schema",
+  "packages/tool_util",
+  "packages/data",
+  "packages/selenium",
+  "packages/tours",
+  "packages/test_base",
+  "packages/test_driver",
+  "packages/test_api",
+  "packages/test_selenium",
+  "packages/auth",
+  "packages/job_execution",
+  "packages/web_framework",
+  "packages/web_stack",
+  "packages/app",
+  "packages/web_apps",
+  "packages/tool_shed",
+  "packages/web_client",
+  "packages/meta",
+]

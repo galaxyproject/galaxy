@@ -5,7 +5,6 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!packages/**'
       - '!.github/workflows/**'
       - '.github/workflows/converter_tests.yaml'
   pull_request:
@@ -13,7 +12,6 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!packages/**'
       - '!.github/workflows/**'
       - '.github/workflows/converter_tests.yaml'
   schedule:
@@ -55,6 +53,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'

@@ -4,16 +4,14 @@ on:
     paths:
       - '**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
-      - '!packages/**'
+      - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
   pull_request:
     paths:
       - '**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
-      - '!packages/**'
+      - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
 env:
@@ -54,6 +52,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Install Python
         run: uv python install

@@ -1,0 +1,34 @@
+name: Check dependency exports
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - 'packages/**/pyproject.toml'
+      - uv.lock
+      - .tool-versions
+      - 'lib/galaxy/dependencies/**'
+      - .github/workflows/dependency_exports.yaml
+  push:
+    branches: [dev]
+    paths:
+      - pyproject.toml
+      - 'packages/**/pyproject.toml'
+      - uv.lock
+      - .tool-versions
+      - 'lib/galaxy/dependencies/**'
+      - .github/workflows/dependency_exports.yaml
+permissions: {}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version-file: .tool-versions
+          python-version: '3.10'
+      - name: Check lock and requirements exports
+        run: sh lib/galaxy/dependencies/update.sh --check

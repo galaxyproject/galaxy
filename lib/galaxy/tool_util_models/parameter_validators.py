@@ -602,8 +602,8 @@ AnySafeValidatorModel = Annotated[
     Field(discriminator="type"),
 ]
 
-DiscriminatedAnyValidatorModel = TypeAdapter(AnyValidatorModel)  # type: ignore[var-annotated]
-DiscriminatedAnySafeValidatorModel = TypeAdapter(AnySafeValidatorModel)  # type: ignore[var-annotated]
+DiscriminatedAnyValidatorModel = TypeAdapter(AnyValidatorModel)
+DiscriminatedAnySafeValidatorModel = TypeAdapter(AnySafeValidatorModel)
 
 
 def raise_error_if_validation_fails(
