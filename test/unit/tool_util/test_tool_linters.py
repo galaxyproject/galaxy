@@ -3086,6 +3086,7 @@ VALID_DATATYPES = """
     </inputs>
     <outputs>
         <data name="autoformat" format="auto"/>
+        <data name="sniffed" format="_sniff_"/>
         <data name="name" format="another_invalid">
             <change_format>
                 <when input="input_text" value="foo" format="just_another_invalid"/>
@@ -3094,6 +3095,8 @@ VALID_DATATYPES = """
         <collection name="collection_name" format="collection_format">
             <discover_datasets format="txt"/>
             <discover_datasets ext="invalid"/>
+            <discover_datasets format="_sniff_"/>
+            <discover_datasets format="_infer_from_file_name_"/>
         </collection>
     </outputs>
     <tests>
@@ -3138,8 +3141,9 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
+    assert "Unknown datatype [_sniff_] used in data" in lint_ctx.error_messages
     assert "Invalid format (auto or input) in tool or tool test inputs" in lint_ctx.error_messages  # 2x
-    assert len(lint_ctx.error_messages) == 8
+    assert len(lint_ctx.error_messages) == 9
 
 
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">

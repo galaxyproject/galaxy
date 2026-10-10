@@ -6838,12 +6838,20 @@ Therefore a filter for such a variable looks like the following example.
     </xs:attribute>
     <xs:attribute name="format" type="Format" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[Format (or datatype) of discovered datasets (an alias with ``ext``).
+Use ``_sniff_`` to detect the datatype from each file's content, or ``_infer_from_file_name_``
+to pick the datatype matching each file name's extension (``data`` if there is none).
+An ``ext`` captured by ``pattern`` takes precedence over this value. Extensions that are not
+datatypes on the Galaxy server are set to ``data`` when the job finishes.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ext" type="Format" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[Format (or datatype) of discovered datasets (an alias with ``format``).
+Use ``_sniff_`` to detect the datatype from each file's content, or ``_infer_from_file_name_``
+to pick the datatype matching each file name's extension (``data`` if there is none).
+An ``ext`` captured by ``pattern`` takes precedence over this value. Extensions that are not
+datatypes on the Galaxy server are set to ``data`` when the job finishes.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="sort_by" type="xs:string" use="optional">

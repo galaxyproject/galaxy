@@ -1,0 +1,36 @@
+<tool id="discover_unknown_ext" name="discover_unknown_ext" version="0.1.0">
+    <command><![CDATA[
+mkdir out &&
+echo 1 > out/1.txt &&
+echo 2 > out/2.notadatatype &&
+echo 3 > '$declared'
+]]></command>
+    <inputs />
+    <outputs>
+        <data name="declared" format="notadatatype" />
+        <collection name="output" type="list">
+            <discover_datasets directory="out" pattern="__name_and_ext__" />
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <output name="declared" ftype="data">
+                <assert_contents>
+                    <has_text text="3" />
+                </assert_contents>
+            </output>
+            <output_collection name="output" type="list" count="2">
+                <element name="1" ftype="txt">
+                    <assert_contents>
+                        <has_text text="1" />
+                    </assert_contents>
+                </element>
+                <element name="2" ftype="data">
+                    <assert_contents>
+                        <has_text text="2" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+</tool>

@@ -246,6 +246,8 @@
   <tool file="discover_sort_by.xml" />
   <tool file="discover_long_name.xml" />
   <tool file="discover_default_ext.xml" />
+  <tool file="discover_unknown_ext.xml" />
+  <tool file="discover_format_tokens.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_pick_larger_file.xml" />
   <tool file="expression_parse_int.xml" />

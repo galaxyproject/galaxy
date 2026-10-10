@@ -99,6 +99,8 @@ class ValidDatatypes(Linter):
                         continue
                     if format == "auto":
                         continue
+                    if elem.tag == "discover_datasets" and format in ("_sniff_", "_infer_from_file_name_"):
+                        continue
                     if format not in datatypes:
                         lint_ctx.error(
                             f"Unknown datatype [{format}] used in {elem.tag} element",
