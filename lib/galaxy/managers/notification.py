@@ -372,7 +372,7 @@ class NotificationManager:
             stmt = stmt.values(seen_time=seen_time)
         if request.deleted is not None:
             stmt = stmt.values(deleted=request.deleted)
-        result = cast(CursorResult, self.sa_session.execute(stmt))
+        result = cast(CursorResult, self.sa_session.execute(stmt))  # type: ignore[redundant-cast, unused-ignore]
         updated_row_count = result.rowcount
         self.sa_session.commit()
         return updated_row_count
@@ -396,7 +396,7 @@ class NotificationManager:
             stmt = stmt.values(expiration_time=request.expiration_time)
         if request.content is not None:
             stmt = stmt.values(content=request.content.json())
-        result = cast(CursorResult, self.sa_session.execute(stmt))
+        result = cast(CursorResult, self.sa_session.execute(stmt))  # type: ignore[redundant-cast, unused-ignore]
         updated_row_count = result.rowcount
         self.sa_session.commit()
         return updated_row_count
@@ -450,13 +450,13 @@ class NotificationManager:
         delete_stmt = delete(UserNotificationAssociation).where(
             UserNotificationAssociation.notification_id.in_(expired_notifications_stmt)
         )
-        result = cast(
+        result = cast(  # type: ignore[redundant-cast, unused-ignore]
             CursorResult, self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
         )
         deleted_associations_count = result.rowcount
 
         delete_stmt = delete(Notification).where(notification_has_expired)
-        result = cast(CursorResult, self.sa_session.execute(delete_stmt))
+        result = cast(CursorResult, self.sa_session.execute(delete_stmt))  # type: ignore[redundant-cast, unused-ignore]
         deleted_notifications_count = result.rowcount
 
         self.sa_session.commit()

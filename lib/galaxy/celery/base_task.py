@@ -145,7 +145,7 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
             except IntegrityError:
                 #  Row was inserted by another thread since we tried the update above.
                 sched_time = now + datetime.timedelta(seconds=task_interval_secs)
-                result = cast(
+                result = cast(  # type: ignore[redundant-cast, unused-ignore]
                     CursorResult, sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
                 )
                 if result.rowcount == 0:

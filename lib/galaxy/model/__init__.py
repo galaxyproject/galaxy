@@ -2044,7 +2044,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         session = object_session(self)
         if session and self.id and state not in Job.finished_states:
             # Do not update if job is in a terminal state
-            rval = cast(  # https://docs.sqlalchemy.org/en/20/changelog/changelog_20.html#change-0651b868cdc88d28c57469affceaf05f
+            rval = cast(  # type: ignore[redundant-cast, unused-ignore]  # https://docs.sqlalchemy.org/en/20/changelog/changelog_20.html#change-0651b868cdc88d28c57469affceaf05f
                 CursorResult,
                 session.execute(
                     update(Job)
