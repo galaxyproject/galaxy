@@ -1,4 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -51,7 +52,7 @@ const SELECTORS = {
 };
 
 const REGISTERED_USER_STATE = {
-    user: { currentUser: { id: "user1", email: "u@galaxy.test", isAnonymous: false } },
+    userStore: { currentUser: getFakeRegisteredUser() },
 };
 
 enableAutoUnmount(afterEach);
