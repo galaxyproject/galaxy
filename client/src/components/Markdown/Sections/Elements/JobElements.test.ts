@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -23,11 +23,13 @@ const localVue = getLocalVue();
 // Keeps requests the imported stores make off the network.
 useServerMock();
 
-let wrapper: VueWrapper | undefined;
+function toolDetailsButton(label = "Tool details") {
+    return `button[aria-label='${label}']`;
+}
+
+enableAutoUnmount(afterEach);
 
 afterEach(() => {
-    wrapper?.unmount();
-    wrapper = undefined;
     Object.keys(translations).forEach((text) => delete translations[text]);
 });
 
@@ -40,7 +42,7 @@ describe.each([
         // The testing store stubs fetchJob, so stand in for the job it would have loaded.
         // @ts-expect-error: getters are only writable on a testing store
         useJobStore(pinia).getJob = () => (toolId ? ({ tool_id: toolId } as ShowFullJobResponse) : null);
-        wrapper = mount(component as object, {
+        return mount(component, {
             props: { jobId: "job_id", title: "Job" },
             global: {
                 ...withPlugins(localVue, pinia),
@@ -55,13 +57,12 @@ describe.each([
                 },
             },
         });
-        return wrapper;
     }
 
     it("anchors the tool popover to a named button so keyboard users can open it", () => {
         const element = mountElement("cat1");
 
-        const button = element.find("button[aria-label='Tool details']");
+        const button = element.find(toolDetailsButton());
         const popover = element.findComponent(ToolLinkPopover);
         const target = (popover.props("target") as () => { $el?: Element })();
 
@@ -73,12 +74,12 @@ describe.each([
     it("localizes the tool details button's accessible name", () => {
         translations["Tool details"] = "Werkzeugdetails";
 
-        expect(mountElement("cat1").find("button[aria-label='Werkzeugdetails']").exists()).toBe(true);
+        expect(mountElement("cat1").find(toolDetailsButton("Werkzeugdetails")).exists()).toBe(true);
     });
 
     it("shows no tool details button until the job's tool is known", () => {
         const element = mountElement();
 
-        expect(element.find("button[aria-label='Tool details']").exists()).toBe(false);
+        expect(element.find(toolDetailsButton()).exists()).toBe(false);
     });
 });
