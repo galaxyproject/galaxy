@@ -475,7 +475,13 @@ def build_index_entry_from_source(
         profile = parse_profile_version(tool_source)
         action_module = tool_source.parse_action_module()
         requirements, containers, _, _, _ = tool_source.parse_requirements()
-        tests = tool_source.parse_tests_to_dict().get("tests", [])
+        # Like the eager Tool, which defers and tolerates test parsing, a
+        # malformed <tests> block only loses the test count, not the tool.
+        try:
+            test_count = len(tool_source.parse_tests_to_dict().get("tests", []))
+        except Exception as e:
+            log.warning("Could not parse tests of %s, indexing it without tests: %s", tool_id, e)
+            test_count = 0
 
         # Capture bounded help text for the toolbox-owned search corpus. Parse failures drop help
         # for this entry rather than failing the populate — a malformed help
@@ -513,7 +519,7 @@ def build_index_entry_from_source(
             require_login=require_login,
             tool_type=tool_type,
             profile=profile,
-            test_count=len(tests),
+            test_count=test_count,
             requirements=requirements.to_dict(),
             container_requirements=[container.to_dict() for container in containers],
             produces_real_jobs=tool_produces_real_jobs(tool_type, action_module),

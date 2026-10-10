@@ -2,8 +2,11 @@
 
 import os
 import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+from sqlalchemy import event
 
 import galaxy.tools.source_store.sqlalchemy as sqlalchemy_store_module
 from galaxy.tools.source_store import (
@@ -139,3 +142,28 @@ def test_list_source_paths_skips_pathless_rows(sqlite_path):
     store.store(with_path)
     store.store(_source(hash="h2", tool_id="t2"))
     assert store.list_source_paths() == {"/tools/a.xml"}
+
+
+def test_writes_from_threads_are_serialized(sqlite_path):
+    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    open_writes = []
+    max_open_writes = 0
+
+    def on_begin(conn):
+        nonlocal max_open_writes
+        open_writes.append(conn)
+        max_open_writes = max(max_open_writes, len(open_writes))
+
+    def on_commit(conn):
+        # Holding the transaction open lets an unserialized writer overlap.
+        time.sleep(0.05)
+        open_writes.remove(conn)
+
+    event.listen(store._engine, "begin", on_begin)
+    event.listen(store._engine, "commit", on_commit)
+
+    with ThreadPoolExecutor(4) as pool:
+        list(pool.map(lambda i: store.store(_source(hash=f"h{i}", tool_id=f"t{i}")), range(8)))
+
+    assert max_open_writes == 1
+    assert store.count() == 8
