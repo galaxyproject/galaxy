@@ -1,28 +1,18 @@
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { emittedArg } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it } from "vitest";
+
+import * as FormDrilldownStories from "./FormDrilldown.stories";
 
 import FormDrilldown from "./FormDrilldown.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(FormDrilldownStories);
+const mountStory = useStoryMount();
 
-const OPTIONS = [
-    {
-        name: "a",
-        value: "a",
-        options: [
-            { name: "aa", value: "aa", options: [] },
-            { name: "ab", value: "ab", options: [{ name: "aba", value: "aba", options: [] }] },
-        ],
-    },
-    { name: "b", value: "b", options: [{ name: "ba", value: "ba", options: [] }] },
-];
-
-function mountDrilldown({ multiple, value }) {
-    return mount(FormDrilldown, {
-        props: { id: "dd", value, options: OPTIONS, multiple },
-        global: localVue,
-    });
+/** Mounts a story, whose harness passes every emitted `input` back as `value`, as a v-model parent does. */
+function mountDrilldown(story, props = {}) {
+    return mountStory(story, { props }).getComponent(FormDrilldown);
 }
 
 async function toggle(wrapper, name, checked) {
@@ -31,86 +21,89 @@ async function toggle(wrapper, name, checked) {
 
 describe("FormDrilldown", () => {
     it("submits only the chosen option when it has descendants", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: [] });
-        await toggle(wrapper, "a", true);
+        const wrapper = mountDrilldown(stories.NothingSelected);
+        await toggle(wrapper, "Bacteria", true);
 
-        expect(emittedArg(wrapper, "input")).toEqual(["a"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["bacteria"]);
     });
 
     it("keeps other selections when adding one", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["ba"] });
-        await toggle(wrapper, "ab", true);
+        const wrapper = mountDrilldown(stories.NestedOptionSelected);
+        await toggle(wrapper, "Proteobacteria", true);
 
-        expect(emittedArg(wrapper, "input")).toEqual(["ba", "ab"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["euryarchaeota", "proteobacteria"]);
     });
 
     it("removes only the deselected option, keeping its selected descendants", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["a", "aa"] });
-        await toggle(wrapper, "a", false);
+        const wrapper = mountDrilldown(stories.ParentAndChildSelected);
+        await toggle(wrapper, "Bacteria", false);
 
-        expect(emittedArg(wrapper, "input")).toEqual(["aa"]);
+        expect(emittedArg(wrapper, "input")).toEqual(["firmicutes"]);
     });
 
     it("emits the chosen value alone when not multiple", async () => {
-        const wrapper = mountDrilldown({ multiple: false, value: null });
-        await toggle(wrapper, "aba", true);
+        const wrapper = mountDrilldown(stories.SingleChoice);
+        await toggle(wrapper, "Escherichia", true);
 
-        expect(emittedArg(wrapper, "input")).toBe("aba");
+        expect(emittedArg(wrapper, "input")).toBe("escherichia");
     });
 
     it("checks the options in the current value", () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["aa", "ba"] });
-        expect(wrapper.find("#drilldown-option-aa").element.checked).toBe(true);
-        expect(wrapper.find("#drilldown-option-ba").element.checked).toBe(true);
-        expect(wrapper.find("#drilldown-option-ab").element.checked).toBe(false);
+        const wrapper = mountDrilldown(stories.NothingSelected, { value: ["firmicutes", "euryarchaeota"] });
+        expect(wrapper.get("#drilldown-option-Firmicutes").element.checked).toBe(true);
+        expect(wrapper.get("#drilldown-option-Euryarchaeota").element.checked).toBe(true);
+        expect(wrapper.get("#drilldown-option-Proteobacteria").element.checked).toBe(false);
     });
 
     it("selects every value from select all", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: [] });
-        await wrapper.find(".select-all-checkbox input").setValue(true);
-        expect([...emittedArg(wrapper, "input")].sort()).toEqual(["a", "aa", "ab", "aba", "b", "ba"]);
+        const wrapper = mountDrilldown(stories.NothingSelected);
+        await wrapper.get(".select-all-checkbox input").setValue(true);
+        expect([...emittedArg(wrapper, "input")].sort()).toEqual([
+            "archaea",
+            "bacteria",
+            "escherichia",
+            "euryarchaeota",
+            "firmicutes",
+            "proteobacteria",
+        ]);
     });
 
     it("clears the value from select all", async () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["a", "aa", "ab", "aba", "b", "ba"] });
-        const selectAll = wrapper.find(".select-all-checkbox input");
+        const wrapper = mountDrilldown(stories.NothingSelected, {
+            value: ["bacteria", "firmicutes", "proteobacteria", "escherichia", "archaea", "euryarchaeota"],
+        });
+        const selectAll = wrapper.get(".select-all-checkbox input");
         expect(selectAll.element.checked).toBe(true);
         await selectAll.setValue(false);
         expect(emittedArg(wrapper, "input")).toBeNull();
     });
 
     it("marks select all as partly checked when some values are selected", () => {
-        const wrapper = mountDrilldown({ multiple: true, value: ["aa"] });
-        expect(wrapper.find(".select-all-checkbox input").element.indeterminate).toBe(true);
+        const wrapper = mountDrilldown(stories.NothingSelected, { value: ["firmicutes"] });
+        expect(wrapper.get(".select-all-checkbox input").element.indeterminate).toBe(true);
     });
 
     it("gives single-select radios one shared name for keyboard navigation", () => {
-        const wrapper = mountDrilldown({ multiple: false, value: "ab" });
+        const wrapper = mountDrilldown(stories.SingleChoice, { value: "proteobacteria" });
         const radios = wrapper.findAll("input[type=radio]");
         expect(radios.length).toBe(6);
         const names = new Set(radios.map((radio) => radio.attributes("name")));
         expect(names.size).toBe(1);
         expect([...names][0]).toBeTruthy();
-        expect(wrapper.find("#drilldown-option-ab").element.checked).toBe(true);
+        expect(wrapper.get("#drilldown-option-Proteobacteria").element.checked).toBe(true);
         expect(wrapper.find(".select-all-checkbox").exists()).toBe(false);
     });
 
     it("keeps the radios of two drilldowns with the same id in separate groups", async () => {
         const mountSingle = (value) =>
-            mount(FormDrilldown, {
-                props: { id: "dd", value, options: OPTIONS, multiple: false },
-                global: localVue,
-                attachTo: document.body,
-            });
-        const first = mountSingle("a");
-        const second = mountSingle("b");
-        const firstName = first.find("input[type=radio]").attributes("name");
-        const secondName = second.find("input[type=radio]").attributes("name");
+            mountStory(stories.SingleChoice, { props: { value }, attachTo: document.body }).getComponent(FormDrilldown);
+        const first = mountSingle("bacteria");
+        const second = mountSingle("archaea");
+        const firstName = first.get("input[type=radio]").attributes("name");
+        const secondName = second.get("input[type=radio]").attributes("name");
         expect(firstName).toBeTruthy();
         expect(firstName).not.toBe(secondName);
-        await first.find("#drilldown-option-aa").setValue(true);
-        expect(second.find("#drilldown-option-b").element.checked).toBe(true);
-        first.unmount();
-        second.unmount();
+        await first.get("#drilldown-option-Firmicutes").setValue(true);
+        expect(second.get("#drilldown-option-Archaea").element.checked).toBe(true);
     });
 });
