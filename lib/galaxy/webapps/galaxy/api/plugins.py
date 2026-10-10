@@ -22,14 +22,18 @@ from fastapi.responses import JSONResponse
 from openai import (
     APIError,
     AsyncOpenAI,
+    omit,
 )
 from openai._streaming import AsyncStream
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
     ChatCompletionMessageParam,
+    ChatCompletionStreamOptionsParam,
+    ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
 )
+from openai.types.shared_params import ReasoningEffort
 from pydantic import BaseModel
 
 from galaxy.config import GalaxyAppConfiguration
@@ -80,9 +84,15 @@ TOKENS_MAX = 8192
 TOP_P = 0.9
 
 
+class ChatTextPart(BaseModel):
+    type: Literal["text"]
+    text: str
+    model_config = dict(extra="allow")
+
+
 class ChatMessage(BaseModel):
     role: Literal["assistant", "system", "tool", "user"]
-    content: Optional[str] = None
+    content: Optional[Union[str, list[ChatTextPart]]] = None
     tool_calls: Optional[list[dict[str, Any]]] = None
     model_config = dict(extra="allow")
 
@@ -102,7 +112,11 @@ class ChatCompletionRequest(BaseModel):
     messages: list[ChatMessage]
     tools: Optional[list[ChatTool]] = None
     stream: Optional[bool] = False
+    stream_options: Optional[ChatCompletionStreamOptionsParam] = None
     max_tokens: Optional[int] = None
+    parallel_tool_calls: Optional[bool] = None
+    reasoning_effort: Optional[ReasoningEffort] = None
+    tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None
     model_config = dict(extra="allow")
 
 
@@ -209,23 +223,15 @@ class FastAPIPlugins:
                 dict(role="system", content=prompt),
             ],
         )
-        original_messages = payload.messages
-        for msg in original_messages:
-            role = msg.role
-            content = msg.content
-            tool_calls = msg.tool_calls
-            if role == "assistant":
-                msg_dict: dict[str, Any] = dict(role="assistant")
-                if content is not None:
-                    msg_dict["content"] = content
-                if isinstance(tool_calls, list):
-                    msg_dict["tool_calls"] = tool_calls
-                if len(msg_dict) > 1:
-                    messages.append(cast(ChatCompletionMessageParam, msg_dict))
-            elif role in ("user", "tool") and isinstance(content, str):
-                messages.append(cast(ChatCompletionMessageParam, dict(role=role, content=content)))
-            else:
+        for msg in payload.messages:
+            if msg.role == "system":
                 continue
+            msg_dict = msg.model_dump(exclude_none=True)
+            if msg.role == "assistant" and not ({"content", "tool_calls"} & msg_dict.keys()):
+                continue
+            if msg.role in ("user", "tool") and "content" not in msg_dict:
+                continue
+            messages.append(cast(ChatCompletionMessageParam, msg_dict))
             if len(messages) >= MAX_MESSAGES:
                 return self._create_error("You have exceeded the number of maximum messages.")
 
@@ -275,9 +281,13 @@ class FastAPIPlugins:
                 max_tokens=max_tokens,
                 messages=messages,
                 model=ai_model,
+                parallel_tool_calls=omit if payload.parallel_tool_calls is None else payload.parallel_tool_calls,
+                reasoning_effort=payload.reasoning_effort or omit,
                 stream=stream,
+                stream_options=payload.stream_options if stream and payload.stream_options else omit,
                 temperature=TEMPERATURE,
-                tools=tools,
+                tool_choice=payload.tool_choice or omit,
+                tools=tools or omit,
                 top_p=TOP_P,
             )
         except APIError as e:
