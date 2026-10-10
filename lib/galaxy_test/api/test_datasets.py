@@ -1,7 +1,10 @@
 import textwrap
 import zipfile
 from io import BytesIO
+from typing import Any
 from urllib.parse import quote
+
+import pytest
 
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -371,7 +374,7 @@ class TestDatasetsApi(ApiTestCase):
         assert display_response.text.startswith(header)
         assert len(display_response.text) <= 100000
 
-    def test_display_extra_paths(self, history_id: str):
+    def _create_directory_dataset(self, history_id: str) -> tuple[dict[str, Any], str]:
         test_data_resolver = TestDataResolver()
         with open(test_data_resolver.get_filename("1.fasta")) as fh:
             fasta_contents = fh.read()
@@ -379,8 +382,11 @@ class TestDatasetsApi(ApiTestCase):
         response = self.dataset_populator.run_tool(
             "create_directory_index", inputs={"reference": {"src": "hda", "id": hda1["id"]}}, history_id=history_id
         )
-        self.dataset_populator.wait_for_job(response["jobs"][0]["id"])
-        directory_dataset = response["outputs"][0]
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        return response["outputs"][0], fasta_contents
+
+    def test_display_extra_paths(self, history_id: str):
+        directory_dataset, fasta_contents = self._create_directory_dataset(history_id)
         # Check that we can access extra_files/1.fasta via the display endpoint.
         display_response = self._get(
             f"histories/{history_id}/contents/{directory_dataset['id']}/display?filename=/1.fasta"
@@ -391,6 +397,25 @@ class TestDatasetsApi(ApiTestCase):
         extra_files_response = self._get(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
         extra_files_response.raise_for_status()
         assert extra_files_response.text == fasta_contents
+        head_response = self._head(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
+        self._assert_status_code_is(head_response, 200)
+        assert head_response.headers["content-length"] == str(len(fasta_contents.encode()))
+        assert head_response.content == b""
+
+    @pytest.mark.parametrize("datatype", ["directory", "bwa_index", "ome_zarr"])
+    def test_directory_subclass_download_is_zip(self, history_id: str, datatype: str):
+        directory_dataset, fasta_contents = self._create_directory_dataset(history_id)
+        update_response = self._put(
+            f"histories/{history_id}/contents/{directory_dataset['id']}", data={"datatype": datatype}, json=True
+        )
+        self._assert_status_code_is(update_response, 200)
+        assert update_response.json()["extension"] == datatype
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        response = self._get(f"datasets/{directory_dataset['id']}/display?to_ext={datatype}")
+        self._assert_status_code_is(response, 200)
+        archive = zipfile.ZipFile(BytesIO(response.content))
+        assert archive.namelist() == ["1.fasta"]
+        assert archive.read("1.fasta").decode() == fasta_contents
 
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(
