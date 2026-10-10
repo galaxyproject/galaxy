@@ -1,16 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import MountTarget from "./RegisterForm.vue";
+import RegisterForm from "./RegisterForm.vue";
 
 const localVue = getLocalVue(true);
-const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
 // const SELECTORS = {
@@ -25,7 +26,7 @@ interface PostRequest {
 let postRequests: PostRequest[] = [];
 
 describe("RegisterForm", () => {
-    let wrapper: VueWrapper;
+    let wrapper: VueWrapper<InstanceType<typeof RegisterForm>>;
 
     beforeEach(() => {
         postRequests = [];
@@ -38,34 +39,41 @@ describe("RegisterForm", () => {
         );
 
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+        onTestFinished(() => disposePinia(pinia));
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div></div>" } }],
+        });
 
-        wrapper = mount(MountTarget as object, {
+        wrapper = mount(RegisterForm, {
             props: {
                 sessionCsrfToken: "sessionCsrfToken",
             },
-            global: localVue,
-            pinia,
-            router,
+            global: withPlugins(localVue, pinia, router),
         });
     });
 
-    it("basics", async () => {
-        const cardHeader = wrapper.find(".card-header");
-        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
-        (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
+    afterEach(() => {
+        vi.mocked(sanitizeHtml).mockClear();
+    });
+    enableAutoUnmount(afterEach);
+
+    it("submits the entered email and password to create an account", async () => {
+        const cardHeader = wrapper.get(".card-header");
+        expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(4);
 
-        const usernameField = nth(inputs, 0);
-        expect(usernameField.attributes("type")).toBe("text");
-        await usernameField.setValue("test_user");
+        const emailField = nth(inputs, 0);
+        expect(emailField.attributes("type")).toBe("text");
+        await emailField.setValue("test_user");
 
         const pwdField = nth(inputs, 1);
         expect(pwdField.attributes("type")).toBe("password");
         await pwdField.setValue("test_pwd");
 
-        const submitButton = wrapper.find("button[type='submit']");
+        const submitButton = wrapper.get("button[type='submit']");
         await submitButton.trigger("submit");
         await flushPromises();
 
@@ -89,9 +97,8 @@ describe("RegisterForm", () => {
 
     // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
     // it("switching from Register to Login", async () => {
-    //     const cardHeader = await wrapper.find(".card-header");
-    //     // TODO: fix typing, see note in ExportForm.test.ts
-    //     (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
+    //     const cardHeader = await wrapper.get(".card-header");
+    //     expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
 
     //     const loginToggle = wrapper.find(SELECTORS.LOGIN_TOGGLE); // TODO: Never appears because of the GLink change
     //     expect(loginToggle.exists()).toBeTruthy();
@@ -106,6 +113,6 @@ describe("RegisterForm", () => {
         const message = 'Read the <a href="https://example.org/terms" target="_blank">terms</a>';
         await wrapper.setProps({ registrationWarningMessage: message });
         expect(sanitizeHtml).not.toHaveBeenCalledWith(message, expect.anything());
-        expect(wrapper.find(".alert span").element.innerHTML).toBe(message);
+        expect(wrapper.get(".alert span").element.innerHTML).toBe(message);
     });
 });
