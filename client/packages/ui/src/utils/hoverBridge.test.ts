@@ -47,6 +47,21 @@ function findDeadSpot(from: Rect, to: Rect) {
 const trigger = { x: 134, y: 0, width: 24, height: 20 };
 const popover = { x: 8, y: 30, width: 276, height: 100 };
 
+// A trigger and its popover for each placement, 10px apart.
+const LAYOUTS = {
+    "bottom-start": { from: { x: 0, y: 0, width: 16, height: 16 }, to: { x: 0, y: 26, width: 276, height: 100 } },
+    "top-start": { from: { x: 50, y: 200, width: 20, height: 20 }, to: { x: 0, y: 90, width: 120, height: 100 } },
+    right: { from: { x: 0, y: 50, width: 20, height: 20 }, to: { x: 30, y: 0, width: 100, height: 150 } },
+    "left-end": { from: { x: 200, y: 10, width: 20, height: 20 }, to: { x: 90, y: 0, width: 100, height: 60 } },
+    "bottom, wider trigger": {
+        from: { x: 0, y: 0, width: 300, height: 20 },
+        to: { x: 100, y: 30, width: 100, height: 50 },
+    },
+} satisfies Record<string, { from: Rect; to: Rect }>;
+
+type Placement = keyof typeof LAYOUTS;
+const PLACEMENTS = Object.keys(LAYOUTS) as Placement[];
+
 describe("computeHoverBridge", () => {
     it("covers the gap and the popover when leaving towards it", () => {
         const bridge = computeHoverBridge([146, 20.5], trigger, popover);
@@ -84,17 +99,17 @@ describe("computeHoverBridge", () => {
         expect(computeHoverBridge([158.5, 11], trigger, popover)).not.toEqual([]);
     });
 
-    it.each<[string, Rect, Rect, Point]>([
-        ["top-start", { x: 50, y: 200, width: 20, height: 20 }, { x: 0, y: 90, width: 120, height: 100 }, [60, 220.5]],
-        ["right", { x: 0, y: 50, width: 20, height: 20 }, { x: 30, y: 0, width: 100, height: 150 }, [-0.5, 60]],
-        ["left-end", { x: 200, y: 10, width: 20, height: 20 }, { x: 90, y: 0, width: 100, height: 60 }, [220.5, 20]],
-    ])("drops an exit through the far edge from a %s popover", (_placement, from, to, exit) => {
+    it.each<[Placement, Point]>([
+        ["top-start", [60, 220.5]],
+        ["right", [-0.5, 60]],
+        ["left-end", [220.5, 20]],
+    ])("drops an exit through the far edge from a %s popover", (placement, exit) => {
+        const { from, to } = LAYOUTS[placement];
         expect(computeHoverBridge(exit, from, to)).toEqual([]);
     });
 
     it("covers a slow diagonal that leaves the trigger through its side edge", () => {
-        const icon = { x: 0, y: 0, width: 16, height: 16 };
-        const wide = { x: 0, y: 26, width: 276, height: 100 };
+        const { from: icon, to: wide } = LAYOUTS["bottom-start"];
         // Centre to centre, leaving the icon's right edge at y ~12.
         const path = (t: number): Point => [8 + 130 * t, 8 + 68 * t];
         const bridge = computeHoverBridge(path(0.062), icon, wide);
@@ -104,28 +119,25 @@ describe("computeHoverBridge", () => {
         }
     });
 
-    it.each<[string, Rect, Rect]>([
-        ["bottom-start", { x: 0, y: 0, width: 16, height: 16 }, { x: 0, y: 26, width: 276, height: 100 }],
-        ["top-start", { x: 50, y: 200, width: 20, height: 20 }, { x: 0, y: 90, width: 120, height: 100 }],
-        ["right", { x: 0, y: 50, width: 20, height: 20 }, { x: 30, y: 0, width: 100, height: 150 }],
-        ["left-end", { x: 200, y: 10, width: 20, height: 20 }, { x: 90, y: 0, width: 100, height: 60 }],
-        ["bottom, wider trigger", { x: 0, y: 0, width: 300, height: 20 }, { x: 100, y: 30, width: 100, height: 50 }],
-    ])("leaves no dead spot on a straight path into a %s popover", (_placement, from, to) => {
+    it.each(PLACEMENTS)("leaves no dead spot on a straight path into a %s popover", (placement) => {
+        const { from, to } = LAYOUTS[placement];
         expect(findDeadSpot(from, to)).toBeNull();
     });
 });
 
 describe("computeHoverGap", () => {
-    it("spans the gap over the extent both elements share", () => {
+    it("spans the gap below, over the width both elements share", () => {
         expect(computeHoverGap(trigger, popover)).toEqual([
             [134, 20],
             [158, 20],
             [158, 30],
             [134, 30],
         ]);
-        expect(
-            computeHoverGap({ x: 0, y: 50, width: 20, height: 20 }, { x: 30, y: 0, width: 100, height: 150 }),
-        ).toEqual([
+    });
+
+    it("spans the gap beside, over the height both elements share", () => {
+        const { from, to } = LAYOUTS.right;
+        expect(computeHoverGap(from, to)).toEqual([
             [20, 50],
             [30, 50],
             [30, 70],
@@ -133,8 +145,10 @@ describe("computeHoverGap", () => {
         ]);
     });
 
-    it("is empty when the elements touch or only meet diagonally", () => {
-        expect(computeHoverGap(trigger, { ...popover, y: 20 })).toEqual([]);
-        expect(computeHoverGap(trigger, { x: 200, y: 40, width: 50, height: 50 })).toEqual([]);
+    it.each<[string, Rect]>([
+        ["touch", { ...popover, y: 20 }],
+        ["only meet diagonally", { x: 200, y: 40, width: 50, height: 50 }],
+    ])("is empty when the elements %s", (_relation, other) => {
+        expect(computeHoverGap(trigger, other)).toEqual([]);
     });
 });
