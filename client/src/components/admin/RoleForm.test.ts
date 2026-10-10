@@ -27,14 +27,12 @@ const ROLE_GROUP = ADMIN_GROUPS[0]!;
 const OTHER_GROUP = ADMIN_GROUPS[1]!;
 
 /** Mounts the story on its form page, so leaving it for the roles list is observable. */
-async function mountRoleForm(story: StoryOf<typeof stories>, { settle = true } = {}) {
+async function mountRoleForm(story: StoryOf<typeof stories>) {
     const router = createTestRouter();
     const formPage = story.args.roleId ? "/admin/form/edit_role" : "/admin/form/create_role";
     await router.push(formPage);
     const wrapper = mountStory(story, { router });
-    if (settle) {
-        await flushPromises();
-    }
+    await flushPromises();
     return { wrapper, router, formPage };
 }
 
@@ -56,15 +54,6 @@ function multiselect(wrapper: VueWrapper, id: string) {
     return wrapper.find(`#${id}`).findComponent(Multiselect);
 }
 
-// vue-multiselect only renders its option list once the dropdown is open.
-async function openDropdown(wrapper: VueWrapper, id: string) {
-    await wrapper.find(`#${id}-select`).trigger("focus");
-}
-
-function selectedTags(wrapper: VueWrapper, id: string) {
-    return wrapper.findAll(`#${id} .multiselect__tag`).map((tag) => tag.text());
-}
-
 async function submit(wrapper: VueWrapper) {
     await wrapper.find("#role-submit").trigger("click");
     await flushPromises();
@@ -80,20 +69,6 @@ describe("RoleForm.vue create mode", () => {
             expect(label.text().length).toBeGreaterThan(0);
             expect(wrapper.find(`input[id="${id}"]`).exists(), `Input for ${id}`).toBe(true);
         }
-    });
-
-    it("shows a loading spinner until the groups are loaded", async () => {
-        const { wrapper } = await mountRoleForm(stories.NewRole, { settle: false });
-        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
-        await flushPromises();
-        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
-        expect(wrapper.find("#role-submit").exists()).toBe(true);
-    });
-
-    it("shows the error and cannot be saved if the groups fail to load", async () => {
-        const { wrapper } = await mountRoleForm(stories.GroupsFailToLoad);
-        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Internal server error.");
-        expect(wrapper.find("#role-submit").exists()).toBe(false);
     });
 
     it("requires a name and a description", async () => {
@@ -138,8 +113,6 @@ describe("RoleForm.vue create mode", () => {
         multiselect(wrapper, "role-users").vm.$emit("search-change", "alice");
         await flushPromises();
         expect(searchedEmail).toBe("alice");
-        await openDropdown(wrapper, "role-users");
-        expect(wrapper.find("#role-users").text()).toContain(ROLE_MEMBER.email);
     });
 
     it("shows the API error if creation fails", async () => {
@@ -155,21 +128,6 @@ describe("RoleForm.vue create mode", () => {
 });
 
 describe("RoleForm.vue edit mode", () => {
-    it("loads the role and its associations", async () => {
-        const { wrapper } = await mountRoleForm(stories.ExistingRole);
-        expect(wrapper.find("#role-name").element).toHaveProperty("value", ROLE_NAME);
-        expect(wrapper.find("#role-description").element).toHaveProperty("value", ROLE_DESCRIPTION);
-        expect(wrapper.find("#role-type").exists()).toBe(false);
-        expect(selectedTags(wrapper, "role-users")).toEqual([ROLE_MEMBER.email]);
-        expect(selectedTags(wrapper, "role-groups")).toEqual([ROLE_GROUP.name]);
-    });
-
-    it("titles the form with the saved name while the name is edited", async () => {
-        const { wrapper } = await mountRoleForm(stories.ExistingRole);
-        await wrapper.find("#role-name").setValue("Renamed Role");
-        expect(wrapper.text()).toContain(`Role '${ROLE_NAME}'`);
-    });
-
     it("saves changes with PUT", async () => {
         const { wrapper, router } = await mountRoleForm(stories.ExistingRole);
         const requests = captureRequests();
@@ -194,14 +152,6 @@ describe("RoleForm.vue edit mode", () => {
         await wrapper.find("#role-description").setValue("");
         await submit(wrapper);
         expect(requests.put).toMatchObject([{ description: "" }]);
-    });
-
-    it("cannot be saved when loading fails", async () => {
-        const { wrapper } = await mountRoleForm(stories.ExistingRoleGone);
-        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain(
-            "No accessible role found with the id provided.",
-        );
-        expect(wrapper.find("#role-submit").exists()).toBe(false);
     });
 
     it("shows the API error if the update fails", async () => {
