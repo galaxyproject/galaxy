@@ -1,56 +1,47 @@
-import "@tests/vitest/mockHelpPopovers";
-
-import { getLocalVue } from "@tests/vitest/helpers";
-import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
+
+import * as ToolSelectPreferredObjectStoreStories from "./ToolSelectPreferredObjectStore.stories";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
 
-setupSelectableMock();
-setupMockConfig({});
-
-enableAutoUnmount(afterEach);
+const stories = composeStories(ToolSelectPreferredObjectStoreStories);
+const mountStory = useStoryMount();
 
 const SELECTION = ROOT_COMPONENT.preferences.object_store_selection;
 const SELECTION_ERROR = ".object-store-selection-error";
 
-async function mountComponent(toolPreferredObjectStoreId: string | null = null) {
-    const wrapper = mount(ToolSelectPreferredObjectStore, {
-        props: { toolPreferredObjectStoreId },
-        global: getLocalVue(true),
-    });
+/** Mounts a story and waits for the storage locations to load. */
+async function mountSelector(story: StoryOf<typeof stories>) {
+    const wrapper = mountStory(story);
     await flushPromises();
-    return wrapper;
+    return wrapper.findComponent(ToolSelectPreferredObjectStore);
 }
 
 describe("ToolSelectPreferredObjectStore.vue", () => {
     it("lists the Galaxy default option and each selectable storage location", async () => {
-        const wrapper = await mountComponent();
+        const selector = await mountSelector(stories.UsesDefaults);
 
-        expect(wrapper.findAll(SELECTION.option_cards.selector)).toHaveLength(3);
-        expect(wrapper.find(SELECTION.option_card({ object_store_id: "__null__" }).selector).exists()).toBe(true);
+        expect(selector.findAll(SELECTION.option_cards.selector)).toHaveLength(3);
+        expect(selector.find(SELECTION.option_card({ object_store_id: "__null__" }).selector).exists()).toBe(true);
     });
 
     it.each([
-        { preferred: null, selected: "object_store_1", emitted: "object_store_1" },
-        { preferred: "object_store_1", selected: "__null__", emitted: null },
-    ])(
-        "emits $emitted when $selected is selected while $preferred is preferred",
-        async ({ preferred, selected, emitted }) => {
-            const wrapper = await mountComponent(preferred);
-            const selectButton = wrapper.find(SELECTION.option_card_select({ object_store_id: selected }).selector);
-            expect(selectButton.exists()).toBe(true);
+        { story: "UsesDefaults", selected: "object_store_1", emitted: "object_store_1" },
+        { story: "PreferredStorage", selected: "__null__", emitted: null },
+    ] as const)("emits $emitted when $selected is selected in $story", async ({ story, selected, emitted }) => {
+        const selector = await mountSelector(stories[story]);
+        const selectButton = selector.find(SELECTION.option_card_select({ object_store_id: selected }).selector);
+        expect(selectButton.exists()).toBe(true);
 
-            await selectButton.trigger("click");
-            await flushPromises();
+        await selectButton.trigger("click");
+        await flushPromises();
 
-            expect(wrapper.find(SELECTION_ERROR).exists()).toBe(false);
-            expect(wrapper.emitted("updated")).toEqual([[emitted]]);
-        },
-    );
+        expect(selector.find(SELECTION_ERROR).exists()).toBe(false);
+        expect(selector.emitted("updated")).toEqual([[emitted]]);
+    });
 });
