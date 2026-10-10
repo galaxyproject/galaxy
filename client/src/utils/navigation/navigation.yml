@@ -583,6 +583,9 @@ last_export_record:
   selectors:
     details: '.export-record-details'
     export_format: '.record-archive-format'
+    export_format_named:
+      type: xpath
+      selector: '//*[contains(@class, "record-archive-format")][normalize-space(text())="${format}"]'
     up_to_date_icon: '.record-up-to-date-icon'
     outdated_icon: '.record-outdated-icon'
     preparing_export_badge: '#g-card-badge-in-progress-latest-export-record'

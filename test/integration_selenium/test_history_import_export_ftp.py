@@ -154,12 +154,14 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
         self, expected_format: str, expect_up_to_date: bool = True, is_download: bool = False
     ):
         last_export_record = self.components.last_export_record
-        last_export_record.preparing_export_badge.wait_for_visible()
+        # A fast export can finish before its in-progress badge is ever rendered, so wait for
+        # the latest record to show this export's format rather than for that badge.
+        last_export_record.export_format_named(format=expected_format).wait_for_visible(
+            wait_type=self.wait_types.DATABASE_OPERATION
+        )
         last_export_record.preparing_export_badge.wait_for_absent(wait_type=self.wait_types.DATABASE_OPERATION)
 
         last_export_record.details.wait_for_visible()
-        format_element = last_export_record.export_format.wait_for_visible()
-        assert format_element.text == expected_format
 
         if expect_up_to_date:
             last_export_record.up_to_date_icon.wait_for_visible()
