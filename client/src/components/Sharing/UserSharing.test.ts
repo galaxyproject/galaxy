@@ -1,9 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -13,8 +13,6 @@ import { useUserStore } from "@/stores/userStore";
 import UserSharing from "./UserSharing.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
-vi.mock("axios");
-
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
         config: ref({ expose_user_email: false }),
@@ -22,14 +20,16 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const localVue = getLocalVue(true);
+const SELECTORS = {
+    CANCEL_BUTTON: "button.cancel-sharing-with",
+    MODAL_BUTTON: ".g-modal-confirm-buttons button",
+    SAVE_BUTTON: "button.submit-sharing-with",
+    SHARED_EMAIL_TAG: ".remove_sharing_with",
+};
 
-async function addCandidateEmail(wrapper: ReturnType<typeof mount>, email: string) {
-    const multiselect = wrapper.findComponent(Multiselect);
-    multiselect.vm.$emit("search-change", email);
-    multiselect.vm.$emit("close");
-    await nextTick();
-}
+const localVue = getLocalVue();
+
+enableAutoUnmount(afterEach);
 
 function makeItem(overrides: Partial<ShareableHistoryWithStatus> = {}): ShareableHistoryWithStatus {
     return {
@@ -49,118 +49,109 @@ function makeItem(overrides: Partial<ShareableHistoryWithStatus> = {}): Shareabl
     };
 }
 
-async function mountComponent(item: ShareableHistoryWithStatus) {
-    const pinia = createPinia();
-
-    const wrapper = mount(UserSharing as object, {
-        localVue,
-        pinia,
-        propsData: {
-            item,
-            modelClass: "History",
+function makeItemRequiringPermissionChanges() {
+    return makeItem({
+        extra: {
+            can_change: [{ id: "dataset_id", name: "A Dataset" }],
+            cannot_change: [],
+            can_share: false,
+            accessible_count: 0,
         },
     });
+}
 
-    const userStore = useUserStore();
-    userStore.currentUser = getFakeRegisteredUser({ email: "owner@test.com", id: "owner_id" });
+function makeItemSharedWithExistingUser() {
+    return makeItem({ users_shared_with: [{ email: "existing@test.com", id: "existing_id" }] });
+}
 
+async function mountUserSharing(item: ShareableHistoryWithStatus) {
+    const pinia = createPinia();
+    useUserStore(pinia).currentUser = getFakeRegisteredUser({ email: "owner@test.com", id: "owner_id" });
+
+    const wrapper = mount(UserSharing, {
+        props: { item, modelClass: "History" },
+        global: withPlugins(localVue, pinia),
+    });
     await flushPromises();
 
     return wrapper;
 }
 
-describe("UserSharing.vue", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
+async function addCandidateEmail(wrapper: VueWrapper, email: string) {
+    const multiselect = wrapper.findComponent(Multiselect);
+    multiselect.vm.$emit("search-change", email);
+    multiselect.vm.$emit("close");
+    await nextTick();
+}
 
-    it("does not show the permissions modal when no permission changes are required", async () => {
-        const wrapper = await mountComponent(makeItem());
+async function clickModalButton(wrapper: VueWrapper, text: "Ok" | "Cancel") {
+    const button = wrapper.findAll(SELECTORS.MODAL_BUTTON).find((candidate) => candidate.text() === text);
+    if (!button) {
+        throw new Error(`no "${text}" button in the permissions modal`);
+    }
+    await button.trigger("click");
+    await flushPromises();
+}
 
-        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-    });
+function sharedEmailTags(wrapper: VueWrapper) {
+    return wrapper.findAll(SELECTORS.SHARED_EMAIL_TAG).map((tag) => tag.attributes("data-email"));
+}
 
-    it("shows the permissions modal when the item requires permission changes", async () => {
-        const item = makeItem({
-            extra: {
-                can_change: [{ id: "dataset_id", name: "A Dataset" }],
-                cannot_change: [],
-                can_share: false,
-                accessible_count: 0,
-            },
+describe("UserSharing", () => {
+    describe("permissions modal", () => {
+        it("stays closed when no permission changes are required", async () => {
+            const wrapper = await mountUserSharing(makeItem());
+
+            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
         });
 
-        const wrapper = await mountComponent(item);
+        it("opens and lists the datasets when the item requires permission changes", async () => {
+            const wrapper = await mountUserSharing(makeItemRequiringPermissionChanges());
 
-        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-        expect(wrapper.text()).toContain("A Dataset");
-    });
-
-    it("emits share with the selected permission option when the modal is confirmed", async () => {
-        const item = makeItem({
-            extra: {
-                can_change: [{ id: "dataset_id", name: "A Dataset" }],
-                cannot_change: [],
-                can_share: false,
-                accessible_count: 0,
-            },
+            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+            expect(wrapper.text()).toContain("A Dataset");
         });
 
-        const wrapper = await mountComponent(item);
+        it("emits share with the selected permission option when confirmed", async () => {
+            const wrapper = await mountUserSharing(makeItemRequiringPermissionChanges());
 
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+            await clickModalButton(wrapper, "Ok");
 
-        expect(wrapper.emitted("share")).toBeTruthy();
-        expect(wrapper.emitted("share")?.[0]).toEqual([[], "make_accessible_to_shared"]);
-    });
-
-    it("closes the permissions modal and emits cancel when the modal is cancelled", async () => {
-        const item = makeItem({
-            extra: {
-                can_change: [{ id: "dataset_id", name: "A Dataset" }],
-                cannot_change: [],
-                can_share: false,
-                accessible_count: 0,
-            },
+            expect(wrapper.emitted("share")).toEqual([[[], "make_accessible_to_shared"]]);
+            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
         });
 
-        const wrapper = await mountComponent(item);
+        it("closes and emits cancel when cancelled", async () => {
+            const wrapper = await mountUserSharing(makeItemRequiringPermissionChanges());
+            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
 
-        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+            await clickModalButton(wrapper, "Cancel");
 
-        wrapper.findComponent(GModal).vm.$emit("cancel");
-        await flushPromises();
-
-        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-        expect(wrapper.emitted("cancel")).toBeTruthy();
+            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+            expect(wrapper.emitted("cancel")).toEqual([[]]);
+        });
     });
 
-    it("emits share with the entered emails when Save is clicked", async () => {
-        const item = makeItem({ users_shared_with: [{ email: "existing@test.com", id: "existing_id" }] });
-        const wrapper = await mountComponent(item);
+    describe("sharing with users", () => {
+        it("emits share with the existing and entered emails when Save is clicked", async () => {
+            const wrapper = await mountUserSharing(makeItemSharedWithExistingUser());
+            await addCandidateEmail(wrapper, "new@test.com");
 
-        await addCandidateEmail(wrapper, "new@test.com");
+            await wrapper.find(SELECTORS.SAVE_BUTTON).trigger("click");
 
-        const saveButton = wrapper.find("button.submit-sharing-with");
-        await saveButton.trigger("click");
+            expect(wrapper.emitted("share")).toEqual([[["existing@test.com", "new@test.com"]]]);
+        });
 
-        expect(wrapper.emitted("share")).toBeTruthy();
-        expect(wrapper.emitted("share")?.[0]).toEqual([["existing@test.com", "new@test.com"]]);
-    });
+        it("resets candidates to the current shared list and emits cancel when Cancel is clicked", async () => {
+            const wrapper = await mountUserSharing(makeItemSharedWithExistingUser());
+            await addCandidateEmail(wrapper, "new@test.com");
+            expect(sharedEmailTags(wrapper)).toEqual(["existing@test.com", "new@test.com"]);
 
-    it("resets candidates to the current shared list and emits cancel when Cancel is clicked", async () => {
-        const item = makeItem({ users_shared_with: [{ email: "existing@test.com", id: "existing_id" }] });
-        const wrapper = await mountComponent(item);
+            await wrapper.find(SELECTORS.CANCEL_BUTTON).trigger("click");
 
-        await addCandidateEmail(wrapper, "new@test.com");
-
-        const cancelButton = wrapper.find("button.cancel-sharing-with");
-        await cancelButton.trigger("click");
-
-        expect(wrapper.emitted("cancel")).toBeTruthy();
-
-        const saveButton = wrapper.find("button.submit-sharing-with");
-        expect(saveButton.attributes("aria-disabled")).toBe("true");
+            expect(wrapper.emitted("cancel")).toEqual([[]]);
+            expect(sharedEmailTags(wrapper)).toEqual(["existing@test.com"]);
+            expect(wrapper.find(SELECTORS.SAVE_BUTTON).attributes("aria-disabled")).toBe("true");
+        });
     });
 });
