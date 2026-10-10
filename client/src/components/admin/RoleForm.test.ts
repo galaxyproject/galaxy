@@ -1,56 +1,55 @@
 import "@/composables/__mocks__/filter";
 
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { createTestRouter } from "@tests/vitest/helpers";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import Multiselect from "vue-multiselect";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import RoleForm from "./RoleForm.vue";
+import * as RoleFormStories from "./RoleForm.stories";
+import { ADMIN_GROUPS } from "./test_fixtures";
+
 import FormSelection from "@/components/Form/Elements/FormSelection.vue";
 
+const stories = composeStories(RoleFormStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
-const mockPush = vi.fn();
 
-vi.mock("vue-router", () => ({
-    useRouter: () => ({
-        push: (...args: unknown[]) => mockPush(...args),
-    }),
-}));
+// The role ExistingRole loads, with its one member and group.
+const ROLE_NAME = "Data managers";
+const ROLE_DESCRIPTION = "Can run data manager tools";
+const ROLE_MEMBER = { id: "f2db41e1fa331b3e", email: "alice@example.org" };
+const ROLE_GROUP = ADMIN_GROUPS[0]!;
+const OTHER_GROUP = ADMIN_GROUPS[1]!;
 
-function useGroups(groups = [{ id: "g1", name: "Group 1", url: "/api/groups/g1", model_class: "Group" as const }]) {
-    server.use(http.get("/api/groups", ({ response }) => response(200).json(groups)));
+/** Mounts the story on its form page, so leaving it for the roles list is observable. */
+async function mountRoleForm(story: StoryOf<typeof stories>, { settle = true } = {}) {
+    const router = createTestRouter();
+    const formPage = story.args.roleId ? "/admin/form/edit_role" : "/admin/form/create_role";
+    await router.push(formPage);
+    const wrapper = mountStory(story, { router });
+    if (settle) {
+        await flushPromises();
+    }
+    return { wrapper, router, formPage };
 }
 
+/** Records the bodies of role creations (POST) and updates (PUT); the story still answers. */
 function captureRequests() {
     const requests: { put: unknown[]; post: unknown[] } = { put: [], post: [] };
-    const role = { id: "r1", name: "Role", type: "admin", description: "", url: "/api/roles/r1", model_class: "Role" };
     server.use(
-        http.post("/api/roles", async ({ request, response }) => {
-            requests.post.push(await request.json());
-            return response(200).json({ ...role, model_class: "Role" as const });
+        http.post("/api/roles", async ({ request }) => {
+            requests.post.push(await request.clone().json());
         }),
-        http.put("/api/roles/{id}", async ({ request, response }) => {
-            requests.put.push(await request.json());
-            return response(200).json({ ...role, model_class: "Role" as const });
+        http.put("/api/roles/{id}", async ({ request }) => {
+            requests.put.push(await request.clone().json());
         }),
     );
     return requests;
-}
-
-async function mountTarget(propsData: { roleId?: string } = {}) {
-    const wrapper = mount(RoleForm as object, {
-        localVue,
-        propsData,
-        stubs: { FontAwesomeIcon: true },
-        attachTo: document.body,
-    });
-    await flushPromises();
-    return wrapper;
 }
 
 function multiselect(wrapper: VueWrapper, id: string) {
@@ -71,16 +70,9 @@ async function submit(wrapper: VueWrapper) {
     await flushPromises();
 }
 
-beforeEach(() => {
-    // FormSelection reads a Pinia store.
-    setActivePinia(createPinia());
-    mockPush.mockClear();
-});
-
 describe("RoleForm.vue create mode", () => {
     it("associates the visible field labels with editable controls", async () => {
-        useGroups();
-        const wrapper = await mountTarget();
+        const { wrapper } = await mountRoleForm(stories.NewRole);
         const ids = ["role-name", "role-description", "role-type", "role-groups-select", "role-users-select"];
         for (const id of ids) {
             const label = wrapper.find(`label[for="${id}"]`);
@@ -91,8 +83,7 @@ describe("RoleForm.vue create mode", () => {
     });
 
     it("shows a loading spinner until the groups are loaded", async () => {
-        useGroups();
-        const wrapper = mount(RoleForm as object, { localVue, stubs: { FontAwesomeIcon: true } });
+        const { wrapper } = await mountRoleForm(stories.NewRole, { settle: false });
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
         await flushPromises();
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
@@ -100,177 +91,126 @@ describe("RoleForm.vue create mode", () => {
     });
 
     it("shows the error and cannot be saved if the groups fail to load", async () => {
-        server.use(
-            http.get("/api/groups", ({ response }) =>
-                response("5XX").json({ err_msg: "Groups failed", err_code: 500 }, { status: 500 }),
-            ),
-        );
-        const wrapper = await mountTarget();
-        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Groups failed");
+        const { wrapper } = await mountRoleForm(stories.GroupsFailToLoad);
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Internal server error.");
         expect(wrapper.find("#role-submit").exists()).toBe(false);
     });
 
     it("requires a name and a description", async () => {
-        useGroups();
+        const { wrapper, router, formPage } = await mountRoleForm(stories.NewRole);
         const requests = captureRequests();
-        const wrapper = await mountTarget();
         await submit(wrapper);
         expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Please complete all required inputs.");
         expect(requests.post).toEqual([]);
+        expect(router.currentRoute.value.path).toBe(formPage);
     });
 
     it("creates a role with the chosen type, groups and users", async () => {
-        useGroups();
+        const { wrapper, router } = await mountRoleForm(stories.NewRole);
         const requests = captureRequests();
-        const wrapper = await mountTarget();
         await wrapper.find("#role-name").setValue("Test Role");
         await wrapper.find("#role-description").setValue("Test Description");
         const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.props("id") === "role-type");
         roleType!.vm.$emit("input", "user_tool_execute");
-        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [{ id: "g1", name: "Group 1" }]);
-        multiselect(wrapper, "role-users").vm.$emit("update:modelValue", [{ id: "u1", email: "user1@example.org" }]);
+        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [ROLE_GROUP]);
+        multiselect(wrapper, "role-users").vm.$emit("update:modelValue", [ROLE_MEMBER]);
         await submit(wrapper);
         expect(requests.post).toEqual([
             {
                 name: "Test Role",
                 description: "Test Description",
-                group_ids: ["g1"],
-                user_ids: ["u1"],
+                group_ids: [ROLE_GROUP.id],
+                user_ids: [ROLE_MEMBER.id],
                 role_type: "user_tool_execute",
             },
         ]);
-        expect(mockPush).toHaveBeenCalledWith("/admin/roles");
+        expect(router.currentRoute.value.path).toBe("/admin/roles");
     });
 
     it("searches users by email", async () => {
-        useGroups();
+        const { wrapper } = await mountRoleForm(stories.NewRole);
         let searchedEmail: string | null = null;
         server.use(
-            http.get("/api/users", ({ request, response }) => {
+            http.get("/api/users", ({ request }) => {
                 searchedEmail = new URL(request.url).searchParams.get("f_email");
-                return response(200).json([{ id: "u1", email: "user1@example.org", username: "user1" }]);
             }),
         );
-        const wrapper = await mountTarget();
-        multiselect(wrapper, "role-users").vm.$emit("search-change", "user1");
+        multiselect(wrapper, "role-users").vm.$emit("search-change", "alice");
         await flushPromises();
-        expect(searchedEmail).toBe("user1");
+        expect(searchedEmail).toBe("alice");
         await openDropdown(wrapper, "role-users");
-        expect(wrapper.find("#role-users").text()).toContain("user1@example.org");
+        expect(wrapper.find("#role-users").text()).toContain(ROLE_MEMBER.email);
     });
 
     it("shows the API error if creation fails", async () => {
-        useGroups();
-        server.use(
-            http.post("/api/roles", ({ response }) =>
-                response("4XX").json({ err_msg: "Creation failed", err_code: 400 }, { status: 400 }),
-            ),
-        );
-        const wrapper = await mountTarget();
-        await wrapper.find("#role-name").setValue("Bad Role");
-        await wrapper.find("#role-description").setValue("Bad Description");
+        const { wrapper, router, formPage } = await mountRoleForm(stories.NewRoleNameTaken);
+        await wrapper.find("#role-name").setValue(ROLE_NAME);
+        await wrapper.find("#role-description").setValue("Test Description");
         await submit(wrapper);
-        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Failed to create role: Creation failed");
-        expect(mockPush).not.toHaveBeenCalled();
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain(
+            `Failed to create role: A role with that name already exists [${ROLE_NAME}]`,
+        );
+        expect(router.currentRoute.value.path).toBe(formPage);
     });
 });
 
 describe("RoleForm.vue edit mode", () => {
-    function useRoleHandlers() {
-        useGroups([
-            { id: "g1", name: "Group 1", url: "/api/groups/g1", model_class: "Group" },
-            { id: "g2", name: "Group 2", url: "/api/groups/g2", model_class: "Group" },
-        ]);
-        server.use(
-            http.get("/api/roles/{id}", ({ response }) =>
-                response(200).json({
-                    id: "r1",
-                    name: "Existing Role",
-                    description: "Existing Description",
-                    type: "admin",
-                    url: "/api/roles/r1",
-                    model_class: "Role",
-                }),
-            ),
-            http.get("/api/roles/{id}/users", ({ response }) =>
-                response(200).json([{ id: "u1", email: "user1@example.org" }]),
-            ),
-            http.get("/api/roles/{id}/groups", ({ response }) =>
-                response(200).json([{ id: "g1", name: "Group 1", model_class: "Group" }]),
-            ),
-        );
-    }
-
     it("loads the role and its associations", async () => {
-        useRoleHandlers();
-        const wrapper = await mountTarget({ roleId: "r1" });
-        expect(wrapper.find("#role-name").element).toHaveProperty("value", "Existing Role");
-        expect(wrapper.find("#role-description").element).toHaveProperty("value", "Existing Description");
+        const { wrapper } = await mountRoleForm(stories.ExistingRole);
+        expect(wrapper.find("#role-name").element).toHaveProperty("value", ROLE_NAME);
+        expect(wrapper.find("#role-description").element).toHaveProperty("value", ROLE_DESCRIPTION);
         expect(wrapper.find("#role-type").exists()).toBe(false);
-        expect(selectedTags(wrapper, "role-users")).toEqual(["user1@example.org"]);
-        expect(selectedTags(wrapper, "role-groups")).toEqual(["Group 1"]);
+        expect(selectedTags(wrapper, "role-users")).toEqual([ROLE_MEMBER.email]);
+        expect(selectedTags(wrapper, "role-groups")).toEqual([ROLE_GROUP.name]);
     });
 
     it("titles the form with the saved name while the name is edited", async () => {
-        useRoleHandlers();
-        const wrapper = await mountTarget({ roleId: "r1" });
+        const { wrapper } = await mountRoleForm(stories.ExistingRole);
         await wrapper.find("#role-name").setValue("Renamed Role");
-        expect(wrapper.text()).toContain("Role 'Existing Role'");
+        expect(wrapper.text()).toContain(`Role '${ROLE_NAME}'`);
     });
 
     it("saves changes with PUT", async () => {
-        useRoleHandlers();
+        const { wrapper, router } = await mountRoleForm(stories.ExistingRole);
         const requests = captureRequests();
-        const wrapper = await mountTarget({ roleId: "r1" });
         await wrapper.find("#role-name").setValue("Renamed Role");
         multiselect(wrapper, "role-users").vm.$emit("update:modelValue", []);
-        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [
-            { id: "g1", name: "Group 1" },
-            { id: "g2", name: "Group 2" },
-        ]);
+        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [ROLE_GROUP, OTHER_GROUP]);
         await submit(wrapper);
         expect(requests.put).toEqual([
             {
                 name: "Renamed Role",
-                description: "Existing Description",
-                group_ids: ["g1", "g2"],
+                description: ROLE_DESCRIPTION,
+                group_ids: [ROLE_GROUP.id, OTHER_GROUP.id],
                 user_ids: [],
             },
         ]);
-        expect(mockPush).toHaveBeenCalledWith("/admin/roles");
+        expect(router.currentRoute.value.path).toBe("/admin/roles");
     });
 
     it("saves a role without a description", async () => {
-        useRoleHandlers();
+        const { wrapper } = await mountRoleForm(stories.ExistingRole);
         const requests = captureRequests();
-        const wrapper = await mountTarget({ roleId: "r1" });
         await wrapper.find("#role-description").setValue("");
         await submit(wrapper);
         expect(requests.put).toMatchObject([{ description: "" }]);
     });
 
     it("cannot be saved when loading fails", async () => {
-        useRoleHandlers();
-        server.use(
-            http.get("/api/roles/{id}/users", ({ response }) =>
-                response("5XX").json({ err_msg: "Users failed", err_code: 500 }, { status: 500 }),
-            ),
+        const { wrapper } = await mountRoleForm(stories.ExistingRoleGone);
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain(
+            "No accessible role found with the id provided.",
         );
-        const wrapper = await mountTarget({ roleId: "r1" });
-        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Users failed");
         expect(wrapper.find("#role-submit").exists()).toBe(false);
     });
 
     it("shows the API error if the update fails", async () => {
-        useRoleHandlers();
-        server.use(
-            http.put("/api/roles/{id}", ({ response }) =>
-                response("4XX").json({ err_msg: "Name taken", err_code: 409 }, { status: 409 }),
-            ),
-        );
-        const wrapper = await mountTarget({ roleId: "r1" });
+        const { wrapper, router, formPage } = await mountRoleForm(stories.ExistingRoleNameTaken);
+        await wrapper.find("#role-name").setValue("Teaching assistants");
         await submit(wrapper);
-        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain("Name taken");
-        expect(mockPush).not.toHaveBeenCalled();
+        expect(wrapper.findComponent({ name: "GAlert" }).text()).toContain(
+            "Failed to update role: A role with that name already exists [Teaching assistants]",
+        );
+        expect(router.currentRoute.value.path).toBe(formPage);
     });
 });
