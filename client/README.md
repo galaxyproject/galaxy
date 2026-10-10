@@ -463,19 +463,20 @@ it("computes result correctly", () => {
 
 #### Mocking Modules and Composables
 
-Mock at file level before imports are resolved:
+Mock at file level before imports are resolved. For configuration, use the ref-backed `__mocks__/config` (or seed `configurationStore` through `createTestingPinia({ initialState })`); a `useConfig` mock returning a plain object reads as undefined in templates:
 
 ```typescript
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: { enable_feature: true },
-        isConfigLoaded: true,
-    })),
-}));
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 
+vi.mock("@/composables/config");
 vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({ params: { id: "123" } })),
 }));
+
+beforeEach(() => {
+    resetMockConfig();
+    setMockConfig({ enable_feature: true });
+});
 ```
 
 #### Async Operations
