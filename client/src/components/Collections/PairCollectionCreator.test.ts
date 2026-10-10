@@ -10,7 +10,6 @@ import { Toast } from "@/composables/toast";
 import * as PairCollectionCreatorStories from "./PairCollectionCreator.stories";
 import { changeHistory } from "./test-utils";
 
-import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 
 vi.mock("@/composables/toast");
@@ -32,13 +31,6 @@ async function mountCreator() {
     return wrapper;
 }
 
-/** The forward/reverse slots as ids - an empty slot renders no view at all. */
-function pairedIds(wrapper: VueWrapper): string[] {
-    return wrapper
-        .findAllComponents(FixedIdentifierDatasetCollectionElementView)
-        .map((slot) => (slot.props("element") as HDASummary).id);
-}
-
 async function clickDataset(wrapper: VueWrapper, id: string) {
     const view = wrapper
         .findAllComponents(DatasetCollectionElementView)
@@ -47,50 +39,25 @@ async function clickDataset(wrapper: VueWrapper, id: string) {
     await flushPromises();
 }
 
+// Each side's content and the toast's text are checked in the stories' play functions; a role
+// can't tell an error toast from a warning, so the variant stays here.
 describe("PairCollectionCreator", () => {
-    it("keeps both sides of the pair when initialElements changes", async () => {
-        const wrapper = await mountCreator();
-
-        await clickDataset(wrapper, FORWARD.id);
-        await clickDataset(wrapper, REVERSE.id);
-        expect(pairedIds(wrapper)).toEqual([FORWARD.id, REVERSE.id]);
-
-        // same datasets, new prop identity (e.g. a history poll tick)
-        await changeHistory(wrapper, "Refresh history");
-
-        expect(pairedIds(wrapper)).toEqual([FORWARD.id, REVERSE.id]);
-        expect(toastError).not.toHaveBeenCalled();
-    });
-
-    it("empties the slot whose dataset left the history and says it was removed", async () => {
-        const wrapper = await mountCreator();
-
-        await clickDataset(wrapper, FORWARD.id);
-        await clickDataset(wrapper, REVERSE.id);
-
-        await changeHistory(wrapper, `Delete ${REVERSE.name}`);
-
-        expect(pairedIds(wrapper)).toEqual([FORWARD.id]);
-        expect(toastError).toHaveBeenCalledTimes(1);
-        expect(toastError).toHaveBeenCalledWith(
-            "2: SRR1553425_2 has been removed from the collection",
-            "Invalid element",
-        );
-    });
-
-    it("empties the slot whose dataset is no longer usable and says why", async () => {
-        const wrapper = await mountCreator();
-
-        await clickDataset(wrapper, FORWARD.id);
-        await clickDataset(wrapper, REVERSE.id);
-
-        await changeHistory(wrapper, `Fail ${REVERSE.name}`);
-
-        expect(pairedIds(wrapper)).toEqual([FORWARD.id]);
-        expect(toastError).toHaveBeenCalledTimes(1);
-        expect(toastError).toHaveBeenCalledWith(
+    it.each([
+        ["left the history", `Delete ${REVERSE.name}`, "2: SRR1553425_2 has been removed from the collection"],
+        [
+            "is no longer usable",
+            `Fail ${REVERSE.name}`,
             "2: SRR1553425_2 has errored, is paused, or is not accessible and is not a valid element for this collection",
-            "Invalid element",
-        );
+        ],
+    ])("raises an error when a picked dataset %s", async (_change, control, message) => {
+        const wrapper = await mountCreator();
+
+        await clickDataset(wrapper, FORWARD.id);
+        await clickDataset(wrapper, REVERSE.id);
+
+        await changeHistory(wrapper, control);
+
+        expect(toastError).toHaveBeenCalledTimes(1);
+        expect(toastError).toHaveBeenCalledWith(message, "Invalid element");
     });
 });
