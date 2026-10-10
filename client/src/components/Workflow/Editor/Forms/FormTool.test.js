@@ -1,25 +1,72 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import FormTool from "./FormTool.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
 
 vi.mock("@/api/schema", () => ({}));
-
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: { enable_tool_source_display: false },
-        isConfigLoaded: true,
-    })),
-}));
+setupMockConfig({ enable_tool_source_display: false });
 
 const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
+
+enableAutoUnmount(afterEach);
+
+function textInput() {
+    return { name: "input", label: "input", type: "text", value: "value" };
+}
+
+function rulesInput() {
+    return {
+        name: "rules",
+        label: "rules",
+        type: "rules",
+        value: {
+            mapping: [{ type: "list_identifiers", columns: [1] }],
+            rules: [{ type: "add_column_metadata", value: "identifier0" }],
+        },
+    };
+}
+
+async function mountFormTool(inputs = [textInput()]) {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    const wrapper = mount(FormTool, {
+        props: {
+            id: "input",
+            datatypes: [],
+            step: {
+                id: 0,
+                config_form: {
+                    id: "tool_id+1.0",
+                    name: "tool_name",
+                    version: "1.0",
+                    description: "description",
+                    inputs,
+                    help: "help_text",
+                    help_format: "restructuredtext",
+                    versions: ["1.0", "2.0", "3.0"],
+                    citations: false,
+                },
+                outputs: [],
+                inputs: [],
+                post_job_actions: {},
+            },
+        },
+        global: { ...withPlugins(localVue, pinia), provide: { workflowId: "mock-workflow" } },
+        stubs: {
+            ToolFooter: { template: "<div>tool-footer</div>" },
+        },
+    });
+    await flushPromises();
+    return wrapper;
+}
 
 describe("FormTool", () => {
     beforeEach(() => {
@@ -33,90 +80,49 @@ describe("FormTool", () => {
         );
     });
 
-    function mountTarget(inputs = [{ name: "input", label: "input", type: "text", value: "value" }]) {
-        return mount(FormTool, {
-            props: {
-                id: "input",
-                datatypes: [],
-                step: {
-                    id: 0,
-                    config_form: {
-                        id: "tool_id+1.0",
-                        name: "tool_name",
-                        version: "1.0",
-                        description: "description",
-                        inputs,
-                        help: "help_text",
-                        help_format: "restructuredtext",
-                        versions: ["1.0", "2.0", "3.0"],
-                        citations: false,
-                    },
-                    outputs: [],
-                    inputs: [],
-                    post_job_actions: {},
-                },
-            },
-            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
-            stubs: {
-                ToolFooter: { template: "<div>tool-footer</div>" },
-            },
-            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        });
-    }
+    it("emits the picked version's tool id and version when switching versions", async () => {
+        const wrapper = await mountFormTool();
 
-    it("changes between different versions", async () => {
-        const wrapper = mountTarget();
+        const versionItems = wrapper.findAll(".tool-versions .dropdown-item");
+        expect(versionItems.map((item) => item.text())).toEqual(["Switch to 3.0", "Switch to 2.0", "Selected 1.0"]);
+        const [switchTo3, switchTo2] = versionItems;
 
-        const dropdowns = wrapper.findAll(".tool-versions .dropdown-item");
-        let version = dropdowns.at(1);
-        expect(version.text()).toBe("Switch to 2.0");
-        await version.trigger("click");
+        await switchTo2.trigger("click");
+        expect(wrapper.emitted("onSetData")[0][1]).toMatchObject({ tool_version: "2.0", tool_id: "tool_id+2.0" });
 
-        let state = wrapper.emitted("onSetData")[0][1];
-        expect(state.tool_version).toEqual("2.0");
-        expect(state.tool_id).toEqual("tool_id+2.0");
-
-        version = dropdowns.at(0);
-        expect(version.text()).toBe("Switch to 3.0");
-        await version.trigger("click");
-
-        state = wrapper.emitted("onSetData")[1][1];
-        expect(state.tool_version).toEqual("3.0");
-        expect(state.tool_id).toEqual("tool_id+3.0");
-        await flushPromises();
+        await switchTo3.trigger("click");
+        expect(wrapper.emitted("onSetData")[1][1]).toMatchObject({ tool_version: "3.0", tool_id: "tool_id+3.0" });
     });
 
-    it("does not stamp UI metadata into a rules input payload", () => {
-        const inputs = mountTarget([
-            { name: "input", label: "input", type: "text", value: "value" },
-            {
-                name: "rules",
-                label: "rules",
-                type: "rules",
-                value: {
-                    mapping: [{ type: "list_identifiers", columns: [1] }],
-                    rules: [{ type: "add_column_metadata", value: "identifier0" }],
-                },
-            },
-        ]).vm.inputs;
-
-        const rulesInput = inputs[1];
-        const nestedEntries = [rulesInput.value.mapping[0], rulesInput.value.rules[0]];
-
-        // Leak fixed: nested rule/mapping entries carry no UI-only keys.
-        for (const entry of nestedEntries) {
-            expect(entry).not.toHaveProperty("collapsible_value");
-            expect(entry).not.toHaveProperty("connectable");
-            expect(entry).not.toHaveProperty("is_workflow");
+    describe("with a rules input", () => {
+        async function mountedInputs() {
+            const wrapper = await mountFormTool([textInput(), rulesInput()]);
+            const [text, rules] = wrapper.findComponent(FormDisplay).props("inputs");
+            return { text, rules };
         }
 
-        // #18741 preserved: the top-level rules input is runtime-editable / not connectable.
-        expect(rulesInput.collapsible_value).toBeUndefined();
-        expect(rulesInput.connectable).toBe(false);
+        it("keeps UI-only metadata out of its nested mapping and rule entries", async () => {
+            const { rules } = await mountedInputs();
 
-        // Regression guard: sibling scalar inputs are still stamped as before.
-        const textInput = inputs[0];
-        expect(textInput.collapsible_value.__class__).toBe("RuntimeValue");
-        expect(textInput.connectable).toBe(true);
+            for (const entry of [rules.value.mapping[0], rules.value.rules[0]]) {
+                expect(entry).not.toHaveProperty("collapsible_value");
+                expect(entry).not.toHaveProperty("connectable");
+                expect(entry).not.toHaveProperty("is_workflow");
+            }
+        });
+
+        it("leaves the rules input runtime-editable and not connectable", async () => {
+            const { rules } = await mountedInputs();
+
+            expect(rules.collapsible_value).toBeUndefined();
+            expect(rules.connectable).toBe(false);
+        });
+
+        it("still marks a sibling text input as a connectable runtime value", async () => {
+            const { text } = await mountedInputs();
+
+            expect(text.collapsible_value.__class__).toBe("RuntimeValue");
+            expect(text.connectable).toBe(true);
+        });
     });
 });
