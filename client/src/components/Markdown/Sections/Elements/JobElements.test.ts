@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
@@ -23,11 +23,13 @@ const localVue = getLocalVue();
 // Keeps requests the imported stores make off the network.
 useServerMock();
 
-let wrapper: VueWrapper | undefined;
+function toolDetailsButton(label = "Tool details") {
+    return `button[aria-label='${label}']`;
+}
+
+enableAutoUnmount(afterEach);
 
 afterEach(() => {
-    wrapper?.unmount();
-    wrapper = undefined;
     document.body.innerHTML = "";
     Object.keys(translations).forEach((text) => delete translations[text]);
 });
@@ -43,7 +45,7 @@ describe.each([
         // triggers a fetch on a cache miss).
         // @ts-expect-error: getters are only writable on a testing store
         useJobStore(pinia).getCachedJob = () => (toolId ? ({ tool_id: toolId } as ShowFullJobResponse) : null);
-        wrapper = mount(component as object, {
+        const wrapper = mount(component, {
             attachTo: document.body,
             props: { jobId: "job_id", title: "Job" },
             global: {
@@ -70,7 +72,7 @@ describe.each([
         const element = await mountElement("cat1");
 
         const title = element.find(".card-title").element;
-        const button = element.find("button[aria-label='Tool details']").element as HTMLButtonElement;
+        const button = element.find(toolDetailsButton()).element as HTMLButtonElement;
         const dialog = document.body.querySelector(".popover[role='dialog']");
 
         expect(button.previousElementSibling?.outerHTML).toBe("<b>Job</b>");
@@ -88,7 +90,7 @@ describe.each([
 
     it("opens the tool dialog when the button gets keyboard focus", async () => {
         const element = await mountElement("cat1");
-        const button = element.find("button[aria-label='Tool details']").element as HTMLButtonElement;
+        const button = element.find(toolDetailsButton()).element as HTMLButtonElement;
 
         button.focus();
         await nextTick();
@@ -101,13 +103,13 @@ describe.each([
 
         const element = await mountElement("cat1");
 
-        expect(element.find("button[aria-label='Werkzeugdetails']").exists()).toBe(true);
+        expect(element.find(toolDetailsButton("Werkzeugdetails")).exists()).toBe(true);
     });
 
     it("shows no tool details button or dialog until the job's tool is known", async () => {
         const element = await mountElement();
 
-        expect(element.find("button[aria-label='Tool details']").exists()).toBe(false);
+        expect(element.find(toolDetailsButton()).exists()).toBe(false);
         expect(document.body.querySelector(".popover")).toBeNull();
     });
 });
