@@ -18,12 +18,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 const stories = composeStories(WorkflowInvocationStateStories);
 const mountStory = useStoryMount();
 
-const selectors = {
-    debugTab: ".invocation-debug-tab",
-    reportTab: ".invocation-report-tab",
-    exportTab: ".invocation-export-tab",
-};
-
 /**
  * Mounts a story once its invocation is loaded and the page's own fetches have settled, and returns
  * the invocation store the page polls. The story preloads through the store's getters, whose fetches
@@ -68,11 +62,6 @@ async function mountWithoutInvocation(invocationId: string, fetchInvocationById?
 /** The terminal state the component reports to its overview */
 function overviewTerminalState(wrapper: VueWrapper) {
     return wrapper.findComponent(WorkflowInvocationOverview).props("invocationAndJobTerminal");
-}
-
-/** The link of the nav item a tab selector names */
-function tabLink(wrapper: VueWrapper, selector: string) {
-    return wrapper.find(`${selector} .nav-link`);
 }
 
 describe("WorkflowInvocationState terminal state and polling", () => {
@@ -143,8 +132,33 @@ describe("WorkflowInvocationState terminal state and polling", () => {
         expect(invocationStore.fetchInvocationById).toHaveBeenCalledTimes(1);
         expect(invocationStore.fetchInvocationJobsSummaryForId).not.toHaveBeenCalled();
         const alert = wrapper.findComponent(GAlert);
+        // `LoadFailed`'s play reads the alert's text.
         expect(alert.props("variant")).toBe("danger");
-        expect(alert.text()).toContain("User does not own specified item.");
+    });
+});
+
+describe("WorkflowInvocationState full page navigation", () => {
+    it("keeps invocation actions inside a list item alongside navigation tabs", async () => {
+        const { wrapper } = await mountInvocation(stories.Completed);
+        const navigation = wrapper.get("ul.nav");
+
+        expect(Array.from(navigation.element.children).every((child) => child.tagName === "LI")).toBe(true);
+        expect(navigation.get("li.ml-auto").element.tagName).toBe("LI");
+    });
+});
+
+// The stories' plays check the Report, Export and Debug tabs and the Cancel Workflow button.
+describe("WorkflowInvocationState terminal state with a failed job", () => {
+    it("reports an invocation with a failed job as not terminal while another job runs", async () => {
+        const { wrapper } = await mountInvocation(stories.JobFailedWhileAnotherRuns);
+
+        expect(overviewTerminalState(wrapper)).toBe(false);
+    });
+
+    it("reports an invocation with a failed job as terminal once every job has finished", async () => {
+        const { wrapper } = await mountInvocation(stories.JobFailed);
+
+        expect(overviewTerminalState(wrapper)).toBe(true);
     });
 });
 
@@ -156,43 +170,5 @@ describe("WorkflowInvocationState retry state", () => {
         expect(alert.props("variant")).toBe("info");
         expect(alert.findComponent(LoadingSpan).props("message")).toBe("Loading invocation");
         expect(alert.text()).not.toContain("Invocation not found.");
-    });
-});
-
-describe("WorkflowInvocationState full page tabs", () => {
-    it("keeps invocation actions inside a list item alongside navigation tabs", async () => {
-        const { wrapper } = await mountInvocation(stories.Completed);
-        const navigation = wrapper.get("ul.nav");
-
-        expect(Array.from(navigation.element.children).every((child) => child.tagName === "LI")).toBe(true);
-        expect(navigation.get("li.ml-auto").element.tagName).toBe("LI");
-    });
-
-    it("disables the Report and Export tabs of a new invocation", async () => {
-        const { wrapper } = await mountInvocation(stories.SchedulingNew);
-
-        expect(tabLink(wrapper, selectors.reportTab).attributes("aria-disabled")).toBe("true");
-        expect(tabLink(wrapper, selectors.exportTab).attributes("aria-disabled")).toBe("true");
-    });
-
-    it("enables the Report and Export tabs of a scheduled invocation with terminal jobs", async () => {
-        const { wrapper } = await mountInvocation(stories.Completed);
-
-        expect(tabLink(wrapper, selectors.reportTab).attributes("aria-disabled")).toBeUndefined();
-        expect(tabLink(wrapper, selectors.exportTab).attributes("aria-disabled")).toBeUndefined();
-    });
-
-    it("hides the Debug tab while an invocation with a failed job still has a running job", async () => {
-        const { wrapper } = await mountInvocation(stories.JobFailedWhileAnotherRuns);
-
-        expect(overviewTerminalState(wrapper)).toBe(false);
-        expect(wrapper.find(selectors.debugTab).exists()).toBe(false);
-    });
-
-    it("shows the Debug tab once an invocation with a failed job is terminal", async () => {
-        const { wrapper } = await mountInvocation(stories.JobFailed);
-
-        expect(overviewTerminalState(wrapper)).toBe(true);
-        expect(wrapper.find(selectors.debugTab).exists()).toBe(true);
     });
 });
