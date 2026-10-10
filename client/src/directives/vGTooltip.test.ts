@@ -1,7 +1,8 @@
+// @vitest-environment jsdom
 import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { DirectiveBinding, RendererNode, VNode } from "vue";
+import { defineComponent, type DirectiveBinding, type RendererNode, type VNode } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
@@ -44,6 +45,51 @@ describe("vGTooltip", () => {
     function getRenderedTooltip() {
         return document.body.querySelector(".g-tooltip-d");
     }
+
+    describe("HTML content", () => {
+        function mountHtmlTooltip(title: string) {
+            return mount(
+                defineComponent({
+                    directives: { "g-tooltip": vGTooltip },
+                    props: { title: { type: String, required: true } },
+                    template: `<button v-g-tooltip.html="title" />`,
+                }),
+                { props: { title }, attachTo: document.body },
+            );
+        }
+
+        test.each([
+            ["<p>First <strong>paragraph</strong>.</p><p>Second &amp; last.</p>", "First paragraph. Second & last."],
+            ["NO_ERROR = 0</br>LOG = 1<br>WARNING = 2", "NO_ERROR = 0 LOG = 1 WARNING = 2"],
+            ["<ul><li>First</li><li>Second</li></ul>", "First Second"],
+        ])("names HTML content as readable text: %s", (title, label) => {
+            const wrapper = mountHtmlTooltip(title);
+            expect(wrapper.attributes("aria-label")).toBe(label);
+            wrapper.unmount();
+        });
+
+        test("updates the label from the sanitized content and clears an empty label", async () => {
+            const wrapper = mountHtmlTooltip("<p>Before</p>");
+            await wrapper.setProps({ title: "<p>After &amp; now</p><script>removed</script>" });
+            wrapper.element.dispatchEvent(new Event("focusin"));
+            expect(wrapper.attributes("aria-label")).toBe("After & now");
+            expect(getRenderedTooltip()?.querySelector("script")).toBeNull();
+            expect(getRenderedTooltip()?.textContent).toBe("After & now");
+            await wrapper.setProps({ title: "" });
+            expect(wrapper.attributes("aria-label")).toBeUndefined();
+            expect(getRenderedTooltip()).toBeNull();
+            wrapper.unmount();
+        });
+
+        test("preserves literal markup and whitespace in text mode", () => {
+            const title = "<p>Literal &amp;  text</p>";
+            const element = createTooltipTarget(title);
+            element.dispatchEvent(new Event("focusin"));
+            expect(element.getAttribute("aria-label")).toBe(title);
+            expect(getRenderedTooltip()?.textContent).toBe(title);
+            vGTooltip.unmounted?.(element, bindingForCleanup(), unusedVNode, null);
+        });
+    });
 
     test("shows on hover after delay", async () => {
         const element = createTooltipTarget();

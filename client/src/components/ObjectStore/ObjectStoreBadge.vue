@@ -13,6 +13,7 @@ import {
     faUserLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
+import { escape } from "lodash";
 import { computed } from "vue";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
@@ -54,12 +55,12 @@ const message = computed<string>(() => {
 });
 
 const title = computed(() => {
-    return stockMessage.value + (message.value ? "\n\n" + markup(message.value ?? "", true) : "");
+    return `<p>${escape(stockMessage.value)}</p>` + (message.value ? markup(message.value, true) : "");
 });
 </script>
 
 <template>
-    <span v-g-tooltip.hover="title" class="object-store-badge-wrapper">
+    <span v-g-tooltip.hover.html="title" class="object-store-badge-wrapper">
         <FontAwesomeLayers :class="layerClasses" :data-badge-type="badgeType">
             <FontAwesomeIcon v-if="badgeType == 'restricted'" :icon="faUserLock" :class="disadvantage" />
             <FontAwesomeIcon v-if="badgeType == 'user_defined'" :icon="faPlug" :class="neutral" />
