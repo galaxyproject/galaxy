@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -11,24 +12,6 @@ import { useUserStore } from "@/stores/userStore";
 
 import WorkflowListTabs from "./WorkflowListTabs.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
-
-// `@tests/vitest/mockConfig` hands back a plain boolean for `isConfigLoaded`,
-// but this component reads `isConfigLoaded.value` inside a computed, so the
-// mock has to expose real refs.
-const configState = vi.hoisted(() => ({
-    curatedSource: "iwc",
-    isConfigLoaded: true,
-}));
-
-vi.mock("@/composables/config", async () => {
-    const { computed } = await import("vue");
-    return {
-        useConfig: () => ({
-            config: computed(() => ({ curated_workflows_source: configState.curatedSource })),
-            isConfigLoaded: computed(() => configState.isConfigLoaded),
-        }),
-    };
-});
 
 const localVue = getLocalVue();
 const router = createRouter({ history: createMemoryHistory(), routes: [] });
@@ -47,8 +30,7 @@ interface MountOptions {
 async function mountTabs(active: WorkflowListTab, options: MountOptions = {}) {
     const { anonymous = false, curatedSource = "iwc", configLoaded = true } = options;
 
-    configState.curatedSource = curatedSource;
-    configState.isConfigLoaded = configLoaded;
+    setupMockConfig({ curated_workflows_source: curatedSource }, configLoaded);
 
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
