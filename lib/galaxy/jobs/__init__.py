@@ -80,6 +80,7 @@ from galaxy.jobs.runners import (
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
+    DatasetHash,
     Job,
     JobOutputNameTooLongError,
     LibraryDatasetDatasetAssociation,
@@ -102,7 +103,9 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    MaxDiscoveredFilesJobMessage,
     output_discovery_job_message,
+    OutputCollectionSecurityJobMessage,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
@@ -2111,15 +2114,15 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def finish(
         self,
-        tool_stdout,
-        tool_stderr,
-        tool_exit_code=None,
-        job_stdout=None,
-        job_stderr=None,
-        check_output_detected_state=None,
-        remote_metadata_directory=None,
-        job_metrics_directory=None,
-    ):
+        tool_stdout: str,
+        tool_stderr: str,
+        tool_exit_code: int | None = None,
+        job_stdout: str | None = None,
+        job_stderr: str | None = None,
+        check_output_detected_state: str | None = None,
+        remote_metadata_directory: str | None = None,
+        job_metrics_directory: str | None = None,
+    ) -> None:
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
@@ -2132,7 +2135,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # default post job setup
         job = self.get_job()
 
-        def fail(message=job.info, exception=None):
+        def fail(message: str = job.info or "Unknown error", exception: Exception | None = None) -> None:
             if not isinstance(exception, (AssertionError, MessageException)):
                 # Only attach MessageException and AssertionErrors to job.traceback
                 exception = None
@@ -2211,6 +2214,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
+        assert self.tool is not None
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
@@ -2248,18 +2252,18 @@ class MinimalJobWrapper(HasResourceParameters):
             except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError, OutputCollectionSecurityError) as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
                 final_job_state = job.states.ERROR
-                message_type = (
-                    "output_collection_security"
+                message = (
+                    OutputCollectionSecurityJobMessage(
+                        type="output_collection_security", desc=str(e), error_level=StdioErrorLevel.FATAL
+                    )
                     if isinstance(e, OutputCollectionSecurityError)
-                    else "max_discovered_files"
+                    else MaxDiscoveredFilesJobMessage(
+                        type="max_discovered_files", desc=str(e), error_level=StdioErrorLevel.FATAL
+                    )
                 )
                 job.job_messages = [
                     *(job.job_messages or []),
-                    {
-                        "type": message_type,
-                        "desc": str(e),
-                        "error_level": StdioErrorLevel.FATAL,
-                    },
+                    message,
                 ]
             except MessageException as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
@@ -2283,20 +2287,25 @@ class MinimalJobWrapper(HasResourceParameters):
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
                 # need to update all associated output hdas, i.e. history was shared with job running
-                for dataset in (
+                assert dataset_assoc.dataset.dataset is not None
+                for hda_or_ldda in (
                     dataset_assoc.dataset.dataset.history_associations
                     + dataset_assoc.dataset.dataset.library_associations
                 ):
                     if is_discovered_dataset:
-                        if dataset is dataset_assoc.dataset:
+                        if hda_or_ldda is dataset_assoc.dataset:
                             continue
-                        elif dataset.extension == dataset_assoc.dataset.extension or dataset.extension == "auto":
-                            copy_dataset_instance_metadata_attributes(dataset_assoc.dataset, dataset)
+                        elif (
+                            hda_or_ldda.extension == dataset_assoc.dataset.extension or hda_or_ldda.extension == "auto"
+                        ):
+                            copy_dataset_instance_metadata_attributes(dataset_assoc.dataset, hda_or_ldda)
                             continue
                     output_name = dataset_assoc.name
 
                     # Handles retry internally on error for instance...
-                    self._finish_dataset(output_name, dataset, job, context, final_job_state, remote_metadata_directory)
+                    self._finish_dataset(
+                        output_name, hda_or_ldda, job, context, final_job_state, remote_metadata_directory
+                    )
                 if (
                     not final_job_state == job.states.ERROR
                     and not dataset_assoc.dataset.dataset.state == job.states.ERROR
@@ -2307,6 +2316,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
+                assert dataset_assoc.dataset.dataset is not None
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = Dataset.states.ERROR
@@ -2333,6 +2343,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
+            assert dataset is not None
             # assume all datasets in a job get written to the same objectstore
             quota_source_info = dataset.quota_source_info
             collected_bytes += dataset.set_total_size()
@@ -2346,6 +2357,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if final_job_state == job.states.OK:
             for dataset_assoc in output_dataset_associations:
                 dataset = dataset_assoc.dataset.dataset
+                assert dataset is not None
                 if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
                     if self.app.config.calculate_dataset_hash == "always" or (
                         self.app.config.calculate_dataset_hash == "upload"
@@ -2355,7 +2367,13 @@ class MinimalJobWrapper(HasResourceParameters):
                         if self.app.config.enable_celery_tasks:
                             from galaxy.celery.tasks import compute_dataset_hash
 
-                            extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                            # A dataset with no extra files gets its primary-file hash tagged
+                            # DatasetHash.FINAL, the only tag has_same_hash() matches on; one
+                            # with extra files is left untouched here until a later phase can
+                            # compute a hash that actually covers them.
+                            extra_files_path = (
+                                dataset.extra_files_path if dataset.extra_files_path_exists() else DatasetHash.FINAL
+                            )
                             request = ComputeDatasetHashTaskRequest(
                                 dataset_id=dataset.id,
                                 extra_files_path=extra_files_path,
@@ -3074,7 +3092,7 @@ class TaskWrapper(JobWrapper):
         self.sa_session.add(task)
         self.sa_session.commit()
 
-    def finish(self, stdout, stderr, tool_exit_code=None, **kwds):
+    def finish(self, stdout: str, stderr: str, tool_exit_code: int | None = None, **kwds):  # type: ignore[override]
         # DBTODO integrate previous finish logic.
         # Simple finish for tasks.  Just set the flag OK.
         """

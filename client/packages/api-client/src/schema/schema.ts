@@ -9463,6 +9463,12 @@ export interface components {
              */
             extra_files_path?: string | null;
             /**
+             * Final
+             * @description If set, mark the computed hash as the authoritative value to match this dataset on for job-cache purposes. Mutually exclusive with `extra_files_path`, and currently only supported for datasets with no extra files.
+             * @default false
+             */
+            final: boolean;
+            /**
              * @description Hash function name to use to compute dataset hashes.
              * @default MD5
              */
