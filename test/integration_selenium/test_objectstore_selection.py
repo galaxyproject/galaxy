@@ -99,6 +99,16 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         details.badge_of_type(type="faster").wait_for_present()
         details.badge_of_type(type="more_stable").wait_for_present()
 
+        # The admin's Markdown message shows as formatted text, not literal HTML, with a link you can follow.
+        self.hover(details.badge_of_type(type="backed_up").wait_for_visible())
+        popover_text = details.badge_message_popover.wait_for_text()
+        assert "This storage has been marked as backed up by the Galaxy administrator." in popover_text
+        assert "Backed up to MSI's long term tape drive nightly." in popover_text
+        assert "<p>" not in popover_text
+        link = details.badge_message_popover_link.wait_for_visible()
+        assert link.get_attribute("href") == "https://www.msi.umn.edu/content/archive-tier-storage"
+        assert link.text == "Archive Tier Storage"
+
     @selenium_test
     @managed_history
     def test_1_tools_override_run(self):

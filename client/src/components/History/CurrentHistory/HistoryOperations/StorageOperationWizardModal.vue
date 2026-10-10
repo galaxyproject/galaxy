@@ -286,7 +286,11 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                                     <span class="font-weight-bold">{{
                                         option.name ?? "Unknown storage location"
                                     }}</span>
-                                    <ObjectStoreBadges :badges="option.badges" size="lg" class="ml-2 flex-shrink-0" />
+                                    <ObjectStoreBadges
+                                        :badges="option.badges"
+                                        size="lg"
+                                        :interactive="false"
+                                        class="ml-2 flex-shrink-0" />
                                 </div>
                                 <div v-if="option.description" class="small text-muted mt-1 text-break">
                                     {{ option.description }}

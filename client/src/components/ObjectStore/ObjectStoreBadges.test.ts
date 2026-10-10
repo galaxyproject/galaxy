@@ -39,4 +39,14 @@ describe("ObjectStoreBadges", () => {
         expect(badges.length).toBe(2);
         expect(nth(badges, 0).attributes("size")).toBe("2x");
     });
+
+    it("should pass along whether badges are interactive", async () => {
+        wrapper = shallowMount(ObjectStoreBadges as object, {
+            props: { badges: BADGES, interactive: false },
+            global: localVue,
+        });
+        const badges = wrapper.findAllComponents(ObjectStoreBadge);
+        expect(nth(badges, 0).props("interactive")).toBe(false);
+        expect(nth(badges, 1).props("interactive")).toBe(false);
+    });
 });

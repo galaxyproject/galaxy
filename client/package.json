@@ -225,7 +225,6 @@
     "fs-extra": "^11.2.0",
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
-    "jsdom": "^28.1.0",
     "msw": "~2.10.5",
     "openapi-msw": "^0.7.0",
     "openapi-typescript": "^7.3.0",

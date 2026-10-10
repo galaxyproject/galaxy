@@ -13,21 +13,27 @@ import {
     faUserLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import { escape } from "lodash";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 import { MESSAGES } from "@/components/ObjectStore/badgeMessages";
-import { markup } from "@/components/ObjectStore/configurationMarkdown";
+
+import GPopover from "@/components/BaseComponents/GPopover.vue";
+import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
 
 interface Props {
     badge: ObjectStoreBadgeType;
     size?: string;
+    /** Focusable trigger whose popover links can be reached; turn off inside dropdown options */
+    interactive?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     size: "lg",
+    interactive: true,
 });
+
+const trigger = ref<HTMLElement>();
 
 const advantage = "storage-advantage";
 const disadvantage = "storage-disadvantage";
@@ -53,14 +59,16 @@ const shrink = computed(() => {
 const message = computed<string>(() => {
     return props.badge.message || "";
 });
-
-const title = computed(() => {
-    return `<p>${escape(stockMessage.value)}</p>` + (message.value ? markup(message.value, true) : "");
-});
 </script>
 
 <template>
-    <span v-g-tooltip.hover.html="title" class="object-store-badge-wrapper">
+    <component
+        :is="interactive ? 'button' : 'span'"
+        ref="trigger"
+        :type="interactive ? 'button' : undefined"
+        :role="interactive ? undefined : 'img'"
+        :aria-label="stockMessage"
+        class="object-store-badge-wrapper">
         <FontAwesomeLayers :class="layerClasses" :data-badge-type="badgeType">
             <FontAwesomeIcon v-if="badgeType == 'restricted'" :icon="faUserLock" :class="disadvantage" />
             <FontAwesomeIcon v-if="badgeType == 'user_defined'" :icon="faPlug" :class="neutral" />
@@ -109,10 +117,22 @@ const title = computed(() => {
 
             <FontAwesomeIcon v-if="badgeType == 'cloud'" :icon="faCloud" :class="neutral" />
         </FontAwesomeLayers>
-    </span>
+    </component>
+    <GPopover :target="() => trigger" :interactive="interactive && !!message" triggers="hover" placement="top">
+        <p>{{ stockMessage }}</p>
+        <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
+    </GPopover>
 </template>
 
 <style scoped>
+button.object-store-badge-wrapper {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    line-height: inherit;
+}
+
 .reduced-opacity {
     opacity: 0.65;
 }

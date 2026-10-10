@@ -1,7 +1,6 @@
-// @vitest-environment jsdom
-// jsdom: DOMPurify doesn't sanitize correctly under happy-dom.
 import { advanceToJustBeforeTooltipHoverDelay, advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
+import purify from "dompurify";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { defineComponent, type DirectiveBinding, type RendererNode, type VNode } from "vue";
 
@@ -48,6 +47,15 @@ describe("vGTooltip", () => {
     }
 
     describe("HTML content", () => {
+        // DOMPurify misbehaves under happy-dom, so it passes content through here; E2E covers real sanitizing.
+        beforeEach(() => {
+            vi.spyOn(purify, "sanitize").mockImplementation((html) => String(html));
+        });
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
         function mountHtmlTooltip(title: string) {
             return mount(
                 defineComponent({
@@ -61,7 +69,7 @@ describe("vGTooltip", () => {
 
         test.each([
             ["<p>First <strong>paragraph</strong>.</p><p>Second &amp; last.</p>", "First paragraph. Second & last."],
-            ["NO_ERROR = 0</br>LOG = 1<br>WARNING = 2", "NO_ERROR = 0 LOG = 1 WARNING = 2"],
+            ["NO_ERROR = 0<br>LOG = 1<br />WARNING = 2", "NO_ERROR = 0 LOG = 1 WARNING = 2"],
             ["<ul><li>First</li><li>Second</li></ul>", "First Second"],
         ])("names HTML content as readable text: %s", (title, label) => {
             const wrapper = mountHtmlTooltip(title);
@@ -71,6 +79,7 @@ describe("vGTooltip", () => {
 
         test("updates the label from the sanitized content and clears an empty label", async () => {
             const wrapper = mountHtmlTooltip("<p>Before</p>");
+            vi.mocked(purify.sanitize).mockReturnValueOnce("<p>After &amp; now</p>");
             await wrapper.setProps({ title: "<p>After &amp; now</p><script>removed</script>" });
             wrapper.element.dispatchEvent(new Event("focusin"));
             expect(wrapper.attributes("aria-label")).toBe("After & now");
