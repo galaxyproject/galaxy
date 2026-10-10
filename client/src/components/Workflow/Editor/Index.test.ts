@@ -4,12 +4,13 @@ import {
     getLocalVue,
     mockUnprivilegedToolsRequest,
     suppressExpectedErrorMessages,
+    withPlugins,
 } from "@tests/vitest/helpers";
-import { shallowMount, type VueWrapper } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount, type VueWrapper } from "@vue/test-utils";
 import { BFormTextarea } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, nextTick } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -21,33 +22,28 @@ import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { type NewStep, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
-import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
-import ChangesIndicator from "@/components/Common/ChangesIndicator.vue";
 import NodeInspector from "@/components/Workflow/Editor/NodeInspector.vue";
 import ReadmeEditor from "@/components/Workflow/Editor/ReadmeEditor.vue";
 import WorkflowAttributes from "@/components/Workflow/Editor/WorkflowAttributes.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
+const WORKFLOW_ID = "workflow_id";
 const GET_APP_ROOT_PREFIX = "prefix/" as const;
-// Selectors
-// `<script setup>` SFCs compile to nameless component objects (their inferred
-// name lives on `__name`, which vue-test-utils 1.x doesn't read). Since
-// `Index.vue` is itself `<script setup>`, it resolves these children as direct
-// object references rather than string tags, so vue-test-utils' `stubs` option
-// (which matches by `.name`) can never target them unless we set `.name`
-// ourselves on the shared imported component object before mounting.
-(ActivityBar as unknown as { name?: string }).name = "ActivityBar";
-(WorkflowGraph as unknown as { name?: string }).name = "WorkflowGraph";
-(ChangesIndicator as unknown as { name?: string }).name = "ChangesIndicator";
+
+const SELECTORS = {
+    SAVE_BUTTON: "#workflow-save-button",
+    SAVE_AS_MODAL: "[data-description='save-as-modal']",
+    ERROR_MODAL: "[data-description='workflow editor error modal']",
+};
 
 const localVue = getLocalVue();
 
@@ -75,27 +71,26 @@ const activityBarStub = defineComponent({
     template: `<div><slot name="side-panel" :is-active-side-bar="isActiveSideBar" /></div>`,
 });
 
-function editorStubs() {
-    return {
-        ActivityBar: activityBarStub,
-        WorkflowGraph: {
-            template: "<div />",
-            props: ["datatypesMapper"],
-            methods: {
-                fitWorkflow() {},
-                setTransform() {},
-            },
+/** Children whose methods `Index.vue` calls through template refs, which the default auto-stubs lack. */
+const EDITOR_STUBS = {
+    ActivityBar: activityBarStub,
+    // Renders its slot, so the node inspector mounts once a step is active.
+    WorkflowGraph: {
+        template: "<div><slot /></div>",
+        props: ["datatypesMapper"],
+        methods: {
+            fitWorkflow() {},
+            setTransform() {},
         },
-        // `Index.vue` calls `changesIndicator.value?.flashSavedIndicator()` directly after a
-        // successful save; the default auto-stub doesn't expose it, so `onSave` would throw.
-        ChangesIndicator: {
-            template: "<div />",
-            methods: {
-                flashSavedIndicator: mockFlashSavedIndicator,
-            },
+    },
+    // Called after every successful save.
+    ChangesIndicator: {
+        template: "<div />",
+        methods: {
+            flashSavedIndicator: mockFlashSavedIndicator,
         },
-    };
-}
+    },
+};
 
 // vue-router mocks
 const mockPush = vi.fn();
@@ -124,13 +119,57 @@ const mockGetVersions = vi.mocked(getVersions);
 const mockSaveWorkflow = vi.mocked(saveWorkflow);
 const mockGetModule = vi.mocked(getModule);
 
+/**
+ * Mounts the editor on a fresh testing Pinia with datatypes already loaded. The
+ * returned stores are scoped to the editor's own id, which is a generated uid
+ * rather than "workflow_id" when `workflowId` is omitted (a new temp workflow).
+ */
+function mountEditor(props: Record<string, unknown> = {}) {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    setActivePinia(pinia);
+    useDatatypesMapperStore().datatypesMapper = testDatatypesMapper;
+
+    const wrapper = shallowMount(Index, {
+        props: { workflowId: WORKFLOW_ID, initialVersion: 1, workflows: [], toolbox: [], ...props },
+        global: { ...withPlugins(localVue, pinia), stubs: { ...localVue.stubs, ...EDITOR_STUBS } },
+    });
+
+    const id = wrapper.findComponent(WorkflowAttributes).props("id") as string;
+    return { wrapper, stateStore: useWorkflowStateStore(id), stepStore: useWorkflowStepStore(id) };
+}
+
+/** Mounts the editor and waits for its initial workflow load to settle. */
+async function mountLoadedEditor(props: Record<string, unknown> = {}) {
+    const editor = mountEditor(props);
+    await flushPromises();
+    return editor;
+}
+
+function clickActivity(wrapper: VueWrapper, activityId: string) {
+    wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", activityId);
+}
+
+function toolStep(overrides: Partial<NewStep> & Pick<NewStep, "name">): NewStep {
+    return {
+        type: "tool",
+        content_id: "cat1",
+        tool_id: "cat1",
+        tool_state: {},
+        input_connections: {},
+        inputs: [],
+        outputs: [],
+        position: { left: 0, top: 0 },
+        workflow_outputs: [],
+        ...overrides,
+    };
+}
+
+enableAutoUnmount(afterEach);
+
 describe("Index", () => {
     beforeEach(() => {
+        vi.resetAllMocks();
         vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
-
-        mockPush.mockClear();
-        mockReplace.mockClear();
-        mockFlashSavedIndicator.mockClear();
         mockRoute = { query: {}, fullPath: "/" };
 
         // `useMagicKeys` (undo/redo shortcuts) always wraps a `Set` in `reactive()`
@@ -145,39 +184,20 @@ describe("Index", () => {
         mockUnprivilegedToolsRequest(server, http);
     });
 
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     describe("default mount", () => {
-        let wrapper: VueWrapper;
-        let stateStore: ReturnType<typeof useWorkflowStateStore>;
-
-        beforeEach(() => {
-            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-            setActivePinia(testingPinia);
-            const datatypesStore = useDatatypesMapperStore();
-            datatypesStore.datatypesMapper = testDatatypesMapper;
-
-            stateStore = useWorkflowStateStore("workflow_id");
-
-            wrapper = shallowMount(Index as object, {
-                propsData: {
-                    workflowId: "workflow_id",
-                    initialVersion: 1,
-                    workflowTags: ["moo", "cow"],
-                    workflows: [],
-                    toolbox: [],
-                },
-                global: localVue,
-                pinia: testingPinia,
-                // mock out components that have exposed methods used by Index.vue.
-                stubs: editorStubs(),
-            });
-        });
-
-        async function resetChanges() {
-            stateStore.hasChanges = false;
-            await nextTick();
+        function mountDefaultEditor() {
+            return mountEditor({ workflowTags: ["moo", "cow"] });
         }
 
         it("resolves datatypes", async () => {
+            const { wrapper } = mountDefaultEditor();
+            // The graph renders once the datatypes mapper has resolved.
+            await flushPromises();
+
             const workflowGraph = wrapper.findComponent(WorkflowGraph);
 
             expect(workflowGraph.props("datatypesMapper")).toEqual(testDatatypesMapper);
@@ -186,28 +206,24 @@ describe("Index", () => {
         });
 
         it("does not have changes once the initial load settles", async () => {
+            const { stateStore } = mountDefaultEditor();
+
             await flushPromises();
+
             expect(stateStore.hasChanges).toBeFalsy();
         });
 
         it("assigns a fresh id and uuid when cloning a step, including its workflow_outputs", async () => {
+            const { wrapper, stepStore } = mountDefaultEditor();
             await flushPromises();
-
-            const stepStore = useWorkflowStepStore("workflow_id");
-            const sourceStep = stepStore.addStep({
-                type: "tool",
-                label: "source label",
-                name: "source step",
-                content_id: "cat1",
-                tool_id: "cat1",
-                tool_state: {},
-                input_connections: {},
-                inputs: [],
-                outputs: [],
-                position: { left: 0, top: 0 },
-                uuid: "11111111-1111-1111-1111-111111111111",
-                workflow_outputs: [{ output_name: "out1", uuid: "22222222-2222-2222-2222-222222222222" }],
-            });
+            const sourceStep = stepStore.addStep(
+                toolStep({
+                    label: "source label",
+                    name: "source step",
+                    uuid: "11111111-1111-1111-1111-111111111111",
+                    workflow_outputs: [{ output_name: "out1", uuid: "22222222-2222-2222-2222-222222222222" }],
+                }),
+            );
 
             wrapper.findComponent(WorkflowGraph).vm.$emit("onClone", String(sourceStep.id));
             await nextTick();
@@ -226,12 +242,14 @@ describe("Index", () => {
         });
 
         it("routes to download URL and respects Galaxy prefix", async () => {
+            const { wrapper } = mountDefaultEditor();
+            // A plain object keeps the assigned href as-is, where the location mock would resolve it.
             Object.defineProperty(window, "location", {
                 value: { href: "original" },
                 writable: true,
             });
 
-            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "workflow-download");
+            clickActivity(wrapper, "workflow-download");
             await flushPromises();
 
             expect(window.location.href).toBe(
@@ -240,133 +258,98 @@ describe("Index", () => {
             expect(window.location.href).not.toBe("api/workflows/workflow_id/download?format=json-download");
         });
 
-        it("tracks changes to annotations", async () => {
+        it.each([
+            {
+                field: "annotation",
+                event: "update:annotationCurrent",
+                original: "original annotation",
+                changed: "new annotation",
+            },
+            { field: "name", event: "update:nameCurrent", original: "original name", changed: "new name" },
+            { field: "help", event: "update:helpCurrent", original: "original help", changed: "new help" },
+            {
+                field: "logoUrl",
+                event: "update:logoUrlCurrent",
+                original: "http://example.com/a.png",
+                changed: "http://example.com/b.png",
+            },
+        ])("tracks changes to $field", async ({ event, original, changed }) => {
+            const { wrapper, stateStore } = mountDefaultEditor();
+            const workflowAttributes = wrapper.findComponent(WorkflowAttributes);
             expect(stateStore.hasChanges).toBeFalsy();
 
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "original annotation");
+            workflowAttributes.vm.$emit(event, original);
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
 
-            await resetChanges();
+            stateStore.hasChanges = false;
+            await nextTick();
 
             // Re-emitting the same value should not mark the workflow as changed again.
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "original annotation");
+            workflowAttributes.vm.$emit(event, original);
             await nextTick();
             expect(stateStore.hasChanges).toBeFalsy();
 
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "new annotation");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeTruthy();
-        });
-
-        it("tracks changes to name", async () => {
-            expect(stateStore.hasChanges).toBeFalsy();
-
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "original name");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeTruthy();
-
-            await resetChanges();
-
-            // Re-emitting the same value should not mark the workflow as changed again.
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "original name");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeFalsy();
-
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:nameCurrent", "new name");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeTruthy();
-        });
-
-        it("tracks changes to help", async () => {
-            expect(stateStore.hasChanges).toBeFalsy();
-
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "original help");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeTruthy();
-
-            await resetChanges();
-
-            // Re-emitting the same value should not mark the workflow as changed again.
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "original help");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeFalsy();
-
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:helpCurrent", "new help");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeTruthy();
-        });
-
-        it("tracks changes to logoUrl", async () => {
-            expect(stateStore.hasChanges).toBeFalsy();
-
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/a.png");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeTruthy();
-
-            await resetChanges();
-
-            // Re-emitting the same value should not mark the workflow as changed again.
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/a.png");
-            await nextTick();
-            expect(stateStore.hasChanges).toBeFalsy();
-
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:logoUrlCurrent", "http://example.com/b.png");
+            workflowAttributes.vm.$emit(event, changed);
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
         });
 
         it("tracks changes to readme", async () => {
-            // wait for the initial workflow load to settle before making changes.
+            const { wrapper, stateStore } = mountDefaultEditor();
             await flushPromises();
             expect(stateStore.hasChanges).toBeFalsy();
 
             wrapper.findComponent(WorkflowAttributes).vm.$emit("update:readme-active", true);
             await nextTick();
+            const readmeEditor = wrapper.findComponent(ReadmeEditor);
 
-            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "original readme");
+            readmeEditor.vm.$emit("update:readmeCurrent", "original readme");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
 
-            await resetChanges();
+            stateStore.hasChanges = false;
+            await nextTick();
 
             // Re-emitting the same value should not mark the workflow as changed again.
-            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "original readme");
+            readmeEditor.vm.$emit("update:readmeCurrent", "original readme");
             await nextTick();
             expect(stateStore.hasChanges).toBeFalsy();
 
-            wrapper.findComponent(ReadmeEditor).vm.$emit("update:readmeCurrent", "new readme");
+            readmeEditor.vm.$emit("update:readmeCurrent", "new readme");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
         });
 
         it("closes the readme editor when leaving the attributes activity, but not for undo-redo", async () => {
+            const { wrapper } = mountDefaultEditor();
+            const activityBar = wrapper.findComponent(activityBarStub);
+
             wrapper.findComponent(WorkflowAttributes).vm.$emit("update:readme-active", true);
             await nextTick();
             expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
 
             // Switching to the undo-redo activity is the one exception: readme stays open.
-            wrapper.findComponent(activityBarStub).vm.setActiveSideBar("workflow-undo-redo");
+            activityBar.vm.setActiveSideBar("workflow-undo-redo");
             await nextTick();
             expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(true);
 
             // Any other activity closes the readme editor.
-            wrapper.findComponent(activityBarStub).vm.setActiveSideBar("workflow-editor-tools");
+            activityBar.vm.setActiveSideBar("workflow-editor-tools");
             await nextTick();
             expect(wrapper.findComponent(ReadmeEditor).exists()).toBe(false);
         });
 
         it("clears hasChanges after a successful save", async () => {
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
-
-            // wait for the initial workflow load to settle before making changes.
+            const { wrapper, stateStore } = mountDefaultEditor();
             await flushPromises();
 
             wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "a change");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
 
-            wrapper.findComponent<typeof GButton>("#workflow-save-button").vm.$emit("click");
+            wrapper.findComponent<typeof GButton>(SELECTORS.SAVE_BUTTON).vm.$emit("click");
             await flushPromises();
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
@@ -382,15 +365,15 @@ describe("Index", () => {
                         resolveSave = resolve;
                     }),
             );
+            const { wrapper, stateStore } = mountDefaultEditor();
             await flushPromises();
-
             const workflowAttributes = wrapper.findComponent(WorkflowAttributes);
+
             workflowAttributes.vm.$emit("update:annotationCurrent", "submitted annotation");
             await nextTick();
-
-            wrapper.findComponent<typeof GButton>("#workflow-save-button").vm.$emit("click");
+            wrapper.findComponent<typeof GButton>(SELECTORS.SAVE_BUTTON).vm.$emit("click");
             await nextTick();
-            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "newer annotation");
+            workflowAttributes.vm.$emit("update:annotationCurrent", "newer annotation");
             await nextTick();
             resolveSave({ version: 2 });
             await flushPromises();
@@ -408,6 +391,7 @@ describe("Index", () => {
                 .spyOn(Services.prototype, "createWorkflow")
                 .mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 3 });
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
+            const { wrapper } = mountDefaultEditor();
 
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
             // vue-test-utils' auto-stub for `BFormTextarea` declares its own v-model
@@ -416,7 +400,7 @@ describe("Index", () => {
             wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
             await nextTick();
 
-            wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
+            wrapper.findComponent<typeof GModal>(SELECTORS.SAVE_AS_MODAL).vm.$emit("ok");
             await flushPromises();
 
             expect(createWorkflowSpy).toHaveBeenCalledWith(
@@ -434,11 +418,12 @@ describe("Index", () => {
                 .spyOn(Services.prototype, "createWorkflow")
                 .mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 1 });
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
+            const { wrapper } = mountDefaultEditor();
 
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
             await nextTick();
 
-            wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("ok");
+            wrapper.findComponent<typeof GModal>(SELECTORS.SAVE_AS_MODAL).vm.$emit("ok");
             await flushPromises();
 
             // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
@@ -446,13 +431,15 @@ describe("Index", () => {
         });
 
         it("resets save-as fields when the modal is cancelled", async () => {
+            const { wrapper } = mountDefaultEditor();
+
             wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "My New Workflow");
             wrapper.findComponent(BFormTextarea).vm.$emit("update", "A description");
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBe("My New Workflow");
 
-            wrapper.findComponent<typeof GModal>("[data-description='save-as-modal']").vm.$emit("cancel");
+            wrapper.findComponent<typeof GModal>(SELECTORS.SAVE_AS_MODAL).vm.$emit("cancel");
             await nextTick();
 
             expect(wrapper.findComponent(GFormInput).props("modelValue")).toBeNull();
@@ -460,7 +447,9 @@ describe("Index", () => {
         });
 
         it("prevents navigation only if hasChanges", async () => {
+            const { wrapper, stateStore } = mountDefaultEditor();
             expect(stateStore.hasChanges).toBeFalsy();
+            expect(wrapper.emitted("update:confirmation")).toBeUndefined();
 
             const workflowAttributes = wrapper.findComponent(WorkflowAttributes);
             expect(workflowAttributes.exists()).toBe(true);
@@ -477,24 +466,23 @@ describe("Index", () => {
         describe("Messages modal", () => {
             it("shows an error when clicking Save fails, and clears it once the modal is dismissed", async () => {
                 mockSaveWorkflow.mockRejectedValue(new Error("Test error message"));
-
-                // wait for workflow to load
+                const { wrapper } = mountDefaultEditor();
                 await flushPromises();
 
                 // save button is disabled initially until a change is made
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeTruthy();
+                expect(wrapper.find(SELECTORS.SAVE_BUTTON).attributes("disabled")).toBeTruthy();
 
                 // simulate WorkflowGraph making a change to enable the Save button
                 wrapper.findComponent(WorkflowGraph).vm.$emit("onChange");
                 await nextTick();
 
                 // save button is now enabled
-                expect(wrapper.find("#workflow-save-button").attributes("disabled")).toBeFalsy();
+                expect(wrapper.find(SELECTORS.SAVE_BUTTON).attributes("disabled")).toBeFalsy();
 
-                wrapper.findComponent<typeof GButton>("#workflow-save-button").vm.$emit("click");
+                wrapper.findComponent<typeof GButton>(SELECTORS.SAVE_BUTTON).vm.$emit("click");
                 await flushPromises();
 
-                const modal = wrapper.findComponent<typeof GModal>("[data-description='workflow editor error modal']");
+                const modal = wrapper.findComponent<typeof GModal>(SELECTORS.ERROR_MODAL);
                 expect(modal.props("show")).toBe(true);
                 expect(modal.props("title")).toBe("Saving workflow failed...");
                 expect(modal.findComponent(GAlert).props("variant")).toBe("danger");
@@ -507,19 +495,12 @@ describe("Index", () => {
                 modal.vm.$emit("close");
                 await nextTick();
 
-                expect(
-                    wrapper
-                        .findComponent<typeof GModal>("[data-description='workflow editor error modal']")
-                        .props("show"),
-                ).toBe(false);
+                expect(wrapper.findComponent<typeof GModal>(SELECTORS.ERROR_MODAL).props("show")).toBe(false);
             });
         });
     });
 
     describe("module updates from the node inspector", () => {
-        let stepStore: ReturnType<typeof useWorkflowStepStore>;
-        let stateStore: ReturnType<typeof useWorkflowStateStore>;
-
         function moduleData(toolState: object) {
             return {
                 content_id: "cat1",
@@ -532,172 +513,108 @@ describe("Index", () => {
             };
         }
 
+        /** Mounts a loaded editor with `stepCount` tool steps, the first one active in the node inspector. */
         async function mountWithSteps(stepCount: number) {
-            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-            setActivePinia(testingPinia);
-            useDatatypesMapperStore().datatypesMapper = testDatatypesMapper;
-            stateStore = useWorkflowStateStore("workflow_id");
-            stepStore = useWorkflowStepStore("workflow_id");
-            const stubs = editorStubs();
-            const wrapper = shallowMount(Index as object, {
-                propsData: { workflowId: "workflow_id", initialVersion: 1, workflows: [], toolbox: [] },
-                localVue,
-                pinia: testingPinia,
-                // render the graph's slot so the node inspector mounts for the active step
-                stubs: { ...stubs, WorkflowGraph: { ...stubs.WorkflowGraph, template: "<div><slot /></div>" } },
-            });
-            await flushPromises();
-            const stepIds = [];
-            for (let i = 0; i < stepCount; i++) {
-                const step = stepStore.addStep({
-                    type: "tool",
-                    label: `step ${i}`,
-                    name: `step ${i}`,
-                    content_id: "cat1",
-                    tool_id: "cat1",
-                    tool_state: {},
-                    input_connections: {},
-                    inputs: [],
-                    outputs: [],
-                    position: { left: 0, top: 0 },
-                    workflow_outputs: [],
-                });
-                stepIds.push(step.id);
-            }
-            stateStore.activeNodeId = stepIds[0]!;
+            const editor = await mountLoadedEditor();
+            const stepIds = Array.from(
+                { length: stepCount },
+                (_, i) => editor.stepStore.addStep(toolStep({ label: `step ${i}`, name: `step ${i}` })).id,
+            );
+            editor.stateStore.activeNodeId = stepIds[0]!;
             await nextTick();
-            return { wrapper, stepIds };
+            return { ...editor, stepIds };
         }
 
         function emitDataChanged(wrapper: VueWrapper, stepId: number, data: object) {
             wrapper.findComponent(NodeInspector).vm.$emit("dataChanged", stepId, data);
         }
 
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
         it("skips superseded form edits and applies the latest module response", async () => {
-            const { wrapper, stepIds } = await mountWithSteps(1);
+            const { wrapper, stateStore, stepStore, stepIds } = await mountWithSteps(1);
             const stepId = stepIds[0]!;
             vi.useFakeTimers();
-            try {
-                let resolveFirst!: (data: object) => void;
-                const firstResponse = new Promise((resolve) => {
-                    resolveFirst = resolve;
-                });
-                mockGetModule.mockReset();
-                mockGetModule.mockReturnValueOnce(firstResponse).mockResolvedValueOnce(moduleData({ text: "latest" }));
+            let resolveFirst!: (data: object) => void;
+            const firstResponse = new Promise((resolve) => {
+                resolveFirst = resolve;
+            });
+            mockGetModule.mockReturnValueOnce(firstResponse).mockResolvedValueOnce(moduleData({ text: "latest" }));
 
-                emitDataChanged(wrapper, stepId, { text: "first" });
-                emitDataChanged(wrapper, stepId, { text: "intermediate" });
-                emitDataChanged(wrapper, stepId, { text: "latest" });
-                await flushPromises();
-                expect(mockGetModule).toHaveBeenCalledTimes(1);
+            emitDataChanged(wrapper, stepId, { text: "first" });
+            emitDataChanged(wrapper, stepId, { text: "intermediate" });
+            emitDataChanged(wrapper, stepId, { text: "latest" });
+            await flushPromises();
+            expect(mockGetModule).toHaveBeenCalledTimes(1);
 
-                resolveFirst(moduleData({ text: "first" }));
-                await flushPromises();
-                expect(stepStore.getStep(stepId)?.tool_state).toEqual({ text: "first" });
+            resolveFirst(moduleData({ text: "first" }));
+            await flushPromises();
+            expect(stepStore.getStep(stepId)?.tool_state).toEqual({ text: "first" });
 
-                await vi.advanceTimersByTimeAsync(1000);
-                await flushPromises();
+            await vi.advanceTimersByTimeAsync(1000);
+            await flushPromises();
 
-                expect(mockGetModule).toHaveBeenCalledTimes(2);
-                expect(mockGetModule).toHaveBeenLastCalledWith({ text: "latest" }, stepId, stateStore.setLoadingState);
-                expect(stepStore.getStep(stepId)?.tool_state).toEqual({ text: "latest" });
-            } finally {
-                vi.useRealTimers();
-            }
+            expect(mockGetModule).toHaveBeenCalledTimes(2);
+            expect(mockGetModule).toHaveBeenLastCalledWith({ text: "latest" }, stepId, stateStore.setLoadingState);
+            expect(stepStore.getStep(stepId)?.tool_state).toEqual({ text: "latest" });
         });
 
         it("applies queued form edits for different steps", async () => {
-            const { wrapper, stepIds } = await mountWithSteps(2);
+            const { wrapper, stateStore, stepStore, stepIds } = await mountWithSteps(2);
             const [stepZero, stepOne] = stepIds as [number, number];
             vi.useFakeTimers();
-            try {
-                let resolveFirst!: (data: object) => void;
-                const firstResponse = new Promise((resolve) => {
-                    resolveFirst = resolve;
-                });
-                const firstEdit = { text: "first" };
-                mockGetModule.mockReset();
-                mockGetModule.mockImplementation((requestData) =>
-                    requestData === firstEdit ? firstResponse : Promise.resolve(moduleData(requestData)),
-                );
+            let resolveFirst!: (data: object) => void;
+            const firstResponse = new Promise((resolve) => {
+                resolveFirst = resolve;
+            });
+            const firstEdit = { text: "first" };
+            mockGetModule.mockImplementation((requestData) =>
+                requestData === firstEdit ? firstResponse : Promise.resolve(moduleData(requestData)),
+            );
 
-                emitDataChanged(wrapper, stepOne, firstEdit);
-                emitDataChanged(wrapper, stepZero, { text: "step 0" });
-                emitDataChanged(wrapper, stepOne, { text: "step 1" });
+            emitDataChanged(wrapper, stepOne, firstEdit);
+            emitDataChanged(wrapper, stepZero, { text: "step 0" });
+            emitDataChanged(wrapper, stepOne, { text: "step 1" });
 
-                resolveFirst(moduleData(firstEdit));
-                await flushPromises();
-                await vi.advanceTimersByTimeAsync(1000);
-                await flushPromises();
+            resolveFirst(moduleData(firstEdit));
+            await flushPromises();
+            await vi.advanceTimersByTimeAsync(1000);
+            await flushPromises();
 
-                expect(mockGetModule).toHaveBeenCalledWith({ text: "step 0" }, stepZero, stateStore.setLoadingState);
-                expect(stepStore.getStep(stepZero)?.tool_state).toEqual({ text: "step 0" });
-                expect(stepStore.getStep(stepOne)?.tool_state).toEqual({ text: "step 1" });
-            } finally {
-                vi.useRealTimers();
-            }
+            expect(mockGetModule).toHaveBeenCalledWith({ text: "step 0" }, stepZero, stateStore.setLoadingState);
+            expect(stepStore.getStep(stepZero)?.tool_state).toEqual({ text: "step 0" });
+            expect(stepStore.getStep(stepOne)?.tool_state).toEqual({ text: "step 1" });
         });
     });
 
+    // The "exit" activity navigates to "/workflows/list" through `onNavigate`, with no forceSave/appendVersion.
     describe("onNavigate", () => {
-        let stateStore: ReturnType<typeof useWorkflowStateStore>;
-
-        /** Mounts a fresh Index instance, so route state (and router.push call
-         * history) never leaks between these tests. */
-        async function mountForNav(propsData: Record<string, unknown> = {}) {
-            const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-            setActivePinia(testingPinia);
-            const datatypesStore = useDatatypesMapperStore();
-            datatypesStore.datatypesMapper = testDatatypesMapper;
-
-            const w = shallowMount(Index as object, {
-                propsData: {
-                    workflowId: "workflow_id",
-                    initialVersion: 1,
-                    workflowTags: [],
-                    workflows: [],
-                    toolbox: [],
-                    ...propsData,
-                },
-                global: localVue,
-                pinia: testingPinia,
-                stubs: editorStubs(),
-            });
-            await flushPromises();
-
-            // When `workflowId` is omitted (new temp workflow), `Index.vue` scopes
-            // its stores to a randomly generated uid, not "workflow_id" — read the
-            // actual id `WorkflowAttributes` was given rather than guessing it.
-            const resolvedId = w.findComponent(WorkflowAttributes).props("id") as string;
-            stateStore = useWorkflowStateStore(resolvedId);
-
-            return w;
-        }
-
         /** Marks the workflow as changed via a real user-facing event (annotation
          * update through `WorkflowAttributes`), rather than reaching into internals. */
-        async function triggerHasChanges(w: VueWrapper) {
-            w.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "trigger change");
+        async function makeChange({ wrapper, stateStore }: ReturnType<typeof mountEditor>) {
+            wrapper.findComponent(WorkflowAttributes).vm.$emit("update:annotationCurrent", "trigger change");
             await nextTick();
             expect(stateStore.hasChanges).toBeTruthy();
         }
 
-        /** `Index.vue` never exposes `onNavigate` directly; the "exit" activity
-         * routes to "/workflows/list" through it with no forceSave/appendVersion,
-         * matching what these tests exercise. */
-        async function triggerOnNavigateToList(w: VueWrapper) {
-            w.findComponent(activityBarStub).vm.$emit("activityClicked", "exit");
+        /** Picks "Save" (forceSave) or "Don't Save" (ignoreChanges) in the save-changes modal. */
+        function proceedFromSaveChangesModal(wrapper: VueWrapper, choice: "save" | "dontSave") {
+            const [forceSave, ignoreChanges] = choice === "save" ? [true, false] : [false, true];
+            wrapper
+                .findComponent(SaveChangesModal)
+                .vm.$emit("on-proceed", "/workflows/list", forceSave, ignoreChanges, false);
         }
 
         beforeEach(() => {
-            mockSaveWorkflow.mockReset();
             mockSaveWorkflow.mockResolvedValue({ version: 1 });
         });
 
         it("navigates immediately when there are no unsaved changes", async () => {
-            const wrapper = await mountForNav();
+            const { wrapper } = await mountLoadedEditor();
 
-            await triggerOnNavigateToList(wrapper);
+            clickActivity(wrapper, "exit");
             await flushPromises();
 
             expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
@@ -706,22 +623,23 @@ describe("Index", () => {
         });
 
         it("shows the save-changes modal instead of navigating when there are unsaved changes", async () => {
-            const wrapper = await mountForNav();
-            await triggerHasChanges(wrapper);
+            const editor = await mountLoadedEditor();
+            await makeChange(editor);
 
-            await triggerOnNavigateToList(wrapper);
+            clickActivity(editor.wrapper, "exit");
             await flushPromises();
 
             expect(mockPush).not.toHaveBeenCalled();
-            const modal = wrapper.findComponent(SaveChangesModal);
+            const modal = editor.wrapper.findComponent(SaveChangesModal);
             expect(modal.props("showModal")).toBe(true);
             expect(modal.props("navUrl")).toBe("/workflows/list");
         });
 
         it("does not navigate and keeps changes when the save-changes modal is cancelled", async () => {
-            const wrapper = await mountForNav();
-            await triggerHasChanges(wrapper);
-            await triggerOnNavigateToList(wrapper);
+            const editor = await mountLoadedEditor();
+            const { wrapper, stateStore } = editor;
+            await makeChange(editor);
+            clickActivity(wrapper, "exit");
             await nextTick();
 
             wrapper.findComponent(SaveChangesModal).vm.$emit("update:show-modal", false);
@@ -734,13 +652,13 @@ describe("Index", () => {
         });
 
         it("navigates without saving when the save-changes modal's Don't Save is chosen", async () => {
-            const wrapper = await mountForNav();
-            await triggerHasChanges(wrapper);
-            await triggerOnNavigateToList(wrapper);
+            const editor = await mountLoadedEditor();
+            const { wrapper, stateStore } = editor;
+            await makeChange(editor);
+            clickActivity(wrapper, "exit");
             await nextTick();
 
-            // "Don't Save": on-proceed emitted with forceSave=false, ignoreChanges=true
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", false, true, false);
+            proceedFromSaveChangesModal(wrapper, "dontSave");
             await flushPromises();
 
             expect(mockSaveWorkflow).not.toHaveBeenCalled();
@@ -749,14 +667,14 @@ describe("Index", () => {
         });
 
         it("saves before navigating when the save-changes modal's Save is chosen", async () => {
-            const wrapper = await mountForNav();
+            const editor = await mountLoadedEditor();
+            const { wrapper, stateStore } = editor;
             mockSaveWorkflow.mockResolvedValue({ version: 2 });
-            await triggerHasChanges(wrapper);
-            await triggerOnNavigateToList(wrapper);
+            await makeChange(editor);
+            clickActivity(wrapper, "exit");
             await nextTick();
 
-            // "Save": on-proceed emitted with forceSave=true, ignoreChanges=false
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
+            proceedFromSaveChangesModal(wrapper, "save");
             await flushPromises();
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
@@ -765,14 +683,14 @@ describe("Index", () => {
         });
 
         it("does not navigate if forced save fails", async () => {
-            const wrapper = await mountForNav();
+            const editor = await mountLoadedEditor();
+            const { wrapper } = editor;
             mockSaveWorkflow.mockRejectedValue(new Error("boom"));
-            await triggerHasChanges(wrapper);
-            await triggerOnNavigateToList(wrapper);
+            await makeChange(editor);
+            clickActivity(wrapper, "exit");
             await nextTick();
 
-            // "Save": on-proceed emitted with forceSave=true, ignoreChanges=false
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
+            proceedFromSaveChangesModal(wrapper, "save");
             await flushPromises();
 
             expect(mockSaveWorkflow).toHaveBeenCalled();
@@ -785,11 +703,11 @@ describe("Index", () => {
         });
 
         it("appends the current version to the URL when appendVersion is true", async () => {
-            const wrapper = await mountForNav();
+            const { wrapper } = await mountLoadedEditor();
 
             // "workflow-run" activity routes via `onRun()`, which calls
             // `onNavigate(..., false, false, true)` — appendVersion=true.
-            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "workflow-run");
+            clickActivity(wrapper, "workflow-run");
             await flushPromises();
 
             expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("&version="));
@@ -797,18 +715,16 @@ describe("Index", () => {
 
         it("creates (rather than just saving) a new temp workflow when forced to save on navigate", async () => {
             // no workflowId prop => isNewTempWorkflow is true
-            const wrapper = await mountForNav({ workflowId: undefined });
+            const editor = await mountLoadedEditor({ workflowId: undefined });
             const createWorkflowSpy = vi
                 .spyOn(Services.prototype, "createWorkflow")
                 .mockResolvedValue({ id: "new_id", name: "Unnamed Workflow", number_of_steps: 0 });
-            mockSaveWorkflow.mockClear();
 
-            await triggerHasChanges(wrapper);
-            await triggerOnNavigateToList(wrapper);
+            await makeChange(editor);
+            clickActivity(editor.wrapper, "exit");
             await nextTick();
 
-            // "Save": on-proceed emitted with forceSave=true, ignoreChanges=false
-            wrapper.findComponent(SaveChangesModal).vm.$emit("on-proceed", "/workflows/list", true, false, false);
+            proceedFromSaveChangesModal(editor.wrapper, "save");
             await flushPromises();
 
             // onCreate() is used (not a plain onSave()) to persist the brand-new workflow;
@@ -821,9 +737,9 @@ describe("Index", () => {
 
         it("emits forceReload instead of pushing when navigating to the exact current route", async () => {
             mockRoute = { query: {}, fullPath: "/workflows/list" };
-            const wrapper = await mountForNav();
+            const { wrapper } = await mountLoadedEditor();
 
-            await triggerOnNavigateToList(wrapper);
+            clickActivity(wrapper, "exit");
             await flushPromises();
 
             expect(mockPush).not.toHaveBeenCalled();
@@ -832,20 +748,20 @@ describe("Index", () => {
 
         it("does not emit forceReload when navigating to a different route", async () => {
             mockRoute = { query: {}, fullPath: "/workflows/edit" };
-            const wrapper = await mountForNav();
+            const { wrapper } = await mountLoadedEditor();
 
-            await triggerOnNavigateToList(wrapper);
+            clickActivity(wrapper, "exit");
             await flushPromises();
 
             expect(wrapper.emitted("forceReload")).toBeFalsy();
         });
 
         it("createNewWorkflow routes through onNavigate and its unsaved-changes guard", async () => {
-            const wrapper = await mountForNav();
+            const { wrapper } = await mountLoadedEditor();
 
             // "workflow-create" activity routes via `createNewWorkflow()`, which
             // calls `onNavigate("/workflows/edit")` with no unsaved changes.
-            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "workflow-create");
+            clickActivity(wrapper, "workflow-create");
             await flushPromises();
 
             expect(mockPush).toHaveBeenCalledWith("/workflows/edit");
