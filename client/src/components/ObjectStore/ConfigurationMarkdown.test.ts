@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
@@ -8,39 +8,37 @@ import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
 const localVue = getLocalVue();
 
-describe("ConfigurationMarkdown.vue", () => {
-    let wrapper;
+function mountConfigurationMarkdown(markdown: string, admin: boolean) {
+    return shallowMount(ConfigurationMarkdown, { props: { markdown, admin }, global: localVue });
+}
 
-    it("should convert supplied configuration markup to markdown and display", () => {
-        wrapper = shallowMount(ConfigurationMarkdown as object, {
-            props: { markdown: "the *content*", admin: true },
-            global: localVue,
-        });
+describe("ConfigurationMarkdown.vue", () => {
+    beforeEach(() => {
+        vi.mocked(sanitizeHtml).mockClear();
+    });
+
+    it("converts the supplied configuration markup from markdown to HTML", () => {
+        const wrapper = mountConfigurationMarkdown("the *content*", true);
+
         expect(wrapper.html()).toContain("<em>content</em>");
     });
 
-    it("should allow HTML in configuration markup explicitly set by the admin", () => {
-        wrapper = shallowMount(ConfigurationMarkdown as object, {
-            props: { markdown: "the <b>content</b>", admin: true },
-            global: localVue,
-        });
+    it("allows HTML in configuration markup explicitly set by the admin", () => {
+        const wrapper = mountConfigurationMarkdown("the <b>content</b>", true);
+
         expect(wrapper.html()).toContain("<b>content</b>");
     });
 
-    it("should escape supplied HTML for non-admin sourced content", () => {
-        wrapper = shallowMount(ConfigurationMarkdown as object, {
-            props: { markdown: "the <b>content</b>", admin: false },
-            global: localVue,
-        });
+    it("escapes HTML in configuration markup not sourced from the admin", () => {
+        const wrapper = mountConfigurationMarkdown("the <b>content</b>", false);
+
         expect(wrapper.html()).not.toContain("<b>content</b>");
+        expect(wrapper.text()).toBe("the <b>content</b>");
     });
 
     it("renders through v-sanitize-html with the links profile", () => {
-        vi.mocked(sanitizeHtml).mockClear();
-        shallowMount(ConfigurationMarkdown as object, {
-            propsData: { markdown: 'the <a href="https://example.org" target="_blank">link</a>', admin: true },
-            localVue,
-        });
+        mountConfigurationMarkdown('the <a href="https://example.org" target="_blank">link</a>', true);
+
         expect(sanitizeHtml).toHaveBeenCalledWith(
             '<p>the <a href="https://example.org" target="_blank">link</a></p>\n',
             "links",
