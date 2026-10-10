@@ -1,43 +1,20 @@
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { deferred } from "@tests/vitest/deferred";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { h, ref } from "vue";
 
-import { useChatStore } from "@/stores/chatStore";
+import {
+    ChatInputStub,
+    chatReply,
+    messageTexts,
+    mockGet,
+    mockPost,
+    mountChat,
+    sendMessage,
+} from "./GalaxyAI/test-utils";
 
-import GalaxyAI from "./GalaxyAI.vue";
-
-const { mockGet, mockPost, mockPut, routeMock, routerMock, ChatMessageCellStub, ChatInputStub } = vi.hoisted(() => ({
-    mockGet: vi.fn(),
-    mockPost: vi.fn(),
-    mockPut: vi.fn(),
+const { routeMock, routerMock } = vi.hoisted(() => ({
     routeMock: { path: "/galaxyai", params: {}, query: {} as Record<string, string> },
     routerMock: { push: vi.fn(), replace: vi.fn() },
-    // render functions because the test environment uses the runtime-only Vue build
-    ChatMessageCellStub: {
-        name: "ChatMessageCellStub",
-        props: ["message"],
-        render(this: { message: { content: string } }) {
-            return h("div", { class: "chat-message-stub" }, [this.message.content]);
-        },
-    },
-    ChatInputStub: {
-        name: "ChatInputStub",
-        props: ["value", "busy"],
-        render() {
-            return h("input", { class: "chat-input-stub" });
-        },
-    },
-}));
-
-vi.mock("@/api", () => ({
-    GalaxyApi: () => ({ GET: mockGet, POST: mockPost, PUT: mockPut, DELETE: vi.fn() }),
-}));
-
-vi.mock("@/api/client", () => ({
-    GalaxyApi: () => ({ GET: mockGet, POST: mockPost, PUT: mockPut, DELETE: vi.fn() }),
 }));
 
 // Center (route) mode: the component keeps the /galaxyai/<exchange> path in sync.
@@ -45,83 +22,6 @@ vi.mock("vue-router", () => ({
     useRoute: () => routeMock,
     useRouter: () => routerMock,
 }));
-
-vi.mock("@/app", () => ({
-    getGalaxyInstance: () => ({ frame: { add: vi.fn() } }),
-}));
-
-// Child components are referenced directly from setup scope, so the test-utils
-// `stubs` option cannot replace them — mock the modules instead.
-vi.mock("@/components/GalaxyAI/ChatMessageCell.vue", () => ({ default: ChatMessageCellStub }));
-vi.mock("@/components/GalaxyAI/ChatInput.vue", () => ({ default: ChatInputStub }));
-
-vi.mock("@/composables/useActiveContext", () => ({
-    useActiveContext: () => ({ activeContext: ref(null), contextLabel: ref("") }),
-}));
-
-vi.mock("@/composables/agentActions", () => ({
-    useAgentActions: () => ({ processingAction: ref(false), handleAction: vi.fn() }),
-}));
-
-vi.mock("@/composables/confirmDialog", () => ({
-    useConfirmDialog: () => ({ confirm: vi.fn() }),
-}));
-
-vi.mock("@/composables/markdown", () => ({
-    useMarkdown: () => ({ renderMarkdown: (content: string) => content }),
-}));
-
-vi.mock("@/composables/toast");
-
-vi.mock("@/composables/useEntityMentions", () => ({
-    MENTION_PATTERN_SOURCE: "@(dataset|history):(\\S+)",
-    parseMentions: () => [],
-    resolveMentions: () => [],
-    buildEntityContext: () => null,
-}));
-
-vi.mock("@/composables/userLocalStorage", () => ({
-    useUserLocalStorage: vi.fn((_key: string, initialValue: unknown) => ref(initialValue)),
-}));
-
-const localVue = getLocalVue();
-
-// jsdom does not implement Element.scrollTo
-window.HTMLElement.prototype.scrollTo = vi.fn();
-
-function mountChat() {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    const wrapper = mount(GalaxyAI, {
-        props: { panel: true },
-        global: {
-            ...withPlugins(localVue, pinia),
-            stubs: { ...localVue.stubs, FontAwesomeIcon: true, BSkeleton: true },
-        },
-    });
-    const chatStore = useChatStore();
-    return { wrapper, chatStore };
-}
-
-function messageTexts(wrapper: VueWrapper) {
-    return wrapper.findAll(".chat-message-stub").map((w) => w.text());
-}
-
-async function sendMessage(wrapper: VueWrapper, text: string) {
-    const input = wrapper.findComponent(ChatInputStub);
-    input.vm.$emit("input", text);
-    await wrapper.vm.$nextTick();
-    input.vm.$emit("submit");
-    await flushPromises();
-}
-
-function deferredResponse() {
-    let resolve!: (value: unknown) => void;
-    const promise = new Promise((r) => {
-        resolve = r;
-    });
-    return { promise, resolve };
-}
 
 describe("GalaxyAI route sync", () => {
     beforeEach(() => {
@@ -132,18 +32,14 @@ describe("GalaxyAI route sync", () => {
     });
 
     async function mountFreshChat() {
-        const mounted = mountChat();
-        await flushPromises();
+        const mounted = await mountChat();
         // the fresh conversation the component starts with already synced the route
         routerMock.replace.mockClear();
         return mounted;
     }
 
     it("routes to the saved exchange once its history load finishes", async () => {
-        mockPost.mockResolvedValue({
-            data: { response: "Here you go", exchange_id: "exchange-123" },
-            error: undefined,
-        });
+        mockPost.mockResolvedValue(chatReply("Here you go", "exchange-123"));
         const { wrapper } = await mountFreshChat();
 
         await sendMessage(wrapper, "find me a mapper");
@@ -154,16 +50,7 @@ describe("GalaxyAI route sync", () => {
     it("prefills a question seeded through the route and drops the parameter", async () => {
         routeMock.path = "/galaxyai/new";
         routeMock.query = { compact: "true", q: "trim my reads" };
-        const pinia = createPinia();
-        setActivePinia(pinia);
-        const wrapper = mount(GalaxyAI, {
-            props: { compact: true, panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
-            global: {
-                ...withPlugins(localVue, pinia),
-                stubs: { ...localVue.stubs, FontAwesomeIcon: true, BSkeleton: true },
-            },
-        });
-        await flushPromises();
+        const { wrapper } = await mountChat({ compact: true, exchangeId: "new", initialQuestion: "trim my reads" });
 
         expect(wrapper.findComponent(ChatInputStub).props("value")).toBe("trim my reads");
         // the seeded question is only prefilled, never sent on the user's behalf
@@ -179,14 +66,11 @@ describe("GalaxyAI route sync", () => {
     });
 
     it("does not route back to the previous exchange when a new chat is started", async () => {
-        mockPost.mockResolvedValue({
-            data: { response: "Here you go", exchange_id: "exchange-123" },
-            error: undefined,
-        });
+        mockPost.mockResolvedValue(chatReply("Here you go", "exchange-123"));
         const { wrapper, chatStore } = await mountFreshChat();
 
         // the history refresh triggered by the new exchange id — left in flight
-        const historyLoad = deferredResponse();
+        const historyLoad = deferred<{ data: never[]; error: undefined }>();
         mockGet.mockReturnValueOnce(historyLoad.promise);
 
         await sendMessage(wrapper, "find me a mapper");
