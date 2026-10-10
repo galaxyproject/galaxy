@@ -1,79 +1,74 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { RegisteredUser } from "@/api";
-import { useUserStore } from "@/stores/userStore";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
-vi.mock("@/api/schema");
+const SELECTORS = {
+    USAGE: ".quota-progress > span",
+    PROGRESS_BAR: ".quota-progress .progress-bar",
+};
 
-const localVue = getLocalVue();
+function quotaUser(overrides: Partial<RegisteredUser> = {}) {
+    return getFakeRegisteredUser({ quota: "100 MB", total_disk_usage: 5120, quota_percent: 50, ...overrides });
+}
 
-async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
-    setupMockConfig(config);
-    const pinia = createTestingPinia({ createSpy: vi.fn });
-    const userStore = useUserStore();
-    userStore.currentUser = user;
-    const wrapper = mount(QuotaMeter as object, {
-        global: localVue,
-        pinia,
-    });
+async function mountQuotaMeter({ enableQuotas, user }: { enableQuotas: boolean; user: RegisteredUser | null }) {
+    setupMockConfig({ enable_quotas: enableQuotas });
+    const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: user } } });
+    const wrapper = mount(QuotaMeter as object, { global: withPlugins(getLocalVue(), pinia) });
     await flushPromises();
     return wrapper;
 }
 
-const FAKE_USER = getFakeRegisteredUser({ quota: "100 MB", total_disk_usage: 5120, quota_percent: 50 });
+enableAutoUnmount(afterEach);
 
 describe("QuotaMeter.vue", () => {
-    it("shows a percentage usage", async () => {
-        const config = { enable_quotas: true };
-        const wrapper = await createQuotaMeterWrapper(config, FAKE_USER);
-        expect(wrapper.find(".quota-progress > span").text()).toBe("Using 50% of 100 MB");
+    it("shows the percentage of the quota in use", async () => {
+        const wrapper = await mountQuotaMeter({ enableQuotas: true, user: quotaUser() });
+
+        expect(wrapper.find(SELECTORS.USAGE).text()).toBe("Using 50% of 100 MB");
     });
 
-    it("changes appearance depending on usage", async () => {
-        const config = { enable_quotas: true };
-        {
-            const user = { ...FAKE_USER, quota_percent: 30 };
-            const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-success");
-        }
-        {
-            const user = { ...FAKE_USER, quota_percent: 80 };
-            const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-warning");
-        }
-        {
-            const user = { ...FAKE_USER, quota_percent: 95 };
-            const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-danger");
-        }
+    it.each([
+        { quotaPercent: 30, variant: "bg-success" },
+        { quotaPercent: 80, variant: "bg-warning" },
+        { quotaPercent: 95, variant: "bg-danger" },
+    ])("colors the bar $variant at $quotaPercent% of the quota", async ({ quotaPercent, variant }) => {
+        const wrapper = await mountQuotaMeter({ enableQuotas: true, user: quotaUser({ quota_percent: quotaPercent }) });
+
+        expect(wrapper.find(SELECTORS.PROGRESS_BAR).classes()).toContain(variant);
     });
 
-    it("displays tooltip", async () => {
-        const config = { enable_quotas: true };
-        const wrapper = await createQuotaMeterWrapper(config, FAKE_USER);
-        expect(wrapper.attributes("title")).toContain("Storage");
+    it("titles the meter with the storage details for a registered user", async () => {
+        const wrapper = await mountQuotaMeter({ enableQuotas: true, user: quotaUser() });
+
+        expect(wrapper.attributes("title")).toBe("Storage and Usage Details");
     });
 
-    it("shows total usage when there is no quota", async () => {
-        {
-            const user = { ...FAKE_USER, total_disk_usage: 7000 };
-            const config = { enable_quotas: false };
-            const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find("span").text()).toBe("Using 7 KB");
-        }
-        {
-            const user = { ...FAKE_USER, total_disk_usage: 21000, quota: "unlimited" };
-            const config = { enable_quotas: true };
-            const wrapper = await createQuotaMeterWrapper(config, user);
-            expect(wrapper.find("span").text()).toBe("Using 21 KB");
-        }
+    it("shows total usage when quotas are disabled", async () => {
+        const wrapper = await mountQuotaMeter({ enableQuotas: false, user: quotaUser({ total_disk_usage: 7000 }) });
+
+        expect(wrapper.find(SELECTORS.USAGE).text()).toBe("Using 7 KB");
+    });
+
+    it("shows total usage for an unlimited quota", async () => {
+        const user = quotaUser({ total_disk_usage: 21000, quota: "unlimited" });
+        const wrapper = await mountQuotaMeter({ enableQuotas: true, user });
+
+        expect(wrapper.find(SELECTORS.USAGE).text()).toBe("Using 21 KB");
+    });
+
+    it("shows no usage before the user has loaded", async () => {
+        const wrapper = await mountQuotaMeter({ enableQuotas: false, user: null });
+
+        expect(wrapper.find(SELECTORS.USAGE).text()).toBe("Using 0 b");
+        expect(wrapper.find(SELECTORS.PROGRESS_BAR).attributes("aria-valuenow")).toBe("0");
     });
 });
