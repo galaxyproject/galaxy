@@ -19,6 +19,7 @@ FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "http_file_sources_conf.yml")
 FILE_SOURCES_CONF_WITHOUT_STOCK = os.path.join(SCRIPT_DIRECTORY, "http_without_stock_file_sources_conf.yml")
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_http_specific():
     test_url = "https://www.usegalaxy.org/myfile.txt"
 
@@ -40,6 +41,7 @@ def test_file_source_http_specific():
         assert_realizes_as(file_sources, test_url, "hello specific world", user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_another_http_specific():
     test_url = "http://www.galaxyproject.org/anotherfile.txt"
 
@@ -61,6 +63,7 @@ def test_file_source_another_http_specific():
         assert_realizes_as(file_sources, test_url, "hello another world", user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_http_generic():
     test_url = "https://www.elsewhere.org/myfile.txt"
 
@@ -115,6 +118,7 @@ def test_file_source_http_without_stock_generic():
         file_sources.get_file_source_path(test_url)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 def test_file_source_http_without_stock_specific():
     test_url = "https://www.usegalaxy.org/myfile2.txt"
 
