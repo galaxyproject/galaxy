@@ -1,4 +1,5 @@
 import os
+import shutil
 from abc import abstractmethod
 from urllib.parse import urljoin
 
@@ -60,6 +61,11 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             return
 
         self.save_screenshot(target)
+        if self.story.enabled:
+            screenshots_target = self._screenshots_directory_path(label)
+            if screenshots_target is not None:
+                # Copy rather than capture again - the page has moved on.
+                shutil.copyfile(target, screenshots_target)
         self.story.add_screenshot(target, caption or label)
         return target
 
@@ -67,9 +73,20 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         """Add markdown narration to the story, interleaved with the screenshots."""
         self.story.add_documentation(markdown_content)
 
-    @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> str | None:
-        """Path to store screenshots in."""
+        """Numbered path in the story directory when collecting a story, else the usual screenshot path."""
+        if self.story.enabled:
+            target = os.path.join(
+                self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}{extension}"
+            )
+            self.story.screenshot_counter += 1
+            return target
+
+        return self._screenshots_directory_path(label, extension)
+
+    @abstractmethod
+    def _screenshots_directory_path(self, label: str, extension=".png") -> str | None:
+        """Path to store screenshots in outside a story, or None to skip them."""
 
 
 class GalaxySeleniumContextImpl(GalaxySeleniumContext):
@@ -88,7 +105,7 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")
         self.target_url_from_selenium = from_dict.get("selenium_galaxy_url", self.url)
 
-    def _screenshot_path(self, label, extension=".png"):
+    def _screenshots_directory_path(self, label, extension=".png"):
         return label + extension
 
 

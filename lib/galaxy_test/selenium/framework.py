@@ -5,7 +5,6 @@ import inspect
 import json
 import logging
 import os
-import shutil
 import traceback
 import unittest
 from functools import (
@@ -550,22 +549,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         with open(target, "w") as f:
             f.write(content)
 
-    def screenshot(self, label: str, caption: str | None = None):
-        """Capture once for the story and the configured CI screenshots directory."""
-        target = self._screenshot_path(label)
-        if target is None:
-            return
-
-        self.save_screenshot(target)
-        if self.story.enabled:
-            screenshots_target = self._screenshots_directory_path(label)
-            if screenshots_target is not None:
-                # Copy rather than capture again - the page has moved on.
-                shutil.copyfile(target, screenshots_target)
-        self.story.add_screenshot(target, caption or label)
-
-        return target
-
     def _screenshots_directory_path(self, label, extension=".png") -> str | None:
         if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
             return None
@@ -579,16 +562,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
             copy += 1
 
         return target
-
-    def _screenshot_path(self, label, extension=".png"):
-        if self.story.enabled:
-            target = os.path.join(
-                self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}{extension}"
-            )
-            self.story.screenshot_counter += 1
-            return target
-
-        return self._screenshots_directory_path(label, extension)
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
