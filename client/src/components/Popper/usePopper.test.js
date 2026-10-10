@@ -1,6 +1,6 @@
 import { createPopper } from "@popperjs/core";
 import { mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
 import { usePopper } from "./usePopper";
@@ -12,67 +12,57 @@ vi.mock("@popperjs/core", () => ({
     })),
 }));
 
-describe("usePopper", () => {
-    let referenceElement;
-    let popperElement;
+function attachedElement() {
+    const element = document.createElement("div");
+    document.body.appendChild(element);
+    return element;
+}
 
-    beforeEach(() => {
-        referenceElement = document.createElement("div");
-        document.body.appendChild(referenceElement);
-
-        popperElement = document.createElement("div");
-        document.body.appendChild(popperElement);
+/** Mount a component that calls `usePopper` on two elements attached to the document. */
+function mountUsePopper(trigger = "none") {
+    const reference = attachedElement();
+    const popper = attachedElement();
+    const wrapper = mount({
+        template: "<div></div>",
+        setup() {
+            return usePopper(ref(reference), ref(popper), { placement: "bottom", trigger });
+        },
     });
+    return { wrapper, reference, popper };
+}
 
+describe("usePopper", () => {
     afterEach(() => {
         document.body.innerHTML = "";
         vi.clearAllMocks();
     });
 
-    const createTestComponent = (trigger = "none") => {
-        return mount({
-            template: "<div></div>",
-            setup() {
-                const reference = ref(referenceElement);
-                const popper = ref(popperElement);
-                const options = { placement: "bottom", trigger };
-                const { visible, instance } = usePopper(reference, popper, options);
-                return { visible, instance };
-            },
-        });
-    };
+    test("creates an absolutely positioned, offset Popper instance on mount", () => {
+        const { reference, popper } = mountUsePopper();
 
-    test("should initialize Popper instance on mount", () => {
-        createTestComponent();
-        expect(createPopper).toHaveBeenCalledWith(referenceElement, popperElement, {
+        expect(createPopper).toHaveBeenCalledWith(reference, popper, {
             placement: "bottom",
-            modifiers: [
-                {
-                    name: "offset",
-                    options: {
-                        offset: [0, 5],
-                    },
-                },
-            ],
+            modifiers: [{ name: "offset", options: { offset: [0, 5] } }],
             strategy: "absolute",
         });
     });
 
-    test("should destroy Popper instance on unmount", () => {
-        const wrapper = createTestComponent();
-        const popperInstance = createPopper.mock.results[0].value;
+    test("destroys the Popper instance on unmount", () => {
+        const { wrapper } = mountUsePopper();
+        const popperInstance = vi.mocked(createPopper).mock.results[0].value;
+
         wrapper.unmount();
+
         expect(popperInstance.destroy).toHaveBeenCalled();
     });
 
-    test("should not change visibility for trigger 'none'", async () => {
-        const wrapper = createTestComponent("none");
-        const { visible } = wrapper.vm;
+    test("stays hidden when the reference is clicked with trigger 'none'", async () => {
+        const { wrapper, reference } = mountUsePopper("none");
+        expect(wrapper.vm.visible).toBe(false);
 
-        expect(visible).toBe(false);
-
-        referenceElement.dispatchEvent(new Event("click"));
+        reference.dispatchEvent(new Event("click"));
         await nextTick();
-        expect(visible).toBe(false);
+
+        expect(wrapper.vm.visible).toBe(false);
     });
 });
