@@ -199,6 +199,28 @@ def test_disabled_stories_write_nothing(tmp_path, finalize_spy, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_unusable_stories_directory_does_not_affect_the_test(tmp_path, finalize_spy, monkeypatch):
+    stories_file = tmp_path / "stories"
+    stories_file.write_text("")
+    monkeypatch.setattr(framework, "GALAXY_TEST_STORIES_DIRECTORY", str(stories_file))
+    ran = []
+
+    @framework.selenium_test
+    def a_test(self):
+        ran.append(True)
+        self.document("Ignored narration.")
+        assert self.screenshot("ignored") is None
+        return "result"
+
+    case = BrowserlessTestCase()
+    assert a_test(case) == "result"
+
+    assert ran == [True]
+    assert isinstance(case.story, NoopStory)
+    assert finalize_spy.call_count == 0
+    assert os.listdir(tmp_path) == ["stories"]
+
+
 def test_screenshots_directory_gets_a_copy_of_story_screenshots(stories_directory, tmp_path, monkeypatch):
     screenshots_directory = tmp_path / "screenshots"
     monkeypatch.setattr(framework, "GALAXY_TEST_SCREENSHOTS_DIRECTORY", str(screenshots_directory))

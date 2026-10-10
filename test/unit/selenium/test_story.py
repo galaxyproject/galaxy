@@ -212,6 +212,15 @@ class TestStoryRuns:
         assert not story.enabled
         assert list(tmp_path.iterdir()) == []
 
+    def test_unusable_base_directory_disables_the_story(self, tmp_path, caplog):
+        base = tmp_path / "not_a_directory"
+        base.write_text("")
+        story = story_for_run(str(base), "test_example_", "T", "")
+
+        assert isinstance(story, NoopStory)
+        assert base.read_text() == ""
+        assert "Failed to create story directory" in caplog.text
+
     def test_run_gets_a_fresh_directory_under_the_base(self, tmp_path):
         story = story_for_run(str(tmp_path), "test_example_", "T", "")
 

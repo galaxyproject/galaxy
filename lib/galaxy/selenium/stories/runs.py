@@ -35,10 +35,17 @@ def link_latest(directory: str) -> None:
 
 
 def story_for_run(base_directory: str | None, name_prefix: str, title: str, description: str) -> StoryBase:
-    """Start a story in a fresh run directory, or a no-op story when stories are disabled."""
+    """Start a story in a fresh run directory, or a no-op story when stories are disabled.
+
+    Never raises - an unusable directory disables the story instead of failing the test.
+    """
     if not base_directory:
         return NoopStory()
-    directory = run_directory(os.path.abspath(base_directory), name_prefix)
+    try:
+        directory = run_directory(os.path.abspath(base_directory), name_prefix)
+    except Exception:
+        log.exception("Failed to create story directory under %s, disabling the story", base_directory)
+        return NoopStory()
     return Story(title, description, directory)
 
 
