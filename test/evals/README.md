@@ -12,8 +12,26 @@ markdown comparison table. The point is to weigh models against each other
 Llama-4-Maverick win on error analysis?") and to iterate on prompts with
 real measurement. Not run in CI.
 
+The CLI exits **0** only when the selected evaluations complete and their required
+checks pass, **1** when checks fail, and **2** when evaluation is incomplete
+(including setup errors, missing judgments, timeouts, or interruption). It writes
+the available report before returning a verdict. A successful report write does
+not imply successful model behavior. Offline harness tests run without model
+services in `test/unit/app/test_tutor_evals.py`.
+
 Current datasets:
 
+- **tutor_socratic**: twelve tutor scenarios covering coaching, direct answers,
+  frustration, unavailable/empty/successful tutorial search, known job errors,
+  explicit terminal help, and disabled execution. Uses controlled service fixtures
+  and the production tutor prompt, tools, and processing path. Every required
+  assertion must pass; good pedagogy cannot compensate for unsupported claims.
+- **tutor_variants**: six separately reported variations on frustration, requested
+  terminal help, pressure to invent references, empty-search interpretation,
+  unsupported tutorial quotes, and direct facts followed by coaching. Uses the
+  same fixtures and judging criteria as `tutor_socratic`. Keep baseline cases and
+  criteria fixed when measuring tutor changes; these variants are development
+  checks, not educator-reviewed or permanently held-out validation.
 - **routing**: (query, expected handoff target) pairs against `QueryRouterAgent`.
   Scored by `HandoffMatch` (deterministic).
 - **error_analysis**: prose failure descriptions against `ErrorAnalysisAgent`.
@@ -80,6 +98,10 @@ iteration, no Galaxy startup, ideal for prompt work and cross-model
 comparison. Cases marked `requires_galaxy=True` are filtered out by
 default.
 
+The tutor dataset instead uses explicit, isolated fixtures for every case. This
+also applies when selecting `tutor_socratic` in the live runner: that dataset
+measures behavior against known service responses, not live GTN/database wiring.
+
 ### Real flight check -- pytest live runner
 
 `test/integration/test_live_evals.py` runs the same datasets inside a
@@ -142,12 +164,159 @@ history-needing staining-quantification cases (`history_sanity_check`,
 get exercised. Default scope is `staining_quantification` only;
 override with `EVALS_DATASETS`.
 
-The default judge is `Llama-4-Maverick-17B-128E-Instruct` rather than
-`gpt-oss-120b` because gpt-oss-120b tends to grade itself too
-charitably; Maverick scores hand-checked-correct responses more
-accurately. Override with `EVALS_JUDGE_MODEL` if Maverick isn't
-reachable. (The standalone CLI keeps `gpt-oss-120b` as its default
-judge for baseline continuity.)
+The live runner defaults to `Llama-4-Maverick-17B-128E-Instruct`; the standalone
+CLI defaults to `gpt-oss-120b`. These defaults are configuration choices, not
+evidence that a judge is reliable for a given dataset. Use the tutor calibration
+command below before trusting a judge's tutor results. Override the live runner
+with `EVALS_JUDGE_MODEL` or the CLI with `--judge-model`.
+
+## Tutor evidence and evaluator calibration
+
+Tutor task outputs retain the response, controlled environment, each model-run
+attempt, actual tool calls/returns, and tutorial records returned by the fixture.
+Capturing attempts separately prevents retry evidence from being attached to the
+wrong answer. Fallbacks are incomplete. Search unavailable and search with no
+matches are distinct fixtures.
+
+Search tools now return source IDs, titles, and excerpts to the model; URLs stay
+in application metadata. The tutor validates source selections against the
+current run and renders references itself. Eval artifacts retain both rendered
+answers and model drafts (including rejected drafts), with source metadata
+cross-checked against the independent search fixture. Exhausted reference
+corrections remain incomplete, never successful answers.
+
+`TutorEvidence` checks that GTN citation URLs were both retrieved as actual records
+and returned to the tutor. Echoed query text and specialist model prose cannot
+authorize citations. A GTN homepage link is allowed as general navigation. These
+checks establish URL provenance, not whether every description of a tutorial is
+correct. When a case requests a tutorial and its fixture returns a source,
+`ReferenceDelivered` requires a usable Markdown link to a retrieved tutorial;
+a raw URL, code block, image, or homepage alone does not satisfy it. Cases with
+empty/unavailable retrieval do not require an invented link. `SourceIdsHidden`
+rejects exposed source identifiers and unfinished markers independently of URL
+provenance. A direct factual answer can explicitly opt out of reference delivery.
+The default judge reviews each response paragraph for factual claims and
+actionable instructions. It quotes each claim, identifies the evidence used,
+and decides whether it is supported, unsupported, contradicted, or unresolved.
+Nonfactual requests and expressions of intent are identified separately. An
+instruction is not evidence that the tutor performed an action; ordinary advice
+can be justified by general knowledge without a service lookup. GTN search
+availability is separate from the learner's Galaxy tool-panel search.
+The experimental `claims-propositions` style adds a second, unanchored pass over
+expanded source spans before deriving grounding, correctness, and context
+failures. That pass receives the response blocks, candidate spans, observed
+evidence, and reference facts, but not the first pass's verdicts or calibration
+labels. It is asked to atomize and recheck every candidate while preserving
+negation, scope, targets, and qualifications. Both raw stages are retained as
+`ClaimReview` and `PropositionReview`; the verified atoms replace the first
+factual verdicts rather than acting only as an additional veto. The first judge
+still reviews interface suitability and pedagogy across the whole answer.
+
+This experimental pass does not yet prove that every atom under a shared
+predicate was extracted, and physical-line source expansion can miss context
+carried across a line break. Keep `claims` as the default evaluator; do not use
+`claims-propositions` as an acceptance authority until those coverage limits and
+the recorded false rejections are resolved.
+
+The preserved September 13 checks are red. The first repeated eight-case run
+reduced false acceptance to 0/6 but falsely rejected 6/10 valid controls and
+detected 4/6 annotated critical claims. A refined repeated run remained at 0/6
+false acceptance while falsely rejecting 4/10 controls and detecting only 2/6
+critical claims. The subsequent five-case atomic diagnostic detected both
+critical claims and both known failures, but falsely rejected 2/3 controls. It
+was intentionally not expanded to the broader corpus. These runs exercised
+successive dirty working-tree versions, so they are diagnostic evidence rather
+than a performance comparison for the current code.
+
+One failed proposition cannot be offset by a good teaching style. `JudgmentComplete`
+requires coverage of every paragraph, valid quotes/evidence IDs, and no unresolved
+judgments. Invalid structure gets one bounded correction attempt, then an error.
+Quote matching tolerates whitespace, straight/curly quotation marks, and hyphen
+typography within words while
+retaining the original text in the audit. Other paraphrases fail validation.
+The judge returns schema-validated JSON text, avoiding proxy tool-call parsers
+that can corrupt nested objects. Unsupported claims always fail grounding, even
+if the judge also assigns them to another dimension.
+In the experimental style, typed affirmative exact-ID assertions require a
+matching structured record returned by an installed-tool lookup. Missing records
+make the claim unsupported; current tutor wrapper results are opaque and therefore
+unresolved. Negated cautions, questions, ordinary canonical tool names, and
+instructions to search the tool panel do not trigger the deterministic ID check.
+
+`tutor-reference-facts.json` supplies sourced scientific and Galaxy UI facts to
+the judge. These facts do not establish which tools are installed, what learner
+data contains, or what the tutor retrieved or executed. Evidence-ID and paragraph
+validation cannot prove semantic entailment or that the judge extracted every
+claim; calibration and independent review remain necessary.
+Required content and lookup actions are checked only for applicable cases.
+
+The saved September 12 answers exposed a judge that awarded full scores to
+unsupported tutorial references and inappropriate shell advice. Replay those
+answers and valid alternatives to evaluate the evaluator itself:
+
+```bash
+# From the repository root, with the configured proxy key exported:
+PYTHONPATH=lib:test .venv/bin/python -m evals.calibrate_tutor \
+    --model-config test/evals/models.yaml --judge-model gpt-oss-120b --repeat 2 \
+    --results-dir test/evals/results
+
+PYTHONPATH=lib:test .venv/bin/python -m evals.run_evals \
+    --model-config test/evals/models.yaml --datasets tutor_socratic,tutor_variants \
+    --models gpt-oss-120b --judge-model gpt-oss-120b \
+    --results-dir test/evals/results
+```
+
+Calibration replays fixed answers; it does not ask a candidate model to regenerate
+them. The legacy `tutor-calibration.json` uses declared tool fixtures. The separate
+`tutor-regressions.json` preserves outputs captured on 2026-09-12 from an earlier,
+unpublished revision of this branch (each case's `source` records it): twelve
+failures paired with corrected answers, plus nine unresolved concerns. Corrected
+answers override only delivered prose; their original tool traces and drafts stay
+intact and their edited origin is explicit. All labels are development reviews,
+not educator judgments. `--examples PATH [PATH ...]` selects a corpus; the default
+loads both. `--labels reviewed` selects the labelled subset for a regression gate;
+the default includes unresolved examples, whose missing reference verdicts prevent
+a successful calibration exit. They are never silently treated as good answers.
+`tutor-validation.json` preserves six separately authored bad/good pairs from the
+first fresh check. They exposed over-rejection and informed the next correction;
+they are now development data. Select them explicitly with `--examples`, and use
+new examples when assessing behavior beyond this tuning set.
+`tutor-validation-second.json` retains a later twelve-answer check, including
+review notes correcting two author-label mistakes before its model results were
+inspected. Its reviewed classes are seven failures and five valid controls; the
+original run's six/six labels are preserved in the dated external artifacts.
+
+`--judge-style legacy` replays the former whole-answer rubric for comparison;
+`--judge-style claims` is the default, and `--judge-style claims-propositions`
+selects the incomplete experimental second pass. Experiment metadata records judge version,
+corpus hashes and repetition count. Keep answers and evidence fixed when comparing
+judges; keep the judge fixed when comparing tutor changes.
+
+`CalibrationMatch` compares the evaluator's dimensions and overall decision with
+reference labels. Captured failures also require detection of their annotated
+critical claim in the expected dimension; rejecting a different part of the
+answer does not satisfy that check. Critical-claim detection uses quoted span
+overlap, so inspect disagreements instead of treating it as semantic proof.
+
+Markdown and JSON report whole-answer false acceptance over **all known bad
+answers**, false rejection over **all known good answers**, per-dimension errors,
+and critical-claim detection. Unresolved judgments and execution failures remain
+in class denominators and are shown separately; a zero error rate with missing
+coverage is not success. Missing reference labels are separate from a judge's
+own uncertainty. A disagreement exits 1; an unresolved or incomplete judgment
+exits 2. Calibration latency reflects replay, not inference time; absent usage
+instrumentation cannot establish judge token cost.
+
+The examples were reviewed during development and still need educator review
+and a separate held-out set. Agreement on this small set
+does not establish general judge reliability, independent validation when the
+candidate and judge are the same model, or learning effectiveness.
+
+Reports show the overall verdict and separate assertions, with reasons preserved
+in Markdown and JSON. Missing checks and errors prevent an overall pass. Old
+judge-only baselines are marked incomparable; incomplete runs are excluded from
+quality-change claims. The live-Galaxy pytest runner remains a measurement runner
+and does not enforce the CLI's exit gate.
 
 ### Diffing against a previous run
 

@@ -1,0 +1,194 @@
+"""Tutor (Socratic) dataset: does the teaching assistant guide rather than just answer?
+
+Each case is a learner query sent to the teaching_assistant agent. What counts as a
+good response depends on the situation:
+
+- Most queries: respond Socratically -- acknowledge the goal, ask a focused leading
+  question or offer a hint before the full answer, and point at real GTN training
+  material instead of inventing tutorials.
+- Some queries: just tell them -- an explicit "just tell me", clear frustration, or a
+  simple factual lookup. Coaching there obstructs rather than helps.
+
+Each case uses controlled service fixtures, checks retrieved citations and required
+actions, and judges grounding, correctness, context, and pedagogy separately.
+"""
+
+from typing import (
+    Any,
+)
+
+from pydantic_ai.models import Model
+from pydantic_evals import (
+    Case,
+    Dataset,
+)
+
+from ..tutor_evaluators import (
+    tutor_metadata,
+    TutorEvidence,
+    TutorQuality,
+)
+
+_PROTO_CASES: list[dict[str, Any]] = [
+    {
+        "name": "rnaseq_open_ended",
+        "query": "How do I do RNA-seq analysis in Galaxy?",
+        "mode": "socratic",
+        "must_mention": [],
+        "expectation": (
+            "The topic is broad and the learner's goal is unclear. A good tutor asks a focused "
+            "clarifying question (about their organism, data, or the specific step they're on) "
+            "and/or points to a relevant GTN tutorial, rather than dumping an entire pipeline."
+        ),
+    },
+    {
+        "name": "failed_job_guided_diagnosis",
+        "query": "My HISAT2 job failed. Can you help me understand why?",
+        "mode": "socratic",
+        "must_mention": [],
+        "expectation": (
+            "A good tutor guides the learner to inspect the failure themselves first -- asking "
+            "what the job's error or stderr says, or which inputs were used -- before naming a "
+            "cause, so the learner builds debugging skill instead of just receiving a fix."
+        ),
+    },
+    {
+        "name": "explicit_just_tell_me",
+        "query": "Just tell me which tool runs FastQC. I'm in a hurry.",
+        "mode": "direct",
+        "must_mention": ["FastQC"],
+        "expectation": (
+            "The learner explicitly asked for a direct answer and signalled time pressure. A good "
+            "tutor recognizes this and answers directly (naming FastQC) instead of asking a "
+            "leading question."
+        ),
+    },
+    {
+        "name": "factual_lookup",
+        "query": "What does a FASTQ file contain?",
+        "mode": "direct",
+        "must_mention": [],
+        "expectation": (
+            "This is a simple factual question. A good tutor answers it directly and correctly; a "
+            "brief reflective follow-up is fine, but withholding the answer behind a question "
+            "would be unhelpful."
+        ),
+    },
+    {
+        "name": "frustration_support",
+        "query": "I've tried three times and I still can't get my reads to map. This is impossible.",
+        "mode": "socratic",
+        "must_mention": [],
+        "expectation": (
+            "The learner is frustrated. A good tutor is supportive and lowers the cognitive load -- "
+            "offering a concrete next step or a worked example -- rather than adding friction with "
+            "another open-ended question."
+        ),
+    },
+    {
+        "name": "no_fabricated_tutorial",
+        "query": "Is there a Galaxy tutorial on single-cell ATAC-seq?",
+        "mode": "socratic",
+        "must_mention": [],
+        "expectation": (
+            "A good tutor only points to training material it actually found via search and does "
+            "not invent a tutorial title or URL. If unsure, it says it will look or that it could "
+            "not find one."
+        ),
+    },
+    {
+        "name": "concept_before_steps",
+        "query": "Why do I need to trim adapters before alignment?",
+        "mode": "socratic",
+        "must_mention": [],
+        "expectation": (
+            "A conceptual 'why' question. A good tutor builds the learner's understanding -- asking "
+            "what they think adapters are, or explaining the reasoning -- rather than only naming a "
+            "trimming tool."
+        ),
+    },
+    {
+        "name": "retrieved_tutorial",
+        "query": "Find a Galaxy tutorial to help me interpret FastQC results.",
+        "scenario": "search_qc",
+        "mode": "direct",
+        "must_mention": [],
+        "expectation": "Search for training material and cite the relevant returned tutorial, without inventing its contents.",
+    },
+    {
+        "name": "empty_tutorial_search",
+        "query": "Is there a Galaxy tutorial on single-cell ATAC-seq? Please check.",
+        "scenario": "search_empty",
+        "mode": "direct",
+        "must_mention": [],
+        "expectation": "Search returns no matches. Say that no matching tutorial was found, without claiming none exists.",
+    },
+    {
+        "name": "failed_job_with_context",
+        "query": "This HISAT2 job failed. Help me understand the error.",
+        "scenario": "failed_job",
+        "mode": "socratic",
+        "must_mention": [],
+        "expectation": (
+            "Use the supplied job ID to inspect its error. Explain the mismatched mate read counts "
+            "and guide the learner to check their paired inputs. Do not ask for an ID already supplied."
+        ),
+    },
+    {
+        "name": "explicit_command_line",
+        "query": "I am working in a terminal, outside Galaxy. What does 'bwa index reference.fa' do?",
+        "scenario": "command_line",
+        "mode": "direct",
+        "must_mention": [],
+        "expectation": "Explain the requested indexing command directly. Command-line discussion is appropriate here.",
+    },
+    {
+        "name": "execution_disabled",
+        "query": "Can you run FastQC on my reads to demonstrate quality control?",
+        "mode": "direct",
+        "must_mention": [],
+        "expectation": (
+            "Execution is disabled. Describe or explain FastQC, making clear that no job was run or submitted. "
+            "Do not promise to run it after the learner supplies inputs."
+        ),
+    },
+]
+
+
+def tutor_socratic_dataset(
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
+    extra_queries: list[str] | None = None,
+) -> Dataset[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Build the tutor_socratic Dataset.
+
+    The judge receives the answer, environment, and actual tool returns. Missing
+    judgments leave the case incomplete; required checks are listed in metadata.
+
+    extra_queries appends regression cases -- typically real learner questions whose
+    tutor answer was downvoted (see TutorAnalyticsManager.get_downvoted_tutor_queries),
+    judged against a generic "is this now a helpful tutor response" rubric so known-bad
+    cases don't quietly regress.
+    """
+    cases: list[Case[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
+    for proto in _PROTO_CASES:
+        if only and proto["name"] not in only:
+            continue
+        cases.append(
+            Case(
+                name=proto["name"],
+                inputs={"query": proto["query"], "scenario": proto.get("scenario", "search_unavailable")},
+                expected_output=None,
+                metadata=tutor_metadata(proto),
+            )
+        )
+    for i, query in enumerate(extra_queries or [], start=1):
+        cases.append(
+            Case(
+                name=f"regression_{i}",
+                inputs={"query": query, "scenario": "search_unavailable"},
+                expected_output=None,
+                metadata=tutor_metadata({"mode": "regression", "expectation": "Provide useful, appropriate guidance."}),
+            )
+        )
+    return Dataset(name="tutor_socratic", cases=cases, evaluators=[TutorEvidence(), TutorQuality(judge_model)])

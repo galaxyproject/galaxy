@@ -71,6 +71,7 @@ from galaxy.managers.jobs import (
     JobSearch,
 )
 from galaxy.managers.landing import LandingRequestManager
+from galaxy.managers.learning_state import LearningStateManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
@@ -1003,7 +1004,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self._register_singleton(AgentRegistry, agent_registry)
         self._register_singleton(
             AgentService,
-            AgentService(self.config, JobQueryManager(self, self.history_manager), agent_registry),
+            AgentService(
+                self.config,
+                JobQueryManager(self, self.history_manager),
+                agent_registry,
+                self._register_singleton(LearningStateManager),
+            ),
         )
 
         self.dependency_resolvers_view = self._register_singleton(

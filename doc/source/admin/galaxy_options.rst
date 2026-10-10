@@ -6061,6 +6061,36 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_learning_mode``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable Learning Mode, the opt-in teaching assistant in the Galaxy
+    AI panel. When enabled, users see a Learning mode switch and, with
+    it on, their Galaxy AI questions go to a tutor that guides them
+    with questions, hints and GTN training material instead of
+    answering outright. Requires the AI agents to be configured. Off
+    by default.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tutor_allow_tool_execution``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow the teaching assistant (tutor mode) to actually run tools on
+    the user's data when demonstrating a concept. Off by default: with
+    this disabled the tutor describes a tool and its inputs instead of
+    executing it, so demonstrations never create jobs or modify
+    histories without an explicit opt-in. Enable only in trusted or
+    evaluation deployments.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_recommendations``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

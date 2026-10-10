@@ -3326,6 +3326,21 @@ galaxy:
   # celery.
   #iwc_manifest_refresh_interval: 3600
 
+  # Enable Learning Mode, the opt-in teaching assistant in the Galaxy AI
+  # panel. When enabled, users see a Learning mode switch and, with it
+  # on, their Galaxy AI questions go to a tutor that guides them with
+  # questions, hints and GTN training material instead of answering
+  # outright. Requires the AI agents to be configured. Off by default.
+  #enable_learning_mode: false
+
+  # Allow the teaching assistant (tutor mode) to actually run tools on
+  # the user's data when demonstrating a concept. Off by default: with
+  # this disabled the tutor describes a tool and its inputs instead of
+  # executing it, so demonstrations never create jobs or modify
+  # histories without an explicit opt-in. Enable only in trusted or
+  # evaluation deployments.
+  #tutor_allow_tool_execution: false
+
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well

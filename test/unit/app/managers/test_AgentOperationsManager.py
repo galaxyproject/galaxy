@@ -415,6 +415,56 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         assert "job" in result
         assert result["job_id"] == "encoded_job_id"
+        mock_service.show.assert_called_once_with(trans=self.trans, id=123, full=False)
+
+    def test_get_full_job_status_includes_stderr(self):
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = {"id": 123, "state": "error", "stderr": "No index found"}
+
+        with mock.patch.object(
+            type(self.agent_ops), "jobs_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            job_id = self.trans.security.encode_id(123)
+            result = self.agent_ops.get_job_status(job_id, full=True)
+
+        mock_service.show.assert_called_once_with(trans=self.trans, id=123, full=True)
+        assert result["job"]["stderr"] == "No index found"
+        assert result["job"]["id"] == job_id
+
+    def test_get_job_parameters_uses_form_labels(self):
+        mock_service = mock.MagicMock()
+        summary = {
+            "parameters": [
+                {"text": "Filter", "depth": 1, "value": [{"src": "hda", "id": 3, "hid": 3, "name": "counts.tabular"}]},
+                {"text": "With following condition", "depth": 1, "value": "c7>100"},
+                {"text": "Number of header lines to skip", "depth": 1, "value": "1"},
+                {"text": "Advanced", "depth": 1},
+                {"text": "Added later", "depth": 2, "notes": "not used (parameter was added after this job was run)"},
+            ],
+            "has_parameter_errors": False,
+            "outputs": {},
+        }
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "jobs_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch("galaxy.agents.operations.summarize_job_parameters", return_value=summary),
+        ):
+            job_id = self.trans.security.encode_id(123)
+            result = self.agent_ops.get_job_parameters(job_id)
+
+        mock_service.get_job.assert_called_once_with(self.trans, job_id=123)
+        assert result == {
+            "job_id": job_id,
+            "parameters": [
+                {"label": "Filter", "value": "HID 3: counts.tabular", "depth": 1},
+                {"label": "With following condition", "value": "c7>100", "depth": 1},
+                {"label": "Number of header lines to skip", "value": "1", "depth": 1},
+                {"label": "Advanced", "value": None, "depth": 1},
+                {"label": "Added later", "value": None, "depth": 2},
+            ],
+            "has_parameter_errors": False,
+        }
 
     def test_list_file_source_templates_filters_hidden(self):
         visible = mock.MagicMock(hidden=False)

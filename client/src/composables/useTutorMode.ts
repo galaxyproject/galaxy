@@ -1,0 +1,70 @@
+import { ref } from "vue";
+
+import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
+
+/**
+ * Tutor ("learning") mode for the Galaxy AI panel.
+ *
+ * When enabled, chat exchanges are routed to the `teaching_assistant` agent for
+ * Socratic, guided answers instead of the default router. The learning state
+ * (mode and scaffolding level) is persisted per-user on the
+ * backend via the `/api/chat/tutor/*` endpoints, so it survives reloads.
+ */
+export function useTutorMode() {
+    const tutorModeEnabled = ref(false);
+    const scaffoldingLevel = ref<number | null>(null);
+    const loading = ref(false);
+
+    function applyState(state: Record<string, unknown> | null | undefined) {
+        if (!state) {
+            return;
+        }
+        tutorModeEnabled.value = Boolean(state.tutor_mode_enabled);
+        scaffoldingLevel.value = typeof state.scaffolding_level === "number" ? state.scaffolding_level : null;
+    }
+
+    // Bumped by every toggle, so a state fetch that started earlier can't overwrite it.
+    let toggles = 0;
+
+    async function fetchTutorState() {
+        const startedAt = toggles;
+        const { data, error } = await GalaxyApi().GET("/api/chat/tutor/state");
+        if (error) {
+            rethrowSimple(error);
+        }
+        if (startedAt === toggles) {
+            applyState(data as Record<string, unknown>);
+        }
+    }
+
+    async function setTutorMode(enabled: boolean) {
+        toggles += 1;
+        const previous = tutorModeEnabled.value;
+        // The switch moves as soon as it is clicked; setting the ref here lets a failure move it back.
+        tutorModeEnabled.value = enabled;
+        loading.value = true;
+        try {
+            const { data, error } = await GalaxyApi().POST("/api/chat/tutor/mode", { body: { enabled } });
+            if (error) {
+                rethrowSimple(error);
+            }
+            const result = data as { enabled?: boolean; state?: Record<string, unknown> };
+            tutorModeEnabled.value = Boolean(result?.enabled);
+            applyState(result?.state);
+        } catch (e) {
+            tutorModeEnabled.value = previous;
+            throw e;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    return {
+        tutorModeEnabled,
+        scaffoldingLevel,
+        loading,
+        fetchTutorState,
+        setTutorMode,
+    };
+}

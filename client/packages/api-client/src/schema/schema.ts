@@ -265,6 +265,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/tutor/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tutor Analytics
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_tutor_analytics_api_chat_tutor_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/tutor/mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Toggle Tutor Mode
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["toggle_tutor_mode_api_chat_tutor_mode_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/tutor/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tutor State
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_tutor_state_api_chat_tutor_state_get"];
+        /**
+         * Update Tutor State
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["update_tutor_state_api_chat_tutor_state_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/{job_id}/feedback": {
         parameters: {
             query?: never;
@@ -19050,6 +19114,60 @@ export interface components {
          * @enum {string}
          */
         LandingRequestState: "unclaimed" | "claimed";
+        /**
+         * LearningState
+         * @description User's learning state for the cognitive tutor.
+         */
+        LearningState: {
+            /**
+             * Demonstrations Count
+             * @description Demonstrations that submitted at least one job
+             * @default 0
+             */
+            demonstrations_count: number;
+            /**
+             * Interaction Count
+             * @description Total tutor interactions
+             * @default 0
+             */
+            interaction_count: number;
+            /**
+             * Last Interaction
+             * @description ISO timestamp of last interaction
+             */
+            last_interaction?: string | null;
+            /**
+             * Scaffolding Level
+             * @description Scaffolding level 1-5 (1=max support, 5=minimal)
+             * @default 3
+             */
+            scaffolding_level: number;
+            /**
+             * Tutor Mode Enabled
+             * @description Whether tutor mode is active
+             * @default false
+             */
+            tutor_mode_enabled: boolean;
+        };
+        /**
+         * LearningStateUpdate
+         * @description The learning-state fields a user may set themselves.
+         *
+         *     Counters and timestamps are derived server-side and deliberately absent, so a
+         *     user cannot forge their own progress.
+         */
+        LearningStateUpdate: {
+            /**
+             * Scaffolding Level
+             * @description Scaffolding level 1-5
+             */
+            scaffolding_level?: number | null;
+            /**
+             * Tutor Mode Enabled
+             * @description Whether tutor mode is active
+             */
+            tutor_mode_enabled?: boolean | null;
+        };
         /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
@@ -26251,6 +26369,29 @@ export interface components {
             scope_type: "recent" | "seed_centered";
             /** Seed In Scope */
             seed_in_scope?: boolean | null;
+        };
+        /**
+         * TutorModeResponse
+         * @description Tutor mode after a toggle, with the full learning state.
+         */
+        TutorModeResponse: {
+            /**
+             * Enabled
+             * @description Whether tutor mode is now active
+             */
+            enabled: boolean;
+            state: components["schemas"]["LearningState"];
+        };
+        /**
+         * TutorModeToggle
+         * @description Request to toggle tutor mode.
+         */
+        TutorModeToggle: {
+            /**
+             * Enabled
+             * @description Whether to enable or disable tutor mode
+             */
+            enabled: boolean;
         };
         /** UndeleteHistoriesPayload */
         UndeleteHistoriesPayload: {
@@ -34025,6 +34166,180 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatHistoryItemResponse"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_tutor_analytics_api_chat_tutor_analytics_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    toggle_tutor_mode_api_chat_tutor_mode_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TutorModeToggle"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorModeResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_tutor_state_api_chat_tutor_state_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningState"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_tutor_state_api_chat_tutor_state_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LearningStateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningState"];
                 };
             };
             /** @description Request Error */

@@ -18,6 +18,7 @@ from galaxy.agents.base import (
     truncate_middle,
 )
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.jobs import summarize_job_parameters
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import UserDynamicToolAssociation
 from galaxy.schema import (
@@ -316,16 +317,39 @@ class AgentOperationsManager:
         result = self.tools_service._create(self.trans, payload)
         return self._encode_ids_in_response(result)
 
-    def get_job_status(self, job_id: str) -> dict[str, Any]:
+    def get_job_status(self, job_id: str, *, full: bool = False) -> dict[str, Any]:
         decoded_job_id = self.trans.security.decode_id(job_id)
 
         job_details = self.jobs_service.show(
             trans=self.trans,
             id=decoded_job_id,
-            full=False,
+            full=full,
         )
 
         return {"job": self._encode_ids_in_response(job_details), "job_id": job_id}
+
+    def get_job_parameters(self, job_id: str) -> dict[str, Any]:
+        """Get a job's settings labelled the way the tool form and job page show them."""
+        job = self.jobs_service.get_job(self.trans, job_id=self.trans.security.decode_id(job_id))
+        summary = summarize_job_parameters(self.trans, job)
+
+        def display(value: Any) -> str | None:
+            if isinstance(value, list):
+                return ", ".join(
+                    f"HID {item['hid']}: {item['name']}" if item.get("hid") is not None else str(item.get("name"))
+                    for item in value
+                    if item
+                )
+            return None if value is None else str(value)
+
+        return {
+            "job_id": job_id,
+            "parameters": [
+                {"label": p["text"], "value": display(p.get("value")), "depth": p.get("depth", 1)}
+                for p in summary["parameters"]
+            ],
+            "has_parameter_errors": summary["has_parameter_errors"],
+        }
 
     def create_history(self, name: str) -> dict[str, Any]:
         payload = CreateHistoryPayload(name=name)

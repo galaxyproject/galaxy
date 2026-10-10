@@ -1,6 +1,7 @@
 """Unit tests for ChatManager page-scoped methods."""
 
 import json
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -20,10 +21,12 @@ def _make_trans(user_id=1):
 class _FakeChatExchange:
     """Lightweight stand-in that avoids SQLAlchemy instrumentation."""
 
-    user_id = mock.Mock()
-    job_id = mock.Mock()
-    page_id = mock.Mock()
-    id = mock.Mock()
+    # Class-level Mocks stand in for SQLAlchemy column expressions (e.g. ChatExchange.id.desc());
+    # typed Any so tests can also assign real ids to instances (e.g. exchange.id = 31).
+    user_id: Any = mock.Mock()
+    job_id: Any = mock.Mock()
+    page_id: Any = mock.Mock()
+    id: Any = mock.Mock()
 
     def __init__(self, user=None, job_id=None, page_id=None, message=None, **kw):
         self.user = user

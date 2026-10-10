@@ -24,6 +24,11 @@ const mockGetHistory = vi.fn();
 // Composable mocks
 const mockActiveContext = ref<ActiveContext | null>(null);
 
+// The real config store would add its own GET to the call counts these tests check.
+vi.mock("@/composables/config", () => ({
+    useConfig: () => ({ config: { value: { enable_learning_mode: true } }, isConfigLoaded: { value: true } }),
+}));
+
 vi.mock("@/composables/useActiveContext", () => ({
     useActiveContext: () => ({ activeContext: mockActiveContext, contextLabel: ref("") }),
 }));

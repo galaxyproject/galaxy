@@ -55,6 +55,11 @@ vi.mock("@/app", () => ({
 vi.mock("@/components/GalaxyAI/ChatMessageCell.vue", () => ({ default: ChatMessageCellStub }));
 vi.mock("@/components/GalaxyAI/ChatInput.vue", () => ({ default: ChatInputStub }));
 
+// The real config store would add its own GET to the call counts these tests check.
+vi.mock("@/composables/config", () => ({
+    useConfig: () => ({ config: { value: { enable_learning_mode: true } }, isConfigLoaded: { value: true } }),
+}));
+
 vi.mock("@/composables/useActiveContext", () => ({
     useActiveContext: () => ({ activeContext: ref(null), contextLabel: ref("") }),
 }));

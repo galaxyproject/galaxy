@@ -21,6 +21,7 @@ from pydantic import Field
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     ConfigurationError,
     MessageException,
     ObjectNotFound,
@@ -31,11 +32,17 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.learning_state import LearningStateManager
 from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
+from galaxy.managers.tutor_analytics import TutorAnalyticsManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.agents import (
     AgentResponse,
+    LearningState,
+    LearningStateUpdate,
+    TutorModeResponse,
+    TutorModeToggle,
     WorkflowReportResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -119,6 +126,8 @@ class ChatAPI:
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
     workflow_manager: WorkflowsManager = depends(WorkflowsManager)
+    learning_state_manager: LearningStateManager = depends(LearningStateManager)
+    tutor_analytics_manager: TutorAnalyticsManager = depends(TutorAnalyticsManager)
 
     @router.post("/api/chat", unstable=True)
     async def query(
@@ -178,9 +187,22 @@ class ChatAPI:
             job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
             if job and not regenerate:
                 existing_response = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
-                if existing_response and existing_response.messages[0]:
+                if existing_response and existing_response.messages:
+                    cached_content = existing_response.messages[0].message
+                    cached_agent_response = None
+                    cached_turn = safe_loads(cached_content)
+                    # Older job exchanges contain plain text, including JSON examples.
+                    if (
+                        isinstance(cached_turn, dict)
+                        and isinstance(cached_turn.get("query"), str)
+                        and isinstance(cached_turn.get("response"), str)
+                        and isinstance(cached_turn.get("agent_type"), str)
+                    ):
+                        cached_content = cached_turn["response"]
+                        cached_agent_response = cached_turn.get("agent_response")
                     return ChatResponse(
-                        response=existing_response.messages[0].message,
+                        response=cached_content,
+                        agent_response=cached_agent_response,
                         error_code=0,
                         error_message="",
                         exchange_id=existing_response.id,
@@ -256,8 +278,15 @@ class ChatAPI:
                 result["response"] = answer
 
             if job:
+                agent_resp = result.get("agent_response")
+                conversation_data = {
+                    "query": query_text,
+                    "response": result.get("response", ""),
+                    "agent_type": agent_resp.agent_type if agent_resp else agent_type,
+                    "agent_response": agent_resp.model_dump() if agent_resp else None,
+                }
                 exchange = await anyio.to_thread.run_sync(
-                    partial(self.chat_manager.create, trans, job.id, str(result["response"]))
+                    partial(self.chat_manager.create, trans, job.id, json.dumps(conversation_data))
                 )
                 result["exchange_id"] = exchange.id
             elif trans.user:
@@ -500,6 +529,56 @@ class ChatAPI:
             except (json.JSONDecodeError, AttributeError):
                 log.debug("Skipping malformed chat exchange %s", exchange.id)
         return history
+
+    @router.get("/api/chat/tutor/state", unstable=True)
+    def get_tutor_state(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> LearningState:
+        """Get the user's current learning state for the cognitive tutor."""
+        self._ensure_learning_mode_enabled()
+        return LearningState(**self.learning_state_manager.get_learning_state(trans))
+
+    @router.put("/api/chat/tutor/state", unstable=True)
+    def update_tutor_state(
+        self,
+        payload: LearningStateUpdate = Body(..., description="Partial learning state update"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> LearningState:
+        """Update the user-settable parts of the learning state (partial update)."""
+        self._ensure_learning_mode_enabled()
+        updates = payload.model_dump(exclude_none=True)
+        return LearningState(**self.learning_state_manager.update_learning_state(trans, updates))
+
+    @router.post("/api/chat/tutor/mode", unstable=True)
+    def toggle_tutor_mode(
+        self,
+        payload: TutorModeToggle = Body(..., description="Whether to enable or disable tutor mode"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> TutorModeResponse:
+        """Toggle tutor mode on or off."""
+        self._ensure_learning_mode_enabled()
+        if payload.enabled:
+            state = self.learning_state_manager.enable_tutor_mode(trans)
+        else:
+            state = self.learning_state_manager.disable_tutor_mode(trans)
+        return TutorModeResponse(enabled=state["tutor_mode_enabled"], state=LearningState(**state))
+
+    @router.get("/api/chat/tutor/analytics", require_admin=True, unstable=True)
+    def get_tutor_analytics(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> dict[str, Any]:
+        """Aggregate tutor usage analytics across all users (admin only)."""
+        self._ensure_learning_mode_enabled()
+        return self.tutor_analytics_manager.get_analytics(trans)
+
+    def _ensure_learning_mode_enabled(self) -> None:
+        if not self.config.enable_learning_mode:
+            raise ConfigDoesNotAllowException("Learning Mode is not enabled on this Galaxy server.")
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""

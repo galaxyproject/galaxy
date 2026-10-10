@@ -1771,12 +1771,23 @@ galaxyai:
     query_cell: '.entry-query .query-text'
     response_cell: '.entry-response'
     response_content: '.entry-response .response-content'
-    agent_indicator: '.entry-response .agent-indicator'
+    agent_indicator: '.entry-response [data-description="agent indicator"]'
+    agent_label: '.entry-response [data-description="agent label"]'
     loading: '.loading-entry'
     feedback_up: '.entry-response .feedback-btn[title="Helpful"]'
     feedback_down: '.entry-response .feedback-btn[title="Not helpful"]'
     feedback_ack: '.entry-response .feedback-ack'
     meta_tag: '.entry-response .meta-tag'
+    learning_mode_toggle: '[data-description="learning mode toggle"]'
+    # bootstrap-vue hides the real checkbox input, so the label is the click target
+    learning_mode_switch: '[data-description="learning mode toggle"] .custom-control-label'
+    learning_mode_scaffolding: '[data-description="learning mode scaffolding"]'
+    context_badge: '[data-description="chat context badge"]'
+    context_dismiss: '[data-description="chat context dismiss"]'
+    dock_right_button: '.galaxyai-header [data-description="dock chat right"]'
+    dock_bottom_button: '.galaxyai-header [data-description="dock chat bottom"]'
+    open_in_center_button: '.galaxyai-header [data-description="open chat in center"]'
+    docked_panel: '#chat-panel .galaxyai-container'
 
   history_panel:
     selectors:

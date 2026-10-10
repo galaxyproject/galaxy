@@ -9,6 +9,7 @@ from .search import (
     FAQResult,
     GTNSearchDB,
     SearchResult,
+    TutorialCurriculum,
 )
 
-__all__ = ["GTNSearchDB", "SearchResult", "FAQResult"]
+__all__ = ["GTNSearchDB", "SearchResult", "FAQResult", "TutorialCurriculum"]
