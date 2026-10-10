@@ -1,3 +1,4 @@
+import { getFakeVisualizationSummary } from "@tests/test-data/visualizations";
 import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -5,22 +6,6 @@ import { useServerMock } from "@/api/client/__mocks__";
 import { loadVisualizations, type VisualizationSummary } from "./visualizations";
 
 const { server, http } = useServerMock();
-
-function mockVisualization(id: string, title: string): VisualizationSummary {
-    return {
-        id,
-        title,
-        type: "nvd3_bar",
-        annotation: null,
-        create_time: "2026-01-01T00:00:00",
-        update_time: "2026-01-02T00:00:00",
-        deleted: false,
-        importable: false,
-        published: false,
-        tags: [],
-        username: "test-user",
-    } as VisualizationSummary;
-}
 
 /** Captures the query parameters of the last intercepted index request. */
 function interceptIndex(visualizations: VisualizationSummary[], totalMatches = "0") {
@@ -39,7 +24,10 @@ function interceptIndex(visualizations: VisualizationSummary[], totalMatches = "
 
 describe("loadVisualizations", () => {
     it("requests own visualizations and returns the total matches header", async () => {
-        const expected = [mockVisualization("viz-1", "First"), mockVisualization("viz-2", "Second")];
+        const expected = [
+            getFakeVisualizationSummary({ id: "viz-1", title: "First" }),
+            getFakeVisualizationSummary({ id: "viz-2", title: "Second" }),
+        ];
         const queries = interceptIndex(expected, "17");
 
         const result = await loadVisualizations();
