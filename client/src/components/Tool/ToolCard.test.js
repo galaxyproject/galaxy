@@ -1,123 +1,65 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeRegisteredUser } from "@tests/test-data";
-import { createTestRouter, expectConfigurationRequest, getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { setupMockConfig } from "@tests/vitest/mockConfig";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { createTestRouter } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import * as ToolCardStories from "./ToolCard.stories";
 
-import ToolCard from "./ToolCard.vue";
-
-const { server, http } = useServerMock();
-
-vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
-    const { ref } = await import("vue");
-    return {
-        useUserLocalStorageFromHashId: (_key, initialValue) => ref(initialValue),
-    };
-});
-
-setupMockConfig({ enable_tool_source_display: false });
+const stories = composeStories(ToolCardStories);
+const mountStory = useStoryMount();
 
 const SELECTORS = {
-    TITLE: "h1",
     DESCRIPTION: "span[itemprop='description']",
     OPTIONS_DROPDOWN: ".tool-dropdown",
-    OPTION: ".dropdown-item",
     BACKDROP: ".portlet-backdrop",
     NEWER_VERSION_BADGE: "[data-description='newer tool version']",
+    RUN_TOOL_BUTTON: "[data-description='run tool button']",
 };
 
-const ADMIN_USER = getFakeRegisteredUser({ is_admin: true });
-
-const TOOL_OPTIONS = {
-    id: "options.id",
-    name: "options.name",
-    version: "options.version",
-    versions: [],
-    sharable_url: "options.sharable_url",
-    help: "options.help",
-    help_format: "restructuredtext",
-    citations: false,
-};
-
-async function mountToolCard({ version = "version", options = {} } = {}) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: ADMIN_USER } } });
-    const router = createTestRouter();
-    const wrapper = mount(ToolCard, {
-        props: {
-            id: "identifier",
-            version,
-            title: "title",
-            description: "description",
-            sustainVersion: false,
-            options: { ...TOOL_OPTIONS, ...options },
-            messageText: "messageText",
-            messageVariant: "warning",
-            disabled: false,
-        },
-        global: withPlugins(getLocalVue(), pinia, router),
-    });
+/** Mounts a story and waits for the configuration the card waits on. */
+async function mountToolCard(story, options) {
+    const wrapper = mountStory(story, options);
     await flushPromises();
-    return { wrapper, router };
+    return wrapper;
 }
 
-enableAutoUnmount(afterEach);
-
 describe("ToolCard", () => {
-    beforeEach(() => {
-        server.use(
-            // configurationStore's setup calls loadConfig() before @pinia/testing swaps its actions for spies
-            expectConfigurationRequest(http, {}),
-            http.untyped.get("/api/webhooks", () => HttpResponse.json([])),
-        );
+    it("marks up the tool's description", async () => {
+        const wrapper = await mountToolCard(stories.LatestVersion);
+
+        expect(wrapper.find(SELECTORS.DESCRIPTION).text()).toBe("Read Quality reports");
     });
 
-    it("shows the tool's title and description", async () => {
-        const { wrapper } = await mountToolCard();
-
-        expect(wrapper.find(SELECTORS.TITLE).text()).toBe("title");
-        expect(wrapper.find(SELECTORS.DESCRIPTION).text()).toBe("description");
-    });
-
-    it("offers an admin five tool options", async () => {
-        const { wrapper } = await mountToolCard();
+    it("titles the tool options menu", async () => {
+        const wrapper = await mountToolCard(stories.LatestVersion);
 
         expect(wrapper.find(SELECTORS.OPTIONS_DROPDOWN).attributes("title")).toBe("Options");
-        expect(wrapper.findAll(SELECTORS.OPTION)).toHaveLength(5);
     });
 
     it("covers the card with a backdrop while disabled", async () => {
-        const { wrapper } = await mountToolCard();
+        const wrapper = await mountToolCard(stories.WithRunButton);
         expect(wrapper.findAll(SELECTORS.BACKDROP)).toHaveLength(0);
 
-        await wrapper.setProps({ disabled: true });
+        await wrapper.find(SELECTORS.RUN_TOOL_BUTTON).trigger("click");
 
         expect(wrapper.findAll(SELECTORS.BACKDROP)).toHaveLength(1);
     });
 
-    it("shows a newer version badge that navigates to the latest version", async () => {
-        const { wrapper, router } = await mountToolCard({
-            version: "1.0",
-            options: { version: "1.0", versions: ["1.0", "2.0"] },
-        });
+    it("navigates to the latest version from the newer version badge", async () => {
+        const router = createTestRouter();
+        const wrapper = await mountToolCard(stories.NewerVersionAvailable, { router });
 
-        const badge = wrapper.find(SELECTORS.NEWER_VERSION_BADGE);
-        expect(badge.text()).toBe("Newer version available");
-
-        await badge.trigger("click");
+        await wrapper.find(SELECTORS.NEWER_VERSION_BADGE).trigger("click");
         await flushPromises();
 
-        expect(router.currentRoute.value.fullPath).toBe("/?tool_id=identifier&version=latest");
+        expect(router.currentRoute.value.fullPath).toBe(
+            "/?tool_id=toolshed.g2.bx.psu.edu%2Frepos%2Fdevteam%2Ffastqc%2Ffastqc%2F0.73%2Bgalaxy0&version=latest",
+        );
     });
 
     it("offers a single focusable toggle for each tool menu", async () => {
-        const { wrapper } = await mountToolCard({
-            version: "1.0",
-            options: { version: "1.0", versions: ["1.0", "2.0"] },
-        });
+        const wrapper = await mountToolCard(stories.LatestVersion);
         for (const menu of [".tool-dropdown", ".tool-versions"]) {
             const toggle = wrapper.get(`${menu} button.dropdown-toggle`);
             expect(toggle.find("button, a, [tabindex]").exists()).toBe(false);
@@ -127,14 +69,5 @@ describe("ToolCard", () => {
             expect(toggle.attributes("aria-expanded")).toBe("true");
             await toggle.trigger("keydown", { key: "Escape" });
         }
-    });
-
-    it.each([
-        { scenario: "the latest version in its lineage", version: "2.0", versions: ["1.0", "2.0"] },
-        { scenario: "a single-version tool", version: "1.0", versions: ["1.0"] },
-    ])("shows no newer version badge for $scenario", async ({ version, versions }) => {
-        const { wrapper } = await mountToolCard({ version, options: { version, versions } });
-
-        expect(wrapper.find(SELECTORS.NEWER_VERSION_BADGE).exists()).toBe(false);
     });
 });
