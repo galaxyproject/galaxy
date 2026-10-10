@@ -4,7 +4,8 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
-import { createMemoryHistory, createRouter } from "vue-router";
+
+import { createMemoryRouter } from "./test-utils";
 
 import GToast from "./GToast.vue";
 
@@ -123,13 +124,7 @@ describe("GToast.vue", () => {
     });
 
     it("navigates via the router when a toast with `to` is clicked", async () => {
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: [
-                { path: "/", component: { template: "<div />" } },
-                { path: "/histories/view", component: { template: "<div />" } },
-            ],
-        });
+        const router = createMemoryRouter({ paths: ["/", "/histories/view"] });
         await router.push("/");
         const wrapper = mountGToast({ router });
 
