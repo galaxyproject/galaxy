@@ -1,8 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils"
 import { createPinia, setActivePinia } from "pinia"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { createMemoryHistory, createRouter } from "vue-router"
 import { useAuthStore } from "@/stores"
+import { createMemoryRouter } from "@/test-utils"
 import ShedToolbar from "./ShedToolbar.vue"
 
 function mountToolbar(user: Record<string, unknown> | null) {
@@ -10,13 +10,9 @@ function mountToolbar(user: Record<string, unknown> | null) {
     vi.spyOn(authStore, "setup").mockResolvedValue(undefined)
     const logout = vi.spyOn(authStore, "logout").mockResolvedValue(undefined)
     authStore.user = user
-    const router = createRouter({
-        history: createMemoryHistory(),
-        routes: [{ path: "/:any(.*)*", component: { template: "<div />" } }],
-    })
     const wrapper = mount(ShedToolbar, {
         props: { title: "Tool Shed" },
-        global: { plugins: [router] },
+        global: { plugins: [createMemoryRouter()] },
         attachTo: document.body,
     })
     return { wrapper, logout }
