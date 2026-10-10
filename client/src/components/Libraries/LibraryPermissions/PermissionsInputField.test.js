@@ -1,10 +1,11 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import PermissionsInputField from "./PermissionsInputField.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 vi.mock("@/components/Libraries/LibraryPermissions/services", () => ({
     Services: class {
@@ -15,12 +16,15 @@ vi.mock("@/components/Libraries/LibraryPermissions/services", () => ({
 }));
 
 describe("PermissionsInputField", () => {
-    it("renders the alert through v-sanitize-html", () => {
+    beforeEach(() => {
         vi.mocked(sanitizeHtml).mockClear();
+    });
+
+    it("renders the alert through v-sanitize-html", () => {
         const alert = "Users with <strong>any</strong> of these roles can access";
+
         const wrapper = shallowMount(PermissionsInputField, {
-            localVue: getLocalVue(),
-            propsData: {
+            props: {
                 id: "lib1",
                 title: "Access",
                 permission_type: "access",
@@ -28,9 +32,10 @@ describe("PermissionsInputField", () => {
                 apiRootUrl: "/api/libraries",
                 alert,
             },
+            global: getLocalVue(),
         });
 
         expect(sanitizeHtml).toHaveBeenCalledWith(alert, "default");
-        expect(wrapper.find("strong").text()).toBe("any");
+        expect(wrapper.findComponent(GAlert).find("strong").text()).toBe("any");
     });
 });
