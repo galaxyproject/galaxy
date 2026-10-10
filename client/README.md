@@ -410,7 +410,7 @@ const userStore = useUserStore();
 userStore.currentUser = getFakeRegisteredUser();
 ```
 
-`createTestingPinia({ initialState })` is keyed by the `defineStore` id, which may differ from the composable name (`useUserStore` is `"userStore"`). A wrong key is silently ignored.
+`createTestingPinia({ initialState })` is keyed by the `defineStore` id, which may differ from the composable name (`useUserStore` is `"userStore"`). A wrong key is silently ignored, and so is state a setup store doesn't return: seed `historyStore`'s current history with `setCurrentHistoryId`, not `storedCurrentHistoryId`.
 
 **Isolated Store Tests**:
 
