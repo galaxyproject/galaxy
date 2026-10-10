@@ -110,6 +110,7 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         link = details.badge_popover_link(id=popover_id).wait_for_visible()
         assert link.get_attribute("href") == "https://www.msi.umn.edu/content/archive-tier-storage"
         assert link.text == "Archive Tier Storage"
+        self.screenshot("objectstore_badge_admin_message")
 
     @selenium_test
     @managed_history
