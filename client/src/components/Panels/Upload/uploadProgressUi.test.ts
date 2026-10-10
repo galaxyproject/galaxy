@@ -1,30 +1,30 @@
 import { describe, expect, it } from "vitest";
 
-import { makeLocalFileItem, makeRemoteFilesItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
-import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import {
+    makeLibraryItem,
+    makeLocalFileItem,
+    makeRemoteFilesItem,
+    makeUrlItem,
+    withUploadState,
+} from "@/composables/upload/testHelpers/uploadFixtures";
 
 import { getUploadItemDisplayInfo } from "./uploadProgressUi";
 
-function withState<T extends NewUploadItem>(item: T) {
-    return {
-        ...item,
-        id: "upload-1",
-        status: "queued" as const,
-        progress: 0,
-        createdAt: 0,
-        datasetIds: [] as string[],
-    };
-}
-
 describe("getUploadItemDisplayInfo sourceUrl", () => {
     it.each([
-        ["paste-links", withState(makeUrlItem())],
-        ["remote-files", withState(makeRemoteFilesItem())],
-    ])("exposes the URL for %s uploads", (_, item) => {
-        expect(getUploadItemDisplayInfo(item).sourceUrl).toBe("url" in item ? item.url : undefined);
+        ["paste-links", makeUrlItem({ url: "http://example.com/file.txt" }), "http://example.com/file.txt"],
+        ["remote-files", makeRemoteFilesItem({ url: "ftp://server/file.txt" }), "ftp://server/file.txt"],
+    ])("exposes the URL for %s uploads", (_mode, item, expectedUrl) => {
+        expect(getUploadItemDisplayInfo(withUploadState(item)).sourceUrl).toBe(expectedUrl);
     });
 
     it("omits the URL for local-file uploads", () => {
-        expect(getUploadItemDisplayInfo(withState(makeLocalFileItem())).sourceUrl).toBeUndefined();
+        expect(getUploadItemDisplayInfo(withUploadState(makeLocalFileItem())).sourceUrl).toBeUndefined();
+    });
+
+    it("omits the API URL of data-library uploads", () => {
+        const item = makeLibraryItem({ url: "/api/libraries/lib_1/datasets/ldda_1" });
+
+        expect(getUploadItemDisplayInfo(withUploadState(item)).sourceUrl).toBeUndefined();
     });
 });
