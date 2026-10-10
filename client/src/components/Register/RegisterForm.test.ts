@@ -51,8 +51,7 @@ describe("RegisterForm", () => {
 
     it("basics", async () => {
         const cardHeader = wrapper.find(".card-header");
-        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
-        (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
+        expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(4);
@@ -77,8 +76,7 @@ describe("RegisterForm", () => {
     // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
     // it("switching from Register to Login", async () => {
     //     const cardHeader = await wrapper.find(".card-header");
-    //     // TODO: fix typing, see note in ExportForm.test.ts
-    //     (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
+    //     expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
 
     //     const loginToggle = wrapper.find(SELECTORS.LOGIN_TOGGLE); // TODO: Never appears because of the GLink change
     //     expect(loginToggle.exists()).toBeTruthy();
