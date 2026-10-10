@@ -22,6 +22,12 @@ const STATUS_MESSAGES: Record<number, string> = {
     502: "Galaxy is temporarily unavailable",
     503: "Galaxy is temporarily unavailable",
     504: "Galaxy took too long to respond",
+    // Cloudflare's own codes for failing to reach or hear back from the origin.
+    520: "Galaxy is temporarily unavailable",
+    521: "Galaxy is temporarily unavailable",
+    522: "Galaxy is temporarily unavailable",
+    523: "Galaxy is temporarily unavailable",
+    524: "Galaxy took too long to respond",
 };
 
 function statusMessage(status: number, statusText: string): string {

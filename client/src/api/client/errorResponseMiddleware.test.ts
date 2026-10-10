@@ -61,6 +61,11 @@ describe("errorResponseMiddleware", () => {
         [429, "Too many requests, please wait and try again (429)"],
         [500, "An internal server error occurred (500)"],
         [502, "Galaxy is temporarily unavailable (502)"],
+        [520, "Galaxy is temporarily unavailable (520)"],
+        [521, "Galaxy is temporarily unavailable (521)"],
+        [522, "Galaxy is temporarily unavailable (522)"],
+        [523, "Galaxy is temporarily unavailable (523)"],
+        [524, "Galaxy took too long to respond (524)"],
         [418, "The request failed (418)"],
     ])("names a %d without relying on the status text", async (status, message) => {
         server.use(
