@@ -1,16 +1,17 @@
 import "@/components/Form/Elements/FormSelectMany/worker/__mocks__/selectMany";
 
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeDatasetSummary } from "@tests/test-data/datasets";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toRaw } from "vue";
 
 import type { HDASummary } from "@/api";
-import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
+
+import * as ListCollectionCreatorStories from "./ListCollectionCreator.stories";
+import { changeHistory } from "./test-utils";
 
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import FormSelectMany from "@/components/Form/Elements/FormSelectMany/FormSelectMany.vue";
@@ -19,48 +20,31 @@ vi.mock("@/composables/toast");
 
 const toastError = vi.mocked(Toast.error);
 
-const localVue = getLocalVue(true);
+const stories = composeStories(ListCollectionCreatorStories);
+const mountStory = useStoryMount();
 
-const { server, http } = useServerMock();
+const [CONTROL, TREATED] = stories.TwoDatasetsInHistory.args.history as [HDASummary, HDASummary];
+
 beforeEach(() => {
     vi.clearAllMocks();
-    server.use(
-        http.get("/api/configuration", ({ response }) => response(200).json({})),
-        http.get("/api/genomes", ({ response }) => response(200).json([])),
-    );
 });
 
-function buildFakeDataset(id: string, hid: number, name: string, overrides: Partial<HDASummary> = {}) {
-    return getFakeDatasetSummary({ id, hid, name, ...overrides });
-}
-
-async function mountCreator(initialElements: HDASummary[]) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
-    setActivePinia(pinia);
-
-    const wrapper = mount(ListCollectionCreator, {
-        props: {
-            historyId: "history-1",
-            initialElements,
-            mode: "modal",
-        },
-        global: withPlugins(localVue, pinia),
-    });
-
+async function mountCreator() {
+    const wrapper = mountStory(stories.TwoDatasetsInHistory);
     await flushPromises();
     return wrapper;
 }
 
-function inListElements(wrapper: ReturnType<typeof mount>): HDASummary[] {
+function inListElements(wrapper: VueWrapper): HDASummary[] {
     return wrapper.findComponent(FormSelectMany).props("value") as HDASummary[];
 }
 
-function inListIds(wrapper: ReturnType<typeof mount>): string[] {
+function inListIds(wrapper: VueWrapper): string[] {
     return inListElements(wrapper).map((element) => element.id);
 }
 
-async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]) {
-    for (const name of names) {
+async function selectIntoList(wrapper: VueWrapper, datasets: HDASummary[]) {
+    for (const { name } of datasets) {
         const option = wrapper
             .findAll(".options-list.unselected .option-button")
             .find((candidate) => candidate.attributes("aria-label") === `Select ${name}`);
@@ -74,51 +58,49 @@ async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]
 
 describe("ListCollectionCreator", () => {
     it("keeps the user's list when initialElements changes, re-projected onto the rebuilt elements", async () => {
-        const wrapper = await mountCreator([buildFakeDataset("a", 1, "one"), buildFakeDataset("b", 2, "two")]);
+        const wrapper = await mountCreator();
 
-        await selectIntoList(wrapper, ["two", "one"]);
-        expect(inListIds(wrapper)).toEqual(["b", "a"]);
+        await selectIntoList(wrapper, [TREATED, CONTROL]);
+        expect(inListIds(wrapper)).toEqual([TREATED.id, CONTROL.id]);
 
         // same datasets, new prop identity (e.g. a history poll tick)
-        const refreshed = [buildFakeDataset("a", 1, "one"), buildFakeDataset("b", 2, "two")];
-        await wrapper.setProps({ initialElements: refreshed });
-        await flushPromises();
+        const creator = wrapper.getComponent(ListCollectionCreator);
+        const before = creator.props("initialElements") as HDASummary[];
+        await changeHistory(wrapper, "Refresh history");
+        const refreshed = creator.props("initialElements") as HDASummary[];
+        expect(refreshed[1]).not.toBe(before[1]);
 
         // the user's order survives, holding the creator's working copies rather than the props
-        expect(inListIds(wrapper)).toEqual(["b", "a"]);
-        expect(inListElements(wrapper)[0]).not.toBe(refreshed[1]);
+        expect(inListIds(wrapper)).toEqual([TREATED.id, CONTROL.id]);
+        expect(toRaw(inListElements(wrapper)[0])).not.toBe(toRaw(refreshed[1]));
         expect(toastError).not.toHaveBeenCalled();
     });
 
     it("drops a dataset that left the history and says it was removed from the collection", async () => {
-        const a = buildFakeDataset("a", 1, "one");
-        const wrapper = await mountCreator([a, buildFakeDataset("b", 2, "two")]);
+        const wrapper = await mountCreator();
 
-        await selectIntoList(wrapper, ["one", "two"]);
-        expect(inListIds(wrapper)).toEqual(["a", "b"]);
+        await selectIntoList(wrapper, [CONTROL, TREATED]);
+        expect(inListIds(wrapper)).toEqual([CONTROL.id, TREATED.id]);
 
-        await wrapper.setProps({ initialElements: [a] });
-        await flushPromises();
+        await changeHistory(wrapper, `Delete ${TREATED.name}`);
 
-        expect(inListIds(wrapper)).toEqual(["a"]);
+        expect(inListIds(wrapper)).toEqual([CONTROL.id]);
         expect(toastError).toHaveBeenCalledTimes(1);
-        expect(toastError).toHaveBeenCalledWith("2: two has been removed from the collection", "Invalid element");
+        expect(toastError).toHaveBeenCalledWith("2: treated has been removed from the collection", "Invalid element");
     });
 
     it("drops a dataset that is still there but no longer usable and says why", async () => {
-        const a = buildFakeDataset("a", 1, "one");
-        const wrapper = await mountCreator([a, buildFakeDataset("b", 2, "two")]);
+        const wrapper = await mountCreator();
 
-        await selectIntoList(wrapper, ["one", "two"]);
-        expect(inListIds(wrapper)).toEqual(["a", "b"]);
+        await selectIntoList(wrapper, [CONTROL, TREATED]);
+        expect(inListIds(wrapper)).toEqual([CONTROL.id, TREATED.id]);
 
-        await wrapper.setProps({ initialElements: [a, buildFakeDataset("b", 2, "two", { state: "error" })] });
-        await flushPromises();
+        await changeHistory(wrapper, `Fail ${TREATED.name}`);
 
-        expect(inListIds(wrapper)).toEqual(["a"]);
+        expect(inListIds(wrapper)).toEqual([CONTROL.id]);
         expect(toastError).toHaveBeenCalledTimes(1);
         expect(toastError).toHaveBeenCalledWith(
-            "2: two has errored, is paused, or is not accessible and is not a valid element for this collection",
+            "2: treated has errored, is paused, or is not accessible and is not a valid element for this collection",
             "Invalid element",
         );
     });
