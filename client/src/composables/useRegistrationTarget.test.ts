@@ -6,6 +6,8 @@ import { useRegistrationTarget } from "./useRegistrationTarget";
 const OKTA = { end_user_registration_endpoint: "https://okta.example.org/register" };
 const KEYCLOAK = { end_user_registration_endpoint: "https://keycloak.example.org/register" };
 
+const LOCAL_REGISTRATION_FORM = { external: false, url: "/register/start" };
+
 function targetFor(config: object) {
     setupMockConfig(config);
     return useRegistrationTarget().registrationTarget.value;
@@ -13,14 +15,16 @@ function targetFor(config: object) {
 
 describe("useRegistrationTarget", () => {
     it("leads to the local registration form where local accounts are on", () => {
-        expect(targetFor({ allow_local_account_creation: true, oidc: { okta: OKTA } })).toEqual({
-            external: false,
-            url: "/register/start",
-        });
+        expect(targetFor({ allow_local_account_creation: true, oidc: { okta: OKTA } })).toEqual(
+            LOCAL_REGISTRATION_FORM,
+        );
     });
 
-    it("offers nothing where no one can register", () => {
+    it("offers nothing where local accounts are off and no OIDC provider registers", () => {
         expect(targetFor({ allow_local_account_creation: false, oidc: { plain: {} } })).toBeUndefined();
+    });
+
+    it("offers nothing where the configuration sets neither local accounts nor OIDC", () => {
         expect(targetFor({})).toBeUndefined();
     });
 
@@ -32,9 +36,8 @@ describe("useRegistrationTarget", () => {
     });
 
     it("lets the form pick among several OIDC providers", () => {
-        expect(targetFor({ allow_local_account_creation: false, oidc: { okta: OKTA, keycloak: KEYCLOAK } })).toEqual({
-            external: false,
-            url: "/register/start",
-        });
+        expect(targetFor({ allow_local_account_creation: false, oidc: { okta: OKTA, keycloak: KEYCLOAK } })).toEqual(
+            LOCAL_REGISTRATION_FORM,
+        );
     });
 });
