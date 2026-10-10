@@ -433,7 +433,10 @@ describe("useMyStore", () => {
 #### Composable Testing
 
 Call composables directly when they only calculate or render values and do not
-require component lifecycle hooks or injection.
+require component lifecycle hooks or injection. If one creates watchers or
+computeds, call it through `runInTestScope(() => useMyComposable())` from
+`@tests/vitest/effectScope` so its effects stop when the test finishes, even on
+failure.
 
 For composables that require lifecycle hooks or a component context, mount a
 minimal component that uses them:
