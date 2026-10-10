@@ -1,59 +1,74 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter, nth, withPlugins } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import MountTarget from "./LoginForm.vue";
+import LoginForm from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
-const router = injectTestRouter(localVue);
+const router = createTestRouter();
 const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
 const { server, http } = useServerMock();
 
 const SELECTORS = {
-    REGISTER_TOGGLE: "[id=register-toggle]",
+    ALERT: ".alert",
+    CARD_HEADER: ".card-header",
+    EXTERNAL_LOGIN: "external-login-stub",
+    LOGIN_INPUT: "#login-form-name",
+    PASSWORD_INPUT: "#login-form-password",
+    SUBMIT_BUTTON: "button[type='submit']",
+    RESET_PASSWORD_LINK: "#reset-password-link",
+    REGISTER_TOGGLE: "#register-toggle",
     REGISTRATION_DISABLED: "[data-description='registration disabled message']",
+    WELCOME_PAGE: "iframe",
 };
 
-interface PostRequest {
+interface LoginRequest {
     url: string;
     data: Record<string, unknown>;
 }
 
-let postRequests: PostRequest[] = [];
+let loginRequests: LoginRequest[] = [];
 let loginResponse: Record<string, unknown> = {};
 
-async function mountLoginForm() {
-    const wrapper = mount(MountTarget, {
+function mountLoginForm(props: Record<string, unknown> = {}) {
+    return mount(LoginForm, {
         props: {
             sessionCsrfToken: "sessionCsrfToken",
+            ...props,
         },
         global: {
             ...withPlugins(localVue, testingPinia, router),
             stubs: { ...localVue.stubs, ExternalLogin: true },
         },
     });
+}
 
-    return wrapper;
+/** LoginForm reads the query once, at setup; vitest-location-mock resets `window.location` before each test. */
+function visitLoginPage(query: string) {
+    window.location.href = `${window.location.origin}/login/start?${query}`;
+}
+
+function stubRouterPush() {
+    return vi.spyOn(router, "push").mockImplementation(async () => {});
 }
 
 describe("LoginForm", () => {
     beforeEach(() => {
-        postRequests = [];
+        loginRequests = [];
         loginResponse = {};
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
             }),
             http.untyped.post(/.*\/user\/login.*/, async ({ request }) => {
-                const url = request.url;
                 const data = (await request.json()) as Record<string, unknown>;
-                postRequests.push({ url, data });
+                loginRequests.push({ url: request.url, data });
                 return HttpResponse.json(loginResponse);
             }),
         );
@@ -93,79 +108,69 @@ describe("LoginForm", () => {
         }
     });
 
-    it("basics", async () => {
-        const wrapper = await mountLoginForm();
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
 
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Welcome to Galaxy, please log in");
+    it("posts the entered name and password to the login endpoint", async () => {
+        const wrapper = mountLoginForm();
 
+        expect(wrapper.find(SELECTORS.CARD_HEADER).text()).toBe("Welcome to Galaxy, please log in");
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
-
         const usernameField = nth(inputs, 0);
+        const passwordField = nth(inputs, 1);
         expect(usernameField.attributes("type")).toBe("text");
+        expect(passwordField.attributes("type")).toBe("password");
 
         await usernameField.setValue("test_user");
-
-        const pwdField = nth(inputs, 1);
-        expect(pwdField.attributes("type")).toBe("password");
-
-        await pwdField.setValue("test_pwd");
-
-        const submitButton = wrapper.find("button[type='submit']");
-        await submitButton.trigger("submit");
+        await passwordField.setValue("test_pwd");
+        await wrapper.find(SELECTORS.SUBMIT_BUTTON).trigger("submit");
         await flushPromises();
 
-        expect(postRequests.length).toBe(1);
-        expect(postRequests[0]?.data.login).toBe("test_user");
-        expect(postRequests[0]?.data.password).toBe("test_pwd");
+        expect(loginRequests.length).toBe(1);
+        expect(loginRequests[0]?.data.login).toBe("test_user");
+        expect(loginRequests[0]?.data.password).toBe("test_pwd");
     });
 
     it("prefills the password reset route with the entered email", async () => {
-        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
-        const wrapper = mount(MountTarget, {
-            props: {
-                sessionCsrfToken: "sessionCsrfToken",
-                showResetLink: true,
-            },
-            global: {
-                ...withPlugins(localVue, testingPinia, router),
-                stubs: { ...localVue.stubs, ExternalLogin: true },
-            },
-        });
+        const push = stubRouterPush();
+        const wrapper = mountLoginForm({ showResetLink: true });
 
-        await wrapper.find("#login-form-name").setValue("test@example.com");
-        await wrapper.find("#reset-password-link").trigger("click");
+        await wrapper.find(SELECTORS.LOGIN_INPUT).setValue("test@example.com");
+        await wrapper.find(SELECTORS.RESET_PASSWORD_LINK).trigger("click");
 
         expect(push).toHaveBeenCalledWith({
             path: "/login/reset_password",
             query: { email: "test@example.com" },
         });
-        push.mockRestore();
     });
 
     it("routes expired-password responses to the current-password form", async () => {
         loginResponse = { expired_user: "expired-user-id" };
-        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
-        const wrapper = await mountLoginForm();
+        const push = stubRouterPush();
+        const wrapper = mountLoginForm();
 
-        await wrapper.find("#login-form-name").setValue("test_user");
-        await wrapper.find("#login-form-password").setValue("test_pwd");
-        await wrapper.find("button[type='submit']").trigger("submit");
+        await wrapper.find(SELECTORS.LOGIN_INPUT).setValue("test_user");
+        await wrapper.find(SELECTORS.PASSWORD_INPUT).setValue("test_pwd");
+        await wrapper.find(SELECTORS.SUBMIT_BUTTON).trigger("submit");
         await flushPromises();
 
         expect(push).toHaveBeenCalledWith({
             path: "/login/start",
             query: { expired_user: "expired-user-id" },
         });
-        push.mockRestore();
     });
 
-    it("props", async () => {
-        const wrapper = await mountLoginForm();
+    it("says registration is disabled when user creation is off", () => {
+        const wrapper = mountLoginForm();
 
-        expect(wrapper.findAll(SELECTORS.REGISTER_TOGGLE).length).toBe(0); // TODO: Never appears because of the GLink change
-        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.REGISTER_TOGGLE).exists()).toBe(false);
+    });
+
+    it("shows the register link, external login and welcome page once they are enabled", async () => {
+        const wrapper = mountLoginForm();
 
         await wrapper.setProps({
             allowUserCreation: true,
@@ -174,112 +179,83 @@ describe("LoginForm", () => {
             welcomeUrl: "welcome_url",
         });
 
-        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeFalsy();
-        // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
-        //       Currentlly, we confirm its existence by checking the fact that the disabled message is not there.
-        // const registerToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE);
-        // expect(registerToggle.exists()).toBeTruthy();
-        // const register = wrapper.find(SELECTORS.REGISTER_TOGGLE);
-        // (expect(register.text()) as any).toBe("Register here.");
-
-        const welcomePage = wrapper.find("iframe");
-        expect(welcomePage.attributes("src")).toBe("welcome_url");
-        await flushPromises();
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBe(false);
+        const registerToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE);
+        expect(registerToggle.text()).toBe("Register here.");
+        expect(registerToggle.attributes("href")).toBe("/register/start");
+        expect(wrapper.find(SELECTORS.EXTERNAL_LOGIN).exists()).toBe(true);
+        expect(wrapper.find(SELECTORS.WELCOME_PAGE).attributes("src")).toBe("welcome_url");
     });
 
-    it("hides register link when local accounts are disabled", async () => {
-        const wrapper = await mountLoginForm();
+    it("hides the register link when local accounts are disabled", async () => {
+        const wrapper = mountLoginForm();
 
         await wrapper.setProps({
             allowUserCreation: true,
             disableLocalAccounts: true,
         });
 
-        expect(wrapper.findAll(SELECTORS.REGISTER_TOGGLE).length).toBe(0);
-        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
+        expect(wrapper.find(SELECTORS.REGISTER_TOGGLE).exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBe(true);
     });
 
-    it("connect external provider", async () => {
-        const external_email = "test@test.com";
-        const provider_id = "test_provider";
-        const provider_label = "Provider";
+    it("logs in as the existing account's email when connecting an external provider", async () => {
+        const externalEmail = "test@test.com";
+        const providerLabel = "Provider";
+        visitLoginPage(
+            `connect_external_email=${externalEmail}&connect_external_provider=test_provider&connect_external_label=${providerLabel}`,
+        );
 
-        // Mock window.location.search by overriding the property
-        const originalSearch = window.location.search;
-        Object.defineProperty(window.location, "search", {
-            configurable: true,
-            writable: true,
-            value: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
-        });
+        const wrapper = mountLoginForm();
 
-        const wrapper = await mountLoginForm();
-
-        expect(wrapper.find(".card-header").exists()).toBe(false);
-
-        const alert = wrapper.find(".alert");
+        expect(wrapper.find(SELECTORS.CARD_HEADER).exists()).toBe(false);
+        const alert = wrapper.find(SELECTORS.ALERT);
         expect(alert.classes()).toContain("alert-info");
-        expect(alert.text()).toContain(`There already exists a user with the email ${external_email}`);
-        expect(alert.text()).toContain(`In order to associate this account with ${provider_label}`);
+        expect(alert.text()).toContain(`There already exists a user with the email ${externalEmail}`);
+        expect(alert.text()).toContain(`In order to associate this account with ${providerLabel}`);
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
-
         const usernameField = nth(inputs, 0);
+        const usernameInput = usernameField.element as HTMLInputElement;
         expect(usernameField.attributes("type")).toBe("text");
-        expect((usernameField.element as HTMLInputElement).disabled).toBe(true);
-        expect((usernameField.element as HTMLInputElement).value).not.toBe("");
-        expect((usernameField.element as HTMLInputElement).value).toContain(external_email);
+        expect(usernameInput.disabled).toBe(true);
+        expect(usernameInput.value).not.toBe("");
+        expect(usernameInput.value).toContain(externalEmail);
+        const passwordField = nth(inputs, 1);
+        expect(passwordField.attributes("type")).toBe("password");
+        expect((passwordField.element as HTMLInputElement).value).toBe("");
 
-        const pwdField = nth(inputs, 1);
-        expect(pwdField.attributes("type")).toBe("password");
-        expect((pwdField.element as HTMLInputElement).value).toBe("");
-
-        await pwdField.setValue("test_pwd");
-
-        const submitButton = wrapper.find("button[type='submit']");
-
-        await submitButton.trigger("submit");
+        await passwordField.setValue("test_pwd");
+        await wrapper.find(SELECTORS.SUBMIT_BUTTON).trigger("submit");
         await flushPromises();
 
-        expect(postRequests.length).toBe(1);
-        expect(postRequests[0]?.data.login).toBe(external_email);
-        expect(postRequests[0]?.data.password).toBe("test_pwd");
-        expect(postRequests[0]?.url).toContain("/user/login");
-
-        // Restore original search
-        Object.defineProperty(window.location, "search", {
-            configurable: true,
-            writable: true,
-            value: originalSearch,
-        });
+        expect(loginRequests.length).toBe(1);
+        expect(loginRequests[0]?.data.login).toBe(externalEmail);
+        expect(loginRequests[0]?.data.password).toBe("test_pwd");
+        expect(loginRequests[0]?.url).toContain("/user/login");
     });
 
-    it("renders message from query params", async () => {
-        const originalHref = window.location.href;
-        window.location.href = `${window.location.origin}/login/start?message=auth-error&status=info`;
+    it("renders the message and status from the query string", async () => {
+        visitLoginPage("message=auth-error&status=info");
 
-        const wrapper = await mountLoginForm();
+        const wrapper = mountLoginForm();
         await flushPromises();
 
-        const alert = wrapper.find(".alert");
+        const alert = wrapper.find(SELECTORS.ALERT);
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("auth-error");
         expect(alert.classes()).toContain("alert-info");
-
-        window.location.href = originalHref;
     });
 
     it("renders the message through v-sanitize-html", async () => {
-        const originalHref = window.location.href;
-        window.location.href = `${window.location.origin}/login/start?message=${encodeURIComponent("<b>note</b>")}`;
+        visitLoginPage(`message=${encodeURIComponent("<b>note</b>")}`);
         vi.mocked(sanitizeHtml).mockClear();
 
-        const wrapper = await mountLoginForm();
+        const wrapper = mountLoginForm();
         await flushPromises();
 
         expect(sanitizeHtml).toHaveBeenCalledWith("<b>note</b>", "default");
-        expect(wrapper.find(".alert b").text()).toBe("note");
-
-        window.location.href = originalHref;
+        expect(wrapper.find(`${SELECTORS.ALERT} b`).text()).toBe("note");
     });
 });
