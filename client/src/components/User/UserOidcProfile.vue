@@ -13,7 +13,7 @@ import localize from "@/utils/localization";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);

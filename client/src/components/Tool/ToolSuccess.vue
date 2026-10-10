@@ -13,7 +13,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
-const { config } = useConfig(true);
+const { config } = useConfig();
 const jobStore = useJobStore();
 const { latestResponse } = storeToRefs(jobStore);
 const router = useRouter();

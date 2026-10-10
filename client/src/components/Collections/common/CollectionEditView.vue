@@ -33,7 +33,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 const collectionAttributesStore = useCollectionAttributesStore();
 
 const historyStore = useHistoryStore();

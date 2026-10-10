@@ -21,7 +21,7 @@ import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveS
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const historyStore = useHistoryStore();
-const { config } = useConfig(true);
+const { config } = useConfig();
 const toast = useToast();
 
 const { hasWritable: hasWritableFileSources } = useFileSources();

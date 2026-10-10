@@ -92,7 +92,7 @@ export default {
         },
     },
     setup() {
-        const { config, isConfigLoaded } = useConfig(true);
+        const { config, isConfigLoaded } = useConfig();
         return { config, isConfigLoaded };
     },
     data() {

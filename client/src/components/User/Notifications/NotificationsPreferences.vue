@@ -33,7 +33,7 @@ const props = withDefaults(defineProps<NotificationsPreferencesProps>(), {
 
 const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Notifications Preferences" }];
 
-const { config } = useConfig(true);
+const { config } = useConfig();
 
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);

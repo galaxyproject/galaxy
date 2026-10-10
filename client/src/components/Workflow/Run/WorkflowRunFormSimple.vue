@@ -79,7 +79,7 @@ const { currentHistoryId, changingCurrentHistory } = storeToRefs(useHistoryStore
 const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
 const { activeNodeId } = storeToRefs(stateStore);
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 const { showPanels } = usePanels();
 
 const formData = ref<Record<string, any>>({});

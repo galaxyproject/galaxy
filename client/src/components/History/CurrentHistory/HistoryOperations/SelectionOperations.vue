@@ -216,7 +216,7 @@ export default {
         totalItemsInQuery: { type: Number, default: 0 },
     },
     setup() {
-        const { config, isConfigLoaded } = useConfig(true);
+        const { config, isConfigLoaded } = useConfig();
         const { confirm } = useConfirmDialog();
         const objectStoreStore = useObjectStoreStore();
         const { isAnonymous } = useUserStore();
