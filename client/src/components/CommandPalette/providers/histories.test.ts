@@ -1,14 +1,18 @@
+import { deferred } from "@tests/vitest/deferred";
+import { nth } from "@tests/vitest/helpers";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createPinia, disposePinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
+import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import type { SharedHistory } from "@/api/histories";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
+import { ensureDefined } from "@/utils/assertions";
 
-import { makeCtx, renderedSections } from "../test-utils";
+import { makeCtx, renderedSections, signIn } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { historiesProvider } from "./histories";
 import { resetListRefreshTracking } from "./refresh";
@@ -92,15 +96,21 @@ const ARCHIVED_SCOPE: ScopeDefinition = {
     variant: "archived",
 };
 
-interface HistoryFields {
-    annotation?: string | null;
-    archived?: boolean;
-    count?: number;
-    owner?: string;
-    username?: string;
-}
+type HistoryFields = Partial<Pick<HistorySummary, "annotation" | "archived" | "count">> &
+    Partial<Pick<SharedHistory, "owner" | "username">>;
 
-function history(id: string, name: string, updateTime = "2026-08-30T10:00:00", extra: HistoryFields = {}) {
+type SuppliedHistory = Pick<
+    HistorySummary,
+    "id" | "name" | "model_class" | "update_time" | "annotation" | "count" | "tags" | "archived"
+> &
+    HistoryFields;
+
+function history(
+    id: string,
+    name: string,
+    updateTime = "2026-08-30T10:00:00",
+    extra: HistoryFields = {},
+): SuppliedHistory {
     return {
         id,
         name,
@@ -156,18 +166,24 @@ function mockHistoriesApi() {
     }));
 }
 
-function signIn(username = "me") {
-    const userStore = useUserStore();
-    userStore.currentUser = { id: "user-1", email: "me@example.org", username, isAnonymous: false } as never;
-}
-
 async function scopedSections(scope: ScopeDefinition, query = "") {
-    return renderedSections(await historiesProvider.searchScoped?.(scope, query, makeCtx()));
+    return renderedSections(await ensureDefined(historiesProvider.searchScoped)(scope, query, makeCtx()));
 }
 
 describe("historiesProvider", () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        onTestFinished(async () => {
+            // Settle background list refreshes before stopping the stores that own them.
+            await flushPromises();
+            disposePinia(pinia);
+            setActivePinia(undefined);
+            resetListRefreshTracking();
+            sseState.onEvent = null;
+            recent = [];
+            vi.resetAllMocks();
+        });
         recent = [];
         vi.clearAllMocks();
         resetListRefreshTracking();
@@ -179,18 +195,19 @@ describe("historiesProvider", () => {
         const store = useHistoryStore();
         store.historiesOffset = 30;
         store.totalHistoryCount = 100;
-        let release = () => {};
-        const pending = new Promise<void>((resolve) => {
-            release = resolve;
+        const pending = deferred<void>();
+        onTestFinished(async () => {
+            pending.resolve();
+            await flushPromises();
         });
         getHistoryList.mockImplementationOnce(async () => {
-            await pending;
+            await pending.promise;
             return [RNA, VARIANTS];
         });
         const searching = scopedSections(OWN_SCOPE, query);
         await flushPromises();
         const duringFetch = { offset: store.historiesOffset, loading: store.historiesLoading };
-        release();
+        pending.resolve();
         const sections = await searching;
 
         expect(duringFetch).toEqual({ offset: 30, loading: false });
@@ -208,30 +225,32 @@ describe("historiesProvider", () => {
         const sections = await scopedSections(OWN_SCOPE);
 
         expect(sections.map((s) => s.title)).toEqual(["Recent", "Latest"]);
-        expect(sections[0]?.items.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
+        expect(nth(sections, 0).items.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
         // latest first, so the newer "Variant calling" leads
-        expect(sections[1]?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+        expect(nth(sections, 1).items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
     });
 
     it("hydrates the own histories even when the current history is cached", async () => {
         // a boot that loaded no listing leaves the current history cached alone
-        useHistoryStore().setHistory(RNA as never);
-        let release = () => {};
-        const pending = new Promise<void>((resolve) => {
-            release = resolve;
+        // This partial summary omits deleted, published, purged and URL metadata.
+        useHistoryStore().setHistory(RNA as HistorySummary);
+        const pending = deferred<void>();
+        onTestFinished(async () => {
+            pending.resolve();
+            await flushPromises();
         });
         getHistoryList.mockImplementationOnce(async () => {
-            await pending;
+            await pending.promise;
             return [RNA, VARIANTS];
         });
 
         const searching = scopedSections(OWN_SCOPE);
         await flushPromises();
-        release();
+        pending.resolve();
         const sections = await searching;
 
         expect(getHistoryList).toHaveBeenCalledTimes(1);
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
     });
 
     it("does not take a partial boot page for the own listing, so `h:` finds an older history", async () => {
@@ -240,9 +259,10 @@ describe("historiesProvider", () => {
             history(`h${n}`, `Alpha history ${n}`, `2026-08-${n}T10:00:00`),
         );
         const older = [history("h02", "Alpha history 02", "2026-07-02T10:00:00")];
-        let release = () => {};
-        const pending = new Promise<void>((resolve) => {
-            release = resolve;
+        const pending = deferred<void>();
+        onTestFinished(async () => {
+            pending.resolve();
+            await flushPromises();
         });
         getHistoryList.mockImplementation(async (_offset: number, limit: number | null, queryString = "") => {
             if (queryString) {
@@ -251,7 +271,7 @@ describe("historiesProvider", () => {
             if (limit === 10) {
                 return newest;
             }
-            await pending;
+            await pending.promise;
             return [...newest, ...older];
         });
         // boot pages the own histories through the scroll list
@@ -259,34 +279,34 @@ describe("historiesProvider", () => {
 
         const searching = scopedSections(OWN_SCOPE, "history 02");
         await flushPromises();
-        release();
+        pending.resolve();
         const titles = (await searching).flatMap((section) => section.items.map((item) => item.title));
 
         expect(titles).toContain("Alpha history 02");
     });
 
     it("opens the history view on enter and offers set-as-current for own histories", async () => {
-        const [item] = (await scopedSections(OWN_SCOPE)).at(-1)?.items ?? [];
+        const item = nth(nth(await scopedSections(OWN_SCOPE), -1).items, 0);
 
-        expect(item?.to).toBe("/histories/view?id=h2");
-        expect(item?.secondaryAction?.label).toBe("Set as current");
+        expect(item.to).toBe("/histories/view?id=h2");
+        expect(item.secondaryAction?.label).toBe("Set as current");
         // the annotation wins over the bare item count
-        expect(item?.subtitle).toContain("exome trio");
-        expect(item?.subtitle).toContain("updated");
-        expect(item?.subtitle).not.toContain("by ");
+        expect(item.subtitle).toContain("exome trio");
+        expect(item.subtitle).toContain("updated");
+        expect(item.subtitle).not.toContain("by ");
     });
 
     it("falls back to the item count when a history has no annotation", async () => {
         const sections = await scopedSections(OWN_SCOPE, "rna");
 
-        expect(sections.at(-1)?.items[0]?.subtitle).toContain("3 items");
+        expect(nth(nth(sections, -1).items, 0).subtitle).toContain("3 items");
     });
 
     it("switches the current history through the store on shift+enter", async () => {
         setCurrentHistoryOnServer.mockResolvedValue({ id: "h2", name: "Variant calling", model_class: "History" });
-        const [item] = (await scopedSections(OWN_SCOPE)).at(-1)?.items ?? [];
+        const item = nth(nth(await scopedSections(OWN_SCOPE), -1).items, 0);
 
-        await item?.secondaryAction?.run?.(makeCtx());
+        await ensureDefined(ensureDefined(item.secondaryAction).run)(makeCtx());
 
         expect(setCurrentHistoryOnServer).toHaveBeenCalledWith("h2");
     });
@@ -296,48 +316,48 @@ describe("historiesProvider", () => {
         await historyStore.loadHistories(false);
         historyStore.setCurrentHistoryId("h2");
 
-        const [item] = (await scopedSections(OWN_SCOPE)).at(-1)?.items ?? [];
+        const item = nth(nth(await scopedSections(OWN_SCOPE), -1).items, 0);
 
-        expect(item?.subtitle).toContain("(current)");
-        expect(item?.secondaryAction).toBeUndefined();
+        expect(item.subtitle).toContain("(current)");
+        expect(item.secondaryAction).toBeUndefined();
     });
 
     it("names the owner and hides set-as-current for histories of other users", async () => {
         const sections = await scopedSections(PUBLISHED_SCOPE);
-        const [item] = sections.at(-1)?.items ?? [];
+        const item = nth(nth(sections, -1).items, 0);
 
         expect(sections.map((s) => s.title)).toEqual(["Latest"]);
-        expect(item?.title).toBe("Public metagenomics");
-        expect(item?.subtitle).toContain("by stranger");
-        expect(item?.secondaryAction).toBeUndefined();
+        expect(item.title).toBe("Public metagenomics");
+        expect(item.subtitle).toContain("by stranger");
+        expect(item.secondaryAction).toBeUndefined();
     });
 
     it("keeps set-as-current for a listed history the current user owns", async () => {
         signIn("colleague");
 
-        const [item] = (await scopedSections(SHARED_SCOPE)).at(-1)?.items ?? [];
+        const item = nth(nth(await scopedSections(SHARED_SCOPE), -1).items, 0);
 
-        expect(item?.secondaryAction?.label).toBe("Set as current");
-        expect(item?.subtitle).not.toContain("by colleague");
+        expect(item.secondaryAction?.label).toBe("Set as current");
+        expect(item.subtitle).not.toContain("by colleague");
     });
 
     it("reads the shared listing for the `hs:` scope", async () => {
         const sections = await scopedSections(SHARED_SCOPE, "alignment");
 
         expect(sections.map((s) => s.title)).toEqual(["Shared histories"]);
-        expect(sections[0]?.items.map((i) => i.title)).toEqual(["Shared alignment"]);
+        expect(nth(sections, 0).items.map((i) => i.title)).toEqual(["Shared alignment"]);
         expect(getSharedHistories).toHaveBeenCalled();
         expect(getPublishedHistories).not.toHaveBeenCalled();
     });
 
     it("reads the archived listing for `ha:`, which is owned by definition", async () => {
         const sections = await scopedSections(ARCHIVED_SCOPE);
-        const [item] = sections.at(-1)?.items ?? [];
+        const item = nth(nth(sections, -1).items, 0);
 
         expect(sections.map((s) => s.title)).toEqual(["Latest"]);
         expect(getArchivedHistories).toHaveBeenCalled();
-        expect(item?.title).toBe("Archived assembly");
-        expect(item?.secondaryAction?.label).toBe("Set as current");
+        expect(item.title).toBe("Archived assembly");
+        expect(item.secondaryAction?.label).toBe("Set as current");
     });
 
     it("hides set-as-current for a foreign listing entry that happens to be cached", async () => {
@@ -345,12 +365,13 @@ describe("historiesProvider", () => {
         // in `storedHistories` alongside their own histories
         const foreign = history("h7", "Public assembly", "2026-08-25T10:00:00");
         getPublishedHistories.mockResolvedValue({ data: [foreign], total: 1 });
-        useHistoryStore().setHistory(foreign as never);
+        // Preserve the ownerless partial summary, including its omitted metadata.
+        useHistoryStore().setHistory(foreign as HistorySummary);
 
-        const [item] = (await scopedSections(PUBLISHED_SCOPE)).at(-1)?.items ?? [];
+        const item = nth(nth(await scopedSections(PUBLISHED_SCOPE), -1).items, 0);
 
-        expect(item?.title).toBe("Public assembly");
-        expect(item?.secondaryAction).toBeUndefined();
+        expect(item.title).toBe("Public assembly");
+        expect(item.secondaryAction).toBeUndefined();
     });
 
     it("waits for the own-history fetch a keystroke arrives during", async () => {
@@ -358,7 +379,7 @@ describe("historiesProvider", () => {
         // first request instead of rendering the still empty cache
         const [, searched] = await Promise.all([scopedSections(OWN_SCOPE), scopedSections(OWN_SCOPE, "variant")]);
 
-        expect(searched.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling"]);
+        expect(nth(searched, -1).items.map((i) => i.title)).toEqual(["Variant calling"]);
         expect(getHistoryList).toHaveBeenCalledTimes(1);
     });
 
@@ -368,7 +389,7 @@ describe("historiesProvider", () => {
             scopedSections(SHARED_SCOPE, "alignment"),
         ]);
 
-        expect(searched.at(-1)?.items.map((i) => i.title)).toEqual(["Shared alignment"]);
+        expect(nth(searched, -1).items.map((i) => i.title)).toEqual(["Shared alignment"]);
         expect(getSharedHistories).toHaveBeenCalledTimes(1);
     });
 
@@ -380,7 +401,7 @@ describe("historiesProvider", () => {
         resetListRefreshTracking();
         const sections = await scopedSections(OWN_SCOPE);
 
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
         expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration + 1);
     });
 
@@ -390,9 +411,9 @@ describe("historiesProvider", () => {
 
         const sections = await scopedSections(OWN_SCOPE, "variant");
 
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Variant calling"]);
         // "Histories" replaces "Latest" once a query narrows the section
-        expect(sections.at(-1)?.title).toBe("Histories");
+        expect(nth(sections, -1).title).toBe("Histories");
         expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration);
     });
 
@@ -427,7 +448,7 @@ describe("historiesProvider", () => {
 
         const sections = await scopedSections(OWN_SCOPE, "zebrafish");
 
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Zebrafish screen"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Zebrafish screen"]);
         expect(getHistoryList.mock.calls.some(([, , queryString]) => queryString?.includes("zebrafish"))).toBe(true);
     });
 
@@ -442,7 +463,7 @@ describe("historiesProvider", () => {
 
         const sections = await scopedSections(SHARED_SCOPE, "alignment");
 
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Shared alignment"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Shared alignment"]);
         expect(getSharedHistories.mock.calls.some(([options]) => options?.search === "alignment")).toBe(true);
     });
 
@@ -454,17 +475,17 @@ describe("historiesProvider", () => {
 
         const sections = await scopedSections(OWN_SCOPE, "variant");
 
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Variant calling"]);
     });
 
     it("falls back to the remembered name for histories missing from the store", async () => {
         recent = [{ type: "history", id: "h9", name: "Forgotten history" }];
 
-        const [item] = (await scopedSections(OWN_SCOPE)).find((s) => s.id === "recent")?.items ?? [];
+        const item = nth(ensureDefined((await scopedSections(OWN_SCOPE)).find((s) => s.id === "recent")).items, 0);
 
-        expect(item?.title).toBe("Forgotten history");
-        expect(item?.to).toBe("/histories/view?id=h9");
-        expect(item?.secondaryAction).toBeUndefined();
+        expect(item.title).toBe("Forgotten history");
+        expect(item.to).toBe("/histories/view?id=h9");
+        expect(item.secondaryAction).toBeUndefined();
     });
 
     it("keeps the palette recents out of the shared, public and archived scopes", async () => {
@@ -560,7 +581,7 @@ describe("historiesProvider", () => {
 
         // …and `hp:` hydrates it with a full, unfiltered page of its own
         expect(getPublishedHistories).toHaveBeenLastCalledWith(expect.objectContaining({ search: "", limit: 25 }));
-        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+        expect(nth(sections, -1).items.map((i) => i.title)).toEqual(["Public metagenomics"]);
     });
 
     it("pages a listing in the fan-out, so a match below the newest rows survives", async () => {
@@ -603,7 +624,7 @@ describe("historiesProvider", () => {
         const items = await historiesProvider.search("variant", makeCtx());
 
         expect(items.map((i) => i.id)).toEqual(["histories:my:h2"]);
-        expect(items[0]?.secondaryAction?.label).toBe("Set as current");
+        expect(nth(items, 0).secondaryAction?.label).toBe("Set as current");
     });
 
     it("searches the public listing alone for an anonymous root query", async () => {
@@ -628,7 +649,9 @@ describe("historiesProvider", () => {
     it("lists remembered histories for an empty root query", async () => {
         recent = [{ type: "history", id: "h1", name: "RNA-seq analysis" }];
 
-        expect(historiesProvider.emptyQueryItems?.(makeCtx())?.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
-        expect(historiesProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
+        expect(ensureDefined(historiesProvider.emptyQueryItems)(makeCtx()).map((i) => i.title)).toEqual([
+            "RNA-seq analysis",
+        ]);
+        expect(ensureDefined(historiesProvider.emptyQueryItems)(makeCtx({ isAnonymous: true }))).toEqual([]);
     });
 });
