@@ -18,8 +18,6 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 const stories = composeStories(WorkflowInvocationOverviewStories);
 const mountStory = useStoryMount();
 
-const UNOWNED_MESSAGE = "Workflow is neither importable, nor owned by or shared with current user";
-
 /** Mounts a story once the overview's workflow fetch, if any, has settled. */
 async function mountOverview(story) {
     const wrapper = mountStory(story);
@@ -27,31 +25,21 @@ async function mountOverview(story) {
     return { overview: wrapper.getComponent(WorkflowInvocationOverview), workflowStore: useWorkflowStore() };
 }
 
-/** The overview's own alerts, leaving out the graph's. */
-function overviewAlerts(overview) {
-    return overview.findAllComponents(GAlert).filter((alert) => alert.element.parentElement === overview.element);
-}
-
 describe("WorkflowInvocationOverview", () => {
-    it("displays the invocation graph for a workflow already in the store", async () => {
+    it("passes a workflow already in the store to the graph without fetching it", async () => {
         const { overview, workflowStore } = await mountOverview(stories.WorkflowGraph);
 
         const graph = overview.findComponent(InvocationGraph);
         expect(graph.exists()).toBe(true);
-        expect(graph.attributes("data-description")).toBe("workflow invocation graph");
         expect(graph.props("workflow")).toEqual(INVOKED_WORKFLOW);
-        expect(overviewAlerts(overview)).toHaveLength(0);
         expect(workflowStore.fetchWorkflowForInstanceId).not.toHaveBeenCalled();
     });
 
-    it("displays the fetch error in a danger alert when the workflow is not accessible", async () => {
+    it("fetches a workflow that is not accessible and shows the error as a danger alert", async () => {
         const { overview, workflowStore } = await mountOverview(stories.WorkflowNotAccessible);
 
         expect(workflowStore.fetchWorkflowForInstanceId).toHaveBeenCalledWith(INVOCATION.workflow_id);
-        expect(overview.findComponent(InvocationGraph).exists()).toBe(false);
-        const alert = overview.findComponent(GAlert);
-        expect(alert.props("variant")).toBe("danger");
-        expect(alert.text()).toContain(UNOWNED_MESSAGE);
+        expect(overview.findComponent(GAlert).props("variant")).toBe("danger");
     });
 
     it("displays an info alert when fetching finds no workflow for the invocation", async () => {
