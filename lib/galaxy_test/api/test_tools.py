@@ -2950,6 +2950,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert job_details["state"] == "error"
         assert "255 character" in job_details["job_messages"][0]["desc"]
 
+    @skip_without_tool("discover_unknown_ext")
+    def test_unknown_output_extension_job_message(self, history_id):
+        response = self._run("discover_unknown_ext", history_id, {})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        messages = [message for message in job_details["job_messages"] if message["type"] == "unknown_datatype"]
+        assert len(messages) == 1, job_details["job_messages"]
+        assert messages[0]["extension"] == "notadatatype"
+        assert messages[0]["error_level"] == 2
+        assert "2 output datasets set to 'data'" in messages[0]["desc"]
+
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed")).read()
         bed2_contents = open(self.get_filename("2.bed")).read()

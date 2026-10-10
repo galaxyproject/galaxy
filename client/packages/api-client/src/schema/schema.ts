@@ -23678,6 +23678,7 @@ export interface components {
                       | components["schemas"]["OutputCollectionSecurityJobMessage"]
                       | components["schemas"]["OutputDiscoveryJobMessage"]
                       | components["schemas"]["StdioReadErrorJobMessage"]
+                      | components["schemas"]["UnknownDatatypeJobMessage"]
                   )[]
                 | null;
             /**
@@ -25963,6 +25964,22 @@ export interface components {
              * @description List of history IDs to be undeleted.
              */
             ids: string[];
+        };
+        /** UnknownDatatypeJobMessage */
+        UnknownDatatypeJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /** Extension */
+            extension: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "unknown_datatype";
         };
         /** UnprivilegedToolResponse */
         UnprivilegedToolResponse: {
