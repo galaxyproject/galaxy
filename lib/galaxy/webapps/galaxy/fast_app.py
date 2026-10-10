@@ -265,7 +265,7 @@ def include_tus(app: FastAPI, gx_app):
         max_size=config.maximum_upload_file_size,
     )
     log.debug("Configured upload TUS router with files_dir=%s", upload_files_dir)
-    job_files_dir = config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path
+    job_files_dir = config.job_files_tus_upload_dir
     job_files_tus_router = create_tus_router(
         prefix="api/job_files/resumable_upload",
         files_dir=job_files_dir,
