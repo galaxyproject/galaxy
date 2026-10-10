@@ -49,6 +49,47 @@ describe("errorResponseMiddleware", () => {
         expect(errorMessageAsString(error)).toBe("Galaxy took too long to respond (504)");
     });
 
+    // Browsers leave statusText empty over HTTP/2, and msw's HttpResponse would fill it in.
+    // A DELETE, because the rate limiter retries a GET that gets a 429.
+    it.each([
+        [400, "The request was not valid (400)"],
+        [401, "Authentication is required (401)"],
+        [403, "Access was denied (403)"],
+        [404, "The requested resource was not found (404)"],
+        [408, "The request timed out (408)"],
+        [413, "The request was too large (413)"],
+        [429, "Too many requests, please wait and try again (429)"],
+        [500, "An internal server error occurred (500)"],
+        [502, "Galaxy is temporarily unavailable (502)"],
+        [520, "Galaxy is temporarily unavailable (520)"],
+        [521, "Galaxy is temporarily unavailable (521)"],
+        [522, "Galaxy is temporarily unavailable (522)"],
+        [523, "Galaxy is temporarily unavailable (523)"],
+        [524, "Galaxy took too long to respond (524)"],
+        [418, "The request failed (418)"],
+    ])("names a %d without relying on the status text", async (status, message) => {
+        server.use(
+            http.delete(
+                "/api/histories/:history_id",
+                () => new Response("<html><body>nginx</body></html>", { status }),
+            ),
+        );
+
+        const { error } = await GalaxyApi().DELETE("/api/histories/{history_id}", {
+            params: { path: { history_id: "f2db41e1fa331b3e" } },
+        });
+
+        expect(errorMessageAsString(error)).toBe(message);
+    });
+
+    it("falls back to the status text for a status it has no wording for", async () => {
+        respondWith("<html><body>teapot</body></html>", 418);
+
+        const { error } = await fetchConfiguration();
+
+        expect(errorMessageAsString(error)).toBe("I'm a Teapot (418)");
+    });
+
     it("leaves a Galaxy API error untouched, whatever its content type says", async () => {
         respondWith(JSON.stringify({ err_msg: "Quota exceeded", err_code: 403002 }), 403, {
             ...FROM_GALAXY,
@@ -68,7 +109,7 @@ describe("errorResponseMiddleware", () => {
 
         const { error } = await fetchConfiguration();
 
-        expect(errorMessageAsString(error)).toBe("Internal Server Error (500)");
+        expect(errorMessageAsString(error)).toBe("An internal server error occurred (500)");
     });
 
     it("normalizes a Galaxy response that is not an API error", async () => {
@@ -79,7 +120,7 @@ describe("errorResponseMiddleware", () => {
 
         const { error } = await fetchConfiguration();
 
-        expect(errorMessageAsString(error)).toBe("Not Found (404)");
+        expect(errorMessageAsString(error)).toBe("The requested resource was not found (404)");
     });
 
     it("keeps the original headers but not the length of the body it replaced", async () => {

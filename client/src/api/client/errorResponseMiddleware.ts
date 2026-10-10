@@ -1,22 +1,12 @@
 import type { Middleware } from "openapi-fetch";
 
 import { REQUEST_ID_HEADER } from "@/api/staleCacheRetry";
+import { statusMessage } from "@/utils/simple-error";
 
 /** The error shape Galaxy's API returns. */
 interface NormalizedApiError {
     err_msg: string;
     err_code: number;
-}
-
-const GATEWAY_MESSAGES: Record<number, string> = {
-    502: "Galaxy is temporarily unavailable",
-    503: "Galaxy is temporarily unavailable",
-    504: "Galaxy took too long to respond",
-};
-
-function statusMessage(status: number, statusText: string): string {
-    const description = GATEWAY_MESSAGES[status] ?? statusText.trim();
-    return description ? `${description} (${status})` : `The request failed (${status})`;
 }
 
 function isGalaxyError(response: Response, body: string): boolean {
