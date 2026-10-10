@@ -740,9 +740,9 @@ steps:
 """)
         self.workflow_run_specify_inputs(inputs)
         workflow_run = self.components.workflow_run
-        workflow_run.simplified_number_list_input(label="columns", index=1).wait_for_and_send_keys("1")
-        workflow_run.simplified_number_list_add(label="columns").wait_for_and_click()
-        workflow_run.simplified_number_list_input(label="columns", index=2).wait_for_and_send_keys("2")
+        workflow_run.simplified_value_list_input(label="columns", index=1).wait_for_and_send_keys("1")
+        workflow_run.simplified_value_list_add(label="columns").wait_for_and_click()
+        workflow_run.simplified_value_list_input(label="columns", index=2).wait_for_and_send_keys("2")
         self.screenshot("workflow_run_multiple_integer_parameter")
         self.workflow_run_submit()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
@@ -753,6 +753,39 @@ steps:
             history_id, dataset_id=invocation["outputs"]["output"]["id"]
         )
         assert "col 1,2" in content, content
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_multiple_text_parameter(self):
+        history_id = self.current_history_id()
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  options:
+    type: [string]
+outputs:
+  output:
+    outputSource: multi_select/output
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex: options
+""")
+        workflow_run = self.components.workflow_run
+        workflow_run.simplified_value_list_input(label="options", index=1).wait_for_and_send_keys("--ex1")
+        workflow_run.simplified_value_list_add(label="options").wait_for_and_click()
+        workflow_run.simplified_value_list_input(label="options", index=2).wait_for_and_send_keys("ex2")
+        self.screenshot("workflow_run_multiple_text_parameter")
+        self.workflow_run_submit()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
+        invocation = self.workflow_populator.get_invocation(invocation_id)
+        assert invocation["input_step_parameters"]["options"]["parameter_value"] == ["--ex1", "ex2"]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=invocation["outputs"]["output"]["id"]
+        )
+        assert content.strip() == "--ex1,ex2", content
 
     @selenium_test
     @managed_history

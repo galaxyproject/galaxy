@@ -1354,7 +1354,11 @@ class InputParameterModule(WorkflowModule):
         # The default value field is shaped by the definition being edited (e.g. ``multiple``),
         # so recover that definition before validating against it.
         super().populate_state_from_tool_form(incoming, {})
-        return super().populate_state_from_tool_form(incoming, errors)
+        state = super().populate_state_from_tool_form(incoming, errors)
+        parameter_def = self._parse_state_into_dict()
+        if isinstance(parameter_def.get("default"), list) and not parameter_def.get("multiple"):
+            errors.setdefault("parameter_definition|optional|specify_default|default", "a single value is required")
+        return state
 
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
@@ -1649,11 +1653,14 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
+            if isinstance(default_value, list):
+                default_values = default_value
+            else:
+                default_values = [default_value] if default_value else []
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
-                    {"label": o[0], "value": o[1], "selected": bool(default_value and o[1] == default_value)}
-                    for o in static_options[0]
+                    {"label": o[0], "value": o[1], "selected": o[1] in default_values} for o in static_options[0]
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
@@ -1666,7 +1673,7 @@ class InputParameterModule(WorkflowModule):
                     {
                         "label": ", ".join(labels),
                         "value": value,
-                        "selected": bool(default_value and value == default_value),
+                        "selected": value in default_values,
                     }
                     for value, labels in collapsed_labels.items()
                 ]

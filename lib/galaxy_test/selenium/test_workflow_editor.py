@@ -460,6 +460,7 @@ steps:
         multiple_columns.input_terminal(name="col").wait_for_present()
         self.workflow_editor_connect("columns#output", "multiple_columns#col")
         self.assert_connected("columns#output", "multiple_columns#col")
+        self.screenshot("workflow_editor_multiple_integer_parameter_multiple_column_connection")
         self.assert_workflow_has_changes_and_save()
 
         workflow_id = self.workflow_populator.index_ids(search=name)[0]
@@ -490,9 +491,9 @@ steps: {}
             self.sleep_for(self.wait_types.UX_RENDER)
 
         default = "parameter_definition|optional|specify_default|default"
-        tool_form.parameter_number_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
-        tool_form.parameter_number_list_add(parameter=default).wait_for_and_click()
-        tool_form.parameter_number_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
+        tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
+        tool_form.parameter_value_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
         self.sleep_for(self.wait_types.UX_RENDER)
         tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
         self.screenshot("workflow_editor_multiple_integer_parameter_list_default")
@@ -510,13 +511,132 @@ steps: {}
         self.workflow_index_open_with_name(name)
         editor.node._(label="columns").wait_for_and_click()
         values = [
-            tool_form.parameter_number_list_input(parameter=default, index=index)
+            tool_form.parameter_value_list_input(parameter=default, index=index)
             .wait_for_visible()
             .get_attribute("value")
             for index in (1, 2)
         ]
         assert values == ["1", "2"], values
         tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+
+    @selenium_test
+    def test_multiple_integer_parameter_with_range(self):
+        name = self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  columns: integer
+steps: {}
+""")
+        editor = self.components.workflow_editor
+        tool_form = self.components.tool_form
+        editor.node._(label="columns").wait_for_and_click()
+        for parameter in [
+            "parameter_definition|multiple",
+            "parameter_definition|optional|specify_default|specify_default",
+        ]:
+            checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+            self.execute_script("arguments[0].click();", checkbox)
+            self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("1")
+        tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("5")
+
+        default = "parameter_definition|optional|specify_default|default"
+        tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("1")
+        tool_form.parameter_value_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("2")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+        self.screenshot("workflow_editor_multiple_integer_parameter_range_list_default")
+        self.save_after_node_form_changes()
+
+        workflow_id = self.workflow_populator.index_ids(search=name)[0]
+        steps = {
+            step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
+        }
+        tool_state = json.loads(steps["columns"]["tool_state"])
+        assert tool_state["multiple"] is True
+        in_range = [v for v in tool_state["validators"] if v["type"] == "in_range"]
+        assert [(str(v["min"]), str(v["max"])) for v in in_range] == [("1", "5")], tool_state
+        assert tool_state["default"] == [1, 2]
+
+        self.workflow_run_with_name(name)
+        workflow_run = self.components.workflow_run
+        values = [
+            workflow_run.simplified_value_list_input(label="columns", index=index)
+            .wait_for_visible()
+            .get_attribute("value")
+            for index in (1, 2)
+        ]
+        assert values == ["1", "2"], values
+        self.screenshot("workflow_run_multiple_integer_parameter_range")
+
+    @selenium_test
+    def test_multiple_text_parameter_connections(self):
+        name = self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  options: string
+steps:
+  multi_select:
+    tool_id: multi_select
+  single_text:
+    tool_id: param_text_option
+    in:
+      text_param: options
+""")
+        editor = self.components.workflow_editor
+        self.assert_connected("options#output", "single_text#text_param")
+
+        tool_form = self.components.tool_form
+        editor.node._(label="options").wait_for_and_click()
+        for parameter in [
+            "parameter_definition|multiple",
+            "parameter_definition|optional|specify_default|specify_default",
+        ]:
+            checkbox = tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+            self.execute_script("arguments[0].click();", checkbox)
+            self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_connection_invalid("options#output", "single_text#text_param")
+        self.screenshot("workflow_editor_multiple_text_parameter_invalid_connection")
+
+        default = "parameter_definition|optional|specify_default|default"
+        tool_form.parameter_value_list_input(parameter=default, index=1).wait_for_and_send_keys("--ex1,ex2")
+        tool_form.parameter_value_list_add(parameter=default).wait_for_and_click()
+        tool_form.parameter_value_list_input(parameter=default, index=2).wait_for_and_send_keys("--ex3")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        tool_form.parameter_error(parameter=default).assert_absent_or_hidden()
+        self.screenshot("workflow_editor_multiple_text_parameter_list_default")
+
+        self.workflow_editor_destroy_connection("single_text#text_param")
+        multi_select = editor.node._(label="multi_select")
+        multi_select.wait_for_and_click()
+        editor.connect_icon(name="select_ex").wait_for_and_click()
+        multi_select.input_terminal(name="select_ex").wait_for_present()
+        self.workflow_editor_connect("options#output", "multi_select#select_ex")
+        self.assert_connected("options#output", "multi_select#select_ex")
+        self.screenshot("workflow_editor_multiple_text_parameter_multi_select_connection")
+        self.assert_workflow_has_changes_and_save()
+
+        workflow_id = self.workflow_populator.index_ids(search=name)[0]
+        steps = {
+            step["label"]: step for step in self.workflow_populator.download_workflow(workflow_id)["steps"].values()
+        }
+        tool_state = json.loads(steps["options"]["tool_state"])
+        assert tool_state["multiple"] is True
+        assert tool_state["default"] == ["--ex1,ex2", "--ex3"]
+        assert steps["multi_select"]["input_connections"]["select_ex"]["id"] == steps["options"]["id"]
+        assert "text_param" not in steps["single_text"]["input_connections"]
+
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        editor.node._(label="options").wait_for_and_click()
+        values = [
+            tool_form.parameter_value_list_input(parameter=default, index=index)
+            .wait_for_visible()
+            .get_attribute("value")
+            for index in (1, 2)
+        ]
+        assert values == ["--ex1,ex2", "--ex3"], values
 
     @selenium_test
     def test_non_data_map_over_carried_through(self):

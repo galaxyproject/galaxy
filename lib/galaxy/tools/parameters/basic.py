@@ -431,6 +431,24 @@ class TextToolParameter(SimpleTextToolParameter):
     _name
     >>> sorted(p.to_dict(trans).items())
     [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('multiple', False), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
+    >>> p = TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "validators": [{"type": "regex", "expression": "^[a-z]+$"}]})
+    >>> p.to_python("a, b", None)
+    ['a, b']
+    >>> p.validate(["ab", "cd"])
+    >>> with assert_throws_param_value_error("Parameter '_name': Value 'C' does not match regular expression '^[a-z]+$'"):
+    ...     p.validate(["ab", "C"])
+    >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
+    ...     p.validate([])
+    >>> with assert_throws_param_value_error("Parameter '_name': values cannot contain newlines; pass a list"):
+    ...     p.validate("ab\\ncd")
+    >>> with assert_throws_param_value_error("Parameter '_name': entries cannot be empty"):
+    ...     p.validate(["ab", ""])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
+    ...     p.validate([["ab"]])
+    >>> p.from_json("ab", trans)
+    ['ab']
+    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": "ab"}).get_initial_value(None, {})
+    ['ab']
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -448,10 +466,58 @@ class TextToolParameter(SimpleTextToolParameter):
             self.optionality_inferred = False
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
-        # Only workflow parameters (which have no tool) accept multiple values, entered one per line.
+        # Only workflow parameters (which have no tool) accept multiple values.
         self.multiple = tool is None and string_as_bool(input_source.get_bool("multiple", False))
 
+    def _is_multiple_value(self, value) -> bool:
+        return self.multiple and value is not None and not contains_workflow_parameter(value)
+
+    def _multiple_values(self, value) -> list:
+        if value == "":
+            return []
+        return value if isinstance(value, list) else [value]
+
+    def _multiple_to_python(self, value) -> list:
+        values = self._multiple_values(value)
+        if any(v is None or v == "" for v in values):
+            raise ParameterValueError("entries cannot be empty", self.name, value)
+        if any(not isinstance(v, (str, int, float)) for v in values):
+            raise ParameterValueError("entries must be text", self.name, value)
+        values = [str(v) for v in values]
+        if any("\n" in v for v in values):
+            raise ParameterValueError("values cannot contain newlines; pass a list", self.name, value)
+        return values
+
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
+        return super().from_json(value, trans, other_values)
+
+    def to_python(self, value, app):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
+        return super().to_python(value, app)
+
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
+        if self.multiple and self.value is not None:
+            return self._multiple_values(self.value)
+        return super().get_initial_value(trans, other_values)
+
+    def to_json(self, value, app, use_security):
+        if self.multiple and isinstance(value, list):
+            return value
+        return super().to_json(value, app, use_security)
+
     def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
+        if not self._is_multiple_value(value):
+            return self._validate_single(value, trans)
+        values = self._multiple_to_python(value)
+        if not values and not self.optional:
+            raise ParameterValueError("at least one value is required", self.name, value)
+        for v in values:
+            self._validate_single(v, trans)
+
+    def _validate_single(self, value, trans: "ProvidesHistoryContext | None"):
         search = self.type == "text"
         if not (
             trans
@@ -531,29 +597,13 @@ class IntegerToolParameter(TextToolParameter):
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
     def _to_int_values(self, value) -> list[int]:
-        if value == "":
-            return []
-        if not isinstance(value, list):
-            value = [value]
-        return [int(v) for v in value]
-
-    def _is_multiple_value(self, value) -> bool:
-        return self.multiple and value is not None and not contains_workflow_parameter(value)
+        return [int(v) for v in self._multiple_values(value)]
 
     def _multiple_to_python(self, value) -> list[int]:
         try:
             return self._to_int_values(value)
         except (TypeError, ValueError):
             raise ParameterValueError("an integer is required", self.name, value) from None
-
-    def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
-        if not self._is_multiple_value(value):
-            return super().validate(value, trans)
-        values = self._multiple_to_python(value)
-        if not values and not self.optional:
-            raise ParameterValueError("at least one integer is required", self.name, value)
-        for v in values:
-            super().validate(v, trans)
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
@@ -585,11 +635,6 @@ class IntegerToolParameter(TextToolParameter):
                 return None
             raise ParameterValueError("an integer is required", self.name, value)
 
-    def to_json(self, value, app, use_security):
-        if self.multiple and isinstance(value, list):
-            return value
-        return super().to_json(value, app, use_security)
-
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.value is not None and self.value != "":
             if self.multiple:
@@ -613,6 +658,13 @@ class FloatToolParameter(TextToolParameter):
     >>> assert type(p.from_json("36.1", trans)) == float
     >>> with assert_throws_param_value_error("Parameter '_name': an integer or workflow parameter is required"):
     ...     p.from_json("_string", trans)
+    >>> p = FloatToolParameter(None, {"name": "_name", "type": "float", "multiple": True, "max": 1})
+    >>> p.to_python(["0.5", 1], None)
+    [0.5, 1.0]
+    >>> with assert_throws_param_value_error("Parameter '_name': a float is required"):
+    ...     p.validate([0.5, "half"])
+    >>> FloatToolParameter(None, {"name": "_name", "type": "float", "multiple": True, "value": [0.5, 1]}).get_initial_value(None, {})
+    [0.5, 1.0]
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
@@ -623,8 +675,8 @@ class FloatToolParameter(TextToolParameter):
         self.max = input_source.get("max")
         if self.value:
             try:
-                float(self.value)
-            except ValueError:
+                self._multiple_to_python(self.value) if self.multiple else float(self.value)
+            except (TypeError, ValueError):
                 raise ParameterValueError("the attribute 'value' must be a real number", self.name, self.value)
         if self.min:
             try:
@@ -639,8 +691,16 @@ class FloatToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
+    def _multiple_to_python(self, value) -> list[float]:
+        try:
+            return [float(v) for v in self._multiple_values(value)]
+        except (TypeError, ValueError):
+            raise ParameterValueError("a float is required", self.name, value) from None
+
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return float(value)
         except (TypeError, ValueError):
@@ -656,6 +716,8 @@ class FloatToolParameter(TextToolParameter):
                 )
 
     def to_python(self, value, app):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return float(value)
         except (TypeError, ValueError):
@@ -669,7 +731,7 @@ class FloatToolParameter(TextToolParameter):
         if self.value is None:
             return None
         try:
-            return float(self.value)
+            return self._multiple_to_python(self.value) if self.multiple else float(self.value)
         except Exception:
             return None
 
