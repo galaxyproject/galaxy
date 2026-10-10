@@ -1197,7 +1197,7 @@ def test_foreign_resolve_waits_for_a_native_install_in_progress(fake_conda: Fake
     env_name = "__samtools@1.9"
     holds_lock = threading.Event()
     finish_install = threading.Event()
-    result: List[Any] = []
+    result: list[Any] = []
 
     def native_install() -> None:
         with context.env_lock(env_name) as locked:

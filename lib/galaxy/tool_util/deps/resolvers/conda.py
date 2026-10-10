@@ -502,8 +502,8 @@ class CondaDependencyResolver(
         )
 
     def _foreign_environment(
-        self, platform: str, env_names: List[str], new_env_name: str, conda_targets: List[CondaTarget], kwds
-    ) -> Optional[str]:
+        self, platform: str, env_names: list[str], new_env_name: str, conda_targets: list[CondaTarget], kwds
+    ) -> str | None:
         """Name of the first of ``env_names`` that is usable on the foreign ``platform``, None if there is none.
 
         A missing environment is created on demand as ``new_env_name`` when auto install is on and the caller does not
