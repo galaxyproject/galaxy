@@ -397,6 +397,20 @@ class DependencyManager:
                     result.append(platform)
         return result
 
+    def platforms_with_failed_install(self, requirements: ToolRequirements) -> List[str]:
+        """Configured conda platforms with a fresh failed-install record for the requirements.
+
+        Only filesystem checks are made. Empty if no conda platforms are configured.
+        """
+        result: List[str] = []
+        for resolver in self.dependency_resolvers:
+            if getattr(resolver, "resolver_type", None) != "conda":
+                continue
+            for platform in resolver.platforms_with_failed_install(requirements):
+                if platform not in result:
+                    result.append(platform)
+        return result
+
     def start_background_tasks(self):
         """Start the background work of the resolvers that have some (called by job handler processes)."""
         for resolver in self.dependency_resolvers:
@@ -556,6 +570,9 @@ class NullDependencyManager(DependencyManager):
         return []
 
     def platforms_for_requirements(self, requirements):
+        return []
+
+    def platforms_with_failed_install(self, requirements):
         return []
 
     def configured_conda_platforms(self):

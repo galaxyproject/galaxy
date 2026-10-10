@@ -28,6 +28,8 @@ def platform_destination(
     A tool without package requirements gets the first destination.
     If nothing is installed for the tool on any platform and the conda resolver has auto_install enabled, the first
     destination with the native platform is returned, so that the job-time install creates the environments.
+    When that platform has a recent failed install of the tool (a package that does not exist for it), the first
+    destination of another configured platform without such a failure is returned instead.
     Every listed destination needs a ``platform`` parameter (or an entry in the mapping).
 
     If no destination matches, ``default`` is returned, or a
@@ -60,8 +62,10 @@ def platform_destination(
     if not available and configured and dependency_manager.conda_auto_install_enabled():
         # Nothing is installed anywhere yet. The job-time auto-install on a native destination creates the
         # environments for all platforms, so later jobs of the tool route normally.
+        failed = dependency_manager.platforms_with_failed_install(requirements.packages)
+        allowed = [p for p in configured if p not in failed] if configured[0] in failed else configured[:1]
         for destination_id, platform in platform_of.items():
-            if platform == configured[0]:
+            if platform in allowed:
                 return destination_id
     if default is not None:
         return default

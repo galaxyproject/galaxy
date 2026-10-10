@@ -24,6 +24,7 @@ from galaxy.tool_util.deps.conda_util import (
     CondaTarget,
     install_conda_target,
     install_conda_targets,
+    installed_conda_targets,
     parse_platforms,
     PLATFORM_OK_MARKER,
 )
@@ -69,6 +70,11 @@ if argv[:1] == ["create"]:
         prefix = os.path.join(os.path.dirname(here), "envs", argv[argv.index("--name") + 1])
     fail = os.path.join(here, "fail_subdirs")
     subdir = os.environ.get("CONDA_SUBDIR")
+    if not subdir and os.path.exists(os.path.join(here, "fail_native")):
+        if os.path.exists(os.path.join(here, "partial_on_fail")):
+            os.makedirs(prefix, exist_ok=True)
+        print("fake solver error for the native platform")
+        sys.exit(1)
     if subdir and os.path.exists(fail) and subdir in open(fail).read().split():
         if os.path.exists(os.path.join(here, "partial_on_fail")):
             os.makedirs(prefix, exist_ok=True)
@@ -115,6 +121,14 @@ class FakeConda:
     def fail_for(self, *subdirs: str) -> None:
         with open(self.fail_path, "w") as fh:
             fh.write("\n".join(subdirs))
+
+    def fail_native(self, fail: bool = True) -> None:
+        """Native creates (those without CONDA_SUBDIR) fail, as for a package without a build for the head's platform."""
+        path = os.path.join(self.bin_dir, "fail_native")
+        if fail:
+            open(path, "w").close()
+        elif os.path.exists(path):
+            os.remove(path)
 
     def leave_partial_dirs_on_failure(self) -> None:
         open(os.path.join(self.bin_dir, "partial_on_fail"), "w").close()
@@ -1228,3 +1242,167 @@ def test_foreign_resolve_waits_for_a_native_install_in_progress(fake_conda: Fake
     assert result[0].environment_path == foreign_env(fake_conda, "linux-aarch64", env_name)
     # the waiting request created nothing on its own: one native and one foreign create in total
     assert len(fake_conda.creates()) == n_creates + 2
+
+
+def native_failure_path(fake: FakeConda, env_name: str) -> str:
+    return os.path.join(fake.prefix, "envs", env_name + ".failed")
+
+
+def test_native_failure_does_not_stop_the_foreign_creates(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    fake_conda.fail_native()
+    fake_conda.fail_for("osx-arm64")
+    env_name = "__blat@36"
+    target = CondaTarget("blat", version="36")
+    # a plain native request keeps the native return code
+    assert install_conda_target(target, context) != 0
+    assert not context.has_env(env_name)
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", env_name))
+    assert not os.path.exists(foreign_marker(fake_conda, "osx-arm64", env_name))
+    assert os.path.isfile(native_failure_path(fake_conda, env_name))
+    assert os.path.isfile(context.platform_failure_path("osx-arm64", env_name))
+    assert context.platform_failure_path("linux-64", env_name) == native_failure_path(fake_conda, env_name)
+    assert context.platform_failure_is_fresh("linux-64", env_name)
+    assert not context.platform_failure_is_fresh("linux-aarch64", env_name)
+    with open(native_failure_path(fake_conda, env_name)) as fh:
+        assert "fake solver error for the native platform" in fh.read()
+    # the failure record is not an environment
+    assert [t.package for t in installed_conda_targets(context)] == []
+
+
+def test_install_counts_as_success_when_the_requested_platform_exists(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    fake_conda.fail_native()
+    fake_conda.fail_for("osx-arm64")
+    target = CondaTarget("blat", version="36")
+    assert install_conda_targets([target], context, env_name="__blat@36", platform="linux-aarch64") == 0
+    assert install_conda_targets([target], context, env_name="__blat@36", platform="osx-arm64") != 0
+
+
+def test_successful_native_create_clears_the_native_failure_record(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    fake_conda.fail_native()
+    assert install_conda_target(CondaTarget("blat", version="36"), context) != 0
+    assert os.path.isfile(native_failure_path(fake_conda, "__blat@36"))
+    fake_conda.fail_native(False)
+    assert install_conda_target(CondaTarget("blat", version="36"), context) == 0
+    assert not os.path.exists(native_failure_path(fake_conda, "__blat@36"))
+    assert context.has_env("__blat@36")
+
+
+def test_repeated_native_failure_leaves_recently_failed_foreign_platforms_alone(
+    fake_conda: FakeConda, tmp_path
+) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    fake_conda.fail_native()
+    fake_conda.fail_for("osx-arm64")
+    target = CondaTarget("blat", version="36")
+    install_conda_target(target, context)
+    n_creates = len(fake_conda.creates())
+    assert install_conda_target(target, context) != 0
+    # only the native create is repeated (with and without strict channel priority), linux-aarch64 exists and
+    # osx-arm64 failed recently
+    new = fake_conda.creates()[n_creates:]
+    assert len(new) == 2 and all("--name" in c["argv"] for c in new)
+
+
+def test_native_failure_leaves_no_partial_directory(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    fake_conda.fail_native()
+    fake_conda.leave_partial_dirs_on_failure()
+    assert install_conda_target(CondaTarget("blat", version="36"), resolver.conda_context) != 0
+    assert not resolver.conda_context.has_env("__blat@36")
+
+
+def test_routing_helpers_after_a_native_failure(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    dm = resolver.dependency_manager
+    fake_conda.fail_native()
+    fake_conda.fail_for("osx-arm64")
+    install_conda_target(CondaTarget("blat", version="36"), resolver.conda_context)
+    requirements = ToolRequirements([req("blat", "36")])
+    n_calls = len(fake_conda.calls())
+    assert dm.platforms_for_requirements(requirements) == ["linux-aarch64"]
+    assert dm.platforms_with_failed_install(requirements) == ["linux-64", "osx-arm64"]
+    assert dm.platforms_with_failed_install(ToolRequirements([req("other", "1")])) == []
+    assert len(fake_conda.calls()) == n_calls
+
+
+def test_failed_install_listing_for_merged_environments(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    requirements = ToolRequirements([req("a"), req("b")])
+    targets = [CondaTarget("a", version="1.0"), CondaTarget("b", version="1.0")]
+    merged = resolver.merged_environment_name(targets)
+    context.record_platform_failure("linux-64", merged, "error")
+    assert resolver.platforms_with_failed_install(requirements) == ["linux-64"]
+    assert resolver.platforms_with_failed_install(ToolRequirements([req("a")])) == []
+
+
+def test_backfill_creates_foreign_environments_for_a_failed_native_one(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    context = resolver.conda_context
+    os.makedirs(os.path.join(fake_conda.prefix, "envs"), exist_ok=True)
+    for name in ("__blat@36", "mulled-v1-abc", "__nofailure@1"):
+        assert not context.has_env(name)
+    context.record_platform_failure("linux-64", "__blat@36", "no build")
+    context.record_platform_failure("linux-64", "mulled-v1-abc", "no build")
+    n_creates = len(fake_conda.creates())
+    counts = context.backfill_platform_environments()
+    assert counts["environments"] == 2 and counts["created"] == 2 and counts["without_specs"] == 1
+    new = fake_conda.creates()[n_creates:]
+    assert [c["argv"][-1] for c in new] == ["blat=36", "blat=36"]
+    for subdir in ("linux-aarch64", "osx-arm64"):
+        assert os.path.exists(foreign_marker(fake_conda, subdir, "__blat@36"))
+        assert not os.path.exists(foreign_marker(fake_conda, subdir, "mulled-v1-abc"))
+    assert not context.has_env("__blat@36")
+    assert os.path.isfile(native_failure_path(fake_conda, "__blat@36"))
+    # the second run finds them present
+    n_creates = len(fake_conda.creates())
+    counts = context.backfill_platform_environments()
+    assert len(fake_conda.creates()) == n_creates
+    assert counts["present"] == 2
+
+
+def test_foreign_resolve_returns_the_foreign_environment_after_a_native_failure(
+    fake_conda: FakeConda, tmp_path
+) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    context = resolver.conda_context
+    fake_conda.fail_native()
+    dep = resolver.resolve(req("blat", "36"), platform="linux-aarch64")
+    assert not isinstance(dep, NullDependency)
+    assert dep.environment_path == foreign_env(fake_conda, "linux-aarch64", "__blat@36")
+    assert not context.has_env("__blat@36")
+    assert context.platform_failure_is_fresh("linux-64", "__blat@36")
+    # a second tool with the merged environment
+    deps = resolver.resolve_all(ToolRequirements([req("a"), req("b")]), platform="linux-aarch64")
+    assert len(deps) == 2
+    # the native request fails as before and the native create is attempted again
+    n_creates = len(fake_conda.creates())
+    assert isinstance(resolver.resolve(req("blat", "36")), NullDependency)
+    new = fake_conda.creates()[n_creates:]
+    assert len(new) == 2 and all("--name" in c["argv"] for c in new)
+
+
+def test_foreign_request_skips_a_known_native_failure(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    context = resolver.conda_context
+    fake_conda.fail_native()
+    context.record_platform_failure("linux-64", "__blat@36", "no build")
+    n_creates = len(fake_conda.creates())
+    assert not isinstance(resolver.resolve(req("blat", "36"), platform="linux-aarch64"), NullDependency)
+    new = fake_conda.creates()[n_creates:]
+    assert [c["CONDA_SUBDIR"] for c in new] == ["linux-aarch64"]
+
+
+def test_uninstall_removes_the_native_failure_record(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    context = resolver.conda_context
+    context.record_platform_failure("linux-64", "__blat@36", "no build")
+    context.remove_platform_environments("__blat@36")
+    assert not os.path.exists(native_failure_path(fake_conda, "__blat@36"))

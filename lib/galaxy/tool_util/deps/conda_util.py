@@ -884,6 +884,11 @@ class CondaContext(installable.InstallableContext):
         for subdir in self.foreign_platforms:
             shutil.rmtree(self.platform_env_path(subdir, env_name), ignore_errors=True)
             self.clear_platform_failure(subdir, env_name)
+        if self.platforms:
+            try:
+                self.clear_platform_failure(self.native_platform, env_name)
+            except Exception:
+                pass
 
     def native_env_specs(self, env_name: str) -> list[str]:
         """Package specs the native environment ``env_name`` was created from.
@@ -917,7 +922,9 @@ class CondaContext(installable.InstallableContext):
     def backfill_platform_environments(self, allow_local: bool = True) -> dict[str, int]:
         """Create the missing foreign copies of the native environments.
 
-        Only environments with a name Galaxy gives them are considered. A platform with a failure
+        Only environments with a name Galaxy gives them are considered. An environment whose native
+        create failed (it has a failure record but no directory) is handled like an existing one, with
+        the specs derived from its name. A platform with a failure
         record younger than ``platforms_retry_days`` is left alone. Each environment is handled
         under its :meth:`env_lock`. Returns counts of what happened.
         """
@@ -927,9 +934,15 @@ class CondaContext(installable.InstallableContext):
             return counts
         try:
             names = sorted(
-                n
-                for n in os.listdir(self.envs_path)
-                if n.startswith(GALAXY_ENV_NAME_PREFIXES) and os.path.isdir(self.env_path(n))
+                {
+                    n[: -len(PLATFORM_FAILED_SUFFIX)] if n.endswith(PLATFORM_FAILED_SUFFIX) else n
+                    for n in os.listdir(self.envs_path)
+                    if n.startswith(GALAXY_ENV_NAME_PREFIXES)
+                    and (
+                        os.path.isdir(self.env_path(n))
+                        or (n.endswith(PLATFORM_FAILED_SUFFIX) and os.path.isfile(self.env_path(n)))
+                    )
+                }
             )
         except OSError:
             return counts
@@ -940,7 +953,9 @@ class CondaContext(installable.InstallableContext):
             counts["environments"] += 1
             try:
                 with self.env_lock(env_name) as locked:
-                    if not locked or not self.has_env(env_name):
+                    if not locked:
+                        continue
+                    if not self.has_env(env_name) and not self._native_failure_recorded(env_name):
                         continue
                     missing = []
                     for subdir in foreign:
@@ -975,6 +990,13 @@ class CondaContext(installable.InstallableContext):
             counts["without_specs"],
         )
         return counts
+
+    def _native_failure_recorded(self, env_name: str) -> bool:
+        """True if a failed native create left a failure record (of any age) for ``env_name``."""
+        try:
+            return os.path.isfile(self.platform_failure_path(self.native_platform, env_name))
+        except Exception:
+            return False
 
     def has_env(self, env_name: str) -> bool:
         env_path = self.env_path(env_name)
@@ -1012,6 +1034,8 @@ def installed_conda_targets(conda_context: CondaContext) -> Iterator["CondaTarge
     envs_path = conda_context.envs_path
     dir_contents = os.listdir(envs_path) if os.path.exists(envs_path) else []
     for name in dir_contents:
+        if name.endswith(PLATFORM_FAILED_SUFFIX):
+            continue  # failure record of a native create, not an environment
         versioned_match = VERSIONED_ENV_DIR_NAME.match(name)
         if versioned_match:
             yield CondaTarget(versioned_match.group(1), version=versioned_match.group(2))
@@ -1148,23 +1172,78 @@ def _create_on_all_platforms(
     native_create_args: list[str],
     specs: list[str],
     allow_local: bool = True,
+    platform: Optional[str] = None,
 ) -> int:
-    """Create the named environment natively, then on each configured foreign platform.
+    """Create the named environment on the native platform and on each configured foreign platform.
 
-    Without configured platforms this is the plain native create. Otherwise both steps run under the
+    Without configured platforms this is the plain native create. Otherwise all creates run under the
     lock of the environment, so that concurrent installs do not create or delete the same directories.
-    Only the native exit code is returned, foreign failures are logged and recorded.
+    Every platform is created independently: a failed native create does not stop the foreign creates.
+    Successes get the ok marker, failures a failure record next to the environment directory.
+
+    The return code is the native exit code for a request without ``platform``. For a request for the
+    ``platform`` it is 0 if the environment exists for that platform afterwards.
     """
+
+    def result(native_ret: int) -> int:
+        if not platform:
+            return native_ret
+        if conda_context.platform_has_env(platform, env_name):
+            return 0
+        return native_ret or 1
+
     if not conda_context.platforms:
+        return conda_context.exec_create(native_create_args, allow_local=allow_local)
+    try:
+        native = conda_context.native_platform
+    except Exception:
+        # The platforms are ignored when the native one is unknown.
         return conda_context.exec_create(native_create_args, allow_local=allow_local)
     with conda_context.env_lock(env_name) as locked:
         if not locked:
             # Native install as before, the backfill adds the foreign copies later.
-            return conda_context.exec_create(native_create_args, allow_local=allow_local)
-        ret = 0 if conda_context.has_env(env_name) else conda_context.exec_create(native_create_args, allow_local)
-        if ret == 0:
-            conda_context.create_platform_environments(env_name, specs, allow_local=allow_local)
-    return ret
+            return result(conda_context.exec_create(native_create_args, allow_local=allow_local))
+        known_native_failure = False
+        if conda_context.has_env(env_name):
+            ret = 0
+        elif (
+            platform
+            and not conda_context.is_native_platform(platform)
+            and (conda_context.platform_failure_is_fresh(native, env_name))
+        ):
+            # Known to fail natively and not needed for the requested platform.
+            ret = 1
+            known_native_failure = True
+        else:
+            known_native_failure = conda_context.platform_failure_is_fresh(native, env_name)
+            existed_before = os.path.exists(conda_context.env_path(env_name))
+            try:
+                with tempfile.NamedTemporaryFile("r", suffix=".log") as out:
+                    ret = conda_context.exec_create(native_create_args, allow_local, stdout_path=out.name)
+                    output = out.read()
+            except Exception:
+                log.warning("Failed to create conda environment %s natively", env_name, exc_info=True)
+                ret, output = 1, "exception while running conda, see the Galaxy log"
+            if ret == 0:
+                conda_context.clear_platform_failure(native, env_name)
+            else:
+                log.warning(
+                    "Could not create conda environment %s for platform %s (exit code %s), "
+                    "creating it for the other configured platforms\n%s",
+                    env_name,
+                    native,
+                    ret,
+                    output,
+                )
+                if not existed_before:
+                    shutil.rmtree(conda_context.env_path(env_name), ignore_errors=True)
+                conda_context.record_platform_failure(native, env_name, output)
+        foreign = conda_context.foreign_platforms
+        if known_native_failure:
+            # The same failing install repeated, leave the foreign platforms that failed recently alone.
+            foreign = [p for p in foreign if not conda_context.platform_failure_is_fresh(p, env_name)]
+        conda_context.create_platform_environments(env_name, specs, allow_local=allow_local, platforms=foreign)
+        return result(ret)
 
 
 def install_conda_targets(
@@ -1172,9 +1251,13 @@ def install_conda_targets(
     conda_context: CondaContext,
     env_name: str | None = None,
     allow_local: bool = True,
+    platform: Optional[str] = None,
 ) -> int:
     """
     Return the process exit code (i.e. 0 in case of success).
+
+    With ``env_name`` and ``platform`` the install counts as successful if the environment exists for
+    that platform afterwards, whatever happened on the other platforms.
     """
     if env_name is not None:
         create_args = [
@@ -1183,7 +1266,7 @@ def install_conda_targets(
         ]
         specs = [conda_target.package_specifier for conda_target in conda_targets]
         create_args.extend(specs)
-        return _create_on_all_platforms(conda_context, env_name, create_args, specs, allow_local)
+        return _create_on_all_platforms(conda_context, env_name, create_args, specs, allow_local, platform)
     else:
         return conda_context.exec_install([t.package_specifier for t in conda_targets], allow_local=allow_local)
 

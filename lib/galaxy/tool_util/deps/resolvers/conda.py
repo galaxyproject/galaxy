@@ -41,6 +41,7 @@ from ..conda_util import (
     is_conda_target_installed,
     LOCKS_DIRECTORY_NAME,
     parse_platforms,
+    PLATFORM_FAILED_SUFFIX,
     USE_PATH_EXEC_DEFAULT,
 )
 
@@ -523,8 +524,11 @@ class CondaDependencyResolver(
             log.debug("Not retrying the recently failed conda environment %s for platform %s", env_name, platform)
             return None
         log.debug("Installing conda environment %s for platform %s on demand", env_name, platform)
-        if install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env_name) != 0:
-            cleanup_failed_install_of_environment(env_name, conda_context=self.conda_context)
+        # Success means the environment exists for ``platform``, the native create may have failed.
+        if (
+            install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env_name, platform=platform)
+            != 0
+        ):
             return None
         return env_name if self.conda_context.platform_has_env(platform, env_name) else None
 
@@ -554,12 +558,7 @@ class CondaDependencyResolver(
         configured = self.conda_context.configured_platforms
         if not configured:
             return configured
-        targets: list[CondaTarget] = []
-        for requirement in requirements:
-            if requirement.type != "package":
-                continue
-            expanded = self._expand_requirement(requirement)
-            targets.append(CondaTarget(expanded.name, version=None if self.versionless else expanded.version))
+        targets = self._targets_of(requirements)
         if not targets:
             return configured
         result = []
@@ -567,6 +566,36 @@ class CondaDependencyResolver(
             if self._platform_has_targets(platform, targets):
                 result.append(platform)
         return result
+
+    def platforms_with_failed_install(self, requirements: Iterable[ToolRequirement]) -> list[str]:
+        """Configured platforms with a fresh failure record for any environment of the package requirements.
+
+        Only the filesystem is consulted. A platform that has all the environments is not listed.
+        """
+        if self.disabled:
+            return []
+        configured = self.conda_context.configured_platforms
+        targets = self._targets_of(requirements)
+        if not configured or not targets:
+            return []
+        names = {t.install_environment for t in targets} | {t.capitalized_install_environment for t in targets}
+        if len(targets) > 1:
+            names |= {self.merged_environment_name(targets, c) for c in (True, False)}
+        return [
+            platform
+            for platform in configured
+            if not self._platform_has_targets(platform, targets)
+            and any(self.conda_context.platform_failure_is_fresh(platform, name) for name in names)
+        ]
+
+    def _targets_of(self, requirements: Iterable[ToolRequirement]) -> list[CondaTarget]:
+        targets: list[CondaTarget] = []
+        for requirement in requirements:
+            if requirement.type != "package":
+                continue
+            expanded = self._expand_requirement(requirement)
+            targets.append(CondaTarget(expanded.name, version=None if self.versionless else expanded.version))
+        return targets
 
     def _platform_has_targets(self, platform: str, targets: list[CondaTarget]) -> bool:
         if len(targets) > 1:
@@ -601,6 +630,7 @@ class CondaDependencyResolver(
         )
         # never delete Galaxy's conda env
         used_paths.add("_galaxy_")
+        dir_contents = {p for p in dir_contents if not p.endswith(PLATFORM_FAILED_SUFFIX)}
         unused_paths = dir_contents.difference(used_paths)  # New set with paths in dir_contents but not in used_paths
         unused_paths = [os.path.join(self.conda_context.envs_path, p) for p in unused_paths]
         return unused_paths

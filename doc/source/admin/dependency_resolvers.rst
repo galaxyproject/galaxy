@@ -312,20 +312,26 @@ or per resolver:
 The platform Galaxy runs on is always included and keeps the layout of a single-platform installation:
 ``<conda_prefix>/envs/<environment name>``. Each foreign platform has its own Conda base at
 ``<conda_prefix>/platforms/<platform>/`` with the environments in
-``<conda_prefix>/platforms/<platform>/envs/<environment name>``. Whenever Galaxy creates an environment for a requirement
-set, it creates the same environment for every foreign platform with ``CONDA_SUBDIR`` set to that platform and
-records each success in a marker file. An environment that cannot be created for a foreign platform is logged, and the
-native installation completes normally. The native and the foreign creates of one environment run under a POSIX file
-lock on ``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs of the same requirement set wait
-for each other. The operating system releases the lock when the holding process dies, so a killed process leaves no
-stale lock behind, and the lock file stays in place. A foreign copy that already exists is not created again. A
-foreign environment counts as installed once its marker is written and the Conda base of its platform exists.
+``<conda_prefix>/platforms/<platform>/envs/<environment name>``. Whenever Galaxy installs an environment for a
+requirement set, it installs it independently for every configured platform: a native ``conda create`` and one
+``conda create --platform`` with ``CONDA_SUBDIR`` set per foreign platform. A success on a foreign platform is recorded in
+a marker file. A create that fails is logged and recorded in a ``.failed`` file next to the environment directory
+(``<conda_prefix>/envs/<environment name>.failed`` for the native platform), and the other platforms are created
+regardless. A package that has no build for the platform of the head therefore still gets its environments on the
+platforms that have it. The first job of such a tool fails on the native destination, because Galaxy installs at job time
+on the destination it already chose; later jobs route to a platform that has the environment. The creates of one
+environment run under a POSIX file lock on ``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs
+of the same requirement set wait for each other. The operating system releases the lock when the holding process dies, so
+a killed process leaves no stale lock behind, and the lock file stays in place. An environment that already exists for a
+platform is not created again. A foreign environment counts as installed once its marker is written and the Conda base of
+its platform exists.
 
 With ``auto_install`` on, a request for a foreign platform whose environment is missing creates the environment on
-demand. The request takes the lock of the environment, so it waits for a native install of the same requirement set that
-is in progress, finds the native environment present and creates only the missing foreign copy. A Pulsar with a
-platform per manager relies on this, because its first job on an arm manager can arrive while the first job on an x86
-manager is still installing. A request does not retry a foreign create whose ``.failed`` file is younger than
+demand. The request takes the lock of the environment, so it waits for an install of the same requirement set that is in
+progress and creates only the platforms that are still missing. The request succeeds when the environment of the
+requested platform exists afterwards, whatever happened on the other platforms. With Pulsar-side resolution the platform
+of the manager is installed on demand in this way; a Pulsar with a platform per manager relies on it, because its first
+job on an arm manager can arrive while the first job on an x86 manager is still installing. A request does not retry a foreign create whose ``.failed`` file is younger than
 ``platforms_retry_days`` and resolves to nothing instead. Without ``auto_install`` a missing foreign environment
 resolves to nothing.
 
@@ -371,7 +377,11 @@ A foreign create that fails leaves ``<conda_prefix>/platforms/<platform>/envs/<e
 timestamp and the tail of the conda output. The backfill does not try that environment and platform again until the
 file is ``platforms_retry_days`` old (global option ``conda_platforms_retry_days``, default 7), so a failing solve is
 not repeated at every start and a transient failure is retried eventually. A new install of the environment always
-tries again and removes the file on success.
+tries again and removes the file on success. For a native create that failed, the file is
+``<conda_prefix>/envs/<environment name>.failed``. The backfill treats such an environment like an existing one and
+creates it for the foreign platforms, taking the specs from the ``__name@version`` name because no history file exists;
+merged ``mulled-v1-*`` environments without history are skipped. Job routing leaves out a platform with a recent
+failure when nothing is installed yet.
 
 Signing of macOS environments
 .............................
@@ -475,6 +485,10 @@ Limits
   see `Signing of macOS environments`_. Without a code signer Galaxy does not mark them as usable.
 * Windows platforms are not supported.
 * The metadata commands of a job run with the dependencies of the native platform.
+* The job script runs Galaxy's own virtual environment for setting metadata when it is reachable from the node, and that
+  virtual environment is platform-specific. On nodes of another platform the step reports ``python: command not found``
+  and Galaxy sets the metadata itself afterwards, so jobs still finish. Providing a virtual environment per platform or
+  setting the metadata on the server avoids the message.
 
 Lmod Dependency Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~

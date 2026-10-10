@@ -10,8 +10,15 @@ from galaxy.util.bunch import Bunch
 
 
 class MockDependencyManager:
-    def __init__(self, platforms: list[str], configured: list[str] | None = None, auto_install: bool = False):
+    def __init__(
+        self,
+        platforms: list[str],
+        configured: list[str] | None = None,
+        auto_install: bool = False,
+        failed: list[str] | None = None,
+    ):
         self.platforms = platforms
+        self.failed = failed or []
         self.auto_install = auto_install
         self.configured = ["linux-64"] if configured is None else configured
         self.calls: list[ToolRequirements] = []
@@ -25,6 +32,9 @@ class MockDependencyManager:
     def platforms_for_requirements(self, requirements):
         self.calls.append(requirements)
         return self.platforms
+
+    def platforms_with_failed_install(self, requirements):
+        return self.failed
 
 
 class MockJobConfig:
@@ -43,9 +53,10 @@ def _app(
     destination_platforms: dict[str, str | None] | None = None,
     configured: list[str] | None = None,
     auto_install: bool = False,
+    failed: list[str] | None = None,
 ):
     return Bunch(
-        toolbox=Bunch(dependency_manager=MockDependencyManager(available, configured, auto_install)),
+        toolbox=Bunch(dependency_manager=MockDependencyManager(available, configured, auto_install, failed)),
         job_config=MockJobConfig(destination_platforms or {}),
     )
 
@@ -185,3 +196,30 @@ def test_without_auto_install_nothing_installed_raises_and_mentions_installing()
     assert "none" in message
     assert "installed first" in message
     assert "admin dependency API or UI" in message
+
+
+def test_failed_native_install_skips_the_native_fallback():
+    configured = ["linux-64", "linux-aarch64", "osx-arm64"]
+    app = _app([], configured=configured, auto_install=True, failed=["linux-64"])
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "slurm_arm"
+    # platforms that failed as well are skipped
+    app = _app([], configured=configured, auto_install=True, failed=["linux-64", "linux-aarch64"])
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "pulsar_mac"
+    app = _app([], configured=configured, auto_install=True, failed=configured)
+    with pytest.raises(JobMappingException):
+        platform_destination(app, _tool(), JOB, MAPPING)
+
+
+def test_next_job_routes_to_the_platform_that_has_the_environment():
+    configured = ["linux-64", "linux-aarch64"]
+    # first job: nothing installed, native has no recorded failure
+    app = _app([], configured=configured, auto_install=True)
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "slurm_x86"
+    # the failed native install created the foreign environment
+    app = _app(["linux-aarch64"], configured=configured, auto_install=True, failed=["linux-64"])
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "slurm_arm"
+
+
+def test_failed_native_install_does_not_affect_other_platforms_that_are_installed():
+    app = _app(["linux-64"], configured=["linux-64", "linux-aarch64"], auto_install=True, failed=["linux-aarch64"])
+    assert platform_destination(app, _tool(), JOB, MAPPING) == "slurm_x86"
