@@ -49,8 +49,7 @@ dependencies = [
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",
     "pebble!=5.2.1,!=5.2.2",
-    # Temporary import-fix-no-getattr source pin; replace with a Pulsar release before merging.
-    "pulsar-galaxy-lib @ git+https://github.com/mvdbeek/pulsar@ee25241a8dc6735bb8073585489d1bc6183ddf7d",
+    "pulsar-galaxy-lib>=0.16.0",
     "pydantic>=2.7.4",
     "pydantic-ai>=1.99.0",
     "pysam>=0.21",
