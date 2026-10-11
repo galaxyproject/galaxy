@@ -148,3 +148,5 @@ class TestFrontendRepositories(PlaywrightTestCase):
         expect(readme).not_to_contain_text("New README")
         # decode() rejects for a broken image; the old logo is 16px wide, the latest one 24px.
         assert readme.locator("img").evaluate("img => img.decode().then(() => img.naturalWidth)") == 16
+        readme.scroll_into_view_if_needed()
+        self.screenshot("repository_old_revision_readme")
