@@ -137,3 +137,11 @@ function onText(value: string) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* option labels are words, so wrap them between words rather than anywhere as other selects do */
+.form-select-or-text :deep(.multiselect__tags .multiselect__single) {
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+</style>
