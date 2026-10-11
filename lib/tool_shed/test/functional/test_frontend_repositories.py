@@ -150,3 +150,9 @@ class TestFrontendRepositories(PlaywrightTestCase):
         assert readme.locator("img").evaluate("img => img.decode().then(() => img.naturalWidth)") == 16
         readme.scroll_into_view_if_needed()
         self.screenshot("repository_old_revision_readme")
+
+        self.visit_url(f"/view/{repository.owner}/{repository.name}")
+        expect(readme).to_contain_text("New README for column maker.")
+        assert readme.locator("img").evaluate("img => img.decode().then(() => img.naturalWidth)") == 24
+        readme.scroll_into_view_if_needed()
+        self.screenshot("repository_latest_revision_readme")
