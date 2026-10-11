@@ -1,0 +1,126 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://w3id.org/ieee/ieee-2791-schema/provenance_domain.json",
+    "type": "object",
+    "title": "Provenance Domain",
+    "description": "Structured field for tracking data through transformations, including contributors, reviewers, and versioning.",
+    "required": [
+        "name",
+        "version",
+        "created",
+        "modified",
+        "contributors",
+        "license"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Public searchable name for IEEE-2791 Object. This public field should take free text value using common biological research terminology supporting the terminology used in the usability_domain, external references (xref), and keywords sections.",
+            "examples": [
+                "HCV1a ledipasvir resistance SNP detection"
+            ]
+        },
+        "version": {
+            "type": "string",
+            "description": "Records the versioning of this IEEE-2791 Object instance. IEEE-2791 Object Version should adhere to semantic versioning as recommended by Semantic Versioning 2.0.0.",
+            "reference": "https://semver.org/spec/v2.0.0.html",
+            "examples": [
+                "2.9"
+            ]
+        },
+        "review": {
+            "type": "array",
+            "description": "Description of the current verification status of an object in the review process. The unreviewed flag indicates that the object has been submitted, but no further evaluation or verification has occurred. The in-review flag indicates that verification is underway. The approved flag indicates that the IEEE-2791 Object has been verified and reviewed. The suspended flag indicates an object that was once valid is no longer considered valid. The rejected flag indicates that an error or inconsistency was detected in the IEEE-2791 Object, and it has been removed or rejected. The fields from the contributor object (described in section 2.1.10) is inherited to populate the reviewer section.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "status",
+                    "reviewer"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "reviewer": {
+                        "$ref": "2791object.json#/definitions/contributor",
+                        "description": "Contributer that assigns IEEE-2791 review status."
+                    },
+                    "reviewer_comment": {
+                        "type": "string",
+                        "description": "Optional free text comment by reviewer",
+                        "examples": [
+                            "Approved by research institution staff. Waiting for approval from regulator"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "unreviewed",
+                            "in-review",
+                            "approved",
+                            "rejected",
+                            "suspended"
+                        ],
+                        "description": "Current verification status of the IEEE-2791 Object",
+                        "default": "unreviewed"
+                    }
+                }
+            }
+        },
+        "derived_from": {
+            "description": "value of `ieee2791_id` field of another IEEE-2791 that this object is partially or fully derived from",
+            "$ref": "2791object.json#/definitions/object_id"
+        },
+        "obsolete_after": {
+            "type": "string",
+            "description": "If the object has an expiration date, this optional field will specify that using the ‘datetime’ type described in ISO-8601 format, as clarified by W3C https://www.w3.org/TR/NOTE-datetime.",
+            "format": "date-time"
+        },
+        "embargo": {
+            "type": "object",
+            "description": "If the object has a period of time during which it shall not be made public, that range can be specified using these optional fields. Using the datetime type, a start and end time are specified for the embargo.",
+            "additionalProperties": false,
+            "properties": {
+                "start_time": {
+                    "type": "string",
+                    "description": "Beginning date of embargo period.",
+                    "format": "date-time"
+                },
+                "end_time": {
+                    "type": "string",
+                    "description": "End date of embargo period.",
+                    "format": "date-time"
+                }
+            }
+        },
+        "created": {
+            "type": "string",
+            "description": "Date and time of the IEEE-2791 Object creation",
+            "readOnly": true,
+            "format": "date-time"
+        },
+        "modified": {
+            "type": "string",
+            "description": "Date and time the IEEE-2791 Object was last modified",
+            "readOnly": true,
+            "format": "date-time"
+        },
+        "contributors": {
+            "type": "array",
+            "description": "This is a list to hold contributor identifiers and a description of their type of contribution, including a field for ORCIDs to record author information, as they allow for the author to curate their information after submission. The contribution type is a choice taken from PAV ontology: provenance, authoring and versioning, which also maps to the PROV-O.",
+            "items": {
+                "$ref": "2791object.json#/definitions/contributor"
+            }
+        },
+        "license": {
+            "type": "string",
+            "description": "Creative Commons license or other license information (text) space. The default or recommended license can be Attribution 4.0 International as shown in example",
+            "examples": [
+                "https://spdx.org/licenses/CC-BY-4.0.html"
+            ]
+        }
+    }
+}

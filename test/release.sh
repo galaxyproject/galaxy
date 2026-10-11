@@ -63,7 +63,12 @@ function get_stable_version() {
         local restore_branch
         restore_branch="$(git branch --show-current)"
         git checkout -q --no-track -b __stable_version_check "upstream/${STABLE_BRANCH}"
-        grep "^VERSION_${part}" lib/galaxy/version.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
+        if [ -e lib/galaxy/version/__init__.py ] ; then
+          version_file=lib/galaxy/version/__init__.py
+        else
+          version_file=lib/galaxy/version.py
+        fi
+        grep "^VERSION_${part}" ${version_file} | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
         git checkout -q "$restore_branch"
         git branch -q -D __stable_version_check
     )
@@ -153,18 +158,23 @@ function verify_version() {
     restore_branch="$(git branch --show-current)"
     [ -n "$(git tag -l "$ref")" ]  || _ref="upstream/${ref}"
     log_exec git checkout --no-track -b "__${ref}" "$_ref"
-    if grep -q "^VERSION_MAJOR = \"${major}\"$" lib/galaxy/version.py; then
+    if [ -e lib/galaxy/version/__init__.py ] ; then
+      version_file=lib/galaxy/version/__init__.py
+    else
+      version_file=lib/galaxy/version.py
+    fi
+    if grep -q "^VERSION_MAJOR = \"${major}\"$" ${version_file}; then
         log "**** Major version '${major}' is correct at ref '${ref}'"
     else
         log "**** Major version '${major}' is incorrect at ref '${ref}':"
-        log "$(grep '^VERSION_MAJOR' lib/galaxy/version.py)"
+        log "$(grep '^VERSION_MAJOR' ${version_file})"
         exit 1
     fi
-    if grep -q "^VERSION_MINOR = \"${minor}\"$" lib/galaxy/version.py; then
+    if grep -q "^VERSION_MINOR = \"${minor}\"$" ${version_file}; then
         log "**** Minor version '${minor}' is correct at ref '${ref}'"
     else
         log "**** Minor version '${minor}' is incorrect at ref '${ref}':"
-        log "$(grep '^VERSION_MINOR' lib/galaxy/version.py)"
+        log "$(grep '^VERSION_MINOR' ${version_file})"
         exit 1
     fi
     log_exec git checkout "$restore_branch"

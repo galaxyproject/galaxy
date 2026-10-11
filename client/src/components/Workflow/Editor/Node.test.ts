@@ -1,11 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
+import { zoomIdentity } from "d3-zoom";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
 
 import { mockOffset } from "./test_fixtures";
 
@@ -25,27 +28,42 @@ const MOCK_SCROLL = {
     isScrolling: { value: true },
 };
 
+const TOOL_STEP = {
+    id: 0,
+    type: "tool",
+    content_id: "tool_id",
+    inputs: [],
+    outputs: [],
+    position: { top: 0, left: 0 },
+};
+
+function mountNode(mounter: typeof shallowMount = shallowMount, propsData = {}) {
+    const testingPinia = createTestingPinia({ createSpy: vi.fn });
+    setActivePinia(testingPinia);
+
+    const wrapper = mounter(Node as any, {
+        propsData: {
+            id: 0,
+            contentId: "tool_id",
+            activeNodeId: null,
+            name: "node-name",
+            step: TOOL_STEP,
+            datatypesMapper: testDatatypesMapper,
+            rootOffset: mockOffset,
+            scroll: MOCK_SCROLL,
+            ...propsData,
+        },
+        localVue,
+        pinia: testingPinia,
+        provide: { workflowId: "mock-workflow", transform: ref(zoomIdentity) },
+    });
+
+    return { wrapper, inspectorStore: useWorkflowNodeInspectorStore() };
+}
+
 describe("Node", () => {
     it("test attributes", async () => {
-        const testingPinia = createTestingPinia({ createSpy: vi.fn });
-        setActivePinia(testingPinia);
-        const wrapper = shallowMount(Node as any, {
-            propsData: {
-                id: 0,
-                contentId: "tool name",
-                activeNodeId: 0,
-                name: "node-name",
-                step: { type: "tool", inputs: [], outputs: [], position: { top: 0, left: 0 } },
-                datatypesMapper: testDatatypesMapper,
-                rootOffset: mockOffset,
-                scroll: MOCK_SCROLL,
-            },
-            localVue,
-            pinia: testingPinia,
-            provide: {
-                workflowId: "mock-workflow",
-            },
-        });
+        const { wrapper } = mountNode(shallowMount, { activeNodeId: 0 });
         await flushPromises();
 
         // fa-wrench is the tool icon ...
@@ -60,5 +78,53 @@ describe("Node", () => {
 
         const workflowTitle = wrapper.find(".node-title");
         expect(workflowTitle.text()).toBe("step label");
+    });
+
+    describe("double click", () => {
+        beforeEach(() => vi.useFakeTimers({ toFake: ["Date"] }));
+        afterEach(() => vi.useRealTimers());
+
+        async function clickNode(wrapper: ReturnType<typeof mount>) {
+            const header = wrapper.find(".card-header");
+            await header.trigger("pointerdown");
+            await header.trigger("pointerup");
+        }
+
+        it("maximizes the inspector when the node is clicked twice within the double click timeout", async () => {
+            const { wrapper, inspectorStore } = mountNode(mount);
+            await flushPromises();
+
+            await clickNode(wrapper);
+            expect(inspectorStore.setMaximized).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(100);
+            await clickNode(wrapper);
+
+            expect(inspectorStore.setMaximized).toHaveBeenCalledWith(TOOL_STEP, true);
+        });
+
+        it("does not maximize the inspector when the node is clicked twice beyond the double click timeout", async () => {
+            const { wrapper, inspectorStore } = mountNode(mount);
+            await flushPromises();
+
+            await clickNode(wrapper);
+            vi.advanceTimersByTime(600);
+            await clickNode(wrapper);
+
+            expect(inspectorStore.setMaximized).not.toHaveBeenCalled();
+        });
+
+        it("does not maximize the inspector when a button inside the node was clicked in between", async () => {
+            const { wrapper, inspectorStore } = mountNode(mount);
+            await flushPromises();
+
+            await clickNode(wrapper);
+            vi.advanceTimersByTime(100);
+            await wrapper.find("button.node-clone").trigger("pointerup");
+            vi.advanceTimersByTime(100);
+            await clickNode(wrapper);
+
+            expect(inspectorStore.setMaximized).not.toHaveBeenCalled();
+        });
     });
 });
