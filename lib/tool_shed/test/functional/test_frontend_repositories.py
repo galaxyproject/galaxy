@@ -132,3 +132,19 @@ class TestFrontendRepositories(PlaywrightTestCase):
         expect(page.locator(".reset-status-chip").filter(has_text="ok")).to_be_visible()
 
         self.screenshot("metadata_inspector_reset_complete")
+
+    def test_old_revision_readme_renders_with_its_images(self):
+        """Verify an old revision shows its README and that revision's image, even when the README is unchanged."""
+        repository = self.populator.setup_test_data_repo("column_maker_with_rst_readme")
+        revisions = list(self.populator.get_metadata(repository).root.values())
+        assert len(revisions) == 3
+        # The second revision only bumps the tool version, so README.rst and images/logo.png are unchanged in it.
+        middle_changeset = revisions[1].changeset_revision
+        self.visit_url(f"/view/{repository.owner}/{repository.name}/{middle_changeset}")
+        page = self._page
+
+        readme = page.locator(".repository-readme")
+        expect(readme).to_contain_text("Old README for column maker.")
+        expect(readme).not_to_contain_text("New README")
+        # decode() rejects for a broken image; the old logo is 16px wide, the latest one 24px.
+        assert readme.locator("img").evaluate("img => img.decode().then(() => img.naturalWidth)") == 16
