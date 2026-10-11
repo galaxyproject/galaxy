@@ -28,6 +28,7 @@ import pytest
 import requests
 
 from galaxy.app import UniverseApplication
+from galaxy.app_unittest_utils.fake_ai_provider import FakeAIProvider
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
@@ -407,3 +408,36 @@ class ConfigureAllowedUrlHeaders:
         with open(url_headers_conf_path, "w") as f:
             f.write(allowed_url_headers_conf)
         config["url_headers_config_file"] = url_headers_conf_path
+
+
+class UsesFakeAIProvider:
+    """Serve a FakeAIProvider for the test class.
+
+    It starts before Galaxy is configured, so ``handle_galaxy_config_kwds`` can point
+    Galaxy's AI base URLs at it.
+    """
+
+    fake_ai_provider: ClassVar[FakeAIProvider]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake_ai_provider = FakeAIProvider()
+        cls.fake_ai_provider.start()
+        super().setUpClass()  # type: ignore[misc]
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()  # type: ignore[misc]
+        cls.fake_ai_provider.stop()
+
+    def setUp(self):
+        super().setUp()  # type: ignore[misc]
+        self.fake_ai_provider.clear()
+
+    @classmethod
+    def _configure_fake_ai_provider(cls, config, model: str = "fake_model"):
+        config["ai_api_key"] = "fake_api_key"
+        config["ai_api_base_url"] = cls.fake_ai_provider.base_url()
+        config["ai_model"] = model
+        # The test driver enables the static agent backend by default; real agents should call the provider.
+        config["inference_services"] = {}

@@ -9,6 +9,7 @@ the real external URLs with automatic skip-if-down behavior.
 """
 
 import functools
+import json
 import os
 import re
 import threading
@@ -22,6 +23,7 @@ from dataclasses import (
     dataclass,
     field,
 )
+from email.message import Message
 from http.server import (
     BaseHTTPRequestHandler,
     HTTPServer,
@@ -210,17 +212,100 @@ class TestHttpServer:
         return url
 
 
-def start_test_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTPServer, str]:
+@dataclass
+class RecordedRequest:
+    method: str
+    path: str
+    headers: Message
+    body: bytes
+
+    def json(self) -> Any:
+        return json.loads(self.body)
+
+
+class RecordingHTTPRequestHandler(TestHTTPRequestHandler):
+    requests: list[RecordedRequest] = []
+
+    def _handle_request(self) -> None:
+        length = int(self.headers.get("Content-Length") or 0)
+        body = self.rfile.read(length) if length else b""
+        self.requests.append(RecordedRequest(self.command, self.path, self.headers, body))
+        super()._handle_request()
+
+
+class RecordingHttpServer:
+    """A local HTTP server with routes at fixed paths that records every request it receives.
+
+    For tests that point Galaxy's configuration at the server before Galaxy starts, then
+    assert on what Galaxy sent. Each instance has its own routes and request log.
+    """
+
+    def __init__(self) -> None:
+        class Handler(RecordingHTTPRequestHandler):
+            routes: dict[str, Route] = {}
+            requests: list[RecordedRequest] = []
+
+        self._handler_class = Handler
+        self._server: HTTPServer | None = None
+        self.base_url: str | None = None
+
+    def start(self) -> None:
+        self._server, self.base_url = start_test_http_server(handler_class=self._handler_class)
+
+    def stop(self) -> None:
+        if self._server is not None:
+            self._server.shutdown()
+            self._server.server_close()
+            self._server = None
+
+    def url_for(self, path: str) -> str:
+        assert self.base_url is not None, "server not started"
+        return f"{self.base_url}{path}"
+
+    def add_route(
+        self,
+        path: str,
+        *,
+        body: str | bytes = "",
+        status: int = 200,
+        content_type: str = "application/octet-stream",
+        request_method: str = "GET",
+    ) -> None:
+        encoded_body = body.encode() if isinstance(body, str) else body
+        self._handler_class.routes[path] = Route(
+            status=status, body=encoded_body, headers={"Content-Type": content_type}, method=request_method
+        )
+
+    def add_json_route(self, path: str, data: Any, *, status: int = 200, request_method: str = "GET") -> None:
+        self.add_route(
+            path, body=json.dumps(data), status=status, content_type="application/json", request_method=request_method
+        )
+
+    def clear(self) -> None:
+        self._handler_class.routes.clear()
+        self._handler_class.requests.clear()
+
+    @property
+    def requests(self) -> list[RecordedRequest]:
+        return self._handler_class.requests
+
+
+def start_test_http_server(
+    host: str = "127.0.0.1",
+    port: int = 0,
+    handler_class: type[TestHTTPRequestHandler] = TestHTTPRequestHandler,
+) -> tuple[HTTPServer, str]:
     """Start the test HTTP server in a daemon thread.
 
     Args:
         host: Address to bind to. Defaults to 127.0.0.1.
         port: Port to bind to. 0 means OS-assigned.
+        handler_class: Request handler; subclasses carry their own routes.
 
     Returns:
         Tuple of (server, base_url).
     """
-    server = HTTPServer((host, port), TestHTTPRequestHandler)
+    server = HTTPServer((host, port), handler_class)
     actual_port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
