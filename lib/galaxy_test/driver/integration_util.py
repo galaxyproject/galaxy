@@ -423,12 +423,18 @@ class UsesFakeAIProvider:
     def setUpClass(cls):
         cls.fake_ai_provider = FakeAIProvider()
         cls.fake_ai_provider.start()
-        super().setUpClass()  # type: ignore[misc]
+        try:
+            super().setUpClass()  # type: ignore[misc]
+        except BaseException:
+            cls.fake_ai_provider.stop()
+            raise
 
     @classmethod
     def tearDownClass(cls):
-        super().tearDownClass()  # type: ignore[misc]
-        cls.fake_ai_provider.stop()
+        try:
+            super().tearDownClass()  # type: ignore[misc]
+        finally:
+            cls.fake_ai_provider.stop()
 
     def setUp(self):
         super().setUp()  # type: ignore[misc]

@@ -1,7 +1,8 @@
 """Test Galaxy AI agents API.
 
-Requires a configured LLM — skipped unless GALAXY_TEST_ENABLE_LIVE_LLM=1.
-For deterministic tests without LLM, see test_static_agent_backend.py.
+Includes deterministic tests against a local fake provider and static backend.
+Live LLM tests are skipped unless GALAXY_TEST_ENABLE_LIVE_LLM=1.
+For additional static-backend coverage, see test_static_agent_backend.py.
 
 ## Running:
     export GALAXY_TEST_AI_API_KEY="your-api-key"
@@ -182,7 +183,11 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         )
         self._assert_status_code_is_ok(response)
         data = response.json()
-        assert "response" in data
+        assert data["error_code"] == 0, data
+        assert data["error_message"] == "", data
+        metadata = data["agent_response"]["metadata"]
+        assert not metadata.get("fallback"), data
+        assert not metadata.get("error"), data
         # Should return some content about RNA-seq
         assert len(data["response"]) > 0
 
@@ -355,12 +360,22 @@ class TestMCPServerSmoke(IntegrationTestCase):
         # Stands in for Dockstore; it must be up before Galaxy reads its TRS config.
         cls.trs_server = RecordingHttpServer()
         cls.trs_server.start()
-        super().setUpClass()
+        try:
+            super().setUpClass()
+        except BaseException:
+            cls.trs_server.stop()
+            raise
 
     @classmethod
     def tearDownClass(cls):
-        super().tearDownClass()
-        cls.trs_server.stop()
+        try:
+            super().tearDownClass()
+        finally:
+            cls.trs_server.stop()
+
+    def setUp(self):
+        super().setUp()
+        self.trs_server.clear()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
