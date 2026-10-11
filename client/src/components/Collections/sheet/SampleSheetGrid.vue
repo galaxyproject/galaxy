@@ -8,9 +8,6 @@ import { computed, ref } from "vue";
 import type {
     CollectionElementIdentifiers,
     CreateNewCollectionPayload,
-    DCESummary,
-    DCObject,
-    HDAObject,
     SampleSheetColumnDefinition,
     SampleSheetColumnDefinitions,
 } from "@/api";
@@ -30,7 +27,8 @@ import {
     initialValue,
 } from "@/components/Collections/sheet/workbooks";
 import type { InitialElements, ParsedFetchWorkbookColumn } from "@/components/Collections/wizard/types";
-import { enforceColumnUniqueness } from "@/components/Landing/gridHelpers";
+import { enforceColumnUniqueness, useGridHelpers } from "@/components/Landing/gridHelpers";
+import { Toast } from "@/composables/toast";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useAgGrid } from "@/composables/useAgGrid";
 import localize from "@/utils/localization";
@@ -41,6 +39,7 @@ import {
     parseSampleSheetValue,
     SAMPLE_SHEET_GRID_STYLE,
     toAgGridColumnDefinition,
+    type UriRow,
     useSampleSheetGrid,
 } from "./useSampleSheetGrid";
 
@@ -67,7 +66,9 @@ const emit = defineEmits<{
 }>();
 
 // Upload properties
-const { effectiveExtensions, listDbKeys } = useUploadConfigurations(props.extensions);
+const uploadConfigurations = useUploadConfigurations(props.extensions);
+const { effectiveExtensions, listDbKeys } = uploadConfigurations;
+const { makeExtensionColumn, makeDbkeyColumn } = useGridHelpers(uploadConfigurations);
 const extension = ref("auto");
 const dbKey = ref("?");
 const listExtensions = computed(() => effectiveExtensions.value.filter((ext) => !ext.composite_files));
@@ -86,12 +87,12 @@ const extraColumns = computed<ParsedFetchWorkbookColumn[]>(() =>
 
 const columnDefinitionList = computed<SampleSheetColumnDefinition[]>(() => props.columnDefinitions ?? []);
 
-function initialColumnValues(): AgRowData {
+function initialColumnValues(): Record<string, SampleSheetColumnValueT | null> {
     return Object.fromEntries(columnDefinitionList.value.map((colDef) => [colDef.name, initialValue(colDef)]));
 }
 
-function uriRow(initialElement: string[]): AgRowData {
-    const row: AgRowData = { url: initialElement[0] };
+function uriRow(initialElement: string[]): UriRow {
+    const row: UriRow = { url: initialElement[0]!, list_identifiers: "" };
     if (isPaired.value) {
         row["url_1"] = initialElement[1];
         row["list_identifiers"] = initialElement[2] || "";
@@ -106,7 +107,8 @@ function uriRow(initialElement: string[]): AgRowData {
 const { rowData } = useSampleSheetGrid(() => {
     const initialElements = props.initialElements;
     if ("rows" in initialElements) {
-        return initialElements.rows.map((parsedRow) => ({ ...parsedRow }));
+        // The workbook parser supplies URI and identifier fields in its open-ended row schema.
+        return initialElements.rows.map((parsedRow) => ({ ...parsedRow }) as UriRow);
     } else if ("elements" in initialElements) {
         return initialElements.elements.map((element) => ({ __model_object: element, ...initialColumnValues() }));
     } else {
@@ -115,11 +117,7 @@ const { rowData } = useSampleSheetGrid(() => {
 });
 
 function elementIdentifierFromRow(row: AgRowData): string {
-    if (mode.value === "model_objects") {
-        return (row["__model_object"] as { element_identifier: string }).element_identifier;
-    } else {
-        return row["list_identifiers"] as string;
-    }
+    return row.__model_object ? row.__model_object.element_identifier : row.list_identifiers;
 }
 
 const elementIdentifiers = computed<string[]>(() => rowData.value.map(elementIdentifierFromRow).filter(Boolean));
@@ -153,6 +151,8 @@ function setCellValue(params: ValueSetterParams, columnDefinition: SampleSheetCo
     const parsed = parseSampleSheetValue(params.newValue, columnDefinition);
     if (parsed.valid) {
         params.data[params.colDef.field!] = parsed.value;
+    } else {
+        Toast.error(`Invalid value for column "${columnDefinition.name}".`);
     }
     return parsed.valid;
 }
@@ -176,7 +176,24 @@ function metadataColumn(colDef: SampleSheetColumnDefinition): ColDef {
 }
 
 function extraColumn(column: ParsedFetchWorkbookColumn): ColDef {
-    return { headerName: column.title, field: column.type, editable: true };
+    const colDef: ColDef = { headerName: column.title, field: column.type, editable: true };
+    if (column.type === "file_type") {
+        makeExtensionColumn(colDef);
+    } else if (column.type === "dbkey") {
+        makeDbkeyColumn(colDef);
+    }
+    if (typeof colDef.valueSetter === "function") {
+        const validate = colDef.valueSetter;
+        colDef.valueSetter = (params) => {
+            // Blank workbook cells use the sheet's upload defaults.
+            if (params.newValue === "" || params.newValue == null) {
+                params.data[params.colDef.field!] = "";
+                return true;
+            }
+            return validate(params);
+        };
+    }
+    return colDef;
 }
 
 const columnDefs = computed<ColDef[]>(() => [
@@ -259,13 +276,16 @@ function urlElementForRow(row: AgRowData, elementIdentifier: string, uri: string
 }
 
 function fetchElementForRow(row: AgRowData): UrlDataElement | NestedElement {
+    if (row.__model_object) {
+        throw new Error("Cannot fetch a model object row");
+    }
     const elementIdentifier = elementIdentifierFromRow(row);
-    const uri = row["url"] as string;
+    const uri = row.url;
     let element: UrlDataElement | NestedElement;
     if (!isPaired.value) {
         element = urlElementForRow(row, elementIdentifier, uri, 0);
     } else {
-        const uri2 = row["url_1"] as string;
+        const uri2 = row.url_1;
         let childElements;
         if (uri2) {
             childElements = [urlElementForRow(row, "forward", uri, 0), urlElementForRow(row, "reverse", uri2, 1)];
@@ -297,12 +317,18 @@ function attemptCreateViaFetch() {
 function elementsForCreateApi(): CollectionElementIdentifiers {
     if (props.collectionType == "sample_sheet") {
         return rowData.value.map((row) => {
-            const hda = (row["__model_object"] as DCESummary).object as HDAObject;
+            const hda = row.__model_object?.object;
+            if (!hda || hda.model_class === "DatasetCollection") {
+                throw new Error("Expected a dataset row");
+            }
             return { name: elementIdentifierFromRow(row), src: "hda" as const, id: hda.id };
         });
     } else if (isPaired.value) {
         return rowData.value.map((row) => {
-            const childCollection = (row["__model_object"] as DCESummary).object as DCObject;
+            const childCollection = row.__model_object?.object;
+            if (!childCollection || childCollection.model_class !== "DatasetCollection") {
+                throw new Error("Expected a collection row");
+            }
             return {
                 name: elementIdentifierFromRow(row),
                 collection_type: childCollection.collection_type,

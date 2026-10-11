@@ -44,8 +44,23 @@ beforeEach(() => {
     vi.clearAllMocks();
     server.use(
         http.get("/api/configuration", ({ response }) => response(200).json({})),
-        http.get("/api/genomes", ({ response }) => response(200).json([])),
-        http.get("/api/datatypes", ({ response }) => response(200).json([])),
+        http.get("/api/genomes", ({ response }) =>
+            response(200).json([
+                ["Unspecified", "?"],
+                ["Human", "hg38"],
+            ]),
+        ),
+        http.get("/api/datatypes/types_and_mapping", ({ response }) =>
+            response(200).json({
+                datatypes: [],
+                datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
+            }),
+        ),
+        http.get("/api/datatypes", ({ response }) =>
+            response(200).json([
+                { extension: "fastqsanger", description: "FASTQ", description_url: null, display_in_upload: true },
+            ]),
+        ),
     );
 });
 
@@ -100,7 +115,11 @@ function setCell(column: ColDef, rows: AgRowData[], rowIndex: number, newValue: 
                 rows.forEach((data, index) => callback({ rowIndex: index, data: toRaw(data) })),
         },
     } as unknown as ValueSetterParams;
-    return (column.valueSetter as (params: ValueSetterParams) => boolean)(params);
+    if (typeof column.valueSetter === "function") {
+        return column.valueSetter(params);
+    }
+    params.data[column.field!] = newValue;
+    return true;
 }
 
 const URIS: InitialElements = [
@@ -146,6 +165,48 @@ describe("SampleSheetGrid", () => {
         expect(setCell(gridColumn(wrapper, "replicate"), rows, 0, null)).toBe(false);
 
         expect(rows[0]!.replicate).toBe(0);
+        expect(toastError).toHaveBeenCalledWith('Invalid value for column "replicate".');
+    });
+
+    it("reports a rejected float edit and keeps the old value", async () => {
+        const wrapper = await mountGrid(URIS, [{ name: "dose", type: "float", optional: false }]);
+        const rows = gridRows(wrapper);
+
+        expect(setCell(gridColumn(wrapper, "dose"), rows, 0, "1abc")).toBe(false);
+        expect(rows[0]!.dose).toBe(0);
+        expect(toastError).toHaveBeenCalledWith('Invalid value for column "dose".');
+    });
+
+    it.each([
+        ["file_type", "fastqsanger", "auto", "Unknown file extension: missing."],
+        ["dbkey", "hg38", "?", "Unknown dbkey: missing."],
+    ])("validates workbook %s edits and preserves empty-cell fallback", async (field, value, defaultValue, message) => {
+        const wrapper = await mountGrid({
+            rows: [{ url: "https://example.org/a.fq", list_identifiers: "a", [field]: value }],
+            extra_columns: [{ title: field, type: field }],
+            parse_log: [],
+        } as unknown as InitialElements);
+        const rows = gridRows(wrapper);
+        const column = gridColumn(wrapper, field);
+
+        expect(setCell(column, rows, 0, "missing")).toBe(false);
+        expect(rows[0]![field]).toBe(value);
+        expect(toastError).toHaveBeenCalledWith(message);
+        toastError.mockClear();
+
+        expect(setCell(column, rows, 0, defaultValue)).toBe(true);
+        expect(rows[0]![field]).toBe(defaultValue);
+        expect(setCell(column, rows, 0, value)).toBe(true);
+        expect(rows[0]![field]).toBe(value);
+        expect(setCell(column, rows, 0, "")).toBe(true);
+        expect(rows[0]![field]).toBe("");
+        expect(setCell(column, rows, 0, null)).toBe(true);
+        expect(rows[0]![field]).toBe("");
+        expect(toastError).not.toHaveBeenCalled();
+
+        (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+        const target = wrapper.emitted("on-fetch-target")![0]![0] as { elements: Record<string, unknown>[] };
+        expect(target.elements[0]![field === "file_type" ? "ext" : "dbkey"]).toBe(defaultValue);
     });
 
     it("offers renamed element identifiers in element_identifier columns", async () => {
@@ -220,6 +281,46 @@ describe("SampleSheetGrid", () => {
 
             expect(await fetchTarget(wrapper)).toMatchObject({
                 elements: [{ name: "a", elements: [{ name: "unpaired", url: "https://example.org/a.fq" }] }],
+            });
+        });
+
+        it("builds a paired sample sheet from existing collection pairs", async () => {
+            const collection = {
+                id: "hdca1",
+                name: "my pairs",
+                elements: [
+                    {
+                        element_identifier: "pair1",
+                        object: {
+                            model_class: "DatasetCollection",
+                            collection_type: "paired",
+                            elements: [
+                                { element_identifier: "forward", object: { id: "hda1" } },
+                                { element_identifier: "reverse", object: { id: "hda2" } },
+                            ],
+                        },
+                    },
+                ],
+            } as unknown as InitialElements;
+            const wrapper = await mountGrid(collection, [], "sample_sheet:paired");
+
+            (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+            await flushPromises();
+
+            expect(wrapper.emitted("on-collection-create-payload")![0]![0]).toMatchObject({
+                collection_type: "sample_sheet:paired",
+                element_identifiers: [
+                    {
+                        name: "pair1",
+                        src: "new_collection",
+                        collection_type: "paired",
+                        element_identifiers: [
+                            { name: "forward", src: "hda", id: "hda1" },
+                            { name: "reverse", src: "hda", id: "hda2" },
+                        ],
+                    },
+                ],
+                rows: { pair1: [] },
             });
         });
 

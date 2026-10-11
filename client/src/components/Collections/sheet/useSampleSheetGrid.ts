@@ -1,10 +1,19 @@
 import type { ColDef } from "ag-grid-community";
 import { ref, watch } from "vue";
 
-import type { SampleSheetColumnDefinition } from "@/api";
+import type { DCESummary, SampleSheetColumnDefinition } from "@/api";
 import type { SampleSheetColumnValueT } from "@/api/datasetCollections";
 
-export type AgRowData = Record<string, unknown>;
+export type UriRow = Record<string, unknown> & {
+    url: string;
+    url_1?: string;
+    list_identifiers: string;
+    __model_object?: never;
+};
+
+export type ModelObjectRow = Record<string, unknown> & { __model_object: DCESummary };
+
+export type AgRowData = UriRow | ModelObjectRow;
 
 export const SAMPLE_SHEET_GRID_STYLE = { width: "100%", height: "500px" };
 
