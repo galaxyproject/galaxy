@@ -35,6 +35,7 @@ from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
+from galaxy.job_execution.job_security import job_files_kind_for_params
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.webapps.galaxy.api.job_files import UPLOAD_STAGING_PREFIX
@@ -408,15 +409,29 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = requests.post(post_url, data=data, files=files)
         _assert_insufficient_permissions(response)
 
+    def _bind_to_compute_resource(self, job, resource_id):
+        """Bind ``job`` to a compute resource and return the matching scoped
+        files key — what the BYOC runner would mint at dispatch. Derives the
+        ``kind`` via the shared helper so the test key always matches the
+        verifier (and the base62 encoding stays in one place)."""
+        job.destination_params = {"compute_resource_id": resource_id}
+        sa_session = self.sa_session
+        sa_session.add(job)
+        sa_session.commit()
+        kind = job_files_kind_for_params(job.destination_params)
+        return self._app.security.encode_id(job.id, kind=kind)
+
     def test_read_path_constraint(self):
         """A valid job_key must not be usable to read arbitrary paths on the
         Galaxy server — only paths the job legitimately needs to stage."""
         job, _, _ = self.create_static_job_with_state("running")
-        job_id, job_key = self._api_job_keys(job)
+        job_key = self._bind_to_compute_resource(job, 42)
+        job_id = self._app.security.encode_id(job.id)
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
 
-        # A tempfile that has nothing to do with this job's I/O — previously
-        # would have been served verbatim. Reject now.
+        # A tempfile that has nothing to do with this job's I/O. A trusted
+        # runner may still read unstructured server-side inputs such as .loc
+        # files, so this constraint applies to compute-resource jobs only.
         with tempfile.NamedTemporaryFile("w", delete=False) as t_file:
             t_file.write("server-side secret")
             outside_path = t_file.name

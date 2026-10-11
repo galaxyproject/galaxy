@@ -6,6 +6,10 @@ import pytest
 
 from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.job_execution.job_security import (
+    job_files_kind_for_job,
+    job_files_kind_for_params,
+)
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.job_files import JobFilesManager
 from galaxy.model import Job
@@ -120,3 +124,76 @@ def test_missing_params(manager, security, job):
         manager.authorize_write(job_id, None, job_key)
     with pytest.raises(exceptions.ObjectAttributeMissingException):
         manager.authorize_write(job_id, path, None)
+
+
+# ---- compute-resource (BYOC) scoping ---------------------------------------
+
+
+@pytest.fixture
+def compute_resource_job(job):
+    job.destination_params = {"compute_resource_id": 7}
+    return job
+
+
+def test_compute_resource_job_requires_its_own_key_kind(manager, security, compute_resource_job):
+    """A tenant-scoped job rejects the untenanted key every other runner uses."""
+    working = _working_directory(compute_resource_job)
+    path = os.path.join(working, "working", "out.txt")
+    encoded = security.encode_id(JOB_ID)
+
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(encoded, path, security.encode_id(JOB_ID, kind="jobs_files"))
+
+    scoped = security.encode_id(JOB_ID, kind=job_files_kind_for_job(compute_resource_job))
+    assert manager.authorize_write(encoded, path, scoped) == working
+
+
+def test_compute_resource_key_rejected_for_another_resource(manager, security, compute_resource_job):
+    other = security.encode_id(JOB_ID, kind=job_files_kind_for_params({"compute_resource_id": 99}))
+    path = os.path.join(_working_directory(compute_resource_job), "working", "out.txt")
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(security.encode_id(JOB_ID), path, other)
+
+
+@pytest.mark.parametrize(
+    "relative",
+    ["metadata/outputs_populated/x", "container_runtime.json", "tool_script.sh", "configs/tool.conf"],
+)
+def test_compute_resource_write_confined_to_tool_cwd(manager, security, compute_resource_job, relative):
+    scoped = security.encode_id(JOB_ID, kind=job_files_kind_for_job(compute_resource_job))
+    path = os.path.join(_working_directory(compute_resource_job), relative)
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(security.encode_id(JOB_ID), path, scoped)
+
+
+def test_non_compute_resource_job_keeps_the_whole_working_directory(manager, security, job):
+    _, job_key = _keys(security)
+    working = _working_directory(job)
+    path = os.path.join(working, "container_runtime.json")
+    assert manager.authorize_write(security.encode_id(JOB_ID), path, job_key) == working
+
+
+def test_symlink_is_never_writable(manager, security, job, tmp_path):
+    _, job_key = _keys(security)
+    working = _working_directory(job)
+    os.makedirs(working, exist_ok=True)
+    outside = tmp_path / "outside.txt"
+    outside.write_text("")
+    link = os.path.join(working, "link.txt")
+    os.symlink(outside, link)
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(security.encode_id(JOB_ID), link, job_key)
+
+
+def test_purged_output_dataset_does_not_authorize_the_process_cwd(manager, security, job):
+    """``get_file_name()`` is empty for a purged dataset and ``abspath("")`` is the cwd."""
+    _, job_key = _keys(security)
+    dataset = SimpleNamespace(get_file_name=lambda: "", extra_files_path=None, purged=True)
+    # Assigning to the relationship would run SQLAlchemy's backref machinery
+    # against a stand-in; the instrumented attribute reads straight back out of
+    # the instance dict, which is all this test needs.
+    job.__dict__["output_datasets"] = [SimpleNamespace(dataset=dataset)]
+    job.__dict__["output_library_datasets"] = []
+    assert manager._output_dataset_path(job, os.getcwd()) is None
+    with pytest.raises(exceptions.ItemAccessibilityException):
+        manager.authorize_write(security.encode_id(JOB_ID), os.getcwd(), job_key)
