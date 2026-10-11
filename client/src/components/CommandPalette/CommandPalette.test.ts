@@ -878,7 +878,9 @@ describe("CommandPalette", () => {
             land();
             await settle();
             expect(wrapper.find("[data-description='palette searching']").exists()).toBe(false);
-            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
+            const empty = wrapper.get("[data-description='palette empty']");
+            expect(empty.element.closest("[role='listbox']")).toBeNull();
+            expect(wrapper.find("[role='group']").exists()).toBe(false);
         } finally {
             workflowsProvider.searchScoped = original;
         }

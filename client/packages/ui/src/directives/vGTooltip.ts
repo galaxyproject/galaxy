@@ -378,10 +378,13 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     // Set aria-label so icon-only buttons have an accessible name
     const target = getLabelTarget(el);
     const labelledHere = !!target.dataset.gTooltipAriaLabel;
-    // A menu toggle with visible text or a label of its own is already named
-    const namedToggle =
-        target !== el && !labelledHere && (target.hasAttribute("aria-label") || !!target.textContent?.trim());
-    if (label && !namedToggle) {
+    // Tooltips describe text controls without replacing their visible or explicit names.
+    const alreadyNamed =
+        !!target.textContent?.trim() ||
+        target.hasAttribute("aria-labelledby") ||
+        (!labelledHere && target.hasAttribute("aria-label"));
+    const canName = target.matches('button, a[href], input, select, textarea, [role="button"], [role="img"]');
+    if (label && canName && !alreadyNamed) {
         target.setAttribute("aria-label", label);
         target.dataset.gTooltipAriaLabel = "1";
     } else if (labelledHere) {

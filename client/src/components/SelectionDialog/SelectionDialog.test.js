@@ -34,6 +34,22 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.findComponent(GTable).exists()).toBeTruthy();
     });
 
+    it("opens a folder without also selecting its row", async () => {
+        const folder = { id: "folder", label: "Results", url: "gxfiles://results", isLeaf: false };
+        await wrapper.setProps({ optionsShow: true, selectable: true, items: [folder] });
+        const open = wrapper.get("button.selection-dialog-folder");
+        expect(open.text()).toContain("Results");
+        expect(open.find("a").exists()).toBe(false);
+        await open.trigger("click");
+        expect(wrapper.emitted("onOpen")).toEqual([[folder]]);
+        expect(wrapper.emitted("onClick")).toBeUndefined();
+    });
+
+    it("names the search and its clear button", () => {
+        expect(wrapper.get("input[type='text']").attributes("aria-label")).toContain("search");
+        expect(wrapper.get("button[aria-label='Clear search']").exists()).toBe(true);
+    });
+
     it("loads header correctly", async () => {
         await nextTick();
         expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();

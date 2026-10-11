@@ -50,7 +50,7 @@ function onZoomReset() {
             title="Reset Zoom Level"
             pill
             size="small"
-            aria-label="Reset Zoom Level"
+            :aria-label="`${zoomPercentage}% zoom. Reset Zoom Level`"
             @click="onZoomReset">
             {{ zoomPercentage }}%
         </GButton>

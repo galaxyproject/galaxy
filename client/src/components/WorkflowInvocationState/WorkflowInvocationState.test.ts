@@ -155,7 +155,7 @@ vi.mock("@/stores/workflowStore", async () => {
  * @param fullPage Whether to render the header as well or just the invocation state tabs
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationState(invocationId: string, isFullPage = false) {
+async function mountWorkflowInvocationState(invocationId: string, isFullPage = false, renderNavigation = false) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
@@ -165,7 +165,10 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
             isFullPage,
         },
         pinia,
-        global: localVue,
+        global: {
+            ...localVue,
+            stubs: renderNavigation ? { BNav: false, BNavItem: false } : {},
+        },
     });
     await flushPromises();
     return wrapper;
@@ -244,6 +247,13 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
 });
 
 describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state and header", () => {
+    it("keeps invocation actions inside a list item alongside navigation tabs", async () => {
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, true, true);
+        const navigation = wrapper.get("ul.nav");
+
+        expect(Array.from(navigation.element.children).every((child) => child.tagName === "LI")).toBe(true);
+        expect(navigation.get("li.ml-auto").element.tagName).toBe("LI");
+    });
     it("for non-terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-id", true);
         const reportTab = wrapper.find(selectors.invocationReportTab);

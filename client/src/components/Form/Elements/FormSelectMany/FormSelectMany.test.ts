@@ -23,10 +23,10 @@ function mountSelectMany(props: Partial<InstanceType<typeof FormSelectMany>["$pr
 }
 
 const selectors = {
-    unselectedOptions: ".options-list.unselected > button",
-    unselectedHighlighted: ".options-list.unselected > button.highlighted",
-    selectedOptions: ".options-list:not(.unselected) > button",
-    selectedHighlighted: ".options-list:not(.unselected) > button.highlighted",
+    unselectedOptions: ".options-list.unselected .option-button",
+    unselectedHighlighted: ".options-list.unselected > .option-row.highlighted .option-button",
+    selectedOptions: ".options-list:not(.unselected) .option-button",
+    selectedHighlighted: ".options-list:not(.unselected) > .option-row.highlighted .option-button",
     selectAll: ".selection-button.select",
     deselectAll: ".selection-button.deselect",
     selectedCount: ".selected-count",
@@ -82,6 +82,22 @@ async function search(wrapper: ReturnType<typeof mountSelectMany>, value: string
 }
 
 describe("FormSelectMany", () => {
+    it("keeps custom label actions beside the option button", async () => {
+        const wrapper = mount(FormSelectMany as any, {
+            props: { options: [{ label: "Dataset", value: "dataset" }], value: [] },
+            slots: { "label-area": '<button class="rename" @click.stop>Rename dataset</button>' },
+            pinia,
+            global: localVue,
+        });
+        const select = wrapper.get(".option-button");
+        expect(select.attributes("aria-label")).toBe("Select Dataset");
+        expect(select.find(".rename").exists()).toBe(false);
+        await wrapper.get(".rename").trigger("click");
+        expect(wrapper.emitted("input")).toBeUndefined();
+        await select.trigger("click");
+        expect(wrapper.emitted("input")?.[0]).toEqual([["dataset"]]);
+    });
+
     it("displays all options", async () => {
         const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
         const wrapper = mountSelectMany({ options });

@@ -231,7 +231,9 @@ watch(
                     'in-panel': inPanel,
                     toolMenuContainer: inPanel,
                 }"
-                role="list">
+                role="region"
+                :aria-label="props.namePlural"
+                tabindex="0">
                 <template v-if="items.length === 0">
                     <GAlert v-if="errorMessage" variant="danger">
                         <p>{{ errorMessage }}</p>
@@ -246,28 +248,30 @@ watch(
                 <component
                     :is="props.gridView ? 'div' : BListGroup"
                     class="pt-1"
+                    role="list"
+                    :aria-label="props.namePlural"
                     :class="{ 'card-list d-flex flex-wrap': props.gridView }">
                     <!-- Use component wrapper with v-for to provide proper keying while avoiding layout interference -->
                     <component
                         :is="'div'"
                         v-for="(item, index) in items"
                         :key="itemKey(item as T)"
+                        role="listitem"
                         style="display: contents">
                         <slot name="item" :item="item" :index="index" />
                     </component>
-
-                    <template v-if="!busy">
-                        <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
-                            <div class="list-end" data-description="no items found footer">
-                                - No {{ props.namePlural }} found -
-                            </div>
-                        </slot>
-
-                        <slot v-else-if="allLoaded" name="all-loaded-footer">
-                            <div class="list-end">- {{ listEndText }} -</div>
-                        </slot>
-                    </template>
                 </component>
+                <template v-if="!busy">
+                    <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
+                        <div class="list-end" data-description="no items found footer">
+                            - No {{ props.namePlural }} found -
+                        </div>
+                    </slot>
+
+                    <slot v-else-if="allLoaded" name="all-loaded-footer">
+                        <div class="list-end">- {{ listEndText }} -</div>
+                    </slot>
+                </template>
             </div>
             <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
@@ -288,6 +292,7 @@ watch(
                     tooltip
                     :disabled="busy"
                     title="Load More"
+                    aria-label="Load More"
                     transparent
                     @click="loadItems(true)">
                     <FontAwesomeIcon :icon="busy ? faSpinner : faArrowDown" :spin="busy" />

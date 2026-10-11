@@ -109,7 +109,7 @@ async function mountTarget(quota?: ReturnType<typeof quotaDetails>) {
 }
 
 async function choose(wrapper: VueWrapper, selectionId: string, value: string) {
-    const selection = wrapper.findAllComponents(FormSelection).find((w) => w.attributes("id") === selectionId);
+    const selection = wrapper.findAllComponents(FormSelection).find((w) => w.props("id") === selectionId);
     selection!.vm.$emit("input", value);
     await flushPromises();
 }
@@ -240,6 +240,26 @@ describe("QuotaForm.vue create mode", () => {
         await wrapper.find("#admin-quota-description").setValue("New Description");
         await wrapper.find("#admin-quota-amount").setValue("10 GB");
     }
+
+    it("associates the visible field labels with editable controls", async () => {
+        useGroups();
+        const wrapper = await mountTarget();
+        const ids = [
+            "admin-quota-name",
+            "admin-quota-description",
+            "admin-quota-amount",
+            "admin-quota-operation",
+            "admin-quota-default",
+            "admin-quota-groups-select",
+            "admin-quota-users-select",
+        ];
+        for (const id of ids) {
+            const label = wrapper.find(`label[for="${id}"]`);
+            expect(label.exists(), `Label for ${id}`).toBe(true);
+            expect(label.text().length).toBeGreaterThan(0);
+            expect(wrapper.find(`input[id="${id}"]`).exists(), `Input for ${id}`).toBe(true);
+        }
+    });
 
     it("creates a quota for a labeled object store", async () => {
         setMockConfig({ quota_source_labels: ["mylabel"] });

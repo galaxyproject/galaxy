@@ -98,6 +98,22 @@ const testLoader = vi.fn(
     },
 );
 
+describe("ScrollList accessibility", () => {
+    it("keeps footer messages out of the list and makes scrolling keyboard reachable", () => {
+        const wrapper = mount(ScrollList as object, {
+            props: { propItems: TEST_ITEMS.slice(0, 2), propTotalCount: 2, itemKey: (item: TestItem) => item.id },
+            slots: { item: TEST_ITEM_SLOT },
+            global: getLocalVue(),
+        });
+        expect(wrapper.get(".scroll-list").attributes("tabindex")).toBe("0");
+        expect(wrapper.get("[role='list']").findAll("[role='listitem']")).toHaveLength(2);
+        expect(wrapper.get(".list-end").element.closest("[role='list']")).toBeNull();
+        const top = wrapper.get("button[aria-label='Scroll to top']");
+        expect(top.attributes("tabindex")).toBe("-1");
+        expect(top.attributes("aria-disabled")).toBe("true");
+    });
+});
+
 describe("ScrollList with local loader and data", () => {
     let wrapper: ScrollListWrapper;
 
