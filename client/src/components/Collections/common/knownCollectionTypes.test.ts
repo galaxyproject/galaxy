@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { isValidCollectionTypeStr } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
-import { KNOWN_COLLECTION_TYPE_GROUPS, KNOWN_COLLECTION_TYPES } from "./knownCollectionTypes";
+import {
+    describeKnownCollectionType,
+    findKnownCollectionTypes,
+    KNOWN_COLLECTION_TYPE_GROUPS,
+    KNOWN_COLLECTION_TYPES,
+} from "./knownCollectionTypes";
 
 describe("knownCollectionTypes", () => {
     it.each(KNOWN_COLLECTION_TYPES.map((known) => known.collectionType))("%s is a valid collection type", (type) => {
@@ -35,10 +40,32 @@ describe("knownCollectionTypes", () => {
         expect(KNOWN_COLLECTION_TYPES).toEqual(KNOWN_COLLECTION_TYPE_GROUPS.flatMap(({ types }) => types));
         expect(KNOWN_COLLECTION_TYPES[0]).toEqual({
             collectionType: "list",
-            label: "List of Datasets",
+            label: "Flat List",
             description:
                 "A simple flat list of datasets, each with an identifier (typically a sample name). If your data isn't nested and doesn't contain paired datasets, this is the option to choose.",
+            notes: {},
             group: "Lists",
         });
+    });
+
+    it("adds the note for where the collection type is being chosen", () => {
+        const [mixed] = findKnownCollectionTypes(["list:paired_or_unpaired"]);
+        const forWorkflowInput = describeKnownCollectionType(mixed!, "workflow_input");
+        expect(forWorkflowInput.startsWith(mixed!.description)).toBe(true);
+        expect(forWorkflowInput).toContain(
+            "A flat list or a list of paired datasets can also be connected to this input.",
+        );
+        expect(describeKnownCollectionType(mixed!, "builder")).toBe(mixed!.description);
+    });
+
+    it("finds collection types in the order asked for", () => {
+        expect(findKnownCollectionTypes(["list:list", "list"]).map((known) => known.label)).toEqual([
+            "Nested List of Datasets",
+            "Flat List",
+        ]);
+    });
+
+    it("refuses a collection type it doesn't describe", () => {
+        expect(() => findKnownCollectionTypes(["list", "list:list:list"])).toThrow("list:list:list");
     });
 });

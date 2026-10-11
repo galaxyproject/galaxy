@@ -45,9 +45,16 @@ function emittedTypes(wrapper: VueWrapper) {
 describe("FormCollectionType", () => {
     it("selects a known collection type and describes it", () => {
         const wrapper = mountWithValue("list:paired");
-        expect(selectedLabel(wrapper)).toBe("List of Dataset Pairs (list:paired)");
+        expect(selectedLabel(wrapper)).toBe("List of Paired Datasets (list:paired)");
         expect(wrapper.find("#form-element-collection_type").text()).toContain("forward and reverse pair");
         expect(customField(wrapper).exists()).toBe(false);
+    });
+
+    it("says what else connects to a collection input of the selected type", () => {
+        const wrapper = mountWithValue("list:paired_or_unpaired");
+        expect(wrapper.find("#form-element-collection_type").text()).toContain(
+            "A flat list or a list of paired datasets can also be connected to this input.",
+        );
     });
 
     it("warns when no collection type is set", () => {
@@ -76,7 +83,7 @@ describe("FormCollectionType", () => {
 
     it("emits a collection type picked from the select", async () => {
         const wrapper = mountWithValue("list");
-        await pick(wrapper, "Sample Sheet of Dataset Pairs (sample_sheet:paired)");
+        await pick(wrapper, "Sample Sheet of Paired Datasets (sample_sheet:paired)");
         expect(emittedTypes(wrapper)).toEqual(["sample_sheet:paired"]);
     });
 
@@ -131,7 +138,7 @@ describe("FormCollectionType", () => {
         await wrapper.find("[data-description='collection type help']").trigger("click");
         await wrapper.find("[data-collection-type='list']").trigger("click");
         expect(customField(wrapper).exists()).toBe(false);
-        expect(selectedLabel(wrapper)).toBe("List of Datasets (list)");
+        expect(selectedLabel(wrapper)).toBe("Flat List (list)");
         expect(wrapper.find("#form-element-collection_type").text()).not.toContain("Invalid collection type");
     });
 });

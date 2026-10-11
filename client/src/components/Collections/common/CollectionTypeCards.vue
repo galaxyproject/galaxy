@@ -1,29 +1,44 @@
 <script setup lang="ts">
 import { BCard, BCardText, BCardTitle } from "bootstrap-vue";
+import { computed } from "vue";
 
 import { borderVariant } from "@/components/Common/Wizard/utils";
 
-import { KNOWN_COLLECTION_TYPE_GROUPS } from "./knownCollectionTypes";
+import {
+    type CollectionTypeContext,
+    describeKnownCollectionType,
+    findKnownCollectionTypes,
+    KNOWN_COLLECTION_TYPE_GROUPS,
+    type KnownCollectionType,
+} from "./knownCollectionTypes";
 
-defineProps<{
+const props = defineProps<{
     value?: string | null;
+    context: CollectionTypeContext;
+    /** Only these collection types, in this order and without group headings; every known type by default. */
+    types?: string[];
+    hideType?: boolean;
 }>();
 
 const emit = defineEmits<{
     (e: "select", collectionType: string): void;
 }>();
+
+const sections = computed<{ group?: string; types: KnownCollectionType[] }[]>(() =>
+    props.types ? [{ types: findKnownCollectionTypes(props.types) }] : KNOWN_COLLECTION_TYPE_GROUPS,
+);
 </script>
 
 <template>
-    <div class="collection-type-cards">
-        <section v-for="{ group, types } in KNOWN_COLLECTION_TYPE_GROUPS" :key="group" class="collection-type-group">
-            <h3 class="collection-type-group-title">{{ group }}</h3>
-            <div class="collection-type-card-grid">
+    <div class="collection-type-cards" :class="{ 'collection-type-cards-grouped': !types }">
+        <section v-for="{ group, types } in sections" :key="group" class="collection-type-group">
+            <h3 v-if="group" class="collection-type-group-title">{{ group }}</h3>
+            <div class="collection-type-card-grid" :class="{ 'collection-type-card-grid-ungrouped': !group }">
                 <BCard
                     v-for="known in types"
                     :key="known.collectionType"
                     :data-collection-type="known.collectionType"
-                    class="collection-type-card"
+                    class="collection-type-card wizard-selection-card"
                     :border-variant="borderVariant(value === known.collectionType)"
                     role="button"
                     tabindex="0"
@@ -34,13 +49,16 @@ const emit = defineEmits<{
                         <b>{{ known.label }}</b>
                     </BCardTitle>
                     <!-- break long types like sample_sheet:paired_or_unpaired after a colon, not mid-word -->
-                    <code class="collection-type-card-type"
+                    <code v-if="!hideType" class="collection-type-card-type"
                         ><span v-for="(part, index) in known.collectionType.split(':')" :key="index"
                             ><template v-if="index > 0">:<wbr /></template>{{ part }}</span
                         ></code
                     >
-                    <BCardText class="collection-type-card-description">{{ known.description }}</BCardText>
+                    <BCardText class="collection-type-card-description">
+                        {{ describeKnownCollectionType(known, context) }}
+                    </BCardText>
                 </BCard>
+                <slot v-if="!group" name="extra" />
             </div>
         </section>
     </div>
@@ -49,7 +67,7 @@ const emit = defineEmits<{
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
 
-.collection-type-cards {
+.collection-type-cards-grouped {
     container-type: inline-size;
 }
 
@@ -84,6 +102,21 @@ const emit = defineEmits<{
 @container (min-width: 60rem) {
     .collection-type-card-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+// a few cards share a row like a wizard's card deck; a flex row sizes to its cards, where a size container would
+// collapse inside a wizard step that shrinks to fit its content
+.collection-type-card-grid.collection-type-card-grid-ungrouped {
+    display: flex;
+
+    > * {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    @media (max-width: 575.98px) {
+        flex-direction: column;
     }
 }
 

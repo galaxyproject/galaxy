@@ -391,7 +391,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         other_card.wait_for_and_click()
         editor.collection_type_help_modal.wait_for_absent()
         self.workflow_editor_wait_for_collection_type_selected("list:paired")
-        assert editor.collection_type_selected.wait_for_text() == "List of Dataset Pairs (list:paired)"
+        assert editor.collection_type_selected.wait_for_text() == "List of Paired Datasets (list:paired)"
         self.screenshot("workflow_editor_collection_type_chosen_from_help")
         # the step rebuild is async with no UI marker - let it land before saving
         self.sleep_for(self.wait_types.UX_RENDER)

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { KNOWN_COLLECTION_TYPES } from "@/components/Collections/common/knownCollectionTypes";
+import {
+    describeKnownCollectionType,
+    KNOWN_COLLECTION_TYPES,
+} from "@/components/Collections/common/knownCollectionTypes";
 import { isValidCollectionTypeStr } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -33,7 +36,7 @@ const attributes = {
         ...KNOWN_COLLECTION_TYPES.map((known) => ({
             label: `${known.label} (${known.collectionType})`,
             value: known.collectionType,
-            help: known.description,
+            help: describeKnownCollectionType(known, "workflow_input"),
         })),
     ],
     other_label: "Custom collection type...",
@@ -92,7 +95,7 @@ function onChooseFromHelp(collectionType: string) {
                 Collections group datasets so a workflow can process many samples at once. Choose the structure this
                 workflow input expects.
             </p>
-            <CollectionTypeCards :value="currentValue" @select="onChooseFromHelp" />
+            <CollectionTypeCards :value="currentValue" context="workflow_input" @select="onChooseFromHelp" />
         </GModal>
     </div>
 </template>

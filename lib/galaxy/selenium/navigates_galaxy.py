@@ -2787,19 +2787,20 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         list_wizard.auto_pairing.wait_for_visible()
         list_wizard.wizard_next_button.wait_for_and_click()
 
-    def history_panel_build_list_of_lists(self):
-        self.history_panel_build_list_advanced_and_select_builder("list:list")
+    def history_panel_build_list_of_lists(self, screenshot_name: str | None = None):
+        self.history_panel_build_list_advanced_and_select_builder("list:list", screenshot_name=screenshot_name)
 
-    def history_panel_build_list_advanced_and_select_builder(self, builder: str):
+    def history_panel_build_list_advanced_and_select_builder(self, builder: str, screenshot_name: str | None = None):
         self.history_panel_build_list_advanced()
         list_wizard = self.components.collection_builders.list_wizard
         list_wizard.which_builder(builder=builder).wait_for_and_click()
+        self.screenshot_if(screenshot_name)
         list_wizard.wizard_next_button.wait_for_and_click()
 
     def history_panel_build_rule_builder_for_selection(self):
         self.history_panel_build_list_advanced()
         list_wizard = self.components.collection_builders.list_wizard
-        list_wizard.which_builder(builder="rules").wait_for_and_click()
+        list_wizard.which_builder_rules.wait_for_and_click()
         list_wizard.wizard_next_button.wait_for_and_click()
 
     def list_wizard_click_cell_and_send_keys(self, column_identifier: str, row_index: int, text: str):

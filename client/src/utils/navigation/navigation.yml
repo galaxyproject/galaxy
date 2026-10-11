@@ -516,7 +516,8 @@ collection_builders:
   list_wizard:
     selectors:
       create: ".wizard-actions .btn-primary"
-      which_builder: '[data-which-builder="${builder}"]'
+      which_builder: '.wizard-container [data-collection-type="${builder}"]'
+      which_builder_rules: '.wizard-container [data-which-builder="rules"]'
       wizard_next_button: '.wizard-actions .go-next-btn'
       auto_pairing: '[data-description="auto pairing"]'
       dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
