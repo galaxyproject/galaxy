@@ -1,75 +1,55 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import Index from "./Index.vue";
+import { BOWTIE2, FASTP } from "../test_fixtures";
+import * as IndexStories from "./Index.stories";
+
 import GLink from "@/components/BaseComponents/GLink.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-vi.mock("../services", () => ({
-    Services: class Services {
-        async getInstalledRepositories() {
-            return [
-                {
-                    name: "name_0",
-                    description: "description_0",
-                    tool_shed: "toolshed_1",
-                    tool_shed_status: {
-                        latest_installable_revision: false,
-                    },
-                },
-                {
-                    name: "name_1",
-                    description: "description_1",
-                    tool_shed: "toolshed_2",
-                    tool_shed_status: {
-                        latest_installable_revision: true,
-                    },
-                },
-            ];
-        }
-    },
-}));
+const { FromTwoToolSheds, FromOneToolShed } = composeStories(IndexStories);
+const mountStory = useStoryMount();
 
 const SELECTORS = {
-    LOADING: "loading-span-stub",
     INSTALLED_MESSAGE: ".installed-message",
     REPOSITORY_NAME: ".name",
     BADGE: ".badge",
     COLUMN_HEADER: "thead th",
 };
 
-function mountInstalledList() {
-    const localVue = getLocalVue();
-    return mount(Index, {
-        props: { filter: "" },
-        global: {
-            ...localVue,
-            stubs: { ...localVue.stubs, RepositoryDetails: true, LoadingSpan: true },
-        },
-    });
+async function mountInstalledList(story) {
+    const wrapper = mountStory(story);
+    await flushPromises();
+    return wrapper;
+}
+
+function columnHeaders(wrapper) {
+    return wrapper.findAll(SELECTORS.COLUMN_HEADER).map((th) => th.text());
 }
 
 describe("InstalledList", () => {
     it("shows a loading message until the installed repositories arrive", async () => {
-        const wrapper = mountInstalledList();
+        const wrapper = mountStory(FromTwoToolSheds);
 
-        expect(wrapper.find(SELECTORS.LOADING).attributes("message")).toBe("Loading installed repositories");
+        expect(wrapper.findComponent(LoadingSpan).props("message")).toBe("Loading installed repositories");
 
         await flushPromises();
 
-        expect(wrapper.find(SELECTORS.LOADING).exists()).toBe(false);
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
+        expect(wrapper.find(SELECTORS.INSTALLED_MESSAGE).exists()).toBe(true);
     });
 
     it("lists the installed repositories and flags ones with a newer version", async () => {
-        const wrapper = mountInstalledList();
-        await flushPromises();
+        const wrapper = await mountInstalledList(FromTwoToolSheds);
 
         expect(wrapper.find(SELECTORS.INSTALLED_MESSAGE).text()).toBe("2 repositories installed on this instance.");
         const names = wrapper.findAll(SELECTORS.REPOSITORY_NAME);
         expect(names.length).toBe(2);
-        expect(nth(names, 0).text()).toBe("name_0");
-        expect(nth(names, 1).text()).toBe("name_1");
+        expect(nth(names, 0).text()).toBe(BOWTIE2.name);
+        expect(nth(names, 1).text()).toBe(FASTP.name);
 
         // The installation-progress toggle, then one link per repository.
         const links = wrapper.findAllComponents(GLink);
@@ -79,9 +59,15 @@ describe("InstalledList", () => {
     });
 
     it("adds a Tool Shed column when repositories come from more than one Tool Shed", async () => {
-        const wrapper = mountInstalledList();
-        await flushPromises();
+        const wrapper = await mountInstalledList(FromTwoToolSheds);
 
-        expect(wrapper.findAll(SELECTORS.COLUMN_HEADER).map((th) => th.text())).toContain("Tool Shed");
+        expect(columnHeaders(wrapper)).toContain("Tool Shed");
+    });
+
+    it("has no Tool Shed column when every repository comes from one Tool Shed", async () => {
+        const wrapper = await mountInstalledList(FromOneToolShed);
+
+        expect(columnHeaders(wrapper)).toContain("Name");
+        expect(columnHeaders(wrapper)).not.toContain("Tool Shed");
     });
 });
