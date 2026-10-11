@@ -527,8 +527,11 @@ class CachedDependencyManager(DependencyManager):
 
     def hash_dependencies(self, resolved_dependencies):
         """Return hash for dependencies"""
+        # The platform is part of the hash of foreign dependencies, so that a platform never uses the cache of another.
         resolved_dependencies = [
-            (dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies
+            (dep.name, dep.version, dep.exact, dep.dependency_type)
+            + ((platform,) if (platform := getattr(dep, "platform", None)) else ())
+            for dep in resolved_dependencies
         ]
         hash_str = json.dumps(sorted(resolved_dependencies))
         return hash_util.new_insecure_hash(hash_str)[:8]  # short hash

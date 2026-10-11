@@ -324,6 +324,7 @@ class CondaContext(installable.InstallableContext):
         self.platforms_retry_days = platforms_retry_days
         self._native_platform: str | None = None
         self._native_platform_failed = False
+        self._platform_contexts: dict[str, CondaContext] = {}
         self.codesign_exec: str | None = codesign_exec or which("rcodesign")
         self._reset_conda_properties()
 
@@ -661,6 +662,38 @@ class CondaContext(installable.InstallableContext):
         if not subdir or self.is_native_platform(subdir):
             return self.activate
         return os.path.join(self.platform_prefix(subdir), "bin", "activate")
+
+    def for_platform(self, subdir: str | None) -> "CondaContext":
+        """The context that runs conda for ``subdir`` on the conda base of that platform.
+
+        The native platform (or none) gives this context. A foreign platform gives a
+        :class:`PlatformCondaContext`, which can be used wherever a context is expected, for example to
+        build the job specific environment of several requirements like the native
+        :class:`~galaxy.tool_util.deps.resolvers.conda.CondaDependency` does.
+        """
+        if not subdir or self.is_native_platform(subdir):
+            return self
+        context = self._platform_contexts.get(subdir)
+        if context is None:
+            context = self._platform_contexts[subdir] = PlatformCondaContext(self, subdir)
+        return context
+
+    def can_build_job_environment(self, subdir: str) -> bool:
+        """Whether job environments can be built for ``subdir`` from the environments installed for it.
+
+        A job environment is created by the conda executable of Galaxy from the package caches, it needs
+        the conda base of a foreign platform (for the activation script) next to that executable.
+        """
+        if self.is_native_platform(subdir):
+            return True
+        if not os.path.isfile(self.platform_activate(subdir)):
+            return False
+        executable = listify(self.conda_exec)[0] if self.conda_exec else None
+        return bool(executable) and (os.path.isfile(executable) or which(executable) is not None)
+
+    def finalize_environment(self, prefix: str) -> bool:
+        """Make a freshly built environment at ``prefix`` usable, False if that was not possible."""
+        return True
 
     def platform_env_vars(self, subdir: str) -> dict[str, str]:
         """Environment variables for solving for ``subdir`` from another platform.
@@ -1028,6 +1061,73 @@ class CondaContext(installable.InstallableContext):
 
     def _bin(self, name: str) -> str:
         return os.path.join(self.conda_prefix, "bin", name)
+
+
+class PlatformCondaContext(CondaContext):
+    """A :class:`CondaContext` for one foreign platform (conda subdir).
+
+    It shares the conda executable, channels, package caches and options of the native context, so
+    conda resolves and links packages of the platform from the caches that the installs of the environments
+    filled. ``conda_prefix`` is the conda base of the platform, which makes ``env_path`` and ``activate`` point
+    to the environments and the activation script of that platform. Every command runs for the platform:
+    ``CONDA_SUBDIR`` and the virtual package overrides are set, and creating or installing gets ``--platform``.
+    """
+
+    def __init__(self, parent: CondaContext, subdir: str) -> None:
+        self.__dict__.update(parent.__dict__)
+        self.parent = parent
+        self.platform = subdir
+        self.conda_prefix = parent.platform_prefix(subdir)
+        self._platform_contexts = {}
+
+    @property
+    def native_platform(self) -> str:
+        return self.parent.native_platform
+
+    def platform_prefix(self, subdir: str) -> str:
+        return self.parent.platform_prefix(subdir)
+
+    def for_platform(self, subdir: str | None) -> CondaContext:
+        return self.parent.for_platform(subdir)
+
+    def exec_command(
+        self,
+        operation: str,
+        args: list[str],
+        stdout_path: str | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> int:
+        env = self.parent.platform_env_vars(self.platform)
+        if extra_env:
+            env.update(extra_env)
+        if operation in ("create", "install"):
+            args = ["--platform", self.platform] + list(args)
+        return super().exec_command(operation, args, stdout_path=stdout_path, extra_env=env)
+
+    def export_list(self, name: str, path: str) -> int:
+        """Export the packages of the environment ``name`` of this platform, which is not in the envs of conda."""
+        env_path = self.env_path(name)
+        if not os.path.isdir(env_path):
+            # Environments of Galaxy before 23.1 have a capitalized name
+            try:
+                for candidate in os.listdir(self.envs_path):
+                    if candidate.lower() == name.lower():
+                        env_path = self.env_path(candidate)
+                        break
+            except OSError:
+                pass
+        return self.exec_command("list", ["--prefix", env_path, "--export"], stdout_path=path)
+
+    def has_env(self, env_name: str) -> bool:
+        return self.parent.platform_has_env(self.platform, env_name)
+
+    def finalize_environment(self, prefix: str) -> bool:
+        """Sign the Mach-O files that conda patched in the environment, needed on osx platforms."""
+        try:
+            return self.parent.sign_platform_files(self.platform, prefix)
+        except Exception:
+            log.warning("Failed to sign files of environment '%s' for %s", prefix, self.platform, exc_info=True)
+            return False
 
 
 def installed_conda_targets(conda_context: CondaContext) -> Iterator["CondaTarget"]:

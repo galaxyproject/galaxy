@@ -361,6 +361,20 @@ Two deployment modes
      - Slurm, CLI, local, and Pulsar with ``dependency_resolution: local``
      - Pulsar with ``dependency_resolution: remote``
 
+Tools with several requirements
+...............................
+
+Activating one environment replaces the previous one, so all requirements of a tool must be in a single environment.
+For the native platform this is the merged ``mulled-v1-<hash>`` environment or, without it, an environment in the job
+directory (``conda-env``) that Galaxy builds from the environments of the individual requirements. A foreign platform
+works the same way. If the merged environment of the platform exists it is activated, and with ``auto_install`` it is
+created on demand. Otherwise the individual environments of the platform are combined in the job directory: Galaxy runs
+the conda of the head node for the platform (``CONDA_SUBDIR``, the virtual package overrides and ``--platform``) with
+``--offline`` and the packages from the shared package cache, which the creation of the individual environments filled,
+and signs the result for ``osx-*`` platforms. Routing therefore counts a platform as available for a tool with several
+requirements if the merged environment exists for it, or if all individual environments exist and the conda base of the
+platform is present.
+
 Backfill of existing environments
 .................................
 

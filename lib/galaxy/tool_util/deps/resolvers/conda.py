@@ -356,6 +356,8 @@ class CondaDependencyResolver(
         platform = self._requested_foreign_platform(kwds)
         if platform is not None:
             # Foreign environments are created together with the native install, or here on demand.
+            # Without the merged environment this returns nothing, the requirements are then resolved one by
+            # one and share the job environment that is built from their individual environments.
             if platform is False:
                 return []
             env = self._foreign_environment(
@@ -453,6 +455,20 @@ class CondaDependencyResolver(
             )
             if env_name is None:
                 return NullDependency(version=version, name=name)
+            job_directory = kwds.get("job_directory", None)
+            if job_directory:
+                # Like the native path: the requirements that resolve one by one share the environment of the
+                # job, built from the environments of the platform, so that all of them are on the PATH.
+                conda_env = "conda-metadata-env" if kwds.get("metadata", False) else "conda-env"
+                return CondaDependency(
+                    self.conda_context.for_platform(platform),
+                    os.path.join(job_directory, conda_env),
+                    exact,
+                    name,
+                    version,
+                    preserve_python_environment=kwds.get("preserve_python_environment", False),
+                    dependency_resolver=self,
+                )
             return MergedCondaDependency(
                 self.conda_context,
                 self.conda_context.platform_env_path(platform, env_name),
@@ -602,13 +618,15 @@ class CondaDependencyResolver(
             for capitalized in (True, False):
                 if self.conda_context.platform_has_env(platform, self.merged_environment_name(targets, capitalized)):
                     return True
-        return all(
+        individual = all(
             any(
                 self.conda_context.platform_has_env(platform, env_name)
                 for env_name in (target.install_environment, target.capitalized_install_environment)
             )
             for target in targets
         )
+        # Several individual environments are only usable together in the job environment built from them.
+        return individual and (len(targets) == 1 or self.conda_context.can_build_job_environment(platform))
 
     def _expand_requirement(self, requirement):
         return self._expand_specs(self._expand_mappings(requirement))
@@ -751,6 +769,7 @@ class CondaDependency(Dependency):
         dependency_resolver: DependencyResolver | None = None,
     ) -> None:
         self.activate = conda_context.activate
+        self.platform = getattr(conda_context, "platform", None)
         self.conda_context = conda_context
         self.environment_path = environment_path
         self._exact = exact
@@ -796,6 +815,10 @@ class CondaDependency(Dependency):
                     "You can try to shorten the path to the job_working_directory."
                 )
             raise DependencyException("Conda dependency seemingly installed but failed to build job environment.")
+        if not self.conda_context.finalize_environment(self.environment_path):
+            raise DependencyException(
+                f"The job environment for platform {self.platform} contains files that could not be signed."
+            )
 
     def shell_commands(self):
         if not self.cache_path:

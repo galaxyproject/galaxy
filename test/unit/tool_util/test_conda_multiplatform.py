@@ -17,6 +17,7 @@ from typing import (
 import pytest
 
 from galaxy.tool_util.deps import (
+    CachedDependencyManager,
     conda_util,
     DependencyManager,
 )
@@ -60,13 +61,41 @@ if argv[:2] == ["info", "--json"]:
         sys.exit(1)
     print(json.dumps({"platform": "linux-64", "conda_version": "24.1.0", "default_prefix": os.path.dirname(here)}))
     sys.exit(0)
+def history_specs(prefix):
+    history = os.path.join(prefix, "conda-meta", "history")
+    if not os.path.exists(history):
+        return []
+    specs = []
+    for line in open(history):
+        if line.startswith("# update specs:"):
+            specs.extend(json.loads(line.split(":", 1)[1]))
+    return specs
+def option(*names):
+    for name in names:
+        if name in argv:
+            return argv[argv.index(name) + 1]
+def file_specs():
+    specs = []
+    for i, a in enumerate(argv):
+        if a == "--file":
+            specs.extend(l.strip() for l in open(argv[i + 1]) if l.strip())
+    return specs
 if argv[:1] == ["list"]:
-    print("[]")
+    if "--export" in argv:
+        env = option("--prefix", "-p") or os.path.join(os.path.dirname(here), "envs", option("--name", "-n"))
+        for spec in history_specs(env):
+            print(spec)
+    else:
+        print("[]")
+    sys.exit(0)
+if argv[:1] == ["install"] and option("--prefix", "-p"):
+    prefix = option("--prefix", "-p")
+    with open(os.path.join(prefix, "conda-meta", "history"), "a") as fh:
+        fh.write("# update specs: " + json.dumps(file_specs()) + "\\n")
     sys.exit(0)
 if argv[:1] == ["create"]:
-    if "-p" in argv:
-        prefix = argv[argv.index("-p") + 1]
-    else:
+    prefix = option("-p", "--prefix")
+    if prefix is None:
         prefix = os.path.join(os.path.dirname(here), "envs", argv[argv.index("--name") + 1])
     fail = os.path.join(here, "fail_subdirs")
     subdir = os.environ.get("CONDA_SUBDIR")
@@ -81,10 +110,10 @@ if argv[:1] == ["create"]:
         print("fake solver error for " + subdir)
         sys.exit(1)
     os.makedirs(os.path.join(prefix, "conda-meta"), exist_ok=True)
-    value_flags = ("--name", "-p", "--platform", "-c", "--solver")
+    value_flags = ("--name", "-p", "--prefix", "--platform", "-c", "--channel", "--solver", "--file")
     specs = [
         a for i, a in enumerate(argv[1:], 1) if not a.startswith("-") and not (argv[i - 1] in value_flags)
-    ]
+    ] + file_specs()
     with open(os.path.join(prefix, "conda-meta", "history"), "w") as fh:
         fh.write("==> 2026-01-01 00:00:00 <==\\n# cmd: conda create\\n# update specs: " + json.dumps(specs) + "\\n")
     for rel in ("bin/tool", "bin/activate", "share/note.txt", "lib/libx.a"):
@@ -427,6 +456,99 @@ def test_merged_environment_per_platform(fake_conda: FakeConda, tmp_path) -> Non
     assert len(foreign) == 2
     assert all("/platforms/linux-aarch64/envs/mulled-v1-" in d.environment_path for d in foreign)
     assert "/platforms/linux-aarch64/bin/activate" in foreign[0].shell_commands()
+
+
+def install_individually(resolver: CondaDependencyResolver, *targets: CondaTarget) -> None:
+    for target in targets:
+        assert install_conda_target(target, resolver.conda_context) == 0
+
+
+def test_foreign_requirements_without_merged_environment_share_one_job_environment(
+    fake_conda: FakeConda, tmp_path
+) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    install_individually(resolver, CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7"))
+    dm = resolver.dependency_manager
+    requirements = ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")])
+    merged = resolver.merged_environment_name([CondaTarget("samtools", "1.9"), CondaTarget("bwa", "0.7")])
+    assert not resolver.conda_context.platform_has_env("linux-aarch64", merged)
+    # the individual environments are enough for the platform, because a job environment can be built from them
+    assert dm.platforms_for_requirements(requirements) == ["linux-64", "linux-aarch64"]
+    assert resolver.resolve_all(requirements, platform="linux-aarch64") == []
+
+    job_directory = str(tmp_path / "job")
+    os.makedirs(job_directory)
+    n_calls = len(fake_conda.calls())
+    commands = dm.dependency_shell_commands(requirements, platform="linux-aarch64", job_directory=job_directory)
+    job_env = os.path.join(job_directory, "conda-env")
+    foreign_activate = os.path.join(fake_conda.prefix, "platforms", "linux-aarch64", "bin", "activate")
+    assert len(commands) == 2
+    for command in commands:
+        # every command activates the one job environment, never one of the individual environments
+        assert f". '{foreign_activate}' '{job_env}'" in command
+        assert "/envs/__" not in command
+
+    new_calls = fake_conda.calls()[n_calls:]
+    assert [c["argv"][0] for c in new_calls if c["argv"][0] in ("create", "install")] == ["create", "install"]
+    for call in new_calls:
+        if call["argv"][0] in ("create", "install"):
+            assert call["CONDA_SUBDIR"] == "linux-aarch64"
+            assert call["CONDA_OVERRIDE_GLIBC"] == "2.17"
+            assert call["argv"][1:3] == ["--platform", "linux-aarch64"]
+            assert "--offline" in call["argv"]
+            assert call["argv"][call["argv"].index("--prefix") + 1] == job_env
+    # the exports come from the foreign environments
+    exports = [c["argv"] for c in new_calls if c["argv"][0] == "list"]
+    assert [a[a.index("--prefix") + 1] for a in exports] == [
+        foreign_env(fake_conda, "linux-aarch64", "__samtools@1.9"),
+        foreign_env(fake_conda, "linux-aarch64", "__bwa@0.7"),
+    ]
+    with open(os.path.join(job_env, "conda-meta", "history")) as fh:
+        specs = [
+            spec for line in fh if line.startswith("# update specs:") for spec in json.loads(line.split(":", 1)[1])
+        ]
+    assert sorted(specs) == ["bwa=0.7", "samtools=1.9"]
+    # nothing was written to the native environments
+    assert not resolver.conda_context.has_env(merged)
+
+
+def test_foreign_requirements_prefer_the_merged_environment(fake_conda: FakeConda, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
+    dm = resolver.dependency_manager
+    requirements = ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")])
+    job_directory = str(tmp_path / "job")
+    os.makedirs(job_directory)
+    commands = dm.dependency_shell_commands(requirements, platform="linux-aarch64", job_directory=job_directory)
+    merged = resolver.merged_environment_name([CondaTarget("samtools", "1.9"), CondaTarget("bwa", "0.7")])
+    merged_env = foreign_env(fake_conda, "linux-aarch64", merged)
+    # created on demand and activated directly, no job environment is built
+    assert os.path.exists(foreign_marker(fake_conda, "linux-aarch64", merged))
+    assert all(f"'{merged_env}'" in command for command in commands)
+    assert not os.path.exists(os.path.join(job_directory, "conda-env"))
+    assert not [c for c in fake_conda.calls("list") if "--export" in c["argv"]]
+
+
+def test_foreign_requirements_need_a_buildable_job_environment(fake_conda: FakeConda, tmp_path, monkeypatch) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    install_individually(resolver, CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7"))
+    dm = resolver.dependency_manager
+    monkeypatch.setattr(CondaContext, "can_build_job_environment", lambda self, subdir: self.is_native_platform(subdir))
+    assert dm.platforms_for_requirements(ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")])) == ["linux-64"]
+    # a single requirement is activated directly and needs no job environment
+    assert dm.platforms_for_requirements(ToolRequirements([req("samtools", "1.9")])) == ["linux-64", "linux-aarch64"]
+
+
+def test_foreign_job_environment_is_signed_on_osx(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
+    resolver = make_resolver(fake_conda, tmp_path, platforms="osx-arm64", codesign_exec=fake_signer.exec)
+    install_individually(resolver, CondaTarget("samtools", version="1.9"), CondaTarget("bwa", version="0.7"))
+    job_directory = str(tmp_path / "job")
+    os.makedirs(job_directory)
+    n_signed = len(fake_signer.calls())
+    resolver.dependency_manager.dependency_shell_commands(
+        ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")]), platform="osx-arm64", job_directory=job_directory
+    )
+    signed = [call[-1] for call in fake_signer.calls()[n_signed:]]
+    assert os.path.join(job_directory, "conda-env", "bin", "tool") in signed
 
 
 def test_platforms_for_requirements(fake_conda: FakeConda, fake_signer: FakeSigner, tmp_path) -> None:
@@ -874,6 +996,20 @@ def test_resolvers_without_platform_support_are_skipped_for_foreign_platforms(fa
     dm.requirements_to_dependencies(requirements, platform="linux-64")
     dm.requirements_to_dependencies(requirements)
     assert len(plain.calls) == 2
+
+
+def test_cached_dependency_hash_includes_the_platform(tmp_path) -> None:
+    manager = CachedDependencyManager(str(tmp_path), app_config=dict(dependency_resolvers=[]))
+
+    def dep(platform: str | None) -> Bunch:
+        return Bunch(name="samtools", version="1.9", exact=True, dependency_type="conda", platform=platform)
+
+    native, native_again, foreign = (manager.hash_dependencies([dep(p)]) for p in (None, None, "linux-aarch64"))
+    assert native == native_again
+    assert native != foreign
+    # dependencies without any platform notion keep the hash they always had
+    plain = Bunch(name="samtools", version="1.9", exact=True, dependency_type="conda")
+    assert manager.hash_dependencies([plain]) == native
 
 
 def test_platform_is_not_filtered_without_a_conda_resolver(tmp_path) -> None:
