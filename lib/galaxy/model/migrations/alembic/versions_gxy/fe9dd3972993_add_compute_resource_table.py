@@ -24,7 +24,7 @@ RESOURCE_TABLE = "compute_resource"
 REGISTRATION_TABLE = "compute_resource_registration"
 
 
-def upgrade():
+def upgrade() -> None:
     """Create the tables backing user-self-registered compute resources.
 
     The relay refresh token associated with each resource is stored in the Galaxy
@@ -79,7 +79,7 @@ def upgrade():
         )
 
 
-def downgrade():
+def downgrade() -> None:
     with transaction():
         drop_table(REGISTRATION_TABLE)
         drop_table(RESOURCE_TABLE)

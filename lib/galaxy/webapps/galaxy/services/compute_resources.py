@@ -15,6 +15,8 @@ Matches the pattern used by ``galaxy.webapps.galaxy.services.credentials``.
 
 from __future__ import annotations
 
+from typing import cast
+
 from fastapi import (
     HTTPException,
     status,
@@ -56,9 +58,10 @@ def _to_summary(resource: ComputeResource) -> ComputeResourceSummary:
 
 
 def _require_authenticated(trans: ProvidesUserContext) -> User:
-    if trans.user is None:
+    user = trans.user
+    if user is None:
         raise exceptions.AuthenticationRequired("Compute resources API requires an authenticated user.")
-    return trans.user
+    return cast(User, user)
 
 
 class ComputeResourceService:

@@ -107,7 +107,7 @@ class TestComputeResourceToolExecution(
     # device flow.
     _keycloak_setup: ClassVar[KeycloakSetup | None] = None
     _compute_resource_manager_name: ClassVar[str]
-    _resource_id: ClassVar[int | None] = None  # genuinely None until setUp() inserts the row
+    _resource_id: ClassVar[str | None] = None  # genuinely None until setUp() inserts the row
     _tmp_dir: ClassVar[Path]
 
     # --- IntegrationTestCase hooks ------------------------------------------
