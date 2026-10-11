@@ -1288,6 +1288,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``admin_extensions_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Admin extensions directory: where to look for extensions that add
+    sections and links to the Admin panel. Each extension is a
+    subdirectory containing a config.yml. By default none are shipped,
+    so nothing is loaded. To use an absolute path begin the path with
+    '/'. This is a comma-separated list.
+:Default: ``config/plugins/admin``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~
 ``webhooks_dir``
 ~~~~~~~~~~~~~~~~

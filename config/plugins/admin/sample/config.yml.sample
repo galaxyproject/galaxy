@@ -1,0 +1,50 @@
+# Sample Admin panel extension. Copy this directory, rename this file to
+# config.yml, and set admin_extensions_dir in galaxy.yml to the parent
+# directory. Each extension adds one section to the Admin panel.
+id: sample
+section: Sample Extension
+items:
+  # Shown inside Galaxy's center panel. Relative URLs are resolved against
+  # Galaxy's root, so this works behind a URL prefix.
+  - id: welcome
+    type: link
+    title: Welcome Page
+    url: /static/welcome.html
+    target: iframe
+  # Opened in a new browser tab.
+  - id: docs
+    type: link
+    title: Galaxy Documentation
+    url: https://docs.galaxyproject.org
+    target: new_tab
+  # A settings form. Values are saved in Galaxy's database and read by the
+  # code that owns each key. Inputs with an explicit `key` write a setting some
+  # other component documents and reads; a job runner, for example, could read
+  # gcp_batch.<runner param name> ahead of its job_conf.yml value. Inputs
+  # without `key` get <extension id>.<item id>.<input name> and are only read
+  # by your own code.
+  - id: batch_settings
+    type: form
+    title: GCP Batch Settings
+    description: Runtime defaults for the GCP Batch job runner.
+    inputs:
+      - name: max_run_duration
+        key: gcp_batch.max_run_duration
+        type: text
+        label: Job walltime
+        help: Longest a single job may run, as a Batch duration such as 3600s.
+        default: 86400s
+      - name: max_retry_count
+        key: gcp_batch.max_retry_count
+        type: integer
+        label: Retries
+        help: Times Batch retries a failed task before the job fails.
+        default: 3
+        min: 0
+        max: 10
+      - name: boot_disk_type
+        key: gcp_batch.boot_disk_type
+        type: select
+        label: Boot disk type
+        options: [pd-standard, pd-balanced, pd-ssd]
+        default: pd-standard

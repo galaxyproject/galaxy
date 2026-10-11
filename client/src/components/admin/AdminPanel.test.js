@@ -1,8 +1,11 @@
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import { useConfig } from "@/composables/config";
+import { useAdminExtensionsStore } from "@/stores/adminExtensionsStore";
 
 import MountTarget from "./AdminPanel.vue";
 
@@ -15,6 +18,14 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
+vi.mock("@/onload/loadConfig", async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        getAppRoot: () => "/galaxy/",
+    };
+});
+
 vi.mock("vue-router", async (importOriginal) => {
     const actual = await importOriginal();
     return {
@@ -23,9 +34,14 @@ vi.mock("vue-router", async (importOriginal) => {
     };
 });
 
-function createTarget(propsData = {}) {
+function createTarget(propsData = {}, extensions = []) {
+    const pinia = createTestingPinia({ stubActions: true, createSpy: vi.fn });
+    const store = useAdminExtensionsStore(pinia);
+    store.extensions = extensions;
+    store.loaded = true;
     return mount(MountTarget, {
         global: localVue,
+        pinia,
         propsData,
         stubs: {
             routerLink: true,
@@ -59,5 +75,49 @@ describe("AdminPanel", () => {
                 expect(wrapper.find(option.elementId).exists()).toBe(available);
             }
         }
+    });
+
+    it("shows no extension sections when none are loaded", () => {
+        const wrapper = createTarget();
+        expect(wrapper.text()).not.toContain("AnVIL");
+        expect(wrapper.find("[id^='admin-link-ext-']").exists()).toBe(false);
+    });
+
+    it("appends a section per extension with framed and external links", async () => {
+        const extensions = [
+            {
+                id: "anvil",
+                section: "AnVIL",
+                items: [
+                    { id: "monitor", type: "link", title: "Cluster Monitor", url: "/monitor", target: "iframe" },
+                    { id: "docs", type: "link", title: "Docs", url: "https://example.org", target: "new_tab" },
+                    { id: "welcome", type: "link", title: "Welcome", url: "/static/welcome.html", target: "new_tab" },
+                    { id: "batch", type: "form", title: "GCP Batch", inputs: [] },
+                ],
+            },
+        ];
+        const wrapper = createTarget({}, extensions);
+        await flushPromises();
+
+        const titles = wrapper.findAll(".unified-panel-divider-text").map((w) => w.text());
+        expect(titles[titles.length - 1]).toBe("AnVIL");
+
+        const framed = wrapper.find("#admin-link-ext-anvil-monitor");
+        expect(framed.exists()).toBe(true);
+        expect(framed.attributes("to")).toBe("/admin/extensions/anvil/monitor");
+
+        const external = wrapper.find("a#admin-link-ext-anvil-docs");
+        expect(external.exists()).toBe(true);
+        expect(external.attributes("href")).toBe("https://example.org");
+        expect(external.attributes("target")).toBe("_blank");
+        expect(external.text()).toBe("Docs");
+
+        // A Galaxy-relative URL gets the configured URL prefix, like framed links do through CenterFrame.
+        const local = wrapper.find("a#admin-link-ext-anvil-welcome");
+        expect(local.attributes("href")).toBe("/galaxy/static/welcome.html");
+
+        const form = wrapper.find("#admin-link-ext-anvil-batch");
+        expect(form.exists()).toBe(true);
+        expect(form.attributes("to")).toBe("/admin/extensions/anvil/batch");
     });
 });

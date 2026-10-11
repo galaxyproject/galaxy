@@ -30,6 +30,7 @@ from kombu.pools import producers
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
+from galaxy.managers.admin_settings import AdminSettingsManager
 from galaxy.managers.sse import (
     SSEConnectionManager,
     SSEEvent,
@@ -453,6 +454,11 @@ def admin_job_lock(app, **kwargs):
     log.info(f"Administrative Job Lock is now set to {job_lock}. Jobs will {'not' if job_lock else 'now'} dispatch.")
 
 
+def reload_admin_settings(app: "MinimalManagerApp", **kwargs) -> None:
+    """Drop this process's cached Admin panel settings after another process saved a form."""
+    app[AdminSettingsManager].invalidate()
+
+
 def notify_users(app: "MinimalManagerApp", **kwargs) -> None:
     """Push SSE events to connected users on this worker process."""
     payload = cast(NotifyUsersPayload, kwargs)
@@ -583,6 +589,7 @@ control_message_to_task = {
     "reload_tool_data_tables": reload_tool_data_tables,
     "reload_job_rules": reload_job_rules,
     "admin_job_lock": admin_job_lock,
+    "reload_admin_settings": reload_admin_settings,
     "reload_sanitize_allowlist": reload_sanitize_allowlist,
     "recalculate_user_disk_usage": recalculate_user_disk_usage,
     "rebuild_toolbox_search_index": rebuild_toolbox_search_index,
