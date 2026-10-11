@@ -455,7 +455,7 @@ class ComputeResourceManager:
             # Persist the rotation so the runner's next exchange sees it
             # — same vault key the runner reads from.
             vault_wrapper.write_secret(secret_path, rotated)
-        access_token = body.get("access_token")
+        access_token: str | None = body.get("access_token")
         if not access_token:
             log.warning(
                 "Relay refresh response missing access_token for resource id=%s.",

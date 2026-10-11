@@ -1611,7 +1611,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             ) -> None:
                 self._write_refresh_token(_resource_id, _user, data)
 
-            kwargs = self._pulsar_client_manager_args()
+            kwargs: dict[str, Any] = self._pulsar_client_manager_args()
             # Per-tenant fields; override anything that might have leaked
             # from runner-level params.
             kwargs.update(
