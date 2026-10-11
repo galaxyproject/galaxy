@@ -1,4 +1,5 @@
 # Test tools API.
+import base64
 import contextlib
 import json
 import os
@@ -3204,6 +3205,37 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output_details["state"] == "ok"
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.strip() == source_uri.strip()
+
+    @skip_without_tool("gx_allow_uri_if_protocol_single")
+    def test_allow_uri_if_protocol_on_single_deferred_zarr_input(self, history_id):
+        top_level_uri = "https://example.org/data/top_level.zarr"
+        nested_uri = "https://example.org/data/nested.zarr"
+        top_level_hda = self.dataset_populator.create_deferred_hda(history_id, top_level_uri, ext="zarr")
+        nested_hda = self.dataset_populator.create_deferred_hda(history_id, nested_uri, ext="zarr")
+
+        inputs = {"input1": dataset_to_param(top_level_hda), "nested|input2": dataset_to_param(nested_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol_single", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.splitlines() == [top_level_uri, nested_uri]
+
+    @skip_without_tool("gx_allow_uri_if_protocol_single")
+    def test_allow_uri_if_protocol_materializes_other_protocols(self, history_id):
+        content = "materialized content\n"
+        source_uri = f"base64://{base64.b64encode(content.encode()).decode()}"
+        deferred_hda = self.dataset_populator.create_deferred_hda(history_id, source_uri, ext="txt")
+
+        inputs = {"input1": dataset_to_param(deferred_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol_single", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content == content
 
     @skip_without_tool("gx_allow_uri_if_protocol")
     def test_allow_uri_if_protocol_on_collection_with_deferred(self, history_id):
