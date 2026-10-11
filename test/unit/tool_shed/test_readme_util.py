@@ -101,7 +101,9 @@ def test_readmes_renders_rst_readme_of_each_downloadable_revision(
     assert other_label not in html
     assert "<script" not in html
     encoded_id = app.security.encode_id(new_repository.id)
-    assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png"' in html
+    # Old revisions point at the image as of that revision; the latest is served from disk.
+    query = f"?changeset_revision={old}" if label == "Old" else ""
+    assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png{query}"' in html
 
 
 def test_readmes_renders_readme_unchanged_in_old_revision(

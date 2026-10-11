@@ -19,6 +19,7 @@ from starlette.responses import (
 )
 
 from galaxy.exceptions import ObjectNotFound
+from galaxy.tool_shed.util.hg_util import get_file_data_from_manifest
 from galaxy.tool_shed.util.repository_util import get_absolute_path_to_file_in_repository
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
@@ -38,6 +39,7 @@ from . import (
     depends,
     DependsOnTrans,
     FromTipQueryParam,
+    OptionalChangesetRevisionQueryParam,
     RequiredChangesetParam,
     RequiredRepoNameParam,
     RequiredRepoOwnerParam,
@@ -203,8 +205,15 @@ class FastAPILegacyInstall:
         self,
         repository_id: str,
         image_file: str,
-    ) -> FileResponse:
+        changeset_revision: str | None = OptionalChangesetRevisionQueryParam,
+    ) -> Response:
         repository = get_repository_in_tool_shed(self.app, repository_id)
+        media_type = self._image_media_type(image_file)
+        if changeset_revision:
+            data = get_file_data_from_manifest(image_file, repository.hg_repo, changeset_revision)
+            if data is None:
+                raise ObjectNotFound("Image file not found.")
+            return Response(content=data, media_type=media_type)
         repo_files_dir = repository.repo_path(self.app)
         path_to_file = get_absolute_path_to_file_in_repository(repo_files_dir, image_file)
         if not path_to_file or not os.path.exists(path_to_file):
@@ -214,8 +223,11 @@ class FastAPILegacyInstall:
         repo_dir_resolved = os.path.realpath(repo_files_dir)
         if resolved != repo_dir_resolved and not resolved.startswith(repo_dir_resolved + os.sep):
             raise ObjectNotFound("Image file not found.")
+        return FileResponse(path=resolved, media_type=media_type)
+
+    def _image_media_type(self, image_file: str) -> str:
         # Determine MIME type - try datatypes registry first, fall back to stdlib
-        media_type = None
+        media_type: str | None = None
         file_name = os.path.basename(image_file)
         try:
             extension = file_name.rsplit(".", 1)[-1]
@@ -229,4 +241,4 @@ class FastAPILegacyInstall:
         # Only serve known image types
         if not media_type or not media_type.startswith("image/"):
             raise ObjectNotFound("Image file not found.")
-        return FileResponse(path=resolved, media_type=media_type)
+        return media_type

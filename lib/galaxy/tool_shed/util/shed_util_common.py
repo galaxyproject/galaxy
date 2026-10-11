@@ -149,12 +149,14 @@ def set_image_paths(
     tool_shed_repository: "ToolShedRepository | None" = None,
     tool_id: str | None = None,
     tool_version: str | None = None,
+    changeset_revision: str | None = None,
 ) -> str:
     """
     Handle tool help image display for tools that are contained in repositories in
     the tool shed or installed into Galaxy as well as image display in repository
     README files.  This method will determine the location of the image file and
-    return the path to it that will enable the caller to open the file.
+    return the path to it that will enable the caller to open the file.  Pass changeset_revision
+    to point at the images as of that repository revision rather than the current files.
     """
     if text:
         if repository_util.is_tool_shed_client(app) and encoded_repository_id:
@@ -180,7 +182,8 @@ def set_image_paths(
         # settings like .. images:: http_files/images/help.png
         for match in re.findall(".. image:: (?!http)/?(.+)", text):
             text = text.replace(match, match.replace("/", "%2F"))
-        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", rf".. image:: {route_to_images}/\1", text)
+        query = f"?changeset_revision={changeset_revision}" if changeset_revision else ""
+        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", rf".. image:: {route_to_images}/\1{query}", text)
     return text
 
 

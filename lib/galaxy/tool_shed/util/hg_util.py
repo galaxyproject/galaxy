@@ -93,6 +93,21 @@ def get_ctx_file_path_from_manifest(filename: str, repo: "IRepo", changeset_revi
     return None, None
 
 
+def get_file_data_from_manifest(filename: str, repo: "IRepo", changeset_revision: str) -> bytes | None:
+    """
+    Return the contents of filename as of changeset_revision, or None if no such file exists then.
+    """
+    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest(filename, repo, changeset_revision)
+    if manifest_ctx is None:
+        return None
+    try:
+        data: bytes = manifest_ctx[ctx_file].data()
+    except LookupError:
+        # The last change to the file deleted it.
+        return None
+    return data
+
+
 def get_file_context_from_ctx(ctx: Any, filename: str) -> Any | Literal["DELETED"] | None:
     """Return the mercurial file context for a specified file."""
     # We have to be careful in determining if we found the correct file because multiple files with
