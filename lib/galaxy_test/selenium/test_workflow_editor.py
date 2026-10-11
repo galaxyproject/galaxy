@@ -368,17 +368,21 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         editor.collection_type_select_toggle.wait_for_and_click()
         editor.collection_type_select_options.wait_for_absent_or_hidden()
 
-        self.workflow_editor_set_collection_type("list")
-        assert editor.collection_type_selected.wait_for_text() == "List of Datasets (list)"
-        assert editor.collection_type_selected_help.wait_for_text().startswith("A simple flat list of datasets")
+        # new collection inputs default to list, so pick something else
+        self.workflow_editor_set_collection_type("list:list")
+        assert editor.collection_type_selected.wait_for_text() == "Nested List of Datasets (list:list)"
+        assert editor.collection_type_selected_help.wait_for_text().startswith(
+            "A list where each element is in turn a list of datasets"
+        )
         self.screenshot("workflow_editor_collection_type_described")
 
         editor.collection_type_help_link.wait_for_and_click()
         editor.collection_type_help_modal.wait_for_visible()
-        current_card = editor.collection_type_card(collection_type="list")
+        current_card = editor.collection_type_card(collection_type="list:list")
         other_card = editor.collection_type_card(collection_type="list:paired")
         current_card.wait_for_visible()
         assert current_card.has_class("border-primary")
+        assert not editor.collection_type_card(collection_type="list").has_class("border-primary")
         assert not other_card.has_class("border-primary")
         self.screenshot("workflow_editor_collection_type_help_modal")
         self.scroll_into_view(editor.collection_type_card(collection_type="sample_sheet:record").wait_for_present())
