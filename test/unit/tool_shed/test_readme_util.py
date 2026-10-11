@@ -70,7 +70,7 @@ def _upload_revision(
     column_maker_version: str,
     label: str,
 ):
-    revision_dir = tmp_path / column_maker_version
+    revision_dir = tmp_path / f"{column_maker_version}_{label}"
     revision_dir.mkdir()
     tool_xml = COLUMN_MAKER_REVISIONS / column_maker_version / "column_maker.xml"
     (revision_dir / "column_maker.xml").write_text(tool_xml.read_text())
@@ -110,12 +110,17 @@ def test_readmes_renders_readme_unchanged_in_old_revision(
     tmp_path: Path,
 ):
     app = provides_repositories.app
+    # The README-only "Mid" upload moves the first downloadable revision forward, so the
+    # column_maker 2 revision's nearest README change is "Mid" and its earliest is "Old".
     revisions = []
-    for column_maker_version, label in [("1", "Old"), ("2", "Old"), ("3", "New")]:
+    for column_maker_version, label in [("1", "Old"), ("1", "Mid"), ("2", "Mid"), ("3", "New")]:
         _upload_revision(provides_repositories, new_repository, tmp_path, column_maker_version, label)
         revisions.append(get_latest_downloadable_changeset_revision(app, new_repository))
-    assert len(set(revisions)) == 3
+    downloadable = {m.changeset_revision for m in new_repository.downloadable_revisions}
+    assert downloadable == set(revisions[1:])
 
-    html = readmes(app, new_repository, revisions[1])["README.rst"]
+    html = readmes(app, new_repository, revisions[2])["README.rst"]
 
-    assert "Old <strong>bold</strong> text." in html
+    assert "Mid <strong>bold</strong> text." in html
+    assert "Old" not in html
+    assert "New" not in html
