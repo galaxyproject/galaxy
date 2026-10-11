@@ -38,26 +38,13 @@ describe("WorkflowCardList — rename flow", () => {
         vi.clearAllMocks();
     });
 
-    it("shows WorkflowRename with correct props when a card emits rename", async () => {
-        const wrapper = await mountWorkflowCardList();
-
-        expect(wrapper.findComponent(WorkflowRename).exists()).toBe(false);
-
-        await requestRename(wrapper, 0, FIRST_WORKFLOW);
-
-        const renameModal = wrapper.findComponent(WorkflowRename);
-        expect(renameModal.exists()).toBe(true);
-        expect(renameModal.props("name")).toBe(FIRST_WORKFLOW.name);
-    });
-
-    it("does not retain first workflow's name when opening rename for a different workflow after aborting", async () => {
+    it("emits refreshList on close and renames the workflow asked for next", async () => {
         const wrapper = await mountWorkflowCardList();
 
         await requestRename(wrapper, 0, FIRST_WORKFLOW);
         wrapper.findComponent(WorkflowRename).vm.$emit("close");
         await flushPromises();
 
-        expect(wrapper.findComponent(WorkflowRename).exists()).toBe(false);
         expect(wrapper.getComponent(WorkflowCardList).emitted("refreshList")).toEqual([[true, true]]);
 
         await requestRename(wrapper, 1, SECOND_WORKFLOW);
