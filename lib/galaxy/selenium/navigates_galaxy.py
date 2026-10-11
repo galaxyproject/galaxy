@@ -1368,6 +1368,45 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         editor.license_selector.wait_for_visible()
         return editor.license_current_value.wait_for_text()
 
+    def workflow_editor_set_collection_type(self, collection_type: str | None, custom: bool = False) -> None:
+        """Set the open collection input's type - ``None`` for any type, ``custom`` to type it in."""
+        editor = self.components.workflow_editor
+        self.select_set_value(
+            editor.collection_type_select,
+            "Custom collection type" if custom else (collection_type or "Any collection type"),
+        )
+        # the options fade out over the custom type input
+        editor.collection_type_select_options.wait_for_absent_or_hidden()
+        if custom:
+            assert collection_type
+            editor.collection_type_custom_input.wait_for_and_clear_and_send_keys(collection_type)
+        self.workflow_editor_wait_for_collection_type_selected(collection_type, custom=custom)
+
+    def workflow_editor_wait_for_collection_type_selected(
+        self, collection_type: str | None, custom: bool = False
+    ) -> None:
+        """Wait for the collection type select to show ``collection_type`` (see ``workflow_editor_set_collection_type``)."""
+        editor = self.components.workflow_editor
+        if custom:
+            expected = "Custom collection type..."
+        elif collection_type is None:
+            expected = "Any collection type"
+        else:
+            # typing sample_sheet:paired also matches sample_sheet:paired_or_unpaired, so check the exact type
+            expected = f"({collection_type})"
+        selected = editor.collection_type_selected
+        selected.wait_for_visible()
+        try:
+            self._wait_on(
+                lambda: selected.wait_for_text().endswith(expected),
+                f"collection type select to show [{expected}]",
+                wait_type=WAIT_TYPES.UX_TRANSITION,
+            )
+        except TimeoutAssertionError as e:
+            raise AssertionError(
+                f"Collection type select shows [{selected.wait_for_text()}], expected [{expected}]"
+            ) from e
+
     def workflow_editor_add_tool_step(self, tool_id: str):
         self.tool_open(tool_id)
 

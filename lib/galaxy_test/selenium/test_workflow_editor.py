@@ -289,7 +289,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("chipseq example input")
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.select_set_value(editor.collection_type_select, "sample_sheet:paired")
+        self.workflow_editor_set_collection_type("sample_sheet:paired")
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_type_selected")
 
         self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
 
@@ -326,9 +327,10 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_create_new()
         self.workflow_editor_add_input(item_name="data_collection_input")
         editor.label_input.wait_for_and_send_keys("input1")
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.select_set_value(editor.collection_type_select, "Custom collection type")
-        editor.collection_type_custom_input.wait_for_and_clear_and_send_keys("list:list:list")
+        input_node.wait_for_visible()
+        self.workflow_editor_set_collection_type("list:list:list", custom=True)
+        self.screenshot("workflow_editor_collection_type_custom")
+        # each change rebuilds the step through an async server call with no UI marker - let it land before saving
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         assert self._current_collection_type() == "list:list:list"
@@ -338,7 +340,9 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert editor.collection_type_selected.wait_for_text() == "Custom collection type..."
         assert editor.collection_type_custom_input.wait_for_value() == "list:list:list"
 
-        self.select_set_value(editor.collection_type_select, "Any collection type")
+        self.workflow_editor_set_collection_type(None)
+        editor.collection_type_custom_input.wait_for_absent()
+        # see above - the step rebuild is async with no UI marker
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         assert self._current_collection_type() is None
@@ -347,6 +351,48 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         input_node.title.wait_for_and_click()
         assert editor.collection_type_selected.wait_for_text() == "Any collection type"
         editor.collection_type_custom_input.assert_absent()
+
+    @selenium_test
+    def test_collection_input_collection_type_help_modal(self):
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+
+        editor.collection_type_select_toggle.wait_for_and_click()
+        editor.collection_type_select_options.wait_for_visible()
+        self.screenshot("workflow_editor_collection_type_select_open")
+        editor.collection_type_select_toggle.wait_for_and_click()
+        editor.collection_type_select_options.wait_for_absent_or_hidden()
+
+        self.workflow_editor_set_collection_type("list")
+        assert editor.collection_type_selected.wait_for_text() == "List of Datasets (list)"
+        assert editor.collection_type_selected_help.wait_for_text().startswith("A simple flat list of datasets")
+        self.screenshot("workflow_editor_collection_type_described")
+
+        editor.collection_type_help_link.wait_for_and_click()
+        editor.collection_type_help_modal.wait_for_visible()
+        current_card = editor.collection_type_card(collection_type="list")
+        other_card = editor.collection_type_card(collection_type="list:paired")
+        current_card.wait_for_visible()
+        assert current_card.has_class("border-primary")
+        assert not other_card.has_class("border-primary")
+        self.screenshot("workflow_editor_collection_type_help_modal")
+        self.scroll_into_view(editor.collection_type_card(collection_type="sample_sheet:record").wait_for_present())
+        self.screenshot("workflow_editor_collection_type_help_modal_sample_sheets")
+
+        other_card.wait_for_and_click()
+        editor.collection_type_help_modal.wait_for_absent()
+        self.workflow_editor_wait_for_collection_type_selected("list:paired")
+        assert editor.collection_type_selected.wait_for_text() == "List of Dataset Pairs (list:paired)"
+        self.screenshot("workflow_editor_collection_type_chosen_from_help")
+        # the step rebuild is async with no UI marker - let it land before saving
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() == "list:paired"
 
     @selenium_test
     def test_data_column_input_editing(self):

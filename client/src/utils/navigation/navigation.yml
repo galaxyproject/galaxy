@@ -1161,8 +1161,17 @@ workflow_editor:
       selector: >
         //div[@id='form-element-__annotation']//textarea
     collection_type_select: '#form-element-collection_type'
+    collection_type_select_toggle: '#form-element-collection_type .multiselect__select'
+    # excludes the 0.4s fade-in, which Playwright counts as visible
+    collection_type_select_options: '#form-element-collection_type .multiselect__content-wrapper:not([class*="multiselect-enter"])'
     collection_type_selected: '#form-element-collection_type .multiselect__single'
+    collection_type_selected_help: '#form-element-collection_type .form-select-or-text > small.form-text'
     collection_type_custom_input: '#collection_type-other'
+    collection_type_help_link:
+      type: data-description
+      selector: 'collection type help'
+    collection_type_help_modal: '.form-collection-type dialog[open]'
+    collection_type_card: '.form-collection-type dialog[open] .collection-type-card[data-collection-type="${collection_type}"]'
     step_when:
       type: xpath
       selector: >
