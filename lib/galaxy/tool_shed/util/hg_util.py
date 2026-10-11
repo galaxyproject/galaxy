@@ -8,7 +8,10 @@ from typing import (
 )
 
 from galaxy.tool_shed.util import basic_util
-from galaxy.util import unicodify
+from galaxy.util import (
+    smart_str,
+    unicodify,
+)
 
 if TYPE_CHECKING:
     from mercurial.interfaces.repository import IRepo
@@ -95,16 +98,21 @@ def get_ctx_file_path_from_manifest(filename: str, repo: "IRepo", changeset_revi
 
 def get_file_data_from_manifest(filename: str, repo: "IRepo", changeset_revision: str) -> bytes | None:
     """
-    Return the contents of filename as of changeset_revision, or None if no such file exists then.
+    Return the contents of filename in the repository manifest as of changeset_revision, or None
+    if that revision is unknown or has no such file.  filename is matched as a path within the
+    repository first and then by file name alone.
     """
-    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest(filename, repo, changeset_revision)
-    if manifest_ctx is None:
+    ctx = get_changectx_for_changeset(repo, changeset_revision)
+    if ctx is None:
         return None
-    try:
-        data: bytes = manifest_ctx[ctx_file].data()
-    except LookupError:
-        # The last change to the file deleted it.
+    path: bytes | None = smart_str(filename)
+    if path not in ctx:
+        stripped_filename = basic_util.strip_path(filename)
+        matches = (f for f in ctx.manifest() if basic_util.strip_path(unicodify(f)) == stripped_filename)
+        path = next(matches, None)
+    if path is None:
         return None
+    data: bytes = ctx[path].data()
     return data
 
 
@@ -219,6 +227,7 @@ __all__ = (
     "get_changectx_for_changeset",
     "get_config_from_disk",
     "get_ctx_file_path_from_manifest",
+    "get_file_data_from_manifest",
     "get_file_context_from_ctx",
     "pull_repository",
     "reversed_lower_upper_bounded_changelog",

@@ -633,12 +633,16 @@ class TestGalaxyInstallApis(ShedApiTestCase):
             assert response.headers["content-type"] == "image/png"
             assert response.content == revision_dirs.joinpath(revision_dir, "images", "logo.png").read_bytes()
 
-    def test_display_image_at_changeset_revision_nonexistent_file(self):
-        """A file missing at the requested revision should not be served."""
+    def test_display_image_at_changeset_revision_not_found(self):
+        """A file missing at the requested revision, or an unknown revision, should not be served."""
         repository = self.populator.setup_test_data_repo("column_maker_with_rst_readme")
         first_revision = list(self.populator.get_metadata(repository).root.values())[0]
-        url = f"{self.url}/repository/static/images/{repository.id}/nonexistent.png"
-        response = requests.get(url, params={"changeset_revision": first_revision.changeset_revision})
+        images_url = f"{self.url}/repository/static/images/{repository.id}"
+        response = requests.get(
+            f"{images_url}/nonexistent.png", params={"changeset_revision": first_revision.changeset_revision}
+        )
+        assert response.status_code == 404
+        response = requests.get(f"{images_url}/images%2Flogo.png", params={"changeset_revision": "000000000bad"})
         assert response.status_code == 404
 
     def test_status_for_installed_repository_redirects(self):

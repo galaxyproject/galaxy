@@ -155,8 +155,9 @@ def set_image_paths(
     Handle tool help image display for tools that are contained in repositories in
     the tool shed or installed into Galaxy as well as image display in repository
     README files.  This method will determine the location of the image file and
-    return the path to it that will enable the caller to open the file.  Pass changeset_revision
-    to point at the images as of that repository revision rather than the current files.
+    return the path to it that will enable the caller to open the file.  In the tool shed, pass
+    changeset_revision to point at the images as of that repository revision rather than the
+    current files; Galaxy's image routes ignore it.
     """
     if text:
         if repository_util.is_tool_shed_client(app) and encoded_repository_id:

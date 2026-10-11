@@ -112,6 +112,10 @@ describe("RepositoryPage", () => {
             "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
             { params: { path: { encoded_repository_id: "repo1", changeset_revision: "abc123" } } },
         )
+        expect(mockGet).not.toHaveBeenCalledWith(
+            "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
+            { params: { path: { encoded_repository_id: "repo1", changeset_revision: "def456" } } },
+        )
         expect(wrapper.get(".repository-readme-wrapper").text()).toBe("old readme")
     })
 
