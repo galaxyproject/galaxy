@@ -440,8 +440,11 @@ before. The destination of a job is assigned in the job handler before the runne
 parameter applies to static and dynamic destinations alike. The parameter is stored with the job and is applied again
 after a Galaxy restart. If a tool has package requirements and none resolves to an environment for the platform of the
 destination, the job fails with a message naming the platform, the destination and exactly those requirements that do
-not resolve. Jobs on a destination that enables a container type (``docker_enabled``, ``singularity_enabled``) skip
-this check because their software comes from the container. For a destination with a platform other than the one
+not resolve. The check uses the same resolution that produces the activation commands, so it sees the same tool
+context (installed Tool Shed dependencies, tool directory). It runs whenever the job script gets dependency commands:
+for jobs without a container, including jobs on a destination that enables a container type but found no container
+for the tool, and for containers that resolve dependencies themselves. A job in a container that brings its own
+software gets no dependency commands and no check. For a destination with a platform other than the one
 Galaxy runs on, only the Conda resolver and the container resolvers take part in the resolution; resolvers without
 platform support (such as ``galaxy_packages`` or ``lmod``) are skipped.
 

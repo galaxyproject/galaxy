@@ -3,12 +3,24 @@ import shutil
 from os import getcwd
 from tempfile import mkdtemp
 
+import pytest
+
+from galaxy.jobs import MinimalJobWrapper
 from galaxy.jobs.command_factory import (
     build_command,
     SETUP_GALAXY_FOR_METADATA,
 )
+from galaxy.jobs.job_destination import (
+    JobDestination,
+    PlatformDependencyError,
+)
 from galaxy.model import Dataset
 from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
+from galaxy.tool_util.deps.requirements import (
+    ToolRequirement,
+    ToolRequirements,
+)
+from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
 
@@ -295,3 +307,80 @@ class MockJobWrapper:
     @property
     def is_cwl_job(self):
         return False
+
+
+class PlatformJobWrapper(MockJobWrapper):
+    """A job wrapper with the dependency commands and the platform check of the real wrapper."""
+
+    dependency_shell_commands = property(
+        MinimalJobWrapper.dependency_shell_commands.fget, lambda self, value: None  # type: ignore[attr-defined]
+    )
+    platform = MinimalJobWrapper.platform
+    _check_platform_dependencies = MinimalJobWrapper._check_platform_dependencies
+
+    def __init__(self, job_dir, destination_params, resolved=()):
+        super().__init__(job_dir)
+        self._dependency_shell_commands = None
+        self.job_destination = JobDestination(id="dest", runner="local", params=destination_params)
+        self.resolve_calls = []
+        requirements = ToolRequirements([ToolRequirement(name="bwa", version="1.0", type="package")])
+
+        def resolve_dependency_shell_commands(job_directory, platform):
+            self.resolve_calls.append(platform)
+            dependencies = {r: Bunch(name=r.name) if r.name in resolved else NullDependency() for r in requirements}
+            return (["activate bwa"] if resolved else []), dependencies
+
+        self.tool = Bunch(
+            requirements=requirements, resolve_dependency_shell_commands=resolve_dependency_shell_commands
+        )
+
+
+def _build_platform_command(job_dir, wrapper, container=None):
+    runner = Bunch(
+        get_work_dir_outputs=lambda job_wrapper, **kwds: [],
+        app=Bunch(job_metrics=Bunch(default_job_instrumenter=Bunch(get_configured_plugin=lambda name: None))),
+    )
+    return build_command(
+        runner,
+        wrapper,
+        container=container,
+        modify_command_for_container=False,
+        include_metadata=False,
+        include_work_dir_outputs=False,
+    )
+
+
+@pytest.fixture
+def platform_job_dir():
+    job_dir = mkdtemp()
+    yield job_dir
+    shutil.rmtree(job_dir)
+
+
+def test_platform_check_runs_when_no_container_was_found(platform_job_dir):
+    # The destination enables docker but no container was found for the tool, the job runs bare
+    wrapper = PlatformJobWrapper(platform_job_dir, {"platform": "linux-aarch64", "docker_enabled": True})
+    with pytest.raises(PlatformDependencyError, match="bwa=1.0"):
+        _build_platform_command(platform_job_dir, wrapper, container=None)
+    assert wrapper.resolve_calls == ["linux-aarch64"]
+
+
+def test_platform_check_passes_for_a_bare_job_with_resolved_requirements(platform_job_dir):
+    wrapper = PlatformJobWrapper(
+        platform_job_dir, {"platform": "linux-aarch64", "docker_enabled": True}, resolved={"bwa"}
+    )
+    assert "activate bwa" in _build_platform_command(platform_job_dir, wrapper, container=None)
+
+
+def test_platform_check_is_skipped_for_a_container_that_brings_its_software(platform_job_dir):
+    wrapper = PlatformJobWrapper(platform_job_dir, {"platform": "linux-aarch64", "docker_enabled": True})
+    container = Bunch(resolve_dependencies=False, container_id="image", container_type="docker")
+    _build_platform_command(platform_job_dir, wrapper, container=container)
+    assert wrapper.resolve_calls == []
+
+
+def test_platform_check_runs_for_a_container_that_resolves_dependencies(platform_job_dir):
+    wrapper = PlatformJobWrapper(platform_job_dir, {"platform": "linux-aarch64", "docker_enabled": True})
+    container = Bunch(resolve_dependencies=True, container_id="image", container_type="docker")
+    with pytest.raises(PlatformDependencyError):
+        _build_platform_command(platform_job_dir, wrapper, container=container)

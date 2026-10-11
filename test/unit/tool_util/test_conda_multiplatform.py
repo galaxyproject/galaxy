@@ -998,6 +998,31 @@ def test_resolvers_without_platform_support_are_skipped_for_foreign_platforms(fa
     assert len(plain.calls) == 2
 
 
+def test_resolve_dependency_shell_commands_resolves_once_with_the_tool_context(fake_conda: FakeConda, tmp_path) -> None:
+    conda_resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64")
+    install_conda_target(CondaTarget("samtools", version="1.9"), conda_resolver.conda_context)
+    recording = RecordingResolver(supports_platforms=True)
+    dm = conda_resolver.dependency_manager
+    dm.dependency_resolvers = [recording, conda_resolver]
+    samtools, bwa = req("samtools", "1.9"), req("bwa", "0.7")
+
+    commands, dependencies = dm.resolve_dependency_shell_commands(
+        ToolRequirements([samtools, bwa]), platform="linux-aarch64", tool_dir="/tools/x", installed_tool_dependencies=[]
+    )
+    # one resolution, the unresolved requirement is reported and no incomplete activation is built
+    assert commands == []
+    assert not isinstance(dependencies[samtools], NullDependency)
+    assert isinstance(dependencies[bwa], NullDependency)
+    assert [c["tool_dir"] for c in recording.calls] == ["/tools/x", "/tools/x"]
+    assert all(c["platform"] == "linux-aarch64" and c["return_null"] for c in recording.calls)
+
+    commands, dependencies = dm.resolve_dependency_shell_commands(
+        ToolRequirements([samtools]), platform="linux-aarch64", tool_dir="/tools/x"
+    )
+    assert len(commands) == 1 and "platforms/linux-aarch64/envs/__samtools@1.9" in commands[0]
+    assert list(dependencies) == [samtools]
+
+
 def test_cached_dependency_hash_includes_the_platform(tmp_path) -> None:
     manager = CachedDependencyManager(str(tmp_path), app_config=dict(dependency_resolvers=[]))
 

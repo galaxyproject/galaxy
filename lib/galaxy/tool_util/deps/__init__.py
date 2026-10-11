@@ -29,6 +29,7 @@ from .requirements import (
 )
 from .resolvers import (
     ContainerDependency,
+    Dependency,
     NullDependency,
 )
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
@@ -208,11 +209,39 @@ class DependencyManager:
         if platform:
             kwds["platform"] = platform
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        return self._shell_commands_of(requirements, requirements_to_dependencies, **kwds)
+
+    def resolve_dependency_shell_commands(
+        self, requirements: ToolRequirements, platform: str | None = None, **kwds: Any
+    ) -> tuple[list[str], dict[ToolRequirement, Dependency]]:
+        """Shell commands activating the dependencies together with the dependencies they come from.
+
+        The requirements are resolved once, with all of ``kwds`` (the context of the tool), and the dependency
+        dictionary contains an entry for every resolvable requirement, a :class:`NullDependency` if it could not be
+        resolved. The commands are only built if every requirement resolved, an incomplete activation is of no use and
+        building the job environments is expensive; the caller decides what unresolved requirements mean.
+        """
+        if platform:
+            kwds["platform"] = platform
+        kwds["return_null"] = True
+        requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        if any(isinstance(d, NullDependency) for d in requirements_to_dependencies.values()) or len(
+            requirements_to_dependencies
+        ) < len(requirements.resolvable):
+            return [], requirements_to_dependencies
+        return self._shell_commands_of(requirements, requirements_to_dependencies, **kwds), requirements_to_dependencies
+
+    def _shell_commands_of(
+        self,
+        requirements: ToolRequirements,
+        requirements_to_dependencies: dict[ToolRequirement, Dependency],
+        **kwds: Any,
+    ) -> list[str]:
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
         return [
             dependency.shell_commands()
             for dependency in ordered_dependencies
-            if not isinstance(dependency, ContainerDependency)
+            if not isinstance(dependency, (ContainerDependency, NullDependency))
         ]
 
     def requirements_to_dependencies(self, requirements, platform: str | None = None, **kwds):
@@ -490,6 +519,9 @@ class CachedDependencyManager(DependencyManager):
 
     def build_cache(self, requirements, **kwds):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        self._build_cache_of(resolved_dependencies, **kwds)
+
+    def _build_cache_of(self, resolved_dependencies, **kwds):
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
         if os.path.exists(hashed_dependencies_dir):
@@ -515,11 +547,17 @@ class CachedDependencyManager(DependencyManager):
         if platform:
             kwds["platform"] = platform
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        return self._shell_commands_of(requirements, resolved_dependencies, **kwds)
+
+    def _shell_commands_of(self, requirements, resolved_dependencies, **kwds):
+        resolved_dependencies = {
+            r: dep for r, dep in resolved_dependencies.items() if not isinstance(dep, NullDependency)
+        }
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
         if not os.path.exists(hashed_dependencies_dir) and self.precache:
             # Cache not present, try to create it
-            self.build_cache(requirements, **kwds)
+            self._build_cache_of(resolved_dependencies, **kwds)
         if os.path.exists(hashed_dependencies_dir):
             [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
         commands = [dep.shell_commands() for dep in resolved_dependencies.values()]
@@ -571,6 +609,9 @@ class NullDependencyManager(DependencyManager):
 
     def dependency_shell_commands(self, requirements, platform=None, **kwds):
         return []
+
+    def resolve_dependency_shell_commands(self, requirements, platform=None, **kwds):
+        return [], {}
 
     def platforms_for_requirements(self, requirements):
         return []

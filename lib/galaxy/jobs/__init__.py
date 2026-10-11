@@ -102,7 +102,6 @@ from galaxy.objectstore import (
 from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.deps.containers import ALL_CONTAINER_TYPES
 from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -1168,14 +1167,19 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def dependency_shell_commands(self):
-        """Shell fragment to inject dependencies."""
+        """Shell fragment to inject dependencies.
+
+        This is only evaluated when the command line is built with dependency resolution, that is for
+        jobs without a container and for containers that resolve dependencies themselves. For a job on a
+        platform all package requirements of the tool must resolve for it.
+        """
         if self._dependency_shell_commands is None:
             platform = self.platform
             if platform:
-                commands = self.tool.build_dependency_shell_commands(
+                commands, dependencies = self.tool.resolve_dependency_shell_commands(
                     job_directory=self.working_directory, platform=platform
                 )
-                self._check_platform_dependencies(platform)
+                self._check_platform_dependencies(platform, dependencies)
             else:
                 commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
             self._dependency_shell_commands = commands
@@ -1190,26 +1194,11 @@ class MinimalJobWrapper(HasResourceParameters):
         """
         return self.job_destination.params.get("platform") or None
 
-    def _destination_runs_container(self) -> bool:
-        """Whether the job destination enables a container type (``docker_enabled``, ``singularity_enabled``)."""
-        params = self.job_destination.params
-        return any(util.asbool(params.get(f"{c_type}_enabled", False)) for c_type in ALL_CONTAINER_TYPES)
-
-    def _check_platform_dependencies(self, platform: str) -> None:
-        """Raise if package requirements of the tool do not resolve for ``platform``.
-
-        Jobs on a container destination are not checked, their software comes from the container.
-        """
-        if self._destination_runs_container():
-            return
+    def _check_platform_dependencies(self, platform: str, dependencies: dict[Any, Any]) -> None:
+        """Raise if a package requirement of the tool is not among the resolved ``dependencies`` for ``platform``."""
         tool_requirements = getattr(self.tool, "requirements", None)
         packages = list(tool_requirements.packages) if tool_requirements else []
-        if not packages:
-            return
-        resolved = self.app.toolbox.dependency_manager.requirements_to_dependencies(
-            tool_requirements, platform=platform, return_null=True
-        )
-        unresolved = [r for r in packages if r not in resolved or isinstance(resolved[r], NullDependency)]
+        unresolved = [r for r in packages if r not in dependencies or isinstance(dependencies[r], NullDependency)]
         if unresolved:
             missing = ", ".join(f"{r.name}={r.version}" if r.version else r.name for r in unresolved)
             raise PlatformDependencyError(

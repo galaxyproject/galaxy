@@ -2670,13 +2670,32 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         """
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             requirements=self.requirements,
+            platform=platform,
+            **self._dependency_resolution_kwds(job_directory=job_directory, metadata=metadata),
+        )
+
+    def resolve_dependency_shell_commands(self, job_directory=None, metadata=False, platform=None):
+        """
+        Return the commands of :meth:`build_dependency_shell_commands` together with the dependency of each
+        requirement (a ``NullDependency`` for a requirement that does not resolve) from one resolution
+        that has the full context of the tool.
+
+        The commands are only built if all requirements resolved.
+        """
+        return self.app.toolbox.dependency_manager.resolve_dependency_shell_commands(
+            requirements=self.requirements,
+            platform=platform,
+            **self._dependency_resolution_kwds(job_directory=job_directory, metadata=metadata),
+        )
+
+    def _dependency_resolution_kwds(self, job_directory=None, metadata=False):
+        return dict(
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
             preserve_python_environment=self.requires_galaxy_python_environment,
             metadata=metadata,
             tool_instance=self,
-            platform=platform,
         )
 
     @property
