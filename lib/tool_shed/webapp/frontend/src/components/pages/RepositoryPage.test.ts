@@ -27,10 +27,10 @@ function repository(overrides: Record<string, unknown> = {}) {
     }
 }
 
-function revision(overrides: Record<string, unknown> = {}) {
+function revision(overrides: Record<string, unknown> = {}, key = "0:abc123") {
     return {
-        "0:abc123": {
-            changeset_revision: "abc123",
+        [key]: {
+            changeset_revision: key.split(":")[1],
             create_time: "2024-01-01T00:00:00",
             malicious: false,
             tools: [],
@@ -41,12 +41,12 @@ function revision(overrides: Record<string, unknown> = {}) {
 }
 
 // Metadata lands after mount, as it does from the store's fetch, so the page picks the newest revision
-async function mountPage({ repositoryMetadata, ...state }: Record<string, unknown>) {
+async function mountPage({ repositoryMetadata, changesetRevision, ...state }: Record<string, unknown>) {
     const store = useRepositoryStore()
     vi.spyOn(store, "setId").mockResolvedValue(undefined)
     store.$patch({ loading: false, empty: false, repositoryPermissions: { can_manage: false }, ...state })
     const wrapper = mount(RepositoryPage, {
-        props: { repositoryId: "repo1" },
+        props: { repositoryId: "repo1", changesetRevision: changesetRevision as string | undefined },
         global: {
             stubs: {
                 RouterLink: { template: "<a><slot /></a>" },
@@ -98,6 +98,21 @@ describe("RepositoryPage", () => {
         )
         const readme = wrapper.get(".repository-readme-wrapper")
         expect(readme.find("p").text()).toBe("hello\u00a0readme")
+    })
+
+    it("loads the READMEs of the revision it is opened at", async () => {
+        readmes.value = { "README.txt": "<p>old readme</p>" }
+        const wrapper = await mountPage({
+            repository: repository(),
+            repositoryMetadata: { ...revision(), ...revision({}, "1:def456") },
+            changesetRevision: "abc123",
+        })
+
+        expect(mockGet).toHaveBeenCalledWith(
+            "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
+            { params: { path: { encoded_repository_id: "repo1", changeset_revision: "abc123" } } },
+        )
+        expect(wrapper.get(".repository-readme-wrapper").text()).toBe("old readme")
     })
 
     it("puts the description in the header and leaves out an About card with nothing more to say", async () => {
