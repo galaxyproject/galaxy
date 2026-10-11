@@ -1,3 +1,4 @@
 pytest
+pyftpdlib
 fs-gcsfs
 s3fs>=2023.1.0,<2024

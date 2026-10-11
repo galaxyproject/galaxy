@@ -92,8 +92,11 @@ prompt-toolkit==3.0.52
 propcache==0.3.2
 psutil==7.1.0 ; sys_platform != 'cygwin'
 psycopg==3.2.10
+pyasynchat==1.0.5 ; python_full_version >= '3.12'
+pyasyncore==1.0.5 ; python_full_version >= '3.12'
 pycparser==2.23 ; implementation_name != 'PyPy' and implementation_name != 'pypy' and os_name == 'nt'
 pyee==13.0.0
+pyftpdlib==2.2.0
 pygments==2.19.2
 pyparsing==3.2.5
 pyshacl==0.26.0 ; python_full_version < '3.10'
