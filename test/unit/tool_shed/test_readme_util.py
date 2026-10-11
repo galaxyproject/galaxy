@@ -24,3 +24,27 @@ def test_plain_readme_is_escaped():
     html = render_readme("README.txt", "<script>alert(1)</script>")
     assert "<script" not in html
     assert "&lt;script&gt;" in html
+
+
+def test_rst_readme_substitutes_legacy_placeholders(monkeypatch):
+    def url_for(path, qualified=False):
+        return "https://shed.example.org/" if qualified else "/shed_static"
+
+    monkeypatch.setattr("tool_shed.util.readme_util.web.url_for", url_for)
+    rst = "See `home <${host_url}view>`__.\n\n.. image:: ${static_path}/logo.png\n"
+    html = render_readme("README.rst", rst)
+    assert 'href="https://shed.example.org/view"' in html
+    assert 'src="/shed_static/logo.png"' in html
+    assert "${" not in html
+
+
+def test_rst_readme_keeps_tables_code_and_images():
+    rst = (
+        "+---+---+\n| a | b |\n+---+---+\n\n"
+        "::\n\n    samtools view in.bam\n\n"
+        ".. image:: https://example.org/logo.png\n"
+    )
+    html = render_readme("README.rst", rst)
+    assert "<table" in html
+    assert "<pre" in html
+    assert 'src="https://example.org/logo.png"' in html
