@@ -1,19 +1,9 @@
+import json
 import os
-from typing import (
-    Any,
-    cast,
-)
-from unittest.mock import (
-    AsyncMock,
-    MagicMock,
-    patch,
-)
+from unittest.mock import patch
 
 import pytest
-from openai import (
-    APIError,
-    omit,
-)
+from pytest_httpserver import HTTPServer
 
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
@@ -32,13 +22,94 @@ def _create_chat_payload(extra=None):
     return payload
 
 
-class TestVisualizationPluginsApi(IntegrationTestCase):
+def _chunk(content):
+    return {
+        "id": "chunk",
+        "object": "chat.completion.chunk",
+        "created": 0,
+        "model": "ai_model",
+        "choices": [{"index": 0, "delta": {"content": content}}],
+    }
+
+
+class FakeAIProvider:
+    """OpenAI-compatible chat completions endpoint served from the test process.
+
+    Galaxy's AI base URL points here, so the proxy uses the real OpenAI client and
+    tests assert on the request that actually reached the provider.
+    """
+
+    def __init__(self):
+        self.server = HTTPServer(port=0)
+
+    def start(self):
+        self.server.start()
+
+    def stop(self):
+        self.server.stop()
+
+    def clear(self):
+        self.server.clear()
+
+    def base_url(self, prefix="/v1"):
+        return self.server.url_for(prefix)
+
+    def respond_completion(self, prefix="/v1", **response):
+        completion = {"id": "test", "object": "chat.completion", "created": 0, "model": "ai_model", "choices": []}
+        self._expect(prefix).respond_with_json({**completion, **response})
+
+    def respond_stream(self, *chunks, prefix="/v1"):
+        data = "".join(f"data: {json.dumps(chunk)}\n\n" for chunk in chunks) + "data: [DONE]\n\n"
+        self._expect(prefix).respond_with_data(data, content_type="text/event-stream")
+
+    def respond_error(self, status, error, prefix="/v1"):
+        self._expect(prefix).respond_with_json({"error": error}, status=status)
+
+    def last_request(self):
+        request, _ = self.server.log[-1]
+        return request
+
+    def last_body(self):
+        return json.loads(self.last_request().get_data())
+
+    @property
+    def requests(self):
+        return [request for request, _ in self.server.log]
+
+    def _expect(self, prefix):
+        return self.server.expect_request(f"{prefix}/chat/completions", method="POST")
+
+
+class FakeAIProviderIntegrationTestCase(IntegrationTestCase):
+    provider: FakeAIProvider
+
+    @classmethod
+    def setUpClass(cls):
+        # Galaxy's config is built in super().setUpClass(), so the provider's URL must exist first.
+        cls.provider = FakeAIProvider()
+        cls.provider.start()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.provider.stop()
+
+    def setUp(self):
+        super().setUp()
+        self.provider.clear()
+
+    def _post_payload(self, payload=None, anon=False):
+        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
+
+
+class TestVisualizationPluginsApi(FakeAIProviderIntegrationTestCase):
     """Tests for the visualization plugins API endpoints."""
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         config["ai_api_key"] = "ai_api_key"
-        config["ai_api_base_url"] = "ai_api_base_url"
+        config["ai_api_base_url"] = cls.provider.base_url()
         config["ai_model"] = "ai_model"
         config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
 
@@ -94,78 +165,53 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert "tests" in plugin
         assert len(plugin["tests"]) >= 1
 
-    def _post_payload(self, payload=None, anon=False):
-        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_non_streaming_success(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
-        payload = _create_chat_payload()
-        response = self._post_payload(payload, anon=False)
+    def test_non_streaming_success(self):
+        self.provider.respond_completion()
+        response = self._post_payload(_create_chat_payload())
         self._assert_status_code_is(response, 200)
         assert response.json()["id"] == "test"
+        request = self.provider.last_request()
+        assert request.headers["Authorization"] == "Bearer ai_api_key"
+        assert self.provider.last_body()["stream"] is False
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_streaming_success(self, mock_client):
-        async def stream_gen():
-            chunk1 = MagicMock()
-            chunk1.model_dump.return_value = {"choices": [{"delta": {"content": "hello"}}]}
-            chunk2 = MagicMock()
-            chunk2.model_dump.return_value = {"choices": [{"delta": {"content": "world"}}]}
-            yield chunk1
-            yield chunk2
+    def test_streaming_success(self):
+        self.provider.respond_stream(_chunk("hello"), _chunk("world"))
+        closed = []
+        close = openai.AsyncOpenAI.close
 
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=stream_gen())
-        mock_instance.close = AsyncMock()
-        mock_client.return_value = mock_instance
-        payload = _create_chat_payload({"stream": True})
-        response = self._post_payload(payload, anon=False)
+        async def record_close(client):
+            closed.append(client)
+            await close(client)
+
+        with patch.object(openai.AsyncOpenAI, "close", record_close):
+            response = self._post_payload(_create_chat_payload({"stream": True}))
         self._assert_status_code_is(response, 200)
         body = response.text
         assert body.count("data:") == 3
         assert "hello" in body
         assert "world" in body
         assert body.rstrip().endswith("data: [DONE]")
-        assert mock_instance.chat.completions.create.called
-        assert mock_instance.close.called
+        assert self.provider.last_body()["stream"] is True
+        assert closed
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_stream_options_forwarded_when_streaming(self, mock_client):
-        async def stream_gen():
-            chunk = MagicMock()
-            chunk.model_dump.return_value = {"choices": [], "usage": {"total_tokens": 3}}
-            yield chunk
-
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.close = AsyncMock()
-        mock_client.return_value = mock_instance
+    def test_stream_options_forwarded_when_streaming(self):
         stream_options = {"include_usage": True}
         for extra, expected in (
             ({"stream": True, "stream_options": stream_options}, stream_options),
-            ({"stream": True}, omit),
-            ({"stream": False, "stream_options": stream_options}, omit),
+            ({"stream": True}, None),
+            ({"stream": False, "stream_options": stream_options}, None),
         ):
-            mock_instance.chat.completions.create = AsyncMock(
-                return_value=stream_gen() if extra["stream"] else mock_response
-            )
+            self.provider.clear()
+            if extra["stream"]:
+                self.provider.respond_stream({**_chunk(""), "choices": [], "usage": {"total_tokens": 3}})
+            else:
+                self.provider.respond_completion()
             response = self._post_payload(_create_chat_payload(extra))
             self._assert_status_code_is(response, 200)
-            assert mock_instance.chat.completions.create.call_args.kwargs["stream_options"] == expected
+            assert self.provider.last_body().get("stream_options") == expected
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_standard_options_forwarded(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_standard_options_forwarded(self):
+        self.provider.respond_completion()
         options = {
             "parallel_tool_calls": False,
             "reasoning_effort": "low",
@@ -176,12 +222,12 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert {key: call_kwargs[key] for key in options} == options
+        sent = self.provider.last_body()
+        assert {key: sent[key] for key in options} == options
         response = self._post_payload(_create_chat_payload())
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert all(call_kwargs[key] is omit for key in options)
+        sent = self.provider.last_body()
+        assert not options.keys() & sent.keys()
 
     def test_tools_exceed_max(self):
         payload = _create_chat_payload(
@@ -189,6 +235,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         assert "Number of tools exceeded" in response.json()["error"]["message"]
+        assert not self.provider.requests
 
     def test_tool_schema_too_large(self):
         big_params = {"x": "a" * 20000}
@@ -197,20 +244,17 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         assert "Tool schema too large" in response.json()["error"]["message"]
+        assert not self.provider.requests
 
     def test_exceed_max_messages(self):
         msgs = {"messages": [{"role": "user", "content": "x"}] * (1024 + 1)}
         payload = _create_chat_payload(msgs)
         response = self._post_payload(payload)
         assert "You have exceeded the number of maximum messages" in response.json()["error"]["message"]
+        assert not self.provider.requests
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_assistant_content_and_tool_calls_preserved(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_assistant_content_and_tool_calls_preserved(self):
+        self.provider.respond_completion()
         payload = {
             "messages": [
                 {
@@ -232,8 +276,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         }
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        forwarded_messages = call_kwargs["messages"]
+        forwarded_messages = self.provider.last_body()["messages"]
         assistant_msgs = [m for m in forwarded_messages if m["role"] == "assistant"]
         assert len(assistant_msgs) == 1
         assert assistant_msgs[0]["content"] == "I will call a tool"
@@ -241,13 +284,8 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert assistant_msgs[0]["tool_calls"][0]["function"]["name"] == "choose_process"
         assert assistant_msgs[0]["tool_calls"][0]["function"]["arguments"] == "{}"
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_messages_forwarded_as_sent(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_messages_forwarded_as_sent(self):
+        self.provider.respond_completion()
         messages = [
             {"role": "user", "content": [{"type": "text", "text": "Which version?"}], "name": "analyst"},
             {
@@ -266,16 +304,10 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         payload = {"messages": messages, "tools": [{"type": "function", "function": {"name": "get_version"}}]}
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        forwarded_messages = mock_instance.chat.completions.create.call_args.kwargs["messages"]
-        assert forwarded_messages[2:] == messages
+        assert self.provider.last_body()["messages"][2:] == messages
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_client_system_messages_replaced(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_client_system_messages_replaced(self):
+        self.provider.respond_completion()
         payload = {
             "messages": [
                 {"role": "system", "content": "client prompt", "x_vendor": 1},
@@ -286,7 +318,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         }
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        forwarded_messages = mock_instance.chat.completions.create.call_args.kwargs["messages"]
+        forwarded_messages = self.provider.last_body()["messages"]
         assert [m["role"] for m in forwarded_messages[:2]] == ["system", "system"]
         assert forwarded_messages[2:] == [{"role": "user", "content": "hi"}, {"role": "user", "content": "again"}]
 
@@ -296,14 +328,10 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 400)
+        assert not self.provider.requests
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_messages_without_content_dropped(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_messages_without_content_dropped(self):
+        self.provider.respond_completion()
         payload = {
             "messages": [
                 {"role": "user", "content": "hi"},
@@ -313,61 +341,41 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         }
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        forwarded_messages = mock_instance.chat.completions.create.call_args.kwargs["messages"]
+        forwarded_messages = self.provider.last_body()["messages"]
         assert [m["role"] for m in forwarded_messages] == ["system", "system", "user"]
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_top_level_extensions_not_forwarded(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_top_level_extensions_not_forwarded(self):
+        self.provider.respond_completion()
         payload = _create_chat_payload(
             {"x_vendor": 1, "model": "client-model", "n": 4, "temperature": 1.5, "top_p": 0.1}
         )
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert "x_vendor" not in call_kwargs
-        assert "n" not in call_kwargs
-        assert call_kwargs["model"] == "ai_model"
-        assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.3, 0.9)
+        sent = self.provider.last_body()
+        assert "x_vendor" not in sent
+        assert "n" not in sent
+        assert sent["model"] == "ai_model"
+        assert (sent["temperature"], sent["top_p"]) == (0.3, 0.9)
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_inference_settings_without_config(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_inference_settings_without_config(self):
+        self.provider.respond_completion()
         for client_max_tokens, max_tokens in ((None, 1024), (100000, 8192)):
             response = self._post_payload(_create_chat_payload({"max_tokens": client_max_tokens}))
             self._assert_status_code_is(response, 200)
-            call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-            assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.3, 0.9)
-            assert call_kwargs["max_tokens"] == max_tokens
-            assert mock_client.call_args.kwargs["timeout"] == 120.0
+            sent = self.provider.last_body()
+            assert (sent["temperature"], sent["top_p"]) == (0.3, 0.9)
+            assert sent["max_tokens"] == max_tokens
+            assert float(self.provider.last_request().headers["x-stainless-read-timeout"]) == 120.0
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_empty_tools_omitted(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_empty_tools_omitted(self):
+        self.provider.respond_completion()
         for payload in (_create_chat_payload(), {"messages": [{"role": "user", "content": "hi"}]}):
             response = self._post_payload(payload)
             self._assert_status_code_is(response, 200)
-            assert mock_instance.chat.completions.create.call_args.kwargs["tools"] is omit
+            assert "tools" not in self.provider.last_body()
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_tool_description_preserved(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_tool_description_preserved(self):
+        self.provider.respond_completion()
         payload = _create_chat_payload(
             {
                 "tools": [
@@ -384,17 +392,11 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        forwarded_tools = call_kwargs["tools"]
+        forwarded_tools = self.provider.last_body()["tools"]
         assert forwarded_tools[0]["function"]["description"] == "Select a processing step"
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_tool_with_none_parameters_normalized(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_tool_with_none_parameters_normalized(self):
+        self.provider.respond_completion()
         payload = _create_chat_payload(
             {
                 "tools": [
@@ -411,20 +413,14 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        forwarded_tools = call_kwargs["tools"]
+        forwarded_tools = self.provider.last_body()["tools"]
         assert forwarded_tools[0]["function"]["parameters"] == {
             "type": "object",
             "properties": {},
         }
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_tool_with_missing_parameters_normalized(self, mock_client):
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+    def test_tool_with_missing_parameters_normalized(self):
+        self.provider.respond_completion()
         payload = _create_chat_payload(
             {
                 "tools": [
@@ -440,32 +436,16 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         )
         response = self._post_payload(payload)
         self._assert_status_code_is(response, 200)
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        forwarded_tools = call_kwargs["tools"]
+        forwarded_tools = self.provider.last_body()["tools"]
         assert forwarded_tools[0]["function"]["parameters"] == {
             "type": "object",
             "properties": {},
         }
 
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_provider_error_body_forwarded(self, mock_client):
-        class MockOpenAIError(APIError):
-            def __init__(self):
-                super().__init__(
-                    message="original error message",
-                    request=cast(Any, object()),
-                    body={
-                        "message": "original error message",
-                        "type": "api_error",
-                        "param": None,
-                        "code": None,
-                    },
-                )
-                self.status_code = 404
-
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(side_effect=MockOpenAIError())
-        mock_client.return_value = mock_instance
+    def test_provider_error_body_forwarded(self):
+        # 4xx: the OpenAI client retries 5xx and 429 with backoff.
+        error = {"message": "original error message", "type": "api_error", "param": None, "code": None}
+        self.provider.respond_error(404, error)
         response = self._post_payload(_create_chat_payload())
         self._assert_status_code_is(response, 404)
         body = response.json()
@@ -473,20 +453,20 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert body["error"]["type"] == "api_error"
 
 
-class TestPluginsInferenceServicesConfig(IntegrationTestCase):
+class TestPluginsInferenceServicesConfig(FakeAIProviderIntegrationTestCase):
     """Tests for inference_services config resolution in plugins."""
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         config["ai_api_key"] = "global_key"
-        config["ai_api_base_url"] = "http://global-url"
+        config["ai_api_base_url"] = cls.provider.base_url("/global/v1")
         config["ai_model"] = "global_model"
         config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
         config["inference_services"] = {
             "default": {
                 "model": "default_model",
                 "api_key": "default_key",
-                "api_base_url": "http://default-url",
+                "api_base_url": cls.provider.base_url("/default/v1"),
                 "max_tokens": 512,
                 "temperature": 0.5,
                 "timeout": 30,
@@ -495,7 +475,7 @@ class TestPluginsInferenceServicesConfig(IntegrationTestCase):
             "jupyterlite": {
                 "model": "jupyterlite_model",
                 "api_key": "jupyterlite_key",
-                "api_base_url": "http://jupyterlite-url",
+                "api_base_url": cls.provider.base_url("/jupyterlite/v1"),
                 "max_tokens": 4096,
                 "temperature": 0.7,
                 "timeout": 60,
@@ -503,58 +483,42 @@ class TestPluginsInferenceServicesConfig(IntegrationTestCase):
             },
         }
 
-    def _post_payload(self, payload=None, anon=False):
-        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_plugin_specific_config_used(self, mock_client):
+    def test_plugin_specific_config_used(self):
         """Plugin-specific inference_services config overrides default and global."""
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
-
+        self.provider.respond_completion(prefix="/jupyterlite/v1")
         response = self._post_payload(payload=_create_chat_payload())
         self._assert_status_code_is(response, 200)
+        request = self.provider.last_request()
+        assert request.path == "/jupyterlite/v1/chat/completions"
+        assert request.headers["Authorization"] == "Bearer jupyterlite_key"
+        assert self.provider.last_body()["model"] == "jupyterlite_model"
 
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert call_kwargs["model"] == "jupyterlite_model"
-        client_kwargs = mock_client.call_args.kwargs
-        assert client_kwargs["api_key"] == "jupyterlite_key"
-        assert client_kwargs["base_url"] == "http://jupyterlite-url"
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_plugin_specific_settings_used(self, mock_client):
+    def test_plugin_specific_settings_used(self):
         """Plugin-specific inference settings override the default block and the built-in policy."""
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+        self.provider.respond_completion(prefix="/jupyterlite/v1")
         for client_max_tokens, max_tokens in ((None, 1024), (2048, 2048), (100000, 4096)):
             response = self._post_payload(payload=_create_chat_payload({"max_tokens": client_max_tokens}))
             self._assert_status_code_is(response, 200)
-            call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-            assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.7, 0.8)
-            assert call_kwargs["max_tokens"] == max_tokens
-            assert mock_client.call_args.kwargs["timeout"] == 60.0
+            sent = self.provider.last_body()
+            assert (sent["temperature"], sent["top_p"]) == (0.7, 0.8)
+            assert sent["max_tokens"] == max_tokens
+            assert float(self.provider.last_request().headers["x-stainless-read-timeout"]) == 60.0
 
 
-class TestPluginsInferenceServicesDefault(IntegrationTestCase):
+class TestPluginsInferenceServicesDefault(FakeAIProviderIntegrationTestCase):
     """Tests that inference_services.default is used when no plugin-specific config exists."""
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         config["ai_api_key"] = "global_key"
-        config["ai_api_base_url"] = "http://global-url"
+        config["ai_api_base_url"] = cls.provider.base_url("/global/v1")
         config["ai_model"] = "global_model"
         config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
         config["inference_services"] = {
             "default": {
                 "model": "default_model",
                 "api_key": "default_key",
-                "api_base_url": "http://default-url",
+                "api_base_url": cls.provider.base_url("/default/v1"),
                 "max_tokens": 512,
                 "temperature": 0.5,
                 "timeout": 30,
@@ -562,39 +526,23 @@ class TestPluginsInferenceServicesDefault(IntegrationTestCase):
             },
         }
 
-    def _post_payload(self, payload=None, anon=False):
-        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_default_config_fallback(self, mock_client):
+    def test_default_config_fallback(self):
         """inference_services.default is used when no plugin-specific entry exists."""
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
-
+        self.provider.respond_completion(prefix="/default/v1")
         response = self._post_payload(payload=_create_chat_payload())
         self._assert_status_code_is(response, 200)
+        request = self.provider.last_request()
+        assert request.path == "/default/v1/chat/completions"
+        assert request.headers["Authorization"] == "Bearer default_key"
+        assert self.provider.last_body()["model"] == "default_model"
 
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert call_kwargs["model"] == "default_model"
-        client_kwargs = mock_client.call_args.kwargs
-        assert client_kwargs["api_key"] == "default_key"
-        assert client_kwargs["base_url"] == "http://default-url"
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_default_settings_inherited(self, mock_client):
+    def test_default_settings_inherited(self):
         """Inference settings in inference_services.default apply when the plugin sets none."""
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
+        self.provider.respond_completion(prefix="/default/v1")
         for client_max_tokens, max_tokens in ((None, 512), (100000, 512)):
             response = self._post_payload(payload=_create_chat_payload({"max_tokens": client_max_tokens}))
             self._assert_status_code_is(response, 200)
-            call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-            assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.5, 0.6)
-            assert call_kwargs["max_tokens"] == max_tokens
-            assert mock_client.call_args.kwargs["timeout"] == 30.0
+            sent = self.provider.last_body()
+            assert (sent["temperature"], sent["top_p"]) == (0.5, 0.6)
+            assert sent["max_tokens"] == max_tokens
+            assert float(self.provider.last_request().headers["x-stainless-read-timeout"]) == 30.0
