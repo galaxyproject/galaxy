@@ -89,6 +89,9 @@ if argv[:1] == ["list"]:
     else:
         print("[]")
     sys.exit(0)
+if argv[:1] == ["install"] and "--platform" in argv:
+    sys.stderr.write("conda: error: unrecognized arguments: --platform " + option("--platform") + "\\n")
+    sys.exit(2)
 if argv[:1] == ["install"] and option("--prefix", "-p"):
     prefix = option("--prefix", "-p")
     with open(os.path.join(prefix, "conda-meta", "history"), "a") as fh:
@@ -495,7 +498,11 @@ def test_foreign_requirements_without_merged_environment_share_one_job_environme
         if call["argv"][0] in ("create", "install"):
             assert call["CONDA_SUBDIR"] == "linux-aarch64"
             assert call["CONDA_OVERRIDE_GLIBC"] == "2.17"
-            assert call["argv"][1:3] == ["--platform", "linux-aarch64"]
+            # only create has --platform, install targets the platform through CONDA_SUBDIR
+            if call["argv"][0] == "create":
+                assert call["argv"][1:3] == ["--platform", "linux-aarch64"]
+            else:
+                assert "--platform" not in call["argv"]
             assert "--offline" in call["argv"]
             assert call["argv"][call["argv"].index("--prefix") + 1] == job_env
     # the exports come from the foreign environments

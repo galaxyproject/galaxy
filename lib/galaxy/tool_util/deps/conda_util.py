@@ -1076,7 +1076,8 @@ class PlatformCondaContext(CondaContext):
     conda resolves and links packages of the platform from the caches that the installs of the environments
     filled. ``conda_prefix`` is the conda base of the platform, which makes ``env_path`` and ``activate`` point
     to the environments and the activation script of that platform. Every command runs for the platform:
-    ``CONDA_SUBDIR`` and the virtual package overrides are set, and creating or installing gets ``--platform``.
+    ``CONDA_SUBDIR`` and the virtual package overrides are set, and creating gets ``--platform``.
+    ``conda install`` has no such option and targets the platform through ``CONDA_SUBDIR``.
     """
 
     def __init__(self, parent: CondaContext, subdir: str) -> None:
@@ -1106,7 +1107,7 @@ class PlatformCondaContext(CondaContext):
         env = self.parent.platform_env_vars(self.platform)
         if extra_env:
             env.update(extra_env)
-        if operation in ("create", "install"):
+        if operation == "create":
             args = ["--platform", self.platform] + list(args)
         return super().exec_command(operation, args, stdout_path=stdout_path, extra_env=env)
 
