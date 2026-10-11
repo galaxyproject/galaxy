@@ -57,13 +57,18 @@ _dist:
 
 dist: clean _dist
 
-_setup-mypy-venv: setup-venv
+_setup-typecheck-venv: setup-venv
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
 _mypy:
 	uv run mypy .
 
-mypy: _setup-mypy-venv _mypy
+mypy: _setup-typecheck-venv _mypy
+
+_ty:
+	uv run bash ../../.ci/ty_check.sh -p "$$PWD"
+
+ty: _setup-typecheck-venv _ty
 
 _setup-lint-venv: setup-venv
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt

@@ -48,15 +48,16 @@ The ``Makefile`` can also be used for typechecking.
     $ git clone https://github.com/galaxyproject/galaxy.git
     $ cd galaxy/packages
     $ cd auth
-    $ make mypy
-    $ make _mypy  # a shortcut to just run mypy on an existing updated environment
+    $ make mypy  # isolated package check and strict annotation requirements
+    $ make ty    # complementary diagnostics
+    $ make _ty  # a shortcut to just run ty on an existing updated environment
 
 This is equivalent to syncing the uv environment and then adding
 Galaxy's type checking dependencies to it.
 
     $ uv sync --all-extras
     $ uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-    $ uv run mypy .
+    $ uv run bash ../../.ci/ty_check.sh -p "$PWD"
 
 The ``Makefile`` can also be used for linting.
 

@@ -72,13 +72,18 @@ src/galaxy/web_client/client_build_hash.txt:
 	mv ../../client/dist src/galaxy/web_client/
 	git rev-parse HEAD > src/galaxy/web_client/client_build_hash.txt
 
-_setup-mypy-venv: setup-venv
+_setup-typecheck-venv: setup-venv
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
 _mypy:
 	uv run mypy .
 
-mypy: _setup-mypy-venv _mypy
+mypy: _setup-typecheck-venv _mypy
+
+_ty:
+	uv run bash ../../.ci/ty_check.sh -p "$$PWD"
+
+ty: _setup-typecheck-venv _ty
 
 lint-dist:
 	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*

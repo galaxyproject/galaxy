@@ -16,6 +16,7 @@ pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementatio
 pydantic==2.13.5
 pydantic-core==2.46.5
 tomli==2.4.1 ; python_full_version < '3.11'
+ty==0.0.85
 types-bleach==6.4.0.20260728
 types-boto==2.49.18.20241019
 types-cachetools==7.0.0.20260713

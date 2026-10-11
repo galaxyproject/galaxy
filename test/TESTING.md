@@ -6,11 +6,17 @@ tests can be run via `tox`, while the others via `./run_tests.sh` .
 
 ## tox
 
-tox needs to be installed in your Python virtualenv with `pip install tox` .
+tox does not need to be installed in your virtualenv. Run it with `uvx`, and
+include the `tox-uv` plugin so environments are built with `uv` rather than
+`virtualenv` + `pip` (this is what CI uses, see `.github/workflows/`):
 
-To view the list of available "test environments" for tox: `tox -l`
+```bash
+uvx --with tox-uv tox -l                    # list "test environments"
+uvx --with tox-uv tox -e lint               # run the lint environment
+```
 
-To run the test for e.g. the `py36-lint` test environment: `tox -e py36-lint`
+For a persistent binary you can instead run `uv tool install tox --with tox-uv`
+once and then invoke `tox` directly.
 
 ## ./run_tests.sh
 
