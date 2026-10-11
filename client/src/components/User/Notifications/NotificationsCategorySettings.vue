@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";

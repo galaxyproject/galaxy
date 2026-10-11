@@ -1,13 +1,19 @@
 name: Test Galaxy packages
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/test_galaxy_packages.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/test_galaxy_packages.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

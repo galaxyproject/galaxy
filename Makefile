@@ -220,7 +220,10 @@ client-eslint: client-node-deps # Run client linting
 client-format-check: client-node-deps # Run client formatting check
 	$(IN_VENV) cd client && pnpm run format-check
 
-client-lint: client-eslint client-format-check ## ES lint and check format of client
+client-check-style-imports: client-node-deps # Check that components don't import base.scss or all of Bootstrap
+	$(IN_VENV) cd client && pnpm run check-style-imports
+
+client-lint: client-eslint client-check-style-imports client-format-check ## ES lint and check format of client
 
 client-test-watch: client ## Watch and run all client unit tests on changes
 	$(IN_VENV) cd client && pnpm run test:watch

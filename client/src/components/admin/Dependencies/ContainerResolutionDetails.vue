@@ -1,5 +1,5 @@
 <template>
-    <b-card>
+    <BCard>
         <div class="row">
             <div class="col">
                 <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
@@ -40,10 +40,12 @@
                 <ContainerResolver :container-resolver="resolution.status.container_resolver" :compact="false" />
             </div>
         </div>
-    </b-card>
+    </BCard>
 </template>
 
 <script>
+import { BCard } from "bootstrap-vue";
+
 import ContainerDescription from "./ContainerDescription.vue";
 import ContainerResolver from "./ContainerResolver.vue";
 import Requirements from "./Requirements.vue";
@@ -52,7 +54,15 @@ import ToolDisplay from "./ToolDisplay.vue";
 import Tools from "./Tools.vue";
 
 export default {
-    components: { ContainerDescription, ContainerResolver, Requirements, StatusDisplay, ToolDisplay, Tools },
+    components: {
+        BCard,
+        ContainerDescription,
+        ContainerResolver,
+        Requirements,
+        StatusDisplay,
+        ToolDisplay,
+        Tools,
+    },
     props: {
         resolution: {
             type: Object,

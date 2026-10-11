@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,7 +31,7 @@ interface DatasetResponse {
 }
 
 const datasetResponse: DatasetResponse = {
-    id: "FOO_HDA_ID",
+    id: HDA_ID,
     hid: 32,
     uuid: "5e89abe4-e8f7-468a-9ef1-d4e322183fa5",
     name: "Add column on data 31",
@@ -45,8 +45,8 @@ const datasetResponse: DatasetResponse = {
 };
 
 describe("DatasetInformation/DatasetInformation", () => {
-    let wrapper: Wrapper<Vue>;
-    let datasetInfoTable: Wrapper<Vue>;
+    let wrapper: VueWrapper;
+    let datasetInfoTable: DOMWrapper<Element>;
 
     beforeEach(async () => {
         server.use(
@@ -55,13 +55,13 @@ describe("DatasetInformation/DatasetInformation", () => {
             }),
         );
 
-        const pinia = createTestingPinia({ createSpy: vi.fn });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
         wrapper = mount(DatasetInformation as object, {
-            propsData: {
+            props: {
                 dataset: datasetResponse,
             },
-            localVue,
+            global: localVue,
             pinia,
             router,
         });

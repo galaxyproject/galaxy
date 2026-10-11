@@ -3,6 +3,7 @@ import os
 import subprocess
 from typing import (
     Any,
+    Literal,
     TYPE_CHECKING,
 )
 
@@ -50,7 +51,7 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
         changeset_ctx = repo[changeset]
         fctx = get_file_context_from_ctx(changeset_ctx, filename)
-        if fctx and fctx not in ["DELETED"]:
+        if fctx is not None and fctx != "DELETED":
             file_path = os.path.join(dir, filename)
             fh = open(file_path, "wb")
             fh.write(fctx.data())
@@ -92,7 +93,7 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     return None, None
 
 
-def get_file_context_from_ctx(ctx, filename):
+def get_file_context_from_ctx(ctx: Any, filename: str) -> Any | Literal["DELETED"] | None:
     """Return the mercurial file context for a specified file."""
     # We have to be careful in determining if we found the correct file because multiple files with
     # the same name may be in different directories within ctx if the files were moved within the change

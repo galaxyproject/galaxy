@@ -8,6 +8,8 @@ import { prependPath } from "@/utils/redirect";
 import { useDatatypeStore } from "../../stores/datatypeStore";
 
 export const SimpleProviderMixin = {
+    // Renders the slot as a fragment, so there is no root element to put attributes on.
+    inheritAttrs: false,
     props: {
         id: { type: String, required: true },
     },
@@ -42,12 +44,17 @@ export const SimpleProviderMixin = {
         },
     },
     render() {
-        return this.$scopedSlots.default({
-            loading: this.loading,
-            item: this.item,
-            save: this.save,
-            result: this.item,
-        });
+        // Use $scopedSlots for Vue 3 compat mode
+        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        if (slotFn) {
+            return slotFn({
+                loading: this.loading,
+                item: this.item,
+                save: this.save,
+                result: this.item,
+            });
+        }
+        return null;
     },
 };
 

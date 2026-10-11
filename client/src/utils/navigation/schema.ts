@@ -7,7 +7,6 @@ interface Root_messages extends Component {
     done: SelectorTemplate;
     info: SelectorTemplate;
     donelarge: SelectorTemplate;
-    infolarge: SelectorTemplate;
     require_login: SelectorTemplate;
 }
 interface Root_ extends Component {

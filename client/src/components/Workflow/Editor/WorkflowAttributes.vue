@@ -6,7 +6,7 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input
+            <BFormInput
                 id="workflow-name"
                 v-model="nameCurrent"
                 :state="!nameCurrent ? false : null"
@@ -30,16 +30,16 @@
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
-            <b-list-group>
-                <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key"
+            <BListGroup>
+                <BListGroupItem v-for="[key, p] in parameters.parameters.entries()" :key="key"
                     >{{ key + 1 }}: {{ p.name }}
-                </b-list-group-item>
-            </b-list-group>
+                </BListGroupItem>
+            </BListGroup>
         </div>
         <div id="workflow-annotation-area" class="mt-2" :class="{ 'highlight-attribute': highlight === 'annotation' }">
             <b>Short Description</b>
             <meta itemprop="description" :content="annotationCurrent" />
-            <b-textarea
+            <BFormTextarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
@@ -133,7 +133,7 @@
         </div>
         <div class="mt-2">
             <b>Help</b>
-            <b-textarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
+            <BFormTextarea id="workflow-help" v-model="helpCurrent" @keyup="$emit('update:helpCurrent', helpCurrent)" />
             <div class="form-text text-muted">
                 A detailed description of how to use the workflow and debug problems with it. Researchers running this
                 workflow will see this text. Markdown is enabled.
@@ -141,7 +141,7 @@
         </div>
         <div class="mt-2">
             <b>Logo URL</b>
-            <b-input
+            <BFormInput
                 id="workflow-logo-url"
                 v-model="logoUrlCurrent"
                 @keyup="$emit('update:logoUrlCurrent', logoUrlCurrent)" />
@@ -153,6 +153,8 @@
 </template>
 
 <script>
+import { BFormInput, BFormTextarea, BListGroup, BListGroupItem } from "bootstrap-vue";
+
 import { Services } from "@/components/Workflow/services";
 
 import {
@@ -180,6 +182,10 @@ const BEST_PRACTICE_HIGHLIGHT_TIME = 4000;
 export default {
     name: "WorkflowAttributes",
     components: {
+        BFormInput,
+        BFormTextarea,
+        BListGroup,
+        BListGroupItem,
         GAlert,
         StatelessTags,
         LicenseSelector,

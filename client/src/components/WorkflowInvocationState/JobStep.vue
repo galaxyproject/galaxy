@@ -39,8 +39,7 @@ const currentStateJobs = computed(() => {
         return [];
     }
     return jobsByState.value[currentState.value].slice().sort((a, b) => {
-        let compare = 0;
-        compare = new Date(a.update_time).getTime() - new Date(b.update_time).getTime();
+        const compare = new Date(a.update_time).getTime() - new Date(b.update_time).getTime();
 
         return sortDesc.value ? -compare : compare;
     });
@@ -104,10 +103,10 @@ watch(
         <GAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </GAlert>
         <JobStepJobs
             v-else
+            v-model:current-page="currentPage"
+            v-model:sort-desc="sortDesc"
             :jobs="currentStateJobs"
             :invocation-id="props.invocationId"
-            :current-page.sync="currentPage"
-            :sort-desc.sync="sortDesc"
             :per-page="PER_PAGE" />
     </div>
 </template>

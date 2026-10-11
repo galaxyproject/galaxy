@@ -125,7 +125,7 @@ class ToolValidator(GalaxyToolValidator):
                 # and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
                 if ctx_file_name.endswith(".sample") and ctx_file_name not in sample_files:
                     fctx = hg_util.get_file_context_from_ctx(changeset_ctx, ctx_file)
-                    if fctx in ["DELETED"]:
+                    if fctx == "DELETED":
                         # Since the possibly future used if statement above is commented out, the
                         # same file that was initially added will be discovered in an earlier changeset
                         # in the change log and fall through to the else block below.  In other words,
@@ -136,7 +136,7 @@ class ToolValidator(GalaxyToolValidator):
                         # the file was deleted.
                         if ctx_file_name not in deleted_sample_files:
                             deleted_sample_files.append(ctx_file_name)
-                    else:
+                    elif fctx is not None:
                         sample_files.append(ctx_file_name)
                         tmp_ctx_file_name = os.path.join(dir, ctx_file_name.replace(".sample", ""))
                         with open(tmp_ctx_file_name, "wb") as fh:

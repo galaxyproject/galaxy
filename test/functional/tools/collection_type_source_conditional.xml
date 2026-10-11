@@ -1,0 +1,38 @@
+<tool id="collection_type_source_conditional" name="collection_type_source_conditional" version="0.1.0">
+  <command>
+    mkdir output;
+    #for $key in $cond.input_collect.keys()#
+    cat "$cond.input_collect[$key]" > output/"$key";
+    #end for#
+  </command>
+  <inputs>
+    <conditional name="cond">
+      <param name="sel" type="select">
+        <option value="a">a</option>
+      </param>
+      <when value="a">
+        <param name="input_collect" type="data_collection" collection_type="list" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <collection name="list_output" type_source="cond|input_collect" format="txt">
+      <discover_datasets pattern="__name__" directory="output" visible="true" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <conditional name="cond">
+        <param name="sel" value="a" />
+        <param name="input_collect">
+          <collection type="list">
+            <element name="samp1" value="simple_line.txt" />
+          </collection>
+        </param>
+      </conditional>
+      <output_collection name="list_output" type="list" count="1">
+        <element name="samp1" file="simple_line.txt" />
+      </output_collection>
+    </test>
+  </tests>
+</tool>

@@ -61,7 +61,7 @@ const storageLocationButtonTitle = computed(() => {
         </GLink>
 
         <SelectPreferredStore
-            :show.sync="showSelectPreferredStore"
+            v-model:show="showSelectPreferredStore"
             show-sub-setting
             :user-preferred-object-store-id="userPreferredObjectStoreId"
             :preferred-object-store-id="preferredObjectStoreId"

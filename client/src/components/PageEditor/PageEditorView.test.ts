@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick, ref } from "vue";
 
 import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
@@ -12,6 +11,7 @@ import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import GModal from "../BaseComponents/GModal.vue";
 import SaveChangesModal from "../Common/SaveChangesModal.vue";
+import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
 import PageEditorView from "./PageEditorView.vue";
@@ -31,14 +31,18 @@ vi.mock("@/composables/config", () => ({
 const mockPush = vi.fn().mockResolvedValue(undefined);
 /** Stands in for the modal's exposed guard; runs the navigation straight through by default. */
 const mockGuardNavigation = vi.fn((navigate: () => void) => navigate());
-vi.mock("vue-router/composables", () => ({
-    useRouter: vi.fn(() => ({
-        push: mockPush,
-    })),
-    useRoute: vi.fn(() => ({
-        params: {},
-    })),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: vi.fn(() => ({
+            push: mockPush,
+        })),
+        useRoute: vi.fn(() => ({
+            params: {},
+        })),
+    };
+});
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: vi.fn(() => ({
@@ -73,6 +77,11 @@ const localVue = getLocalVue();
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
 
+const SELECTORS = {
+    PERMISSIONS_BUTTON: "[data-description='page permissions button']",
+    EXTRACT_WORKFLOW_BUTTON: "[data-description='page extract workflow button']",
+};
+
 let pinia: Pinia;
 
 function mountComponent(propsData: { pageId: string; historyId?: string; displayOnly?: boolean }) {
@@ -80,6 +89,7 @@ function mountComponent(propsData: { pageId: string; historyId?: string; display
         localVue,
         propsData,
         pinia,
+        stubs: { PageDisplayToolbar: false, GButton: false },
     });
     // shallowMount replaces the modal with a stub, which has none of its exposed methods.
     // A `stubs` entry can't supply one either -- those are keyed by registered name, and a
@@ -123,7 +133,7 @@ describe("PageEditorView", () => {
     });
 
     describe("Editor view (history mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage(HISTORY_ID);
@@ -165,10 +175,69 @@ describe("PageEditorView", () => {
 
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages`);
         });
+
+        it("shows Extract Workflow button in history mode", () => {
+            expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(true);
+        });
+
+        it("navigates to page-seeded extraction without saving an unchanged notebook", async () => {
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(usePageEditorStore().savePage).not.toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
+        });
+
+        it("waits for pending notebook edits to save before extracting", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            let completeSave!: () => void;
+            vi.mocked(store.savePage).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        completeSave = resolve;
+                    }),
+            );
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            expect(store.savePage).toHaveBeenCalledOnce();
+            expect(mockPush).not.toHaveBeenCalled();
+
+            completeSave();
+            await flushPromises();
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
+        });
+
+        it("keeps the editor open and displays an error when saving for extraction fails", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            vi.mocked(store.savePage).mockImplementation(async () => {
+                store.error = "Could not save notebook";
+                throw new Error(store.error);
+            });
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await flushPromises();
+
+            expect(mockPush).not.toHaveBeenCalled();
+            expect(wrapper.text()).toContain("Could not save notebook");
+        });
+
+        it("titles the editor with the history name", () => {
+            expect(wrapper.findComponent(MarkdownEditor).props("title")).toBe("History: Test History");
+        });
+    });
+
+    it("falls back to the entity name when the history isn't loaded", async () => {
+        setupLoadedPage("unknown-history");
+        const wrapper = mountComponent({ pageId: PAGE_ID, historyId: "unknown-history" });
+        await flushPromises();
+
+        expect(wrapper.findComponent(MarkdownEditor).props("title")).toBe("Galaxy Notebook");
     });
 
     describe("Editor view (standalone mode)", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             setupLoadedPage();
@@ -184,6 +253,22 @@ describe("PageEditorView", () => {
         it("passes page mode to MarkdownEditor when no historyId", () => {
             const editor = wrapper.findComponent(MarkdownEditor);
             expect(editor.props("mode")).toBe("page");
+        });
+
+        it("hides Extract Workflow button in standalone mode", () => {
+            expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(false);
+        });
+
+        it("opens and closes standalone permissions through the toolbar slot", async () => {
+            const permissions = wrapper.getComponent(ObjectPermissionsModal);
+            expect(permissions.props("show")).toBe(false);
+
+            await wrapper.get(SELECTORS.PERMISSIONS_BUTTON).trigger("click");
+            expect(permissions.props("show")).toBe(true);
+
+            permissions.vm.$emit("update:show", false);
+            await nextTick();
+            expect(permissions.props("show")).toBe(false);
         });
 
         it("back button navigates to pages list", async () => {
@@ -206,7 +291,7 @@ describe("PageEditorView", () => {
             await modal.props("onSave")();
             expect(store.savePage).toHaveBeenCalled();
 
-            modal.props("onDiscard")();
+            modal.props("onDiscard")?.();
             expect(store.discardChanges).toHaveBeenCalled();
         });
     });
@@ -230,7 +315,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID, displayOnly: true });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).not.toHaveBeenCalled();
             expect(store.clearCurrentPage).toHaveBeenCalled();
         });
@@ -383,7 +468,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.clearCurrentPage).toHaveBeenCalled();
             expect(store.$reset).not.toHaveBeenCalled();
         });
@@ -395,7 +480,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.error).toBe("Save failed");
         });
     });
@@ -407,7 +492,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const errorAlert = wrapper.find("galert-stub[variant='danger']");
+            const errorAlert = wrapper.find("g-alert-stub[variant='danger']");
             expect(errorAlert.exists()).toBe(true);
             expect(errorAlert.text()).toContain("Save failed");
             expect(wrapper.findComponent(PageDisplayToolbar).exists()).toBe(true);

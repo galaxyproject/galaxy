@@ -164,13 +164,13 @@ def expand_workflow_inputs(param_inputs, inputs=None):
                     key = input_key.key
                     assert step_id is not None
                     new_params[step_id][key] = value
-                    if "hid" in value:
+                    if isinstance(value, dict) and "hid" in value:
                         new_keys.append(str(value["hid"]))
                 else:
                     input_id = input_key.input_id
                     assert input_id is not None
                     new_inputs[input_id] = value
-                    if "hid" in value:
+                    if isinstance(value, dict) and "hid" in value:
                         new_keys.append(str(value["hid"]))
 
         params_keys.append(new_keys)

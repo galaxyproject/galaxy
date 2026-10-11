@@ -575,6 +575,21 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """
         ...
 
+    @abstractmethod
+    def highlight_element(self, element: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager that draws a red border around an element.
+
+        The element's previous border is restored on exit, whether or not the
+        block raised. Intended for annotating screenshots.
+
+        Usage:
+            with driver.highlight_element(element):
+                driver.save_screenshot("highlighted.png")
+            # Border removed here
+        """
+        ...
+
     # Timeout utilities
     @abstractmethod
     def _timeout_message(self, on_str: str) -> str:

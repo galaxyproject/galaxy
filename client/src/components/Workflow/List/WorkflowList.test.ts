@@ -1,11 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { loadWorkflows } from "@/api/workflows";
@@ -25,8 +24,7 @@ vi.mock("@/api/workflows", () => ({
 const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const router = createTestRouter();
 
 const FAKE_USER_ID = "fake_user_id";
 const FAKE_USERNAME = "fake_username";
@@ -38,11 +36,11 @@ const FAKE_USER = getFakeRegisteredUser({
 });
 
 async function mountWorkflowList() {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
-        localVue,
+        global: localVue,
         pinia,
         router,
     });

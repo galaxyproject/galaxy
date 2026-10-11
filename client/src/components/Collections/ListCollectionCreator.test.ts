@@ -1,7 +1,7 @@
 import "@/components/Form/Elements/FormSelectMany/worker/__mocks__/selectMany";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -49,14 +49,13 @@ async function mountCreator(initialElements: HDASummary[]) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
-    const wrapper = mount(ListCollectionCreator as object, {
-        propsData: {
+    const wrapper = mount(ListCollectionCreator, {
+        props: {
             historyId: "history-1",
             initialElements,
             mode: "modal",
         },
-        localVue,
-        pinia,
+        global: withPlugins(localVue, pinia),
     });
 
     await flushPromises();
@@ -71,7 +70,7 @@ async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]
     for (const name of names) {
         const option = wrapper
             .findAll(".options-list.unselected > button")
-            .wrappers.find((candidate) => candidate.text().includes(name));
+            .find((candidate) => candidate.text().includes(name));
         await option?.trigger("click");
         await flushPromises();
     }

@@ -169,6 +169,19 @@ def has_driver_instance(request, driver, playwright_resources) -> HasDriverProto
         return HasDriverProxyImpl(selenium_impl)
 
 
+@pytest.fixture
+def playwright_driver_instance(playwright_resources) -> HasDriverProtocol:
+    """
+    Create a Playwright-only instance, for behavior the two backends do not share.
+
+    Args:
+        playwright_resources: PlaywrightResources fixture
+    """
+    if not check_playwright_cached():
+        pytest.skip(PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE)
+    return cast(HasDriverProtocol, TestHasPlaywrightDriverImpl(playwright_resources))
+
+
 class TestElementFinding:
     """Tests for element finding methods."""
 
@@ -1125,6 +1138,43 @@ class TestScreenshots:
         # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
         assert screenshot_bytes[:8] == b"\x89PNG\r\n\x1a\n"
 
+    def test_highlight_element(self, has_driver_instance, base_url):
+        """Test the border is applied inside the block and restored after it."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with has_driver_instance.highlight_element(element):
+            border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+            assert "red" in border.lower()
+            assert "3px" in border
+
+        assert has_driver_instance.execute_script("return arguments[0].style.border;", element) == ""
+
+    def test_highlight_element_restores_on_exception(self, has_driver_instance, base_url):
+        """Test the border is restored when the block raises."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with pytest.raises(ValueError):
+            with has_driver_instance.highlight_element(element):
+                raise ValueError("Test exception")
+
+        assert has_driver_instance.execute_script("return arguments[0].style.border;", element) == ""
+
+    def test_highlight_element_restores_existing_border(self, has_driver_instance, base_url):
+        """Test an element's own border survives being highlighted."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+        has_driver_instance.execute_script("arguments[0].style.border = '2px solid blue';", element)
+        original_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+
+        with has_driver_instance.highlight_element(element):
+            assert "red" in has_driver_instance.execute_script("return arguments[0].style.border;", element).lower()
+
+        restored = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+        assert restored == original_border
+        assert "blue" in restored.lower()
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""
@@ -1279,6 +1329,27 @@ class TestVisitNewWindow:
 
         assert "opened=1" not in has_driver_instance.current_url
         assert has_driver_instance.find_element_by_id("open-new-window") is not None
+
+
+class TestNavigateTo:
+    """Test navigate_to."""
+
+    def test_navigate_to_outlasts_a_competing_navigation(self, playwright_driver_instance, base_url):
+        """
+        A page that redirects itself mid-flight must not strand navigate_to.
+
+        Playwright only: Selenium's get() reports no error when the browser
+        cancels the navigation it asked for, and offers nothing to tell that
+        apart from an ordinary redirect, so it is left where the page went.
+        """
+        playwright_driver_instance.navigate_to(f"{base_url}/basic.html")
+        playwright_driver_instance.click_selector("#navigate-away-later")
+
+        # The fixture redirects itself while this slow response is still on the
+        # wire, so the requested navigation is the one the browser cancels.
+        playwright_driver_instance.navigate_to(f"{base_url}/slow/basic.html?requested=1")
+
+        assert "requested=1" in playwright_driver_instance.current_url
 
 
 class TestPageTitle:

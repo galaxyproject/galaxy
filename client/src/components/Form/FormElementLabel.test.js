@@ -8,8 +8,8 @@ const localVue = getLocalVue();
 
 function mountTarget(props = {}, slots = {}) {
     return mount(Target, {
-        localVue,
-        propsData: props,
+        global: localVue,
+        props: props,
         slots,
         stubs: {
             FontAwesomeIcon: true,

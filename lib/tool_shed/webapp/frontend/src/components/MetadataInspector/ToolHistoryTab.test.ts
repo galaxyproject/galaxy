@@ -47,7 +47,7 @@ describe("ToolHistoryTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            const cards = wrapper.findAll(".q-card")
+            const cards = wrapper.findAll(".tool-history-card")
             expect(cards.length).toBeGreaterThan(0)
             expect(wrapper.text()).toContain("Add_a_column1")
         })
@@ -58,6 +58,48 @@ describe("ToolHistoryTab", () => {
             })
 
             expect(wrapper.text()).toMatch(/\d+\.\d+\.\d+/)
+        })
+    })
+
+    describe("revision badge", () => {
+        it("labels each version with its revision number", () => {
+            const wrapper = mount(ToolHistoryTab, {
+                props: { metadata: fixtureMetadata },
+            })
+
+            const badges = wrapper.findAll(".revision-badge")
+            expect(badges.length).toBeGreaterThan(0)
+            for (const badge of badges) {
+                expect(badge.text()).toMatch(/^\[\d+\]$/)
+            }
+        })
+    })
+
+    describe("timeline", () => {
+        it("lists each tool's versions as an ordered list with name and description", () => {
+            const wrapper = mount(ToolHistoryTab, {
+                props: { metadata: simulatedMetadataMultiTool },
+            })
+
+            const timelines = wrapper.findAll("ol.tool-history-timeline")
+            expect(timelines.length).toBe(4)
+
+            const versionCount = Object.values(simulatedMetadataMultiTool).reduce(
+                (count, revision) => count + (revision.tools?.length ?? 0),
+                0,
+            )
+            const entries = wrapper.findAll("li.tool-history-entry")
+            expect(entries.length).toBe(versionCount)
+
+            // Tools sort alphabetically and versions newest first, so the first entry is
+            // align_sequences at its highest revision.
+            const newestAlign = Object.entries(simulatedMetadataMultiTool)
+                .sort(([a], [b]) => parseInt(b) - parseInt(a))
+                .flatMap(([, revision]) => revision.tools ?? [])
+                .find((tool) => tool.id === "align_sequences")
+            expect(entries[0].find(".tool-history-subtitle").text()).toBe(
+                `${newestAlign?.name} ${newestAlign?.description}`,
+            )
         })
     })
 
@@ -105,7 +147,7 @@ describe("ToolHistoryTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            const revButtons = wrapper.findAll(".q-btn")
+            const revButtons = wrapper.findAll("button")
             const revButton = revButtons.find((btn) => btn.text().includes("Rev"))
             expect(revButton).toBeTruthy()
 
@@ -122,8 +164,33 @@ describe("ToolHistoryTab", () => {
                 props: { metadata: fixtureMetadata },
             })
 
-            const expansionItems = wrapper.findAll(".q-expansion-item")
-            expect(expansionItems.length).toBeGreaterThan(0)
+            const toggles = wrapper.findAll(".tool-details-toggle")
+            expect(toggles.length).toBeGreaterThan(0)
+        })
+
+        it("toggles tool details from an accessible button", async () => {
+            const wrapper = mount(ToolHistoryTab, {
+                props: { metadata: fixtureMetadata },
+            })
+
+            const toggle = wrapper.find(".tool-details-toggle")
+            expect(toggle.element.tagName).toBe("BUTTON")
+            expect(toggle.text()).toContain("Tool Details")
+            expect(toggle.attributes("aria-expanded")).toBe("false")
+
+            const details = wrapper.find(`#${toggle.attributes("aria-controls")}`)
+            expect(details.exists()).toBe(true)
+            expect(details.find(".mock-json-viewer").exists()).toBe(false)
+
+            await toggle.trigger("click")
+
+            expect(toggle.attributes("aria-expanded")).toBe("true")
+            expect(details.find(".mock-json-viewer").exists()).toBe(true)
+            expect(wrapper.findAll(".tool-details-toggle[aria-expanded=true]").length).toBe(1)
+
+            await toggle.trigger("click")
+
+            expect(toggle.attributes("aria-expanded")).toBe("false")
         })
     })
 

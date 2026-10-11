@@ -9,11 +9,11 @@ const localVue = getLocalVue(true);
 describe("CreateInstance", () => {
     it("should render a loading message during loading", async () => {
         const wrapper = shallowMount(CreateInstance as object, {
-            propsData: {
+            props: {
                 loading: true,
                 loadingMessage: "component loading...",
             },
-            localVue,
+            global: localVue,
         });
         const loadingSpan = wrapper.findComponent({ name: "LoadingSpan" }).exists();
         expect(loadingSpan).toBeTruthy();
@@ -21,11 +21,11 @@ describe("CreateInstance", () => {
 
     it("should hide a loading message after loading", async () => {
         const wrapper = shallowMount(CreateInstance as object, {
-            propsData: {
+            props: {
                 loading: false,
                 loadingMessage: "component loading...",
             },
-            localVue,
+            global: localVue,
         });
         const loadingSpan = wrapper.findComponent({ name: "LoadingSpan" }).exists();
         expect(loadingSpan).toBeFalsy();

@@ -1,4 +1,4 @@
-import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -49,7 +49,7 @@ async function mountSelectionOperationsWrapper(config) {
 
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
-        propsData: {
+        props: {
             history: FAKE_HISTORY,
             filterText: "",
             contentSelection: new Map(),
@@ -58,7 +58,7 @@ async function mountSelectionOperationsWrapper(config) {
             totalItemsInQuery: 5,
             isMultiViewItem: false,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
     await flushPromises();
@@ -77,7 +77,9 @@ describe("History Selection Operations", () => {
         describe("Dropdown Menu", () => {
             it("should not render if there is nothing selected", async () => {
                 await wrapper.setProps({ selectionSize: 0 });
-                expect(wrapper.html()).toBe("");
+                // root is `<section v-if="...">`; when false, VTU2 renders it as
+                // a comment node rather than empty markup.
+                expect(wrapper.find("section").exists()).toBe(false);
             });
 
             it("should display the total number of items to apply the operation", async () => {
@@ -251,7 +253,7 @@ describe("History Selection Operations", () => {
                 wrapper.vm.hideSelected();
                 await flushPromises();
                 expect(wrapper.emitted()).toHaveProperty("update:show-selection");
-                expect(wrapper.emitted()["update:show-selection"][0][0]).toBe(false);
+                expect(emittedArg(wrapper, "update:show-selection")).toBe(false);
             });
 
             it("should update operation-running state when running any operation that succeeds", async () => {

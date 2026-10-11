@@ -129,7 +129,7 @@ function handleFailingStepClick() {
             :invocation="props.invocation"
             @view-step="emit('view-step', $event)"
             @view-subworkflow-invocation="
-                (invocationId, stepId) => emit('view-subworkflow-invocation', invocationId, stepId)
+                (invocationId: string, stepId: number) => emit('view-subworkflow-invocation', invocationId, stepId)
             " />
         <div class="invocation-error-grid d-flex flex-wrap">
             <GCard

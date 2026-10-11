@@ -4,7 +4,7 @@ import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome
 import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
@@ -115,7 +115,7 @@ watch(
 );
 
 const filtered = computed<HistorySummary[]>(() => {
-    let filteredHistories: HistorySummary[] = [];
+    let filteredHistories: HistorySummary[];
     if (!validFilter.value) {
         filteredHistories = historiesProxy.value;
     } else {

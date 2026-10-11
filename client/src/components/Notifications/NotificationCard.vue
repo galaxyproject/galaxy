@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { RequestedTool, UserNotification } from "@/api/notifications";
 import type { CardAction, TitleIcon } from "@/components/Common/GCard.types";
@@ -269,9 +269,9 @@ function markNotificationAsSeen() {
                             <dt>Tool</dt>
                             <dd>{{ toolLabel(singleRequestedTool) }}</dd>
                         </template>
-                        <template v-for="row in singleToolDetailRows">
-                            <dt :key="`detail-dt-${row.label}`">{{ row.label }}</dt>
-                            <dd :key="`detail-dd-${row.label}`">
+                        <template v-for="row in singleToolDetailRows" :key="row.label">
+                            <dt>{{ row.label }}</dt>
+                            <dd>
                                 <span
                                     :class="{
                                         'text-break': row.breakText,

@@ -13,6 +13,6 @@ capabilities for isolating test functionality.
 - [Testing async
   operations](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
 - [Testing a Vue component for expected rendering
-  output](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
+  output](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/TagsMultiselect/StatelessTags.test.js)
 - [Firing an event against a shallow mounted vue
-  component](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
+  component](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/TagsMultiselect/StatelessTags.test.js)

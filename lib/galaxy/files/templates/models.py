@@ -6,6 +6,7 @@ from typing import (
 
 from pydantic import (
     Field,
+    field_validator,
     model_validator,
     RootModel,
 )
@@ -18,6 +19,7 @@ from galaxy.util.config_templates import (
     ImplicitConfigurationParameters,
     MarkdownContent,
     merge_implicit_parameters,
+    normalize_s3_bucket,
     OAuth2Configuration,
     populate_default_variables,
     SecretsDict,
@@ -53,6 +55,7 @@ FileSourceTemplateType = Literal[
     "github",
     "iiif",
     "ipfs",
+    "xrootd",
     "mavedb",
     "omero",
     "ssh",
@@ -156,7 +159,14 @@ class OneDriveFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictModel
     drive_mode: Literal["appfolder", "full"] = "appfolder"
 
 
-class S3FSFileSourceTemplateConfiguration(StrictModel):
+class S3FSConfigMixin:
+    @field_validator("bucket", mode="before")
+    @classmethod
+    def normalize_bucket(cls, value: Any) -> Any:
+        return normalize_s3_bucket(value)
+
+
+class S3FSFileSourceTemplateConfiguration(S3FSConfigMixin, StrictModel):
     type: Literal["s3fs"]
     endpoint_url: str | TemplateExpansion | None = None
     anon: bool | TemplateExpansion | None = False
@@ -168,7 +178,7 @@ class S3FSFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
-class S3FSFileSourceConfiguration(StrictModel):
+class S3FSFileSourceConfiguration(S3FSConfigMixin, StrictModel):
     type: Literal["s3fs"]
     endpoint_url: str | None = None
     anon: bool | None = False
@@ -519,6 +529,24 @@ class IPFSFileSourceConfiguration(StrictModel):
     gateway_url: str
 
 
+class XRootDFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["xrootd"]
+    root: str | TemplateExpansion
+    hostid: str | TemplateExpansion
+    timeout: int | TemplateExpansion = 30
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class XRootDFileSourceConfiguration(StrictModel):
+    type: Literal["xrootd"]
+    root: str
+    hostid: str
+    writable: bool = False
+    timeout: int = 30
+
+
 class MaveDBFileSourceTemplateConfiguration(StrictModel):
     type: Literal["mavedb"]
     base_url: str | TemplateExpansion = "https://api.mavedb.org/api/v1"
@@ -655,6 +683,7 @@ FileSourceTemplateConfiguration = Annotated[
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
     | IPFSFileSourceTemplateConfiguration
+    | XRootDFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
@@ -688,6 +717,7 @@ FileSourceConfiguration = Annotated[
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
     | IPFSFileSourceConfiguration
+    | XRootDFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
@@ -781,6 +811,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
     "ipfs": IPFSFileSourceConfiguration,
+    "xrootd": XRootDFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,

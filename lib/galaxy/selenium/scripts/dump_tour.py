@@ -4,10 +4,12 @@ import datetime
 import os
 import sys
 import time
+from contextlib import nullcontext
 from typing import Any
 
 from galaxy.selenium import cli
 from galaxy.selenium.navigates_galaxy import TourCallbackProtocol
+from galaxy.selenium.web_element_protocol import WebElementProtocol
 
 DESCRIPTION = "Walk a Galaxy tour and dump screenshots."
 
@@ -36,9 +38,13 @@ class DumpTourCallback(TourCallbackProtocol):
         self.driver_wrapper = driver_wrapper
         self.output = output
 
-    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
+    def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
         time.sleep(0.5)
-        self.driver_wrapper.save_screenshot(f"{self.output}/{step_index}.png")
+        # Border the element the step is about, so the dump reads as documentation
+        # rather than a sequence of indistinguishable full-page screenshots.
+        highlight = self.driver_wrapper.highlight_element(element) if element is not None else nullcontext()
+        with highlight:
+            self.driver_wrapper.save_screenshot(f"{self.output}/{step_index}.png")
         time.sleep(0.5)
 
 

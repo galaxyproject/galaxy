@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { loadWorkflows, undeleteWorkflow, type WorkflowSummary } from "@/api/workflows";
 import { getWorkflowFilters, helpHtml } from "@/components/Workflow/List/workflowFilters";
@@ -43,7 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const breadcrumbItems = [{ title: "Workflows" }];
 
-const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const { confirm } = useConfirmDialog();
 
@@ -280,7 +280,7 @@ async function onBulkDelete() {
             Toast.success(`Deleted ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to delete some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -319,7 +319,7 @@ async function onBulkRestore() {
             Toast.success(`Restored ${totalSelected} workflows.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to restore some workflows.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -384,8 +384,8 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(() => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    if (route.query?.owner) {
+        updateFilterValue("user", `'${route.query.owner}'`);
     }
     load();
 });
@@ -402,14 +402,14 @@ onMounted(() => {
 
             <FilterMenu
                 id="workflow-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="workflows"
                 :filter-class="workflowFilters"
-                :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 has-help
                 view="compact"
-                :placeholder="localize(searchPlaceHolder)"
-                :show-advanced.sync="showAdvanced">
+                :placeholder="localize(searchPlaceHolder)">
                 <template v-slot:menu-help-text>
                     <div v-sanitize-html="helpHtml(activeList, userStore.isAnonymous)"></div>
                 </template>
@@ -506,7 +506,7 @@ onMounted(() => {
                 @on-key-down="onKeyDown"
                 @select="onSelectWorkflow"
                 @refreshList="load"
-                @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
+                @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)"
                 @updateFilter="updateFilterValue" />
         </GOverlay>
 

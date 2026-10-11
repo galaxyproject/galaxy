@@ -135,7 +135,7 @@ def security_check(trans: "ProvidesUserContext", item, check_ownership=False, ch
     return item
 
 
-def get_class(class_name):
+def get_class(class_name) -> type:
     """
     Returns the class object that a string denotes. Without this method, we'd have
     to do eval(<class_name>).

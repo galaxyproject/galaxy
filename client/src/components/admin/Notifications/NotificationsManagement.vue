@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useConfig } from "@/composables/config";
 

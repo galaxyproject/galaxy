@@ -111,32 +111,32 @@ function setFilterValue(newFilter: string, newValue: string) {
 <template>
     <GModal
         ref="modal"
+        v-model:show="propShowModal"
         size="small"
         :overflow-visible="showAdvanced"
         :fixed-height="!showAdvanced"
-        :show.sync="propShowModal"
         :title="localize(title)">
         <BFormGroup :description="localize('Filter histories')">
             <FilterMenu
                 ref="filterMenuRef"
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
-                :filter-text.sync="filter"
-                :loading="busy"
-                :show-advanced.sync="showAdvanced" />
+                :loading="busy" />
         </BFormGroup>
 
         <HistoryList
             v-show="!showAdvanced"
+            v-model:show-modal="propShowModal"
+            v-model:loading="busy"
             :multiple="props.multiple"
             :selected-histories="selectedHistories"
             :additional-options="props.additionalOptions"
             :hide-deleted="props.hideDeleted"
-            :show-modal.sync="propShowModal"
             in-modal
             :filter="filter"
-            :loading.sync="busy"
             @selectHistory="selectHistory"
             @setFilter="setFilterValue">
             <template v-slot:footer-button-area>

@@ -105,7 +105,7 @@ function getAutocompleteMatch(query: string): AutocompleteMatch | null {
     const start = beforeCaret.length - fullMatch.length + leadingWhitespaceLength;
     const queryPart = match[2] ?? match[3] ?? "";
 
-    let end = caret;
+    let end: number;
     if (match[2] !== undefined) {
         const nextQuoteIndex = afterCaret.indexOf('"');
         end = nextQuoteIndex >= 0 ? caret + nextQuoteIndex + 1 : query.length;

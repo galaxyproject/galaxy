@@ -13,7 +13,10 @@ from fastapi import (
 )
 from starlette.responses import StreamingResponse
 
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
@@ -30,6 +33,7 @@ from galaxy.schema.schema import (
     SharingStatus,
     UpdatePagePayload,
 )
+from galaxy.schema.workflows import WorkflowExtractionSummary
 from galaxy.webapps.base.api import GalaxyStreamingResponse
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -252,6 +256,20 @@ class FastAPIPages:
     ) -> PageDetails:
         """Return summary information about a specific Page and the content of the last revision."""
         return self.service.show(trans, id)
+
+    @router.get(
+        "/api/pages/{id}/workflow_extraction_summary",
+        summary="Summarize the page's history for workflow extraction, seeded from referenced outputs.",
+        response_description="The history's extraction summary with seeded rows and exposed outputs.",
+    )
+    def workflow_extraction_summary(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionSummary:
+        """Summarize the jobs in the page's history, preselecting the subgraph that
+        produced the datasets/collections the page references."""
+        return self.service.get_workflow_extraction_summary(trans, id)
 
     @router.get(
         "/api/pages/{id}/sharing",

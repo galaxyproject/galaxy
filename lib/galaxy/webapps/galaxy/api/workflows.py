@@ -95,7 +95,6 @@ from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
 from galaxy.tools._types import ParameterValidationErrorsT
-from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.web import (
     expose_api,
@@ -559,8 +558,7 @@ class WorkflowsAPIController(
         module_state: dict[str, Any] = {}
         errors: ParameterValidationErrorsT = {}
         if from_tool_form:
-            populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
-            module.recover_state(module_state, from_tool_form=True)
+            module_state = module.populate_state_from_tool_form(inputs, errors)
             module.check_and_update_state()
         else:
             module_state = module.get_export_state()

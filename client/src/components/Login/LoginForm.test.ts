@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, nth, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -29,16 +29,14 @@ let postRequests: PostRequest[] = [];
 let loginResponse: Record<string, unknown> = {};
 
 async function mountLoginForm() {
-    const wrapper = mount(MountTarget as object, {
-        propsData: {
+    const wrapper = mount(MountTarget, {
+        props: {
             sessionCsrfToken: "sessionCsrfToken",
         },
-        localVue,
-        router,
-        stubs: {
-            ExternalLogin: true,
+        global: {
+            ...withPlugins(localVue, testingPinia, router),
+            stubs: { ...localVue.stubs, ExternalLogin: true },
         },
-        pinia: testingPinia,
     });
 
     return wrapper;
@@ -70,12 +68,12 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs.at(0);
+        const usernameField = nth(inputs, 0);
         expect(usernameField.attributes("type")).toBe("text");
 
         await usernameField.setValue("test_user");
 
-        const pwdField = inputs.at(1);
+        const pwdField = nth(inputs, 1);
         expect(pwdField.attributes("type")).toBe("password");
 
         await pwdField.setValue("test_pwd");
@@ -91,17 +89,15 @@ describe("LoginForm", () => {
 
     it("prefills the password reset route with the entered email", async () => {
         const push = vi.spyOn(router, "push").mockImplementation(async () => {});
-        const wrapper = mount(MountTarget as object, {
-            propsData: {
+        const wrapper = mount(MountTarget, {
+            props: {
                 sessionCsrfToken: "sessionCsrfToken",
                 showResetLink: true,
             },
-            localVue,
-            router,
-            stubs: {
-                ExternalLogin: true,
+            global: {
+                ...withPlugins(localVue, testingPinia, router),
+                stubs: { ...localVue.stubs, ExternalLogin: true },
             },
-            pinia: testingPinia,
         });
 
         await wrapper.find("#login-form-name").setValue("test@example.com");
@@ -194,13 +190,13 @@ describe("LoginForm", () => {
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
 
-        const usernameField = inputs.at(0);
+        const usernameField = nth(inputs, 0);
         expect(usernameField.attributes("type")).toBe("text");
         expect((usernameField.element as HTMLInputElement).disabled).toBe(true);
         expect((usernameField.element as HTMLInputElement).value).not.toBe("");
         expect((usernameField.element as HTMLInputElement).value).toContain(external_email);
 
-        const pwdField = inputs.at(1);
+        const pwdField = nth(inputs, 1);
         expect(pwdField.attributes("type")).toBe("password");
         expect((pwdField.element as HTMLInputElement).value).toBe("");
 

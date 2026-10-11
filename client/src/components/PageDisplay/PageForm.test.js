@@ -16,7 +16,7 @@ const localVue = getLocalVue();
 
 const mockPush = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -24,11 +24,10 @@ vi.mock("vue-router/composables", () => ({
 
 function mountTarget(props = {}) {
     return mount(PageForm, {
-        localVue,
-        propsData: props,
+        global: localVue,
+        props: props,
         stubs: {
             FontAwesomeIcon: true,
-            GButton: true,
         },
         directives: {
             localize: () => {},
@@ -127,6 +126,11 @@ describe("PageForm.vue - Create mode", () => {
 describe("PageForm.vue - Edit mode", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        server.use(
+            http.get("/api/pages/:id", ({ response }) =>
+                response(200).json({ id: "456", title: "", slug: "", annotation: "", content: "" }),
+            ),
+        );
     });
 
     it("renders loading spinner and fetches page details", async () => {

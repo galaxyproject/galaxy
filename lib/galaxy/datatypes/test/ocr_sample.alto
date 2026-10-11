@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alto xmlns="http://www.loc.gov/standards/alto/ns-v4#">
+  <Description>
+    <MeasurementUnit>pixel</MeasurementUnit>
+    <sourceImageInformation><fileName>sample.png</fileName></sourceImageInformation>
+  </Description>
+  <Layout>
+    <Page ID="page_1" PHYSICAL_IMG_NR="1" WIDTH="800" HEIGHT="600">
+      <PrintSpace HPOS="50" VPOS="50" WIDTH="700" HEIGHT="70">
+        <TextBlock ID="block_1" HPOS="50" VPOS="50" WIDTH="700" HEIGHT="70">
+          <TextLine ID="line_1" HPOS="50" VPOS="50" WIDTH="350" HEIGHT="50">
+            <String ID="word_1" CONTENT="Hello" HPOS="50" VPOS="50" WIDTH="130" HEIGHT="50" WC="0.99"/>
+            <SP HPOS="180" VPOS="50" WIDTH="20"/>
+            <String ID="word_2" CONTENT="Galaxy" HPOS="200" VPOS="50" WIDTH="200" HEIGHT="50" WC="0.98"/>
+          </TextLine>
+        </TextBlock>
+      </PrintSpace>
+    </Page>
+  </Layout>
+</alto>

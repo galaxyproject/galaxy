@@ -102,7 +102,7 @@ async function updateExports() {
                 exportErrorMessage.value = "The history export request failed. Please try again later.";
             }
         }
-    } catch (e) {
+    } catch {
         exportErrorMessage.value = "The request to get your history exports records failed. Please check back later.";
     }
 }
@@ -124,7 +124,7 @@ async function doExportToFileSource(exportDirectory: string, fileName: string) {
     isExportDialogOpen.value = false;
     try {
         await exportHistoryToFileSource(props.history.id, exportDirectory, fileName, DEFAULT_EXPORT_PARAMS);
-    } catch (error) {
+    } catch {
         exportErrorMessage.value = "The history export request failed. Please try again later.";
     }
     updateExports();
@@ -210,7 +210,11 @@ function onArchiveHistoryWithExport() {
             Archive (and purge) history
         </GButton>
 
-        <GModal :show.sync="isExportDialogOpen" title="Export history to permanent storage" size="medium" fixed-height>
+        <GModal
+            v-model:show="isExportDialogOpen"
+            title="Export history to permanent storage"
+            size="medium"
+            fixed-height>
             <GTabs card vertical lazy scrollable-content class="export-option-tabs">
                 <GTab id="to-remote-file-tab" title="To Repository" active>
                     <p>

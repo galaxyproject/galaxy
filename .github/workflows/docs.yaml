@@ -1,15 +1,21 @@
 name: Build docs
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/docs.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/docs.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

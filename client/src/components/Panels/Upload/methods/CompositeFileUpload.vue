@@ -229,7 +229,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                         :items="availableExtensions"
                         :current-item="availableExtensions.find((ext) => ext.id === selectedExtension)"
                         :disabled="!configurationsReady"
-                        @update:selected-item="(ext) => onExtensionChange(ext?.id ?? '')" />
+                        @update:selected-item="(ext: ExtensionDetails | null) => onExtensionChange(ext?.id ?? '')" />
                 </div>
 
                 <!-- Dataset name -->
@@ -241,10 +241,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <GFormInput
                         id="composite-dataset-name"
                         class="form-control"
-                        :value="currentItem?.name ?? ''"
+                        :model-value="currentItem?.name ?? ''"
                         :disabled="!currentItem"
                         placeholder="Provide a name for the dataset"
-                        @input="onDatasetNameInput" />
+                        @update:model-value="onDatasetNameInput" />
                 </div>
 
                 <!-- DB key / Reference -->
@@ -284,7 +284,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                 v-for="(slot, index) in slots"
                 :key="slot.slotName"
                 :slot-item="slot"
-                @update:slotItem="(updated) => updateSlot(index, updated)" />
+                @update:slotItem="(updated: CompositeSlot) => updateSlot(index, updated)" />
 
             <!-- Actions footer -->
             <div class="d-flex justify-content-end mt-2">

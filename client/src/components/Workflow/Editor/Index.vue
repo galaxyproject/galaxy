@@ -18,7 +18,7 @@ import type { ZoomTransform } from "d3-zoom";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { generateAIReport as generateAIReportFetch } from "@/api/chat";
 import type { Creator, RefactorRequestAction } from "@/api/workflows";
@@ -46,6 +46,7 @@ import type { NewStep, PostJobActions, Step } from "@/stores/workflowStepStore";
 import type { WorkflowTransform } from "@/utils/geometry";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { cloneRaw } from "@/utils/toRawDeep";
 import { textify } from "@/utils/utils";
 
 import { getWorkflowFull } from "../workflows.services";
@@ -308,7 +309,7 @@ const tags = ref<string[]>(props.workflowTags || []);
  * creating a new version, meaning we don't need to queue an undo/redo action for them.
  */
 function setTags(newTags: string[]) {
-    tags.value = structuredClone(newTags);
+    tags.value = cloneRaw(newTags);
 }
 
 // ---------------------------------------------------------------------------
@@ -1317,11 +1318,11 @@ initializeWorkflowEditor();
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
 
         <RefactorConfirmationModal
+            v-model:loading="loadingWorkflow"
             :workflow-id="id"
             :version="version ?? undefined"
             :versions="versions"
             :refactor-actions="refactorActions"
-            :loading.sync="loadingWorkflow"
             @onWorkflowError="onWorkflowError"
             @onRefactor="onRefactor"
             @onShow="hideErrorModal" />
@@ -1336,13 +1337,13 @@ initializeWorkflowEditor();
         </GModal>
 
         <SaveChangesModal
+            v-model:show-modal="showSaveChangesModal"
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
-            :show-modal.sync="showSaveChangesModal"
             @on-proceed="onNavigate" />
 
         <GModal
-            :show.sync="showSaveAsModal"
+            v-model:show="showSaveAsModal"
             confirm
             size="small"
             data-description="save-as-modal"
@@ -1350,7 +1351,7 @@ initializeWorkflowEditor();
             ok-text="Save"
             @ok="doSaveAs"
             @cancel="resetSaveAs">
-            <GForm @submit.native.prevent="doSaveAs">
+            <GForm @submit.prevent="doSaveAs">
                 <GFormLabel title="Name">
                     <GFormInput v-model="saveAsName" />
                 </GFormLabel>
@@ -1392,11 +1393,7 @@ initializeWorkflowEditor();
                     :steps="steps"
                     :has-changes="hasChanges"
                     :on-save="onSave"
-                    @onAttributes="
-                        (e) => {
-                            showAttributes(e);
-                        }
-                    "
+                    @onAttributes="showAttributes"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActive('workflow-undo-redo')" :store-id="id" />
@@ -1409,8 +1406,9 @@ initializeWorkflowEditor();
                 <WorkflowAttributes
                     v-else-if="isActive('workflow-editor-attributes')"
                     :id="id"
+                    v-model:highlight="highlightAttribute"
+                    v-model:readme-active="readmeActive"
                     :tags="tags"
-                    :highlight.sync="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -1421,7 +1419,6 @@ initializeWorkflowEditor();
                     :doi="doi || undefined"
                     :logo-url="logoUrl"
                     :help="help"
-                    :readme-active.sync="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"
@@ -1579,8 +1576,8 @@ initializeWorkflowEditor();
                     :initial-position="{ x: 50, y: 50 }"
                     :loading="loadingWorkflow || initialLoading"
                     @scrollTo="scrollToId = null"
-                    @transform="(value) => (transform = value)"
-                    @graph-offset="(value) => (graphOffset = value)"
+                    @transform="(value: ZoomTransform) => (transform = value)"
+                    @graph-offset="(value: typeof graphOffset) => (graphOffset = value)"
                     @onClone="onClone"
                     @onCreate="onInsertTool"
                     @onChange="hasChanges = true"

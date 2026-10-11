@@ -3,7 +3,7 @@ import { faArchive, faBurn, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type HistorySummary, userOwnsHistory } from "@/api";
 import { Toast } from "@/composables/toast";
@@ -146,7 +146,10 @@ const linkClass = computed(() => {
 .history-link {
     display: flex;
     gap: 1px;
-    align-items: center;
-    justify-content: space-between;
+    align-items: baseline;
+}
+
+.history-link :deep(.g-link) {
+    text-align: start;
 }
 </style>

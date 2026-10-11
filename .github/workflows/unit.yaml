@@ -1,17 +1,23 @@
 name: Unit tests
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/unit.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/unit.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

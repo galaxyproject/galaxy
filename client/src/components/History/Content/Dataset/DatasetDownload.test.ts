@@ -1,7 +1,6 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import DatasetDownload from "./DatasetDownload.vue";
 
@@ -13,34 +12,33 @@ const items = [
 ];
 
 describe("DatasetDownload", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         wrapper = mount(DatasetDownload as object, {
-            propsData: {
+            props: {
                 item: items[0],
             },
-            localVue,
+            global: localVue,
         });
     });
 
     it("checks basics", async () => {
         const dropdownItems = wrapper.findAll(".dropdown-item");
         expect(dropdownItems.length).toBe(3);
-        expect(dropdownItems.at(0).text()).toBe("Download Dataset");
-        expect(dropdownItems.at(1).text()).toBe("Download a");
-        expect(dropdownItems.at(2).text()).toBe("Download b");
+        expect(nth(dropdownItems, 0).text()).toBe("Download Dataset");
+        expect(nth(dropdownItems, 1).text()).toBe("Download a");
+        expect(nth(dropdownItems, 2).text()).toBe("Download b");
         for (let i = 0; i < dropdownItems.length; i++) {
-            await dropdownItems.at(i).trigger("click");
+            await nth(dropdownItems, i).trigger("click");
         }
         await wrapper.setProps({ item: items[1] });
         const foundItems = wrapper.find(".dropdown-item").exists();
         expect(foundItems).toBe(false);
         await wrapper.trigger("click");
-        const emitted = wrapper.emitted()["on-download"];
-        expect(emitted?.[0]?.[0]).toBe(`/api/datasets/item_id/download?to_ext=ext`);
-        expect(emitted?.[1]?.[0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=a`);
-        expect(emitted?.[2]?.[0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=b`);
-        expect(emitted?.[3]?.[0]).toBe(`/api/datasets/item_id/download?to_ext=ext`);
+        expect(emittedArg(wrapper, "on-download")).toBe(`/api/datasets/item_id/download?to_ext=ext`);
+        expect(emittedArg(wrapper, "on-download", 1)).toBe(`/api/datasets/item_id/metadata_file?metadata_file=a`);
+        expect(emittedArg(wrapper, "on-download", 2)).toBe(`/api/datasets/item_id/metadata_file?metadata_file=b`);
+        expect(emittedArg(wrapper, "on-download", 3)).toBe(`/api/datasets/item_id/download?to_ext=ext`);
     });
 });

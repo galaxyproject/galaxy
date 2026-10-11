@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue, nth } from "@tests/vitest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
 
 import { setMockConfig } from "@/composables/__mocks__/config";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -13,7 +12,6 @@ import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
 
 vi.mock("@/composables/config");
 
@@ -45,20 +43,20 @@ vi.mock("@/components/Citation/services", () => ({
 setupMockHistoryBreadcrumbs();
 
 describe("CitationsList", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
 
-        const router = new VueRouter();
+        const router = createTestRouter();
         router.push("/histories/citations?id=test-id");
 
         wrapper = mount(MountTarget as object, {
-            propsData: {
+            props: {
                 id: "test-id",
                 source: "histories",
             },
-            localVue,
+            global: localVue,
             pinia,
             router,
         });
@@ -72,10 +70,10 @@ describe("CitationsList", () => {
         // It finds the Galaxy citation from the config, and the mocked citation for the history tools.
         expect(citationItems.length).toBe(2);
 
-        expect(citationItems.at(0).text()).toContain(
+        expect(nth(citationItems, 0).text()).toContain(
             "The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update",
         );
-        expect(citationItems.at(1).text()).toContain(
+        expect(nth(citationItems, 1).text()).toContain(
             "DFTB$\\mathplus$, a software package for efficient approximate density functional theory based atomistic simulations",
         );
     });

@@ -1,6 +1,7 @@
 <script setup>
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormFile } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 const props = defineProps({
@@ -37,7 +38,7 @@ function readFile() {
 
 <template>
     <div>
-        <b-form-file v-model="file" class="mb-1" @input="readFile" />
+        <BFormFile v-model="file" class="mb-1" @input="readFile" />
         <div v-if="waiting">
             <FontAwesomeIcon :icon="faSpinner" spin />
             Uploading File...

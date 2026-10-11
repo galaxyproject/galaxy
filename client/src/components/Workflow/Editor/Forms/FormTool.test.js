@@ -35,7 +35,7 @@ describe("FormTool", () => {
 
     function mountTarget(inputs = [{ name: "input", label: "input", type: "text", value: "value" }]) {
         return mount(FormTool, {
-            propsData: {
+            props: {
                 id: "input",
                 datatypes: [],
                 step: {
@@ -56,12 +56,11 @@ describe("FormTool", () => {
                     post_job_actions: {},
                 },
             },
-            localVue,
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-            provide: { workflowId: "mock-workflow" },
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
     }
 
@@ -73,7 +72,7 @@ describe("FormTool", () => {
         expect(version.text()).toBe("Switch to 2.0");
         await version.trigger("click");
 
-        let state = wrapper.emitted().onSetData[0][1];
+        let state = wrapper.emitted("onSetData")[0][1];
         expect(state.tool_version).toEqual("2.0");
         expect(state.tool_id).toEqual("tool_id+2.0");
 
@@ -81,7 +80,7 @@ describe("FormTool", () => {
         expect(version.text()).toBe("Switch to 3.0");
         await version.trigger("click");
 
-        state = wrapper.emitted().onSetData[1][1];
+        state = wrapper.emitted("onSetData")[1][1];
         expect(state.tool_version).toEqual("3.0");
         expect(state.tool_id).toEqual("tool_id+3.0");
         await flushPromises();

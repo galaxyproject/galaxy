@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { getStepTitle } from "@/components/WorkflowInvocationState/util";
+import { useUid } from "@/composables/utils/uid";
+import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
-import WorkflowStepTitle from "@/components/WorkflowInvocationState/WorkflowStepTitle.vue";
 
 interface WorkflowDisplayProps {
     workflowId: string;
@@ -30,6 +34,15 @@ type ItemContent = {
     name: string;
     steps: Array<any>; // This isn't actually a proper workflow step type, right?  TODO, unify w/ workflowStepStore?
 };
+
+// Per instance, as a Page or report can show the same workflow twice.
+const stepIdPrefix = useUid("workflow-display-");
+
+// preview-style steps carry order_index and a server-resolved label rather
+// than the id/tool fields WorkflowStepTitle expects
+function stepTitle(step: any): string {
+    return getStepTitle(step.order_index, step.type, step.label || undefined);
+}
 
 const errorContent = ref();
 const itemContent = ref<ItemContent | null>(null);
@@ -71,6 +84,10 @@ watch(
     },
     { immediate: true },
 );
+
+function toolButtonId(orderIndex: number) {
+    return `${stepIdPrefix.value}-step-${orderIndex}`;
+}
 </script>
 
 <template>
@@ -80,8 +97,8 @@ watch(
         </ul>
         <div v-else>{{ errorContent }}</div>
     </GAlert>
-    <b-card v-else body-class="p-0" class="workflow-display">
-        <b-card-header v-if="!embedded">
+    <BCard v-else body-class="p-0" class="workflow-display">
+        <BCardHeader v-if="!embedded">
             <span class="float-right">
                 <GButton
                     v-g-tooltip.hover
@@ -110,27 +127,35 @@ watch(
                 <span>Workflow:</span>
                 <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+        <BCardBody>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
-                        <span :id="`step-icon-${step.order_index}`">
-                            <WorkflowStepIcon v-if="step.type" :step-type="step.type" />
-                        </span>
+                        <GLink
+                            v-if="step.type == 'tool' && step.tool_id"
+                            :id="toolButtonId(step.order_index)"
+                            dark
+                            thin
+                            type="button"
+                            :aria-label="localize('Tool details')">
+                            <WorkflowStepIcon step-type="tool" />
+                        </GLink>
+                        <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
                         <ToolLinkPopover
-                            v-if="step.type == 'tool'"
-                            :target="`step-icon-${step.order_index}`"
+                            v-if="step.type == 'tool' && step.tool_id"
+                            interactive
+                            :target="toolButtonId(step.order_index)"
                             :tool-id="step.tool_id"
                             :tool-version="step.tool_version" />
-                        <WorkflowStepTitle :workflow-step="step" />
+                        <span>{{ stepTitle(step) }}</span>
                         <WorkflowTree :input="step" :skip-head="true" />
                     </div>
                 </div>
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 <style scoped>
 .content-height {

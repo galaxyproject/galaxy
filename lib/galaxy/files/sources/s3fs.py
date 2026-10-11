@@ -8,6 +8,7 @@ from galaxy.files.sources._fsspec import (
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
 )
+from galaxy.files.templates.models import S3FSConfigMixin
 from galaxy.util.config_templates import TemplateExpansion
 from galaxy.util.s3_checksum import (
     s3_checksum_config_kwargs,
@@ -27,7 +28,7 @@ REQUIRED_PACKAGE = FS_PLUGIN_TYPE = "s3fs"
 log = logging.getLogger(__name__)
 
 
-class S3FSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
+class S3FSFileSourceTemplateConfiguration(S3FSConfigMixin, FsspecBaseFileSourceTemplateConfiguration):
     anon: bool | TemplateExpansion = False
     endpoint_url: str | TemplateExpansion | None = None
     bucket: str | TemplateExpansion | None = None
@@ -35,7 +36,7 @@ class S3FSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigurat
     key: str | TemplateExpansion | None = None
 
 
-class S3FSFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
+class S3FSFileSourceConfiguration(S3FSConfigMixin, FsspecBaseFileSourceConfiguration):
     anon: bool = False
     endpoint_url: str | None = None
     bucket: str | None = None

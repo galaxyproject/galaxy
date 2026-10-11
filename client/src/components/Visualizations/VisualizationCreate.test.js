@@ -20,7 +20,7 @@ const PLUGIN = {
     tags: ["tag1", "tag2"],
 };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: vi.fn(),
     }),
@@ -68,8 +68,8 @@ beforeEach(() => {
 
 it("renders plugin info after load", async () => {
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             visualization: "scatterplot",
         },
     });
@@ -93,8 +93,8 @@ it("adds hid to dataset names when fetching history items", async () => {
         ],
     });
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             visualization: "scatterplot",
         },
     });
@@ -109,8 +109,7 @@ it("adds hid to dataset names when fetching history items", async () => {
 it("displays create new visualization option if dataset is not required", async () => {
     vi.mocked(fetchPlugin).mockResolvedValueOnce(PLUGIN);
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        props: {
             visualization: "scatterplot",
         },
     });

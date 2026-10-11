@@ -194,6 +194,11 @@ def _normalize_step_parameters(
                 step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized
             )
         if param_dict:
+            if step.type == "parameter_input" and "input" not in param_dict:
+                raise exceptions.RequestParameterInvalidException(
+                    f"{step.label or step.order_index + 1}: legacy workflow parameter inputs must specify an 'input' value. "
+                    "Prefer passing the parameter value directly in 'inputs'."
+                )
             normalized_param_map[step.id] = param_dict
     return normalized_param_map
 
@@ -386,13 +391,18 @@ def build_workflow_run_configs(
                 continue
             step = steps_by_id[key]
             if step.type == "parameter_input":
+                if isinstance(input_dict, dict):
+                    raise exceptions.RequestParameterInvalidException(
+                        f"{step.label or step.order_index + 1}: workflow parameter inputs cannot be dictionaries. "
+                        "Pass the parameter value directly in 'inputs', without a 'parameter_value' wrapper."
+                    )
                 module_injector.inject(step)
                 assert step.module
                 input_param = step.module.get_runtime_inputs(step.module)["input"]
                 try:
                     input_param.validate(input_dict, trans=trans)
                     if isinstance(input_param, IntegerToolParameter) and input_param.multiple:
-                        # The run form submits one integer per line.
+                        # Store the validated integers, not the submitted values.
                         normalized_inputs[key] = input_param.to_python(input_dict, trans.app)
                 except ParameterValueError as e:
                     raise exceptions.RequestParameterInvalidException(

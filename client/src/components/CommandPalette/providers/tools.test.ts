@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { PALETTE_SCOPES } from "./scopes";
 import { toolsProvider } from "./tools";
 
@@ -39,14 +39,10 @@ const ALL_TOOLS = [FASTQC, BOWTIE];
 
 const TOOLS_SCOPE = PALETTE_SCOPES.find((scope) => scope.key === "t")!;
 
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
-}
-
 /** Bulk `/api/tools` returns the toolbox, a `q` search returns matching ids */
 function mockToolsApi(searchResult: string[] = [FASTQC.id]) {
-    vi.mocked(axios.get).mockImplementation(async (_url: string, config?: { params?: Record<string, unknown> }) => {
-        if (config?.params?.q) {
+    vi.mocked(axios.get).mockImplementation(async (_url, config) => {
+        if ((config?.params as { q?: string } | undefined)?.q) {
             return { data: searchResult };
         }
         return { data: ALL_TOOLS };
@@ -70,6 +66,18 @@ describe("toolsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.mocked(axios.get).mockReset();
+    });
+
+    it("never searches the backend once a newer search took over", async () => {
+        mockToolsApi();
+        await hydrateToolStore();
+        const controller = new AbortController();
+        controller.abort();
+
+        const items = await toolsProvider.search("fastqc", makeCtx(), { signal: controller.signal });
+
+        expect(items).toEqual([]);
+        expect(backendSearches()).toHaveLength(0);
     });
 
     it("searches the backend and maps matches to palette items", async () => {
@@ -103,15 +111,14 @@ describe("toolsProvider", () => {
         expect(backendSearches()).toEqual([]);
     });
 
-    it("keeps an unknown scope token out of the backend search", async () => {
+    it("matches a local-only query against the toolbox without a backend search", async () => {
         mockToolsApi();
         await hydrateToolStore();
         vi.mocked(axios.get).mockClear();
 
-        // `it:` is gated off on this instance, so it stays plain root text —
-        // but it is a filter the user is typing, not a tool to search for
-        await toolsProvider.search("it:", makeCtx());
+        const items = await toolsProvider.search("fastqc", makeCtx(), { localOnly: true });
 
+        expect(items.map((i) => i.id)).toEqual(["tools:fastqc_id"]);
         expect(backendSearches()).toEqual([]);
     });
 

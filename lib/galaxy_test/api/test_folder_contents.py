@@ -324,6 +324,101 @@ class TestFolderContentsApi(ApiTestCase):
         expected_order_by_name = ["Folder_C", "Folder_B", "Folder_A", "c", "b", "a"]
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
+    @requires_new_library
+    def test_index_readme(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme")
+        assert self._get_readme(folder_id) is None
+
+        readme_content = "# Project README\n\nSome **markdown** content.\n"
+        self._create_dataset_in_folder(
+            history_id,
+            folder_id,
+            name="ReadMe.md",
+            content=readme_content,
+            file_type="markdown",
+        )
+        self.dataset_populator.wait_for_history(history_id)
+
+        readme = self._get_readme(folder_id)
+        assert readme is not None
+        assert readme.strip() == readme_content.strip()
+
+    @requires_new_library
+    def test_index_readme_filenames(self, history_id):
+        for name in ["readme.txt", "README", " README.markdown "]:
+            folder_id = self._create_folder_in_library(f"Test Folder Contents Readme {name.strip()}")
+            self._create_dataset_in_folder(history_id, folder_id, name=name, content="# Hi\n", file_type="txt")
+            self.dataset_populator.wait_for_history(history_id)
+            readme = self._get_readme(folder_id)
+            assert readme is not None, f"README named {name!r} was not found"
+            assert readme.strip() == "# Hi"
+
+    @requires_new_library
+    def test_index_readme_ignores_other_folders(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Scope")
+        sibling_id = self._create_folder_in_library("Test Folder Contents Readme Scope Sibling")
+        self._create_dataset_in_folder(
+            history_id, sibling_id, name="README.md", content="# Sibling\n", file_type="markdown"
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme(sibling_id) is not None
+        assert self._get_readme(folder_id) is None
+
+    @requires_new_library
+    def test_index_readme_ignores_deleted(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Deleted")
+        ld_id, _ = self._create_dataset_in_folder(
+            history_id, folder_id, name="README.md", content="# Gone\n", file_type="markdown"
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme(folder_id) is not None
+
+        self._delete_library_dataset(ld_id)
+        assert self._get_readme(folder_id) is None
+
+    @requires_new_library
+    def test_index_readme_ignores_non_text_datatypes(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Datatype")
+        self._create_dataset_in_folder(history_id, folder_id, name="README", content="a\tb\n", file_type="tabular")
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme(folder_id) is None
+
+    @requires_new_library
+    def test_index_readme_follows_rename(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Rename")
+        ld_id, _ = self._create_dataset_in_folder(
+            history_id, folder_id, name="notes.md", content="# Notes\n", file_type="markdown"
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        assert self._get_readme(folder_id) is None
+
+        self._rename_library_dataset(ld_id, "README.md")
+        readme = self._get_readme(folder_id)
+        assert readme is not None
+        assert readme.strip() == "# Notes"
+
+        self._rename_library_dataset(ld_id, "notes.md")
+        assert self._get_readme(folder_id) is None
+
+    @requires_new_library
+    def test_index_readme_permissions(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme Permissions")
+        _, hda_id = self._create_dataset_in_folder(
+            history_id, folder_id, name="README.md", content="# Secret\n", file_type="markdown"
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        self._make_dataset_private(hda_id)
+
+        assert self._get_readme(folder_id) is not None
+
+        with self._different_user():
+            self._allow_library_access_to_user_role(self.dataset_populator.user_private_role_id())
+            # The folder listing hides the private dataset, so its README content must not leak either
+            assert self._get_readme(folder_id) is None
+
+            self._allow_dataset_access(hda_id)
+            assert self._get_readme(folder_id) is not None
+
     def _assert_folder_order_by_is_expected(
         self, folder_id: str, order_by: str, sort_desc: str, expected_order_by_name: list[str]
     ):
@@ -346,6 +441,15 @@ class TestFolderContentsApi(ApiTestCase):
         assert metadata["total_rows"] == expected_total_count, "Expected total rows doesn't match"
         assert len(contents) == expected_contents_count, "Expected number of contents doesn't match"
         return index_response
+
+    def _get_readme(self, folder_id: str) -> str | None:
+        response = self._get(f"folders/{folder_id}/contents")
+        self._assert_status_code_is(response, 200)
+        return response.json()["metadata"]["readme"]
+
+    def _rename_library_dataset(self, library_dataset_id: str, name: str) -> None:
+        response = self._patch(f"libraries/datasets/{library_dataset_id}", data={"name": name}, json=True)
+        self._assert_status_code_is(response, 200)
 
     def _create_folder_in_library(self, name: str) -> str:
         root_folder_id = self.library["root_folder_id"]

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
@@ -147,7 +147,10 @@ defineExpose({ attemptImport });
                     :query-trs-id="props.queryTrsId"
                     :query-trs-server="props.queryTrsServer"
                     :query-trs-version-id="props.queryTrsVersionId"
-                    @onImport="(trsId, toolId, version) => importVersion(trsId, toolId, version, props.isRun)"
+                    @onImport="
+                        (trsId: string, toolId: string, version?: string) =>
+                            importVersion(trsId, toolId, version, props.isRun)
+                    "
                     @input-valid="onChildValidation" />
             </div>
 
@@ -155,7 +158,7 @@ defineExpose({ attemptImport });
                 <TrsUrlImport
                     ref="trsUrlImportRef"
                     :query-trs-url="props.queryTrsUrl"
-                    @onImport="(url) => importVersionFromUrl(url, props.isRun)"
+                    @onImport="(url: string) => importVersionFromUrl(url, props.isRun)"
                     @input-valid="onChildValidation" />
             </div>
         </div>

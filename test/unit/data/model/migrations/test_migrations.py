@@ -73,12 +73,35 @@ ANNOTATION_MODELS = (
 LONG_ANNOTATION = "".join(sha256(str(i).encode()).hexdigest() for i in range(64))
 
 
+# Migration 0035 auto-named these indexes until 2010; databases created before then
+# (e.g. usegalaxy.org) still carry the auto-generated names.
+LEGACY_ANNOTATION_INDEX_NAMES = {
+    "history_annotation_association": "ix_history_annotation_association_annotation",
+    "history_dataset_association_annotation_association": "ix_history_dataset_association_annotation_association_ann_2",
+    "stored_workflow_annotation_association": "ix_stored_workflow_annotation_association_annotation",
+    "workflow_step_annotation_association": "ix_workflow_step_annotation_association_annotation",
+}
+
+
+def _annotation_index_names(engine, table_name) -> list[str]:
+    indexes = inspect(engine).get_indexes(table_name)
+    return [index["name"] for index in indexes if index["column_names"] == ["annotation"]]
+
+
 def _has_annotation_index(engine, annotation_model) -> bool:
-    indexes = inspect(engine).get_indexes(annotation_model.__tablename__)
-    return any(index["column_names"] == ["annotation"] for index in indexes)
+    return bool(_annotation_index_names(engine, annotation_model.__tablename__))
 
 
-def test_drop_annotation_indexes(url_factory):  # noqa: F811
+def _rename_to_legacy_annotation_indexes(engine) -> None:
+    with engine.begin() as conn:
+        for table_name, legacy_name in LEGACY_ANNOTATION_INDEX_NAMES.items():
+            for index_name in _annotation_index_names(conn, table_name):
+                conn.execute(text(f"DROP INDEX {index_name}"))
+            conn.execute(text(f"CREATE INDEX {legacy_name} ON {table_name} (annotation)"))
+
+
+@pytest.mark.parametrize("legacy_index_names", [False, True])
+def test_drop_annotation_indexes(url_factory, legacy_index_names):  # noqa: F811
     """Downgrade to the indexed schema, then verify the upgrade keeps rows and accepts long annotations."""
     db_url = url_factory()
     with create_and_drop_database(db_url), disposing_engine(db_url) as engine:
@@ -86,6 +109,8 @@ def test_drop_annotation_indexes(url_factory):  # noqa: F811
         manager = AlembicManager(engine)
         manager.stamp_model_head(GXY)
         alembic.command.downgrade(manager.alembic_cfg, "e96dd6fd5863")
+        if legacy_index_names:
+            _rename_to_legacy_annotation_indexes(engine)
 
         for annotation_model in ANNOTATION_MODELS:
             assert _has_annotation_index(engine, annotation_model)

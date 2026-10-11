@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -27,10 +28,10 @@ onMounted(async () => {
 });
 </script>
 <template>
-    <b-form-group>
-        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" :disabled="jobLockUpdating" switch size="lg">
+    <BFormGroup>
+        <BFormCheckbox id="prevent-job-dispatching" v-model="jobLock" :disabled="jobLockUpdating" switch size="lg">
             Job dispatching is currently
             <strong>{{ jobLock ? "locked" : "unlocked" }}</strong>
-        </b-form-checkbox>
-    </b-form-group>
+        </BFormCheckbox>
+    </BFormGroup>
 </template>

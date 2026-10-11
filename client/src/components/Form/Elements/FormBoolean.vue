@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed } from "vue";
 
 export interface FormBooleanProps {
@@ -24,7 +25,7 @@ const label = computed(() => (currentValue.value ? "Yes" : "No"));
 </script>
 
 <template>
-    <b-form-checkbox v-model="currentValue" class="no-highlight" switch>
+    <BFormCheckbox v-model="currentValue" class="no-highlight" switch>
         <span v-if="!props.noLabel" v-localize>{{ label }}</span>
-    </b-form-checkbox>
+    </BFormCheckbox>
 </template>

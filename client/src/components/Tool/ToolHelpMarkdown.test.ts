@@ -26,6 +26,6 @@ describe("ToolHelpMarkdown", () => {
         expect(html).toContain('href="https://example.org" target="_blank"');
         expect(html).toContain("&lt;b&gt;raw&lt;/b&gt;");
         const links = wrapper.findAll("a");
-        expect(links.at(1).attributes("href")).toBe("/galaxy/help/terms/tool");
+        expect(links.at(1)!.attributes("href")).toBe("/galaxy/help/terms/tool");
     });
 });

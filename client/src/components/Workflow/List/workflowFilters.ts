@@ -1,7 +1,7 @@
 import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
 
 export function helpHtml(activeList = "my", isAnonymous = false) {
-    let extra = "";
+    let extra: string;
     if (activeList === "my") {
         extra = `<dt><code>is:published</code></dt>
         <dd>

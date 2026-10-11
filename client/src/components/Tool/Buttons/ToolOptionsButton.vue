@@ -21,7 +21,7 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 import ToolSource from "@/components/Tool/ToolSource.vue";
 
 const { currentUser, isAdmin } = storeToRefs(useUserStore());
-const { config } = useConfig(true);
+const { config } = useConfig();
 
 interface Props {
     id: string;
@@ -123,7 +123,7 @@ loadToolMenuWebhooks();
             </GDropdownItem>
         </GDropdown>
 
-        <GModal :show.sync="showToolSource" fullscreen :title="`Tool Source for ${id}`">
+        <GModal v-model:show="showToolSource" fullscreen :title="`Tool Source for ${id}`">
             <ToolSource v-if="showToolSource" :tool-id="id" :tool-uuid="toolUuid || undefined" />
         </GModal>
     </div>

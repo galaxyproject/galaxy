@@ -53,12 +53,17 @@ const routerPushMock = vi.fn();
 
 // The component reads the router via `useRouter()` (mocked here) while child
 // components (e.g. GButton's `<RouterLink>`) need a real router on the mount
-// option to render — keep both wired up.
-vi.mock("vue-router/composables", () => ({
-    useRouter: () => ({
-        push: routerPushMock,
-    }),
-}));
+// option to render -- getLocalVue() provides that default router now, so we
+// only need to override useRouter() itself.
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: () => ({
+            push: routerPushMock,
+        }),
+    };
+});
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
@@ -98,9 +103,10 @@ describe("ToolsList", () => {
 
     it("performs an advanced search with a router push", async () => {
         const wrapper = mount(ToolsList as object, {
-            localVue,
-            pinia,
-            router,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia],
+            },
         });
 
         // By default, no search text, fetch tools is still called but without a query
@@ -112,11 +118,12 @@ describe("ToolsList", () => {
 
         expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
 
-        // Now add all filters in the advanced menu
+        // Now add all filters in the advanced menu. BFormInput isn't stubbed, so
+        // `find()` here returns the real <input> DOM element, not a component wrapper.
         for (const [selector, value] of Object.entries(FILTER_INPUTS)) {
             const filterInput = wrapper.find(selector);
-            expect(filterInput.vm).toBeTruthy();
-            expect(filterInput.props().type).toBe("text");
+            expect(filterInput.exists()).toBe(true);
+            expect(filterInput.attributes("type")).toBe("text");
             await filterInput.setValue(value);
         }
 
@@ -131,10 +138,11 @@ describe("ToolsList", () => {
 
     it("detects filters in the route and searches the backend", async () => {
         mount(ToolsList as object, {
-            localVue,
-            pinia,
-            router,
-            propsData: FILTER_SETTINGS,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia],
+            },
+            props: FILTER_SETTINGS,
         });
 
         expect(fetchToolsMock).toHaveBeenCalledWith(WHOOSH_QUERY);

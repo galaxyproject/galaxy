@@ -215,8 +215,8 @@ class TestPages(SeleniumTestCase, UsesUploadActivity):
         self.components.pages.history.preview_button.wait_for_visible()
         self.components.pages.history.permissions_button.wait_for_visible()
 
-        # Back button says "Back to Reports" not "This History's Notebooks"
+        # Back button says "Back to Notebooks" not "This History's Notebooks"
         back_text = self.components.pages.history.back_button.wait_for_text()
-        assert "Back to Reports" in back_text
+        assert "Back to Notebooks" in back_text
         assert "This History's Notebooks" not in back_text
         self.screenshot("standalone_toolbar_controls")

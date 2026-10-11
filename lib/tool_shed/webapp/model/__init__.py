@@ -110,7 +110,7 @@ class User(Base, Dictifiable):
     create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
     email: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
-    username: Mapped[str | None] = mapped_column(String(255), index=True)
+    username: Mapped[str | None] = mapped_column(String(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(40), nullable=False)
     external: Mapped[bool | None] = mapped_column(Boolean, default=False)
     new_repo_alert: Mapped[bool | None] = mapped_column(Boolean, default=False)
@@ -537,7 +537,8 @@ class Repository(Base, Dictifiable):
             return {}
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == next_downloadable_changeset_revision:
-                return downloadable_revision.metadata.get("tool_dependencies", {})
+                metadata = downloadable_revision.metadata or {}
+                return metadata.get("tool_dependencies", {})
         return {}
 
     def installable_revisions(self, app: "ToolShedApp", sort_revisions: bool = True):
@@ -716,7 +717,7 @@ class RepositoryMetadata(Dictifiable):
     repository_id: Mapped[int | None]
     changeset_revision: Mapped[str | None]
     numeric_revision: Mapped[int | None]
-    metadata: Mapped[Any]
+    metadata: Mapped[dict[str, Any] | None]
     tool_versions: Mapped[Any]
     malicious: Mapped[bool | None]
     downloadable: Mapped[bool | None]

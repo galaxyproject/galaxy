@@ -556,8 +556,8 @@ class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
         # Standalone-only controls absent
         self.components.pages.history.permissions_button.assert_absent_or_hidden()
 
-        # Back button says "This History's Pages" not "Back to Pages"
+        # Back button says "This History's Notebooks" not "Back to Notebooks"
         back_text = self.components.pages.history.back_button.wait_for_text()
         assert "This History's Notebooks" in back_text
-        assert "Back to Reports" not in back_text
+        assert "Back to Notebooks" not in back_text
         self.screenshot("history_toolbar_controls")

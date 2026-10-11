@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -128,7 +128,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
     );
 
     const wrapper = mount(WorkflowInvocationShare as object, {
-        propsData: {
+        props: {
             invocationId: "invocation-id",
             workflowId: bothShareable ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
             historyId: bothShareable
@@ -140,8 +140,8 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
         stubs: {
             FontAwesomeIcon: true,
         },
-        localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        global: localVue,
+        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
     });
 
     const userStore = useUserStore();
@@ -154,7 +154,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
     return { wrapper };
 }
 
-async function openShareModal(wrapper: Wrapper<Vue>) {
+async function openShareModal(wrapper: VueWrapper) {
     await wrapper.find(SELECTORS.SHARE_ICON_BUTTON).trigger("click");
 }
 
@@ -213,9 +213,9 @@ describe("WorkflowInvocationShare", () => {
         const { wrapper } = await mountWorkflowInvocationShare(true, true);
 
         // Initially, the modal is not visible and this time remains closed when the button is clicked
-        expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
         await openShareModal(wrapper);
-        expect(wrapper.findComponent(GModal).props("visible")).toBeFalsy();
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
 
         // Instead we already have a singular toast with the link copied message
         expect(raisedToasts()).toEqual([{ variant: "info", message: CLIPBOARD_MSG }]);

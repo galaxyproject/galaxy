@@ -10,6 +10,8 @@ from galaxy.tool_util.provided_metadata import (
     NullToolProvidedMetadata,
     ToolProvidedMetadata,
 )
+from galaxy.tool_util.toolbox import ToolLoadError
+from galaxy.tool_util_models.tool_source import HelpContent
 from galaxy.tools import create_tool_from_source
 
 XML_TOOL = """
@@ -122,6 +124,10 @@ USER_DEFINED_TOOL_WITH_METADATA_DISCOVERY = USER_DEFINED_TOOL.replace(
     discover_datasets:
       - discover_via: tool_provided_metadata""",
 )
+USER_DEFINED_TOOL_WITH_RST_HELP = USER_DEFINED_TOOL + """help:
+  format: restructuredtext
+  content: "**user tool help**"
+"""
 USER_DEFINED_TOOL_SPOOFING_UPLOAD = USER_DEFINED_TOOL.replace("id: samtools-reference", "id: upload1")
 
 
@@ -357,9 +363,77 @@ def test_user_defined_tool_cannot_enable_tool_provided_metadata(tool_app, tmp_pa
     assert isinstance(metadata, NullToolProvidedMetadata)
 
 
+def test_user_defined_tool_rst_help_is_markdown(tool_app):
+    tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=USER_DEFINED_TOOL_WITH_RST_HELP)
+    assert tool.raw_help == HelpContent(format="markdown", content="**user tool help**")
+
+
 def test_deserialize_cwl_tool(tool_app):
     # Can't verify much about cwl tools at this point
     tool_source = get_tool_source(tool_app, tool_source_class="CwlToolSource", raw_tool_source=CWL_TOOL)
     assert isinstance(tool_source, CwlToolSource)
     assert tool_source.allows_tool_provided_metadata()
     assert tool_source.parse_provided_metadata_is_explicit()
+
+
+TYPE_SOURCE_TOOL = """
+<tool id="type_source_tool" name="type source tool" version="1">
+    <inputs>
+        {inputs}
+    </inputs>
+    <outputs>
+        {output}
+    </outputs>
+</tool>
+"""
+COLLECTION_IN_CONDITIONAL = """
+<conditional name="cond">
+    <param name="sel" type="select"><option value="a">a</option></param>
+    <when value="a"><param name="input_collect" type="data_collection" /></when>
+</conditional>
+"""
+COLLECTION_IN_SECTION = (
+    '<section name="sec" title="sec"><param name="input_collect" type="data_collection" /></section>'
+)
+COLLECTION_IN_REPEAT_CONDITIONAL = f'<repeat name="rep" title="rep">{COLLECTION_IN_CONDITIONAL}</repeat>'
+COLLECTION_AT_TOP_LEVEL = '<param name="input_collect" type="data_collection" />'
+
+
+def _collection_output(type_source):
+    return f'<collection name="out" type_source="{type_source}" />'
+
+
+def _type_source_tool(tool_app, inputs, output):
+    return _deserialize(
+        tool_app,
+        tool_source_class="XmlToolSource",
+        raw_tool_source=TYPE_SOURCE_TOOL.format(inputs=inputs, output=output),
+    )
+
+
+@pytest.mark.parametrize(
+    "inputs,type_source,qualified",
+    [
+        (COLLECTION_IN_CONDITIONAL, "input_collect", "cond|input_collect"),
+        (COLLECTION_IN_SECTION, "input_collect", "sec|input_collect"),
+        (COLLECTION_IN_REPEAT_CONDITIONAL, "rep_0|input_collect", "rep_0|cond|input_collect"),
+    ],
+)
+def test_bare_type_source_alias_fails_to_load(tool_app, inputs, type_source, qualified):
+    with pytest.raises(ToolLoadError) as e:
+        _type_source_tool(tool_app, inputs, _collection_output(type_source))
+    assert f"type_source '{type_source}', which must be qualified as '{qualified}'" in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "inputs,type_source",
+    [
+        (COLLECTION_IN_CONDITIONAL, "cond|input_collect"),
+        (COLLECTION_IN_SECTION, "sec|input_collect"),
+        (COLLECTION_IN_REPEAT_CONDITIONAL, "rep_0|cond|input_collect"),
+        (COLLECTION_AT_TOP_LEVEL + COLLECTION_IN_CONDITIONAL, "input_collect"),
+    ],
+)
+def test_qualified_type_source_loads(tool_app, inputs, type_source):
+    tool = _type_source_tool(tool_app, inputs, _collection_output(type_source))
+    assert tool.output_collections["out"].structure.collection_type_source == type_source

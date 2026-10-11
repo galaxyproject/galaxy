@@ -11,11 +11,11 @@ describe("FormHidden", () => {
 
     beforeEach(() => {
         wrapper = mount(FormHidden, {
-            propsData: {
+            props: {
                 value: false,
                 info: "info",
             },
-            localVue,
+            global: localVue,
         });
     });
 

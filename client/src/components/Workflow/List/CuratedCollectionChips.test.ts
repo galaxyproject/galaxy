@@ -39,9 +39,7 @@ async function mountChips(active?: string) {
 }
 
 function hiddenChips(wrapper: Awaited<ReturnType<typeof mountChips>>) {
-    return wrapper
-        .findAll(".curated-workflow-collection-hidden")
-        .wrappers.map((chip) => chip.attributes("data-collection"));
+    return wrapper.findAll(".curated-workflow-collection-hidden").map((chip) => chip.attributes("data-collection"));
 }
 
 describe("CuratedCollectionChips", () => {

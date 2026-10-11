@@ -409,13 +409,16 @@ describe("useUserToolCredentials", () => {
     });
 
     describe("status variant computation", () => {
-        it("should return info when busy", () => {
-            // Mock the isBusy property to return true
-            vi.spyOn(userToolsServiceCredentialsStore, "isBusy", "get").mockReturnValue(true);
-
+        it("should return info when busy", async () => {
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 
+            // isBusy is read-only outside the store, so make it busy for real: the
+            // fetch sets it before its first await.
+            const fetching = userToolsServiceCredentialsStore.fetchAllUserToolsServiceCredentials();
             expect(statusVariant.value).toBe("info");
+
+            await fetching;
+            expect(statusVariant.value).not.toBe("info");
         });
 
         it("should return success when all credentials provided", async () => {

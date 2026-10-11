@@ -645,9 +645,8 @@ async function attemptCreate() {
     } else {
         listIdentifiers = pairedListIdentifiers();
     }
-    let confirmed: boolean | null = false;
     if (listIdentifiers.length == 0) {
-        confirmed = await confirm("Are you sure you want to create a list with no entries?", {
+        const confirmed = await confirm("Are you sure you want to create a list with no entries?", {
             title: "Create an empty list",
             okText: "Create",
         });
@@ -892,7 +891,7 @@ const context = {
 </script>
 
 <script lang="ts">
-// eslint-disable-next-line import/first
+// eslint-disable-next-line import-x/first
 import { components as VueComponents } from "./PairedOrUnpairedComponents";
 
 // defineExpose should work for exposing PairedDatasetCellComponent to AG Grid
@@ -978,7 +977,9 @@ export default {
                         </GButton>
                     </div>
                     <div :style="style" :class="theme">
+                        <!-- ag-grid animates rows by default since 31; a removed row would linger at its old index. -->
                         <AgGridVue
+                            :animate-rows="false"
                             :row-drag-managed="true"
                             :row-drag-text="rowDragText"
                             :get-row-id="getRowId"

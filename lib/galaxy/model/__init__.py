@@ -926,7 +926,7 @@ class User(Base, Dictifiable, RepresentById):
         collection_class=ordering_list("order_index"),
     )
     _preferences: Mapped[dict[str, "UserPreference"]] = relationship(collection_class=attribute_keyed_dict("name"))
-    values: Mapped[list["FormValues"]] = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
+    values: "Mapped[FormValues | None]" = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
     # Add type hint (will this work w/SA?)
     api_keys: Mapped[list["APIKeys"]] = relationship(
         back_populates="user",
@@ -6993,6 +6993,7 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+    extension: Mapped[str]
     message: Mapped[str | None]
     tags: Mapped[list["LibraryDatasetDatasetAssociationTagAssociation"]]
 
@@ -9090,7 +9091,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     name: Mapped[str | None] = mapped_column(TEXT)
     has_cycles: Mapped[bool | None]
     has_errors: Mapped[bool | None]
-    reports_config: Mapped[bytes | None] = mapped_column(JSONType)
+    reports_config: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
     creator_metadata: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONType)
     license: Mapped[str | None] = mapped_column(TEXT)
     source_metadata: Mapped[dict[str, str | None] | None] = mapped_column(JSONType)

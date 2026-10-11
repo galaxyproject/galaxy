@@ -470,6 +470,8 @@ class GalaxyAppConfigurationAttributes:
     enable_sse_updates: bool
     history_audit_monitor_poll_interval: int
     enable_notification_system: bool
+    enable_command_palette: bool
+    command_palette_disabled_providers: list[Any]
     enable_mcp_server: bool
     mcp_server_path: str
     expired_notifications_cleanup_interval: int

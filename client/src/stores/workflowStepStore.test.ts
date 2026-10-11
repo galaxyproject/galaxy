@@ -100,7 +100,7 @@ describe("getCombinedStepInputs", () => {
     const stepWithWhen = createTestStep(1, {
         inputs: [regularInput],
         outputs: [],
-        when: "${check_value}",
+        when: "$(inputs.check_value)",
         inputConnections: {
             check_value: { output_name: "output", id: 0 },
         },
@@ -139,6 +139,19 @@ describe("getCombinedStepInputs", () => {
         // Extra inputs should come first
         expect(combinedInputs[0]?.name).toBe("check_value");
         expect(combinedInputs[1]?.name).toBe("input_dataset");
+    });
+
+    it("does not confuse a connection name with a longer referenced input", () => {
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        stepStore.addStep(workflowStepZero);
+        const step = stepStore.addStep(
+            createTestStep(1, {
+                when: "$(inputs.check_value)",
+                inputConnections: { check: { output_name: "output", id: 0 } },
+            }),
+        );
+
+        expect(getCombinedStepInputs(step, stepStore)).toHaveLength(0);
     });
 
     it("handles step with no inputs gracefully", () => {

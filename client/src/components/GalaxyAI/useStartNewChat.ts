@@ -1,4 +1,4 @@
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { useChatStore } from "@/stores/chatStore";
 

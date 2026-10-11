@@ -11,6 +11,13 @@ DYNAMIC_ARGUMENTS = DynamicArguments()
 SHARED_ARGUMENTS: list[str] = [
     "collapse",
 ]
+CELL_TYPES: list[str] = [
+    "galaxy",
+    "markdown",
+    "vega",
+    "visualization",
+    "vitessce",
+]
 VALID_ARGUMENTS: dict[str, list[str] | DynamicArguments] = {
     "generate_galaxy_version": [],
     "generate_time": [],

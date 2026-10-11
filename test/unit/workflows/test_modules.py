@@ -12,11 +12,13 @@ from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.schema.invocation import FailureReason
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import to_decoded_json
 from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
     NO_REPLACEMENT,
     RuntimeValue,
+    workflow_building_modes,
 )
 from galaxy.util import (
     bunch,
@@ -260,6 +262,64 @@ def test_subworkflow_new_inputs_collection_type():
     subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKFLOW_YAML)
     inputs = subworkflow_module.get_data_inputs()
     assert inputs[0]["collection_type"] == "list:list"
+
+
+MULTIPLE_PARAMETER_WORKFLOW_YAML = """
+steps:
+  - type: "parameter_input"
+    label: "single"
+    tool_inputs: {"parameter_type": "integer", "optional": false}
+  - type: "parameter_input"
+    label: "multiple"
+    tool_inputs: {"parameter_type": "integer", "optional": false, "multiple": true}
+  - type: "parameter_input"
+    label: "multiple_text"
+    tool_inputs: {"parameter_type": "text", "optional": false, "multiple": true}
+"""
+
+
+def test_subworkflow_new_inputs_parameter_multiple():
+    subworkflow_module = __new_subworkflow_module(MULTIPLE_PARAMETER_WORKFLOW_YAML)
+    inputs = {i["name"]: i for i in subworkflow_module.get_all_inputs()}
+    assert inputs["single"]["multiple"] is False
+    assert inputs["multiple"]["multiple"] is True
+    assert inputs["multiple_text"]["multiple"] is True
+
+
+def test_parameter_input_multiple_integer_list_default_round_trip():
+    module, errors = __populate_integer_parameter_from_tool_form(multiple=True, default=[1, 2])
+    assert not errors, errors
+    step = model.WorkflowStep()
+    module.save_to_step(step)
+    reloaded = modules.module_factory.from_workflow_step(MockTrans(), step)
+    assert reloaded.get_export_state()["default"] == [1, 2]
+    assert reloaded.get_runtime_inputs(mock.MagicMock())["input"].get_initial_value(None, {}) == [1, 2]
+
+
+@pytest.mark.parametrize("default", ["1,2", "1\n2", ["1,2"]])
+def test_parameter_input_multiple_integer_rejects_separated_string(default):
+    _, errors = __populate_integer_parameter_from_tool_form(multiple=True, default=default)
+    assert "an integer is required" in str(errors["parameter_definition|optional|specify_default|default"])
+
+
+def test_parameter_input_multiple_integer_cleared_default():
+    _, errors = __populate_integer_parameter_from_tool_form(multiple=True, default=None)
+    assert "an integer or workflow parameter is required" in str(
+        errors["parameter_definition|optional|specify_default|default"]
+    )
+
+
+def test_parameter_input_list_default_after_disabling_multiple():
+    _, errors = __populate_integer_parameter_from_tool_form(multiple=False, default=[1, 2])
+    assert "an integer or workflow parameter is required" in str(
+        errors["parameter_definition|optional|specify_default|default"]
+    )
+    step = model.WorkflowStep()
+    step.type = "parameter_input"
+    step.tool_inputs = {"parameter_type": "integer", "optional": False, "multiple": False, "default": [1, 2]}
+    module = modules.module_factory.from_workflow_step(MockTrans(), step)
+    with pytest.raises(ParameterValueError, match="the attribute 'value' must be an integer"):
+        module.get_runtime_inputs(mock.MagicMock())
 
 
 def test_subworkflow_new_outputs():
@@ -571,6 +631,22 @@ def test_subworkflow_map_over_type(test_case):
         test_case.step_output_def,
         new_steps[1]["outputs"][0].get("collection_type"),
     )
+
+
+def __populate_integer_parameter_from_tool_form(multiple, default):
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    errors: dict[str, Any] = {}
+    incoming = {
+        "parameter_definition|parameter_type": "integer",
+        "parameter_definition|multiple": multiple,
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|optional|specify_default|specify_default": True,
+        "parameter_definition|optional|specify_default|default": default,
+    }
+    module.populate_state_from_tool_form(incoming, errors)
+    return module, errors
 
 
 def __new_subworkflow_module(workflow=TEST_WORKFLOW_YAML):

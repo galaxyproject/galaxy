@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
@@ -340,20 +340,20 @@ watch(operationMessage, () => {
                         outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
-                        <FontAwesomeIcon :icon="action.icon" class="mr-1" />
+                        <FontAwesomeIcon v-if="action.icon" :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
                     </GButton>
                 </div>
             </div>
             <FilterMenu
                 v-if="filterClass"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 :class="{ 'py-2': !embedded }"
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
-                :filter-text.sync="filterText"
                 :loading="initDataLoading || resultsLoading"
-                :show-advanced.sync="showAdvanced"
                 view="compact" />
         </div>
         <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
@@ -452,7 +452,7 @@ watch(operationMessage, () => {
                                     <GridExpand
                                         v-else-if="fieldEntry.type == 'expand'"
                                         :details-showing="expanded.has(rowData)"
-                                        @show-details="(s) => showDetails(rowData, s)" />
+                                        @show-details="(s: boolean) => showDetails(rowData, s)" />
                                     <GridBoolean
                                         v-else-if="fieldEntry.type == 'boolean'"
                                         :value="rowData[fieldEntry.key]" />

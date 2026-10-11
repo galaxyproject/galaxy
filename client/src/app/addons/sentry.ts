@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/vue";
-import Vue from "vue";
-import type VueRouter from "vue-router";
+import type { App } from "vue";
+import type { Router } from "vue-router";
 
 interface GalaxyConfig {
     sentry_dsn_public?: string;
@@ -37,7 +37,7 @@ function isReplayEnabled(user?: GalaxyUser): boolean {
     }
 }
 
-export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
+export function initSentry(Galaxy: GalaxyInstance, router: Router, app: App): void {
     const config = Galaxy.config;
     if (!config.sentry_dsn_public) {
         return;
@@ -61,7 +61,7 @@ export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
     }
 
     Sentry.init({
-        Vue,
+        app,
         dsn: config.sentry_dsn_public,
         integrations,
         release,

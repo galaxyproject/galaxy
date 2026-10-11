@@ -109,7 +109,10 @@ See Also
 import abc
 import logging
 from collections.abc import Sequence
-from contextlib import contextmanager
+from contextlib import (
+    AbstractContextManager,
+    contextmanager,
+)
 from typing import (
     Any,
     Generic,
@@ -324,7 +327,17 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             url: The URL to navigate to
         """
-        self.page.goto(url)
+        try:
+            self.page.goto(url)
+        except PlaywrightError as e:
+            if "ERR_ABORTED" not in str(e):
+                raise
+            # The page navigated itself - an async form submit assigning
+            # window.location, say - and the browser cancels whichever
+            # navigation lost the race. Selenium's get() accepts wherever that
+            # leaves it; go where the caller asked instead. The competing load
+            # has committed by now, so this one has the page to itself.
+            self.page.goto(url)
 
     def refresh(self) -> None:
         """Reload the current page."""
@@ -1282,6 +1295,32 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             PNG image data as bytes
         """
         return self.page.screenshot()
+
+    def highlight_element(self, element: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager that draws a red border around an element.
+
+        Args:
+            element: The element to highlight
+
+        Returns:
+            Context manager restoring the previous border on exit
+        """
+        return self._highlight_element(self._unwrap_element(element))
+
+    def _highlight_element(self, element: ElementHandle) -> AbstractContextManager[None]:
+        """Internal implementation of highlight_element."""
+
+        @contextmanager
+        def _highlight_context():
+            original_border = self.execute_script("return arguments[0].style.border;", element)
+            try:
+                self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                yield
+            finally:
+                self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+
+        return _highlight_context()
 
     def close(self) -> None:
         """Cleanup the current browser tab/page."""

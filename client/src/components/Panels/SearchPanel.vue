@@ -16,8 +16,10 @@ const emit = defineEmits<{
 
 <template>
     <ActivityPanel title="Search">
-        <DelayedInput placeholder="search workflow" :delay="200" @change="(v) => (currentQuery = v)" />
+        <DelayedInput placeholder="search workflow" :delay="200" @change="(v: string) => (currentQuery = v)" />
 
-        <GraphSearch :current-query="currentQuery" @result-clicked="(result) => emit('result-clicked', result)" />
+        <GraphSearch
+            :current-query="currentQuery"
+            @result-clicked="(result: SearchData) => emit('result-clicked', result)" />
     </ActivityPanel>
 </template>

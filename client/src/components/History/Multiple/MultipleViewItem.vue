@@ -109,8 +109,8 @@ function onViewCollection(collection: object) {
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0]?.history_id === source.id"
+            v-model:selected-collections="selectedCollections"
             :history="history"
-            :selected-collections.sync="selectedCollections"
             :show-controls="false"
             multi-view
             @view-collection="onViewCollection" />
@@ -119,7 +119,6 @@ function onViewCollection(collection: object) {
             v-else
             :history="history"
             :filter="filter"
-            :show-controls="false"
             is-multi-view-item
             @view-collection="onViewCollection" />
     </div>

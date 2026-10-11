@@ -23,6 +23,15 @@
 _shared_arguments:
   - collapse
 
+# Names a ``` fenced block (cell) may carry in pages and reports. The client renders
+# each in Sections/SectionWrapper.vue; the validator rejects any other ``` fence.
+_cell_types:
+  - galaxy
+  - markdown
+  - vega
+  - visualization
+  - vitessce
+
 _parameter_sets:
   dataset_addressing:
     output:

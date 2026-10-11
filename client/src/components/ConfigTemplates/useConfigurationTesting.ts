@@ -195,18 +195,20 @@ export function useConfigurationTemplateEdit<T extends TemplateSummary, R extend
         if (template.value && instance.value) {
             const payload = editFormDataToPayload(template.value, formData);
 
-            let pluginStatus;
+            let pluginStatus: PluginStatus | undefined;
             try {
                 testRunning.value = true;
                 showForceActionButton.value = false;
-                const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST(testUpdateUrl, {
+                const { data, error: testRequestError } = await GalaxyApi().POST(testUpdateUrl, {
                     params: { path: { uuid: instance.value.uuid } },
                     body: payload,
                 });
                 if (testRequestError) {
                     error.value = errorMessageAsString(testRequestError);
                     showForceActionButton.value = true;
+                    return;
                 }
+                pluginStatus = data;
                 testResults.value = pluginStatus;
             } catch (e) {
                 error.value = errorMessageAsString(e);
@@ -315,11 +317,11 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
         }
 
         const payload = upgradeFormDataToPayload(template.value, formData);
-        let pluginStatus;
+        let pluginStatus: PluginStatus | undefined;
         try {
             testRunning.value = true;
             showForceActionButton.value = false;
-            const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST(testUpdateUrl, {
+            const { data, error: testRequestError } = await GalaxyApi().POST(testUpdateUrl, {
                 params: { path: { uuid: instance.value.uuid } },
                 body: payload,
             });
@@ -328,6 +330,7 @@ export function useConfigurationTemplateUpgrade<T extends TemplateSummary, R ext
                 showForceActionButton.value = true;
                 return;
             } else {
+                pluginStatus = data;
                 testResults.value = pluginStatus;
             }
         } catch (e) {

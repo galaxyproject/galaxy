@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<document xmlns="http://www.abbyy.com/FineReader_xml/FineReader10-schema-v1.xml" version="1.0" producer="" languages="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.abbyy.com/FineReader_xml/FineReader10-schema-v1.xml http://www.abbyy.com/FineReader_xml/FineReader10-schema-v1.xml">
+<page width="1488" height="2198" resolution="300" originalCoords="1">
+<block blockType="Text" l="734" t="280" r="787" b="323"><region><rect l="734" t="280" r="787" b="323"/></region>
+<text>
+<par align="Center" lineSpacing="1160">
+<line baseline="316" l="740" t="286" r="781" b="317"><formatting lang="GermanStandard" ff="Times New Roman" fs="10.5" bold="1">
+<charParams l="740" t="287" r="756" b="317" wordFirst="1" wordLeftMost="1" wordFromDictionary="0" wordNormal="0" wordNumeric="1" wordIdentifier="0" charConfidence="100" serifProbability="91" wordPenalty="0" meanStrokeWidth="46">1</charParams>
+<charParams l="761" t="286" r="781" b="316" wordFromDictionary="0" wordNormal="0" wordNumeric="1" wordIdentifier="0" charConfidence="44" serifProbability="255" wordPenalty="0" meanStrokeWidth="46">2</charParams></formatting></line></par>
+</text>
+</block>
+</page>
+</document>

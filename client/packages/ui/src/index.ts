@@ -1,5 +1,6 @@
-// @galaxyproject/galaxy-ui public barrel. Internal package, consumed by the
-// main Galaxy client through a Vite source alias (no library build).
+// @galaxyproject/galaxy-ui public barrel. Internal package with no library build: the main
+// Galaxy client consumes it through a Vite source alias, and the Tool Shed frontend through a
+// file: dependency. See README.md.
 
 export {
     type ColorVariant,
@@ -32,6 +33,22 @@ export { default as GModal } from "./components/GModal.vue";
 export { default as GOverlay } from "./components/GOverlay.vue";
 export { default as GPopover } from "./components/GPopover.vue";
 export { default as GTab } from "./components/GTab.vue";
+export type {
+    BootstrapSize,
+    BootstrapVariant,
+    FieldAlignment,
+    RowClickEvent,
+    RowIcon,
+    RowSelectEvent,
+    SortChangeEvent,
+    SortOrder,
+    TableAction,
+    TableClassValue,
+    TableEmptyState,
+    TableField,
+    TableItemClassMeta,
+} from "./components/GTable.types";
+export { default as GTable } from "./components/GTable.vue";
 export { default as GTabs } from "./components/GTabs.vue";
 export { default as GTip } from "./components/GTip.vue";
 export { default as GToast } from "./components/GToast.vue";
@@ -45,6 +62,7 @@ export { useResolveElement } from "./composables/resolveElement";
 export { type ToastOptions, type ToastProps, type ToastVariant, useToast } from "./composables/toast";
 export { activeToastHost, registerToastHost, unregisterToastHost } from "./composables/toastHost";
 export { useUid } from "./composables/uid";
+export { vGTooltip } from "./directives/vGTooltip";
 export {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,

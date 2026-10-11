@@ -105,6 +105,13 @@ def split_ftp_host_path(data: Any) -> Any:
     return data
 
 
+def normalize_s3_bucket(bucket: Any) -> Any:
+    """Strip an ``s3://`` or ``s3a://`` prefix and surrounding slashes from an S3 ``bucket`` value."""
+    if not isinstance(bucket, str):
+        return bucket
+    return bucket.strip().removeprefix("s3://").removeprefix("s3a://").strip("/")
+
+
 class BaseTemplateVariable(StrictModel):
     name: str
     label: str | None = None

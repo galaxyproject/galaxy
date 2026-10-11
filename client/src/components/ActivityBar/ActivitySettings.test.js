@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
@@ -10,9 +9,6 @@ import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
 import mountTarget from "./ActivitySettings.vue";
-
-const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";
@@ -50,16 +46,18 @@ describe("ActivitySettings", () => {
                 return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
             }),
         );
-        activityStore = useActivityStore(undefined);
+        activityStore = useActivityStore("test-activity-bar");
         wrapper = mount(mountTarget, {
-            localVue,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    FontAwesomeIcon: { template: "<div></div>" },
+                },
+            },
             pinia,
             props: {
                 query: "",
-                activityBarId: undefined,
-            },
-            stubs: {
-                FontAwesomeIcon: { template: "<div></div>" },
+                activityBarId: "test-activity-bar",
             },
         });
         await activityStore.sync();

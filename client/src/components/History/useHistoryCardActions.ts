@@ -33,7 +33,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
  * @param {Ref<AnyHistoryEntry>} history - Reactive reference to the history entry
  * @param {boolean} archivedView - Whether the card is displayed in archived view
  * @param {() => void} refreshCallBack - Callback function to refresh the parent list
- * @returns {Object} Object containing action arrays for different action categories
+ * @returns {Object} Object containing computed action lists for different action categories
  *
  * @example
  * const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimaryActions } =
@@ -44,8 +44,8 @@ export function useHistoryCardActions(
     archivedView: boolean,
     refreshCallBack: () => void,
 ): {
-    historyCardExtraActions: CardAction[];
-    historyCardSecondaryActions: CardAction[];
+    historyCardExtraActions: ComputedRef<CardAction[]>;
+    historyCardSecondaryActions: ComputedRef<CardAction[]>;
     historyCardPrimaryActions: ComputedRef<CardAction[]>;
     onDeleteHistory: (purge?: boolean) => Promise<void>;
 } {
@@ -190,9 +190,10 @@ export function useHistoryCardActions(
     /**
      * Extra actions shown in the history card dropdown menu
      * Includes destructive actions like delete and purge
-     * @type {CardAction[]}
+     * Computed because ownership is only known once the current user has loaded
+     * @type {ComputedRef<CardAction[]>}
      */
-    const historyCardExtraActions: CardAction[] = [
+    const historyCardExtraActions: ComputedRef<CardAction[]> = computed(() => [
         {
             id: "delete",
             label: localize("Delete"),
@@ -209,14 +210,14 @@ export function useHistoryCardActions(
             handler: async () => await onDeleteHistory(true),
             visible: !history.value.purged && isMyHistory(history.value),
         },
-    ];
+    ]);
 
     /**
      * Secondary actions shown as buttons on the history card
      * Includes sharing and access management action
-     * @type {CardAction[]}
+     * @type {ComputedRef<CardAction[]>}
      */
-    const historyCardSecondaryActions: CardAction[] = [
+    const historyCardSecondaryActions: ComputedRef<CardAction[]> = computed(() => [
         {
             id: "share-access-management",
             label: localize("Share & Manage Access"),
@@ -226,7 +227,7 @@ export function useHistoryCardActions(
             to: `/histories/sharing?id=${history.value.id}`,
             visible: !history.value.deleted && isMyHistory(history.value),
         },
-    ];
+    ]);
 
     /**
      * Primary actions computed dynamically based on history state

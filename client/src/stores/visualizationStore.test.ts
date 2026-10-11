@@ -112,6 +112,33 @@ describe("useVisualizationStore", () => {
         expect(first.map((viz) => viz.id)).toEqual(["viz-1"]);
     });
 
+    it("shares one request between identical concurrent fetches", async () => {
+        let resolveVisualizations: (value: { data: VisualizationSummary[]; totalMatches: number }) => void = () =>
+            undefined;
+        vi.mocked(loadVisualizations).mockReturnValueOnce(
+            new Promise((resolve) => {
+                resolveVisualizations = resolve;
+            }),
+        );
+        vi.mocked(loadVisualizations).mockResolvedValue({ data: [], totalMatches: 0 });
+
+        const first = store.fetchVisualizations("my");
+        const second = store.fetchVisualizations("my");
+        const other = store.fetchVisualizations("my", { search: "atac" });
+
+        expect(loadVisualizations).toHaveBeenCalledTimes(2);
+
+        resolveVisualizations({ data: [mockVisualization("viz-1", "First")], totalMatches: 1 });
+        const [firstResult, secondResult] = await Promise.all([first, second, other]);
+
+        expect(secondResult).toEqual(firstResult);
+        expect(store.isLoading).toBe(false);
+
+        // settled requests are not reused
+        await store.fetchVisualizations("my");
+        expect(loadVisualizations).toHaveBeenCalledTimes(3);
+    });
+
     it("filters the cached variant list by title", async () => {
         vi.mocked(loadVisualizations).mockResolvedValue({
             data: [mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot")],

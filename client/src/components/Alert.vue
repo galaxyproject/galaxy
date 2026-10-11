@@ -1,5 +1,5 @@
 <template>
-    <GAlert :variant="galaxyKwdToBootstrap" :show="showP" v-bind="$props">
+    <GAlert v-bind="$props" :variant="galaxyKwdToBootstrap" :show="showP">
         <!-- @slot Message to display in alert -->
         <slot> {{ message }} </slot>
     </GAlert>

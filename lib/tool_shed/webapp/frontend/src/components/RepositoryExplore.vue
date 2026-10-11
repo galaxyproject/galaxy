@@ -1,5 +1,17 @@
 <script setup lang="ts">
+import {
+    faCircleInfo,
+    faCodeBranch,
+    faCodeCompare,
+    faCompass,
+    faFileCode,
+    faHouse,
+    faList,
+} from "@fortawesome/free-solid-svg-icons"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { GButton, GButtonGroup, GDropdownItem, GDropdownItemButton } from "@galaxyproject/galaxy-ui"
 import { computed } from "vue"
+import ActionMenu from "@/components/ActionMenu.vue"
 import { goToRepository, goToMetadataInspector } from "@/router"
 
 interface Repository {
@@ -25,98 +37,77 @@ const props = withDefaults(defineProps<RepositoryExploreProps>(), {
 
 const changelog = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/shortlog`)
 const contents = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/file/tip`)
-function navigate(location: string | null | undefined) {
-    if (location) {
-        window.location.href = location
-    }
-}
-const buttonProperties = computed(() => {
-    return {
-        size: "sm",
-        class: "text-primary",
-        padding: "sm",
-    }
-})
 </script>
 <template>
-    <q-fab
-        class="q-px-md"
-        color="secondary"
-        text-color="primary"
-        icon="explore"
-        direction="down"
-        aria-label="Explore repository"
-        v-if="!dense"
-    >
-        <q-fab-action
-            v-if="showDetailsLink"
-            color="secondary"
-            text-color="black"
-            icon="sym_r_overview"
-            label="Details"
-            @click="goToRepository(props.repository.id)"
-        />
-        <!-- receipt_long? -->
-        <q-fab-action
-            color="secondary"
-            text-color="black"
-            icon="difference"
-            label="Changelog"
-            @click="navigate(changelog)"
-        />
-        <q-fab-action color="secondary" text-color="black" icon="list" label="Contents" @click="navigate(contents)" />
-        <q-fab-action
-            color="secondary"
-            text-color="black"
-            icon="sym_r_data_object"
-            label="Metadata"
-            @click="goToMetadataInspector(props.repository.id)"
-        />
-    </q-fab>
-    <q-btn-group class="q-mx-xl" dense rounded push v-else>
-        <q-btn
-            v-bind="buttonProperties"
-            icon="sym_r_overview"
+    <ActionMenu v-if="!dense" :icon="faCompass" label="Explore repository">
+        <GDropdownItemButton v-if="showDetailsLink" @click="goToRepository(props.repository.id)">
+            <FontAwesomeIcon :icon="faCircleInfo" fixed-width />
+            Details
+        </GDropdownItemButton>
+        <GDropdownItem :href="changelog">
+            <FontAwesomeIcon :icon="faCodeCompare" fixed-width />
+            Changelog
+        </GDropdownItem>
+        <GDropdownItem :href="contents">
+            <FontAwesomeIcon :icon="faList" fixed-width />
+            Contents
+        </GDropdownItem>
+        <GDropdownItemButton @click="goToMetadataInspector(props.repository.id)">
+            <FontAwesomeIcon :icon="faFileCode" fixed-width />
+            Metadata
+        </GDropdownItemButton>
+    </ActionMenu>
+    <GButtonGroup v-else class="repository-explore-buttons">
+        <GButton
+            icon-only
+            transparent
             title="Details"
             aria-label="Details"
             @click="goToRepository(props.repository.id)"
-        />
-        <q-btn
-            v-bind="buttonProperties"
-            icon="sym_r_data_object"
+        >
+            <FontAwesomeIcon :icon="faCircleInfo" />
+        </GButton>
+        <GButton
+            icon-only
+            transparent
             title="Metadata Inspector"
             aria-label="Metadata Inspector"
             @click="goToMetadataInspector(props.repository.id)"
-        />
-        <q-btn
-            v-bind="buttonProperties"
-            icon="difference"
-            title="Changelog"
-            aria-label="Changelog"
-            @click="navigate(changelog)"
-        />
-        <q-btn
-            v-bind="buttonProperties"
-            icon="list"
-            title="Contents"
-            aria-label="Contents"
-            @click="navigate(contents)"
-        />
-        <q-btn
-            v-bind="buttonProperties"
-            icon="home"
+        >
+            <FontAwesomeIcon :icon="faFileCode" />
+        </GButton>
+        <GButton icon-only transparent title="Changelog" aria-label="Changelog" :href="changelog">
+            <FontAwesomeIcon :icon="faCodeCompare" />
+        </GButton>
+        <GButton icon-only transparent title="Contents" aria-label="Contents" :href="contents">
+            <FontAwesomeIcon :icon="faList" />
+        </GButton>
+        <GButton
+            v-if="repository.homepage_url"
+            icon-only
+            transparent
             title="Homepage"
             aria-label="Homepage"
-            @click="navigate(repository.homepage_url)"
-            v-if="repository.homepage_url"
-        />
-        <q-btn
-            v-bind="buttonProperties"
-            icon="code"
+            :href="repository.homepage_url"
+        >
+            <FontAwesomeIcon :icon="faHouse" />
+        </GButton>
+        <GButton
+            v-if="repository.remote_repository_url"
+            icon-only
+            transparent
             title="Development Repository"
             aria-label="Development Repository"
-            @click="navigate(repository.remote_repository_url)"
-            v-if="repository.remote_repository_url"
-        />
-    </q-btn-group>
+            :href="repository.remote_repository_url"
+        >
+            <FontAwesomeIcon :icon="faCodeBranch" />
+        </GButton>
+    </GButtonGroup>
 </template>
+
+<style scoped lang="scss">
+// .g-button keeps GButton's grey from outranking the brand tint these carried as q-btns
+.repository-explore-buttons :deep(.g-button.g-transparent) {
+    color: var(--color-galaxy-primary, #25537b);
+}
+</style>

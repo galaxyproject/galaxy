@@ -181,8 +181,10 @@ watch(
                 <transition name="slide-up">
                     <table v-show="footerToggled" class="tabletip info_data_table">
                         <thead>
-                            <th>Term</th>
-                            <th>Definition</th>
+                            <tr>
+                                <th>Term</th>
+                                <th>Definition</th>
+                            </tr>
                         </thead>
 
                         <tbody>

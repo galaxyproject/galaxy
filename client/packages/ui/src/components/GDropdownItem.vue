@@ -71,7 +71,7 @@ function onClick(event: MouseEvent) {
         :aria-current="active ? 'true' : undefined"
         role="menuitem"
         tabindex="-1"
-        @click.native="onClick">
+        @click="onClick">
         <slot />
     </router-link>
     <a

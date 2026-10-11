@@ -45,8 +45,8 @@
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard
+                    v-model:expanded="input.expanded"
                     :title="localize(input.title || input.name)"
-                    :expanded.sync="input.expanded"
                     :collapsible="true">
                     <template v-slot:body>
                         <div v-if="input.help" class="my-2" data-description="section help">
@@ -105,9 +105,8 @@
 </template>
 
 <script>
-import { set } from "vue";
-
 import { matchCase } from "@/components/Form/utilities";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import FormInputMismatchBadge from "./Elements/FormInputMismatchBadge.vue";
 import FormCard from "./FormCard.vue";
@@ -126,7 +125,9 @@ export default {
     },
     props: {
         inputs: {
-            type: Array,
+            // Usually an array of input definitions, but FormRepeat passes a single cached
+            // record (v-for below iterates objects fine too) for each repeat block.
+            type: [Array, Object],
             default: null,
         },
         loading: {
@@ -190,6 +191,7 @@ export default {
             default: () => [],
         },
     },
+    emits: ["stop-flagging", "update:active-node-id"],
     methods: {
         getPrefix(name, index) {
             if (this.prefix) {
@@ -205,9 +207,9 @@ export default {
             return matchCase(input, input.test_param.value) == caseId;
         },
         repeatInsert(input) {
-            const newInputs = structuredClone(input.inputs);
+            const newInputs = cloneRaw(input.inputs);
 
-            set(input, "cache", input.cache ?? []);
+            input.cache = input.cache ?? [];
             input.cache.push(newInputs);
 
             this.onChangeForm();
@@ -217,9 +219,9 @@ export default {
             this.onChangeForm();
         },
         repeatClone(input, cacheId) {
-            const clonedInputs = structuredClone(input.cache[cacheId]);
+            const clonedInputs = cloneRaw(input.cache[cacheId]);
 
-            set(input, "cache", input.cache ?? []);
+            input.cache = input.cache ?? [];
             input.cache.splice(cacheId + 1, 0, clonedInputs);
 
             this.onChangeForm();

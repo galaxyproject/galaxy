@@ -69,7 +69,7 @@ vi.mock("@/composables/usePageProposals", () => ({
     }),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => ({ path: "/", params: {}, query: {} }),
     useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
@@ -175,7 +175,7 @@ describe("GalaxyAI fetch operations on mount", () => {
     });
 
     afterEach(() => {
-        lastWrapper?.destroy();
+        lastWrapper?.unmount();
         lastWrapper = null;
         vi.restoreAllMocks();
     });

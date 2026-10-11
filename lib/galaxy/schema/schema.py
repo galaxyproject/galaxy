@@ -3792,6 +3792,7 @@ class LibraryFolderMetadata(Model):
     can_modify_folder: bool
     can_add_library_item: bool
     full_path: list[tuple[EncodedLibraryFolderDatabaseIdField, str]]
+    readme: str | None = None
 
 
 class LibraryFolderContentsIndexResult(Model):
@@ -4237,7 +4238,7 @@ class PageSummaryBase(Model):
         default=None,
         title="Identifier",
         description="The identifying slug for the page URL, must be unique. Required for non-history pages.",
-        pattern=r"^[a-z0-9-]+$",
+        pattern=r"^[^/:?#]+$",
     )
 
 

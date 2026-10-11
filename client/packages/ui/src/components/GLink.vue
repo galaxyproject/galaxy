@@ -63,6 +63,11 @@ const styleClasses = computed(() => {
 });
 
 const baseComponent = useClickableElement(props);
+
+// Only a plain anchor takes our href. A RouterLink builds its own, including the router
+// base Galaxy may be served under, and any `href` key passed down -- even undefined --
+// replaces it.
+const anchorAttributes = computed(() => (baseComponent.value === "a" ? { href: props.href } : {}));
 const currentTitle = useCurrentTitle(props);
 
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
@@ -72,14 +77,6 @@ const linkElementRef = useResolveElement(linkRef);
 </script>
 
 <template>
-    <!--
-        `@click` binds a DOM listener when the root is a plain `button`/`a`, where Vue 2
-        ignores `nativeOn`. When the root is a RouterLink the roles swap: vue-router 3
-        never emits a `click` component event and does not merge `$listeners`, so only
-        `@click.native` reaches the rendered `<a>`. Exactly one of the two fires for any
-        given root, so the handler never runs twice. Both can collapse to a single
-        `@click` on Vue 3, where listeners fall through to a component's root element.
-    -->
     <component
         :is="baseComponent"
         ref="linkRef"
@@ -87,12 +84,10 @@ const linkElementRef = useResolveElement(linkRef);
         :class="styleClasses"
         :data-title="currentTitle"
         :to="!props.disabled ? props.to : ''"
-        :href="!props.disabled ? (props.to ?? props.href) : ''"
-        :title="props.tooltip ? false : currentTitle"
-        :aria-disabled="props.disabled"
-        v-bind="$attrs"
-        @click="onClick"
-        @click.native="onClick">
+        :title="props.tooltip ? undefined : currentTitle"
+        :aria-disabled="props.disabled || undefined"
+        v-bind="{ ...anchorAttributes, ...$attrs }"
+        @click="onClick">
         <slot></slot>
 
         <!-- TODO: make tooltip a sibling in Vue 3 -->

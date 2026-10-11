@@ -80,7 +80,7 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <button class="btn btn-primary">{{ "Submit" | localize }}</button>
+                            <button class="btn btn-primary">{{ localize("Submit") }}</button>
                         </div>
                     </form>
                 </div>

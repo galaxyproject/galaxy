@@ -50,7 +50,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 
     const pinia = createPinia();
     const wrapper = mount(DiskUsageSummary as object, {
-        localVue,
+        global: localVue,
         pinia,
     });
     const userStore = useUserStore();

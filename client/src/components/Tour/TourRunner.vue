@@ -103,7 +103,7 @@ function getElement(selector: string) {
         try {
             return document.querySelector(selector);
         } catch (error) {
-            throw Error(`Invalid selector. ${selector}`);
+            throw Error(`Invalid selector. ${selector}`, { cause: error });
         }
     }
 }

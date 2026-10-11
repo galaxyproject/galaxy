@@ -7,7 +7,10 @@ attribute.
 import abc
 import threading
 from collections.abc import Sequence
-from contextlib import contextmanager
+from contextlib import (
+    AbstractContextManager,
+    contextmanager,
+)
 from typing import (
     Any,
     cast,
@@ -702,6 +705,28 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             PNG image data as bytes
         """
         return self.driver.get_screenshot_as_png()
+
+    def highlight_element(self, element: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager that draws a red border around an element.
+
+        Args:
+            element: The element to highlight
+
+        Returns:
+            Context manager restoring the previous border on exit
+        """
+
+        @contextmanager
+        def _highlight_context():
+            original_border = self.execute_script("return arguments[0].style.border;", element)
+            try:
+                self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                yield
+            finally:
+                self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+
+        return _highlight_context()
 
     def close(self) -> None:
         """Cleanup the current browser tab/page."""

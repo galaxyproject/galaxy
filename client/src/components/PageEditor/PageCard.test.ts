@@ -38,7 +38,7 @@ describe("PageCard", () => {
 
         // Click to emit edit event
         await title.trigger("click");
-        expect(wrapper.emitted().edit).toBeTruthy();
+        expect(wrapper.emitted("edit")).toBeTruthy();
     });
 
     it("shows 'Untitled Notebook' when title is empty", () => {
@@ -77,10 +77,10 @@ describe("PageCard", () => {
 
         const viewButton = wrapper.find(getSelector("view", FAKE_PAGE_SUMMARY.id));
         await viewButton.trigger("click");
-        expect(wrapper.emitted().view).toBeTruthy();
+        expect(wrapper.emitted("view")).toBeTruthy();
 
         const editButton = wrapper.find(getSelector("edit", FAKE_PAGE_SUMMARY.id));
         await editButton.trigger("click");
-        expect(wrapper.emitted().edit).toBeTruthy();
+        expect(wrapper.emitted("edit")).toBeTruthy();
     });
 });

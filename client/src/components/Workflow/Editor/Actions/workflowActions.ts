@@ -8,6 +8,7 @@ import {
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
@@ -28,8 +29,8 @@ export class LazySetValueAction<T> extends LazyUndoRedoAction {
         what: string | null = null,
     ) {
         super();
-        this.fromValue = structuredClone(fromValue);
-        this.toValue = structuredClone(toValue);
+        this.fromValue = cloneRaw(fromValue);
+        this.toValue = cloneRaw(toValue);
         this.setValueHandler = setValueHandler;
         this.showAttributesCallback = showCanvasCallback;
         this.what = what;
@@ -40,7 +41,7 @@ export class LazySetValueAction<T> extends LazyUndoRedoAction {
     }
 
     changeValue(value: T) {
-        this.toValue = structuredClone(value);
+        this.toValue = cloneRaw(value);
         this.setValueHandler(this.toValue);
     }
 
@@ -131,8 +132,8 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
         super();
 
         this.workflowId = workflowId;
-        this.data = structuredClone(data);
-        this.position = structuredClone(position);
+        this.data = cloneRaw(data);
+        this.position = cloneRaw(position);
 
         this.stepStore = useWorkflowStepStore(this.workflowId);
         this.commentStore = useWorkflowCommentStore(this.workflowId);
@@ -156,7 +157,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
         const commentIdsBefore = new Set(this.commentStore.comments.map((comment) => comment.id));
         const stepIdsBefore = new Set(Object.values(this.stepStore.steps).map((step) => step.id));
 
-        fromSimple(this.workflowId, structuredClone(this.data), structuredClone(this.loadWorkflowOptions));
+        fromSimple(this.workflowId, cloneRaw(this.data), cloneRaw(this.loadWorkflowOptions));
 
         const commentIdsAfter = this.commentStore.comments.map((comment) => comment.id);
         const stepIdsAfter = Object.values(this.stepStore.steps).map((step) => step.id);
@@ -168,7 +169,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     redo() {
         this.subAction.redo();
 
-        fromSimple(this.workflowId, structuredClone(this.data), structuredClone(this.loadWorkflowOptions));
+        fromSimple(this.workflowId, cloneRaw(this.data), cloneRaw(this.loadWorkflowOptions));
     }
 
     undo() {
@@ -369,7 +370,7 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
         const stepIds = [...stateStore.multiSelectedStepIds];
 
         const comments = commentIds.map((id) =>
-            structuredClone(ensureDefined(commentStore.commentsRecord[id])),
+            cloneRaw(ensureDefined(commentStore.commentsRecord[id])),
         ) as WorkflowComment[];
 
         const labelSet = getLabelSet(stepStore);
@@ -408,7 +409,7 @@ export class DeleteSelectionAction extends UndoRedoAction {
         };
 
         const connectionsForSteps = this.stepIds.flatMap((id) => this.connectionStore.getConnectionsForStep(id));
-        this.storedConnections = structuredClone(new Set(connectionsForSteps));
+        this.storedConnections = cloneRaw(new Set(connectionsForSteps));
     }
 
     get name() {
@@ -447,6 +448,6 @@ export class DeleteSelectionAction extends UndoRedoAction {
 
     undo() {
         this.storedSelectionAction.redo();
-        this.storedConnections.forEach((connection) => this.connectionStore.addConnection(structuredClone(connection)));
+        this.storedConnections.forEach((connection) => this.connectionStore.addConnection(cloneRaw(connection)));
     }
 }

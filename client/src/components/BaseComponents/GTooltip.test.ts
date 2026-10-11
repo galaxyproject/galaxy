@@ -1,6 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick } from "vue";
 
 import GTooltip from "./GTooltip.vue";
@@ -20,7 +19,7 @@ vi.mock("@floating-ui/dom", () => ({
     shift: () => ({ name: "shift", fn: () => ({}) }),
 }));
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 async function showTooltip() {
     const reference = document.createElement("button");
@@ -35,7 +34,7 @@ async function showTooltip() {
 
 describe("GTooltip", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         floatingUi.stopTracking.mockClear();
@@ -62,7 +61,7 @@ describe("GTooltip", () => {
     it("stops tracking its reference when unmounted while shown", async () => {
         await showTooltip();
 
-        wrapper!.destroy();
+        wrapper!.unmount();
         wrapper = undefined;
 
         expect(floatingUi.stopTracking).toHaveBeenCalled();

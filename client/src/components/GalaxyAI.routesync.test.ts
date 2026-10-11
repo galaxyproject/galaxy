@@ -1,9 +1,9 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import { useChatStore } from "@/stores/chatStore";
 
@@ -19,14 +19,14 @@ const { mockGet, mockPost, mockPut, routeMock, routerMock, ChatMessageCellStub, 
     ChatMessageCellStub: {
         name: "ChatMessageCellStub",
         props: ["message"],
-        render(this: { message: { content: string } }, h: (...args: unknown[]) => unknown) {
+        render(this: { message: { content: string } }) {
             return h("div", { class: "chat-message-stub" }, [this.message.content]);
         },
     },
     ChatInputStub: {
         name: "ChatInputStub",
         props: ["value", "busy"],
-        render(h: (...args: unknown[]) => unknown) {
+        render() {
             return h("input", { class: "chat-input-stub" });
         },
     },
@@ -41,7 +41,7 @@ vi.mock("@/api/client", () => ({
 }));
 
 // Center (route) mode: the component keeps the /galaxyai/<exchange> path in sync.
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => routeMock,
     useRouter: () => routerMock,
 }));
@@ -92,21 +92,22 @@ window.HTMLElement.prototype.scrollTo = vi.fn();
 function mountChat() {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const wrapper = mount(GalaxyAI as object, {
-        localVue,
-        pinia,
-        propsData: { panel: true },
-        stubs: { FontAwesomeIcon: true, BSkeleton: true },
+    const wrapper = mount(GalaxyAI, {
+        props: { panel: true },
+        global: {
+            ...withPlugins(localVue, pinia),
+            stubs: { ...localVue.stubs, FontAwesomeIcon: true, BSkeleton: true },
+        },
     });
     const chatStore = useChatStore();
     return { wrapper, chatStore };
 }
 
-function messageTexts(wrapper: Wrapper<Vue>) {
-    return wrapper.findAll(".chat-message-stub").wrappers.map((w) => w.text());
+function messageTexts(wrapper: VueWrapper) {
+    return wrapper.findAll(".chat-message-stub").map((w) => w.text());
 }
 
-async function sendMessage(wrapper: Wrapper<Vue>, text: string) {
+async function sendMessage(wrapper: VueWrapper, text: string) {
     const input = wrapper.findComponent(ChatInputStub);
     input.vm.$emit("input", text);
     await wrapper.vm.$nextTick();
@@ -155,11 +156,12 @@ describe("GalaxyAI route sync", () => {
         routeMock.query = { compact: "true", q: "trim my reads" };
         const pinia = createPinia();
         setActivePinia(pinia);
-        const wrapper = mount(GalaxyAI as object, {
-            localVue,
-            pinia,
-            propsData: { compact: true, panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
-            stubs: { FontAwesomeIcon: true, BSkeleton: true },
+        const wrapper = mount(GalaxyAI, {
+            props: { compact: true, panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
+            global: {
+                ...withPlugins(localVue, pinia),
+                stubs: { ...localVue.stubs, FontAwesomeIcon: true, BSkeleton: true },
+            },
         });
         await flushPromises();
 

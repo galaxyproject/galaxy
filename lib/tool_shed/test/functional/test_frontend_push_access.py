@@ -24,7 +24,7 @@ class TestFrontendPushAccess(PlaywrightTestCase):
         collaborator = email_to_username(COLLABORATOR_EMAIL)
         collaborator_populator = self.user_populator(email=COLLABORATOR_EMAIL, password=TEST_PASSWORD)
         repository = self._new_repository()
-        request = UpdateRepositoryRequest(description="Published by a push collaborator")
+        request = UpdateRepositoryRequest(synopsis="Published by a push collaborator")
 
         # Before the grant the collaborator cannot update repository metadata.
         api_asserts.assert_status_code_is(collaborator_populator.update_raw(repository, request), 403)
@@ -42,14 +42,14 @@ class TestFrontendPushAccess(PlaywrightTestCase):
         collaborator_populator.update(repository, request)
         updated = self.populator.get_repository(repository.id)
         assert updated.owner == owner
-        assert updated.description == request.description
+        assert updated.description == request.synopsis
         api_asserts.assert_status_code_is(collaborator_populator.add_admin_user_raw(repository, collaborator), 403)
 
         self._browser.revoke_user_access(collaborator)
         expect(self._playwright_browser.push_access_entry(collaborator)).to_have_count(0)
-        revoked_request = UpdateRepositoryRequest(description="Should not be applied after revocation")
+        revoked_request = UpdateRepositoryRequest(synopsis="Should not be applied after revocation")
         api_asserts.assert_status_code_is(collaborator_populator.update_raw(repository, revoked_request), 403)
-        assert self.populator.get_repository(repository.id).description == request.description
+        assert self.populator.get_repository(repository.id).description == request.synopsis
 
     def test_push_access_lists_repository_owner_not_viewer(self) -> None:
         owner = email_to_username(OWNER_EMAIL)

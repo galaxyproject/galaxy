@@ -28,7 +28,10 @@ from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
 )
-from galaxy_test.base.decorators import requires_new_history
+from galaxy_test.base.decorators import (
+    requires_new_history,
+    requires_new_user,
+)
 from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
     DatasetCollectionPopulator,
@@ -203,6 +206,21 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # returned.
         tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
+
+    @skip_without_tool("bibtex")
+    def test_no_panel_index_returns_raw_tool_help(self):
+        index = self._get("tools", data=dict(in_panel=False, tool_help=True))
+        self._assert_status_code_is_ok(index)
+        tool = next(t for t in index.json() if t["id"] == "bibtex")
+        assert tool["help_format"] == "restructuredtext"
+        assert "**WARNING:**" in tool["help"]
+
+    @skip_without_tool("help_features_markdown")
+    def test_no_panel_index_tool_help_markdown(self):
+        tools_index = self._get("tools", data=dict(in_panel=False, tool_help=True)).json()
+        tool = next(t for t in tools_index if t["id"] == "help_features_markdown")
+        assert tool["help_format"] == "markdown"
+        assert "**This is bold text**" in tool["help"]
 
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
@@ -2019,6 +2037,85 @@ class TestToolsApi(ApiTestCase, TestsTools):
             copied_job_id = outputs_two["jobs"][0]["id"]
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
             assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
+
+    def _run_and_get_job(self, tool_id, history_id, inputs, use_cached_job=False):
+        outputs = self._run(
+            tool_id, history_id, inputs=inputs, use_cached_job=use_cached_job, assert_ok=True, wait_for_job=True
+        )
+        return self.dataset_populator.get_job_details(outputs["jobs"][0]["id"], full=True).json()
+
+    @skip_without_tool("multi_data_optional")
+    @requires_new_history
+    @requires_new_user
+    def test_run_multi_data_optional_map_over_empty_subcollection_use_cached_job(self):
+        # Empty collections have no datasets that are unique to this test, so a fresh user keeps
+        # jobs from earlier runs against the same database out of the cache lookup.
+        with self._different_user_and_history(f"{uuid4()}@test.com") as history_id:
+
+            def run(hdca_id, use_cached_job=False):
+                inputs = {
+                    "input1": {"batch": True, "values": [{"src": "hdca", "map_over_type": "list", "id": hdca_id}]}
+                }
+                return self._run_and_get_job("multi_data_optional", history_id, inputs, use_cached_job)
+
+            populated_hdca = self.dataset_collection_populator.upload_collection(
+                history_id,
+                "list:list",
+                elements=[{"name": "sample", "elements": [{"src": "pasted", "paste_content": "1\n", "name": "read"}]}],
+                wait=True,
+            ).json()["output_collections"][0]
+            empty_hdca = self.dataset_collection_populator.upload_collection(
+                history_id, "list:list", elements=[{"name": "sample", "elements": []}], wait=True
+            ).json()["output_collections"][0]
+            empty_hdca_copy = self.dataset_collection_populator.copy_collection(history_id, empty_hdca["id"]).json()
+
+            run(populated_hdca["id"])
+            empty_job = run(empty_hdca["id"], use_cached_job=True)
+            assert empty_job["copied_from_job_id"] is None
+            cached_job = run(empty_hdca_copy["id"], use_cached_job=True)
+            assert cached_job["copied_from_job_id"] == empty_job["id"]
+
+    @skip_without_tool("multi_data_optional")
+    @requires_new_history
+    @requires_new_user
+    def test_run_multi_data_optional_empty_collection_use_cached_job(self):
+        with self._different_user_and_history(f"{uuid4()}@test.com") as history_id:
+
+            def run(hdca_id, use_cached_job=False):
+                inputs = {"input1": {"batch": False, "values": [{"src": "hdca", "id": hdca_id}]}}
+                return self._run_and_get_job("multi_data_optional", history_id, inputs, use_cached_job)
+
+            populated_hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["1\n"], wait=True
+            ).json()["output_collections"][0]
+            empty_hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[], wait=True
+            ).json()["output_collections"][0]
+            empty_hdca_copy = self.dataset_collection_populator.copy_collection(history_id, empty_hdca["id"]).json()
+
+            run(populated_hdca["id"])
+            empty_job = run(empty_hdca["id"], use_cached_job=True)
+            assert empty_job["copied_from_job_id"] is None
+            cached_job = run(empty_hdca_copy["id"], use_cached_job=True)
+            assert cached_job["copied_from_job_id"] == empty_job["id"]
+
+    @skip_without_tool("identifier_all_collection_types")
+    @requires_new_history
+    def test_run_identifier_all_collection_types_empty_inner_lists_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_identifier_all_collection_types_empty_inner_lists_use_cached_job
+        ) as history_id:
+
+            def run(outer_identifier, use_cached_job=False):
+                hdca = self.dataset_collection_populator.upload_collection(
+                    history_id, "list:list", elements=[{"name": outer_identifier, "elements": []}], wait=True
+                ).json()["output_collections"][0]
+                inputs = {"input1": {"src": "hdca", "id": hdca["id"]}}
+                return self._run_and_get_job("identifier_all_collection_types", history_id, inputs, use_cached_job)
+
+            run("a")
+            job = run("b", use_cached_job=True)
+            assert job["copied_from_job_id"] is None
 
     @skip_without_tool("identifier_single")
     @requires_new_history

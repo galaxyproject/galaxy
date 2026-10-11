@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircleInfo } from "@fortawesome/free-solid-svg-icons"
+import { GAlert, GButton, GButtonGroup } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { ToolShedApi } from "@/schema"
 import type { components } from "@/schema"
@@ -68,72 +71,79 @@ function clearPreview() {
 <template>
     <div>
         <!-- Initial state -->
-        <q-banner v-if="!previewResult" class="bg-blue-1 q-mb-md">
-            <template #avatar>
-                <q-icon name="sym_r_info" color="primary" />
-            </template>
-            <div><strong>Reset metadata</strong> regenerates all revision metadata from repository contents.</div>
-            <div class="q-mt-sm text-caption">
-                Use cases:
-                <ul class="q-mb-none">
-                    <li>Fix corrupted tool_config paths after migration</li>
-                    <li>Refresh metadata after tool shed code updates</li>
-                    <li>Repair missing or incomplete metadata</li>
-                </ul>
+        <GAlert v-if="!previewResult" variant="info" class="reset-metadata-intro">
+            <div class="reset-metadata-banner">
+                <FontAwesomeIcon :icon="faCircleInfo" class="reset-metadata-icon" />
+                <div class="reset-metadata-banner-content">
+                    <div>
+                        <strong>Reset metadata</strong> regenerates all revision metadata from repository contents.
+                    </div>
+                    <div class="reset-metadata-use-cases">
+                        Use cases:
+                        <ul>
+                            <li>Fix corrupted tool_config paths after migration</li>
+                            <li>Refresh metadata after tool shed code updates</li>
+                            <li>Repair missing or incomplete metadata</li>
+                        </ul>
+                    </div>
+                </div>
+                <GButton color="blue" :loading="loading" @click="runPreview">Preview Changes</GButton>
             </div>
-            <template #action>
-                <q-btn color="primary" label="Preview Changes" @click="runPreview" :loading="loading" />
-            </template>
-        </q-banner>
+        </GAlert>
 
         <!-- Results -->
         <div v-if="previewResult">
-            <q-card class="q-mb-md">
-                <q-card-section>
-                    <div class="row items-center justify-between">
-                        <div>
-                            <span class="text-weight-bold">
-                                {{ previewResult.dry_run ? "Preview Results" : "Reset Complete" }}
-                            </span>
-                            <q-chip
-                                :color="previewResult.status === 'ok' ? 'positive' : 'warning'"
-                                size="sm"
-                                class="q-ml-sm"
-                            >
-                                {{ previewResult.status }}
-                            </q-chip>
-                            <span v-if="previewResult.dry_run" class="text-caption q-ml-sm">(dry run)</span>
-                        </div>
-                        <div>
-                            <q-btn
-                                v-if="previewResult.dry_run"
-                                color="primary"
-                                label="Apply Now"
-                                @click="applyReset"
-                                :loading="loading"
-                            />
-                            <q-btn flat label="New Preview" @click="clearPreview" class="q-ml-sm" :disable="loading" />
-                        </div>
+            <section class="reset-result-card">
+                <div class="reset-result-header">
+                    <div class="reset-result-status">
+                        <strong>
+                            {{ previewResult.dry_run ? "Preview Results" : "Reset Complete" }}
+                        </strong>
+                        <span
+                            class="reset-status-chip"
+                            :class="
+                                previewResult.status === 'ok' ? 'reset-status-chip--ok' : 'reset-status-chip--warning'
+                            "
+                        >
+                            {{ previewResult.status }}
+                        </span>
+                        <span v-if="previewResult.dry_run" class="reset-dry-run">(dry run)</span>
                     </div>
-                </q-card-section>
-            </q-card>
+                    <div class="reset-result-actions">
+                        <GButton v-if="previewResult.dry_run" color="blue" :loading="loading" @click="applyReset">
+                            Apply Now
+                        </GButton>
+                        <GButton transparent :disabled="loading" @click="clearPreview">New Preview</GButton>
+                    </div>
+                </div>
+            </section>
 
             <!-- View mode toggle -->
-            <q-btn-toggle
-                v-model="viewMode"
-                :options="[
-                    { value: 'table', label: 'Summary Table' },
-                    { value: 'diff', label: 'JSON Diff' },
-                ]"
-                class="q-mb-md"
-            />
+            <GButtonGroup class="reset-view-toggle">
+                <GButton
+                    outline
+                    :pressed="viewMode === 'table'"
+                    :aria-pressed="viewMode === 'table'"
+                    @click="viewMode = 'table'"
+                >
+                    Summary Table
+                </GButton>
+                <GButton
+                    outline
+                    :pressed="viewMode === 'diff'"
+                    :aria-pressed="viewMode === 'diff'"
+                    @click="viewMode = 'diff'"
+                >
+                    JSON Diff
+                </GButton>
+            </GButtonGroup>
 
             <!-- Summary Table View -->
             <ChangesetSummaryTable
                 v-if="viewMode === 'table' && previewResult.changeset_details"
                 :changesets="previewResult.changeset_details"
             />
-            <div v-else-if="viewMode === 'table'" class="text-grey">No changeset details available</div>
+            <div v-else-if="viewMode === 'table'" class="reset-empty">No changeset details available</div>
 
             <!-- JSON Diff View -->
             <div v-if="viewMode === 'diff'">
@@ -142,8 +152,93 @@ function clearPreview() {
                     :before="previewResult.repository_metadata_before"
                     :after="previewResult.repository_metadata_after"
                 />
-                <div v-else class="text-grey">No diff data available</div>
+                <div v-else class="reset-empty">No diff data available</div>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.reset-metadata-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+}
+
+.reset-metadata-intro,
+.reset-result-card,
+.reset-view-toggle {
+    margin-bottom: var(--spacing-4);
+}
+
+.reset-metadata-icon {
+    color: var(--color-galaxy-primary);
+}
+
+.reset-metadata-banner-content {
+    flex: 1 1 auto;
+}
+
+.reset-metadata-use-cases {
+    margin-top: var(--spacing-2);
+    font-size: var(--font-size-small);
+}
+
+.reset-metadata-use-cases ul {
+    margin-bottom: 0;
+}
+
+.reset-result-card {
+    padding: var(--spacing-4);
+    background: var(--background-color);
+    border: 1px solid var(--color-grey-300);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reset-result-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-2);
+}
+
+.reset-result-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.reset-result-actions {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.reset-dry-run {
+    font-size: var(--font-size-small);
+}
+
+.reset-empty {
+    color: var(--color-grey-500);
+}
+
+.reset-status-chip {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--spacing-4);
+    font-size: var(--font-size-small);
+}
+
+.reset-status-chip--ok {
+    background-color: var(--color-green-200);
+    color: var(--color-green-900);
+}
+
+.reset-status-chip--warning {
+    background-color: var(--color-orange-200);
+    color: var(--color-orange-900);
+}
+</style>

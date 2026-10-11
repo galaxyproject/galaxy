@@ -36,6 +36,6 @@ describe("WorkflowHelpDisplay", () => {
 
         const rendered = wrapper.findAll(".container .sanitized");
         expect(rendered).toHaveLength(2);
-        expect(rendered.at(1).html()).toContain("<em>text</em>");
+        expect(rendered.at(1)!.html()).toContain("<em>text</em>");
     });
 });

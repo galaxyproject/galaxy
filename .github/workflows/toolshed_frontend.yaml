@@ -3,10 +3,12 @@ on:
   push:
     paths:
       - 'lib/tool_shed/webapp/frontend/**'
+      - 'client/packages/ui/**'
       - '.github/workflows/toolshed_frontend.yaml'
   pull_request:
     paths:
       - 'lib/tool_shed/webapp/frontend/**'
+      - 'client/packages/ui/**'
       - '.github/workflows/toolshed_frontend.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

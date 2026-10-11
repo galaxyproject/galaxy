@@ -1,17 +1,23 @@
 name: Database indexes
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/db_indexes.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/db_indexes.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

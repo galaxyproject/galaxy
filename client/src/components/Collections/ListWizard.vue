@@ -243,7 +243,7 @@ function onRuleState(newRuleState: boolean) {
                     :from-selection="true"
                     :show-upload="false"
                     mode="wizard"
-                    @input-valid="(e) => (builderInputsValid = e)"
+                    @input-valid="(e: boolean) => (builderInputsValid = e)"
                     @on-create="onCreate" />
             </div>
             <div v-else-if="wizard.isCurrent('auto-pairing')">
@@ -270,7 +270,7 @@ function onRuleState(newRuleState: boolean) {
                     :from-selection="true"
                     :show-upload="false"
                     :show-buttons="false"
-                    @input-valid="(e) => (builderInputsValid = e)"
+                    @input-valid="(e: boolean) => (builderInputsValid = e)"
                     @go-to-auto-pairing="goToAutoPairing"
                     @on-create="onCreate" />
             </div>

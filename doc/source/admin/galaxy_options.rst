@@ -4416,7 +4416,10 @@
     accidentally creating large numbers of datasets when running tools
     that create a potentially unlimited number of output datasets,
     such as tools that split a file into a collection of datasets for
-    each line in an input dataset.
+    each line in an input dataset. Collection operation tools that
+    multiply their inputs (cross product, duplicate file to
+    collection, apply rules) are subject to the same limit and refuse
+    to run if they would create more datasets than this.
 :Default: ``10000``
 :Type: int
 
@@ -6342,6 +6345,38 @@
     announcements, to name a few examples.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_command_palette``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Master toggle for the command palette, the searchable overlay that
+    lets users jump to tools, workflows, histories, datasets and other
+    Galaxy resources from anywhere in the interface.
+    When disabled, the search button in the masthead is hidden and the
+    Ctrl/Cmd-K keyboard shortcut that opens the palette is not
+    registered.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``command_palette_disabled_providers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    List of command palette providers to disable.
+    Valid provider ids are: ``actions``, ``navigation``, ``tools``,
+    ``workflows``, ``histories``, ``datasets``, ``visualizations``,
+    ``invocations``, ``reports`` and ``interactiveTools``.
+    Disabling a provider removes its search scopes, its category tab
+    and its results from the palette. This only hides palette UI: the
+    API endpoints the provider searches stay available. An unknown id
+    is ignored, with a warning in the browser console.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~

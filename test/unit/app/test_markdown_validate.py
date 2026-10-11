@@ -1,12 +1,4 @@
-import re
-from pathlib import Path
-
-from galaxy.managers.markdown_parse import (
-    GALAXY_MARKDOWN_CELL_TYPES,
-    validate_galaxy_markdown,
-)
-
-SECTION_WRAPPER_RELATIVE_PATH = Path("client/src/components/Markdown/Sections/SectionWrapper.vue")
+from galaxy.managers.markdown_parse import validate_galaxy_markdown
 
 
 def assert_markdown_valid(markdown):
@@ -527,15 +519,6 @@ def test_markdown_validation_fence_types_match_client_line_handling():
     assert_markdown_invalid("text\r\n```python\r\nx\r\n```\r\n", at_line=1)
     assert_markdown_invalid("\ufeff```python\nx\n```\n", at_line=0)
     assert_markdown_valid("text\u2028```python\n")
-
-
-def test_markdown_cell_types_match_client_renderer():
-    root = next(
-        parent for parent in Path(__file__).resolve().parents if (parent / SECTION_WRAPPER_RELATIVE_PATH).is_file()
-    )
-    section_wrapper = (root / SECTION_WRAPPER_RELATIVE_PATH).read_text()
-    client_cell_types = re.findall(r"name === '(\w+)'", section_wrapper)
-    assert sorted(client_cell_types) == sorted(GALAXY_MARKDOWN_CELL_TYPES)
 
 
 def test_markdown_validation_fence_type_error_message():

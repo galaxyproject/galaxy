@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { h } from "vue";
 
 import DisplayApplications from "./DisplayApplications.vue";
 
@@ -64,30 +65,33 @@ const raw = {
 };
 
 vi.mock("../providers/DatasetProvider", () => ({
+    // A plain-object `render() { this.$slots... }` method gets routed through Vue
+    // compat's legacy `with(this)` render-context wrapping (RENDER_FUNCTION compat),
+    // which doesn't play well with a hand-built component here. `setup()` returning
+    // a render function sidesteps that entirely.
     default: {
-        render() {
-            return this.$scopedSlots.default({
-                loading: false,
-                result: raw,
-            });
+        setup(_props, { slots }) {
+            return () => slots.default?.({ loading: false, result: raw });
         },
     },
 }));
 
 function mountTarget() {
     return mount(DisplayApplications, {
-        propsData: {
+        props: {
             datasetId: "dataset-id",
         },
         stubs: {
+            // setup() (not an options-API `render() { this.$slots }` method) --
+            // see the DatasetProvider mock above for why.
             RouterLink: {
                 props: ["to"],
-                render(h) {
-                    return h("a", { attrs: { href: this.to } }, this.$slots.default);
+                setup(props, { slots }) {
+                    return () => h("a", { href: props.to }, slots.default?.());
                 },
             },
         },
-        localVue,
+        global: localVue,
     });
 }
 

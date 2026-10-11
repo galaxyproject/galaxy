@@ -2,7 +2,7 @@
 import { BFormInput, BInputGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
-import { COMMON_FILTERS } from "@/components/Collections/pairing";
+import { COMMON_FILTERS, isValidFilter } from "@/components/Collections/pairing";
 
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
@@ -62,7 +62,11 @@ watch(currentReverseFilter, resync);
             </GDropdown>
         </template>
 
-        <BFormInput v-model="currentForwardFilter"></BFormInput>
-        <BFormInput v-model="currentReverseFilter"></BFormInput>
+        <BFormInput
+            v-model="currentForwardFilter"
+            :state="isValidFilter(currentForwardFilter) ? null : false"></BFormInput>
+        <BFormInput
+            v-model="currentReverseFilter"
+            :state="isValidFilter(currentReverseFilter) ? null : false"></BFormInput>
     </BInputGroup>
 </template>

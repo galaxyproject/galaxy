@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
     simple: false,
 });
 
-const { config } = useConfig(true);
+const { config } = useConfig();
 
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 

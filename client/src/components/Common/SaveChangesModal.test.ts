@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick } from "vue";
 
 import SaveChangesModal from "./SaveChangesModal.vue";
@@ -12,7 +11,8 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 const mockOnBeforeRouteLeave = vi.fn();
 const mockOnBeforeRouteUpdate = vi.fn();
 const mockPush = vi.fn();
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", async (importOriginal) => ({
+    ...(await importOriginal<Record<string, unknown>>()),
     onBeforeRouteLeave: (guard: unknown) => mockOnBeforeRouteLeave(guard),
     onBeforeRouteUpdate: (guard: unknown) => mockOnBeforeRouteUpdate(guard),
     useRouter: vi.fn(() => ({
@@ -38,11 +38,11 @@ interface GuardExpose {
     guardNavigation: (navigate: () => void) => void;
 }
 
-function footerButtons(wrapper: Wrapper<Vue>) {
-    return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton).wrappers;
+function footerButtons(wrapper: VueWrapper): VueWrapper<InstanceType<typeof GButton>>[] {
+    return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 
-function buttonsDisabled(wrapper: Wrapper<Vue>) {
+function buttonsDisabled(wrapper: VueWrapper) {
     return footerButtons(wrapper).map((button) => button.props("disabled"));
 }
 
@@ -50,7 +50,7 @@ describe("SaveChangesModal reusable component", () => {
     let onSave: ReturnType<typeof vi.fn>;
     let onDiscard: ReturnType<typeof vi.fn>;
     let push: typeof mockPush;
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -66,11 +66,11 @@ describe("SaveChangesModal reusable component", () => {
                 onSave,
                 onDiscard,
             },
-        }) as Wrapper<Vue>;
+        }) as VueWrapper;
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     async function makeDirty() {
@@ -272,7 +272,7 @@ describe("SaveChangesModal reusable component", () => {
 
         it("stops listening after unmount", async () => {
             await makeDirty();
-            wrapper.destroy();
+            wrapper.unmount();
             const event = dispatchBeforeUnload();
 
             expect(event.defaultPrevented).toBe(false);

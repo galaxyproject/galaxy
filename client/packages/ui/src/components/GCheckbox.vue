@@ -6,28 +6,37 @@
 
 import { computed } from "vue";
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = defineProps<{
     /** The v-model value (checked state) */
-    value?: boolean;
+    modelValue?: boolean;
     /** ID attribute for the checkbox input */
     id?: string;
+    /** Accessible name when no visible label is provided */
+    ariaLabel?: string;
     /** Disabled state */
     disabled?: boolean;
     /** Render as a toggle switch instead of a checkbox */
     toggle?: boolean;
+    /** Partly-checked state, e.g. a select-all box when only some rows are selected */
+    indeterminate?: boolean;
 }>();
 
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
     (e: "change", event: Event): void;
 }>();
 
 const currentValue = computed({
     get() {
-        return props.value ?? false;
+        return props.modelValue ?? false;
     },
     set(newValue: boolean) {
-        emit("input", newValue);
+        emit("update:modelValue", newValue);
     },
 });
 
@@ -45,10 +54,12 @@ function onChange(event: Event) {
         :data-test-id="id ? `${id}-label` : undefined">
         <input
             :id="id"
+            :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
             :data-test-id="id ? `${id}-input` : undefined"
             :checked="currentValue"
+            :indeterminate="indeterminate"
             :disabled="disabled"
             @change="onChange" />
         <span v-if="toggle" class="g-switch-slider" />

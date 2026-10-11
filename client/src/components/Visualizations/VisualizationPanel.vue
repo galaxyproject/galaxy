@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { fetchPlugins, type Plugin } from "@/api/plugins";
 
@@ -58,8 +58,8 @@ const filteredPlugins = computed(() => {
 
 async function selectVisualization(plugin: Plugin) {
     if (props.datasetId) {
+        // @ts-ignore - monkeypatched router accepts a second options argument; drop with migration.
         router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${props.datasetId}`, {
-            // @ts-ignore
             title: plugin.name,
         });
     } else {

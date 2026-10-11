@@ -10,11 +10,16 @@
         <FormElementLabel title="Height" help="Specify the height of the view in pixel.">
             <FormNumber
                 id="visualization-height"
-                v-model="height"
+                :value="height"
                 :min="100"
                 :max="1000"
                 type="integer"
-                @input="onHeight" />
+                @input="
+                    (v: number) => {
+                        height = v;
+                        onHeight(v);
+                    }
+                " />
         </FormElementLabel>
     </div>
 </template>

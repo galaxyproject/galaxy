@@ -42,8 +42,8 @@ vi.mock("@/stores/historyStore", () => {
 
 function mountComponent(props = {}) {
     return mount(SelectionField, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             objectType: "history_dataset_id",
             ...props,
         },

@@ -39,7 +39,7 @@ export function syncRefToLocalStorage<T>(key: string, refToSync: Ref<T>) {
     if (stored !== null) {
         try {
             refToSync.value = parse(stored, typeof refToSync.value as "string" | "number" | "boolean" | "object");
-        } catch (e) {
+        } catch {
             console.error(`Failed to parse value "${stored}" from local storage key "${key}". Resetting key`);
             sync();
         }

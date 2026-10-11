@@ -1,11 +1,13 @@
-<tool id="interactive_tool_tensorboard" tool_type="interactive" name="TensorBoard" version="2.21.0" profile="23.0">
+<tool id="interactive_tool_tensorboard" tool_type="interactive" name="TensorBoard" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="23.0">
     <icon src="tensorboard.png"/>
     <description>Visualize and explore tensorboard logs from machine/deep learning experiments</description>
     <macros>
+        <token name="@TOOL_VERSION@">2.21.0</token>
+        <token name="@VERSION_SUFFIX@">0</token>
         <token name="@PORT@">6006</token>
     </macros>
     <requirements>
-        <container type="docker">quay.io/galaxy/tensorboard:2.21.0</container>
+        <container type="docker">quay.io/biocontainers/tensorboard:@TOOL_VERSION@</container>
     </requirements>
     <entry_points>
         <entry_point name="TensorBoard" requires_domain="True">
@@ -53,7 +55,7 @@
                 <param name="infile" type="data" format="tfevents" label="TensorBoard event log" help="Select a TensorBoard event file."/>
             </when>
             <when value="collection">
-                <param name="infiles" type="data_collection" collection_type="list" format="tfevents" label="TensorBoard event logs" help="Select a list collection of TensorBoard event files. Each collection element is displayed as a separate TensorBoard run."/>
+                <param name="infiles" type="data_collection" collection_type="list" format="tfevents" label="TensorBoard event logs" help="Select a list collection of TensorBoard event files. Each collection element is loaded as a separate set of TensorBoard logs."/>
             </when>
         </conditional>
     </inputs>
@@ -65,8 +67,9 @@
         You can provide either a single TensorBoard event file or a list collection of
         TensorBoard event files.
 
-        For list collections, each collection element is presented as a separate
-        TensorBoard run. Galaxy collection element identifiers are used as the run names.
+        For list collections, each collection element is loaded as a separate set of TensorBoard logs. 
+        The Galaxy collection element identifier is used as the corresponding name in TensorBoard, 
+        allowing logs from multiple training runs to be compared.
 
         After starting the tool, open TensorBoard from Galaxy's active interactive tools.
         The available dashboards depend on the data recorded in your event logs.

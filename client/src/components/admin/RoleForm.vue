@@ -5,7 +5,7 @@ import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -197,11 +197,11 @@ fetchData();
                                 track-by="id"
                                 placeholder="Search users by email..."
                                 @search-change="onUserSearch">
-                                <template slot="noResult">
+                                <template v-slot:noResult>
                                     <div v-if="userSearch.length < 3">Enter at least 3 characters to search</div>
                                     <div v-else>No users found</div>
                                 </template>
-                                <template slot="noOptions">
+                                <template v-slot:noOptions>
                                     <div>Enter at least 3 characters to search</div>
                                 </template>
                             </Multiselect>

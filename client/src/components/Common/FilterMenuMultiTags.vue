@@ -50,7 +50,7 @@ watch(
             <StatelessTags
                 :value="localValue"
                 :placeholder="`any ${props.filter.placeholder}`"
-                @input="(tags) => (localValue = tags)" />
+                @input="(tags: string[]) => (localValue = tags)" />
         </BInputGroup>
     </div>
 </template>

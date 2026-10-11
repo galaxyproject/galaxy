@@ -1,6 +1,5 @@
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
@@ -37,7 +36,7 @@ vi.mock("@floating-ui/dom", () => ({
     shift: (options?: unknown) => ({ name: "shift", options, fn: () => ({}) }),
 }));
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 // Queried off the document, since the popover relocates out of the wrapper.
 function popoverEl() {
@@ -57,7 +56,7 @@ async function showPopover(placement: string, resolvedPlacement: string, propsDa
 
     wrapper = mount(GPopover as object, {
         attachTo: document.body,
-        propsData: { target: "trigger", placement, show: false, ...propsData },
+        props: { target: "trigger", placement, show: false, ...propsData },
         slots: { default: "body content" },
     });
 
@@ -74,7 +73,7 @@ async function showPopover(placement: string, resolvedPlacement: string, propsDa
 
 describe("GPopover", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -131,7 +130,7 @@ describe("GPopover", () => {
 
         wrapper = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: "dialog-trigger", show: false },
+            props: { target: "dialog-trigger", show: false },
             slots: { default: "body content" },
         });
         await wrapper.setProps({ show: true });
@@ -148,9 +147,9 @@ describe("GPopover", () => {
 
         const shortLived = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: "short-lived-trigger", triggers: "hover" },
+            props: { target: "short-lived-trigger", triggers: "hover" },
         });
-        shortLived.destroy();
+        shortLived.unmount();
         await nextTick();
         await nextTick();
 
@@ -160,7 +159,7 @@ describe("GPopover", () => {
     it("removes the relocated popover when unmounted", async () => {
         await showPopover("bottom", "bottom");
 
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
 
         expect(document.body.querySelector(".popover")).toBeNull();
@@ -176,7 +175,7 @@ async function mountWithTrigger(propsData: Record<string, unknown>) {
 
     wrapper = mount(GPopover as object, {
         attachTo: mountPoint,
-        propsData: { target: "interactive-trigger", ...propsData },
+        props: { target: "interactive-trigger", ...propsData },
         slots: { default: "<a href='#'>popover link</a>" },
     });
     await nextTick();
@@ -200,7 +199,7 @@ describe("GPopover hover", () => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         vi.useRealTimers();
@@ -493,7 +492,7 @@ describe("GPopover hover", () => {
 
         leave(target, 158.5, 12);
         const unmounted = wrapper!;
-        unmounted.destroy();
+        unmounted.unmount();
         wrapper = undefined;
 
         expect(added).toHaveBeenCalled();
@@ -575,7 +574,7 @@ describe("GPopover hover", () => {
         target.dispatchEvent(new MouseEvent(show ? "mouseleave" : "mouseenter"));
 
         const unmounted = wrapper!;
-        unmounted.destroy();
+        unmounted.unmount();
         wrapper = undefined;
         await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
 
@@ -602,7 +601,7 @@ describe("GPopover focus", () => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         vi.useRealTimers();
@@ -726,7 +725,7 @@ describe("GPopover escape", () => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
         vi.useRealTimers();
@@ -832,9 +831,9 @@ describe("GPopover escape", () => {
         dialog.showModal();
         // happy-dom does not implement :modal.
         vi.spyOn(dialog, "matches").mockImplementation((selector) => selector === ":modal");
-        const insideModal = mount(GPopover as object, {
+        const insideModal: VueWrapper = mount(GPopover as object, {
             attachTo: modalMountPoint,
-            propsData: { target: "modal-trigger", triggers: "hover", show: false },
+            props: { target: "modal-trigger", triggers: "hover", show: false },
         });
         await nextTick();
         await nextTick();
@@ -851,18 +850,18 @@ describe("GPopover escape", () => {
         expect(wrapper!.emitted("update:show")).toBeUndefined();
         expect(event.defaultPrevented).toBe(true);
 
-        insideModal.destroy();
+        insideModal.unmount();
     });
 
     it("closes only the most recently opened popover", async () => {
-        const mountPopover = (id: string) => {
+        const mountPopover = (id: string): VueWrapper => {
             const target = document.createElement("button");
             target.id = id;
             const mountPoint = document.createElement("div");
             document.body.append(target, mountPoint);
             return mount(GPopover as object, {
                 attachTo: mountPoint,
-                propsData: { target: id, triggers: "hover", show: false },
+                props: { target: id, triggers: "hover", show: false },
                 slots: { default: id },
             });
         };
@@ -877,8 +876,8 @@ describe("GPopover escape", () => {
         expect(first.emitted("update:show")).toBeUndefined();
         expect(second.emitted("update:show")).toEqual([[false]]);
 
-        first.destroy();
-        second.destroy();
+        first.unmount();
+        second.unmount();
     });
 
     it("does not dismiss manual popovers", async () => {
@@ -893,7 +892,7 @@ describe("GPopover escape", () => {
 
 describe("GPopover description", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -915,7 +914,7 @@ describe("GPopover description", () => {
 
         wrapper = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: toTarget(target), triggers: "hover" },
+            props: { target: toTarget(target), triggers: "hover" },
         });
         await nextTick();
         await nextTick();
@@ -932,14 +931,14 @@ describe("GPopover description", () => {
 
         wrapper = mount(GPopover as object, {
             attachTo: mountPoint,
-            propsData: { target: "described-trigger", triggers: "hover focus" },
+            props: { target: "described-trigger", triggers: "hover focus" },
         });
         await nextTick();
         await nextTick();
 
         expect(target.getAttribute("aria-describedby")).toBe(`existing-hint ${popoverEl().id}`);
 
-        wrapper.destroy();
+        wrapper.unmount();
         wrapper = undefined;
 
         expect(target.getAttribute("aria-describedby")).toBe("existing-hint");
@@ -948,7 +947,7 @@ describe("GPopover description", () => {
 
 describe("GPopover click", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -984,7 +983,7 @@ describe("GPopover click", () => {
 
 describe("GPopover click dialog", () => {
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
         document.body.innerHTML = "";
     });
@@ -1101,14 +1100,370 @@ describe("GPopover click dialog", () => {
         expect(document.activeElement).toBe(target);
     });
 
+    it("treats the last shown control as the end when a hidden one follows it", async () => {
+        const target = await openByClick();
+        const link = popoverEl().querySelector("a")!;
+        const hidden = document.createElement("button");
+        popoverEl().querySelector(".popover-body")!.appendChild(hidden);
+        hidden.style.display = "none";
+        link.focus();
+
+        expect(pressTab(link).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(target);
+    });
+
     it("restores the trigger's attributes when unmounted", async () => {
         const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
 
-        wrapper?.destroy();
+        wrapper?.unmount();
         wrapper = undefined;
 
         expect(target.hasAttribute("aria-haspopup")).toBe(false);
         expect(target.hasAttribute("aria-expanded")).toBe(false);
         expect(target.hasAttribute("aria-controls")).toBe(false);
+    });
+});
+
+describe("GPopover interactive hover", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        wrapper?.unmount();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+        vi.useRealTimers();
+    });
+
+    const LINKS = "<a id='first-link' href='#'>first</a> <a id='last-link' href='#'>last</a>";
+
+    // The trigger, then whatever follows it in the page; the popover itself relocates to the end of the body.
+    async function mountInteractive({
+        slot = LINKS,
+        withNext = true,
+        props = {},
+        container = document.body,
+        link = false,
+    }: {
+        slot?: string;
+        withNext?: boolean;
+        props?: Record<string, unknown>;
+        container?: HTMLElement;
+        link?: boolean;
+    } = {}) {
+        const target = document.createElement(link ? "a" : "button");
+        if (link) {
+            target.setAttribute("href", "#dataset");
+        }
+        target.id = "interactive-trigger";
+        const mountPoint = document.createElement("div");
+        const next = document.createElement("button");
+        next.id = "after-trigger";
+        container.append(target, mountPoint, ...(withNext ? [next] : []));
+
+        wrapper = mount(GPopover as object, {
+            attachTo: mountPoint,
+            props: { target: "interactive-trigger", triggers: "hover", interactive: true, ...props },
+            slots: { default: slot },
+        });
+        await nextTick();
+        await nextTick();
+
+        return { target, next };
+    }
+
+    async function focusTrigger(target: HTMLElement) {
+        target.focus();
+        await nextTick();
+    }
+
+    function pressTab(on: Element, shiftKey = false) {
+        const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true, cancelable: true });
+        on.dispatchEvent(event);
+        return event;
+    }
+
+    function guards() {
+        return popoverEl().querySelectorAll<HTMLElement>(".g-popover-focus-guard");
+    }
+
+    function guardTabindexes() {
+        return Array.from(guards(), (guard) => guard.getAttribute("tabindex"));
+    }
+
+    function pressEscape() {
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
+    }
+
+    // Enter or Space on a button fires a click without pointer detail; a mouse click has a detail of 1.
+    async function activate(target: HTMLElement, detail = 0) {
+        target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, detail }));
+        await nextTick();
+    }
+
+    async function tabPastLastControl() {
+        popoverEl().querySelector<HTMLElement>("#last-link")!.focus();
+        // The browser moves Tab from the last control onto the trailing guard.
+        guards()[1]!.focus();
+        await nextTick();
+    }
+
+    it("is a dialog the trigger controls rather than a description of it", async () => {
+        const { target } = await mountInteractive();
+
+        expect(popoverEl().getAttribute("role")).toBe("dialog");
+        expect(popoverEl().hasAttribute("aria-modal")).toBe(false);
+        expect(popoverEl().getAttribute("aria-labelledby")).toBe(target.id);
+        expect(target.getAttribute("aria-haspopup")).toBe("dialog");
+        expect(target.getAttribute("aria-controls")).toBe(popoverEl().id);
+        expect(target.getAttribute("aria-expanded")).toBe("false");
+        expect(target.hasAttribute("aria-describedby")).toBe(false);
+    });
+
+    it("tabs from the trigger into the first control", async () => {
+        const { target } = await mountInteractive();
+        await focusTrigger(target);
+
+        expect(pressTab(target).defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe("first-link");
+        expect(isShown()).toBe(true);
+        expect(target.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("tabs from the trigger onto the popover while it has nothing to focus yet", async () => {
+        const { target } = await mountInteractive({ slot: "Loading" });
+        await focusTrigger(target);
+
+        expect(pressTab(target).defaultPrevented).toBe(true);
+        await nextTick();
+
+        expect(document.activeElement).toBe(popoverEl());
+        expect(isShown()).toBe(true);
+        expect(guardTabindexes()).toEqual(["0", "0"]);
+    });
+
+    it("tabs from the popover into the first control once its content has loaded", async () => {
+        const { target } = await mountInteractive({ slot: "Loading" });
+        await focusTrigger(target);
+        pressTab(target);
+        await nextTick();
+
+        popoverEl().querySelector(".popover-body")!.innerHTML = LINKS;
+
+        expect(pressTab(popoverEl()).defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe("first-link");
+        expect(isShown()).toBe(true);
+    });
+
+    it("tabs from a popover that is still empty on past the trigger, or back to it with Shift+Tab", async () => {
+        const { target, next } = await mountInteractive({ slot: "Loading" });
+        await focusTrigger(target);
+        pressTab(target);
+        await nextTick();
+
+        expect(pressTab(popoverEl(), true).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(true);
+
+        pressTab(target);
+        await nextTick();
+
+        expect(pressTab(popoverEl()).defaultPrevented).toBe(true);
+        await nextTick();
+
+        expect(document.activeElement).toBe(next);
+        expect(isShown()).toBe(false);
+    });
+
+    it("returns to the trigger on Shift+Tab from the first control and stays open", async () => {
+        const { target } = await mountInteractive();
+        await focusTrigger(target);
+        pressTab(target);
+
+        // The browser moves Shift+Tab from the first control onto the leading guard.
+        guards()[0]!.focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(true);
+    });
+
+    it("continues after the trigger when tabbing past the last control, and closes", async () => {
+        const { target, next } = await mountInteractive();
+        await focusTrigger(target);
+        popoverEl().querySelector<HTMLElement>("#last-link")!.focus();
+
+        // The browser moves Tab from the last control onto the trailing guard.
+        guards()[1]!.focus();
+        await nextTick();
+
+        expect(document.activeElement).toBe(next);
+        expect(isShown()).toBe(false);
+        expect(target.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("returns focus to the trigger when nothing follows it", async () => {
+        const { target } = await mountInteractive({ withNext: false });
+        await focusTrigger(target);
+        popoverEl().querySelector<HTMLElement>("#last-link")!.focus();
+
+        guards()[1]!.focus();
+        await nextTick();
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(false);
+    });
+
+    it("closes on Escape from inside and returns focus to the trigger", async () => {
+        const { target } = await mountInteractive();
+        await focusTrigger(target);
+        pressTab(target);
+
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("does not trap focus on the trigger", async () => {
+        const { target } = await mountInteractive();
+        await focusTrigger(target);
+
+        expect(pressTab(target, true).defaultPrevented).toBe(false);
+
+        pressTab(target);
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
+        await nextTick();
+
+        // Closed, Tab leaves the trigger for the page as usual.
+        expect(pressTab(target).defaultPrevented).toBe(false);
+    });
+
+    it("steers focus with its guards only once focus came in from the trigger", async () => {
+        const { target } = await mountInteractive();
+        await focusTrigger(target);
+
+        expect(guardTabindexes()).toEqual(["-1", "-1"]);
+
+        pressTab(target);
+        await nextTick();
+
+        expect(guardTabindexes()).toEqual(["0", "0"]);
+    });
+
+    it("lets focus from elsewhere in the page move through as in the DOM", async () => {
+        const { next } = await mountInteractive({ props: { triggers: "manual hover", show: true } });
+        next.focus();
+
+        // Rendered last, the popover is where Tab past the page's last control goes, without passing the trigger.
+        popoverEl().querySelector<HTMLElement>("#first-link")!.focus();
+        await nextTick();
+
+        expect(guardTabindexes()).toEqual(["-1", "-1"]);
+
+        // A guard that focus from outside still reaches does not send it anywhere.
+        next.focus();
+        guards()[1]!.focus();
+        await nextTick();
+
+        expect(document.activeElement).toBe(guards()[1]);
+        expect(isShown()).toBe(true);
+    });
+
+    it("toggles on Enter or Space on a button trigger, so Enter reopens it after Escape", async () => {
+        const { target } = await mountInteractive();
+        await focusTrigger(target);
+        pressEscape();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+
+        await activate(target);
+
+        expect(isShown()).toBe(true);
+        expect(target.getAttribute("aria-expanded")).toBe("true");
+
+        // Reopened from the keyboard, it stays open while the trigger has focus.
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+
+        await activate(target);
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("leaves pointer clicks to hover and Enter on a link to the link", async () => {
+        const { target } = await mountInteractive();
+        await activate(target, 1);
+
+        expect(isShown()).toBe(false);
+
+        wrapper?.unmount();
+        document.body.innerHTML = "";
+        const { target: link } = await mountInteractive({ link: true });
+        await activate(link);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("passes over hidden and disabled controls after the trigger", async () => {
+        const { target, next } = await mountInteractive();
+        const hidden = document.createElement("button");
+        hidden.style.display = "none";
+        const disabled = document.createElement("button");
+        disabled.disabled = true;
+        disabled.tabIndex = 0;
+        next.before(hidden, disabled);
+        await focusTrigger(target);
+        pressTab(target);
+        await tabPastLastControl();
+
+        expect(document.activeElement).toBe(next);
+    });
+
+    it("looks for the next stop only within the trigger's dialog", async () => {
+        const dialog = document.createElement("dialog");
+        dialog.setAttribute("open", "");
+        document.body.append(dialog);
+        const { target } = await mountInteractive({ container: dialog, withNext: false });
+        document.body.append(document.createElement("button"));
+        await focusTrigger(target);
+        pressTab(target);
+        await tabPastLastControl();
+
+        expect(popoverEl().parentElement).toBe(dialog);
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(false);
+    });
+
+    it("leaves an interactive popover that only the page opens out of the dialog role", async () => {
+        const { target } = await mountInteractive({ props: { triggers: "manual", show: true } });
+
+        expect(popoverEl().getAttribute("role")).toBe("tooltip");
+        expect(target.hasAttribute("aria-haspopup")).toBe(false);
+        expect(target.hasAttribute("aria-expanded")).toBe(false);
+        expect(guards()).toHaveLength(0);
+    });
+
+    it("leaves popovers that are not interactive as tooltips", async () => {
+        const { target } = await mountInteractive({ props: { interactive: false } });
+        await focusTrigger(target);
+
+        expect(popoverEl().getAttribute("role")).toBe("tooltip");
+        expect(target.getAttribute("aria-describedby")).toBe(popoverEl().id);
+        expect(target.hasAttribute("aria-expanded")).toBe(false);
+        expect(guards()).toHaveLength(0);
+        expect(pressTab(target).defaultPrevented).toBe(false);
     });
 });

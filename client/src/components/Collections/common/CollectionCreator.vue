@@ -147,9 +147,10 @@ watch(
 
                         <div class="d-flex align-items-center justify-content-between">
                             <CollectionCreatorSourceOptions
-                                v-model="localHideSourceItems"
+                                :value="localHideSourceItems"
                                 :render-extensions-toggle="renderExtensionsToggle"
                                 :extensions-toggle="extensionsToggle"
+                                @input="(v: boolean) => (localHideSourceItems = v)"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
                                 :value="name"
@@ -190,9 +191,10 @@ watch(
 
                             <div class="d-flex align-items-center justify-content-between">
                                 <CollectionCreatorSourceOptions
-                                    v-model="localHideSourceItems"
+                                    :value="localHideSourceItems"
                                     :render-extensions-toggle="renderExtensionsToggle"
-                                    :extensions-toggle="extensionsToggle" />
+                                    :extensions-toggle="extensionsToggle"
+                                    @input="(v: boolean) => (localHideSourceItems = v)" />
                                 <CollectionNameInput
                                     :value="collectionName"
                                     :short-what-is-being-created="shortWhatIsBeingCreated"
@@ -226,12 +228,6 @@ watch(
 </template>
 
 <style lang="scss">
-$fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "@fortawesome/fontawesome-free/scss/_variables";
-@import "@fortawesome/fontawesome-free/scss/solid";
-@import "@fortawesome/fontawesome-free/scss/fontawesome";
-@import "@fortawesome/fontawesome-free/scss/brands";
-
 // Outside the modal - we need to set a max width on the help so ellipses display
 // doesn't cause it to grow without bound. Would greater appreciate a better workaround.
 .collection-creator-bounded-help {
@@ -450,22 +446,6 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
         // NOT setting the above will give a full-height page
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
-    }
-    .element-drop-placeholder {
-        width: 60px;
-        height: 3px;
-        margin: 2px 0px 0px 14px;
-        background: black;
-        &:before {
-            @extend .fas;
-            float: left;
-            font-size: 120%;
-            margin: -9px 0px 0px -8px;
-            content: fa-content($fa-var-caret-right);
-        }
-        &:last-child {
-            margin-bottom: 8px;
-        }
     }
     // ------------------------------------------------------------------------ footer
     .footer {

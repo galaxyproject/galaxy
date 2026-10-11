@@ -18,15 +18,3 @@ export class PaletteFetchError extends Error {
 export function isPaletteFetchError(error: unknown): error is PaletteFetchError {
     return error instanceof PaletteFetchError;
 }
-
-/**
- * Runs the fetch that fills an empty cache, reporting a failure instead of
- * swallowing it — see {@link PaletteFetchError}.
- */
-export async function fetchOrFail(fetch: () => Promise<unknown>): Promise<void> {
-    try {
-        await fetch();
-    } catch (error) {
-        throw new PaletteFetchError(error);
-    }
-}

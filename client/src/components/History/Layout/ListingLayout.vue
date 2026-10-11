@@ -58,9 +58,9 @@ const observer = new IntersectionObserver(
     { root: root.value },
 );
 
-function getKey(item: unknown, index: number) {
+function getKey(item: unknown, index: number): PropertyKey {
     if (props.dataKey) {
-        return (item as Record<string, unknown>)[props.dataKey];
+        return (item as Record<string, PropertyKey>)[props.dataKey] ?? index;
     } else {
         return index;
     }

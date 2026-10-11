@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -32,7 +32,6 @@ vi.mock("@/stores/datatypeVisualizationsStore", () => ({
 
 const DATASET_ID = "dataset_id";
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 // Mock dataset
 const mockDataset = {
@@ -90,16 +89,16 @@ async function mountDatasetView(tab = "preview", options = {}) {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
     router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             tab: tab,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
         attachTo: document.createElement("div"),
@@ -154,15 +153,19 @@ async function mountLoadingDatasetView() {
     };
     const pinia = setupPinia(datasetStore);
 
-    const router = new VueRouter();
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
     router.push = vi.fn();
     router.replace = vi.fn();
 
+    // Never resolve the dataset fetch, so the view stays in its loading state
+    // for the duration of the test instead of racing flushPromises() to completion.
+    server.use(http.get("/api/datasets/:dataset_id", () => new Promise(() => {})));
+
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
         stubs: {
@@ -211,6 +214,18 @@ describe("DatasetView", () => {
                     },
                 });
             }),
+            http.untyped.get("/api/datatypes/types_and_mapping", () => {
+                // Return an empty mapping; tests don't depend on real datatype info,
+                // they just need the endpoint to not 404 so console.error stays quiet.
+                return new Response(
+                    JSON.stringify({
+                        datatypes: [],
+                        datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
+                    }),
+                    { headers: { "Content-Type": "application/json" } },
+                );
+            }),
+            http.get("/api/datatypes/{datatype}", ({ response }) => response(200).json({})),
         );
     });
 
@@ -243,8 +258,10 @@ describe("DatasetView", () => {
         it("shows loading message when dataset is loading", async () => {
             const wrapper = await mountLoadingDatasetView();
             expect(wrapper.find(".loading-message").exists()).toBe(true);
-            expect(wrapper.find(".loading-message").text()).toBe("Loading...");
-            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
+            // `.dataset-view` only renders once loading finishes (it's the `v-else` branch
+            // of the same conditional the LoadingSpan is in), so it can't coexist with it.
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
         });
 
         it("renders dataset information", async () => {
@@ -357,8 +374,9 @@ describe("DatasetView", () => {
             const wrapper = await mountDatasetView("preview");
             await flushPromises(); // Wait for preferred visualization check
 
-            // No preferred visualization should be set
-            expect(wrapper.vm.preferredVisualization).toBeUndefined();
+            // No preferred visualization should be set. `getPreferredVisualization` falls
+            // back to `null` (not `undefined`) when nothing is configured.
+            expect(wrapper.vm.preferredVisualization).toBeNull();
 
             // Check that we're using the default iframe
             expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);

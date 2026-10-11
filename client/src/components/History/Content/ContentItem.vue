@@ -10,7 +10,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
@@ -363,7 +363,7 @@ function unexpandedClick(event: Event) {
                     <span v-if="hasStateIcon" class="state-icon">
                         <FontAwesomeIcon
                             fixed-width
-                            :icon="contentState.icon"
+                            :icon="contentState.icon!"
                             :spin="contentState.spin"
                             :title="item.populated_state_message || contentState.text" />
                     </span>

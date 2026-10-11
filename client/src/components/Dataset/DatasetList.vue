@@ -381,7 +381,7 @@ onMounted(() => {
                     <StatelessTags
                         :value="row.item.tags"
                         :disabled="row.item.deleted"
-                        @input="(tags) => onTags(tags, row.index)" />
+                        @input="(tags: string[]) => onTags(tags, row.index)" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">
@@ -430,9 +430,9 @@ onMounted(() => {
         </div>
 
         <SelectorModal
+            v-model:show-modal="showBulkCopyModal"
             :histories="histories"
             hide-deleted
-            :show-modal.sync="showBulkCopyModal"
             title="Copy selected datasets to history"
             selection-instruction="Click a history to copy selected datasets"
             @selectHistory="onBulkCopy" />

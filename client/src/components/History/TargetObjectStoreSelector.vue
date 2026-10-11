@@ -111,7 +111,7 @@ function handleStoreSelected(selectedOption: SelectorOption | null) {
                 data-test-id="upload-target-object-store-selector"
                 :title="disabledMessage ?? changeLinkTooltip">
                 <Multiselect
-                    :value="currentStoreOption"
+                    :model-value="currentStoreOption"
                     :options="storeOptions"
                     :allow-empty="false"
                     :searchable="false"
@@ -120,7 +120,7 @@ function handleStoreSelected(selectedOption: SelectorOption | null) {
                     class="w-100 target-object-store-multiselect multiselect--soft-option-highlight"
                     label="name"
                     track-by="id"
-                    @input="handleStoreSelected">
+                    @update:model-value="handleStoreSelected">
                     <template v-slot:singleLabel="{ option }">
                         <span class="d-flex align-items-center justify-content-between">
                             <span class="text-truncate mr-2">{{ option.name ?? "Unknown storage location" }}</span>

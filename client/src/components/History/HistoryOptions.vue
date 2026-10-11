@@ -21,7 +21,7 @@ import axios from "axios";
 import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { canMutateHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useToast } from "@/composables/toast";
@@ -271,10 +271,10 @@ watch(
             </GDropdownItem>
         </GDropdown>
 
-        <CopyModal :history="history" :show-modal.sync="showCopyModal" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" />
 
         <GModal
-            :show.sync="showDeleteModal"
+            v-model:show="showDeleteModal"
             :title="localize(isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?')"
             :ok-text="localize(isDeletedNotPurged ? 'Delete Permanently' : 'Delete')"
             ok-color="red"

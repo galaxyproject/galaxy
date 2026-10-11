@@ -1,0 +1,25 @@
+- doc: |
+    Test mapping a list:list over a type_source collection output whose input is in a conditional.
+  job:
+    input1:
+      class: Collection
+      collection_type: list:list
+      elements:
+        - identifier: outer1
+          class: Collection
+          elements:
+            - identifier: inner1
+              class: File
+              contents: "TestData123"
+  outputs:
+    out:
+      class: Collection
+      collection_type: list:list
+      elements:
+        outer1:
+          class: Collection
+          elements:
+            inner1:
+              asserts:
+              - that: has_text
+                text: "TestData123"

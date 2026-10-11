@@ -2,7 +2,11 @@ import logging
 import socket
 import sqlite3
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import (
+    Literal,
+    overload,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import (
     and_,
@@ -63,6 +67,8 @@ if TYPE_CHECKING:
         ProvidesAppContext,
         ProvidesUserContext,
     )
+    from galaxy.model import History
+    from galaxy.structured_app import BasicSharedApp
 
 log = logging.getLogger(__name__)
 
@@ -720,7 +726,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         self.sa_session.commit()
         return assoc
 
-    def create_user_role(self, user, app):
+    def create_user_role(self, user: User, app: "BasicSharedApp") -> None:
         # Create private user role if necessary
         self.get_private_user_role(user, auto_create=True)
         # Create default user permissions if necessary
@@ -735,11 +741,14 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         user.attempt_create_private_role()
         return self.get_private_user_role(user)
 
-    def get_private_user_role(self, user, auto_create=False):
-        if auto_create and user.id is None:
-            # New user, directly create private role
-            return self.create_private_user_role(user)
-        role = get_private_user_role(user, self.sa_session)
+    @overload
+    def get_private_user_role(self, user: User, auto_create: Literal[True]) -> Role: ...
+
+    @overload
+    def get_private_user_role(self, user: User, auto_create: bool = False) -> Role | None: ...
+
+    def get_private_user_role(self, user: User, auto_create: bool = False) -> Role | None:
+        role = get_private_user_role(user, self.sa_session) if user.id is not None else None
         if not role and auto_create:
             role = self.create_private_user_role(user)
         return role
@@ -783,18 +792,15 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
 
     def user_set_default_permissions(
         self,
-        user,
-        permissions=None,
-        history=False,
-        dataset=False,
-        bypass_manage_permission=False,
-        default_access_private=False,
-    ):
+        user: User,
+        permissions: dict[str, list[Role]] | dict[Action, list[Role]] | None = None,
+        history: bool = False,
+        dataset: bool = False,
+        bypass_manage_permission: bool = False,
+        default_access_private: bool = False,
+    ) -> None:
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
         flush_needed = False
-        permissions = permissions or {}
-        if user is None:
-            return None
         if not permissions:
             # default permissions
             permissions = {
@@ -817,25 +823,33 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         if flush_needed:
             self.sa_session.commit()
         if history:
-            for history in user.active_histories:
+            for active_history in user.active_histories:
                 self.history_set_default_permissions(
-                    history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission
+                    active_history,
+                    permissions=permissions,
+                    dataset=dataset,
+                    bypass_manage_permission=bypass_manage_permission,
                 )
 
-    def user_get_default_permissions(self, user):
-        permissions = {}
+    def user_get_default_permissions(self, user: User) -> dict[Action, list[Role]]:
+        permissions: dict[Action, list[Role]] = {}
         for dup in user.default_permissions:
+            assert dup.action is not None
             action = self.get_action(dup.action)
-            if action in permissions:
-                permissions[action].append(dup.role)
-            else:
-                permissions[action] = [dup.role]
+            assert action is not None
+            assert dup.role is not None
+            permissions.setdefault(action, []).append(dup.role)
         return permissions
 
-    def history_set_default_permissions(self, history, permissions=None, dataset=False, bypass_manage_permission=False):
+    def history_set_default_permissions(
+        self,
+        history: "History",
+        permissions: dict[str, list[Role]] | dict[Action, list[Role]] | None = None,
+        dataset: bool = False,
+        bypass_manage_permission: bool = False,
+    ) -> None:
         # bypass_manage_permission is used to change permissions of datasets in a user-less history when logging in
         flush_needed = False
-        permissions = permissions or {}
         user = history.user
         if not user:
             # default permissions on a user-less history are None
@@ -858,15 +872,15 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         if dataset:
             # Only deal with datasets that are not purged
             for hda in history.activatable_datasets:
-                dataset = hda.dataset
-                if dataset.library_associations:
+                hda_dataset = hda.dataset
+                if hda_dataset.library_associations:
                     # Don't change permissions on a dataset associated with a library
                     continue
-                if [assoc for assoc in dataset.history_associations if assoc.history not in user.histories]:
+                if [assoc for assoc in hda_dataset.history_associations if assoc.history not in user.histories]:
                     # Don't change permissions on a dataset associated with a history not owned by the user
                     continue
-                if bypass_manage_permission or self.can_manage_dataset(user.all_roles(), dataset):
-                    self.set_all_dataset_permissions(dataset, permissions)
+                if bypass_manage_permission or self.can_manage_dataset(user.all_roles(), hda_dataset):
+                    self.set_all_dataset_permissions(hda_dataset, permissions)
 
     def history_get_default_permissions(self, history):
         permissions = {}
@@ -1332,6 +1346,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 )
             # Make sure user's private role is included
             private_role = self.get_private_user_role(user)
+            assert private_role is not None
             for action in self.permitted_actions.values():
                 if not found_permission_class.filter_by(role_id=private_role.id, action=action.action).first():
                     lp = found_permission_class(action.action, target_library_item, private_role)

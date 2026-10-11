@@ -11,11 +11,11 @@ const localVue = getLocalVue(true);
 describe("EditSecretsForm", () => {
     it("should render a secrets for for file source templates", async () => {
         const wrapper = mount(EditSecretsForm as object, {
-            propsData: {
+            props: {
                 template: STANDARD_FILE_SOURCE_TEMPLATE,
                 title: "Secrets FORM for file source",
             },
-            localVue,
+            global: localVue,
         });
         const titleText = wrapper.find(".portlet-title-text");
         expect(titleText.exists()).toBeTruthy();
@@ -24,11 +24,11 @@ describe("EditSecretsForm", () => {
 
     it("should render a secrets for for object store templates", async () => {
         const wrapper = mount(EditSecretsForm as object, {
-            propsData: {
+            props: {
                 template: STANDARD_OBJECT_STORE_TEMPLATE,
                 title: "Secrets FORM for object store",
             },
-            localVue,
+            global: localVue,
         });
         const titleText = wrapper.find(".portlet-title-text");
         expect(titleText.exists()).toBeTruthy();

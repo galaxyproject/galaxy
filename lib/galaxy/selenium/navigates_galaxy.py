@@ -129,11 +129,17 @@ DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
 class TourCallbackProtocol(Protocol):
-    def handle_step(self, step: dict[str, Any], step_index: int) -> None: ...
+    def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
+        """Handle a tour step once it has been reached.
+
+        ``element`` is the step's target, or None for a step that names neither an
+        ``element`` selector nor a ``component``.
+        """
+        ...
 
 
 class NullTourCallback(TourCallbackProtocol):
-    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
+    def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
         pass
 
 
@@ -584,11 +590,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_history(self, assert_ok=True):
         def history_becomes_terminal(driver=None):
             current_history_id = self.current_history_id()
-            state = self.api_get(f"histories/{current_history_id}")["state"]
-            if state not in ["running", "queued", "new", "ready"]:
-                return state
-            else:
+            history = self.api_get(f"histories/{current_history_id}?keys=state,contents_active")
+            state = history["state"]
+            # On Postgres a new item's hid is committed before its row; in between,
+            # the history reports "ok" with no contents at all.
+            if state in ["running", "queued", "new", "ready"] or not any(history["contents_active"].values()):
                 return None
+            return state
 
         final_state = self._wait_on_custom(
             history_becomes_terminal, "history to become terminal", wait_type=WAIT_TYPES.JOB_COMPLETION
@@ -2189,6 +2197,22 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # Wait for the rename promise to resolve (modal closes in the finally block)
         self.wait_for_selector_absent_or_hidden(f"#{item_type}-name-input")
 
+    def navigate_to_history_page_editor(self, history_id, page_id):
+        """Open an existing history-attached page (notebook) in the editor (history mode)."""
+        self.get(f"histories/{history_id}/pages/{page_id}")
+        self.components.pages.history.toolbar.wait_for_visible()
+
+    def notebook_click_extract_workflow(self):
+        """Click the notebook editor's Extract Workflow toolbar action, wait for the form."""
+        self.components.pages.history.extract_workflow_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.components.workflow_extract._.wait_for_visible()
+
+    def history_page_open_chat(self):
+        """Click chat button in page toolbar, wait for chat panel visible."""
+        self.components.pages.history.chat_button.wait_for_and_click()
+        self.components.pages.history.chat_panel.wait_for_visible()
+
     @retry_during_transitions
     def click_history_options(self):
         component = self.components.history_panel.options_button_icon
@@ -2252,7 +2276,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.command_palette_wait_for_open()
 
     def command_palette_toggle_with_shortcut(self) -> None:
-        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus."""
+        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus.
+
+        The palette component owns the shortcut listener and mounts only once the
+        client has loaded the configuration, which can land after the masthead is
+        up. Its ``<dialog>`` is in the DOM whenever the component is mounted, so
+        waiting for it means the key press has a listener to reach.
+        """
+        self.components.command_palette._.wait_for_present()
         self.press("k", modifiers=[self.platform_modifier_key()])
 
     def command_palette_wait_for_open(self) -> None:
@@ -2891,6 +2922,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components._.messages.error.assert_absent_or_hidden()
 
     def run_tour_step(self, step: dict[str, Any], step_index: int, tour_callback: TourCallbackProtocol) -> None:
+        element: WebElementProtocol | None = None
         element_str = step.get("element", None)
         if element_str is None:
             component = step.get("component", None)
@@ -2911,6 +2943,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             assert element is not None
 
         if (textinsert := step.get("textinsert", None)) is not None:
+            assert element is not None, f"Tour step {step_index} has textinsert but no element"
             if "\t" in textinsert:
                 # send_keys interprets \t as a Tab keypress, which moves focus
                 # out of the element. Use JS to set the value directly instead.
@@ -2923,7 +2956,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             else:
                 element.send_keys(textinsert)
 
-        tour_callback.handle_step(step, step_index)
+        tour_callback.handle_step(step, step_index, element)
 
         postclick = step.get("postclick", [])
         if postclick is True:
@@ -3050,7 +3083,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if assert_valid:
             self.assert_no_error_message()
 
-            xpath = f'//span[contains(text(), "{user_email}")]'
+            xpath = f'//span[text()[contains(., "{user_email}")]]'
             self.wait_for_xpath_visible(xpath)
         self.screenshot_if(screenshot_after_submit)
 

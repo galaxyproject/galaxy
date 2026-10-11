@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { faCheckSquare, faChevronCircleRight, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, type Ref, ref } from "vue";
-//@ts-ignore missing typedefs
-import VirtualList from "vue-virtual-scroll-list";
+import { useVirtualList } from "@vueuse/core";
+import { computed, ref } from "vue";
 
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
@@ -36,7 +35,19 @@ const emit = defineEmits<{
     (e: "load-more"): void;
 }>();
 
-const scrollContainer: Ref<HTMLElement | null> = ref(null);
+// Columns are 15rem (240px) wide plus `mx-1` margins on each side
+const COLUMN_WIDTH = 248;
+
+const {
+    list: visibleHistories,
+    containerProps,
+    wrapperProps,
+} = useVirtualList(
+    // Copy, since `useVirtualList` only reacts to a new array, not to items pushed into the same one
+    computed(() => [...props.selectedHistories]),
+    { itemWidth: COLUMN_WIDTH },
+);
+const scrollContainer = containerProps.ref;
 const { arrived } = useAnimationFrameScroll(scrollContainer);
 
 const isScrollable = ref(false);
@@ -82,20 +93,19 @@ async function onKeyDown(evt: KeyboardEvent) {
 <template>
     <!-- eslint-disable vuejs-accessibility/no-static-element-interactions -->
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
-        <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
-            <VirtualList
-                v-if="props.selectedHistories.length"
-                :estimate-size="240"
-                :data-key="'id'"
-                :data-component="MultipleViewItem"
-                :data-sources="props.selectedHistories"
-                :direction="'horizontal'"
-                :extra-props="{ filter }"
-                :item-style="{ width: '100%', minWidth: '15rem' }"
-                item-class="d-flex mx-1 mt-1"
-                class="d-flex"
-                wrap-class="row flex-nowrap m-0">
-            </VirtualList>
+        <div
+            ref="scrollContainer"
+            class="d-flex h-100 w-auto overflow-auto"
+            :style="containerProps.style"
+            @scroll="containerProps.onScroll">
+            <div v-if="props.selectedHistories.length" v-bind="wrapperProps" class="flex-nowrap flex-shrink-0">
+                <div
+                    v-for="{ data: history } in visibleHistories"
+                    :key="history.id"
+                    class="history-column d-flex mx-1 mt-1">
+                    <MultipleViewItem :source="history" :filter="filter" />
+                </div>
+            </div>
 
             <div
                 class="history-picker"
@@ -142,6 +152,10 @@ async function onKeyDown(evt: KeyboardEvent) {
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
 .list-container {
+    .history-column {
+        flex-shrink: 0;
+        width: 15rem;
+    }
     .history-picker {
         min-width: 15rem;
         max-width: 15rem;

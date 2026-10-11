@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 
 import { useEventStore } from "@/stores/eventStore";
 
@@ -43,7 +42,7 @@ function mountComponent(
     });
 }
 
-function getTextarea(wrapper: Wrapper<Vue>) {
+function getTextarea(wrapper: VueWrapper) {
     return wrapper.find("textarea");
 }
 
@@ -64,7 +63,7 @@ function setNonHistoryDragItem() {
     eventStore.setDragData({ id: "wf1", name: "workflow", hid: 1 });
 }
 
-async function dropAndGetUpdate(wrapper: Wrapper<Vue>): Promise<string> {
+async function dropAndGetUpdate(wrapper: VueWrapper): Promise<string> {
     const textarea = getTextarea(wrapper);
     textarea.element.dispatchEvent(makeDragEvent("drop"));
     await wrapper.vm.$nextTick();
@@ -73,7 +72,7 @@ async function dropAndGetUpdate(wrapper: Wrapper<Vue>): Promise<string> {
     return updates![updates!.length - 1]![0] as string;
 }
 
-async function applyHighlight(wrapper: Wrapper<Vue>) {
+async function applyHighlight(wrapper: VueWrapper) {
     const textarea = getTextarea(wrapper);
     textarea.element.dispatchEvent(makeDragEvent("dragenter"));
     await wrapper.vm.$nextTick();

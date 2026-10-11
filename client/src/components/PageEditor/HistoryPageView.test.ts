@@ -20,14 +20,18 @@ vi.mock("@/composables/config", () => ({
 }));
 
 const mockPush = vi.fn();
-vi.mock("vue-router/composables", () => ({
-    useRouter: vi.fn(() => ({
-        push: mockPush,
-    })),
-    useRoute: vi.fn(() => ({
-        params: {},
-    })),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: vi.fn(() => ({
+            push: mockPush,
+        })),
+        useRoute: vi.fn(() => ({
+            params: {},
+        })),
+    };
+});
 
 const mockPushToFrameOrPage = vi.fn();
 vi.mock("@/composables/windowAwareNavigation", () => ({
@@ -64,8 +68,8 @@ const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
 
 const SELECTORS = {
-    INFO_ALERT: "galert-stub[variant='info']",
-    ERROR_ALERT: "galert-stub[variant='danger']",
+    INFO_ALERT: "g-alert-stub[variant='info']",
+    ERROR_ALERT: "g-alert-stub[variant='danger']",
 } as const;
 
 let pinia: Pinia;
@@ -105,7 +109,7 @@ describe("HistoryPageView", () => {
             await flushPromises();
 
             const alerts = wrapper.findAll(SELECTORS.INFO_ALERT);
-            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading galaxy notebooks"));
+            const loadingAlert = alerts.find((w) => w.text().includes("Loading galaxy notebooks"));
             expect(loadingAlert).toBeTruthy();
         });
     });
@@ -244,10 +248,7 @@ describe("HistoryPageView", () => {
             await flushPromises();
 
             const md = wrapper.findComponent(PageDisplayOnly);
-            const config = md.props("markdownConfig");
-            expect(config.id).toBe(PAGE_ID);
-            expect(config.title).toBe("My Page");
-            expect(config.content).toBe("# Hello");
+            expect(md.props("markdownConfig")).toMatchObject({ id: PAGE_ID, title: "My Page", content: "# Hello" });
         });
 
         it("Edit button navigates to edit mode (no displayOnly)", async () => {
@@ -274,7 +275,7 @@ describe("HistoryPageView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).not.toHaveBeenCalled();
             expect(store.clearCurrentPage).not.toHaveBeenCalled();
         });
@@ -392,7 +393,7 @@ describe("HistoryPageView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            wrapper.destroy();
+            wrapper.unmount();
             expect(store.$reset).toHaveBeenCalled();
         });
     });

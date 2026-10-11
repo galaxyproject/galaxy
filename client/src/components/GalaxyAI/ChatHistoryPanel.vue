@@ -4,7 +4,7 @@ import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-i
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
@@ -51,7 +51,10 @@ const {
 
 const currentExchangeId = computed(() => {
     if (chatStore.isCenterMode) {
-        return route.params["exchangeId"] || null;
+        // The galaxyai/:exchangeId route param is never repeated, but vue-router's generic
+        // params type always allows string[] -- narrow to the single value it actually is.
+        const param = route.params["exchangeId"];
+        return (Array.isArray(param) ? param[0] : param) || null;
     } else {
         return chatStore.activeChatId;
     }
@@ -169,7 +172,7 @@ async function deleteSelected() {
                     :class="{ selected: selectedIds.has(item.id), current: item.id === currentExchangeId }"
                     role="button"
                     tabindex="0"
-                    @click="(event) => handleItemClick(item, index, event)">
+                    @click="(event: MouseEvent) => handleItemClick(item, index, event)">
                     <span v-if="selectionMode" class="history-checkbox">
                         <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
                     </span>

@@ -17,7 +17,7 @@ function mountWith(value: unknown, directive = "v-sanitize-html") {
         },
         template: `<div><span data-other>{{ other }}</span><div class="target" ${directive}="value" /></div>`,
     });
-    return mount(Host as object, { propsData: { value } });
+    return mount(Host, { props: { value } });
 }
 
 describe("v-sanitize-html", () => {
@@ -84,7 +84,7 @@ describe("v-sanitize-html", () => {
             props: { rich: { type: Boolean, default: true } },
             template: `<div><pre v-if="rich" v-sanitize-html="'<b>rich</b>'" /><pre v-else class="plain">plain</pre></div>`,
         });
-        const wrapper = mount(Host as object, { propsData: { rich: true } });
+        const wrapper = mount(Host, { props: { rich: true } });
         expect(wrapper.find("pre").element.innerHTML).toBe("<i>sanitized:<b>rich</b></i>");
 
         await wrapper.setProps({ rich: false });
@@ -94,7 +94,7 @@ describe("v-sanitize-html", () => {
     test("keeps its markup while the element is being destroyed", () => {
         const wrapper = mountWith("content");
         const target = wrapper.find(".target").element;
-        wrapper.destroy();
+        wrapper.unmount();
         expect(target.innerHTML).toBe("<i>sanitized:content</i>");
     });
 });

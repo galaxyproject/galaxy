@@ -120,7 +120,7 @@ from galaxy.util import (
 )
 from galaxy.util.path import StrPath
 from galaxy.util.resources import resource_string
-from galaxy.util.unittest_utils import skip_if_site_down
+from galaxy.util.unittest_utils import skip_if_toolshed_down as skip_if_toolshed_down  # noqa: F401 - re-exported
 from galaxy.util.unittest_utils.test_http_server import TestHttpServer
 from galaxy_test.base.decorators import (
     has_requirement,
@@ -300,9 +300,6 @@ def skip_without_visualization_plugin(plugin_name: str):
         return wrapped_method
 
     return method_wrapper
-
-
-skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
 
 
 def summarize_instance_history_on_error(method):
@@ -2177,6 +2174,31 @@ class BaseDatasetPopulator(BasePopulator):
         response = self.new_history_page_raw(history_id, title=title, content=content, content_format=content_format)
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
+
+    def new_notebook_referencing(
+        self,
+        history_id: str,
+        output_ids: list[str] | None = None,
+        collection_ids: list[str] | None = None,
+        job_ids: list[str] | None = None,
+        icj_ids: list[str] | None = None,
+        title: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a history-attached page (notebook) whose markdown references the
+        given dataset outputs (history_dataset_display), dataset collection
+        outputs (history_dataset_collection_display), and/or jobs via a job
+        directive (job_metrics) by job id or implicit collection jobs id."""
+        blocks = [
+            f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```" for output_id in output_ids or []
+        ]
+        blocks += [
+            f"```galaxy\nhistory_dataset_collection_display(history_dataset_collection_id={collection_id})\n```"
+            for collection_id in collection_ids or []
+        ]
+        blocks += [f"```galaxy\njob_metrics(job_id={job_id})\n```" for job_id in job_ids or []]
+        blocks += [f"```galaxy\njob_metrics(implicit_collection_jobs_id={icj_id})\n```" for icj_id in icj_ids or []]
+        content = "# Analysis\n\n" + "\n".join(blocks) + "\n"
+        return self.new_history_page(history_id, title=title, content=content)
 
     def get_history_page(self, page_id: str) -> dict[str, Any]:
         response = self._get(f"pages/{page_id}")

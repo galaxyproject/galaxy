@@ -137,8 +137,8 @@ export async function invokeWorkflow(workflowId, invocationData) {
  * @param {String} toolId - Tool ID to fetch data for.
  * @param {String} toolVersion - Corresponding tool version.
  * @param {Object} toolInputs - Current tool state.
- * @param {Object} historyId - History ID to populate data selection fields.
- * @param {Object} optionsPagination - Optional per-parameter pagination spec
+ * @param {String|null} historyId - History ID to populate data selection fields.
+ * @param {Object} [optionsPagination] - Optional per-parameter pagination spec
  *   (`{<dotted-name>: {<src>: {offset, limit, search}}}`) forwarded as
  *   `options_pagination` so the workflow run form can lazy-load paginated
  *   options or backend-search the dropdown.

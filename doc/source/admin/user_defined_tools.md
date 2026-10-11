@@ -22,6 +22,8 @@ This level of access is acceptable when only administrators install tools. Howev
 
 To address this, Galaxy supports a restricted tool language for user-defined tools. This format is modeled after the XML tool definition but replaces Cheetah templating with sandboxed JavaScript expressions that have no access to the database or filesystem, and it requires every tool to declare the container it runs in.
 
+User-defined tool help must be written in Markdown, which Galaxy renders without raw HTML.
+
 The sandbox constrains what a tool definition can *template*. It does not constrain what the resulting command can *do* inside its container, so the isolation of the job's execution environment is still the deployment's responsibility.
 
 ## Enabling User-Defined Tools

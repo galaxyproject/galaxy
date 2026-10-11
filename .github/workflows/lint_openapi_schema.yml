@@ -1,17 +1,39 @@
 name: OpenAPI linting
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/lint_openapi_schema.yml'
+      - 'client/.node_version'
+      - 'client/.npmrc'
+      - 'client/package.json'
+      - 'client/prettier.config.js'
+      - 'client/.prettierignore'
+      - 'client/pnpm-lock.yaml'
+      - 'client/pnpm-workspace.yaml'
+      - 'client/packages/api-client/src/schema/schema.ts'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/lint_openapi_schema.yml'
+      - 'client/.node_version'
+      - 'client/.npmrc'
+      - 'client/package.json'
+      - 'client/prettier.config.js'
+      - 'client/.prettierignore'
+      - 'client/pnpm-lock.yaml'
+      - 'client/pnpm-workspace.yaml'
+      - 'client/packages/api-client/src/schema/schema.ts'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

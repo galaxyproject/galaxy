@@ -1,9 +1,9 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import { useChatStore } from "@/stores/chatStore";
 
@@ -17,14 +17,14 @@ const { mockGet, mockPost, mockPut, ChatMessageCellStub, ChatInputStub } = vi.ho
     ChatMessageCellStub: {
         name: "ChatMessageCellStub",
         props: ["message"],
-        render(this: { message: { content: string } }, h: (...args: unknown[]) => unknown) {
+        render(this: { message: { content: string } }) {
             return h("div", { class: "chat-message-stub" }, [this.message.content]);
         },
     },
     ChatInputStub: {
         name: "ChatInputStub",
         props: ["value", "busy"],
-        render(h: (...args: unknown[]) => unknown) {
+        render() {
             return h("input", { class: "chat-input-stub" });
         },
     },
@@ -38,7 +38,7 @@ vi.mock("@/api/client", () => ({
     GalaxyApi: () => ({ GET: mockGet, POST: mockPost, PUT: mockPut, DELETE: vi.fn() }),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: () => ({ path: "/", params: {}, query: {} }),
     useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
@@ -99,11 +99,11 @@ function mountChat() {
     return { wrapper, chatStore };
 }
 
-function messageTexts(wrapper: Wrapper<Vue>) {
-    return wrapper.findAll(".chat-message-stub").wrappers.map((w) => w.text());
+function messageTexts(wrapper: VueWrapper) {
+    return wrapper.findAll(".chat-message-stub").map((w) => w.text());
 }
 
-async function sendMessage(wrapper: Wrapper<Vue>, text: string) {
+async function sendMessage(wrapper: VueWrapper, text: string) {
     const input = wrapper.findComponent(ChatInputStub);
     input.vm.$emit("input", text);
     await wrapper.vm.$nextTick();
@@ -202,5 +202,52 @@ describe("GalaxyAI", () => {
         expect(texts[2]).toBe("Second answer");
         expect(wrapper.find(".loading-entry").exists()).toBe(false);
         expect(chatStore.activeChatId).toBe("exchange-2");
+    });
+
+    it("uses its own wording for a gateway failure rather than the normalized one", async () => {
+        mockPost.mockResolvedValue({
+            data: undefined,
+            error: { err_msg: "Galaxy took too long to respond (504)", err_code: 504 },
+            response: { status: 504 },
+        });
+        const { wrapper } = mountChat();
+        await flushPromises();
+
+        await sendMessage(wrapper, "how do I remove the first row of a table?");
+
+        const texts = messageTexts(wrapper);
+        expect(texts[texts.length - 1]).toBe("Error: GalaxyAI took too long to respond (504). Please try again.");
+    });
+
+    it("shows the message from a genuine API error", async () => {
+        mockPost.mockResolvedValue({
+            data: undefined,
+            error: { err_msg: "No agent is configured for that request", err_code: 400 },
+            response: { status: 400 },
+        });
+        const { wrapper } = mountChat();
+        await flushPromises();
+
+        await sendMessage(wrapper, "route this somewhere");
+
+        const texts = messageTexts(wrapper);
+        expect(texts[texts.length - 1]).toContain("No agent is configured for that request");
+    });
+
+    // The API client normalizes failures into objects, so this only bites if a
+    // response reaches the chat without going through it.
+    it("never puts an unparsed body in the conversation", async () => {
+        mockPost.mockResolvedValue({
+            data: undefined,
+            error: "<h1>500 Internal Server Error</h1><hr><center>nginx</center>",
+            response: { status: 500 },
+        });
+        const { wrapper } = mountChat();
+        await flushPromises();
+
+        await sendMessage(wrapper, "anything");
+
+        const texts = messageTexts(wrapper);
+        expect(texts[texts.length - 1]).toBe("Error: GalaxyAI could not answer that request (500). Please try again.");
     });
 });

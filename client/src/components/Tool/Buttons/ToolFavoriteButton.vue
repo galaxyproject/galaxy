@@ -30,7 +30,7 @@ const { favoriteToolAction: btn } = useToolsListCardActions(props.id);
         :transparent="!props.detailed"
         :title="btn.title"
         @click="btn.handler">
-        <FontAwesomeIcon :icon="btn.icon" />
+        <FontAwesomeIcon :icon="btn.icon!" />
         <span v-if="props.detailed">
             {{ btn.label }}
         </span>

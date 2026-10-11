@@ -1,17 +1,23 @@
 name: Workflow framework tests
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/framework_workflows.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!packages/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/framework_workflows.yaml'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'

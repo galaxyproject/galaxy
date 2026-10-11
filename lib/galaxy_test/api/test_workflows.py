@@ -72,6 +72,8 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+    WORKFLOW_WITH_OUTPUT_ACTIONS,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
@@ -1209,6 +1211,162 @@ steps:
         workflow_v1_check = self.workflow_populator.download_workflow(workflow_id, version=1)
         assert workflow_v1_check["steps"]["0"]["label"] == "v1_label"
 
+    def test_refactor_upgrade_preserves_previous_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.1"
+    state:
+      inttest: 0
+""")
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+
+        previous_version = self.workflow_populator.download_workflow(workflow_id, version=0)
+        # the source version keeps its steps
+        assert previous_version["steps"]["0"]["tool_version"] == "0.1"
+        latest_version = self.workflow_populator.download_workflow(workflow_id, version=1)
+        assert latest_version["steps"]["0"]["tool_version"] == "0.2"
+
+    def test_refactor_noop_does_not_create_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.2"
+    state:
+      inttest: 0
+""")
+        name = self.workflow_populator.download_workflow(workflow_id)["name"]
+        for actions in [
+            [{"action_type": "upgrade_all_steps"}],
+            [{"action_type": "update_name", "name": name}],
+        ]:
+            dry_run_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+            dry_run_response.raise_for_status()
+            assert dry_run_response.json()["changed"] is False
+
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+            refactor_response.raise_for_status()
+            assert refactor_response.json()["changed"] is False
+            assert len(self._workflow_versions(workflow_id)) == 1
+
+    def test_refactor_upgrade_reports_changed(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.1"
+    state:
+      inttest: 0
+""")
+        actions = [{"action_type": "upgrade_all_steps"}]
+        dry_run_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        dry_run_response.raise_for_status()
+        assert dry_run_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 1
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+
+    def test_refactor_noop_of_previous_version_creates_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        name = self.workflow_populator.download_workflow(workflow_id)["name"]
+        relabel = [{"action_type": "update_step_label", "step": {"order_index": 0}, "label": "v1_label"}]
+        self.workflow_populator.refactor_workflow(workflow_id, relabel).raise_for_status()
+
+        # a no-op refactor of an older version restores it as the latest version
+        noop = [{"action_type": "update_name", "name": name}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, noop, version=0)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is False
+        assert len(self._workflow_versions(workflow_id)) == 3
+        assert self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["label"] == "input1"
+
+    def test_refactor_noop_with_connections_and_subworkflow(self):
+        for workflow_yaml in [WORKFLOW_SIMPLE_CAT_TWICE, WORKFLOW_NESTED_SIMPLE, WORKFLOW_WITH_OUTPUT_ACTIONS]:
+            workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+            name = self.workflow_populator.download_workflow(workflow_id)["name"]
+            noop = [{"action_type": "update_name", "name": name}]
+            upgrade = [{"action_type": "upgrade_all_steps"}]
+            # the first upgrade re-injects steps and saves the connected inputs that were
+            # stored as runtime values at upload - after that, no-ops don't save
+            self.workflow_populator.refactor_workflow(workflow_id, upgrade).raise_for_status()
+            num_versions = len(self._workflow_versions(workflow_id))
+            for actions in [upgrade, noop]:
+                refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+                refactor_response.raise_for_status()
+                assert refactor_response.json()["changed"] is False, (workflow_yaml, actions)
+            assert len(self._workflow_versions(workflow_id)) == num_versions
+
+    def test_refactor_step_position_creates_version(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+
+        def left_offset(workflow_dict):
+            return workflow_dict["steps"]["1"]["position"]["left"] - workflow_dict["steps"]["0"]["position"]["left"]
+
+        offset = left_offset(self.workflow_populator.download_workflow(workflow_id))
+        actions = [
+            {"action_type": "update_step_position", "step": {"order_index": 0}, "position_shift": {"left": 3, "top": 5}}
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert left_offset(self.workflow_populator.download_workflow(workflow_id, version=0)) == offset
+        assert left_offset(self.workflow_populator.download_workflow(workflow_id)) == offset - 3
+
+    def test_refactor_annotation_reports_changed(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+doc: the annotation
+inputs: {}
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: "0.2"
+    state:
+      inttest: 0
+""")
+        same_annotation = [{"action_type": "update_annotation", "annotation": "the annotation"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, same_annotation)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is False
+        assert len(self._workflow_versions(workflow_id)) == 1
+
+        new_annotation = [{"action_type": "update_annotation", "annotation": "a new annotation"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, new_annotation)
+        refactor_response.raise_for_status()
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert self.workflow_populator.download_workflow(workflow_id)["annotation"] == "a new annotation"
+
+    def test_refactor_noop_saves_pending_tool_substitution(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
+        name = self.workflow_populator.download_workflow(workflow_id)["name"]
+        actions = [{"action_type": "update_name", "name": name}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        # the stored 0.0.1 isn't installed, so saving picks up the substituted version
+        assert refactor_response.json()["changed"] is True
+        assert len(self._workflow_versions(workflow_id)) == 2
+        assert self.workflow_populator.download_workflow(workflow_id)["steps"]["1"]["tool_version"] == "0.2"
+
+    def _workflow_versions(self, workflow_id):
+        versions_response = self._get(f"workflows/{workflow_id}/versions")
+        versions_response.raise_for_status()
+        return versions_response.json()
+
     def test_refactor_tool_state_upgrade(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -1403,6 +1561,19 @@ steps:
         workflow_object["steps"]["2"]["tool_id"] = "cat-not-found"
         put_response = self._update_workflow(workflow_id, workflow_object)
         self._assert_status_code_is(put_response, 400)
+
+    def test_update_report_with_unsupported_fence(self):
+        # Import keeps accepting existing reports; saving an edited one is rejected.
+        workflow_object = self.workflow_populator.load_workflow(name="test_import")
+        workflow_object["report"] = {"markdown": "# Report\n\n```python\nprint('hello')\n```\n"}
+        upload_response = self.__test_upload(workflow=workflow_object)
+        workflow_id = upload_response.json()["id"]
+        put_response = self._update_workflow(workflow_id, workflow_object)
+        self._assert_status_code_is(put_response, 400)
+        assert "Unsupported fenced block type [python]" in put_response.json()["err_msg"]
+        workflow_object["report"] = {"markdown": "# Report\n\n~~~python\nprint('hello')\n~~~\n"}
+        put_response = self._update_workflow(workflow_id, workflow_object)
+        self._assert_status_code_is(put_response, 200)
 
     def test_require_unique_step_uuids(self):
         workflow_dup_uuids = self.workflow_populator.load_workflow(name="test_import")
@@ -7627,6 +7798,185 @@ columns:
             )
             assert "columns: an integer is required" in response["err_msg"]
 
+    @pytest.mark.parametrize(
+        "parameter_type,value", [("integer", 100), ("float", 0.1), ("boolean", False), ("text", "ND")]
+    )
+    def test_run_with_wrapped_parameter_input(self, history_id, parameter_type, value):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  parameter: {parameter_type}
+steps: []
+""")
+        url = f"workflows/{workflow_id}/invocations"
+        response = self._post(
+            url,
+            data={"history_id": history_id, "inputs_by": "step_index", "inputs": {"0": {"parameter_value": value}}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "parameter")
+        assert_error_message_contains(response, "Pass the parameter value directly")
+        assert self._history_jobs(history_id) == []
+
+        response = self._post(
+            url,
+            data={"history_id": history_id, "inputs_by": "step_index", "inputs": {"0": value}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        actual_value = invocation["input_step_parameters"]["parameter"]["parameter_value"]
+        assert actual_value == value
+        assert type(actual_value) is type(value)
+
+    @pytest.mark.parametrize(
+        "parameter_type,values",
+        [("integer", [100, 2500]), ("float", [0.1, 0.2]), ("boolean", [False, True]), ("text", ["ND", "MT"])],
+    )
+    def test_run_with_batched_parameter_input(self, history_id, parameter_type, values):
+        workflow_id = self._upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  parameter: {parameter_type}
+steps: []
+""")
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={
+                "history_id": history_id,
+                "inputs_by": "name",
+                "batch": True,
+                "inputs": {"parameter": {"batch": True, "values": values}},
+            },
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocations = response.json()
+        assert len(invocations) == 2
+        for invocation, value in zip(invocations, values):
+            invocation = self.workflow_populator.get_invocation(invocation["id"])
+            assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == value
+
+    @pytest.mark.parametrize("parameters_normalized", [False, True])
+    def test_run_with_invalid_legacy_parameter_input(self, history_id, parameters_normalized):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  parameter:
+    type: integer
+    optional: true
+steps: []
+""")
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={
+                "history_id": history_id,
+                "parameters_normalized": parameters_normalized,
+                "parameters": {"0": {"parameter_value": 100}},
+            },
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "parameter")
+        assert_error_message_contains(response, "must specify an 'input' value")
+
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={
+                "history_id": history_id,
+                "parameters_normalized": parameters_normalized,
+                "parameters": {"0": {"input": 100}},
+            },
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == 100
+
+    def test_run_form_multiple_integer_list_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  columns:
+    type: [integer]
+    default: [1, 2]
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        (default_input,) = run_workflow["steps"][0]["inputs"]
+        assert default_input["multiple"] is True
+        assert default_input["value"] == [1, 2]
+
+    def test_run_form_invalid_default_on_single_integer_parameter(self):
+        for default in ["[1, 2]", "x"]:
+            workflow_id = self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  columns:
+    type: int
+    default: {default}
+steps: {{}}
+""")
+            with self.dataset_populator.test_history() as history_id:
+                response = self._get(
+                    f"workflows/{workflow_id}/download", data={"style": "run", "history_id": history_id}
+                )
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Workflow step 'columns' cannot be run")
+            assert_error_message_contains(response, "the attribute 'value' must be an integer")
+
+    @skip_without_tool("column_param_list")
+    def test_run_multiple_integer_list_default_through_subworkflow(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input: data
+  columns:
+    type: [integer]
+    default: [1, 2]
+outputs:
+  output:
+    outputSource: nested/output
+steps:
+  nested:
+    in:
+      input: input
+      columns: columns
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input: data
+        columns:
+          type: [integer]
+      outputs:
+        output:
+          outputSource: column_param_list/output2
+      steps:
+        column_param_list:
+          tool_id: column_param_list
+          in:
+            input1: input
+            col: columns
+            col_names: columns
+"""
+        test_data = """
+input:
+  value: 2.tabular
+  type: File
+  file_type: tabular
+"""
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                workflow, test_data=test_data, history_id=history_id, wait=True, assert_ok=True
+            )
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=invocation["outputs"]["output"]["id"]
+            )
+            assert "col 1,2" in content, content
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
@@ -8908,6 +9258,62 @@ fastq_input:
             content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
             name = content["name"]
             assert name == "fastq1 suffix", name
+
+    @skip_without_tool("mapper2")
+    def test_run_rename_ignores_partial_input_segments(self):
+        self._run_rename_ignores_partial_input_segments(mapped=False)
+
+    @skip_without_tool("mapper2")
+    def test_run_rename_ignores_partial_input_segments_on_mapped_collection(self):
+        self._run_rename_ignores_partial_input_segments(mapped=True)
+
+    def _run_rename_ignores_partial_input_segments(self, mapped):
+        workflow = yaml.safe_load("""
+class: GalaxyWorkflow
+inputs:
+  fasta_input: data
+  fastq_input: data
+steps:
+  mapping:
+    tool_id: mapper2
+    in:
+      fastq_input|fastq_input1: fastq_input
+      reference: fasta_input
+    state:
+      fastq_input:
+        fastq_input_selector: single
+    out:
+      out_file1:
+        rename: "#{input1}#{fastq_input1 | basename} suffix"
+""")
+        fastq_input: dict[str, Any] = {
+            "value": "1.fastqsanger",
+            "type": "File",
+            "name": "fastq1.fastq",
+            "file_type": "fastqsanger",
+        }
+        if mapped:
+            workflow["inputs"]["fastq_input"] = {"type": "collection", "collection_type": "list"}
+            fastq_input = {
+                "collection_type": "list",
+                "name": "fastq1.fastq",
+                "elements": [{"value": "1.fastqsanger", "type": "File", "name": "reads.fastq", "ext": "fastqsanger"}],
+            }
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                workflow,
+                test_data={
+                    "fasta_input": {"value": "1.fasta", "type": "File", "name": "fasta1", "file_type": "fasta"},
+                    "fastq_input": fastq_input,
+                },
+                history_id=history_id,
+            )
+            if mapped:
+                content = self.dataset_populator.get_history_collection_details(history_id, wait=True, assert_ok=True)
+                assert content["elements"][0]["object"]["name"] == "reads suffix", content
+            else:
+                content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
+            assert content["name"] == "fastq1 suffix", content
 
     @skip_without_tool("collection_creates_pair")
     def test_run_hide_on_collection_output(self):
