@@ -7,10 +7,7 @@ from typing import (
 
 from galaxy import web
 from galaxy.tool_shed.util import basic_util
-from galaxy.tool_shed.util.hg_util import (
-    get_changectx_for_changeset,
-    get_file_context_from_ctx,
-)
+from galaxy.tool_shed.util.hg_util import get_ctx_file_path_from_manifest
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.util import (
     rst_to_html,
@@ -53,18 +50,13 @@ def build_readme_files_dict(
     if not metadata or "readme_files" not in metadata:
         return readme_files_dict
     encoded_repository_id = app.security.encode_id(repository.id)
-    if changeset_revision == get_latest_downloadable_changeset_revision(app, repository):
-        ctx = None
-    else:
-        ctx = get_changectx_for_changeset(repository.hg_repo, changeset_revision)
-        if not ctx:
-            return readme_files_dict
+    use_disk_files = changeset_revision == get_latest_downloadable_changeset_revision(app, repository)
     for relative_path_to_readme_file in metadata["readme_files"]:
         readme_file_name = os.path.split(relative_path_to_readme_file)[1]
-        if ctx is None:
+        if use_disk_files:
             text = _read_readme_from_disk(relative_path_to_readme_file)
         else:
-            text = _read_readme_from_manifest(ctx, readme_file_name)
+            text = _read_readme_from_manifest(repository, changeset_revision, readme_file_name)
         if text:
             readme_files_dict[readme_file_name] = _render_repository_readme(
                 app, encoded_repository_id, readme_file_name, text
@@ -81,16 +73,20 @@ def _read_readme_from_disk(relative_path_to_readme_file: str) -> str | None:
         return None
 
 
-def _read_readme_from_manifest(ctx: Any, readme_file_name: str) -> str | None:
-    fctx = get_file_context_from_ctx(ctx, readme_file_name)
-    if fctx is None or fctx == "DELETED":
+def _read_readme_from_manifest(repository: "Repository", changeset_revision: str, readme_file_name: str) -> str | None:
+    # The README may have last changed in an earlier changeset, so search back from changeset_revision.
+    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest(readme_file_name, repository.hg_repo, changeset_revision)
+    if manifest_ctx is None:
         return None
     try:
-        data: bytes = fctx.data()
-        return unicodify(data)
+        data: bytes = manifest_ctx[ctx_file].data()
+    except LookupError:
+        # The last change to the README deleted it.
+        return None
     except Exception:
         log.exception("Error reading README file '%s' from repository manifest", readme_file_name)
         return None
+    return unicodify(data)
 
 
 def _render_repository_readme(app: "ToolShedApp", encoded_repository_id: str, readme_file_name: str, text: str) -> str:
@@ -100,5 +96,5 @@ def _render_repository_readme(app: "ToolShedApp", encoded_repository_id: str, re
         try:
             text = set_image_paths(app, text, encoded_repository_id=encoded_repository_id)
         except Exception:
-            log.exception("Exception in build_readme_files_dict, so images may not be properly displayed")
+            log.exception("Error setting image paths in README file '%s'", readme_file_name)
     return render_readme(readme_file_name, text)

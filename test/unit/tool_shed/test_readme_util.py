@@ -102,3 +102,20 @@ def test_readmes_renders_rst_readme_of_each_downloadable_revision(
     assert "<script" not in html
     encoded_id = app.security.encode_id(new_repository.id)
     assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png"' in html
+
+
+def test_readmes_renders_readme_unchanged_in_old_revision(
+    provides_repositories: ProvidesRepositoriesContext,
+    new_repository: Repository,
+    tmp_path: Path,
+):
+    app = provides_repositories.app
+    revisions = []
+    for column_maker_version, label in [("1", "Old"), ("2", "Old"), ("3", "New")]:
+        _upload_revision(provides_repositories, new_repository, tmp_path, column_maker_version, label)
+        revisions.append(get_latest_downloadable_changeset_revision(app, new_repository))
+    assert len(set(revisions)) == 3
+
+    html = readmes(app, new_repository, revisions[1])["README.rst"]
+
+    assert "Old <strong>bold</strong> text." in html

@@ -78,7 +78,7 @@ def get_config_from_disk(config_file: str, relative_install_dir: str) -> str | N
     return None
 
 
-def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
+def get_ctx_file_path_from_manifest(filename: str, repo: "IRepo", changeset_revision: str) -> tuple[Any, Any]:
     """
     Get the ctx file path for the latest revision of filename from the repository manifest up
     to the value of changeset_revision.
@@ -160,7 +160,7 @@ def reversed_lower_upper_bounded_changelog(
     return reversed_changelog
 
 
-def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revision):
+def reversed_upper_bounded_changelog(repo: "IRepo", included_upper_bounds_changeset_revision: str | None) -> list[Any]:
     """
     Return a reversed list of changesets in the repository changelog up to and including the
     included_upper_bounds_changeset_revision.
