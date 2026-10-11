@@ -64,10 +64,15 @@ COLUMN_MAKER_REVISIONS = TEST_DATA_REPO_FILES / "repos" / "column_maker"
 
 
 def _upload_revision(
-    provides_repositories: ProvidesRepositoriesContext, repository: Repository, revision_dir: Path, label: str
+    provides_repositories: ProvidesRepositoriesContext,
+    repository: Repository,
+    tmp_path: Path,
+    column_maker_version: str,
+    label: str,
 ):
+    revision_dir = tmp_path / column_maker_version
     revision_dir.mkdir()
-    tool_xml = COLUMN_MAKER_REVISIONS / revision_dir.name / "column_maker.xml"
+    tool_xml = COLUMN_MAKER_REVISIONS / column_maker_version / "column_maker.xml"
     (revision_dir / "column_maker.xml").write_text(tool_xml.read_text())
     readme = f"{label} **bold** text.\n\n.. raw:: html\n\n   <script>alert(1)</script>\n"
     (revision_dir / "README.rst").write_text(readme)
@@ -83,8 +88,8 @@ def test_readmes_renders_rst_readme_of_each_downloadable_revision(
     other_label: str,
 ):
     app = provides_repositories.app
-    _upload_revision(provides_repositories, new_repository, tmp_path / "1", "Old")
-    _upload_revision(provides_repositories, new_repository, tmp_path / "2", "New")
+    _upload_revision(provides_repositories, new_repository, tmp_path, "1", "Old")
+    _upload_revision(provides_repositories, new_repository, tmp_path, "2", "New")
     latest = get_latest_downloadable_changeset_revision(app, new_repository)
     (old,) = [m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
     changeset_revision = old if label == "Old" else latest
