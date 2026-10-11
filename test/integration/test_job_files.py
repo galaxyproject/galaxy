@@ -517,7 +517,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session.commit()
 
         job_id = self._app.security.encode_id(job.id)
-        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:99")
+        scoped_key = self._app.security.encode_id(job.id, kind=job_files_kind_for_params({"compute_resource_id": 99}))
 
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
 
@@ -562,7 +562,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 
     def test_compute_resource_scoped_key_rejects_legacy_kind(self):
         """A job bound to a compute resource refuses the legacy ``jobs_files``
-        key — only the tenant-scoped ``jobs_files:compute_resource:<resource_id>``
+        key — only the tenant-scoped kind from ``job_files_kind_for_params``
         key is accepted. Prevents cross-tenant replay of a leaked credential."""
         job, _, _ = self.create_static_job_with_state("running")
         sa_session = self.sa_session
@@ -572,7 +572,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 
         job_id = self._app.security.encode_id(job.id)
         legacy_key = self._app.security.encode_id(job.id, kind="jobs_files")
-        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:42")
+        scoped_key = self._app.security.encode_id(job.id, kind=job_files_kind_for_params({"compute_resource_id": 42}))
 
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         data = {"path": self.input_hda.get_file_name(), "job_key": legacy_key}
