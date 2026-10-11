@@ -12,11 +12,14 @@ For deterministic tests without LLM, see test_static_agent_backend.py.
 """
 
 import asyncio
+import json
 import logging
 import os
+import urllib.parse
 from typing import cast
 
 import pytest
+import yaml
 from fastmcp import (
     Client,
     FastMCP,
@@ -26,6 +29,7 @@ from fastmcp.exceptions import ToolError
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.util.unittest_utils import pytestmark_live_llm
+from galaxy.util.unittest_utils.test_http_server import RecordingHttpServer
 from galaxy.webapps.galaxy.api.mcp import get_mcp_app
 from galaxy.work.context import SessionRequestContext
 from galaxy_test.base.populators import (
@@ -33,7 +37,10 @@ from galaxy_test.base.populators import (
     TOOL_WITH_SHELL_COMMAND,
     WorkflowPopulator,
 )
-from galaxy_test.driver.integration_util import IntegrationTestCase
+from galaxy_test.driver.integration_util import (
+    IntegrationTestCase,
+    UsesFakeAIProvider,
+)
 
 log = logging.getLogger(__name__)
 
@@ -90,6 +97,12 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
     These tests require a configured LLM and will be skipped unless
     GALAXY_TEST_ENABLE_LIVE_LLM=1 is set.
     """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # Talk to the configured LLM, not the test driver's default static agent backend.
+        config.pop("inference_services", None)
 
     def test_query_agent_auto_routing_live(self):
         response = self._post(
@@ -179,6 +192,46 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         data = response.json()
         # Should return a list (may be empty)
         assert isinstance(data, list)
+
+
+class TestAgentsApiFakeProvider(UsesFakeAIProvider, AgentIntegrationTestCase):
+    """Real agents behind real endpoints, with the LLM replaced by a scripted provider."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls._configure_fake_ai_provider(config)
+
+    def test_error_analysis_endpoint(self):
+        # pydantic-ai asks for structured output through its ``final_result`` tool.
+        self.fake_ai_provider.respond_tool_call(
+            "final_result",
+            {
+                "error_category": "resource_limits",
+                "error_severity": "high",
+                "likely_cause": "The job ran out of memory and was killed (exit code 137).",
+                "solution_steps": ["Rerun with more memory"],
+                "confidence": "high",
+            },
+        )
+        response = self._post(
+            "ai/agents/error-analysis",
+            data={
+                "query": "My BWA job failed with exit code 137 and stderr shows 'Killed'",
+                "error_details": {"tool_id": "bwa_mem", "exit_code": 137},
+            },
+            json=True,
+        )
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        assert "**Error Type**: Resource Limits" in data["content"]
+        assert "1. Rerun with more memory" in data["content"]
+        assert data["confidence"] == "high"
+
+        sent = self.fake_ai_provider.last_body()
+        assert sent["model"] == "fake_model"
+        assert self.fake_ai_provider.last_request().headers["Authorization"] == "Bearer fake_api_key"
+        assert any("exit code 137" in str(message.get("content")) for message in sent["messages"])
+        assert [tool["function"]["name"] for tool in sent["tools"]] == ["final_result"]
 
 
 # ============================================================================
@@ -295,10 +348,29 @@ class TestMCPServerSmoke(IntegrationTestCase):
     the MCP tools are thin wrappers around AgentOperationsManager.
     """
 
+    trs_server: RecordingHttpServer
+
+    @classmethod
+    def setUpClass(cls):
+        # Stands in for Dockstore; it must be up before Galaxy reads its TRS config.
+        cls.trs_server = RecordingHttpServer()
+        cls.trs_server.start()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.trs_server.stop()
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["enable_mcp_server"] = True
         config["enable_beta_tool_formats"] = True
+        trs_config_file = os.path.join(cls.temp_config_dir("trs"), "trs_config.yml")
+        os.makedirs(os.path.dirname(trs_config_file))
+        with open(trs_config_file, "w") as f:
+            yaml.safe_dump([{"id": "dockstore", "api_url": cls.trs_server.url_for("/api"), "label": "Dockstore"}], f)
+        config["trs_servers_config_file"] = trs_config_file
 
     def _get_mcp_server(self):
         http_app = get_mcp_app(self._app)
@@ -528,11 +600,6 @@ class TestMCPServerSmoke(IntegrationTestCase):
 
     def test_mcp_import_workflow_from_iwc(self):
         """import_workflow_from_iwc() imports a StoredWorkflow via the shared TRS pipeline."""
-        import json
-        from unittest.mock import patch
-
-        from fastmcp import Client
-
         mcp_server = self._get_mcp_server()
         api_key = self._get_api_key()
 
@@ -558,6 +625,8 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "annotation": "",
         }
         trs_id = "#workflow/github.com/iwc-workflows/smoke/main"
+        descriptor_path = f"/api/ga4gh/trs/v2/tools/{urllib.parse.quote_plus(trs_id)}/versions/main/GALAXY/descriptor"
+        self.trs_server.add_json_route(descriptor_path, {"content": json.dumps(definition)})
 
         async def _import():
             async with Client(mcp_server) as client:
@@ -566,17 +635,13 @@ class TestMCPServerSmoke(IntegrationTestCase):
                     {"api_key": api_key, "trs_id": trs_id},
                 )
 
-        # The TRS proxy fetches the workflow descriptor over HTTP; mock that so we
-        # don't actually hit Dockstore from CI.
-        with patch("galaxy.workflow.trs_proxy.requests.get") as mock_get:
-            mock_get.return_value.ok = True
-            mock_get.return_value.json.return_value = {"content": json.dumps(definition)}
-            result = self._run_async(_import())
+        result = self._run_async(_import())
 
         assert not result.is_error, result
         data = result.data
         assert "id" in data
         assert data["trsID"] == trs_id
+        assert [request.path for request in self.trs_server.requests] == [descriptor_path]
 
     def test_mcp_page_lifecycle(self):
         """create_page -> get_page -> update_page -> list_page_revisions round-trip."""
