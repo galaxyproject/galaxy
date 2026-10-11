@@ -1,3 +1,5 @@
+import type { RouteRecordRaw } from "vue-router";
+
 import LibrariesList from "@/components/Libraries/LibrariesList.vue";
 import LibraryFolder from "@/components/Libraries/LibraryFolder/LibraryFolder.vue";
 import LibraryDataset from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue";
@@ -6,7 +8,7 @@ import LibraryFolderPermissions from "@/components/Libraries/LibraryFolder/Libra
 import LibraryPermissions from "@/components/Libraries/LibraryPermissions/LibraryPermissions.vue";
 import Base from "@/entry/analysis/modules/Base.vue";
 
-export default [
+const libraryRoutes: RouteRecordRaw[] = [
     {
         path: "/libraries",
         component: Base,
@@ -25,9 +27,9 @@ export default [
                 name: "LibraryFolder",
                 component: LibraryFolder,
                 props(route) {
-                    const props = { ...route.params };
+                    const props: Record<string, string | string[] | number> = { ...route.params };
                     if (props.page) {
-                        props.page = +props.page;
+                        props.page = Number(props.page);
                     }
                     return props;
                 },
@@ -53,3 +55,5 @@ export default [
         ],
     },
 ];
+
+export default libraryRoutes;
