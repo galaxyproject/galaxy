@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { isValidCollectionTypeStr } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
 import {
+    COLLECTION_TYPE_SHORT_LABELS,
     describeKnownCollectionType,
     findKnownCollectionTypes,
     KNOWN_COLLECTION_TYPE_GROUPS,
@@ -41,11 +42,20 @@ describe("knownCollectionTypes", () => {
         expect(KNOWN_COLLECTION_TYPES[0]).toEqual({
             collectionType: "list",
             label: "Flat List",
+            shortLabel: "list",
             description:
                 "A simple flat list of datasets, each with an identifier (typically a sample name). If your data isn't nested and doesn't contain paired datasets, this is the option to choose.",
             notes: {},
             group: "Lists",
         });
+    });
+
+    it("gives every collection type a short lowercase label for prose", () => {
+        for (const known of KNOWN_COLLECTION_TYPES) {
+            expect(known.shortLabel, known.collectionType).toMatch(/\S/);
+            expect(known.shortLabel, known.collectionType).toBe(known.shortLabel.toLowerCase());
+        }
+        expect(COLLECTION_TYPE_SHORT_LABELS["list:paired"]).toBe("list of pairs");
     });
 
     it("adds the note for where the collection type is being chosen", () => {

@@ -1,15 +1,17 @@
 # Collection types the client describes by name, grouped and in the order they're offered. Labels follow the
-# collection builders. Each description is shown wherever the type is offered; a note under `notes` is added only
+# collection builders; a short label is the lowercase name used in running text ("Create a new list of pairs"). Each description is shown wherever the type is offered; a note under `notes` is added only
 # where that note's context (`workflow_input` or `builder`) applies.
 - group: Lists
   types:
     - collection_type: list
       label: Flat List
+      short_label: list
       description: >-
         A simple flat list of datasets, each with an identifier (typically a sample name). If your data isn't nested
         and doesn't contain paired datasets, this is the option to choose.
     - collection_type: list:paired
       label: List of Paired Datasets
+      short_label: list of pairs
       description: >-
         A list where every element is a forward and reverse pair of datasets (e.g. paired-end data from Illumina or
         Element Biosciences).
@@ -17,6 +19,7 @@
         builder: Use this option if all of your data should be paired off.
     - collection_type: list:paired_or_unpaired
       label: Mixed List of Paired and Unpaired Datasets
+      short_label: mixed list of paired and unpaired
       description: >-
         A list where each element is either a single dataset or a forward and reverse pair. For studies that have a
         mix of paired and unpaired data, this may be the right choice. Existing tools and workflows may have to be
@@ -25,6 +28,7 @@
         workflow_input: A flat list or a list of paired datasets can also be connected to this input.
     - collection_type: list:record
       label: List of Records
+      short_label: list of records
       description: >-
         A list where every element is a record - a fixed set of named datasets (e.g. a sequence file and its index)
         declared by its record fields.
@@ -32,24 +36,29 @@
   types:
     - collection_type: paired
       label: Dataset Pair
+      short_label: dataset pair
       description: A single forward and reverse pair of datasets, such as the reads for one paired-end sample.
     - collection_type: record
       label: Record
+      short_label: record
       description: A single fixed set of named datasets, declared by its record fields.
 - group: Nested Lists
   types:
     - collection_type: list:list
       label: Nested List of Datasets
+      short_label: nested list
       description: >-
         A list where each element is in turn a list of datasets. The outer list identifier might group samples
         together by condition, sample type, etc.
     - collection_type: list:list:paired
       label: Nested List of Paired Datasets
+      short_label: nested list of pairs
       description: A list where each element is in turn a list of paired datasets.
 - group: Sample Sheets
   types:
     - collection_type: sample_sheet
       label: Sample Sheet of Datasets
+      short_label: sample sheet
       description: >-
         A list of datasets where each element also carries a row of typed metadata (e.g. condition, replicate)
         described by its column definitions.
@@ -59,15 +68,18 @@
           input.
     - collection_type: sample_sheet:paired
       label: Sample Sheet of Paired Datasets
+      short_label: sample sheet of pairs
       description: >-
         A list of forward and reverse dataset pairs where each pair also carries a row of typed metadata described by
         its column definitions.
     - collection_type: sample_sheet:paired_or_unpaired
       label: Sample Sheet of Paired and Unpaired Datasets
+      short_label: mixed sample sheet of paired and unpaired
       description: >-
         A mix of single datasets and dataset pairs where each element also carries a row of typed metadata described
         by its column definitions.
     - collection_type: sample_sheet:record
       label: Sample Sheet of Records
+      short_label: sample sheet of records
       description: >-
         A list of records where each record also carries a row of typed metadata described by its column definitions.
