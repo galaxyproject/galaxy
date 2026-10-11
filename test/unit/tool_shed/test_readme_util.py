@@ -74,7 +74,7 @@ def _upload_revision(
     revision_dir.mkdir()
     tool_xml = COLUMN_MAKER_REVISIONS / column_maker_version / "column_maker.xml"
     (revision_dir / "column_maker.xml").write_text(tool_xml.read_text())
-    readme = f"{label} **bold** text.\n\n.. raw:: html\n\n   <script>alert(1)</script>\n"
+    readme = f"{label} **bold** text.\n\n.. image:: images/logo.png\n\n.. raw:: html\n\n   <script>alert(1)</script>\n"
     (revision_dir / "README.rst").write_text(readme)
     upload(provides_repositories, repository, revision_dir, arcname="readme_repo")
 
@@ -100,3 +100,5 @@ def test_readmes_renders_rst_readme_of_each_downloadable_revision(
     assert f"{label} <strong>bold</strong> text." in html
     assert other_label not in html
     assert "<script" not in html
+    encoded_id = app.security.encode_id(new_repository.id)
+    assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png"' in html
