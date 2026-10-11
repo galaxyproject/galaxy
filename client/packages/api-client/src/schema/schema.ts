@@ -8511,19 +8511,106 @@ export interface components {
              */
             type: "change_dbkey";
         };
+        /**
+         * ChatCompletionAllowedToolChoiceParam
+         * @description Constrains the tools available to the model to a pre-defined set.
+         */
+        ChatCompletionAllowedToolChoiceParam: {
+            allowed_tools: components["schemas"]["ChatCompletionAllowedToolsParam"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "allowed_tools";
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionAllowedToolsParam
+         * @description Constrains the tools available to the model to a pre-defined set.
+         */
+        ChatCompletionAllowedToolsParam: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "auto" | "required";
+            /** Tools */
+            tools: {
+                [key: string]: unknown;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionNamedToolChoiceCustomParam
+         * @description Specifies a tool the model should use.
+         *
+         *     Use to force the model to call a specific custom tool.
+         */
+        ChatCompletionNamedToolChoiceCustomParam: {
+            custom: components["schemas"]["Custom"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "custom";
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionNamedToolChoiceParam
+         * @description Specifies a tool the model should use.
+         *
+         *     Use to force the model to call a specific function.
+         */
+        ChatCompletionNamedToolChoiceParam: {
+            function: components["schemas"]["Function"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "function";
+        } & {
+            [key: string]: unknown;
+        };
         /** ChatCompletionRequest */
         ChatCompletionRequest: {
             /** Max Tokens */
             max_tokens?: number | null;
             /** Messages */
             messages: components["schemas"]["ChatMessage"][];
+            /** Parallel Tool Calls */
+            parallel_tool_calls?: boolean | null;
+            /** Reasoning Effort */
+            reasoning_effort?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh") | null;
             /**
              * Stream
              * @default false
              */
             stream: boolean | null;
+            stream_options?: components["schemas"]["ChatCompletionStreamOptionsParam"] | null;
+            /** Tool Choice */
+            tool_choice?:
+                | ("none" | "auto" | "required")
+                | components["schemas"]["ChatCompletionAllowedToolChoiceParam"]
+                | components["schemas"]["ChatCompletionNamedToolChoiceParam"]
+                | components["schemas"]["ChatCompletionNamedToolChoiceCustomParam"]
+                | null;
             /** Tools */
             tools?: components["schemas"]["ChatTool"][] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionStreamOptionsParam
+         * @description Options for streaming response. Only set this when you set `stream: true`.
+         */
+        ChatCompletionStreamOptionsParam: {
+            /** Include Obfuscation */
+            include_obfuscation?: boolean;
+            /** Include Usage */
+            include_usage?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -8589,7 +8676,7 @@ export interface components {
         /** ChatMessage */
         ChatMessage: {
             /** Content */
-            content?: string | null;
+            content?: string | components["schemas"]["ChatTextPart"][] | null;
             /**
              * Role
              * @enum {string}
@@ -8670,6 +8757,18 @@ export interface components {
              * @description The response to the chat query.
              */
             response: string;
+        };
+        /** ChatTextPart */
+        ChatTextPart: {
+            /** Text */
+            text: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "text";
+        } & {
+            [key: string]: unknown;
         };
         /** ChatTool */
         ChatTool: {
@@ -10121,6 +10220,13 @@ export interface components {
             dialect: components["schemas"]["CsvDialect"];
             /** Message */
             message: string;
+        };
+        /** Custom */
+        Custom: {
+            /** Name */
+            name: string;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * CustomArchivedHistoryView
@@ -13505,6 +13611,13 @@ export interface components {
             src: "ftp_import";
             /** Tags */
             tags?: string[] | null;
+        };
+        /** Function */
+        Function: {
+            /** Name */
+            name: string;
+        } & {
+            [key: string]: unknown;
         };
         /** GenerateTourResponse */
         GenerateTourResponse: {
