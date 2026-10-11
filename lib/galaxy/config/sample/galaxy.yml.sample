@@ -3248,9 +3248,10 @@ galaxy:
   # back to global ai_model/ai_api_key settings. All agents are enabled
   # by default. Example: inference_services: { default: { model:
   # gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled: false },
-  # jupyterlite: { model: gpt-4o } } Set static_responses to a YAML file
-  # path to replace all LLM calls with deterministic responses for
-  # testing: inference_services: { static_responses:
+  # jupyterlite: { model: gpt-4o } } Plugins also accept top_p and
+  # timeout, and use max_tokens as an upper limit. Set static_responses
+  # to a YAML file path to replace all LLM calls with deterministic
+  # responses for testing: inference_services: { static_responses:
   # test/integration/static_agents.yml } Per-agent or default-block
   # ``structured_output_override: true|false`` beats the model
   # capability table -- see ``agent_model_capabilities_file`` for the

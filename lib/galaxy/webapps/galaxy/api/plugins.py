@@ -167,13 +167,14 @@ class FastAPIPlugins:
         else:
             return self._create_error("Visualization registry is not available.")
 
-    def _get_plugin_config(self, plugin_name: str, key: str) -> str | None:
+    def _get_plugin_config(self, plugin_name: str, key: str, default: Any = None) -> Any:
         """Get config for a plugin with fallback through inference_services.
 
         Precedence:
         1. Plugin-specific: inference_services.<plugin_name>.<key>
         2. Default inference: inference_services.default.<key>
         3. Global config: ai_model / ai_api_key / ai_api_base_url
+        4. The given default
         """
         inference_config = getattr(self.config, "inference_services", None)
         if isinstance(inference_config, dict):
@@ -190,7 +191,7 @@ class FastAPIPlugins:
             return self.config.ai_api_key
         elif key == "api_base_url":
             return self.config.ai_api_base_url
-        return None
+        return default
 
     async def _open_ai_adapter(
         self,
@@ -210,8 +211,14 @@ class FastAPIPlugins:
         if ai_model is None:
             return self._create_error("AI service not configured: Model is required.")
 
+        # Collect inference settings via the same fallback chain
+        temperature = float(self._get_plugin_config(plugin_name, "temperature", TEMPERATURE))
+        timeout = float(self._get_plugin_config(plugin_name, "timeout", TIMEOUT))
+        tokens_max = int(self._get_plugin_config(plugin_name, "max_tokens", TOKENS_MAX))
+        top_p = float(self._get_plugin_config(plugin_name, "top_p", TOP_P))
+
         # Limit max tokens
-        max_tokens = min(payload.max_tokens or TOKENS_DEFAULT, TOKENS_MAX)
+        max_tokens = min(payload.max_tokens or TOKENS_DEFAULT, tokens_max)
 
         # Validate messages
         messages: list[ChatCompletionMessageParam] = cast(
@@ -256,7 +263,7 @@ class FastAPIPlugins:
         try:
             client = AsyncOpenAI(
                 api_key=ai_api_key,
-                timeout=TIMEOUT,
+                timeout=timeout,
                 base_url=ai_api_base_url or None,
             )
         except Exception as e:
@@ -283,10 +290,10 @@ class FastAPIPlugins:
                 reasoning_effort=payload.reasoning_effort or omit,
                 stream=stream,
                 stream_options=payload.stream_options if stream and payload.stream_options else omit,
-                temperature=TEMPERATURE,
+                temperature=temperature,
                 tool_choice=payload.tool_choice or omit,
                 tools=tools or omit,
-                top_p=TOP_P,
+                top_p=top_p,
             )
         except APIError as e:
             log.debug("Failed to complete OpenAI request.", exc_info=e)

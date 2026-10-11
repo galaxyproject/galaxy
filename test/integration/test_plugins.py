@@ -335,6 +335,21 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.3, 0.9)
 
     @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_inference_settings_without_config(self, mock_client):
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+        for client_max_tokens, max_tokens in ((None, 1024), (100000, 8192)):
+            response = self._post_payload(_create_chat_payload({"max_tokens": client_max_tokens}))
+            self._assert_status_code_is(response, 200)
+            call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+            assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.3, 0.9)
+            assert call_kwargs["max_tokens"] == max_tokens
+            assert mock_client.call_args.kwargs["timeout"] == 120.0
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
     def test_empty_tools_omitted(self, mock_client):
         mock_response = MagicMock()
         mock_response.model_dump.return_value = {"id": "test", "choices": []}
@@ -472,11 +487,19 @@ class TestPluginsInferenceServicesConfig(IntegrationTestCase):
                 "model": "default_model",
                 "api_key": "default_key",
                 "api_base_url": "http://default-url",
+                "max_tokens": 512,
+                "temperature": 0.5,
+                "timeout": 30,
+                "top_p": 0.6,
             },
             "jupyterlite": {
                 "model": "jupyterlite_model",
                 "api_key": "jupyterlite_key",
                 "api_base_url": "http://jupyterlite-url",
+                "max_tokens": 4096,
+                "temperature": 0.7,
+                "timeout": 60,
+                "top_p": 0.8,
             },
         }
 
@@ -501,6 +524,22 @@ class TestPluginsInferenceServicesConfig(IntegrationTestCase):
         assert client_kwargs["api_key"] == "jupyterlite_key"
         assert client_kwargs["base_url"] == "http://jupyterlite-url"
 
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_plugin_specific_settings_used(self, mock_client):
+        """Plugin-specific inference settings override the default block and the built-in policy."""
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+        for client_max_tokens, max_tokens in ((None, 1024), (2048, 2048), (100000, 4096)):
+            response = self._post_payload(payload=_create_chat_payload({"max_tokens": client_max_tokens}))
+            self._assert_status_code_is(response, 200)
+            call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+            assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.7, 0.8)
+            assert call_kwargs["max_tokens"] == max_tokens
+            assert mock_client.call_args.kwargs["timeout"] == 60.0
+
 
 class TestPluginsInferenceServicesDefault(IntegrationTestCase):
     """Tests that inference_services.default is used when no plugin-specific config exists."""
@@ -516,6 +555,10 @@ class TestPluginsInferenceServicesDefault(IntegrationTestCase):
                 "model": "default_model",
                 "api_key": "default_key",
                 "api_base_url": "http://default-url",
+                "max_tokens": 512,
+                "temperature": 0.5,
+                "timeout": 30,
+                "top_p": 0.6,
             },
         }
 
@@ -539,3 +582,19 @@ class TestPluginsInferenceServicesDefault(IntegrationTestCase):
         client_kwargs = mock_client.call_args.kwargs
         assert client_kwargs["api_key"] == "default_key"
         assert client_kwargs["base_url"] == "http://default-url"
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_default_settings_inherited(self, mock_client):
+        """Inference settings in inference_services.default apply when the plugin sets none."""
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+        for client_max_tokens, max_tokens in ((None, 512), (100000, 512)):
+            response = self._post_payload(payload=_create_chat_payload({"max_tokens": client_max_tokens}))
+            self._assert_status_code_is(response, 200)
+            call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+            assert (call_kwargs["temperature"], call_kwargs["top_p"]) == (0.5, 0.6)
+            assert call_kwargs["max_tokens"] == max_tokens
+            assert mock_client.call_args.kwargs["timeout"] == 30.0
