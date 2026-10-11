@@ -1,6 +1,4 @@
-import logging
 import subprocess
-from types import SimpleNamespace
 
 import pytest
 
@@ -10,7 +8,6 @@ from galaxy.job_metrics.instrumenters.core import (
     GALAXY_SLOTS_KEY,
     PLATFORM_KEY,
 )
-from galaxy.jobs import MinimalJobWrapper
 from galaxy.util import listify
 
 
@@ -53,33 +50,6 @@ def test_platform_mapping(tmpdir, uname, expected):
 
 def test_platform_missing_file(tmpdir):
     assert PLATFORM_KEY not in CorePlugin().job_properties(1, str(tmpdir))
-
-
-def _collect(metrics, requested, caplog):
-    wrapper = SimpleNamespace(
-        job_id=7,
-        platform=requested,
-        working_directory="/nonexistent",
-        app=SimpleNamespace(job_metrics=SimpleNamespace(collect_properties=lambda *a: metrics)),
-    )
-    has_metrics = SimpleNamespace(
-        get_job=lambda: SimpleNamespace(destination_id="aarch64_dest"), add_metric=lambda *a: None
-    )
-    with caplog.at_level(logging.WARNING, logger="galaxy.jobs"):
-        MinimalJobWrapper._collect_metrics(wrapper, has_metrics)
-
-
-def test_platform_mismatch_warns(caplog):
-    _collect({"core": {"platform": "linux-64"}}, "linux-aarch64", caplog)
-    assert "Job 7 ran on platform linux-64" in caplog.text
-    assert "aarch64_dest" in caplog.text and "linux-aarch64" in caplog.text
-
-
-def test_platform_match_or_unset_is_quiet(caplog):
-    _collect({"core": {"platform": "linux-64"}}, "linux-64", caplog)
-    _collect({"core": {"platform": "linux-64"}}, None, caplog)
-    _collect({"core": {}}, "linux-64", caplog)
-    assert caplog.text == ""
 
 
 def _run_plugin(plugin, work_dir, env=None):

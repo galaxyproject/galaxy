@@ -2,6 +2,7 @@
 
 import json
 import os
+import shlex
 import shutil
 import signal
 import stat
@@ -43,22 +44,21 @@ from galaxy.tool_util.deps.resolvers.conda import (
 from galaxy.util.bunch import Bunch
 
 FAKE_CONDA = """\
-#!{python}
 import json, os, sys
 here = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[1:]
 with open(os.path.join(here, "calls.log"), "a") as fh:
-    fh.write(json.dumps({{
+    fh.write(json.dumps({
         "argv": argv,
         "CONDA_SUBDIR": os.environ.get("CONDA_SUBDIR"),
         "CONDA_OVERRIDE_GLIBC": os.environ.get("CONDA_OVERRIDE_GLIBC"),
         "CONDA_OVERRIDE_OSX": os.environ.get("CONDA_OVERRIDE_OSX"),
         "CONDARC": os.environ.get("CONDARC"),
-    }}) + "\\n")
+    }) + "\\n")
 if argv[:2] == ["info", "--json"]:
     if os.path.exists(os.path.join(here, "fail_info")):
         sys.exit(1)
-    print(json.dumps({{"platform": "linux-64", "conda_version": "24.1.0", "default_prefix": os.path.dirname(here)}}))
+    print(json.dumps({"platform": "linux-64", "conda_version": "24.1.0", "default_prefix": os.path.dirname(here)}))
     sys.exit(0)
 if argv[:1] == ["list"]:
     print("[]")
@@ -91,13 +91,13 @@ if argv[:1] == ["create"]:
         os.makedirs(os.path.dirname(os.path.join(prefix, rel)), exist_ok=True)
         with open(os.path.join(prefix, rel), "wb") as fh:
             fh.write(b"\\xcf\\xfa\\xed\\xfe" + b"content" if rel == "bin/tool" else b"!<arch>\\n" if rel == "lib/libx.a" else b"content")
-    record = {{"name": "pkg", "paths_data": {{"paths": [
-        {{"_path": "bin/tool", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
-        {{"_path": "share/note.txt", "file_mode": "text", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
-        {{"_path": "lib/libx.a", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
-        {{"_path": "bin/gone", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"}},
-        {{"_path": "bin/plain", "path_type": "hardlink"}},
-    ]}}}}
+    record = {"name": "pkg", "paths_data": {"paths": [
+        {"_path": "bin/tool", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"},
+        {"_path": "share/note.txt", "file_mode": "text", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"},
+        {"_path": "lib/libx.a", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"},
+        {"_path": "bin/gone", "file_mode": "binary", "prefix_placeholder": "/old/prefix", "path_type": "hardlink"},
+        {"_path": "bin/plain", "path_type": "hardlink"},
+    ]}}
     with open(os.path.join(prefix, "conda-meta", "pkg-1.0-0.json"), "w") as fh:
         json.dump(record, fh)
     sys.exit(0)
@@ -105,15 +105,28 @@ sys.exit(0)
 """
 
 
+def write_fake_executable(directory: str, name: str, python_body: str) -> str:
+    """Write a fake executable as a POSIX sh wrapper that runs a Python body with the interpreter of the tests.
+
+    A shebang with ``sys.executable`` breaks when the path of the interpreter has a space, the quoted ``exec`` does not.
+    The body is a sibling file, so that ``__file__`` of the body is next to the logs and markers of the fake.
+    """
+    body_path = os.path.join(directory, f"{name}.py")
+    with open(body_path, "w") as fh:
+        fh.write(python_body)
+    exec_path = os.path.join(directory, name)
+    with open(exec_path, "w") as fh:
+        fh.write(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(body_path)} "$@"\n')
+    os.chmod(exec_path, os.stat(exec_path).st_mode | stat.S_IEXEC)
+    return exec_path
+
+
 class FakeConda:
     def __init__(self, base: str) -> None:
         self.prefix = os.path.join(base, "conda")
         bin_dir = os.path.join(self.prefix, "bin")
         os.makedirs(bin_dir)
-        self.exec = os.path.join(bin_dir, "conda")
-        with open(self.exec, "w") as fh:
-            fh.write(FAKE_CONDA.format(python=sys.executable))
-        os.chmod(self.exec, os.stat(self.exec).st_mode | stat.S_IEXEC)
+        self.exec = write_fake_executable(bin_dir, "conda", FAKE_CONDA)
         self.log_path = os.path.join(bin_dir, "calls.log")
         self.fail_path = os.path.join(bin_dir, "fail_subdirs")
         self.bin_dir = bin_dir
@@ -150,7 +163,6 @@ class FakeConda:
 
 
 FAKE_SIGNER = """\
-#!{python}
 import json, os, sys
 here = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(here, "signer.log"), "a") as fh:
@@ -166,10 +178,7 @@ class FakeSigner:
     def __init__(self, base: str) -> None:
         self.dir = os.path.join(base, "signer")
         os.makedirs(self.dir)
-        self.exec = os.path.join(self.dir, "rcodesign")
-        with open(self.exec, "w") as fh:
-            fh.write(FAKE_SIGNER.format(python=sys.executable))
-        os.chmod(self.exec, os.stat(self.exec).st_mode | stat.S_IEXEC)
+        self.exec = write_fake_executable(self.dir, "rcodesign", FAKE_SIGNER)
 
     def fail(self) -> None:
         open(os.path.join(self.dir, "fail_sign"), "w").close()
@@ -180,6 +189,9 @@ class FakeSigner:
             return []
         with open(path) as fh:
             return [json.loads(line) for line in fh if line.strip()]
+
+
+TRUE_EXEC = shutil.which("true") or "true"
 
 
 @pytest.fixture(autouse=True)
@@ -614,7 +626,7 @@ def test_no_platforms_writes_no_marker_and_never_asks_for_the_platform(fake_cond
 
 
 def test_second_install_finds_the_environment_present_and_keeps_it(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     target = CondaTarget("samtools", version="1.9")
     assert install_conda_target(target, context) == 0
@@ -649,7 +661,7 @@ def test_second_install_only_adds_the_missing_foreign_environment(fake_conda: Fa
 
 
 def test_failed_foreign_create_keeps_a_preexisting_directory(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     fake_conda.fail_for("linux-aarch64", "osx-arm64")
     fake_conda.leave_partial_dirs_on_failure()
@@ -1003,7 +1015,7 @@ def test_failure_is_recorded_and_cleared_by_a_later_success(fake_conda: FakeCond
 
 
 def test_backfill_creates_missing_foreign_environments(fake_conda: FakeConda, tmp_path, caplog) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     native_only_env(fake_conda, "__samtools@1.9", ["samtools=1.9"])
     native_only_env(fake_conda, "mulled-v1-abc", ["samtools=1.9", "bwa=0.7"])
@@ -1033,7 +1045,7 @@ def test_backfill_creates_missing_foreign_environments(fake_conda: FakeConda, tm
 
 
 def test_backfill_skips_fresh_failures_and_retries_old_ones(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     native_only_env(fake_conda, "__samtools@1.9", ["samtools=1.9"])
     context.record_platform_failure("linux-aarch64", "__samtools@1.9", "earlier error")
@@ -1249,7 +1261,7 @@ def native_failure_path(fake: FakeConda, env_name: str) -> str:
 
 
 def test_native_failure_does_not_stop_the_foreign_creates(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     fake_conda.fail_native()
     fake_conda.fail_for("osx-arm64")
@@ -1272,7 +1284,7 @@ def test_native_failure_does_not_stop_the_foreign_creates(fake_conda: FakeConda,
 
 
 def test_install_counts_as_success_when_the_requested_platform_exists(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     fake_conda.fail_native()
     fake_conda.fail_for("osx-arm64")
@@ -1296,7 +1308,7 @@ def test_successful_native_create_clears_the_native_failure_record(fake_conda: F
 def test_repeated_native_failure_leaves_recently_failed_foreign_platforms_alone(
     fake_conda: FakeConda, tmp_path
 ) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     fake_conda.fail_native()
     fake_conda.fail_for("osx-arm64")
@@ -1319,7 +1331,7 @@ def test_native_failure_leaves_no_partial_directory(fake_conda: FakeConda, tmp_p
 
 
 def test_routing_helpers_after_a_native_failure(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     dm = resolver.dependency_manager
     fake_conda.fail_native()
     fake_conda.fail_for("osx-arm64")
@@ -1344,7 +1356,7 @@ def test_failed_install_listing_for_merged_environments(fake_conda: FakeConda, t
 
 
 def test_backfill_creates_foreign_environments_for_a_failed_native_one(fake_conda: FakeConda, tmp_path) -> None:
-    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec="/bin/true")
+    resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64,osx-arm64", codesign_exec=TRUE_EXEC)
     context = resolver.conda_context
     os.makedirs(os.path.join(fake_conda.prefix, "envs"), exist_ok=True)
     for name in ("__blat@36", "mulled-v1-abc", "__nofailure@1"):
