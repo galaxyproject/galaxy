@@ -93,8 +93,5 @@ def _render_repository_readme(app: "ToolShedApp", encoded_repository_id: str, re
     text = basic_util.size_string(text)
     if ".. image:: " in text:
         # Point relative image paths at the repository's image route.
-        try:
-            text = set_image_paths(app, text, encoded_repository_id=encoded_repository_id)
-        except Exception:
-            log.exception("Error setting image paths in README file '%s'", readme_file_name)
+        text = set_image_paths(app, text, encoded_repository_id=encoded_repository_id)
     return render_readme(readme_file_name, text)
