@@ -31,7 +31,6 @@ from urllib.parse import (
 )
 
 import requests
-from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
@@ -65,7 +64,6 @@ class RunningJob:
 
 
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
-    initialized = False
     dataset_populator: DatasetPopulator
     input_hda_dict: dict[str, Any]
     input_hda: model.HistoryDatasetAssociation
@@ -79,22 +77,19 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         config["server_name"] = "files"
         cls.nginx_upload_job_files_store = cls._test_driver.mkdtemp()
         config["nginx_upload_job_files_store"] = cls.nginx_upload_job_files_store
-        cls.initialized = False
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        if not TestJobFilesIntegration.initialized:
-            history_id = self.dataset_populator.new_history()
-            sa_session = self.sa_session
-            stmt = select(model.HistoryDatasetAssociation)
-            assert len(sa_session.scalars(stmt).all()) == 0
-            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
-                history_id, content=TEST_INPUT_TEXT, wait=True
-            )
-            assert len(sa_session.scalars(stmt).all()) == 1
-            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
-            TestJobFilesIntegration.initialized = True
+        # Every test gets its own history and input dataset, so tests that
+        # mutate their input (purging it, for instance) cannot affect others.
+        history_id = self.dataset_populator.new_history()
+        self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+        input_hda = self.sa_session.get(
+            model.HistoryDatasetAssociation, self._app.security.decode_id(self.input_hda_dict["id"])
+        )
+        assert input_hda
+        self.input_hda = input_hda
 
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
@@ -469,7 +464,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session.commit()
 
         job_id = self._app.security.encode_id(job.id)
-        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:99")
+        scoped_key = self._app.security.encode_id(job.id, kind=job_files_kind_for_params({"compute_resource_id": 99}))
 
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
 
@@ -514,7 +509,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 
     def test_compute_resource_scoped_key_rejects_legacy_kind(self):
         """A job bound to a compute resource refuses the legacy ``jobs_files``
-        key — only the tenant-scoped ``jobs_files:compute_resource:<resource_id>``
+        key — only the tenant-scoped kind from ``job_files_kind_for_params``
         key is accepted. Prevents cross-tenant replay of a leaked credential."""
         job, _, _ = self.create_static_job_with_state("running")
         sa_session = self.sa_session
@@ -524,7 +519,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
 
         job_id = self._app.security.encode_id(job.id)
         legacy_key = self._app.security.encode_id(job.id, kind="jobs_files")
-        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:42")
+        scoped_key = self._app.security.encode_id(job.id, kind=job_files_kind_for_params({"compute_resource_id": 42}))
 
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         data = {"path": self.input_hda.get_file_name(), "job_key": legacy_key}
@@ -565,20 +560,15 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         return self._app.model.session
 
     def create_static_job_with_state(self, state, with_input=True):
-        """Create a job with unknown handler so its state won't change."""
+        """Create a job with unknown handler so its state won't change.
+
+        The job takes this test's ``input_hda`` as input and lives in its history.
+        """
         sa_session = self.sa_session
-        # Order by id so we deterministically pick the original shared input
-        # dataset / history / user created in setUp. Without ORDER BY, PostgreSQL
-        # (CI) returns rows in arbitrary order; once earlier tests have added
-        # HDAs, ``[0]`` could be another job's output, the job's input would no
-        # longer be ``self.input_hda``, and positive-path reads would 403.
-        hda = sa_session.scalars(
-            select(model.HistoryDatasetAssociation).order_by(model.HistoryDatasetAssociation.id)
-        ).first()
-        assert hda
-        history = sa_session.scalars(select(model.History).order_by(model.History.id)).first()
+        hda = self.input_hda
+        history = hda.history
         assert history
-        user = sa_session.scalars(select(model.User).order_by(model.User.id)).first()
+        user = history.user
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2
