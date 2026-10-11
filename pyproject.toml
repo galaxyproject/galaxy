@@ -109,7 +109,7 @@ dependencies = [
     "starlette-context",
     "svgwrite",
     "tifffile",
-    "typing-extensions",
+    "typing-extensions>=4.13",  # for TypeForm
     "tuspyserver",
     "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
     "uvloop>=0.21.0",  # Python 3.13 support
