@@ -360,19 +360,19 @@ class CondaDependencyResolver(
             # one and share the job environment that is built from their individual environments.
             if platform is False:
                 return []
-            env = self._foreign_environment(
+            foreign_env = self._foreign_environment(
                 platform,
                 [self.merged_environment_name(conda_targets, c) for c in (True, False)],
                 self.merged_environment_name(conda_targets),
                 conda_targets,
                 kwds,
             )
-            if env is None:
+            if foreign_env is None:
                 return []
             return [
                 MergedCondaDependency(
                     self.conda_context,
-                    self.conda_context.platform_env_path(platform, env),
+                    self.conda_context.platform_env_path(platform, foreign_env),
                     exact=not self.versionless or requirement.version is None,
                     name=requirement.name,
                     version=requirement.version,
@@ -571,7 +571,7 @@ class CondaDependencyResolver(
         """
         if self.disabled:
             return []
-        configured = self.conda_context.configured_platforms
+        configured: list[str] = self.conda_context.configured_platforms
         if not configured:
             return configured
         targets = self._targets_of(requirements)
@@ -590,7 +590,7 @@ class CondaDependencyResolver(
         """
         if self.disabled:
             return []
-        configured = self.conda_context.configured_platforms
+        configured: list[str] = self.conda_context.configured_platforms
         targets = self._targets_of(requirements)
         if not configured or not targets:
             return []

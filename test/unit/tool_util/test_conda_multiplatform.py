@@ -12,6 +12,7 @@ import threading
 import time
 from typing import (
     Any,
+    cast,
 )
 
 import pytest
@@ -422,7 +423,7 @@ def test_platform_kwd_changes_activate_line(fake_conda: FakeConda, tmp_path) -> 
     with_native = dm.requirements_to_dependencies(requirements, platform="linux-64")
     assert [d.environment_path for d in with_native.values()] == [native_env]
     for platform in (None, "linux-64"):
-        dep = resolver.resolve(req("samtools", "1.9"), platform=platform)
+        dep: Any = resolver.resolve(req("samtools", "1.9"), platform=platform)
         assert dep.activate == native_activate
         assert dep.environment_path == native_env
 
@@ -452,7 +453,7 @@ def test_merged_environment_per_platform(fake_conda: FakeConda, tmp_path) -> Non
     requirements = ToolRequirements([req("samtools", "1.9"), req("bwa", "0.7")])
     deps = resolver.resolve_all(requirements)
     assert len(deps) == 2
-    foreign = resolver.resolve_all(requirements, platform="linux-aarch64")
+    foreign: Any = resolver.resolve_all(requirements, platform="linux-aarch64")
     assert len(foreign) == 2
     assert all("/platforms/linux-aarch64/envs/mulled-v1-" in d.environment_path for d in foreign)
     assert "/platforms/linux-aarch64/bin/activate" in foreign[0].shell_commands()
@@ -1257,7 +1258,7 @@ def test_backfill_thread_is_gated_by_options(fake_conda: FakeConda, tmp_path, mo
         resolver = make_resolver(
             fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True, platforms_backfill=True
         )
-        assert resolver._backfill_thread is None
+        assert cast(Any, resolver)._backfill_thread is None
         assert "Starting backfill" not in caplog.text
         assert started == []
         resolver.dependency_manager.start_background_tasks()
@@ -1308,7 +1309,7 @@ def test_foreign_resolve_with_auto_install_creates_native_and_foreign(fake_conda
     env_name = "__samtools@1.9"
     assert not resolver.conda_context.has_env(env_name)
     n_before = len(fake_conda.creates())
-    dep = resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64")
+    dep: Any = resolver.resolve(req("samtools", "1.9"), platform="linux-aarch64")
     assert not isinstance(dep, NullDependency)
     assert dep.activate == os.path.join(fake_conda.prefix, "platforms", "linux-aarch64", "bin", "activate")
     assert dep.environment_path == foreign_env(fake_conda, "linux-aarch64", env_name)
@@ -1325,7 +1326,7 @@ def test_foreign_resolve_with_auto_install_creates_native_and_foreign(fake_conda
 
 def test_foreign_resolve_all_with_auto_install_creates_the_merged_environment(fake_conda: FakeConda, tmp_path) -> None:
     resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
-    deps = resolver.resolve_all(ToolRequirements([req("a"), req("b")]), platform="linux-aarch64")
+    deps: Any = resolver.resolve_all(ToolRequirements([req("a"), req("b")]), platform="linux-aarch64")
     assert len(deps) == 2
     assert all(d.platform == "linux-aarch64" for d in deps)
     assert all(os.path.exists(os.path.join(d.environment_path, PLATFORM_OK_MARKER)) for d in deps)
@@ -1547,7 +1548,7 @@ def test_foreign_resolve_returns_the_foreign_environment_after_a_native_failure(
     resolver = make_resolver(fake_conda, tmp_path, platforms="linux-aarch64", auto_install=True)
     context = resolver.conda_context
     fake_conda.fail_native()
-    dep = resolver.resolve(req("blat", "36"), platform="linux-aarch64")
+    dep: Any = resolver.resolve(req("blat", "36"), platform="linux-aarch64")
     assert not isinstance(dep, NullDependency)
     assert dep.environment_path == foreign_env(fake_conda, "linux-aarch64", "__blat@36")
     assert not context.has_env("__blat@36")

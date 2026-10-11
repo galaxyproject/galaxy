@@ -2,6 +2,10 @@
 
 import logging
 from types import SimpleNamespace
+from typing import (
+    Any,
+    cast,
+)
 
 from galaxy.jobs import MinimalJobWrapper
 
@@ -17,7 +21,7 @@ def _collect(metrics, requested, caplog):
         get_job=lambda: SimpleNamespace(destination_id="aarch64_dest"), add_metric=lambda *a: None
     )
     with caplog.at_level(logging.WARNING, logger="galaxy.jobs"):
-        MinimalJobWrapper._collect_metrics(wrapper, has_metrics)
+        MinimalJobWrapper._collect_metrics(cast(Any, wrapper), has_metrics)
 
 
 def test_platform_mismatch_warns(caplog):

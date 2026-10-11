@@ -3,6 +3,7 @@ import os
 from contextlib import contextmanager
 from types import SimpleNamespace
 from typing import (
+    Any,
     cast,
     TYPE_CHECKING,
 )
@@ -122,7 +123,7 @@ class TestJobWrapperPlatform(AbstractTestCases.BaseWrapperTestCase):
 
     def _dependency_commands(self, params, requirements=None, resolved=None):
         wrapper = self._wrapper()
-        tool = self.app.toolbox.get(TEST_TOOL_ID)
+        tool = cast(Any, self.app.toolbox).get(TEST_TOOL_ID)
         tool.requirements = requirements or ToolRequirements([])
         tool.resolved = resolved or {}
         destination = JobDestination(id="dest", runner="local", params=params)

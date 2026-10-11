@@ -72,7 +72,8 @@ def _bearer_token(challenge: str, repository: str) -> str | None:
     response = requests.get(realm, params=query, timeout=REGISTRY_TIMEOUT)
     response.raise_for_status()
     body = response.json()
-    return body.get("token") or body.get("access_token")
+    token: str | None = body.get("token") or body.get("access_token")
+    return token
 
 
 def _get(url: str, headers: dict[str, str], repository: str, state: dict[str, str]) -> "requests.Response":

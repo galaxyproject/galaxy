@@ -189,6 +189,7 @@ def test_explicit_singularity_checks_architecture(mocker):
     description = resolver.resolve(
         enabled_container_types=["singularity"], tool_info=tool_info, destination_info={"platform": "linux-aarch64"}
     )
+    assert description is not None
     assert description.identifier == "docker://python:3.12-alpine"
     mocker.patch.object(registry, "registry_image_architectures", return_value=["amd64"])
     assert (

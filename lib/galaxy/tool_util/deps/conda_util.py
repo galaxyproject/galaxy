@@ -22,15 +22,19 @@ from collections.abc import (
     Iterable,
     Iterator,
 )
+from types import ModuleType
 from typing import (
     Any,
     TYPE_CHECKING,
 )
 
 try:
-    import fcntl
+    import fcntl as _fcntl
 except ImportError:  # Windows
-    fcntl = None  # type: ignore[assignment]
+    _fcntl = None  # type: ignore[assignment]
+
+# None where POSIX locks are not available
+fcntl: ModuleType | None = _fcntl
 
 from packaging.version import Version
 
@@ -287,7 +291,7 @@ class CondaContext(installable.InstallableContext):
         copy_dependencies: bool = False,
         use_local: bool = USE_LOCAL_DEFAULT,
         platforms: str | list[str] | None = None,
-        platform_overrides: dict[str, dict[str, str | None]] | None = None,
+        platform_overrides: dict[str, dict[str, str]] | None = None,
         codesign_exec: str | None = None,
         platforms_retry_days: int | float = DEFAULT_PLATFORMS_RETRY_DAYS,
     ) -> None:
@@ -688,8 +692,10 @@ class CondaContext(installable.InstallableContext):
             return True
         if not os.path.isfile(self.platform_activate(subdir)):
             return False
-        executable = listify(self.conda_exec)[0] if self.conda_exec else None
-        return bool(executable) and (os.path.isfile(executable) or which(executable) is not None)
+        executables: list[str] = listify(self.conda_exec)
+        if not executables:
+            return False
+        return os.path.isfile(executables[0]) or which(executables[0]) is not None
 
     def finalize_environment(self, prefix: str) -> bool:
         """Make a freshly built environment at ``prefix`` usable, False if that was not possible."""

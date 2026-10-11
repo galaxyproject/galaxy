@@ -338,6 +338,7 @@ def test_explicit_cached_singularity_platform_pull(mocker, tmp_path):
     cache_path = str(
         tmp_path / "singularity" / "explicit" / "linux-aarch64" / "docker:" / "quay.io" / "biocontainers" / "foo:1.0"
     )
+    assert description is not None
     assert description.identifier == cache_path
     assert shell.call_args.args[0] == [
         "singularity",

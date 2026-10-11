@@ -2,6 +2,10 @@ import os
 import shutil
 from os import getcwd
 from tempfile import mkdtemp
+from typing import (
+    Any,
+    cast,
+)
 
 import pytest
 
@@ -322,7 +326,7 @@ class PlatformJobWrapper(MockJobWrapper):
         super().__init__(job_dir)
         self._dependency_shell_commands = None
         self.job_destination = JobDestination(id="dest", runner="local", params=destination_params)
-        self.resolve_calls = []
+        self.resolve_calls: list[str] = []
         requirements = ToolRequirements([ToolRequirement(name="bwa", version="1.0", type="package")])
 
         def resolve_dependency_shell_commands(job_directory, platform):
@@ -341,7 +345,7 @@ def _build_platform_command(job_dir, wrapper, container=None):
         app=Bunch(job_metrics=Bunch(default_job_instrumenter=Bunch(get_configured_plugin=lambda name: None))),
     )
     return build_command(
-        runner,
+        cast(Any, runner),
         wrapper,
         container=container,
         modify_command_for_container=False,

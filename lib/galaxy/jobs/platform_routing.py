@@ -37,6 +37,7 @@ def platform_destination(
     """
     if not destinations:
         raise JobMappingException("No destinations given for platform routing.")
+    platform_of: dict[str, str | None]
     if isinstance(destinations, dict):
         platform_of = dict(destinations)
     else:
@@ -50,7 +51,7 @@ def platform_destination(
 
     requirements = getattr(tool, "requirements", None)
     packages = list(requirements.packages) if requirements else []
-    if not packages:
+    if requirements is None or not packages:
         return next(iter(platform_of))
 
     dependency_manager = app.toolbox.dependency_manager
@@ -74,15 +75,16 @@ def platform_destination(
             f"No job destination can run tool '{getattr(tool, 'id', None)}' (job {getattr(job, 'id', None)}): no "
             "conda platforms are configured, set conda_platforms (or the platforms option of the conda dependency "
             "resolver) so that conda environments are maintained for the platforms of the destinations "
-            f"[{', '.join(sorted(set(platform_of.values())))}]."
+            f"[{', '.join(sorted({p for p in platform_of.values() if p}))}]."
         )
     raise JobMappingException(
         f"No job destination can run tool '{getattr(tool, 'id', None)}' (job {getattr(job, 'id', None)}): its "
         f"requirements are installed for platforms [{', '.join(available) or 'none'}], the destinations offer "
-        f"[{', '.join(sorted(set(platform_of.values())))}]. The environments must be installed first, for example "
-        "with the admin dependency API or UI, or by enabling auto_install of the conda resolver."
+        f"[{', '.join(sorted({p for p in platform_of.values() if p}))}]. The environments must be installed first, "
+        "for example with the admin dependency API or UI, or by enabling auto_install of the conda resolver."
     )
 
 
 def _configured_platform(app: Any, destination_id: str) -> str | None:
-    return app.job_config.get_destination(destination_id).params.get("platform")
+    platform: str | None = app.job_config.get_destination(destination_id).params.get("platform")
+    return platform
