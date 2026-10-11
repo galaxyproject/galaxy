@@ -5,6 +5,7 @@ import { isValidCollectionTypeStr } from "@/components/Workflow/Editor/modules/c
 import {
     COLLECTION_TYPE_SHORT_LABELS,
     describeKnownCollectionType,
+    findKnownCollectionType,
     findKnownCollectionTypes,
     KNOWN_COLLECTION_TYPE_GROUPS,
     KNOWN_COLLECTION_TYPES,
@@ -43,6 +44,7 @@ describe("knownCollectionTypes", () => {
             collectionType: "list",
             label: "Flat List",
             shortLabel: "list",
+            summary: { container: "list", element: "dataset", elementPlural: "datasets" },
             description:
                 "A simple flat list of datasets, each with an identifier (typically a sample name). If your data isn't nested and doesn't contain paired datasets, this is the option to choose.",
             notes: {},
@@ -56,6 +58,21 @@ describe("knownCollectionTypes", () => {
             expect(known.shortLabel, known.collectionType).toBe(known.shortLabel.toLowerCase());
         }
         expect(COLLECTION_TYPE_SHORT_LABELS["list:paired"]).toBe("list of pairs");
+    });
+
+    it("gives every collection type a lowercase summary of its elements", () => {
+        for (const { collectionType, summary } of KNOWN_COLLECTION_TYPES) {
+            for (const noun of [summary.container, summary.element, summary.elementPlural]) {
+                expect(noun, collectionType).toMatch(/\S/);
+                expect(noun, collectionType).toBe(noun.toLowerCase());
+            }
+        }
+        expect(findKnownCollectionType("list:record")?.summary).toEqual({
+            container: "list",
+            element: "record",
+            elementPlural: "records",
+        });
+        expect(findKnownCollectionType("paired:paired")).toBeUndefined();
     });
 
     it("adds the note for where the collection type is being chosen", () => {

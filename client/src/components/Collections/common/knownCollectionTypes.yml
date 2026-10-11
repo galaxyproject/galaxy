@@ -1,17 +1,27 @@
 # Collection types the client describes by name, grouped and in the order they're offered. Labels follow the
-# collection builders; a short label is the lowercase name used in running text ("Create a new list of pairs"). Each description is shown wherever the type is offered; a note under `notes` is added only
-# where that note's context (`workflow_input` or `builder`) applies.
+# collection builders; a short label is the lowercase name used in running text ("Create a new list of pairs"). A
+# summary names a collection and its elements for the line under it in the history ("a list with 4 pairs"). Each
+# description is shown wherever the type is offered; a note under `notes` is added only where that note's context
+# (`workflow_input` or `builder`) applies.
 - group: Lists
   types:
     - collection_type: list
       label: Flat List
       short_label: list
+      summary:
+        container: list
+        element: dataset
+        element_plural: datasets
       description: >-
         A simple flat list of datasets, each with an identifier (typically a sample name). If your data isn't nested
         and doesn't contain paired datasets, this is the option to choose.
     - collection_type: list:paired
       label: List of Paired Datasets
       short_label: list of pairs
+      summary:
+        container: list
+        element: pair
+        element_plural: pairs
       description: >-
         A list where every element is a forward and reverse pair of datasets (e.g. paired-end data from Illumina or
         Element Biosciences).
@@ -20,6 +30,10 @@
     - collection_type: list:paired_or_unpaired
       label: Mixed List of Paired and Unpaired Datasets
       short_label: mixed list of paired and unpaired
+      summary:
+        container: list
+        element: dataset pair or unpaired dataset
+        element_plural: paired and unpaired datasets
       description: >-
         A list where each element is either a single dataset or a forward and reverse pair. For studies that have a
         mix of paired and unpaired data, this may be the right choice. Existing tools and workflows may have to be
@@ -29,6 +43,10 @@
     - collection_type: list:record
       label: List of Records
       short_label: list of records
+      summary:
+        container: list
+        element: record
+        element_plural: records
       description: >-
         A list where every element is a record - a fixed set of named datasets (e.g. a sequence file and its index)
         declared by its record fields.
@@ -37,28 +55,48 @@
     - collection_type: paired
       label: Dataset Pair
       short_label: dataset pair
+      summary:
+        container: pair
+        element: dataset
+        element_plural: datasets
       description: A single forward and reverse pair of datasets, such as the reads for one paired-end sample.
     - collection_type: record
       label: Record
       short_label: record
+      summary:
+        container: record
+        element: dataset
+        element_plural: datasets
       description: A single fixed set of named datasets, declared by its record fields.
 - group: Nested Lists
   types:
     - collection_type: list:list
       label: Nested List of Datasets
       short_label: nested list
+      summary:
+        container: list
+        element: list
+        element_plural: lists
       description: >-
         A list where each element is in turn a list of datasets. The outer list identifier might group samples
         together by condition, sample type, etc.
     - collection_type: list:list:paired
       label: Nested List of Paired Datasets
       short_label: nested list of pairs
+      summary:
+        container: nested list
+        element: list of pairs
+        element_plural: lists of pairs
       description: A list where each element is in turn a list of paired datasets.
 - group: Sample Sheets
   types:
     - collection_type: sample_sheet
       label: Sample Sheet of Datasets
       short_label: sample sheet
+      summary:
+        container: sample sheet
+        element: dataset
+        element_plural: datasets
       description: >-
         A list of datasets where each element also carries a row of typed metadata (e.g. condition, replicate)
         described by its column definitions.
@@ -69,17 +107,29 @@
     - collection_type: sample_sheet:paired
       label: Sample Sheet of Paired Datasets
       short_label: sample sheet of pairs
+      summary:
+        container: sample sheet
+        element: pair
+        element_plural: pairs
       description: >-
         A list of forward and reverse dataset pairs where each pair also carries a row of typed metadata described by
         its column definitions.
     - collection_type: sample_sheet:paired_or_unpaired
       label: Sample Sheet of Paired and Unpaired Datasets
       short_label: mixed sample sheet of paired and unpaired
+      summary:
+        container: sample sheet
+        element: dataset pair or unpaired dataset
+        element_plural: paired and unpaired datasets
       description: >-
         A mix of single datasets and dataset pairs where each element also carries a row of typed metadata described
         by its column definitions.
     - collection_type: sample_sheet:record
       label: Sample Sheet of Records
       short_label: sample sheet of records
+      summary:
+        container: sample sheet
+        element: record
+        element_plural: records
       description: >-
         A list of records where each record also carries a row of typed metadata described by its column definitions.
