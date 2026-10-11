@@ -17,7 +17,6 @@ from collections.abc import (
     Callable,
     Iterator,
 )
-from contextlib import nullcontext
 from datetime import datetime
 from typing import (
     Any,
@@ -56,10 +55,8 @@ from .interface import (
 
 log = logging.getLogger(__name__)
 
-# How long a SQLite connection waits for another connection's write lock
-# before failing with "database is locked". Python's default of 5 seconds is
-# too short when a commit is slow (network or FUSE filesystems) and several
-# processes write the same store, e.g. web workers self-healing missing tools.
+# pysqlite's 5s default is too short for slow commits (network/FUSE
+# filesystems) when several processes write one store.
 SQLITE_BUSY_TIMEOUT_SECONDS = 60
 
 
@@ -70,15 +67,8 @@ _R = TypeVar("_R")
 def _serialized_write(
     method: "Callable[Concatenate[SqlAlchemyToolSourceStore, _P], _R]",
 ) -> "Callable[Concatenate[SqlAlchemyToolSourceStore, _P], _R]":
-    """Run a mutating store method under the store's in-process write lock.
-
-    SQLite allows a single writer per database. Writers in other threads of
-    this process (the populator's parse workers) would otherwise queue inside
-    SQLite and fail once the busy timeout expires behind slow commits; the
-    lock makes them queue here instead, without a deadline. It also makes
-    the read-modify-write in :meth:`SqlAlchemyToolSourceStore.update_index_entry`
-    atomic with respect to other threads.
-    """
+    """Hold the store's write lock, so threads queue here instead of failing
+    inside SQLite once its busy timeout expires."""
 
     @functools.wraps(method)
     def wrapper(self: "SqlAlchemyToolSourceStore", *args: _P.args, **kwargs: _P.kwargs) -> _R:
@@ -154,10 +144,9 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
         self._ensure_sqlite_parent_directory(url)
 
-        is_sqlite = make_url(url).drivername.split("+")[0] == "sqlite"
         # Re-entrant: update_index_entry calls store_index while holding it.
-        # Server databases handle concurrent writers themselves.
-        self._write_lock: threading.RLock | nullcontext[None] = threading.RLock() if is_sqlite else nullcontext()
+        self._write_lock = threading.RLock()
+        is_sqlite = make_url(url).drivername.split("+")[0] == "sqlite"
         connect_args = {"timeout": SQLITE_BUSY_TIMEOUT_SECONDS} if is_sqlite else {}
         self._engine = create_engine(url, future=True, connect_args=connect_args)
         if not read_only and not self._is_remote_engine():

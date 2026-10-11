@@ -475,8 +475,7 @@ def build_index_entry_from_source(
         profile = parse_profile_version(tool_source)
         action_module = tool_source.parse_action_module()
         requirements, containers, _, _, _ = tool_source.parse_requirements()
-        # Like the eager Tool, which defers and tolerates test parsing, a
-        # malformed <tests> block only loses the test count, not the tool.
+        # The eager Tool tolerates bad tests too: lose the count, not the tool.
         try:
             test_count = len(tool_source.parse_tests_to_dict().get("tests", []))
         except Exception as e:

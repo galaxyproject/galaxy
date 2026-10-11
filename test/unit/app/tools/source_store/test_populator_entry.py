@@ -83,7 +83,7 @@ def test_entry_help_text_capped(tmp_path):
     assert len(entry.help_text) <= MAX_TOOL_SEARCH_HELP_CHARS
 
 
-_TOOL_XML_BAD_TEST = """<tool id="bad_test_tool" name="Bad Test Tool" version="1.0">
+_TOOL_XML_OUTPUT_WITHOUT_ASSERTIONS = """<tool id="bad_test_tool" name="Bad Test Tool" version="1.0">
   <command>echo</command>
   <inputs/>
   <outputs>
@@ -99,9 +99,7 @@ _TOOL_XML_BAD_TEST = """<tool id="bad_test_tool" name="Bad Test Tool" version="1
 
 
 def test_entry_survives_unparseable_tests(tmp_path):
-    # An <output> with nothing to check makes test parsing raise; the eager
-    # toolbox still loads such a tool, so the index must not drop it either.
-    entry = _build(tmp_path, _TOOL_XML_BAD_TEST)
+    entry = _build(tmp_path, _TOOL_XML_OUTPUT_WITHOUT_ASSERTIONS)
     assert entry is not None
     assert entry.id == "bad_test_tool"
     assert entry.test_count == 0
