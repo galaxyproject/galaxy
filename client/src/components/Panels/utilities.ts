@@ -430,9 +430,7 @@ export function searchTools(
         "description",
     ]);
     const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
-    // An instance may install and place more than one version of the same tool,
-    // sometimes across different sections. Collapse those to a single result so a
-    // tool doesn't surface as a duplicate in the search results (issue #23151).
+    // Placed versions of one tool would otherwise render as duplicates (#23151).
     const orderById = new Map(matchedResults.map((match) => [match.id, match.order]));
     const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(idResults, resultPanel, tools, orderById);
     return { results, resultPanel: dedupedPanel, closestTerm: closestTerm };

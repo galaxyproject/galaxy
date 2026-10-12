@@ -496,11 +496,7 @@ describe("getValidPanelItems", () => {
 });
 
 describe("searchTools tool-lineage de-duplication", () => {
-    // Regression for issue #23151: an instance can install and place more than one
-    // version of the same tool (sometimes across different sections). Searching the
-    // tool's name previously returned every placed version as a separate result,
-    // rendering as a duplicate. Search results should collapse to a single entry
-    // per tool lineage.
+    // Regression for #23151: each placed version of a tool showed up as its own search result.
     const pgt38 = "toolshed.g2.bx.psu.edu/repos/iuc/pygenometracks/pygenomeTracks/3.8+galaxy2";
     const pgt39 = "toolshed.g2.bx.psu.edu/repos/iuc/pygenometracks/pygenomeTracks/3.9+galaxy0";
 
