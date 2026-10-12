@@ -11,7 +11,8 @@
 import { computed, provide } from "vue";
 
 import { useUid } from "../composables/uid";
-import { checkboxGroupKey, type CheckboxGroupOption, looseEqual } from "./checkboxGroupContext";
+import { looseEqual } from "../utils/looseEqual";
+import { checkboxGroupKey, type CheckboxGroupOption } from "./checkboxGroupContext";
 import type { ComponentSize } from "./componentVariants";
 
 import GCheckbox from "./GCheckbox.vue";
