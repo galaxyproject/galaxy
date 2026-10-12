@@ -10,7 +10,7 @@ vi.unmock("./sanitizeHtml");
 const { defaultInstance, linksInstance, createInstance } = vi.hoisted(() => {
     const makeInstance = () => ({
         sanitize: vi.fn((html: string, _config?: Config) => `clean(${html})`),
-        addHook: vi.fn(),
+        addHook: vi.fn<(name: "afterSanitizeAttributes", hook: (node: Node) => void) => void>(),
     });
     const defaultInstance = makeInstance();
     const linksInstance = makeInstance();
@@ -19,14 +19,16 @@ const { defaultInstance, linksInstance, createInstance } = vi.hoisted(() => {
 
 vi.mock("dompurify", () => ({ default: Object.assign(createInstance, defaultInstance) }));
 
-type Hook = (node: Node) => void;
-
-function linksHook(): Hook {
+function linksHook() {
     sanitizeHtml("", "links");
     const calls = linksInstance.addHook.mock.calls;
     expect(calls).toHaveLength(1);
-    expect(calls[0]![0]).toBe("afterSanitizeAttributes");
-    return calls[0]![1] as Hook;
+    expect(calls[0]?.[0]).toBe("afterSanitizeAttributes");
+    const hook = calls[0]?.[1];
+    if (!hook) {
+        throw new Error("The links profile did not register its attributes hook");
+    }
+    return hook;
 }
 
 describe("sanitizeHtml", () => {
