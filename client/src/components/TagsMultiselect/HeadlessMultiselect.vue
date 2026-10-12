@@ -233,6 +233,11 @@ function isOwnElement(element: Element | null) {
 
 /** emulates tab behavior, because options list is teleported to the app layer */
 function onCloseButtonTab(event: KeyboardEvent) {
+    // in the page flow the options follow the close button, so the native Tab order is right
+    if (props.listInFlow) {
+        return;
+    }
+
     const first = event.shiftKey ? null : getOptionWithId(0);
     // without suggestions there is no option to move to, so keep the native Tab
     if (first) {

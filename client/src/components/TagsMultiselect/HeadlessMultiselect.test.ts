@@ -439,6 +439,25 @@ describe("HeadlessMultiselect", () => {
             await close(wrapper);
         });
 
+        it("keeps the native Tab on the close button", async () => {
+            const wrapper = mountWithProps({
+                id: "tags",
+                options: sampleOptions,
+                selected: [] as string[],
+                listInFlow: true,
+            });
+            await open(wrapper);
+            const closeButton = wrapper.find("fieldset button").element as HTMLButtonElement;
+            closeButton.focus();
+
+            const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+            closeButton.dispatchEvent(event);
+
+            expect(event.defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(closeButton);
+            await close(wrapper);
+        });
+
         function addOutsideButton() {
             const button = document.createElement("button");
             appRoot.appendChild(button);
