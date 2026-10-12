@@ -78,7 +78,7 @@ const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
 });
 
-const { config } = useConfig(true);
+const { config } = useConfig();
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const isCrypt4gh = computed(() => {
