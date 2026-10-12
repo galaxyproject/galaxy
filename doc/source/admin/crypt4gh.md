@@ -227,6 +227,8 @@ destinations must also use:
   `embed_metadata_in_job: false`, and runners that always collect metadata after
   the job (Kubernetes, AWS Batch, GCP Batch, Chronos, GoDocker), can't run them.
 - No task splitting.
+- No `live_tool_output_reporting`, which would serve the tool's output, possibly
+  decrypted data, to everyone who can see the job while it runs.
 - `remote_metadata: true` and `rewrite_parameters: true` on Pulsar destinations.
 
 How jobs connect to the compute service is set with these destination

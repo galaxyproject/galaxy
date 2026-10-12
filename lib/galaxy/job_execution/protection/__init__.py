@@ -123,6 +123,7 @@ class ProtectionDestination:
     rewrite_parameters: bool
     recryptor: RecryptorSettings | None
     walltime: timedelta | None = None
+    live_tool_output_reporting: bool = False
 
     def check(self, outputs_in_job_directory: bool) -> None:
         problems = []
@@ -141,6 +142,9 @@ class ProtectionDestination:
         if self.is_pulsar and not self.rewrite_parameters:
             # Otherwise the protection plan would hold paths of the Galaxy server.
             problems.append("Pulsar destinations must use rewrite_parameters")
+        if self.live_tool_output_reporting:
+            # The API would serve the tool's live output, which may contain decrypted data.
+            problems.append("live_tool_output_reporting must be disabled")
         if self.recryptor is None:
             problems.append("it has no Crypt4GH recryptor service (crypt4gh_recryptor_url) configured")
         if problems:
