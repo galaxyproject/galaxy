@@ -1,39 +1,28 @@
 import { createTestingPinia } from "@pinia/testing";
+import { composeStories } from "@storybook/vue3-vite";
 import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, shallowMount } from "@vue/test-utils";
-import type { UseScrollReturn } from "@vueuse/core";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { zoomIdentity } from "d3-zoom";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { ref } from "vue";
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { getGalaxyInstance, setGalaxyInstance } from "@/app";
+import { GalaxyApp } from "@/app/galaxy";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
-import type { Step } from "@/stores/workflowStepStore";
-import type { Connection } from "@/stores/workflowStoreTypes";
 
-import { mockOffset } from "./test_fixtures";
+import * as NodeStories from "./Node.stories";
+import { SUBWORKFLOW_STEP, TOOL_STEP } from "./node_test_fixtures";
 
 import Node from "./Node.vue";
 import NodeInput from "./NodeInput.vue";
 import NodeOutput from "./NodeOutput.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
-const galaxyConfig = vi.hoisted(() => ({ enable_tool_recommendations: false }));
-
-vi.mock("@/app", () => ({
-    getGalaxyInstance: vi.fn(() => ({
-        config: galaxyConfig,
-    })),
-}));
-
-const localVue = getLocalVue();
-
+const stories = composeStories(NodeStories);
+const mountStory = useStoryMount();
 enableAutoUnmount(afterEach);
-
-const WORKFLOW_ID = "mock-workflow";
 
 const SELECTORS = {
     HEADER: ".card-header",
@@ -46,96 +35,26 @@ const SELECTORS = {
     RECOMMENDATIONS_BUTTON: "button.node-recommendations",
 };
 
-const MOCK_SCROLL = {
-    x: { value: 100 },
-    y: { value: 200 },
-    isScrolling: { value: true },
-} as UseScrollReturn;
-
-const TOOL_STEP: Step = {
-    id: 0,
-    name: "tool_id",
-    type: "tool",
-    content_id: "tool_id",
-    input_connections: {},
-    tool_state: {},
-    inputs: [],
-    outputs: [],
-    position: { top: 0, left: 0 },
-};
-
-const SUBWORKFLOW_STEP: Step = {
-    id: 0,
-    name: "subworkflow",
-    label: "step label",
-    type: "subworkflow",
-    input_connections: {},
-    tool_state: {},
-    inputs: [],
-    outputs: [],
-    position: { top: 0, left: 0 },
-};
-
-// The server sends a missing tool's errors as a string, though `Step` types them as `string[]`.
-const MISSING_TOOL_STEP = {
-    ...TOOL_STEP,
-    errors: "Tool is not installed",
-} as unknown as Step;
-
-const MISSING_TOOL_CONNECTIONS: Connection[] = [
-    {
-        input: { stepId: 0, name: "input1", connectorType: "input" },
-        output: { stepId: 1, name: "output", connectorType: "output" },
-    },
-    {
-        input: { stepId: 2, name: "input1", connectorType: "input" },
-        output: { stepId: 0, name: "out_file1", connectorType: "output" },
-    },
-];
-
-interface MountNodeOptions {
-    mounter?: typeof shallowMount;
-    props?: Record<string, unknown>;
-    connections?: Connection[];
-    toolRecommendations?: boolean;
-}
-
-function mountNode({
-    mounter = shallowMount,
-    props = {},
-    connections = [],
-    toolRecommendations = false,
-}: MountNodeOptions = {}) {
-    // Node reads this once at setup, so it has to be set before mounting.
-    galaxyConfig.enable_tool_recommendations = toolRecommendations;
-    const pinia = createTestingPinia({ createSpy: vi.fn });
-    setActivePinia(pinia);
-    useConnectionStore(WORKFLOW_ID).$patch({ stepToConnections: { 0: connections } });
-
-    const wrapper = mounter(Node, {
-        props: {
-            id: 0,
-            contentId: "tool_id",
-            activeNodeId: null,
-            name: "node-name",
-            step: TOOL_STEP,
-            datatypesMapper: testDatatypesMapper,
-            rootOffset: mockOffset,
-            scroll: MOCK_SCROLL,
-            ...props,
-        },
-        global: {
-            ...withPlugins(localVue, pinia),
-            provide: { workflowId: WORKFLOW_ID, transform: ref(zoomIdentity), isDragging: ref(false) },
-        },
-    });
-
-    return { wrapper, inspectorStore: useWorkflowNodeInspectorStore() };
+function mountNode(story: StoryOf<typeof stories> = stories.Tool) {
+    const mounted = mountStory(story, { pinia: { stubActions: true } });
+    return { wrapper: mounted.getComponent(Node), inspectorStore: useWorkflowNodeInspectorStore() };
 }
 
 describe("Node", () => {
     it("renders an active tool node, then the subworkflow icon and label after the step changes", async () => {
-        const { wrapper } = mountNode({ props: { activeNodeId: 0 } });
+        // A live prop update must keep the same node instance; composed stories remount on setProps.
+        const previous = getGalaxyInstance();
+        setGalaxyInstance(new GalaxyApp({ config: { enable_tool_recommendations: false } }));
+        const wrapper = mount(Node, {
+            props: { ...NodeStories.default.args, ...NodeStories.ActiveTool.args },
+            global: {
+                ...withPlugins(getLocalVue(), createTestingPinia({ createSpy: vi.fn })),
+                provide: { workflowId: "quality-control", transform: ref(zoomIdentity), isDragging: ref(false) },
+            },
+        });
+        onTestFinished(() => {
+            (window as { _galaxyInstance?: unknown })._galaxyInstance = previous;
+        });
         await flushPromises();
 
         expect(wrapper.classes()).toContain("is-active");
@@ -145,16 +64,12 @@ describe("Node", () => {
 
         expect(wrapper.findAll(SELECTORS.SUBWORKFLOW_ICON)).toHaveLength(1);
         expect(wrapper.findAll(SELECTORS.TOOL_ICON)).toHaveLength(0);
-        expect(wrapper.find(SELECTORS.TITLE).text()).toBe("step label");
+        expect(wrapper.find(SELECTORS.TITLE).text()).toBe("Read quality control");
     });
 
     describe("step with errors", () => {
         it("renders terminals for connections of a missing tool", async () => {
-            const { wrapper } = mountNode({
-                mounter: mount,
-                props: { step: MISSING_TOOL_STEP },
-                connections: MISSING_TOOL_CONNECTIONS,
-            });
+            const { wrapper } = mountNode(stories.MissingToolWithConnections);
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.ERROR).text()).toBe("Tool is not installed");
@@ -168,7 +83,7 @@ describe("Node", () => {
         });
 
         it("renders only the error for a missing tool without connections", async () => {
-            const { wrapper } = mountNode({ mounter: mount, props: { step: MISSING_TOOL_STEP } });
+            const { wrapper } = mountNode(stories.MissingTool);
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.ERROR).classes()).toContain("rounded-bottom");
@@ -177,14 +92,14 @@ describe("Node", () => {
     });
 
     it("lets keyboard users into the tool recommendations popover", async () => {
-        const { wrapper } = mountNode({ toolRecommendations: true });
+        const { wrapper } = mountNode(stories.WithRecommendations);
         await flushPromises();
 
         expect(wrapper.findComponent(GPopover).props("interactive")).toBe(true);
     });
 
     it("keeps Enter on the tool recommendations button from activating the node", async () => {
-        const { wrapper } = mountNode({ mounter: mount, toolRecommendations: true });
+        const { wrapper } = mountNode(stories.WithRecommendations);
         await flushPromises();
 
         await wrapper.find(SELECTORS.RECOMMENDATIONS_BUTTON).trigger("keyup.enter");
@@ -197,14 +112,14 @@ describe("Node", () => {
     });
 
     describe("double click", () => {
-        async function clickNode(wrapper: ReturnType<typeof mount>) {
+        async function clickNode(wrapper: ReturnType<typeof mountNode>["wrapper"]) {
             const header = wrapper.find(SELECTORS.HEADER);
             await header.trigger("pointerdown");
             await header.trigger("pointerup");
         }
 
         it("maximizes the inspector on a native double click", async () => {
-            const { wrapper, inspectorStore } = mountNode({ mounter: mount });
+            const { wrapper, inspectorStore } = mountNode();
             await flushPromises();
 
             await clickNode(wrapper);
@@ -216,7 +131,7 @@ describe("Node", () => {
         });
 
         it("does not maximize the inspector for consecutive pointer clicks", async () => {
-            const { wrapper, inspectorStore } = mountNode({ mounter: mount });
+            const { wrapper, inspectorStore } = mountNode();
             await flushPromises();
 
             await clickNode(wrapper);
@@ -226,7 +141,7 @@ describe("Node", () => {
         });
 
         it("does not maximize the inspector for clicks or double clicks on a node control", async () => {
-            const { wrapper, inspectorStore } = mountNode({ mounter: mount });
+            const { wrapper, inspectorStore } = mountNode();
             await flushPromises();
 
             await clickNode(wrapper);
