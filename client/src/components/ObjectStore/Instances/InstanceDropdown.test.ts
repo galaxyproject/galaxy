@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
@@ -47,30 +47,31 @@ describe("Object Store Instance Dropdown", () => {
     const localVue = getLocalVue(true);
 
     beforeEach(() => {
-        server.resetHandlers();
         toastError.mockClear();
     });
 
+    enableAutoUnmount(afterEach);
+
     it("emits entryRemoved when remove succeeds", async () => {
-        let requestBody: Record<string, unknown> | undefined;
+        const requestBodies: unknown[] = [];
         server.use(
             http.put("/api/object_store_instances/{uuid}", async ({ request, response }) => {
-                requestBody = (await request.json()) as Record<string, unknown>;
+                requestBodies.push(await request.json());
                 return response(200).json(OBJECT_STORE);
             }),
         );
 
-        const wrapper = shallowMount(ObjectStoreInstanceDropdown as object, {
-            localVue,
-            propsData: {
+        const wrapper = shallowMount(ObjectStoreInstanceDropdown, {
+            global: localVue,
+            props: {
                 objectStore: OBJECT_STORE,
             },
         });
 
-        wrapper.findComponent(ConfigurationInstanceDropdown).vm.$emit("remove");
+        wrapper.getComponent(ConfigurationInstanceDropdown).vm.$emit("remove");
         await flushPromises();
 
-        expect(requestBody).toEqual({ hidden: true });
+        expect(requestBodies).toEqual([{ hidden: true }]);
         expect(wrapper.emitted("entryRemoved")).toBeTruthy();
         expect(toastError).not.toHaveBeenCalled();
     });
@@ -82,14 +83,14 @@ describe("Object Store Instance Dropdown", () => {
             }),
         );
 
-        const wrapper = shallowMount(ObjectStoreInstanceDropdown as object, {
-            localVue,
-            propsData: {
+        const wrapper = shallowMount(ObjectStoreInstanceDropdown, {
+            global: localVue,
+            props: {
                 objectStore: OBJECT_STORE,
             },
         });
 
-        wrapper.findComponent(ConfigurationInstanceDropdown).vm.$emit("remove");
+        wrapper.getComponent(ConfigurationInstanceDropdown).vm.$emit("remove");
         await flushPromises();
 
         expect(toastError).toHaveBeenCalledWith("Unable to remove", "Failed to remove instance");
