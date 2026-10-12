@@ -266,3 +266,12 @@ def test_wrapped_converters_need_their_dependencies_encrypted():
     assert registry.get_converter_deps("bed", "tabix") == {"bgzip": "bgzip"}
     assert registry.get_converter_deps("bed.c4gh", "tabix.c4gh") == {"bgzip": "bgzip.c4gh"}
     assert registry.get_converter_deps("bed", "bgzip") == {}
+
+
+@pytest.mark.parametrize(
+    "basename, inner_ext",
+    [("reads.fastqsanger.c4gh", "fastqsanger"), ("reads.c4gh", "data"), (None, "data")],
+)
+def test_inner_ext_inferred_from_the_uploaded_name(basename, inner_ext):
+    dataset = Bunch(extension="c4gh", dataset=Bunch(created_from_basename=basename))
+    assert Crypt4GH()._infer_inner_ext(dataset) == inner_ext
