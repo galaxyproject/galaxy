@@ -11,9 +11,7 @@ interface Props {
     querySelectionBreak: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    querySelectionBreak: true,
-});
+const props = defineProps<Props>();
 
 const userFlagsStore = useUserFlagsStore();
 const { showSelectionQueryBreakWarning } = storeToRefs(useUserFlagsStore());

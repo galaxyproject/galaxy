@@ -51,7 +51,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    columnDefinitions: null,
     extensions: undefined,
 });
 

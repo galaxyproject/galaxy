@@ -5,7 +5,7 @@ import { BProgress, BProgressBar } from "bootstrap-vue";
 
 interface Props {
     total?: number;
-    note: string;
+    note?: string;
     loading?: boolean;
     okCount?: number;
     runningCount?: number;

@@ -32,10 +32,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     multiple: false,
     title: "Switch to history",
-    histories: () => [],
     additionalOptions: () => [],
     hideDeleted: false,
-    showModal: false,
     selectionInstruction: "Click a history to switch to it",
 });
 
