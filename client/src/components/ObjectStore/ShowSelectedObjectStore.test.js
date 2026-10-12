@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -46,36 +47,35 @@ const USER_OBJECT_STORE_DATA = {
 };
 
 function mountWithPreferredStoreId(preferredObjectStoreId) {
-    const wrapper = mount(ShowSelectedObjectStore, {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    onTestFinished(() => disposePinia(pinia));
+    return mount(ShowSelectedObjectStore, {
         props: { preferredObjectStoreId, forWhat: "Data goes into..." },
-        global: {
-            ...localVue,
-            plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
-        },
+        global: withPlugins(localVue, pinia),
     });
-    return wrapper;
 }
 
 describe("ShowSelectedObjectStore", () => {
-    it("should show a loading message and then a DescribeObjectStore component", async () => {
+    enableAutoUnmount(afterEach);
+
+    it("shows loading before describing the selected Galaxy object store", async () => {
         server.use(
             http.get("/api/object_stores/{object_store_id}", ({ response }) => {
                 return response(200).json(OBJECT_STORE_DATA);
             }),
         );
         const wrapper = mountWithPreferredStoreId(TEST_OBJECT_ID);
-        let loadingEl = wrapper.findComponent(LoadingSpan);
+        const loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
+        expect(loadingEl.get(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
-        loadingEl = wrapper.findComponent(LoadingSpan);
-        expect(loadingEl.exists()).toBeFalsy();
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBeFalsy();
         expect(wrapper.findComponent(DescribeObjectStore).exists()).toBeTruthy();
         // Shown inside hover popovers, which can't hold another interactive popover.
         expect(wrapper.findComponent(DescribeObjectStore).props("interactive")).toBe(false);
     });
 
-    it("should fetch from the user based object store APIs for dynamic ids that are uris", async () => {
+    it("loads URI IDs through the user object-store instance API", async () => {
         server.use(
             http.get("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
                 return response(200).json(USER_OBJECT_STORE_DATA);
@@ -83,12 +83,11 @@ describe("ShowSelectedObjectStore", () => {
         );
 
         const wrapper = mountWithPreferredStoreId(TEST_USER_OBJECT_STORE_ID);
-        let loadingEl = wrapper.findComponent(LoadingSpan);
+        const loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
+        expect(loadingEl.get(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
-        loadingEl = wrapper.findComponent(LoadingSpan);
-        expect(loadingEl.exists()).toBeFalsy();
+        expect(wrapper.findComponent(LoadingSpan).exists()).toBeFalsy();
         expect(wrapper.findComponent(DescribeObjectStore).exists()).toBeTruthy();
     });
 });
