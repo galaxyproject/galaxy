@@ -187,3 +187,56 @@ def test_file_source_http_with_spaces_in_url_error():
     with pytest.raises(ValueError, match="URL contains unencoded characters"):
         file_source_pair = file_sources.get_file_source_path(test_url)
         file_source_pair.file_source.realize_to(file_source_pair.path, "/tmp/test", user_context=user_context)
+
+
+def _realize_capturing_request_url(test_url: str, tmp_path) -> str:
+    requested = []
+
+    def capture_url(request, **kwargs):
+        requested.append(request.full_url)
+        response: Any = io.StringIO("ok")
+        response.headers = {}
+        response.geturl = lambda: request.full_url
+        return response
+
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
+    with mock.patch.object(urllib.request, "urlopen", new=capture_url):
+        file_source_pair.file_source.realize_to(
+            file_source_pair.path, str(tmp_path / "realized"), user_context=user_context_fixture()
+        )
+    assert len(requested) == 1
+    return requested[0]
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_percent_encodes_unsafe_query_characters(tmp_path):
+    test_url = (
+        "https://erddap.example.org/erddap/tabledap/data.geoJson?pres,time"
+        '&pres>=0&pres<=10&time>=2025-01-01T00%3A00%3A00Z&pres_qc="1"'
+    )
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert requested_url == (
+        "https://erddap.example.org/erddap/tabledap/data.geoJson?pres,time"
+        "&pres%3E=0&pres%3C=10&time%3E=2025-01-01T00%3A00%3A00Z&pres_qc=%221%22"
+    )
+    assert urllib.parse.urlsplit(requested_url).netloc == urllib.parse.urlsplit(test_url).netloc
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_keeps_encoded_url_unchanged(tmp_path):
+    test_url = "https://www.elsewhere.org/a%20b%2Fc.txt?q=%22x%22&t=00%3A00"
+    assert _realize_capturing_request_url(test_url, tmp_path) == test_url
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_keeps_non_ascii_host_unchanged(tmp_path):
+    test_url = "https://bücher.example/x<y"
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert requested_url == "https://bücher.example/x%3Cy"
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_keeps_url_with_invalid_escape_unchanged(tmp_path):
+    test_url = "https://www.elsewhere.org/a%20b?x=%zz&d=50%off"
+    assert _realize_capturing_request_url(test_url, tmp_path) == test_url
