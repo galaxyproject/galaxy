@@ -1,31 +1,19 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it, vi } from "vitest";
 
-import { useFileSources } from "@/composables/fileSources";
+import * as componentStories from "./Index.stories";
 
 import Index from "./Index.vue";
 
-vi.mock("@/composables/fileSources");
+const stories = composeStories(componentStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue();
+describe("HistoryExport", () => {
+    it("shows export tabs when writable file sources are available", async () => {
+        const wrapper = mountStory(stories.WritableRepository).getComponent(Index);
+        await vi.waitFor(() => expect(wrapper.findComponent(".history-export-tabs").exists()).toBe(true));
 
-useFileSources.mockReturnValue({ isLoading: false, hasWritable: true });
-
-describe("Index.vue", () => {
-    it("should render tabs", async () => {
-        // just make sure the component renders to catch obvious big errors
-        const pinia = createTestingPinia({ createSpy: vi.fn });
-        const wrapper = shallowMount(Index, {
-            props: {
-                historyId: "test_id",
-            },
-            global: localVue,
-            pinia,
-        });
-        await flushPromises();
         const tabs = wrapper.findComponent(".history-export-tabs");
         expect(tabs.exists()).toBeTruthy();
     });
