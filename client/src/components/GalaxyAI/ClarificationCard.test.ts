@@ -1,22 +1,20 @@
+import { composeStories } from "@storybook/vue3-vite";
 import { nth } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it } from "vitest";
+
+import * as ClarificationCardStories from "./ClarificationCard.stories";
 
 import ClarificationCard from "./ClarificationCard.vue";
 
-function mountCard(props: Partial<InstanceType<typeof ClarificationCard>["$props"]> = {}) {
-    return mount(ClarificationCard, {
-        props: {
-            question: "Do you want a tool recommendation or a tutorial?",
-            options: ["Tool recommendation", "Tutorial"],
-            ...props,
-        },
-    });
+const stories = composeStories(ClarificationCardStories);
+const mountStory = useStoryMount();
+
+function mountCard(story = stories.QuickReplyChoices) {
+    return mountStory(story).getComponent(ClarificationCard);
 }
 
 describe("ClarificationCard", () => {
-    enableAutoUnmount(afterEach);
-
     it("renders the question", () => {
         const wrapper = mountCard();
         expect(wrapper.get(".clarification-question").text()).toBe("Do you want a tool recommendation or a tutorial?");
@@ -37,7 +35,7 @@ describe("ClarificationCard", () => {
     });
 
     it("renders the question with no options and no buttons", () => {
-        const wrapper = mountCard({ options: [] });
+        const wrapper = mountCard(stories.FreeTextAnswer);
         expect(wrapper.get(".clarification-question").text()).toBe("Do you want a tool recommendation or a tutorial?");
         expect(wrapper.findAll(".clarification-options button").length).toBe(0);
     });

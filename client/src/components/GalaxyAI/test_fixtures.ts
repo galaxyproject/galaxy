@@ -24,3 +24,9 @@ export function chatAnswers(answer: string) {
         return response(200).json(chatResponse(answer, exchange_id ?? NEW_EXCHANGE_ID));
     });
 }
+
+/** The router asks this when a request could mean a tool suggestion or a lesson. */
+export const CLARIFICATION_QUESTION = "Do you want a tool recommendation or a tutorial?";
+
+/** The router's documented quick-reply choices; omitted for a free-text clarification. */
+export const CLARIFICATION_OPTIONS = ["Tool recommendation", "Tutorial"];
