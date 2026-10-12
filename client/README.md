@@ -539,6 +539,16 @@ The following test files demonstrate specific patterns well and can serve as ref
 | **Slots in stubs**          | `src/components/Markdown/Editor/Configurations/ConfigureHeader.test.js` | Stub templates that include slot definitions                                          |
 | **Test data factory**       | `tests/test-data/index.ts`                                              | getFakeRegisteredUser() pattern for reusable mock data                                |
 
+#### Teardown Dependencies
+
+Unmount components before restoring timers or mocks they use during cleanup. With
+Vitest's default stacked hooks, `afterEach` runs in reverse registration order:
+register restoration first and `enableAutoUnmount(afterEach)` last, in the same
+scope. For an already mocked shared function such as `sanitizeHtml`, retain its
+initial mock implementation and restore it after unmounting; clearing call history
+or resetting to an empty mock does not restore that implementation. See
+`TrsTool.test.ts` and `WorkflowHelpDisplay.test.ts` for this ordering.
+
 #### Best Practices Summary
 
 1. **Test behavior, not implementation**: Focus on what users see, not internal methods
