@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import SelectionOperations from "./SelectionOperations.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 vi.mock("@/composables/confirmDialog", () => ({
     useConfirmDialog: () => ({
@@ -45,7 +44,7 @@ const getHiddenSelection = () => new Map([["FAKE_ID", { visible: false }]]);
 const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
-async function mountSelectionOperationsWrapper(config) {
+async function mountSelectionOperationsWrapper(config, { stubs = {}, attachTo } = {}) {
     setupMockConfig(config);
 
     const pinia = createPinia();
@@ -59,8 +58,9 @@ async function mountSelectionOperationsWrapper(config) {
             totalItemsInQuery: 5,
             isMultiViewItem: false,
         },
-        global: localVue,
+        global: { ...localVue, stubs: { ...localVue.stubs, ...stubs } },
         pinia,
+        attachTo,
     });
     await flushPromises();
     return wrapper;
@@ -369,15 +369,27 @@ describe("History Selection Operations", () => {
     });
 
     describe("Tag dialogs", () => {
-        it("show the tag suggestions in the dialog flow, under a full-width tag input", async () => {
-            wrapper = await mountSelectionOperationsWrapper(NO_TASKS_CONFIG);
-            const tagEditors = wrapper.findAllComponents(StatelessTags);
+        it.each(["add tags", "remove tags"])(
+            "%s: shows the tag suggestions in the dialog body, above Cancel and Ok",
+            async (menuItem) => {
+                wrapper = await mountSelectionOperationsWrapper(NO_TASKS_CONFIG, {
+                    stubs: { GModal: false, HeadlessMultiselect: false, StatelessTags: false, teleport: false },
+                    attachTo: document.body,
+                });
+                wrapper.findComponent(`[data-description="${menuItem}"]`).vm.$emit("click");
+                await flushPromises();
 
-            expect(tagEditors).toHaveLength(2);
-            tagEditors.forEach((editor) => {
-                expect(editor.props("listInFlow")).toBe(true);
-                expect(editor.props("inline")).toBe(false);
-            });
-        });
+                const dialog = wrapper.find("dialog[open]");
+                await dialog.find(".stateless-tags .toggle-button").trigger("click");
+                await flushPromises();
+
+                const listbox = dialog.element.querySelector("[role='listbox']");
+                expect(listbox).not.toBeNull();
+                expect(dialog.find(".g-modal-content").element.contains(listbox)).toBe(true);
+                const confirmButtons = dialog.find("footer .g-modal-confirm-buttons").element;
+                expect(listbox.compareDocumentPosition(confirmButtons) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+                wrapper.unmount();
+            },
+        );
     });
 });
