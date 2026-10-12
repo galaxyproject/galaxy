@@ -5,7 +5,7 @@ import { withCurrentHistory } from "@tests/test-data/currentHistory";
 import { withCurrentUser } from "@tests/test-data/currentUser";
 import { getFakeToolFormConfig } from "@tests/test-data/tools";
 import { deferred } from "@tests/vitest/deferred";
-import { HttpResponse } from "msw";
+import { http as rawHttp, HttpResponse } from "msw";
 import { expect, waitFor, within } from "storybook/test";
 import { h, onBeforeUnmount } from "vue";
 
@@ -84,7 +84,8 @@ const meta = {
                     object_store_allows_id_selection: false,
                 }),
                 webhooks: http.untyped.get("/api/webhooks", () => HttpResponse.json([])),
-                submission: http.untyped.post("/api/tools", async ({ request }) => {
+                // Transport failures have no Galaxy response headers.
+                submission: rawHttp.post("/api/tools", async ({ request }) => {
                     const payload = (await request.json()) as { tool_id?: string };
                     if ([NO_INPUTS.id, TEXT_INPUT.id, REGEX_INPUT.id].includes(payload.tool_id ?? "")) {
                         return HttpResponse.error();
@@ -101,7 +102,25 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 /** A shipped tool with no parameters; submitting it encounters a network failure. */
-export const NoInputParameters: Story = {};
+export const NoInputParameters: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Read the shipped tool with no input parameters", async () => {
+            await expect(
+                await canvas.findByText(
+                    "This tool requires no input parameters and can be run as is.",
+                    {},
+                    { timeout: 5000 },
+                ),
+            ).toBeVisible();
+            await expect(canvas.getByRole("heading", { name: "Tool Parameters" })).toBeVisible();
+            await expect(canvas.getByRole("heading", { name: "Additional Options" })).toBeVisible();
+            for (const button of canvas.getAllByRole("button", { name: /^Run Tool / })) {
+                await expect(button).not.toHaveAttribute("aria-disabled", "true");
+            }
+            await expect(canvas.queryByText("Loading Tool...", { exact: true })).not.toBeInTheDocument();
+        });
+    },
+};
 /** The history is already loaded while Galaxy is still building the tool form. */
 export const LoadingBuild: Story = {
     decorators: [
@@ -158,5 +177,65 @@ export const BackendValidationError: Story = {
                 ),
             },
         },
+    },
+};
+
+/** Editing the shipped regex tool removes the stale build-time backend error. */
+export const ClearsBackendValidationError: Story = {
+    ...BackendValidationError,
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Read the backend error before editing", async () => {
+            await expect(
+                await canvas.findByText("letters, numbers, or punctuation", {}, { timeout: 5000 }),
+            ).toBeVisible();
+            for (const button of canvas.getAllByRole("button", { name: /^Run Tool / })) {
+                await expect(button).toHaveAttribute("aria-disabled", "true");
+            }
+        });
+        await step("Correct the input and clear its stale backend error", async () => {
+            const input = canvas.getByRole("textbox", { name: "cell1" });
+            await userEvent.clear(input);
+            await userEvent.type(input, "letters");
+            await expect(input).toHaveValue("letters");
+            await expect(
+                canvas.queryByText("letters, numbers, or punctuation", { exact: true }),
+            ).not.toBeInTheDocument();
+            for (const button of canvas.getAllByRole("button", { name: /^Run Tool / })) {
+                await expect(button).not.toHaveAttribute("aria-disabled", "true");
+            }
+        });
+    },
+};
+
+/** A network interruption leaves the form available to retry after dismissing its failure dialog. */
+export const RecoversFromNetworkSubmissionFailure: Story = {
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Start with a runnable tool and no failure dialog", async () => {
+            await expect(
+                await canvas.findByText(
+                    "This tool requires no input parameters and can be run as is.",
+                    {},
+                    { timeout: 5000 },
+                ),
+            ).toBeVisible();
+            await expect(canvas.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+        await step("Submit and read the network failure", async () => {
+            await userEvent.click(canvas.getAllByRole("button", { name: /^Run Tool / })[0]!);
+            const dialog = await canvas.findByRole("dialog", {}, { timeout: 5000 });
+            await expect(within(dialog).getByRole("heading", { name: "Job submission failed." })).toBeVisible();
+            await expect(within(dialog).getByText("Network Error", { exact: true })).toBeVisible();
+            await expect(within(dialog).getByText(/The server could not complete this request/)).toBeVisible();
+        });
+        await step("Dismiss the failure and return to the runnable form", async () => {
+            await userEvent.click(within(canvas.getByRole("dialog")).getByRole("button"));
+            await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+            await expect(
+                canvas.getByText("This tool requires no input parameters and can be run as is."),
+            ).toBeVisible();
+            for (const button of canvas.getAllByRole("button", { name: /^Run Tool / })) {
+                await expect(button).not.toHaveAttribute("aria-disabled", "true");
+            }
+        });
     },
 };
