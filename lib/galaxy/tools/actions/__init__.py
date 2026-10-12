@@ -203,6 +203,10 @@ class DefaultToolAction(ToolAction):
                 data = getattr(data, "hda", data)
 
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
+                if converted_dataset and trans.app.dataset_protection.retire_unusable_conversion(
+                    trans.user, data, converted_dataset, formats
+                ):
+                    converted_dataset = None
                 if not direct_match and target_ext:
                     if converted_dataset:
                         data = converted_dataset
