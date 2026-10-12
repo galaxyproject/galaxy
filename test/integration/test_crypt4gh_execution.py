@@ -438,6 +438,21 @@ class TestCrypt4GHExternalMetadataDestinationIntegration(BaseCrypt4GHExecutionIn
         assert self.service.requests == []
 
 
+class TestCrypt4GHLiveToolOutputDestinationIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # The API would serve the tool's output while it runs.
+        config["job_config"] = cls._job_config(live_tool_output_reporting=True)
+
+    def test_destination_reporting_live_tool_output_is_refused(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+        assert job["state"] == "error"
+        assert "live_tool_output_reporting must be disabled" in output["misc_info"]
+        assert self.service.requests == []
+
+
 class TestCrypt4GHMetadataRetryIntegration(BaseCrypt4GHExecutionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
