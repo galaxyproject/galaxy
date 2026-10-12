@@ -25,7 +25,7 @@ importers:
         version: 0.1.0
       '@galaxyproject/galaxy-ui':
         specifier: file:../../../../client/packages/ui
-        version: file:../../../../client/packages/ui(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@11.3.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))
+        version: file:../../../../client/packages/ui(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@11.3.0(vue@3.5.26(typescript@5.9.3)))(eslint-plugin-vuejs-accessibility@2.6.2(eslint@10.12.0)(globals@17.13.0))(typescript-eslint@8.71.1(eslint@10.12.0)(typescript@5.9.3))(vue-eslint-parser@10.4.1(eslint@10.12.0))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))
       '@quasar/extras':
         specifier: ^1.12.4
         version: 1.17.0
@@ -382,8 +382,18 @@ packages:
       '@fortawesome/free-solid-svg-icons': ^5.15.0 || ^6.0.0
       '@fortawesome/vue-fontawesome': ^3.0.0
       '@vueuse/core': '>=10.0.0 <13.0.0'
+      eslint-plugin-vuejs-accessibility: ^2.6.0
+      typescript-eslint: ^8.0.0
       vue: ^3.4.0
+      vue-eslint-parser: ^10.0.0
       vue-router: ^4.0.0 || ^5.0.0
+    peerDependenciesMeta:
+      eslint-plugin-vuejs-accessibility:
+        optional: true
+      typescript-eslint:
+        optional: true
+      vue-eslint-parser:
+        optional: true
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2158,7 +2168,7 @@ snapshots:
 
   '@galaxyproject/brand-tokens@0.1.0': {}
 
-  '@galaxyproject/galaxy-ui@file:../../../../client/packages/ui(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@11.3.0(vue@3.5.26(typescript@5.9.3)))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))':
+  '@galaxyproject/galaxy-ui@file:../../../../client/packages/ui(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/vue-fontawesome@3.3.3(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.26(typescript@5.9.3)))(@vueuse/core@11.3.0(vue@3.5.26(typescript@5.9.3)))(eslint-plugin-vuejs-accessibility@2.6.2(eslint@10.12.0)(globals@17.13.0))(typescript-eslint@8.71.1(eslint@10.12.0)(typescript@5.9.3))(vue-eslint-parser@10.4.1(eslint@10.12.0))(vue-router@4.6.4(vue@3.5.26(typescript@5.9.3)))(vue@3.5.26(typescript@5.9.3))':
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@fortawesome/fontawesome-svg-core': 6.7.2
@@ -2171,6 +2181,10 @@ snapshots:
       markdown-it: 14.3.2
       vue: 3.5.26(typescript@5.9.3)
       vue-router: 4.6.4(vue@3.5.26(typescript@5.9.3))
+    optionalDependencies:
+      eslint-plugin-vuejs-accessibility: 2.6.2(eslint@10.12.0)(globals@17.13.0)
+      typescript-eslint: 8.71.1(eslint@10.12.0)(typescript@5.9.3)
+      vue-eslint-parser: 10.4.1(eslint@10.12.0)
 
   '@humanfs/core@0.19.2':
     dependencies:

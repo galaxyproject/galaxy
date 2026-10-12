@@ -1,13 +1,12 @@
 import js from "@eslint/js";
+import { galaxyVueBase } from "@galaxyproject/galaxy-ui/eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 import compat from "eslint-plugin-compat";
 import importX from "eslint-plugin-import-x";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import vue from "eslint-plugin-vue";
-import vuejsAccessibility from "eslint-plugin-vuejs-accessibility";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import vueParser from "vue-eslint-parser";
 
 const baseRules = {
     // Standard rules
@@ -146,7 +145,7 @@ export default defineConfig(
             js.configs.recommended,
             compat.configs["flat/recommended"],
             ...vue.configs["flat/recommended"],
-            ...vuejsAccessibility.configs["flat/recommended"],
+            ...galaxyVueBase,
         ],
         plugins: {
             "@typescript-eslint": tseslint.plugin,
@@ -165,19 +164,6 @@ export default defineConfig(
         files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
         languageOptions: {
             globals: globals.vitest,
-        },
-    },
-    {
-        files: ["**/*.vue"],
-        languageOptions: {
-            // Plugin flat configs set the parser from their own dependency, so a stale nested
-            // copy could win depending on order; pin the one we install.
-            parser: vueParser,
-            parserOptions: {
-                // The type-import rules need typescript-eslint's parser services, even in
-                // components whose script block is plain JS.
-                parser: tseslint.parser,
-            },
         },
     },
     {
