@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import {
@@ -19,10 +20,18 @@ const PREPARE = "/api/histories/{history_id}/contents/{type}s/{id}/prepare_store
 const { server, http } = useServerMock();
 
 let exportUrls: string[] = [];
+let mounted: VueWrapper[] = [];
 
 beforeEach(() => {
     exportUrls = [];
     localStorage.clear();
+});
+
+// Exports are followed to their end even after the dialog closes, so stop them before the next test.
+afterEach(() => {
+    mounted.forEach((wrapper) => wrapper.unmount());
+    mounted = [];
+    vi.useRealTimers();
 });
 
 function recentExportRecord(contentId: string) {
@@ -58,6 +67,7 @@ function mountDialog() {
     const wrapper = mount(ExportToAnotherGalaxyDialog as object, {
         global: withPlugins(getLocalVue(), pinia),
     });
+    mounted.push(wrapper);
     return { wrapper, store: useExportToAnotherGalaxyStore(pinia) };
 }
 
@@ -134,6 +144,37 @@ describe("ExportToAnotherGalaxyDialog", () => {
             }),
         );
         expect(recentExportRecord("d1")?.taskStatus).not.toBe("READY");
+    });
+
+    it("records a failure that comes after the dialog was closed", async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        let taskState = "PENDING";
+        let stateChecks = 0;
+        server.use(
+            http.post(PREPARE, ({ response }) =>
+                response(200).json({ storage_request_id: "req1", task: { id: "task1" } } as never),
+            ),
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                stateChecks += 1;
+                return response(200).json(taskState as never);
+            }),
+            http.get("/api/tasks/{task_id}/result", ({ response }) =>
+                response(200).json({ state: "FAILURE", result: "Unknown error: the file is missing" } as never),
+            ),
+        );
+        const { store } = mountDialog();
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(stateChecks).toBe(1));
+        await flushPromises();
+        store.close();
+        taskState = "FAILURE";
+        await vi.advanceTimersByTimeAsync(3000);
+        await vi.waitFor(() =>
+            expect(recentExportRecord("d1")).toMatchObject({
+                isFinal: true,
+                failureReason: "Unknown error: the file is missing",
+            }),
+        );
     });
 
     it("exports a collection and says so", async () => {

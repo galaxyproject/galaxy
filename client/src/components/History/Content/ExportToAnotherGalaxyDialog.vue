@@ -3,10 +3,11 @@ import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, shallowReactive, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { useDownloadTracker } from "@/composables/downloadTracker";
+import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import type { MonitoringData } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 import { READY_STATE } from "@/composables/shortTermStorageMonitor";
@@ -25,19 +26,23 @@ const POLL_DELAY = 3000;
 // Well inside the shortest storage duration a server is likely to use, so a reused link still works.
 const REUSE_FOR_MS = 60 * 60 * 1000;
 
+interface Export {
+    storageRequestId: string;
+    taskId: string;
+    startedAt: number;
+    monitor: TaskMonitor;
+}
+
 const store = useExportToAnotherGalaxyStore();
 const { item } = storeToRefs(store);
 
-// The export task's own state, not the storage's: a failed export still marks its storage ready.
-const { waitForTask, stopWaitingForTask, isCompleted, hasFailed, failureReason, requestHasFailed } = useTaskMonitor();
 const { getDownloadObjectUrl } = useShortTermStorage();
 const { trackDownloadRequestWithData } = useDownloadTracker();
 
-// This dialog lives as long as the page, so reopening an item shows its export again.
-const preparedExports = new Map<string, { storageRequestId: string; taskId: string; startedAt: number }>();
-const trackedExports = new Map<string, MonitoringData>();
+// This dialog lives as long as the page. Each export has its own monitor, so it is followed to its end even
+// after the dialog closes, and reopening an item shows its export again.
+const exports = shallowReactive(new Map<string, Export>());
 
-const storageRequestId = ref<string>();
 const startError = ref<string>();
 
 const showDialog = computed({
@@ -49,21 +54,22 @@ const showDialog = computed({
     },
 });
 const noun = computed(() => (item.value?.contentType === "dataset_collection" ? "collection" : "dataset"));
+const shown = computed(() => (item.value ? exports.get(keyOf(item.value)) : undefined));
+// The export task's own state, not the storage's: a failed export still marks its storage ready.
 const link = computed(() =>
-    isCompleted.value && storageRequestId.value ? absPath(getDownloadObjectUrl(storageRequestId.value)) : undefined,
+    shown.value?.monitor.isCompleted.value ? absPath(getDownloadObjectUrl(shown.value.storageRequestId)) : undefined,
 );
 const errorMessage = computed(() => {
     if (startError.value) {
         return startError.value;
     }
-    // Until the new export has started, the monitor may still hold the previous one's state.
-    if (!storageRequestId.value) {
-        return undefined;
+    const monitor = shown.value?.monitor;
+    if (monitor?.hasFailed.value) {
+        return monitor.failureReason.value || "The export failed.";
     }
-    if (hasFailed.value) {
-        return failureReason.value || "The export failed.";
-    }
-    return requestHasFailed.value ? "Galaxy could not say how the export is going. Please try again later." : undefined;
+    return monitor?.requestHasFailed.value
+        ? "Galaxy could not say how the export is going. Please try again later."
+        : undefined;
 });
 
 // Dataset and collection ids can be equal, so the type is part of the key.
@@ -72,30 +78,25 @@ function keyOf(exportable: ExportableItem) {
 }
 
 // Recent Exports only learns from the storage, which a failed export also marks ready, so tell it the outcome.
-function finishTracking(exportable: ExportableItem, status: Pick<MonitoringData, "taskStatus" | "failureReason">) {
-    const tracked = trackedExports.get(keyOf(exportable));
-    if (tracked) {
-        trackDownloadRequestWithData({ ...tracked, ...status, isFinal: true });
-    }
+function recordOutcome(monitor: TaskMonitor, tracked: MonitoringData) {
+    const stop = watch(
+        [monitor.isCompleted, monitor.hasFailed, monitor.failureReason],
+        ([completed, failed, failureReason]) => {
+            if (completed) {
+                trackDownloadRequestWithData({ ...tracked, taskStatus: READY_STATE, isFinal: true });
+                stop();
+            } else if (failed) {
+                // Any state but ready or pending reads as failed there. The reason comes in a second request.
+                trackDownloadRequestWithData({ ...tracked, taskStatus: "FAILURE", failureReason, isFinal: true });
+                if (failureReason !== undefined) {
+                    stop();
+                }
+            }
+        },
+    );
 }
 
-watch(isCompleted, (completed) => {
-    if (completed && item.value) {
-        finishTracking(item.value, { taskStatus: READY_STATE });
-    }
-});
-
-watch([hasFailed, failureReason], ([failed]) => {
-    if (failed && item.value) {
-        preparedExports.delete(keyOf(item.value));
-        // Any state but ready or pending reads as failed there.
-        finishTracking(item.value, { taskStatus: "FAILURE", failureReason: failureReason.value });
-    }
-});
-
 watch(item, (exportable) => {
-    stopWaitingForTask();
-    storageRequestId.value = undefined;
     startError.value = undefined;
     if (exportable) {
         startExport(exportable);
@@ -124,12 +125,15 @@ async function prepareExport(exportable: ExportableItem) {
 
 async function startExport(exportable: ExportableItem) {
     const key = keyOf(exportable);
-    const prepared = preparedExports.get(key);
-    if (prepared && Date.now() - prepared.startedAt < REUSE_FOR_MS) {
-        storageRequestId.value = prepared.storageRequestId;
-        waitForTask(prepared.taskId, POLL_DELAY);
+    const existing = exports.get(key);
+    if (existing && !existing.monitor.hasFailed.value && Date.now() - existing.startedAt < REUSE_FOR_MS) {
+        if (existing.monitor.requestHasFailed.value) {
+            existing.monitor.waitForTask(existing.taskId, POLL_DELAY);
+        }
         return;
     }
+    existing?.monitor.stopWaitingForTask();
+    exports.delete(key);
     let data;
     try {
         data = await prepareExport(exportable);
@@ -139,11 +143,6 @@ async function startExport(exportable: ExportableItem) {
         }
         return;
     }
-    preparedExports.set(key, {
-        storageRequestId: data.storage_request_id,
-        taskId: data.task.id,
-        startedAt: Date.now(),
-    });
     const tracked: MonitoringData = {
         taskId: data.storage_request_id,
         taskType: "short_term_storage",
@@ -161,16 +160,19 @@ async function startExport(exportable: ExportableItem) {
         startedAt: new Date(),
         isFinal: false,
     };
-    trackedExports.set(key, tracked);
     trackDownloadRequestWithData(tracked);
-    // The dialog may have been closed or opened for another item while the request was on its way.
-    if (isShown(key)) {
-        storageRequestId.value = data.storage_request_id;
-        waitForTask(data.task.id, POLL_DELAY);
-    }
+    const monitor = useTaskMonitor();
+    recordOutcome(monitor, tracked);
+    exports.set(key, {
+        storageRequestId: data.storage_request_id,
+        taskId: data.task.id,
+        startedAt: Date.now(),
+        monitor,
+    });
+    monitor.waitForTask(data.task.id, POLL_DELAY);
 }
 
-onUnmounted(stopWaitingForTask);
+onUnmounted(() => exports.forEach((entry) => entry.monitor.stopWaitingForTask()));
 </script>
 
 <template>
