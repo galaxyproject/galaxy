@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -18,7 +19,11 @@ const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
 
-const tabularMetaData = {
+beforeEach(() => vi.mocked(sanitizeHtml).mockClear());
+afterEach(() => vi.mocked(sanitizeHtml).mockClear());
+enableAutoUnmount(afterEach);
+
+const tabularDataset = {
     metadata_columns: 2,
     metadata_data_lines: 4,
     misc_blurb: "tabular_misc_blurb",
@@ -30,17 +35,17 @@ const tabularMetaData = {
 
 function setUpDatatypesStore() {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    const datatypesStore = useDatatypesMapperStore();
+    onTestFinished(() => disposePinia(pinia));
+    const datatypesStore = useDatatypesMapperStore(pinia);
     datatypesStore.datatypesMapper = testDatatypesMapper;
     return pinia;
 }
 
-async function mountTarget(propsData = {}, dataset = tabularMetaData) {
+async function mountDatasetDetails(props, dataset = tabularDataset) {
     server.use(http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(dataset)));
     const wrapper = mount(HistoryDatasetDetails, {
-        global: localVue,
-        propsData,
-        pinia: setUpDatatypesStore(),
+        global: withPlugins(localVue, setUpDatatypesStore()),
+        props,
     });
     await flushPromises();
     return wrapper;
@@ -51,8 +56,8 @@ describe("HistoryDatasetDetails.vue", () => {
         vi.useRealTimers();
     });
 
-    it("should render details", async () => {
-        const wrapper = await mountTarget({ datasetId: "datasetId", name: "history_dataset_peek" });
+    it("updates the displayed attribute from peek to name, information, and datatype", async () => {
+        const wrapper = await mountDatasetDetails({ datasetId: "datasetId", name: "history_dataset_peek" });
         expect(wrapper.text()).toBe("tabular_peek");
         await wrapper.setProps({ name: "history_dataset_name" });
         expect(wrapper.text()).toBe("tabular_name");
@@ -63,16 +68,15 @@ describe("HistoryDatasetDetails.vue", () => {
     });
 
     it("shows the dataset name as text and renders the peek through v-sanitize-html", async () => {
-        vi.mocked(sanitizeHtml).mockClear();
-        const dataset = { ...tabularMetaData, name: "<b>name</b>", peek: "<table><tr><td>peek</td></tr></table>" };
-        const wrapper = await mountTarget({ datasetId: "datasetId", name: "history_dataset_name" }, dataset);
-        expect(wrapper.find("pre").text()).toBe("<b>name</b>");
+        const dataset = { ...tabularDataset, name: "<b>name</b>", peek: "<table><tr><td>peek</td></tr></table>" };
+        const wrapper = await mountDatasetDetails({ datasetId: "datasetId", name: "history_dataset_name" }, dataset);
+        expect(wrapper.get("pre").text()).toBe("<b>name</b>");
         expect(wrapper.find("b").exists()).toBe(false);
         expect(sanitizeHtml).not.toHaveBeenCalled();
 
         await wrapper.setProps({ name: "history_dataset_peek" });
         expect(sanitizeHtml).toHaveBeenCalledWith(dataset.peek, "default");
-        expect(wrapper.find("pre td").text()).toBe("peek");
+        expect(wrapper.get("pre td").text()).toBe("peek");
     });
 
     it("shows loading while a failed fetch waits to retry", async () => {
@@ -84,13 +88,12 @@ describe("HistoryDatasetDetails.vue", () => {
                     failNext--;
                     return response("5XX").json({ err_msg: "unavailable", err_code: 0 }, { status: 503 });
                 }
-                return response(200).json(tabularMetaData);
+                return response(200).json(tabularDataset);
             }),
         );
         const wrapper = mount(HistoryDatasetDetails, {
-            localVue,
-            propsData: { datasetId: "retryDatasetId", name: "history_dataset_name" },
-            pinia: setUpDatatypesStore(),
+            global: withPlugins(localVue, setUpDatatypesStore()),
+            props: { datasetId: "retryDatasetId", name: "history_dataset_name" },
         });
         await flushPromises();
         expect(wrapper.find("pre").exists()).toBe(false);
@@ -110,17 +113,16 @@ describe("HistoryDatasetDetails.vue", () => {
                     failNext--;
                     return response("5XX").json({ err_msg: "unavailable", err_code: 0 }, { status: 503 });
                 }
-                return response(200).json(tabularMetaData);
+                return response(200).json(tabularDataset);
             }),
         );
         const pinia = setUpDatatypesStore();
-        useDatasetStore().saveDatasets([
+        useDatasetStore(pinia).saveDatasets([
             { id: "summaryDatasetId", history_content_type: "dataset", name: "tabular_name", state: "ok" },
         ]);
         const wrapper = mount(HistoryDatasetDetails, {
-            localVue,
-            propsData: { datasetId: "summaryDatasetId", name: "history_dataset_peek" },
-            pinia,
+            global: withPlugins(localVue, pinia),
+            props: { datasetId: "summaryDatasetId", name: "history_dataset_peek" },
         });
         await flushPromises();
         expect(wrapper.text()).not.toContain("unavailable");
