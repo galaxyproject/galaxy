@@ -3,6 +3,7 @@
  */
 import { GalaxyApi } from "@/api";
 import { getDbKeys } from "@/api/dbKeys";
+import { memoizeUntilRejected } from "@/utils/sharedPromise";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const AUTO_EXTENSION = {
@@ -23,12 +24,6 @@ export const RULES_TYPES = [
     { id: "datasets", text: "Datasets" },
 ];
 
-/**
- * Local cache.
- */
-let _cachedDatatypes;
-let _cachedDbKeys;
-
 /*
  * Local helper utilities.
  */
@@ -44,10 +39,7 @@ function dbKeySort(defaultDbKey) {
     };
 }
 
-async function loadDbKeys() {
-    if (_cachedDbKeys) {
-        return _cachedDbKeys;
-    }
+async function fetchDbKeys() {
     const dbKeys = await getDbKeys();
     const dbKeyList = [];
     for (var key in dbKeys) {
@@ -56,17 +48,16 @@ async function loadDbKeys() {
             text: dbKeys[key][0],
         });
     }
-    _cachedDbKeys = dbKeyList;
     return dbKeyList;
 }
 
-async function loadUploadDatatypes() {
-    if (_cachedDatatypes) {
-        return _cachedDatatypes;
-    }
-    const { data: datatypes } = await GalaxyApi().GET("/api/datatypes", {
+async function fetchUploadDatatypes() {
+    const { data: datatypes, error } = await GalaxyApi().GET("/api/datatypes", {
         params: { query: { extension_only: false } },
     });
+    if (error) {
+        rethrowSimple(error);
+    }
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
@@ -83,9 +74,13 @@ async function loadUploadDatatypes() {
         var b_text = b.text && b.text.toLowerCase();
         return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
     });
-    _cachedDatatypes = listExtensions;
     return listExtensions;
 }
+
+/** @type {() => Promise<any[]>} */
+const loadDbKeys = memoizeUntilRejected(fetchDbKeys);
+/** @type {() => Promise<any[]>} */
+const loadUploadDatatypes = memoizeUntilRejected(fetchUploadDatatypes);
 
 /*
  * Exported utilities.
