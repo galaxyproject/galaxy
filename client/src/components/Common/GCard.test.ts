@@ -255,7 +255,7 @@ describe("GCard", () => {
             Object.defineProperty(element, "clientHeight", { configurable: true, value: clientHeight });
         }
 
-        async function mountTitle(scrollHeight: number, clientHeight: number, hint = "Preview Workflow") {
+        async function mountTitle(scrollHeight: number, clientHeight: number, hint = "Click to preview workflow") {
             resizeCallbacks.length = 0;
             const wrapper = mountCard({ title: { label: NAME, title: hint, handler: vi.fn() }, titleNLines: 2 });
             setHeight(wrapper.find("#g-card-title-link-card").element, scrollHeight, clientHeight);
@@ -269,7 +269,7 @@ describe("GCard", () => {
 
             const hint = tooltip.find(".g-card-title-tooltip-hint");
             const name = tooltip.find(".g-card-title-tooltip-name");
-            expect(hint.text()).toBe("Preview Workflow");
+            expect(hint.text()).toBe("Click to preview workflow");
             expect(name.text()).toBe(NAME);
             expect(hint.element.compareDocumentPosition(name.element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         });
@@ -277,7 +277,7 @@ describe("GCard", () => {
         it("shows only the click hint when the whole title fits", async () => {
             const tooltip = (await mountTitle(40, 40)).find("#g-card-title-tooltip-card");
 
-            expect(tooltip.find(".g-card-title-tooltip-hint").text()).toBe("Preview Workflow");
+            expect(tooltip.find(".g-card-title-tooltip-hint").text()).toBe("Click to preview workflow");
             expect(tooltip.find(".g-card-title-tooltip-name").exists()).toBe(false);
         });
 
