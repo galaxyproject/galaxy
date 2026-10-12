@@ -1,9 +1,10 @@
 import { registerToastHost, unregisterToastHost, useToast } from "@galaxyproject/galaxy-ui";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
+import type { Router } from "vue-router";
 
 import { createMemoryRouter } from "./test-utils";
 
@@ -17,36 +18,52 @@ const SELECTORS = {
 const localVue = getLocalVue();
 const { toasts, addToast, clearToasts } = useToast();
 
-// Track every wrapper mounted in a test and unmount it afterwards so we don't
-// leak reactive GToast instances (all reading the same toast-queue singleton)
-// across tests.
+// Every mounted host reads the same queue; unmount before clearing singleton
+// state or restoring timers so a failed assertion cannot leak a host or toast.
 const mountedWrappers: Array<{ unmount: () => void }> = [];
+const registeredHosts = new Set<string>();
 
-/**
- * @param realTransitions VTU stubs `<transition>`/`<transition-group>` by default
- * (regardless of the `stubs` config), which skips their enter/leave class
- * lifecycle entirely. Pass `true` for tests that assert on those classes.
- */
-function mountGToast(options: Record<string, unknown> = {}, realTransitions = false) {
-    const global = realTransitions ? { ...localVue, stubs: { ...localVue.stubs, TransitionGroup: false } } : localVue;
-    const wrapper = mount(GToast as object, { global, ...options });
+function registerHost(host: string) {
+    registerToastHost(host);
+    registeredHosts.add(host);
+}
+
+function mountGToast({
+    host,
+    router,
+    realTransitions = false,
+}: { host?: string; router?: Router; realTransitions?: boolean } = {}) {
+    const global = router ? withPlugins(localVue, router) : localVue;
+    const wrapper = mount(GToast, {
+        props: { host },
+        global: {
+            ...global,
+            // Keep real transitions only when checking their leave classes.
+            stubs: { ...global.stubs, TransitionGroup: !realTransitions },
+        },
+    });
     mountedWrappers.push(wrapper);
     return wrapper;
 }
 
 afterEach(() => {
     mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+    registeredHosts.forEach(unregisterToastHost);
+    registeredHosts.clear();
     clearToasts();
+    if (vi.isFakeTimers()) {
+        vi.clearAllTimers();
+    }
     vi.useRealTimers();
 });
 
 describe("GToast.vue", () => {
-    it("when modal is active, modal triggers toast to render inside main browser window", async () => {
+    it("renders only in the modal host while it is active, then returns to the root host", async () => {
         const host = "modal-toast-host";
         const rootWrapper = mountGToast();
 
-        registerToastHost(host);
-        const modalWrapper = mountGToast({ propsData: { host } });
+        registerHost(host);
+        const modalWrapper = mountGToast({ host });
         addToast("Shown above the modal", { duration: 0 });
         await nextTick();
 
@@ -54,6 +71,10 @@ describe("GToast.vue", () => {
         expect(modalWrapper.get(SELECTORS.G_TOAST).text()).toContain("Shown above the modal");
 
         unregisterToastHost(host);
+        await nextTick();
+
+        expect(modalWrapper.find(SELECTORS.G_TOAST).exists()).toBe(false);
+        expect(rootWrapper.get(SELECTORS.G_TOAST).text()).toContain("Shown above the modal");
     });
 
     it("renders queued toasts with title, message and variant class", async () => {
@@ -69,7 +90,8 @@ describe("GToast.vue", () => {
     });
 
     it("removes a toast when its close button is clicked", async () => {
-        const wrapper = mountGToast({}, true);
+        vi.useFakeTimers();
+        const wrapper = mountGToast({ realTransitions: true });
 
         addToast("Dismiss me", { duration: 0 });
         await nextTick();
@@ -93,7 +115,7 @@ describe("GToast.vue", () => {
 
     it("auto-dismisses a toast after its duration elapses", async () => {
         vi.useFakeTimers();
-        const wrapper = mountGToast({}, true);
+        const wrapper = mountGToast({ realTransitions: true });
 
         addToast("Temporary", { duration: 1000 });
         await nextTick();
@@ -110,7 +132,7 @@ describe("GToast.vue", () => {
         ["info", "g-toast-info", "Info"],
         ["warning", "g-toast-warning", "Warning"],
         ["error", "g-toast-danger", "Error"],
-    ] as const)("%s() raises a %s toast with the default title", async (method, variantClass, defaultTitle) => {
+    ] as const)("%s() renders the %s variant and its default title", async (method, variantClass, defaultTitle) => {
         const wrapper = mountGToast();
         const raise = useToast()[method];
 
