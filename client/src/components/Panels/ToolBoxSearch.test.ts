@@ -1,11 +1,14 @@
 import "@/composables/__mocks__/filter";
 
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createPinia, disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
 
+import type { AnyUser } from "@/api";
 import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
 import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
@@ -26,7 +29,6 @@ const toolsListInPanel = toolsListInPanelUntyped as unknown as Record<string, To
 const EXPECTED_LABELS = ["Recent tools", "Favorites"];
 
 const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
 
 function toToolsById(list: Tool[]) {
     return list.reduce(
@@ -44,12 +46,12 @@ function withFavoriteEdamOperationTool(list: Tool[]) {
     );
 }
 
-const SIGNED_IN_USER = {
+const SIGNED_IN_USER = getFakeRegisteredUser({
     id: "user-id",
     username: "test-user",
     email: "test@example.org",
     isAnonymous: false,
-} as any;
+});
 
 interface MountToolBoxOptions {
     /** Override the tool list used to populate `toolStore.toolsById` (default: `toolsList`). */
@@ -57,10 +59,10 @@ interface MountToolBoxOptions {
     /** Override `toolStore.toolSections` (default: `{ default: toolsListInPanel }`). */
     toolSections?: Record<string, Record<string, Tool | ToolSection>>;
     /** Override `userStore.currentUser` — anonymous by default. */
-    currentUser?: any;
+    currentUser?: AnyUser;
     /** Override `userStore.currentPreferences.favorites` (default: `{ tools: [] }`). */
-    favorites?: any;
-    /** Set `userStore.recentTools` if provided. */
+    favorites?: Partial<NonNullable<ReturnType<typeof useUserStore>["currentPreferences"]>["favorites"]>;
+    /** Override `userStore.recentTools` (default: `[]`). */
     recentTools?: string[];
     /** Override the active panel view (default: `"my_panel"`). */
     currentPanelView?: string;
@@ -74,31 +76,31 @@ interface MountToolBoxOptions {
 
 function mountToolBox(options: MountToolBoxOptions = {}) {
     const pinia = createPinia();
-    setActivePinia(pinia);
+    onTestFinished(() => disposePinia(pinia));
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div></div>" } }],
+    });
 
-    const toolStore = useToolStore();
+    const toolStore = useToolStore(pinia);
     vi.spyOn(toolStore, "fetchToolTagsMapping").mockResolvedValue();
     toolStore.toolsById = toToolsById(options.tools ?? toolsList);
     toolStore.toolSections = options.toolSections ?? { default: toolsListInPanel };
     toolStore.defaultPanelView = "default";
     toolStore.currentPanelView = options.currentPanelView ?? "my_panel";
 
-    const userStore = useUserStore();
+    const userStore = useUserStore(pinia);
     if (options.currentUser !== undefined) {
         userStore.currentUser = options.currentUser;
     }
-    userStore.currentPreferences = { favorites: options.favorites ?? { tools: [] } };
-    if (options.recentTools !== undefined) {
-        userStore.recentTools = options.recentTools;
-    }
+    userStore.$patch({ currentPreferences: { favorites: options.favorites ?? { tools: [] } } });
+    userStore.recentTools = options.recentTools ?? [];
 
     options.setupStores?.(toolStore, userStore);
 
-    const wrapper = mount(ToolBox as object, {
-        pinia,
-        localVue,
-        router,
-        propsData: {
+    const wrapper = mount(ToolBox, {
+        global: withPlugins(localVue, pinia, router),
+        props: {
             favoritesDefault: options.favoritesDefault ?? true,
             workflow: options.workflow ?? false,
             useSearchWorker: false,
@@ -108,25 +110,28 @@ function mountToolBox(options: MountToolBoxOptions = {}) {
     return { wrapper, toolStore, userStore };
 }
 
+beforeEach(() => {
+    vi.useFakeTimers();
+});
+
+afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    resetMockConfig();
+    setMockConfig({ toolbox_auto_sort: true });
+});
+enableAutoUnmount(afterEach);
+
 describe("ToolBox search", () => {
-    beforeEach(() => {
-        vi.useFakeTimers();
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
-    });
-
     it("searches across toolbox when favorites are the default view and clears the query with Escape", async () => {
         const { wrapper } = mountToolBox({ favorites: { tools: ["liftOver1"] } });
         await flushPromises();
 
         expect(wrapper.find('[data-tool-id="liftOver1"]').exists()).toBe(true);
 
-        const input = wrapper.find("input.search-query");
-        await input.setValue("Zip");
-        vi.advanceTimersByTime(250);
-        await flushPromises();
+        const input = wrapper.get("input.search-query");
+        await searchFor(wrapper, "Zip");
 
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
 
@@ -157,10 +162,7 @@ describe("ToolBox search", () => {
         const { wrapper } = mountToolBox({ favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } });
         await flushPromises();
 
-        const input = wrapper.find("input.search-query");
-        await input.setValue("Filter");
-        vi.advanceTimersByTime(250);
-        await flushPromises();
+        await searchFor(wrapper, "Filter");
 
         const labels = wrapper.findAll(".tool-panel-label").map((item) => item.text());
         expect(labels).toEqual(["Favorites", "Search results"]);
@@ -184,25 +186,17 @@ describe("ToolBox search", () => {
         });
         await flushPromises();
 
-        const input = wrapper.find("input.search-query");
-
-        await input.setValue("#favorites AND Filter");
-        vi.advanceTimersByTime(250);
-        await flushPromises();
+        await searchFor(wrapper, "#favorites AND Filter");
 
         let toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__"]);
 
-        await input.setValue("#favorites Filter");
-        vi.advanceTimersByTime(250);
-        await flushPromises();
+        await searchFor(wrapper, "#favorites Filter");
 
         toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__"]);
 
-        await input.setValue("#favorites");
-        vi.advanceTimersByTime(250);
-        await flushPromises();
+        await searchFor(wrapper, "#favorites");
 
         toolIds = wrapper.findAll("a[data-tool-id]").map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__"]);
@@ -302,10 +296,7 @@ describe("ToolBox search", () => {
         const { wrapper } = mountToolBox({ favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } });
         await flushPromises();
 
-        const input = wrapper.find("input.search-query");
-        await input.setValue("Filter");
-        vi.advanceTimersByTime(250);
-        await flushPromises();
+        await searchFor(wrapper, "Filter");
 
         expect(wrapper.find('[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(true);
         expect(wrapper.find('[data-tool-id="__FILTER_EMPTY_DATASETS__"]').exists()).toBe(true);
@@ -333,14 +324,14 @@ describe("ToolBox search", () => {
         expect(toolIds).toEqual(["__ZIP_COLLECTION__", "__FILTER_EMPTY_DATASETS__", "__FILTER_FAILED_DATASETS__"]);
         expect(wrapper.find('.tool-favorite-button[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
 
-        await wrapper.find('[data-description="clear-recent-tools"]').trigger("click");
+        await wrapper.get('[data-description="clear-recent-tools"]').trigger("click");
         await flushPromises();
 
         expect(wrapper.find('[data-description="clear-recent-tools"]').exists()).toBe(false);
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(false);
     });
 
-    it("shows each recent tool once when stored recent tools contain duplicate or non-panel version IDs", async () => {
+    it("shows each recent tool once and ignores unknown IDs when recent tools contain duplicate or non-panel versions", async () => {
         const latestZipVersion = {
             ...toolsList.find((tool) => tool.id === "__ZIP_COLLECTION__")!,
             id: "toolshed.example.org/repos/dev/zip_collection/zip/1.0",
@@ -362,7 +353,7 @@ describe("ToolBox search", () => {
                     },
                 },
             },
-            recentTools: [olderZipVersion.id, latestZipVersion.id, "__FILTER_EMPTY_DATASETS__"],
+            recentTools: [olderZipVersion.id, latestZipVersion.id, "__FILTER_EMPTY_DATASETS__", "unknown-recent-tool"],
         });
         await flushPromises();
 
@@ -584,7 +575,7 @@ describe("ToolBox search", () => {
     // would duplicate the gate check without exercising user-visible behavior.
 });
 
-const ANONYMOUS_USER = { id: "anon", isAnonymous: true } as any;
+const ANONYMOUS_USER = { ...getFakeAnonymousUser(), id: "anon" };
 
 /** A default-panel toolbox with search results already in the store. */
 async function mountDefaultPanelToolBox(options: MountToolBoxOptions = {}) {
@@ -599,7 +590,7 @@ async function mountDefaultPanelToolBox(options: MountToolBoxOptions = {}) {
 }
 
 async function searchFor(wrapper: VueWrapper, query: string) {
-    await wrapper.find("input.search-query").setValue(query);
+    await wrapper.get("input.search-query").setValue(query);
     vi.advanceTimersByTime(250);
     await flushPromises();
 }
@@ -608,18 +599,11 @@ const REQUEST_BUTTON = '[data-description="request tool installation button"]';
 
 describe("ToolBox — Request Tool Installation button", () => {
     beforeEach(() => {
-        vi.useFakeTimers();
         setMockConfig({
             toolbox_auto_sort: true,
             enable_notification_system: true,
             enable_tool_installation_request_form: true,
         });
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
-        resetMockConfig();
-        setMockConfig({ toolbox_auto_sort: true });
     });
 
     it("is hidden when search returns results", async () => {
