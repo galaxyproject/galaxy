@@ -1,14 +1,18 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { deferred } from "@tests/vitest/deferred";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia, setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { h } from "vue";
 
 import VisualizationDisplay from "./VisualizationDisplay.vue";
 
-const guards = { leave: undefined, update: undefined };
+const { guards, getVisualization } = vi.hoisted(() => ({
+    guards: { leave: undefined, update: undefined },
+    getVisualization: vi.fn(),
+}));
 
 vi.mock("vue-router", () => ({
     onBeforeRouteLeave: (guard) => (guards.leave = guard),
@@ -18,13 +22,9 @@ vi.mock("vue-router", () => ({
 const ME = "user-1";
 const SIGNED_IN = { id: ME, email: "me@example.org" };
 
-let signedIn;
-let stored;
-let respond;
-
 vi.mock("@/api", async (importOriginal) => ({
     ...(await importOriginal()),
-    GalaxyApi: () => ({ GET: () => new Promise((resolve) => (respond = () => resolve(stored))) }),
+    GalaxyApi: () => ({ GET: getVisualization }),
 }));
 
 vi.mock("@/components/Visualizations/VisualizationFrame.vue", () => ({
@@ -38,33 +38,44 @@ vi.mock("@/components/Visualizations/VisualizationFrame.vue", () => ({
 const FRAME = { name: "VisualizationFrame" };
 const localVue = getLocalVue();
 
-let wrapper;
+const originalConfirm = Object.getOwnPropertyDescriptor(window, "confirm");
 
 function savedBy(userId) {
     return { data: { title: "Saved chart", user_id: userId, latest_revision: { config: { a: 1 } } }, error: null };
 }
 
-function mountDisplay(propsData = { visualization: "example", datasetId: "d1" }) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: signedIn } } });
+function mountDisplay(
+    props = { visualization: "example", datasetId: "d1" },
+    { user = SIGNED_IN, response = savedBy(ME) } = {},
+) {
+    const request = deferred();
+    getVisualization.mockReturnValueOnce(request.promise);
+    const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: user } } });
     setActivePinia(pinia);
-    wrapper = mount(VisualizationDisplay, {
-        propsData,
-        localVue,
-        pinia,
-        stubs: { LoadingSpan: true },
+    onTestFinished(async () => {
+        // The wrapper is already unmounted; finish any request before disposing its store.
+        request.resolve(response);
+        await flushPromises();
+        disposePinia(pinia);
     });
-    return wrapper;
+    const wrapper = mount(VisualizationDisplay, {
+        props,
+        global: { ...withPlugins(localVue, pinia), stubs: { LoadingSpan: true } },
+    });
+    return { wrapper, respond: () => request.resolve(response) };
 }
 
-async function openSaved(ownerId) {
-    stored = savedBy(ownerId);
-    mountDisplay({ visualization: "example", visualizationId: "v1" });
+async function openSaved(ownerId, user = SIGNED_IN) {
+    const { wrapper, respond } = mountDisplay(
+        { visualization: "example", visualizationId: "v1" },
+        { user, response: savedBy(ownerId) },
+    );
     respond();
     await flushPromises();
     return wrapper;
 }
 
-const report = (saved) => wrapper.findComponent(FRAME).vm.$emit("saved", saved);
+const report = (wrapper, saved) => wrapper.getComponent(FRAME).vm.$emit("saved", saved);
 const unloadIsBlocked = () => !window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
 
 function refuses() {
@@ -97,50 +108,52 @@ function decide(guard) {
 
 beforeEach(() => {
     guards.leave = guards.update = undefined;
-    stored = savedBy(ME);
-    signedIn = SIGNED_IN;
+    getVisualization.mockReset();
 });
 
 afterEach(() => {
-    wrapper?.unmount();
-    wrapper = undefined;
-    // happy-dom has no confirm of its own, so the stub has to be taken back off.
-    delete window.confirm;
+    if (originalConfirm) {
+        Object.defineProperty(window, "confirm", originalConfirm);
+    } else {
+        delete window.confirm;
+    }
     vi.restoreAllMocks();
 });
+// Register last so component listeners are removed before their spies are restored.
+enableAutoUnmount(afterEach);
 
 describe("warning about unsaved work", () => {
     it("warns once the visualization reports an unsaved change, and stops once it saves", async () => {
-        mountDisplay();
+        const { wrapper } = mountDisplay();
         await flushPromises();
         expect(unloadIsBlocked()).toBe(false);
-        await report(false);
+        await report(wrapper, false);
         expect(unloadIsBlocked()).toBe(true);
-        await report(true);
+        await report(wrapper, true);
         expect(unloadIsBlocked()).toBe(false);
     });
 
     it("guards a tab or dataset switch, which keeps the same route", async () => {
-        mountDisplay();
+        const { wrapper } = mountDisplay();
         await flushPromises();
-        await report(false);
+        await report(wrapper, false);
         const confirm = refuses();
         expect(decide(guards.update)).toBe(false);
         expect(confirm).toHaveBeenCalled();
     });
 
     it("guards leaving the route as well", async () => {
-        mountDisplay();
+        const { wrapper } = mountDisplay();
         await flushPromises();
-        await report(false);
+        await report(wrapper, false);
         refuses();
         expect(decide(guards.leave)).toBe(false);
     });
 
     it("lets a switch through once the visualization is saved", async () => {
-        mountDisplay();
+        const { wrapper } = mountDisplay();
         await flushPromises();
-        await report(true);
+        await report(wrapper, true);
         const confirm = refuses();
         expect(decide(guards.update)).toBe(true);
         expect(confirm).not.toHaveBeenCalled();
@@ -148,7 +161,7 @@ describe("warning about unsaved work", () => {
 
     it("leaves nothing listening when it is left while its request is pending", async () => {
         const listening = watchUnloadListeners();
-        mountDisplay({ visualization: "example", visualizationId: "v1" });
+        const { wrapper, respond } = mountDisplay({ visualization: "example", visualizationId: "v1" });
         expect(listening.size).toBe(1);
         wrapper.unmount();
         respond();
@@ -159,36 +172,35 @@ describe("warning about unsaved work", () => {
 
 describe("saving a visualization the viewer did not make", () => {
     it("names the saved visualization when the viewer owns it, so saving updates it", async () => {
-        await openSaved(ME);
-        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBe("v1");
+        const wrapper = await openSaved(ME);
+        expect(wrapper.getComponent(FRAME).props("visualizationId")).toBe("v1");
     });
 
     it("names nothing when someone else owns it, so saving makes the viewer a copy", async () => {
-        await openSaved("someone-else");
-        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBeUndefined();
+        const wrapper = await openSaved("someone-else");
+        expect(wrapper.getComponent(FRAME).props("visualizationId")).toBeUndefined();
     });
 
     it("names nothing for a viewer who is not signed in, who can own nothing", async () => {
-        signedIn = null;
-        await openSaved(ME);
-        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBeUndefined();
+        const wrapper = await openSaved(ME, null);
+        expect(wrapper.getComponent(FRAME).props("visualizationId")).toBeUndefined();
     });
 
     it("still shows the title and config it was stored under", async () => {
-        await openSaved("someone-else");
-        expect(wrapper.findComponent(FRAME).props("title")).toBe("Saved chart");
-        expect(wrapper.findComponent(FRAME).props("config")).toEqual({ a: 1 });
+        const wrapper = await openSaved("someone-else");
+        expect(wrapper.getComponent(FRAME).props("title")).toBe("Saved chart");
+        expect(wrapper.getComponent(FRAME).props("config")).toEqual({ a: 1 });
     });
 });
 
 describe("showing a different visualization", () => {
     it("renders a fresh frame when the plugin changes, so the iframe reloads with it", async () => {
-        mountDisplay();
+        const { wrapper } = mountDisplay();
         await flushPromises();
-        const before = wrapper.findComponent(FRAME).element;
+        const before = wrapper.getComponent(FRAME).element;
         await wrapper.setProps({ visualization: "another" });
         await flushPromises();
-        const frame = wrapper.findComponent(FRAME);
+        const frame = wrapper.getComponent(FRAME);
         expect(frame.props("name")).toBe("another");
         expect(frame.element).not.toBe(before);
     });
