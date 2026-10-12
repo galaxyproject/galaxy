@@ -227,7 +227,8 @@ class Crypt4GH(Binary):
         created_from_basename = getattr(dataset.dataset, "created_from_basename", None)
         if created_from_basename:
             unwrapped_name = unwrap_crypt4gh_file_ext(created_from_basename)
-            if unwrapped_name is not None:
+            # A name without an inner extension ('reads.c4gh') unwraps to the stem.
+            if unwrapped_name is not None and "." in unwrapped_name:
                 return unwrapped_name.rsplit(".", 1)[-1]
         return "data"
 
