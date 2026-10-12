@@ -1,14 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { deferred } from "@tests/vitest/deferred";
-import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, nth, suppressBootstrapVueWarnings, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
 import { curatedHelpHtml } from "@/components/Workflow/List/curatedFilters";
 import { useUserStore } from "@/stores/userStore";
@@ -19,7 +19,6 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const FAKE_USER = getFakeRegisteredUser();
 
@@ -90,15 +89,14 @@ function useCatalog(respondWith: CatalogResponder) {
 
 async function mountList() {
     const pinia = createTestingPinia({ createSpy: vi.fn });
-    setActivePinia(pinia);
+    onTestFinished(() => disposePinia(pinia));
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
-    const userStore = useUserStore();
+    const userStore = useUserStore(pinia);
     userStore.currentUser = FAKE_USER;
 
-    const wrapper = mount(CuratedWorkflowList as object, {
-        localVue,
-        pinia,
-        router,
+    const wrapper = mount(CuratedWorkflowList, {
+        global: withPlugins(localVue, pinia, router),
     });
 
     await flushPromises();
@@ -112,7 +110,7 @@ async function mountCuratedList(response: CuratedWorkflowsIndexResponse) {
 }
 
 async function setFilterText(wrapper: Awaited<ReturnType<typeof mountList>>, text: string) {
-    wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", text);
+    wrapper.getComponent(FilterMenu).vm.$emit("update:filterText", text);
     await flushPromises();
 }
 
@@ -134,8 +132,7 @@ describe("CuratedWorkflowList", () => {
             // WorkflowListTabs and the sort header read the config store, which
             // fetches eagerly when it is first instantiated.
             http.get("/api/configuration", ({ response }) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                return response(200).json({ curated_workflows_source: configSource } as any);
+                return response.untyped(HttpResponse.json({ curated_workflows_source: configSource }));
             }),
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 countsRequested();
@@ -143,6 +140,11 @@ describe("CuratedWorkflowList", () => {
             }),
         );
     });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+    enableAutoUnmount(afterEach);
 
     it("renders a card per workflow for the iwc source", async () => {
         const workflows = [
@@ -203,7 +205,7 @@ describe("CuratedWorkflowList", () => {
         await setFilterText(wrapper, "owner:bob");
 
         expect(wrapper.find("#no-curated-workflow-found-invalid").exists()).toBe(true);
-        expect(wrapper.find("#no-curated-workflow-found-invalid").text()).toContain("owner");
+        expect(wrapper.get("#no-curated-workflow-found-invalid").text()).toContain("owner");
         expect(catalogQueries).toHaveLength(1);
     });
 
@@ -239,7 +241,7 @@ describe("CuratedWorkflowList", () => {
         });
         const wrapper = await mountList();
 
-        wrapper.findComponent({ name: "BPagination" }).vm.$emit("change", 3);
+        wrapper.getComponent({ name: "BPagination" }).vm.$emit("change", 3);
         await flushPromises();
 
         expect(catalogQueries.map((query) => query.get("offset"))).toEqual(["0", "48", "24"]);
@@ -258,7 +260,7 @@ describe("CuratedWorkflowList", () => {
         const wrapper = await mountList();
 
         expect(wrapper.find("#curated-workflows-error").exists()).toBe(true);
-        expect(wrapper.find("#curated-workflows-error").text()).toContain("not enabled");
+        expect(wrapper.get("#curated-workflows-error").text()).toContain("not enabled");
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(0);
     });
 
@@ -271,7 +273,7 @@ describe("CuratedWorkflowList", () => {
         });
 
         expect(wrapper.find("#curated-workflows-preparing").exists()).toBe(true);
-        expect(wrapper.find("#curated-workflows-preparing").text()).toContain("fetching the curated workflow catalog");
+        expect(wrapper.get("#curated-workflows-preparing").text()).toContain("fetching the curated workflow catalog");
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(0);
         expect(wrapper.find("#curated-workflows-unavailable").exists()).toBe(false);
     });
@@ -285,7 +287,7 @@ describe("CuratedWorkflowList", () => {
         });
 
         expect(wrapper.find("#curated-workflows-unavailable").exists()).toBe(true);
-        expect(wrapper.find("#curated-workflows-unavailable").text()).toContain("could not reach");
+        expect(wrapper.get("#curated-workflows-unavailable").text()).toContain("could not reach");
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(0);
         expect(wrapper.find("#curated-workflows-preparing").exists()).toBe(false);
     });
@@ -301,28 +303,28 @@ describe("CuratedWorkflowList", () => {
     it("starts on Recommended and leaves the order to the server until the user picks a sort", async () => {
         const wrapper = await mountCuratedList({ source: "iwc", total_matches: 1, workflows: [iwcWorkflow()] });
 
-        expect(wrapper.find("#sortby-default").classes()).toContain("g-pressed");
-        expect(wrapper.find("#sortby-update_time").classes()).not.toContain("g-pressed");
+        expect(wrapper.get("#sortby-default").classes()).toContain("g-pressed");
+        expect(wrapper.get("#sortby-update_time").classes()).not.toContain("g-pressed");
         // Sending a sort at all would opt out of runnable-first ordering.
         expect(catalogQueries).toHaveLength(1);
         expect(catalogQueries[0]!.has("sort_by")).toBe(false);
         expect(catalogQueries[0]!.has("sort_desc")).toBe(false);
 
-        await wrapper.find("#sortby-name").trigger("click");
+        await wrapper.get("#sortby-name").trigger("click");
         await flushPromises();
 
         expect(catalogQueries).toHaveLength(2);
         expect(catalogQueries[1]!.get("sort_by")).toBe("name");
         expect(catalogQueries[1]!.get("sort_desc")).toBe("true");
-        expect(wrapper.find("#sortby-default").classes()).not.toContain("g-pressed");
+        expect(wrapper.get("#sortby-default").classes()).not.toContain("g-pressed");
 
-        await wrapper.find("#sortby-default").trigger("click");
+        await wrapper.get("#sortby-default").trigger("click");
         await flushPromises();
 
         expect(catalogQueries).toHaveLength(3);
         expect(catalogQueries[2]!.has("sort_by")).toBe(false);
         expect(catalogQueries[2]!.has("sort_desc")).toBe(false);
-        expect(wrapper.find("#sortby-default").classes()).toContain("g-pressed");
+        expect(wrapper.get("#sortby-default").classes()).toContain("g-pressed");
     });
 
     it("offers the catalog's collections as chips that filter one collection at a time", async () => {
@@ -344,18 +346,18 @@ describe("CuratedWorkflowList", () => {
         await flushPromises();
 
         expect(catalogQueries[1]!.get("search")).toBe("collection:'Genome assembly'");
-        expect(wrapper.find('[data-collection="Genome assembly"]').classes()).toContain("g-pressed");
+        expect(wrapper.get('[data-collection="Genome assembly"]').classes()).toContain("g-pressed");
 
         // Another chip replaces the selection rather than stacking on it.
-        await wrapper.find('[data-collection="Transcriptomics"]').trigger("click");
+        await wrapper.get('[data-collection="Transcriptomics"]').trigger("click");
         await flushPromises();
 
         expect(catalogQueries[2]!.get("search")).toBe("collection:'Transcriptomics'");
-        expect(wrapper.find('[data-collection="Genome assembly"]').classes()).not.toContain("g-pressed");
-        expect(wrapper.find('[data-collection="Transcriptomics"]').classes()).toContain("g-pressed");
+        expect(wrapper.get('[data-collection="Genome assembly"]').classes()).not.toContain("g-pressed");
+        expect(wrapper.get('[data-collection="Transcriptomics"]').classes()).toContain("g-pressed");
 
         // And the active chip clears it.
-        await wrapper.find('[data-collection="Transcriptomics"]').trigger("click");
+        await wrapper.get('[data-collection="Transcriptomics"]').trigger("click");
         await flushPromises();
 
         expect(catalogQueries[3]!.get("search") ?? "").toBe("");
@@ -369,11 +371,11 @@ describe("CuratedWorkflowList", () => {
         });
         await setFilterText(wrapper, "name:flye");
 
-        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await wrapper.get('[data-collection="Genome assembly"]').trigger("click");
         await flushPromises();
         expect(catalogQueries.at(-1)!.get("search")).toBe("name:flye collection:'Genome assembly'");
 
-        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await wrapper.get('[data-collection="Genome assembly"]').trigger("click");
         await flushPromises();
         expect(catalogQueries.at(-1)!.get("search")).toBe("name:flye");
     });
@@ -385,11 +387,11 @@ describe("CuratedWorkflowList", () => {
         });
         await setFilterText(wrapper, "flye");
 
-        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await wrapper.get('[data-collection="Genome assembly"]').trigger("click");
         await flushPromises();
         expect(catalogQueries.at(-1)!.get("search")).toBe("flye collection:'Genome assembly'");
 
-        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await wrapper.get('[data-collection="Genome assembly"]').trigger("click");
         await flushPromises();
         expect(catalogQueries.at(-1)!.get("search")).toBe("flye");
     });
@@ -404,15 +406,15 @@ describe("CuratedWorkflowList", () => {
         });
         await setFilterText(wrapper, "c:'Genome assembly'");
 
-        expect(wrapper.find('[data-collection="Genome assembly"]').classes()).toContain("g-pressed");
+        expect(wrapper.get('[data-collection="Genome assembly"]').classes()).toContain("g-pressed");
 
         // Switching replaces the alias rather than ANDing a second collection onto it.
-        await wrapper.find('[data-collection="Transcriptomics"]').trigger("click");
+        await wrapper.get('[data-collection="Transcriptomics"]').trigger("click");
         await flushPromises();
         expect(catalogQueries.at(-1)!.get("search")).toBe("collection:'Transcriptomics'");
 
         await setFilterText(wrapper, "c:'Genome assembly'");
-        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await wrapper.get('[data-collection="Genome assembly"]').trigger("click");
         await flushPromises();
         expect(catalogQueries.at(-1)!.get("search") ?? "").toBe("");
     });
@@ -424,8 +426,8 @@ describe("CuratedWorkflowList", () => {
         });
 
         await wrapper
-            .find(".curated-workflow-card")
-            .find("#g-card-badge-curated-collection-single-cell-a")
+            .get(".curated-workflow-card")
+            .get("#g-card-badge-curated-collection-single-cell-a")
             .trigger("click");
         await flushPromises();
 
@@ -441,7 +443,7 @@ describe("CuratedWorkflowList", () => {
 
     it("offers the collection filter in the advanced menu only for the iwc catalog", async () => {
         const menuHasCollection = (wrapper: Awaited<ReturnType<typeof mountList>>) =>
-            wrapper.findComponent(FilterMenu).props("filterClass").validFilters.collection?.menuItem;
+            wrapper.getComponent(FilterMenu).props("filterClass").validFilters.collection?.menuItem;
 
         const iwcWrapper = await mountCuratedList(iwcPage(["a"]));
         expect(menuHasCollection(iwcWrapper)).toBe(true);
@@ -469,11 +471,11 @@ describe("CuratedWorkflowList", () => {
         const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });
 
         expect(wrapper.find("#sortby-default").exists()).toBe(false);
-        expect(wrapper.find("#sortby-update_time").classes()).toContain("g-pressed");
+        expect(wrapper.get("#sortby-update_time").classes()).toContain("g-pressed");
         expect(catalogQueries[0]!.has("sort_by")).toBe(false);
 
         // Already newest first, so the first click on it flips to oldest first.
-        await wrapper.find("#sortby-update_time").trigger("click");
+        await wrapper.get("#sortby-update_time").trigger("click");
         await flushPromises();
 
         expect(catalogQueries[1]!.get("sort_by")).toBe("update_time");
