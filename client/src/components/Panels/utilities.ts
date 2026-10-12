@@ -23,6 +23,7 @@ import type {
     ToolSectionLabel,
 } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
+import { compareToolVersions } from "@/utils/tool-version";
 
 export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
 
@@ -432,37 +433,42 @@ export function searchTools(
     // An instance may install and place more than one version of the same tool,
     // sometimes across different sections. Collapse those to a single result so a
     // tool doesn't surface as a duplicate in the search results (issue #23151).
-    const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(idResults, resultPanel, tools);
+    const orderById = new Map(matchedResults.map((match) => [match.id, match.order]));
+    const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(idResults, resultPanel, tools, orderById);
     return { results, resultPanel: dedupedPanel, closestTerm: closestTerm };
 }
 
 /**
  * Collapses search results that belong to the same tool lineage (the same tool
- * installed at multiple versions) down to a single result, keeping the first
- * (highest-ranked) occurrence. Also prunes the sectioned `resultPanel` so the
- * dropped ids no longer render, removing any section left empty as a result.
+ * installed at multiple versions) down to a single result. The best-ranked version
+ * wins; among equally ranked versions the latest one wins, so the result does not
+ * depend on the order the tools API lists versions in. Also prunes the sectioned
+ * `resultPanel` so the dropped ids no longer render, removing any section left
+ * empty as a result.
  *
  * @param idResults ordered result tool ids from `createSortedResultPanel`
  * @param resultPanel sectioned result panel from `createSortedResultPanel`
  * @param tools the searched tools, used to resolve each id's version
+ * @param orderById search rank of each result id (higher ranks first)
  * @returns the de-duplicated `results` and matching `resultPanel`
  */
 export function dedupeResultsByToolLineage(
     idResults: string[],
     resultPanel: Record<string, Tool | ToolSection>,
     tools: Tool[],
+    orderById: Map<string, number> = new Map(),
 ): { results: string[]; resultPanel: Record<string, Tool | ToolSection> } {
     const toolById = new Map(tools.map((tool) => [tool.id, tool]));
-    const keptLineages = new Set<string>();
-    const results: string[] = [];
+    const keptByLineage = new Map<string, string>();
     for (const id of idResults) {
         const lineage = getVersionlessToolId(id, toolById.get(id));
-        if (keptLineages.has(lineage)) {
-            continue;
+        const keptId = keptByLineage.get(lineage);
+        if (keptId === undefined || isPreferredLineageResult(id, keptId, toolById, orderById)) {
+            keptByLineage.set(lineage, id);
         }
-        keptLineages.add(lineage);
-        results.push(id);
     }
+    // Map keeps first-insertion order, so each lineage stays at its best-ranked slot.
+    const results = Array.from(keptByLineage.values());
 
     // Nothing collapsed: keep the original panel untouched.
     if (results.length === idResults.length) {
@@ -488,6 +494,20 @@ export function dedupeResultsByToolLineage(
         }
     }
     return { results, resultPanel: prunedPanel };
+}
+
+function isPreferredLineageResult(
+    candidateId: string,
+    keptId: string,
+    toolById: Map<string, Tool>,
+    orderById: Map<string, number>,
+) {
+    const candidateOrder = orderById.get(candidateId) ?? 0;
+    const keptOrder = orderById.get(keptId) ?? 0;
+    if (candidateOrder !== keptOrder) {
+        return candidateOrder > keptOrder;
+    }
+    return compareToolVersions(toolById.get(candidateId)?.version, toolById.get(keptId)?.version) > 0;
 }
 
 export function searchSections(sections: ToolSection[], query: string) {

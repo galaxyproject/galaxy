@@ -524,16 +524,43 @@ describe("searchTools tool-lineage de-duplication", () => {
         },
     } as unknown as Record<string, ToolPanelItem>;
 
-    it("collapses a tool placed at multiple versions across sections to a single result", () => {
-        const { results, resultPanel } = searchTools(twoVersionTools, "pyGenomeTracks", twoSectionPanel);
+    it.each([
+        ["older version listed first", twoVersionTools],
+        ["newer version listed first", [...twoVersionTools].reverse()],
+    ])("collapses a tool placed at multiple versions to its latest version (%s)", (_order, tools) => {
+        const { results, resultPanel } = searchTools(tools, "pyGenomeTracks", twoSectionPanel);
 
-        // Only one lineage entry survives (the first / highest-ranked occurrence)
+        // Equally ranked versions of one lineage collapse to the latest, whatever the API order
+        expect(results).toEqual([pgt39]);
+
+        // The section left empty by the dropped version is removed.
+        expect(Object.keys(resultPanel)).toEqual(["plots"]);
+        expect((resultPanel.plots as ToolSection).tools).toEqual([pgt39]);
+    });
+
+    it("compares versions numerically when picking the latest", () => {
+        const pgt310 = "toolshed.g2.bx.psu.edu/repos/iuc/pygenometracks/pygenomeTracks/3.10+galaxy0";
+        const tools = [
+            ...twoVersionTools,
+            { id: pgt310, name: "pyGenomeTracks", description: "Plot genomic tracks", version: "3.10+galaxy0" },
+        ] as unknown as Tool[];
+        const panel = {
+            plots: { model_class: "ToolSection", id: "plots", name: "Plots", tools: [pgt39, pgt310, pgt38] },
+        } as unknown as Record<string, ToolPanelItem>;
+
+        const { results } = searchTools(tools, "pyGenomeTracks", panel);
+        expect(results).toEqual([pgt310]);
+    });
+
+    it("keeps the better-ranked version when versions match the query differently", () => {
+        const tools = [
+            { id: pgt38, name: "pyGenomeTracks", description: "Plot genomic tracks", version: "3.8+galaxy2" },
+            { id: pgt39, name: "pyGenomeTracks plot", description: "Plot genomic tracks", version: "3.9+galaxy0" },
+        ] as unknown as Tool[];
+
+        // 3.8 is an exact name match and outranks the newer 3.9, which only starts with the query
+        const { results } = searchTools(tools, "pyGenomeTracks", twoSectionPanel);
         expect(results).toEqual([pgt38]);
-
-        // The sectioned result panel no longer renders the dropped version;
-        // the section left empty by the dropped version is removed.
-        const remainingToolIds = Object.values(resultPanel).flatMap((item) => (item as ToolSection).tools ?? []);
-        expect(remainingToolIds).toEqual([pgt38]);
     });
 
     it("keeps distinct tools that merely share a search term", () => {
