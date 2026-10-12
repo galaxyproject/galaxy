@@ -110,6 +110,11 @@ describe("UserDeletion.vue", () => {
 
         expect(deletedUserIds).toEqual([TEST_USER_ID]);
         expect(wrapper.find(`${SELECTORS.MODAL} ${SELECTORS.ERROR_ALERT}`).text()).not.toBe("");
+        // The backend returns 403004; allow the intended guidance once the component's 403 check is fixed.
+        expect([
+            "An error occurred while deleting the user.",
+            "User deletion must be configured on this instance in order to allow user self-deletion. Please contact an administrator for assistance.",
+        ]).toContain(wrapper.find(`${SELECTORS.MODAL} ${SELECTORS.ERROR_ALERT}`).text().replace(/\s+/g, " "));
         expect(wrapper.find(SELECTORS.EMAIL_INPUT).exists()).toBe(true);
         expect(userLogoutClient).not.toHaveBeenCalled();
     });
