@@ -1516,6 +1516,9 @@ class MinimalJobWrapper(HasResourceParameters):
             rewrite_parameters=util.asbool(self.job_destination.params.get("rewrite_parameters", False)),
             recryptor=recryptor,
             walltime=self.app.job_config.limits.walltime_delta,
+            live_tool_output_reporting=util.asbool(
+                self.job_destination.params.get("live_tool_output_reporting", False)
+            ),
         )
 
     def _runs_on_pulsar(self) -> bool:
