@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
@@ -22,18 +22,21 @@ vi.mock("vue-router", () => ({
     }),
 }));
 
-function mountTarget(props = {}) {
+/** @param {InstanceType<typeof PageForm>["$props"]} props */
+function mountTarget(props) {
     return mount(PageForm, {
-        global: localVue,
-        props: props,
-        stubs: {
-            FontAwesomeIcon: true,
-        },
-        directives: {
-            localize: () => {},
+        props,
+        global: {
+            ...localVue,
+            stubs: { ...localVue.stubs, FontAwesomeIcon: true },
         },
     });
 }
+
+afterEach(() => {
+    vi.clearAllMocks();
+});
+enableAutoUnmount(afterEach);
 
 describe("PageForm.vue - Create mode", () => {
     beforeEach(() => {
@@ -64,9 +67,9 @@ describe("PageForm.vue - Create mode", () => {
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
         await flushPromises();
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
-        expect(wrapper.find("#page-title").element.value).toBe("Invoked Report Title");
-        expect(wrapper.find("#page-slug").element.value).toBe("invocation-42");
-        await wrapper.find("#page-submit").trigger("click");
+        expect(wrapper.get("#page-title").element.value).toBe("Invoked Report Title");
+        expect(wrapper.get("#page-slug").element.value).toBe("invocation-42");
+        await wrapper.get("#page-submit").trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/editor?id=new-page-321");
     });
@@ -81,13 +84,13 @@ describe("PageForm.vue - Create mode", () => {
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
-        expect(alert.text()).toContain("Failed to fetch report");
+        expect(wrapper.get(".alert").text()).toContain("Failed to fetch report");
     });
 
     it("submit button is disabled when required fields are missing", async () => {
         const wrapper = mountTarget({ mode: "create" });
         await flushPromises();
-        expect(wrapper.find("#page-submit").classes()).toContain("g-disabled");
+        expect(wrapper.get("#page-submit").classes()).toContain("g-disabled");
     });
 
     it("submits page creation with correct fields", async () => {
@@ -103,10 +106,10 @@ describe("PageForm.vue - Create mode", () => {
         );
         const wrapper = mountTarget({ mode: "create" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("My Title");
-        await wrapper.find("#page-slug").setValue("my-title");
-        await wrapper.find("#page-annotation").setValue("An annotation");
-        await wrapper.find("#page-submit").trigger("click");
+        await wrapper.get("#page-title").setValue("My Title");
+        await wrapper.get("#page-slug").setValue("my-title");
+        await wrapper.get("#page-annotation").setValue("An annotation");
+        await wrapper.get("#page-submit").trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/editor?id=new-page-123");
     });
@@ -115,9 +118,9 @@ describe("PageForm.vue - Create mode", () => {
         server.use(http.post("/api/pages", ({ response }) => response(400).json({ err_msg: "Creation failed" })));
         const wrapper = mountTarget({ mode: "create" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("Some Title");
-        await wrapper.find("#page-slug").setValue("some-title");
-        await wrapper.find("#page-submit").trigger("click");
+        await wrapper.get("#page-title").setValue("Some Title");
+        await wrapper.get("#page-slug").setValue("some-title");
+        await wrapper.get("#page-submit").trigger("click");
         await flushPromises();
         expect(Toast.error).toHaveBeenCalledWith("Creation failed", "Error Creating Page");
     });
@@ -148,9 +151,9 @@ describe("PageForm.vue - Edit mode", () => {
         const wrapper = mountTarget({ mode: "edit", id: "123" });
         expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
         await flushPromises();
-        expect(wrapper.find("#page-title").element.value).toBe("Test Page");
-        expect(wrapper.find("#page-slug").element.value).toBe("test-page");
-        expect(wrapper.find("#page-annotation").element.value).toBe("Testing page edit");
+        expect(wrapper.get("#page-title").element.value).toBe("Test Page");
+        expect(wrapper.get("#page-slug").element.value).toBe("test-page");
+        expect(wrapper.get("#page-annotation").element.value).toBe("Testing page edit");
     });
 
     it("shows error alert if fetching page fails", async () => {
@@ -159,13 +162,13 @@ describe("PageForm.vue - Edit mode", () => {
         await flushPromises();
         const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
-        expect(alert.text()).toContain("Page load failed");
+        expect(wrapper.get(".alert").text()).toContain("Page load failed");
     });
 
     it("submit button is disabled when required fields are missing", async () => {
         const wrapper = mountTarget({ mode: "edit", id: "123" });
         await flushPromises();
-        expect(wrapper.find("#page-submit").classes()).toContain("g-disabled");
+        expect(wrapper.get("#page-submit").classes()).toContain("g-disabled");
     });
 
     it("submits page update with correct fields", async () => {
@@ -180,10 +183,10 @@ describe("PageForm.vue - Edit mode", () => {
         );
         const wrapper = mountTarget({ mode: "edit", id: "456" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("Updated Title");
-        await wrapper.find("#page-slug").setValue("updated-title");
-        await wrapper.find("#page-annotation").setValue("Updated annotation");
-        await wrapper.find("#page-submit").trigger("click");
+        await wrapper.get("#page-title").setValue("Updated Title");
+        await wrapper.get("#page-slug").setValue("updated-title");
+        await wrapper.get("#page-annotation").setValue("Updated annotation");
+        await wrapper.get("#page-submit").trigger("click");
         await flushPromises();
         expect(mockPush).toHaveBeenCalledWith("/pages/list");
     });
@@ -192,9 +195,9 @@ describe("PageForm.vue - Edit mode", () => {
         server.use(http.put("/api/pages/:id", ({ response }) => response(400).json({ err_msg: "Update failed" })));
         const wrapper = mountTarget({ mode: "edit", id: "789" });
         await flushPromises();
-        await wrapper.find("#page-title").setValue("Error Title");
-        await wrapper.find("#page-slug").setValue("error-title");
-        await wrapper.find("#page-submit").trigger("click");
+        await wrapper.get("#page-title").setValue("Error Title");
+        await wrapper.get("#page-slug").setValue("error-title");
+        await wrapper.get("#page-submit").trigger("click");
         await flushPromises();
         expect(Toast.error).toHaveBeenCalledWith("Update failed", "Error Updating Page");
     });
