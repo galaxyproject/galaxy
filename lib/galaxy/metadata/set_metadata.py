@@ -569,7 +569,7 @@ def set_metadata_portable(
                     dataset,
                     # Unset for deferred outputs.
                     external_filename=None if is_deferred else external_filename,
-                    link_data_only=bool(link_data_only),
+                    link_data_only=not is_deferred and bool(link_data_only),
                 )
                 file_dict = output_protector.without_tool_metadata(file_dict)
 
