@@ -1,8 +1,8 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createPinia, disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -12,22 +12,22 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 describe("DatatypesProvider", () => {
-    let wrapper;
+    let pinia;
     let datatypesRequests;
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        const ownedPinia = createPinia();
+        pinia = ownedPinia;
+        onTestFinished(() => disposePinia(ownedPinia));
         datatypesRequests = 0;
     });
 
-    afterEach(() => {
-        wrapper?.unmount();
-    });
+    enableAutoUnmount(afterEach);
 
     function mountProvider() {
         return mount(DatatypesProvider, {
-            localVue,
-            propsData: { id: "datatypes" },
+            global: withPlugins(localVue, pinia),
+            props: { id: "datatypes" },
             slots: {
                 default: `<template #default="props">
                     <div><span class="state">{{ props.loading }}</span><span class="error">{{ props.error }}</span></div>
@@ -43,11 +43,11 @@ describe("DatatypesProvider", () => {
                 return response.untyped(HttpResponse.json({ err_msg: "unavailable", err_code: 0 }, { status: 500 }));
             }),
         );
-        wrapper = mountProvider();
+        const wrapper = mountProvider();
         await flushPromises();
         expect(datatypesRequests).toBe(1);
-        expect(wrapper.find(".state").text()).toBe("false");
-        expect(wrapper.find(".error").text()).toContain("unavailable");
+        expect(wrapper.get(".state").text()).toBe("false");
+        expect(wrapper.get(".error").text()).toContain("unavailable");
     });
 
     it("exposes no error when fetching datatypes succeeds", async () => {
@@ -57,9 +57,9 @@ describe("DatatypesProvider", () => {
                 return response.untyped(HttpResponse.json([]));
             }),
         );
-        wrapper = mountProvider();
+        const wrapper = mountProvider();
         await flushPromises();
-        expect(wrapper.find(".state").text()).toBe("false");
-        expect(wrapper.find(".error").text()).toBe("");
+        expect(wrapper.get(".state").text()).toBe("false");
+        expect(wrapper.get(".error").text()).toBe("");
     });
 });
