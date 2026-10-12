@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from "pinia";
+import { createPinia, disposePinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
@@ -63,6 +63,7 @@ function makePastedItem(name = "file.txt", targetHistoryId = "hist_1"): NewUploa
     };
 }
 
+// Partial cache fixtures omit schema fields unused by this monitor, including dataset_id/genome_build.
 function makeHistoryItem(id: string, state: string): HistoryItemSummary {
     return {
         id,
@@ -84,6 +85,7 @@ function makeHistoryItem(id: string, state: string): HistoryItemSummary {
     } as unknown as HistoryItemSummary;
 }
 
+// Collection summaries likewise omit collection_id/contents_url and element counters.
 function makeHDCAItem(id: string, populatedState: string | null = "ok"): HDCASummary {
     return {
         id,
@@ -109,14 +111,15 @@ function makeHDCAItem(id: string, populatedState: string | null = "ok"): HDCASum
 
 describe("useUploadDatasetMonitorStore", () => {
     let uploadState: ReturnType<typeof useUploadState>;
-    let monitor: ReturnType<typeof useUploadDatasetMonitorStore> | undefined;
+    let pinia: ReturnType<typeof createPinia>;
 
     function createMonitor() {
-        monitor = useUploadDatasetMonitorStore();
+        return useUploadDatasetMonitorStore(pinia);
     }
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        pinia = createPinia();
+        setActivePinia(pinia);
         vi.clearAllMocks();
         mockWatchHandlers.length = 0;
         mockCurrentHistoryId.value = "hist_1";
@@ -127,9 +130,13 @@ describe("useUploadDatasetMonitorStore", () => {
     });
 
     afterEach(() => {
-        // Shared module-level upload state persists between tests.
-        monitor?.$dispose();
-        monitor = undefined;
+        disposePinia(pinia);
+        // Shared module-level upload state persists beyond the owned store scope.
+        uploadState.clearAll();
+        if (vi.isFakeTimers()) {
+            vi.clearAllTimers();
+            vi.useRealTimers();
+        }
     });
 
     it("resolves an upload when its dataset reaches ok state", () => {
@@ -360,25 +367,21 @@ describe("useUploadDatasetMonitorStore", () => {
 
         it("marks an upload as error after missing contents exceed the timeout", async () => {
             vi.useFakeTimers();
-            try {
-                mockGetHistoryItems.mockReturnValue([]);
+            mockGetHistoryItems.mockReturnValue([]);
 
-                const id = uploadState.addUploadItem(makePastedItem());
-                uploadState.setStatus(id, "uploading");
-                uploadState.markProcessing(id, ["ds_1"]);
-                createMonitor();
+            const id = uploadState.addUploadItem(makePastedItem());
+            uploadState.setStatus(id, "uploading");
+            uploadState.markProcessing(id, ["ds_1"]);
+            createMonitor();
 
-                expect(uploadState.activeItems.value.find((u) => u.id === id)?.status).toBe("processing");
+            expect(uploadState.activeItems.value.find((u) => u.id === id)?.status).toBe("processing");
 
-                await vi.advanceTimersByTimeAsync(31 * 60 * 1000);
-                await nextTick();
+            await vi.advanceTimersByTimeAsync(31 * 60 * 1000);
+            await nextTick();
 
-                const item = uploadState.activeItems.value.find((u) => u.id === id)!;
-                expect(item.status).toBe("error");
-                expect(item.error).toBeTruthy();
-            } finally {
-                vi.useRealTimers();
-            }
+            const item = uploadState.activeItems.value.find((u) => u.id === id)!;
+            expect(item.status).toBe("error");
+            expect(item.error).toBeTruthy();
         });
     });
 });
