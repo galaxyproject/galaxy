@@ -2,8 +2,9 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { nextTick } from "vue";
 
 import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -18,7 +19,7 @@ enableAutoUnmount(afterEach);
 
 async function mountNotificationsList(notifications: UserNotification[], attachTo?: HTMLElement) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
-    setActivePinia(pinia);
+    onTestFinished(() => disposePinia(pinia));
 
     const notificationsStore = useNotificationsStore(pinia);
     notificationsStore.notifications = notifications;
@@ -32,28 +33,30 @@ async function mountNotificationsList(notifications: UserNotification[], attachT
     });
 
     await flushPromises();
-    return wrapper;
+    return { wrapper, notificationsStore };
 }
 
 describe("NotificationsList", () => {
-    it("render and count unread notifications", async () => {
+    it("renders every notification and marks the six unread items", async () => {
         const { notifications, messageCount, sharedItemCount } = generateNotificationsList(10);
-        const wrapper = await mountNotificationsList(notifications);
+        const { wrapper } = await mountNotificationsList(notifications);
 
         expect(wrapper.findAll(".g-card")).toHaveLength(messageCount + sharedItemCount);
 
-        const unreadNotification = wrapper.findAll(".unread-notification");
-        expect(unreadNotification).toHaveLength(notifications.filter((notification) => !notification.seen_time).length);
-        expect(unreadNotification).toHaveLength(6);
+        const unreadNotifications = wrapper.findAll(".unread-notification");
+        expect(unreadNotifications).toHaveLength(
+            notifications.filter((notification) => !notification.seen_time).length,
+        );
+        expect(unreadNotifications).toHaveLength(6);
     });
 
-    it("unread filter works", async () => {
+    it("shows only unread notifications after clicking the unread filter", async () => {
         const { notifications } = generateNotificationsList(10);
-        const wrapper = await mountNotificationsList(notifications);
+        const { wrapper } = await mountNotificationsList(notifications);
 
         const unreadFilter = wrapper.find("#show-unread-filter");
         expect(unreadFilter.exists()).toBe(true);
-        await unreadFilter.trigger("click");
+        await wrapper.get("#show-unread-filter").trigger("click");
 
         expect(wrapper.findAll(".g-card")).toHaveLength(
             notifications.filter((notification) => !notification.seen_time).length,
@@ -64,7 +67,7 @@ describe("NotificationsList", () => {
     it("selects all from a partial selection, then none, keeping the header box in sync", async () => {
         // Attached, so a native click on the box dispatches change
         const { notifications } = generateNotificationsList(10);
-        const wrapper = await mountNotificationsList(notifications, document.body);
+        const { wrapper } = await mountNotificationsList(notifications, document.body);
         const header = wrapper.get(".notifications-list-filter-selection");
         const headerBox = header.get<HTMLInputElement>("input[type='checkbox']");
         const total = notifications.length;
@@ -87,15 +90,14 @@ describe("NotificationsList", () => {
         wrapper.unmount();
     });
 
-    it("show no notifications message", async () => {
+    it("shows the empty-state message when the notification store is cleared", async () => {
         const { notifications } = generateNotificationsList(10);
-        const wrapper = await mountNotificationsList(notifications);
+        const { wrapper, notificationsStore } = await mountNotificationsList(notifications);
         expect(wrapper.find("#no-notifications").exists()).toBe(false);
 
-        const notificationsStore = useNotificationsStore();
         notificationsStore.notifications = [];
 
-        await wrapper.vm.$nextTick();
+        await nextTick();
 
         expect(wrapper.find("#no-notifications").exists()).toBe(true);
     });
