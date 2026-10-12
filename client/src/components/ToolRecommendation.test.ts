@@ -1,49 +1,34 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getDatatypesMapper } from "@/components/Datatypes";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
-import { getCompatibleRecommendations } from "@/components/Workflow/Editor/modules/utilities";
+
+import * as componentStories from "./ToolRecommendation.stories";
 
 import ToolRecommendation from "./ToolRecommendation.vue";
 
-vi.mock("@/components/Datatypes", () => ({ getDatatypesMapper: vi.fn() }));
-vi.mock("@/components/Workflow/Editor/modules/services", () => ({ getToolPredictions: vi.fn() }));
-vi.mock("@/components/Workflow/Editor/modules/utilities", () => ({ getCompatibleRecommendations: vi.fn() }));
+vi.mock("@/components/Datatypes", { spy: true });
+vi.mock("@/components/Workflow/Editor/modules/services", { spy: true });
 
-const predictions = {
-    predicted_data: {
-        name: "cat1",
-        is_deprecated: false,
-        message: "",
-        o_extensions: ["txt"],
-        children: [{ name: "Cut", id: "cut1" }],
-    },
-};
+const stories = composeStories(componentStories);
+const mountStory = useStoryMount();
 
 describe("ToolRecommendation", () => {
-    enableAutoUnmount(afterEach);
-
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(getToolPredictions).mockResolvedValue(predictions);
-        vi.mocked(getDatatypesMapper).mockResolvedValue(
-            new DatatypesMapperModel({
-                datatypes: [],
-                datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
-            }),
-        );
-        vi.mocked(getCompatibleRecommendations).mockReturnValue(predictions.predicted_data.children);
+        vi.mocked(getToolPredictions).mockReset();
+        vi.mocked(getDatatypesMapper).mockReset();
     });
 
-    async function mountRecommendation() {
-        const wrapper = shallowMount(ToolRecommendation, {
-            props: { toolId: "cat1" },
-            global: getLocalVue(),
-        });
+    async function mountRecommendation(story: StoryOf<typeof stories> = stories.CompatibleTools) {
+        const wrapper = mountStory(story).getComponent(ToolRecommendation);
+        await flushPromises();
+        // Wait for the real prediction and mapper promises, including the expected rejected requests.
+        await Promise.allSettled(vi.mocked(getToolPredictions).mock.results.map((result) => result.value));
+        await flushPromises();
+        await Promise.allSettled(vi.mocked(getDatatypesMapper).mock.results.map((result) => result.value));
         await flushPromises();
         return wrapper;
     }
@@ -52,7 +37,7 @@ describe("ToolRecommendation", () => {
         const wrapper = await mountRecommendation();
         expect(getToolPredictions).toHaveBeenCalledWith({ tool_sequence: "cat1" });
         expect(wrapper.text()).toContain("For further analysis");
-        // root node ("cat1") plus one child node ("Cut") rendered by d3
+        // The concatenation root plus one child node ("Cut") rendered by d3
         expect(wrapper.findAll("g.node")).toHaveLength(2);
         expect(wrapper.text()).toContain("Cut");
     });
@@ -60,8 +45,11 @@ describe("ToolRecommendation", () => {
     it.each(["API authentication required for this request", "Network Error"])(
         "handles prediction failure: %s",
         async (message) => {
-            vi.mocked(getToolPredictions).mockRejectedValue(new Error(message));
-            const wrapper = await mountRecommendation();
+            // This endpoint permits anonymous access; retain the original synthetic authentication rejection locally.
+            if (message === "API authentication required for this request") {
+                vi.mocked(getToolPredictions).mockRejectedValueOnce(new Error(message));
+            }
+            const wrapper = await mountRecommendation(stories.PredictionNetworkFailure);
             expect(wrapper.text()).toContain("Tool recommendations could not be loaded");
             expect(wrapper.text()).toContain(message);
             expect(getDatatypesMapper).not.toHaveBeenCalled();
@@ -70,15 +58,15 @@ describe("ToolRecommendation", () => {
     );
 
     it("handles datatype loading failure", async () => {
-        vi.mocked(getDatatypesMapper).mockRejectedValue(new Error("Datatypes unavailable"));
-        const wrapper = await mountRecommendation();
+        // Keep the original synthetic message; the standalone story exercises the real fetch network failure.
+        vi.mocked(getDatatypesMapper).mockRejectedValueOnce(new Error("Datatypes unavailable"));
+        const wrapper = await mountRecommendation(stories.DatatypesNetworkFailure);
         expect(wrapper.text()).toContain("Datatypes unavailable");
         expect(wrapper.findAll("g.node")).toHaveLength(0);
     });
 
     it("handles an unconfigured prediction model", async () => {
-        vi.mocked(getToolPredictions).mockResolvedValue(null);
-        const wrapper = await mountRecommendation();
+        const wrapper = await mountRecommendation(stories.NoPredictionModel);
         expect(getDatatypesMapper).not.toHaveBeenCalled();
         expect(wrapper.findAll("g.node")).toHaveLength(0);
         expect(wrapper.text()).not.toContain("For further analysis");
