@@ -441,10 +441,19 @@ class TextToolParameter(SimpleTextToolParameter):
     ...     p.validate([])
     >>> with assert_throws_param_value_error("Parameter '_name': values cannot contain newlines; pass a list"):
     ...     p.validate("ab\\ncd")
+    >>> with assert_throws_param_value_error("Parameter '_name': values cannot contain newlines"):
+    ...     p.validate(["ab\\ncd"])
     >>> with assert_throws_param_value_error("Parameter '_name': entries cannot be empty"):
     ...     p.validate(["ab", ""])
     >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
     ...     p.validate([["ab"]])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
+    ...     p.validate([True])
+    >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
+    ...     p.validate(None)
+    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "optional": True}).validate(None)
+    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": [1, 2]}).get_initial_value(None, {})
+    ['1', '2']
     >>> p.from_json("ab", trans)
     ['ab']
     >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": "ab"}).get_initial_value(None, {})
@@ -481,11 +490,14 @@ class TextToolParameter(SimpleTextToolParameter):
         values = self._multiple_values(value)
         if any(v is None or v == "" for v in values):
             raise ParameterValueError("entries cannot be empty", self.name, value)
-        if any(not isinstance(v, (str, int, float)) for v in values):
+        if any(isinstance(v, bool) or not isinstance(v, (str, int, float)) for v in values):
             raise ParameterValueError("entries must be text", self.name, value)
         values = [str(v) for v in values]
         if any("\n" in v for v in values):
-            raise ParameterValueError("values cannot contain newlines; pass a list", self.name, value)
+            message = "values cannot contain newlines"
+            if not isinstance(value, list):
+                message += "; pass a list"
+            raise ParameterValueError(message, self.name, value)
         return values
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
@@ -500,7 +512,7 @@ class TextToolParameter(SimpleTextToolParameter):
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.multiple and self.value is not None:
-            return self._multiple_values(self.value)
+            return [str(v) for v in self._multiple_values(self.value)]
         return super().get_initial_value(trans, other_values)
 
     def to_json(self, value, app, use_security):
@@ -509,6 +521,10 @@ class TextToolParameter(SimpleTextToolParameter):
         return super().to_json(value, app, use_security)
 
     def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
+        if self.multiple and value is None:
+            if not self.optional:
+                raise ParameterValueError("at least one value is required", self.name, value)
+            return
         if not self._is_multiple_value(value):
             return self._validate_single(value, trans)
         values = self._multiple_to_python(value)

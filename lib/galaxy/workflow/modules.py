@@ -1654,7 +1654,7 @@ class InputParameterModule(WorkflowModule):
 
             options: list[OptionDict] | None = None
             if isinstance(default_value, list):
-                default_values = default_value
+                default_values = [str(value) for value in default_value]
             else:
                 default_values = [default_value] if default_value else []
             if static_options and len(static_options) == 1:

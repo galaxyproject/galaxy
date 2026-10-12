@@ -55,10 +55,14 @@ function toValues(value: FieldValue | FieldValue[] | null | undefined): FieldVal
     if (value === null || value === undefined || value === "") {
         return [];
     }
+    if (isText.value) {
+        const values = Array.isArray(value) ? value : [value];
+        return values.flatMap((entry) => String(entry).split("\n"));
+    }
     if (Array.isArray(value)) {
         return value;
     }
-    if (typeof value === "string" && !isText.value) {
+    if (typeof value === "string") {
         return value
             .split(/[\n,]/)
             .map((v) => v.trim())

@@ -9907,6 +9907,27 @@ steps:
         options = run_workflow["steps"][0]["inputs"][0]["options"]
         assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
 
+    @skip_without_tool("multi_select_numeric")
+    def test_value_restriction_selects_multiple_numeric_text_list_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  values:
+     type: [string]
+     restrictOnConnections: true
+     default: [1, 2]
+steps:
+  select:
+    tool_id: multi_select_numeric
+    in:
+      select_numeric: values
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        (runtime_input,) = run_workflow["steps"][0]["inputs"]
+        assert runtime_input["value"] == ["1", "2"]
+        assert [value for _, value, selected in runtime_input["options"] if selected] == ["1", "2"]
+
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow

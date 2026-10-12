@@ -63,6 +63,19 @@ describe("FormValueList", () => {
         expect((inputs.at(0)!.element as HTMLInputElement).value).toBe("a,b");
     });
 
+    it.each([" a,b\nc ", [" a,b\nc "]])(
+        "preserves newline-separated text default %j as editable rows",
+        async (value) => {
+            const wrapper = mountList(value, "text");
+            const inputs = wrapper.findAll("input.ui-input");
+            expect(inputs.length).toBe(2);
+            expect((inputs.at(0)!.element as HTMLInputElement).value).toBe(" a,b");
+            expect((inputs.at(1)!.element as HTMLInputElement).value).toBe("c ");
+            await inputs.at(1)!.setValue("d");
+            expect(wrapper.emitted("input")!.at(-1)).toEqual([[" a,b", "d"]]);
+        },
+    );
+
     it("emits the entered text values as strings", async () => {
         const wrapper = mountList("a", "text");
         await wrapper.find("[data-description='add value']").trigger("click");
