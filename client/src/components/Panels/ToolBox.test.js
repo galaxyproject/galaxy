@@ -16,14 +16,14 @@ setMockConfig({
 const { server, http } = useServerMock();
 
 describe("ToolBox", () => {
-    const toolsMock = toolsList.reduce((acc, item) => {
+    const toolsById = toolsList.reduce((acc, item) => {
         acc[item.id] = item;
         return acc;
     }, {});
-    const toolPanelMock = toolsListInPanel;
-    const resultsMock = ["liftOver1", "__FILTER_EMPTY_DATASETS__", "__UNZIP_COLLECTION__"];
+    const originalPanel = toolsListInPanel;
+    const matchingToolIds = ["liftOver1", "__FILTER_EMPTY_DATASETS__", "__UNZIP_COLLECTION__"];
 
-    it("test filter functions correctly matching: (1) Tools store array-of-objects with (2) Results array", async () => {
+    it("filters matching tools and groups them into their original panel sections", async () => {
         server.use(
             http.untyped.get("/api/tool_panels/default", () => {
                 return HttpResponse.json(toolsListInPanel);
@@ -31,20 +31,23 @@ describe("ToolBox", () => {
             http.untyped.get("/api/tools", ({ request }) => {
                 const url = new URL(request.url);
                 if (url.searchParams.get("in_panel") === "False") {
-                    return HttpResponse.json(toolsMock);
+                    return HttpResponse.json(toolsById);
                 }
-                return HttpResponse.json(resultsMock);
+                return HttpResponse.json(matchingToolIds);
             }),
         );
-        const toolsResults = filterTools(toolsMock, resultsMock);
-        const resultIds = Object.keys(toolsResults);
-        expect(resultIds.length).toBe(3);
-        const matchedTools = resultIds.map((id) => {
-            return { id: id, sections: [], order: 0 };
-        });
-        const toolsResultsSection = createSortedResultPanel(matchedTools, toolPanelMock);
+        const matchingTools = filterTools(toolsById, matchingToolIds);
+        const resultIds = Object.keys(matchingTools);
+        expect(resultIds).toHaveLength(3);
+        expect(resultIds).toEqual(matchingToolIds);
+        const matchedTools = resultIds.map((id) => ({ id, order: 0 }));
+        const toolsResultsSection = createSortedResultPanel(matchedTools, originalPanel);
         expect(toolsResultsSection.idResults).toEqual(resultIds);
         const resultSectionIds = Object.keys(toolsResultsSection.resultPanel);
-        expect(resultSectionIds.length).toBe(2);
+        expect(resultSectionIds).toHaveLength(2);
+        expect(toolsResultsSection.resultPanel).toMatchObject({
+            liftOver: { tools: ["liftOver1"] },
+            collection_operations: { tools: ["__FILTER_EMPTY_DATASETS__", "__UNZIP_COLLECTION__"] },
+        });
     });
 });
