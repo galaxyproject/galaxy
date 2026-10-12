@@ -622,6 +622,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             source_uri=source_uri,
             for_library=False,
             model_store_format=payload.model_store_format,
+            discarded_data=payload.discarded_data,
         )
         result = import_model_store.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)

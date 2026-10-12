@@ -1,5 +1,7 @@
 """A dataset or collection exported as a link and imported from it, as between two Galaxy servers."""
 
+from typing import Any
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -70,22 +72,39 @@ class TestGalaxyLinkImportIntegration(integration_util.IntegrationTestCase):
             assert dataset["tags"] == ["group:demo"]
             assert self.dataset_populator.get_history_dataset_content(target_id, dataset_id=dataset["id"]) == content
 
-    def _export_link(self, history_id: str, contents_type: str, item_id: str) -> str:
+    def test_a_background_import_follows_the_discarded_data_policy(self):
+        source_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(source_id, content="chr1\t1\t10\n", wait=True)
+        without_data = self._export_link(source_id, "datasets", hda["id"], include_files=False)
+        with_data = self._export_link(source_id, "datasets", hda["id"])
+
+        # As for the import that runs in the request, where an omitted policy means "allow".
+        cases: list[tuple[str, str | None, dict[str, Any]]] = [
+            (without_data, None, {"state": "discarded", "deleted": False}),
+            (without_data, "allow", {"state": "discarded", "deleted": False}),
+            (without_data, "forbid", {"deleted": True}),
+            (with_data, "force", {"state": "discarded", "deleted": False}),
+        ]
+        for link, policy, expected in cases:
+            target_id = self._import_link(link, discarded_data=policy)
+            imported = self.dataset_populator.get_history_dataset_details(target_id, wait=False)
+            assert {key: imported[key] for key in expected} == expected, policy
+
+    def _export_link(self, history_id: str, contents_type: str, item_id: str, include_files: bool = True) -> str:
         prepared = self._post(
             f"histories/{history_id}/contents/{contents_type}/{item_id}/prepare_store_download",
-            {"model_store_format": "tar.gz", "include_files": True},
+            {"model_store_format": "tar.gz", "include_files": include_files},
             json=True,
         ).json()
         self.dataset_populator.wait_for_download_ready(prepared["storage_request_id"])
         return f"{self.url.rstrip('/')}/api/short_term_storage/{prepared['storage_request_id']}"
 
-    def _import_link(self, link: str) -> str:
+    def _import_link(self, link: str, discarded_data: str | None = None) -> str:
         target_id = self.dataset_populator.new_history()
-        response = self._post(
-            f"histories/{target_id}/contents_from_store_async",
-            {"store_content_uri": link, "model_store_format": "tar.gz"},
-            json=True,
-        )
+        payload = {"store_content_uri": link, "model_store_format": "tar.gz"}
+        if discarded_data:
+            payload["discarded_data"] = discarded_data
+        response = self._post(f"histories/{target_id}/contents_from_store_async", payload, json=True)
         response.raise_for_status()
         assert self.dataset_populator.wait_on_task(response)
         return target_id
