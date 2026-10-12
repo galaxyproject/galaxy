@@ -1,112 +1,31 @@
-import "@/composables/__mocks__/filter";
-
-import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { createPinia, disposePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AnyUser } from "@/api";
-import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
-import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
-import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
-import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
+import { type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
+
+import { TOOLBOX_PANEL as toolsListInPanel, TOOLBOX_TOOLS as toolsList } from "./test_fixtures";
+import * as ToolBoxStories from "./ToolBox.stories";
 
 import ToolInstallationRequestForm from "../Tool/ToolInstallationRequestForm.vue";
 import ToolBox from "./ToolBox.vue";
 
-vi.mock("@/composables/config");
-
-setMockConfig({
-    toolbox_auto_sort: true,
-});
-
-const toolsList = toolsListUntyped as unknown as Tool[];
-const toolsListInPanel = toolsListInPanelUntyped as unknown as Record<string, Tool | ToolSection>;
+const stories = composeStories(ToolBoxStories);
+const mountStory = useStoryMount();
 const EXPECTED_LABELS = ["Recent tools", "Favorites"];
 
-const localVue = getLocalVue();
+type SetupStores = (toolStore: ReturnType<typeof useToolStore>, userStore: ReturnType<typeof useUserStore>) => void;
 
-function toToolsById(list: Tool[]) {
-    return list.reduce(
-        (acc, tool) => {
-            acc[tool.id] = tool;
-            return acc;
-        },
-        {} as Record<string, Tool>,
-    );
-}
-
-function withFavoriteEdamOperationTool(list: Tool[]) {
-    return list.map((tool) =>
-        tool.id === "liftOver1" ? ({ ...tool, edam_operations: ["operation_2409"] } as Tool) : tool,
-    );
-}
-
-const SIGNED_IN_USER = getFakeRegisteredUser({
-    id: "user-id",
-    username: "test-user",
-    email: "test@example.org",
-    isAnonymous: false,
-});
-
-interface MountToolBoxOptions {
-    /** Override the tool list used to populate `toolStore.toolsById` (default: `toolsList`). */
-    tools?: Tool[];
-    /** Override `toolStore.toolSections` (default: `{ default: toolsListInPanel }`). */
-    toolSections?: Record<string, Record<string, Tool | ToolSection>>;
-    /** Override `userStore.currentUser` — anonymous by default. */
-    currentUser?: AnyUser;
-    /** Override `userStore.currentPreferences.favorites` (default: `{ tools: [] }`). */
-    favorites?: Partial<NonNullable<ReturnType<typeof useUserStore>["currentPreferences"]>["favorites"]>;
-    /** Override `userStore.recentTools` (default: `[]`). */
-    recentTools?: string[];
-    /** Override the active panel view (default: `"my_panel"`). */
-    currentPanelView?: string;
-    /** Mount the workflow editor variant of the toolbox. */
-    workflow?: boolean;
-    /** Start on the favorites panel (default: true). */
-    favoritesDefault?: boolean;
-    /** Install spies / extra store setup before `mount`. Runs after the defaults are applied. */
-    setupStores?: (toolStore: ReturnType<typeof useToolStore>, userStore: ReturnType<typeof useUserStore>) => void;
-}
-
-function mountToolBox(options: MountToolBoxOptions = {}) {
-    const pinia = createPinia();
-    onTestFinished(() => disposePinia(pinia));
-    const router = createRouter({
-        history: createMemoryHistory(),
-        routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div></div>" } }],
-    });
-
-    const toolStore = useToolStore(pinia);
-    vi.spyOn(toolStore, "fetchToolTagsMapping").mockResolvedValue();
-    toolStore.toolsById = toToolsById(options.tools ?? toolsList);
-    toolStore.toolSections = options.toolSections ?? { default: toolsListInPanel };
-    toolStore.defaultPanelView = "default";
-    toolStore.currentPanelView = options.currentPanelView ?? "my_panel";
-
-    const userStore = useUserStore(pinia);
-    if (options.currentUser !== undefined) {
-        userStore.currentUser = options.currentUser;
-    }
-    userStore.$patch({ currentPreferences: { favorites: options.favorites ?? { tools: [] } } });
-    userStore.recentTools = options.recentTools ?? [];
-
-    options.setupStores?.(toolStore, userStore);
-
-    const wrapper = mount(ToolBox, {
-        global: withPlugins(localVue, pinia, router),
-        props: {
-            favoritesDefault: options.favoritesDefault ?? true,
-            workflow: options.workflow ?? false,
-            useSearchWorker: false,
-        },
-    });
-
+async function mountToolBox(story: StoryOf<typeof stories>, setupStores?: SetupStores) {
+    const root = mountStory(story);
+    // The real configuration and viewer hash gate rendering and store initialization.
+    const wrapper = await vi.waitFor(() => root.getComponent(ToolBox));
+    const toolStore = useToolStore();
+    const userStore = useUserStore();
+    setupStores?.(toolStore, userStore);
+    await flushPromises();
     return { wrapper, toolStore, userStore };
 }
 
@@ -118,14 +37,11 @@ afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
     vi.restoreAllMocks();
-    resetMockConfig();
-    setMockConfig({ toolbox_auto_sort: true });
 });
-enableAutoUnmount(afterEach);
 
 describe("ToolBox search", () => {
     it("searches across toolbox when favorites are the default view and clears the query with Escape", async () => {
-        const { wrapper } = mountToolBox({ favorites: { tools: ["liftOver1"] } });
+        const { wrapper } = await mountToolBox(stories.FavoriteGenomeTool);
         await flushPromises();
 
         expect(wrapper.find('[data-tool-id="liftOver1"]').exists()).toBe(true);
@@ -143,7 +59,7 @@ describe("ToolBox search", () => {
     });
 
     it("shows empty favorites copy in My panel when no favorites are set", async () => {
-        const { wrapper } = mountToolBox();
+        const { wrapper } = await mountToolBox(stories.NoFavorites);
         await flushPromises();
 
         const emptyState = wrapper.find(".tool-panel-empty");
@@ -159,7 +75,7 @@ describe("ToolBox search", () => {
     });
 
     it("separates favorite results and shows favorite button for non-favorites during search", async () => {
-        const { wrapper } = mountToolBox({ favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } });
+        const { wrapper } = await mountToolBox(stories.FavoriteAndOtherFilters);
         await flushPromises();
 
         await searchFor(wrapper, "Filter");
@@ -181,9 +97,7 @@ describe("ToolBox search", () => {
     });
 
     it("treats #favorites as a filter token for both explicit AND and shorthand searches", async () => {
-        const { wrapper } = mountToolBox({
-            favorites: { tools: ["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__"] },
-        });
+        const { wrapper } = await mountToolBox(stories.FavoriteCollections);
         await flushPromises();
 
         await searchFor(wrapper, "#favorites AND Filter");
@@ -213,9 +127,11 @@ describe("ToolBox search", () => {
             id: "toolshed.example.org/repos/dev/zip_collection/zip/0.9",
             version: "0.9",
         };
-        const { wrapper } = mountToolBox({
-            tools: [...toolsList, latestZipVersion, olderZipVersion],
-            toolSections: {
+        const { wrapper } = await mountToolBox(stories.NoFavorites, (toolStore, userStore) => {
+            toolStore.toolsById = Object.fromEntries(
+                [...toolsList, latestZipVersion, olderZipVersion].map((tool) => [tool.id, tool]),
+            );
+            toolStore.toolSections = {
                 default: {
                     ...toolsListInPanel,
                     collection_operations: {
@@ -223,8 +139,8 @@ describe("ToolBox search", () => {
                         tools: [latestZipVersion.id, olderZipVersion.id],
                     },
                 },
-            },
-            favorites: { tools: [olderZipVersion.id] },
+            };
+            userStore.currentPreferences = { favorites: { tools: [olderZipVersion.id] } };
         });
         await flushPromises();
 
@@ -256,9 +172,11 @@ describe("ToolBox search", () => {
             id: "toolshed.example.org/repos/dev/zip_collection/zip/0.9",
             version: "0.9",
         };
-        const { wrapper, userStore } = mountToolBox({
-            tools: [...toolsList, latestZipVersion, olderZipVersion],
-            toolSections: {
+        const { wrapper, userStore } = await mountToolBox(stories.NoFavorites, (toolStore, userStore) => {
+            toolStore.toolsById = Object.fromEntries(
+                [...toolsList, latestZipVersion, olderZipVersion].map((tool) => [tool.id, tool]),
+            );
+            toolStore.toolSections = {
                 default: {
                     ...toolsListInPanel,
                     collection_operations: {
@@ -266,7 +184,8 @@ describe("ToolBox search", () => {
                         tools: [latestZipVersion.id, olderZipVersion.id],
                     },
                 },
-            },
+            };
+            userStore.currentPreferences = { favorites: { tools: [] } };
         });
         await flushPromises();
 
@@ -293,7 +212,7 @@ describe("ToolBox search", () => {
     });
 
     it("collapses favorite results during search in My panel", async () => {
-        const { wrapper } = mountToolBox({ favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } });
+        const { wrapper } = await mountToolBox(stories.FavoriteAndOtherFilters);
         await flushPromises();
 
         await searchFor(wrapper, "Filter");
@@ -311,10 +230,7 @@ describe("ToolBox search", () => {
     });
 
     it("shows recent tools before favorites and allows clearing", async () => {
-        const { wrapper } = mountToolBox({
-            favorites: { tools: ["__FILTER_FAILED_DATASETS__"] },
-            recentTools: ["__ZIP_COLLECTION__", "__FILTER_EMPTY_DATASETS__"],
-        });
+        const { wrapper } = await mountToolBox(stories.RecentAndFavoriteCollections);
         await flushPromises();
 
         const labels = wrapper.findAll(".tool-panel-label").map((item) => item.text());
@@ -342,9 +258,12 @@ describe("ToolBox search", () => {
             id: "toolshed.example.org/repos/dev/zip_collection/zip/0.9",
             version: "0.9",
         };
-        const { wrapper } = mountToolBox({
-            tools: [...toolsList, latestZipVersion, olderZipVersion],
-            toolSections: {
+        const { wrapper } = await mountToolBox(stories.RecentInstalledVersions, (toolStore, userStore) => {
+            // Preserve the original invented version IDs only in this unit contract case.
+            toolStore.toolsById = Object.fromEntries(
+                [...toolsList, latestZipVersion, olderZipVersion].map((tool) => [tool.id, tool]),
+            );
+            toolStore.toolSections = {
                 default: {
                     ...toolsListInPanel,
                     collection_operations: {
@@ -352,8 +271,13 @@ describe("ToolBox search", () => {
                         tools: [latestZipVersion.id, "__FILTER_EMPTY_DATASETS__"],
                     },
                 },
-            },
-            recentTools: [olderZipVersion.id, latestZipVersion.id, "__FILTER_EMPTY_DATASETS__", "unknown-recent-tool"],
+            };
+            userStore.recentTools = [
+                olderZipVersion.id,
+                latestZipVersion.id,
+                "__FILTER_EMPTY_DATASETS__",
+                "unknown-recent-tool",
+            ];
         });
         await flushPromises();
 
@@ -362,26 +286,7 @@ describe("ToolBox search", () => {
     });
 
     it("shows one section per favorite tag in stored order and hides empty tag sections", async () => {
-        const { wrapper, userStore } = mountToolBox({
-            currentUser: SIGNED_IN_USER,
-            favorites: {
-                tools: ["__FILTER_FAILED_DATASETS__"],
-                tags: ["genome_coordinates", "data_cleanup", "missing_tag"],
-            },
-            recentTools: ["__ZIP_COLLECTION__"],
-            setupStores: (_toolStore, userStore) => {
-                vi.spyOn(userStore, "removeFavoriteTag").mockImplementation(async (tag: string) => {
-                    userStore.currentPreferences = {
-                        favorites: {
-                            tools: userStore.currentPreferences?.favorites.tools ?? [],
-                            tags: (userStore.currentPreferences?.favorites.tags ?? []).filter(
-                                (currentTag) => currentTag !== tag,
-                            ),
-                        },
-                    };
-                });
-            },
-        });
+        const { wrapper, userStore } = await mountToolBox(stories.FavoriteTags);
         await flushPromises();
 
         const tagSectionNames = wrapper.findAll(".toolSectionTitle .name").map((item) => item.text().trim());
@@ -429,10 +334,9 @@ describe("ToolBox search", () => {
             name: "Old Filter empty",
             version: "0.9.0",
         };
-        const { wrapper } = mountToolBox({
-            currentUser: SIGNED_IN_USER,
-            tools: [...toolsList, oldVersion],
-            favorites: { tags: ["data_cleanup"] },
+        const { wrapper } = await mountToolBox(stories.FavoriteCleanupTag, (toolStore) => {
+            // A synthetic obsolete built-in ID remains a unit-only panel-membership case.
+            toolStore.toolsById = Object.fromEntries([...toolsList, oldVersion].map((tool) => [tool.id, tool]));
         });
         await flushPromises();
 
@@ -449,17 +353,7 @@ describe("ToolBox search", () => {
     });
 
     it("renders top-level favorites in the stored mixed-type order", async () => {
-        const { wrapper } = mountToolBox({
-            currentUser: SIGNED_IN_USER,
-            favorites: {
-                tools: ["__FILTER_FAILED_DATASETS__"],
-                tags: ["genome_coordinates"],
-                order: [
-                    { object_type: "tags", object_id: "genome_coordinates" },
-                    { object_type: "tools", object_id: "__FILTER_FAILED_DATASETS__" },
-                ],
-            },
-        });
+        const { wrapper } = await mountToolBox(stories.OrderedTagAndToolFavorites);
         await flushPromises();
 
         const menuText = wrapper.find(".toolMenu").text();
@@ -470,10 +364,7 @@ describe("ToolBox search", () => {
     });
 
     it("collapses favorites and recent tools sections on label click", async () => {
-        const { wrapper } = mountToolBox({
-            favorites: { tools: ["__FILTER_FAILED_DATASETS__"] },
-            recentTools: ["__ZIP_COLLECTION__"],
-        });
+        const { wrapper } = await mountToolBox(stories.RecentCollectionAndFavoriteFilter);
         await flushPromises();
 
         expect(wrapper.find('[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(true);
@@ -499,7 +390,7 @@ describe("ToolBox search", () => {
     });
 
     it("does not show empty favorites copy when recent tools exist", async () => {
-        const { wrapper } = mountToolBox({ recentTools: ["__ZIP_COLLECTION__"] });
+        const { wrapper } = await mountToolBox(stories.RecentOnly);
         await flushPromises();
 
         const emptyState = wrapper.find(".tool-panel-empty");
@@ -510,9 +401,15 @@ describe("ToolBox search", () => {
     });
 
     it("shows one section per favorite EDAM operation and allows removing it from My Tools", async () => {
-        const { wrapper, userStore } = mountToolBox({
-            tools: withFavoriteEdamOperationTool(toolsList),
-            toolSections: {
+        const { wrapper, userStore } = await mountToolBox(stories.FavoriteEdamOperation, (toolStore, userStore) => {
+            // Preserve the original annotation contract; the standalone story uses shipped Mapper annotations.
+            toolStore.toolsById = Object.fromEntries(
+                toolsList.map((tool) => [
+                    tool.id,
+                    tool.id === "liftOver1" ? { ...tool, edam_operations: ["operation_2409"] } : tool,
+                ]),
+            );
+            toolStore.toolSections = {
                 default: toolsListInPanel,
                 "ontology:edam_operations": {
                     operation_2409: {
@@ -522,22 +419,8 @@ describe("ToolBox search", () => {
                         tools: ["liftOver1"],
                     },
                 },
-            },
-            currentUser: SIGNED_IN_USER,
-            favorites: { tools: [], tags: [], edam_operations: ["operation_2409"] },
-            setupStores: (_toolStore, userStore) => {
-                vi.spyOn(userStore, "removeFavoriteEdamOperation").mockImplementation(async (operationId: string) => {
-                    userStore.currentPreferences = {
-                        favorites: {
-                            tools: userStore.currentPreferences?.favorites.tools ?? [],
-                            tags: userStore.currentPreferences?.favorites.tags ?? [],
-                            edam_operations: (userStore.currentPreferences?.favorites.edam_operations ?? []).filter(
-                                (currentOperation) => currentOperation !== operationId,
-                            ),
-                        },
-                    };
-                });
-            },
+            };
+            userStore.currentPreferences = { favorites: { tools: [], tags: [], edam_operations: ["operation_2409"] } };
         });
         await flushPromises();
 
@@ -575,21 +458,12 @@ describe("ToolBox search", () => {
     // would duplicate the gate check without exercising user-visible behavior.
 });
 
-const ANONYMOUS_USER = { ...getFakeAnonymousUser(), id: "anon" };
-
-/** A default-panel toolbox with search results already in the store. */
-async function mountDefaultPanelToolBox(options: MountToolBoxOptions = {}) {
-    const { wrapper } = mountToolBox({
-        currentPanelView: "default",
-        favoritesDefault: false,
-        currentUser: SIGNED_IN_USER,
-        ...options,
-    });
-    await flushPromises();
-    return wrapper;
+/** A default-panel toolbox whose story owns its viewer and configuration. */
+async function mountDefaultPanelToolBox(story: StoryOf<typeof stories> = stories.InstallationRequestsAvailable) {
+    return (await mountToolBox(story)).wrapper;
 }
 
-async function searchFor(wrapper: VueWrapper, query: string) {
+async function searchFor(wrapper: Awaited<ReturnType<typeof mountToolBox>>["wrapper"], query: string) {
     await wrapper.get("input.search-query").setValue(query);
     vi.advanceTimersByTime(250);
     await flushPromises();
@@ -598,14 +472,6 @@ async function searchFor(wrapper: VueWrapper, query: string) {
 const REQUEST_BUTTON = '[data-description="request tool installation button"]';
 
 describe("ToolBox — Request Tool Installation button", () => {
-    beforeEach(() => {
-        setMockConfig({
-            toolbox_auto_sort: true,
-            enable_notification_system: true,
-            enable_tool_installation_request_form: true,
-        });
-    });
-
     it("is hidden when search returns results", async () => {
         const wrapper = await mountDefaultPanelToolBox();
         await searchFor(wrapper, "Filter");
@@ -622,12 +488,7 @@ describe("ToolBox — Request Tool Installation button", () => {
     });
 
     it("is hidden when enable_tool_installation_request_form config is false", async () => {
-        setMockConfig({
-            toolbox_auto_sort: true,
-            enable_notification_system: true,
-            enable_tool_installation_request_form: false,
-        });
-        const wrapper = await mountDefaultPanelToolBox();
+        const wrapper = await mountDefaultPanelToolBox(stories.InstallationRequestsDisabled);
         await searchFor(wrapper, "xyznonexistenttool123");
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
@@ -635,12 +496,7 @@ describe("ToolBox — Request Tool Installation button", () => {
     });
 
     it("is hidden when the notification system is off, which the request needs", async () => {
-        setMockConfig({
-            toolbox_auto_sort: true,
-            enable_notification_system: false,
-            enable_tool_installation_request_form: true,
-        });
-        const wrapper = await mountDefaultPanelToolBox();
+        const wrapper = await mountDefaultPanelToolBox(stories.NotificationsDisabled);
         await searchFor(wrapper, "xyznonexistenttool123");
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
@@ -648,7 +504,7 @@ describe("ToolBox — Request Tool Installation button", () => {
     });
 
     it("is hidden for anonymous users even when search returns no results", async () => {
-        const wrapper = await mountDefaultPanelToolBox({ currentUser: ANONYMOUS_USER });
+        const wrapper = await mountDefaultPanelToolBox(stories.AnonymousDefaultPanel);
         await searchFor(wrapper, "xyznonexistenttool123");
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
@@ -656,7 +512,7 @@ describe("ToolBox — Request Tool Installation button", () => {
     });
 
     it("is hidden in workflow mode even when search returns no results", async () => {
-        const wrapper = await mountDefaultPanelToolBox({ workflow: true });
+        const wrapper = await mountDefaultPanelToolBox(stories.WorkflowToolbox);
         await searchFor(wrapper, "xyznonexistenttool123");
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
