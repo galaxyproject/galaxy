@@ -126,6 +126,11 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
             inputs[f"queries_{i}|input2"] = {"src": "hda", "id": other["id"]}
         return self.dataset_populator.run_tool_raw("cat", inputs, history_id)
 
+    def _run_explicit_conversion(self, history_id: str, input1: dict):
+        return self.dataset_populator.run_tool_raw(
+            "explicit_conversion", {"input1": {"src": "hda", "id": input1["id"]}}, history_id
+        )
+
     def _wait_for_job(self, history_id: str, response) -> tuple[dict, dict]:
         self._assert_status_code_is(response, 200)
         job_id = response.json()["jobs"][0]["id"]
@@ -355,12 +360,23 @@ steps:
 
     def test_explicitly_converted_inputs_are_decrypted(self, history_id):
         dataset = self._upload_authorized(history_id, b">read1\nACGT\n", name="reads.fasta.c4gh")
-        response = self.dataset_populator.run_tool_raw(
-            "explicit_conversion", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
-        )
-        job, output = self._wait_for_job(history_id, response)
+        job, output = self._wait_for_job(history_id, self._run_explicit_conversion(history_id, dataset))
 
         assert job["state"] == "ok", job
+        assert self._decrypted_content(history_id, output) == b"read1\n"
+
+    def test_conversions_are_converted_again_once_their_authorization_expired(self, history_id):
+        dataset, encrypted = self._upload_encrypted(history_id, b">read1\nACGT\n", name="reads.fasta.c4gh")
+        self._authorize(dataset["id"], encrypted)
+        first, _ = self._wait_for_job(history_id, self._run_explicit_conversion(history_id, dataset))
+        assert first["state"] == "ok", first
+        # The user can renew the authorization of the dataset, not the one of its hidden conversion.
+        self._expire_grants(first["inputs"]["input1_table"]["id"])
+
+        second, output = self._wait_for_job(history_id, self._run_explicit_conversion(history_id, dataset))
+
+        assert second["state"] == "ok", second
+        assert second["inputs"]["input1_table"]["id"] != first["inputs"]["input1_table"]["id"]
         assert self._decrypted_content(history_id, output) == b"read1\n"
 
     def test_other_users_jobs_decrypting_inputs_are_not_reused(self, history_id):
