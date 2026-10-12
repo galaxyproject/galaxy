@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import JobsTable from "./JobsTable.vue";
 
@@ -17,7 +17,7 @@ const items = [
 
 function mountJobsTable() {
     const globalConfig = getLocalVue();
-    return mount(JobsTable as object, {
+    return mount(JobsTable, {
         props: { tableCaption: "Unfinished Jobs", fields, items, busy: false },
         global: { ...globalConfig, stubs: { ...globalConfig.stubs, UtcDate: true, JobDetails: true } },
     });
@@ -28,6 +28,8 @@ function renderedJobIds(wrapper: ReturnType<typeof mountJobsTable>) {
 }
 
 describe("JobsTable", () => {
+    enableAutoUnmount(afterEach);
+
     it("shows the most recently updated jobs first", () => {
         const wrapper = mountJobsTable();
         expect(renderedJobIds(wrapper)).toEqual(["newer", "older"]);
@@ -35,7 +37,7 @@ describe("JobsTable", () => {
 
     it("toggles to oldest first when the Last Update header is clicked", async () => {
         const wrapper = mountJobsTable();
-        await wrapper.findAll("thead th")[1]!.trigger("click");
+        await wrapper.get("thead th[id^='g-table-field-update_time-']").trigger("click");
         expect(renderedJobIds(wrapper)).toEqual(["older", "newer"]);
     });
 });
