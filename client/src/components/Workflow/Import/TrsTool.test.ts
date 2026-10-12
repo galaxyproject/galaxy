@@ -1,28 +1,48 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { flushPromises, mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
+import type { TrsTool as TrsToolData } from "./types";
+
 import TrsTool from "./TrsTool.vue";
+
+const registryTool = {
+    id: "#workflow/example",
+    name: "example",
+    description: "A [workflow](https://example.org) with <b>markup</b>",
+    organization: "org",
+    versions: [{ id: "v1", name: "v1" }],
+} satisfies TrsToolData;
+
+const sanitizeSpy = vi.mocked(sanitizeHtml);
+const originalSanitizeImplementation = sanitizeSpy.getMockImplementation();
+
+beforeEach(() => {
+    sanitizeSpy.mockClear();
+    sanitizeSpy.mockImplementation((html) => `<span class="sanitized">${html}</span>`);
+});
+
+afterEach(() => {
+    sanitizeSpy.mockReset();
+    if (originalSanitizeImplementation) {
+        sanitizeSpy.mockImplementation(originalSanitizeImplementation);
+    }
+});
+// Vitest runs afterEach hooks in reverse order: unmount while the test's
+// sanitizer implementation is still installed, then restore the shared spy.
+enableAutoUnmount(afterEach);
 
 describe("TrsTool", () => {
     it("renders the registry description through v-sanitize-html with the links profile", () => {
-        vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
-        const wrapper = mount(TrsTool as object, {
+        const wrapper = mount(TrsTool, {
             global: getLocalVue(),
-            props: {
-                trsTool: {
-                    id: "#workflow/example",
-                    name: "example",
-                    description: "A [workflow](https://example.org) with <b>markup</b>",
-                    organization: "org",
-                    versions: [{ id: "v1", name: "v1" }],
-                },
-            },
+            props: { trsTool: registryTool },
         });
 
-        const [html, profile] = vi.mocked(sanitizeHtml).mock.calls.at(-1)!;
+        expect(sanitizeSpy).toHaveBeenCalledTimes(1);
+        const [html, profile] = nth(sanitizeSpy.mock.calls, -1);
         expect(profile).toBe("links");
         expect(html).toContain('<a href="https://example.org" target="_blank">workflow</a>');
         expect(html).toContain("&lt;b&gt;markup&lt;/b&gt;");
@@ -30,20 +50,13 @@ describe("TrsTool", () => {
     });
 
     it("lists versions newest first and emits the picked version", async () => {
-        const wrapper = mount(TrsTool as object, {
+        const versions = [
+            { id: "id-1", name: "1.0" },
+            { id: "id-2", name: "2.0" },
+        ];
+        const wrapper = mount(TrsTool, {
             global: getLocalVue(),
-            props: {
-                trsTool: {
-                    id: "#workflow/example",
-                    name: "example",
-                    description: "",
-                    organization: "org",
-                    versions: [
-                        { id: "id-1", name: "1.0" },
-                        { id: "id-2", name: "2.0" },
-                    ],
-                },
-            },
+            props: { trsTool: { ...registryTool, description: "", versions } },
         });
         const select = wrapper.get(".workflow-version-select");
 
