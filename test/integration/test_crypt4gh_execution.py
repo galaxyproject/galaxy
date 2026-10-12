@@ -1,11 +1,18 @@
 """Integration tests running jobs on Crypt4GH-encrypted datasets against a mock recryptor service."""
 
 import io
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from typing import Any
 
 from galaxy.job_execution.setup import JobWorkingDirectory
-from galaxy.model import Job
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    Job,
+)
 from galaxy_test.base.crypt4gh import (
     decrypt,
     encrypt,
@@ -13,7 +20,10 @@ from galaxy_test.base.crypt4gh import (
     Keypair,
     MockRecryptorService,
 )
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
 from galaxy_test.driver import integration_util
 
 PLAINTEXT_1 = b"@read1\nACGT\n+\nIIII\n"
@@ -22,6 +32,7 @@ PLAINTEXT_2 = b"@read2\nTTTT\n+\nIIII\n"
 
 class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
+    workflow_populator: WorkflowPopulator
     framework_tool_and_types = True
     service: MockRecryptorService
 
@@ -61,6 +72,7 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.service.requests.clear()
         self.service.failures.clear()
         self.user = generate_keypair()
@@ -134,6 +146,13 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
 
     def _ready(self, dataset_id: str) -> bool:
         return self._get(f"datasets/{dataset_id}/protection").json()["ready"]
+
+    def _expire_grants(self, dataset_id: str) -> None:
+        hda = self._app.model.session.get(HistoryDatasetAssociation, self._app.security.decode_id(dataset_id))
+        assert hda and hda.dataset
+        for grant in hda.dataset.protection_grants:
+            grant.expires_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
+        self._app.model.session.commit()
 
     def _job_directory_exists(self, encoded_job_id: str) -> bool:
         job = self._app.model.session.get(Job, self._app.security.decode_id(encoded_job_id))
@@ -276,6 +295,63 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         assert second["copied_from_job_id"] == first["id"]
         assert self._decrypted_content(history_id, output) == PLAINTEXT_1
         assert self.service.routes_called().count("recrypt_header_to_job_key") == 1
+
+    def test_own_jobs_are_reused_once_the_authorization_expired(self, history_id):
+        dataset = self._upload_authorized(history_id, PLAINTEXT_1)
+        first, _ = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
+        assert first["state"] == "ok", first
+        self._expire_grants(dataset["id"])
+
+        # Reusing the job decrypts nothing, its outputs are encrypted for the user already.
+        response = self.dataset_populator.run_tool_raw(
+            "cat", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id, use_cached_job=True
+        )
+        second, output = self._wait_for_job(history_id, response)
+
+        assert second["state"] == "ok", second
+        assert second["copied_from_job_id"] == first["id"]
+        assert self._decrypted_content(history_id, output) == PLAINTEXT_1
+
+    def test_skipped_workflow_steps_need_no_authorization(self, history_id):
+        dataset, _ = self._upload_encrypted(history_id, PLAINTEXT_1)
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  reads:
+    type: data
+steps:
+  cat:
+    tool_id: cat
+    in:
+      input1: reads
+      should_run: should_run
+    when: $(inputs.should_run)
+""")
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id,
+            history_id=history_id,
+            inputs={"should_run": False, "reads": {"src": "hda", "id": dataset["id"]}},
+            inputs_by="name",
+        )
+        self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+
+        jobs = self.workflow_populator.get_invocation(invocation_id, step_details=True)["steps"][-1]["jobs"]
+        assert [job["state"] for job in jobs] == ["skipped"]
+        assert self.service.requests == []
+
+    def test_implicitly_converted_inputs_are_decrypted(self, history_id):
+        dataset = self._upload_authorized(history_id, b">read1\nACGT\n", name="reads.fasta.c4gh")
+        response = self.dataset_populator.run_tool_raw(
+            "implicit_conversion", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+
+        assert job["state"] == "ok", job
+        # The tool read the decrypted conversion to tabular, not the encrypted FASTA.
+        assert job["inputs"]["input1"]["id"] != dataset["id"]
+        assert self._decrypted_content(history_id, output) == b"read1\n"
 
     def test_explicitly_converted_inputs_are_decrypted(self, history_id):
         dataset = self._upload_authorized(history_id, b">read1\nACGT\n", name="reads.fasta.c4gh")
