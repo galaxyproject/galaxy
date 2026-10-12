@@ -88,14 +88,21 @@ class ProtectionPlan(BaseModel):
 
     def write(self, path: str) -> None:
         # The plan carries bearer capabilities (headers sealed to the compute key).
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as f:
-            f.write(self.model_dump_json())
+        write_private_file(path, self.model_dump_json())
 
     @classmethod
     def read(cls, path: str) -> "ProtectionPlan":
         with open(path) as f:
             return cls.model_validate(json.load(f))
+
+
+def write_private_file(path: str, content: str) -> None:
+    """Write a file only its owner can read, for files holding bearer capabilities."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        # The mode only applies to new files.
+        os.fchmod(f.fileno(), 0o600)
+        f.write(content)
 
 
 def protected_directory(job_directory: str) -> str:

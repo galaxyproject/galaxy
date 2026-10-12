@@ -13,7 +13,10 @@ import logging
 import os
 import shutil
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    wait,
+)
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -32,6 +35,7 @@ from . import (
     ProtectedJobRuntime,
     ProtectionError,
     ProtectionPlan,
+    write_private_file,
 )
 
 if TYPE_CHECKING:
@@ -58,7 +62,8 @@ class OutputProtector:
         self.datatypes_registry = datatypes_registry
         self.records: dict[str, dict[str, Any]] = {}
         self.errors: list[str] = []
-        self._concurrent_files = threading.BoundedSemaphore(MAX_CONCURRENT_FILES)
+        # Every file of every output is protected through this pool, it caps the calls to the key service.
+        self._file_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES, thread_name_prefix="protect_file")
 
     @classmethod
     def for_job(cls, metadata_params: dict[str, Any], datatypes_registry: "Registry") -> "OutputProtector | None":
@@ -89,12 +94,15 @@ class OutputProtector:
             result = self._protect_file(path)
             extra_files: dict[str, str | None] = {}
             if extra_files_path and os.path.isdir(extra_files_path):
-                relpaths = list(iter_relpaths(extra_files_path))
-                with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES) as executor:
-                    results = executor.map(
-                        lambda relpath: self._protect_file(os.path.join(extra_files_path, relpath)), relpaths
+                futures = {
+                    relpath: self._file_executor.submit(
+                        self.runtime.protect_file, os.path.join(extra_files_path, relpath)
                     )
-                    extra_files = {relpath: result.compute_header for relpath, result in zip(relpaths, results)}
+                    for relpath in iter_relpaths(extra_files_path)
+                }
+                # Let every file finish before failing, the files are discarded then.
+                wait(futures.values())
+                extra_files = {relpath: future.result().compute_header for relpath, future in futures.items()}
         except Exception as e:
             message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
             if not link_data:
@@ -130,8 +138,7 @@ class OutputProtector:
             list(executor.map(protect, outputs))
 
     def _protect_file(self, path: str) -> ProtectedFileResult:
-        with self._concurrent_files:
-            return self.runtime.protect_file(path)
+        return self._file_executor.submit(self.runtime.protect_file, path).result()
 
     def record_outcome(self, dataset_instance: "DatasetInstance", outcome: str) -> None:
         self.records.setdefault(self._uuid(dataset_instance), {"outcome": outcome})
@@ -176,9 +183,7 @@ class OutputProtector:
             # The inputs were never staged, there are no outputs to use again.
             pass
         # Compute headers are bearer capabilities.
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as f:
-            json.dump(sidecar, f)
+        write_private_file(path, json.dumps(sidecar))
 
     def _protected_ext(self, ext: str | None, path: str) -> str:
         inner_ext = unwrap_crypt4gh_file_ext(ext or "") or ext or "data"
