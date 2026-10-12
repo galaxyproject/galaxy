@@ -235,5 +235,17 @@ describe("GCheckbox", () => {
             expect(input.attributes("role")).toBe("switch");
             expect(wrapper.find("label").classes()).toEqual(expect.arrayContaining(["g-disabled", "g-switch"]));
         });
+
+        it("ignores its own switch prop but keeps its own disabled", () => {
+            const { wrapper } = mountInGroup(
+                { disabled: true, switch: true, value: "b" },
+                { disabled: false, switches: false },
+            );
+            const input = wrapper.find("input");
+
+            expect(input.attributes("disabled")).toBeDefined();
+            expect(input.attributes("role")).toBeUndefined();
+            expect(wrapper.find("label").classes()).not.toContain("g-switch");
+        });
     });
 });

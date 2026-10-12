@@ -9,8 +9,9 @@
  * checkbox an `aria-label`.
  *
  * Inside a GCheckboxGroup the group owns the state: the checkbox is checked when its `value` is in
- * the group's v-model, emits `change` but not `update:modelValue`, and takes the group's name, size,
- * disabled and switch mode unless it sets its own.
+ * the group's v-model and emits `change` but not `update:modelValue`. It takes the group's name and
+ * size unless it sets its own; the group's disabled always applies and its `switches` alone sets
+ * switch mode, as in BootstrapVue.
  */
 
 import { computed, inject, useAttrs } from "vue";
@@ -41,7 +42,7 @@ const props = defineProps<{
     required?: boolean;
     /** Displayed size; unset keeps the surrounding font size */
     size?: ComponentSize;
-    /** Render as a toggle switch instead of a checkbox */
+    /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
     switch?: boolean;
     /** Value attribute for the checkbox input, rendered as a string whenever it is set */
     value?: unknown;
@@ -76,7 +77,7 @@ const isChecked = computed(() => (group ? group.isChecked(props.value) : (props.
 
 const isDisabled = computed(() => props.disabled || Boolean(group?.disabled.value));
 
-const isSwitch = computed(() => props.switch || Boolean(group?.switches.value));
+const isSwitch = computed(() => (group ? group.switches.value : props.switch));
 
 const inputName = computed(() => props.name ?? group?.name.value);
 
