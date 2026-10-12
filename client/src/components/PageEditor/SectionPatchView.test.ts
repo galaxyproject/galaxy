@@ -1,32 +1,19 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it } from "vitest";
+
+import * as componentStories from "./SectionPatchView.stories";
 
 import SectionPatchView from "./SectionPatchView.vue";
 
-const localVue = getLocalVue();
-
-const ORIGINAL_SECTIONS = "# Intro\nOld intro text\n# Methods\nOld methods text\n# Results\nOld results text";
-const PROPOSED_SECTIONS = "# Intro\nNew intro text\n# Methods\nOld methods text\n# Results\nNew results text";
-
-type SectionPatchProps = InstanceType<typeof SectionPatchView>["$props"];
+const stories = composeStories(componentStories);
+const mountStory = useStoryMount();
 
 const REJECT_BUTTON = '[data-description="reject all patches"]';
 const APPLY_BUTTON = '[data-description="apply selected patches"]';
 
-enableAutoUnmount(afterEach);
-
-// GButton emits `click` from its own root handler, so the apply/reject buttons
-// have to be really mounted for a click to reach this component.
-function mountPatchView(overrides: Partial<SectionPatchProps> = {}) {
-    return mount(SectionPatchView, {
-        props: {
-            original: ORIGINAL_SECTIONS,
-            proposed: PROPOSED_SECTIONS,
-            ...overrides,
-        },
-        global: localVue,
-    });
+function mountPatchView(story: StoryOf<typeof stories> = stories.TwoSectionProposal) {
+    return mountStory(story).getComponent(SectionPatchView);
 }
 
 describe("SectionPatchView", () => {
@@ -64,18 +51,12 @@ describe("SectionPatchView", () => {
     });
 
     it("uses the singular section count when one section changes", () => {
-        const wrapper = mountPatchView({
-            original: "# A\nold",
-            proposed: "# A\nnew",
-        });
+        const wrapper = mountPatchView(stories.SingleSectionProposal);
         expect(wrapper.text()).toContain("1 section changed");
     });
 
     it("counts no changed sections when the proposal matches the original", () => {
-        const wrapper = mountPatchView({
-            original: "# A\nsame",
-            proposed: "# A\nsame",
-        });
+        const wrapper = mountPatchView(stories.UnchangedProposal);
         expect(wrapper.text()).toContain("0 sections changed");
     });
 });
