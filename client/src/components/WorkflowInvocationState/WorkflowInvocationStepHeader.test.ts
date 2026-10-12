@@ -1,27 +1,46 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { disposePinia } from "pinia";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { nextTick } from "vue";
 
 import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 
 const localVue = getLocalVue();
 
+enableAutoUnmount(afterEach);
+
 describe("WorkflowInvocationStepHeader", () => {
     it("keeps the tool popover a tooltip, since its icon trigger takes no focus", async () => {
-        const wrapper = mount(WorkflowInvocationStepHeader as object, {
-            attachTo: document.body,
-            props: { workflowStep: { id: 3, type: "tool", tool_id: "cat1", tool_version: "1.0.0" } },
+        const target = document.createElement("div");
+        document.body.appendChild(target);
+        onTestFinished(() => target.remove());
+        const pinia = createTestingPinia({ createSpy: vi.fn });
+        onTestFinished(() => disposePinia(pinia));
+
+        const wrapper = mount(WorkflowInvocationStepHeader, {
+            attachTo: target,
+            props: {
+                workflowStep: {
+                    id: 3,
+                    type: "tool",
+                    tool_id: "cat1",
+                    tool_version: "1.0.0",
+                    annotation: null,
+                    input_steps: {},
+                    when: null,
+                },
+            },
             global: {
-                ...withPlugins(localVue, createTestingPinia({ createSpy: vi.fn })),
+                ...withPlugins(localVue, pinia),
                 stubs: { ...localVue.stubs, RouterLink: true, WorkflowStepTitle: true },
             },
         });
         await nextTick();
         await nextTick();
 
-        const trigger = document.getElementById("step-icon-3")!;
+        const trigger = wrapper.get("#step-icon-3").element;
         const popover = document.body.querySelector(".popover")!;
 
         expect(trigger.tagName).toBe("SPAN");
@@ -31,8 +50,5 @@ describe("WorkflowInvocationStepHeader", () => {
         expect(trigger.hasAttribute("aria-expanded")).toBe(false);
         expect(trigger.hasAttribute("aria-haspopup")).toBe(false);
         expect(trigger.hasAttribute("aria-controls")).toBe(false);
-
-        wrapper.unmount();
-        document.body.innerHTML = "";
     });
 });
