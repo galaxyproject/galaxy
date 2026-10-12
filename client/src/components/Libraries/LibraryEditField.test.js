@@ -1,20 +1,21 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
+import * as LibraryEditFieldStories from "./LibraryEditField.stories";
+
 import LibraryEditField from "./LibraryEditField.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(LibraryEditFieldStories);
+const mountStory = useStoryMount();
 const sanitizeSpy = vi.mocked(sanitizeHtml);
 const originalSanitizeImplementation = sanitizeSpy.getMockImplementation();
 
-enableAutoUnmount(afterEach);
-
-function mountLibraryEditField(props) {
-    return shallowMount(LibraryEditField, { global: localVue, props });
+function mountLibraryEditField(story) {
+    return mountStory(story).getComponent(LibraryEditField);
 }
 
 describe("LibraryEditField", () => {
@@ -29,10 +30,10 @@ describe("LibraryEditField", () => {
     });
 
     it("sanitizes before linkifying, then sanitizes the rendered HTML with the default profile", () => {
-        const text = "See https://usegalaxy.org <em>now</em>";
+        const text = stories.LinkedDescription.args.text;
         const linkifiedHtml =
             '<span class="sanitized">See <a href="https://usegalaxy.org">https://usegalaxy.org</a> <em>now</em></span>';
-        const wrapper = mountLibraryEditField({ text });
+        const wrapper = mountLibraryEditField(stories.LinkedDescription);
 
         expect(sanitizeSpy.mock.calls).toEqual([[text], [linkifiedHtml, "default"]]);
         expect(wrapper.get(".sanitized a").attributes("href")).toBe("https://usegalaxy.org");
@@ -40,9 +41,9 @@ describe("LibraryEditField", () => {
     });
 
     it("sanitizes the shortened text when the description is collapsed", () => {
-        const shortenedText = "x".repeat(MAX_DESCRIPTION_LENGTH);
-        const text = `${shortenedText}-tail-text`;
-        const wrapper = mountLibraryEditField({ text });
+        const text = stories.CollapsedDescription.args.text;
+        const shortenedText = text.substring(0, MAX_DESCRIPTION_LENGTH);
+        const wrapper = mountLibraryEditField(stories.CollapsedDescription);
 
         expect(sanitizeSpy.mock.calls).toEqual([
             [shortenedText],
@@ -53,8 +54,8 @@ describe("LibraryEditField", () => {
     });
 
     it("renders the complete description when expanded", () => {
-        const text = `${"x".repeat(MAX_DESCRIPTION_LENGTH)}-tail-text`;
-        const wrapper = mountLibraryEditField({ text, isExpanded: true });
+        const text = stories.ExpandedDescription.args.text;
+        const wrapper = mountLibraryEditField(stories.ExpandedDescription);
 
         expect(sanitizeSpy.mock.calls).toEqual([[text], [`<span class="sanitized">${text}</span>`, "default"]]);
         expect(wrapper.get(".sanitized").text()).toBe(text);
@@ -62,10 +63,10 @@ describe("LibraryEditField", () => {
     });
 
     it.each([
-        { state: "collapsed", isExpanded: false, label: "(more)" },
-        { state: "expanded", isExpanded: true, label: "(less)" },
-    ])("emits an expansion toggle when $label is clicked in the $state description", async ({ isExpanded, label }) => {
-        const wrapper = mountLibraryEditField({ text: "x".repeat(MAX_DESCRIPTION_LENGTH + 10), isExpanded });
+        { state: "collapsed", story: stories.CollapsedDescription, label: "(more)" },
+        { state: "expanded", story: stories.ExpandedDescription, label: "(less)" },
+    ])("emits an expansion toggle when $label is clicked in the $state description", async ({ story, label }) => {
+        const wrapper = mountLibraryEditField(story);
         const toggleLink = wrapper.get(".more-text-btn");
         expect(toggleLink.text()).toBe(label);
 
