@@ -209,7 +209,7 @@ Standard imports pattern:
 
 ```typescript
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -228,6 +228,10 @@ const localVue = getLocalVue();
 // or with localization instrumentation for testing l() calls:
 const localVue = getLocalVue(true);
 ```
+
+Pass these options as `global`. To use your own Pinia or router instance,
+`withPlugins(localVue, pinia, router)` replaces the corresponding defaults while
+preserving the other plugins and stubs.
 
 **Test Data Factories**: Use factory functions for consistent test data:
 
@@ -327,13 +331,16 @@ Vue Test Utils provides two mounting functions: `mount` and `shallowMount`. In G
 - Slower, requires more mocking setup
 
 ```typescript
-import { shallowMount, mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { mount, shallowMount } from "@vue/test-utils";
+
+const localVue = getLocalVue();
 
 // Preferred: isolated unit test
-const wrapper = shallowMount(MyComponent, { localVue, pinia });
+const wrapper = shallowMount(MyComponent, { global: withPlugins(localVue, pinia) });
 
 // Use sparingly: when testing parent-child interaction
-const wrapper = mount(MyComponent, { localVue, pinia });
+const wrapper = mount(MyComponent, { global: withPlugins(localVue, pinia) });
 ```
 
 **Why shallowMount for Galaxy?** Client-side tests should be focused unit tests that verify individual component behavior. Integration testing across multiple components is better handled by Galaxy's Selenium/Playwright test framework, which tests the full application stack in a real browser environment. This separation keeps unit tests fast, focused, and maintainable.
@@ -345,16 +352,15 @@ See [Vue Test Utils: Stubs and Shallow Mount](https://test-utils.vuejs.org/guide
 **Mount Wrapper Factories**: Create reusable mount functions for complex component setup:
 
 ```typescript
-async function mountMyComponent(propsData = {}, options = {}) {
+async function mountMyComponent(props = {}, options = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
 
     const wrapper = shallowMount(MyComponent, {
-        localVue,
-        propsData: {
+        props: {
             defaultProp: "value",
-            ...propsData,
+            ...props,
         },
-        pinia,
+        global: withPlugins(localVue, pinia),
         ...options,
     });
 
@@ -403,7 +409,7 @@ import { setActivePinia } from "pinia";
 const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 setActivePinia(pinia);
 
-const wrapper = shallowMount(MyComponent, { localVue, pinia });
+const wrapper = shallowMount(MyComponent, { global: withPlugins(localVue, pinia) });
 
 // Access and manipulate stores
 const userStore = useUserStore();
@@ -493,7 +499,7 @@ state:
 import flushPromises from "flush-promises";
 
 it("loads data on mount", async () => {
-    const wrapper = shallowMount(MyComponent, { localVue, pinia });
+    const wrapper = shallowMount(MyComponent, { global: withPlugins(localVue, pinia) });
     await flushPromises(); // Wait for mounted() API calls
 
     expect(wrapper.find(".data").exists()).toBe(true);
