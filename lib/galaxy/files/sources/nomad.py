@@ -87,8 +87,14 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             raise self.required_package_exception
         config = context.config
         self._refuse_a_private_address(config.base_url)
-        # the token is part of fsspec's instance key, so users never share listings
-        return NomadFileSystem(base_url=config.base_url, token=config.token or None, **cache_options)
+        token = config.token or None
+        return NomadFileSystem(
+            base_url=config.base_url,
+            token=token,
+            # fsspec keeps every cached instance for the life of the process, one per token and thread
+            skip_instance_cache=token is not None,
+            **cache_options,
+        )
 
     def _refuse_a_private_address(self, base_url: str) -> None:
         # parsed as requests parses it; validate_non_local needs a lowercase scheme and a bare IPv6 host
@@ -146,10 +152,8 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         except FileNotFoundError as e:
             raise ObjectNotFound(f"{source_path} was not found in NOMAD.") from e
         except PermissionError as e:
-            raise AuthenticationRequired(
-                f"NOMAD refused access to {source_path}. "
-                f"Please check your credentials in your preferences for {self.label}."
-            ) from e
+            hint = f" Check the NOMAD token of {self.label}." if context.config.token else ""
+            raise AuthenticationRequired(f"NOMAD refused access to {source_path}.{hint}") from e
 
     def _info_to_entry(self, info: dict[str, Any], config: NomadFileSourceConfiguration) -> AnyRemoteEntry:
         entry = super()._info_to_entry(info, config)
