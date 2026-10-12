@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
 import { Services } from "@/components/Toolshed/services";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -45,38 +46,25 @@ const fields: TableField[] = [
     },
 ];
 
-let timeout: ReturnType<typeof setTimeout> | undefined;
-
 const showItems = computed(() => items.value.length > 0);
 
 const showEmpty = computed(() => !loading.value && items.value.length === 0);
 
-function schedulePoll() {
-    clearPollTimeout();
-    timeout = setTimeout(() => {
-        load();
-    }, POLL_DELAY);
-}
+const { startWatchingResource, dispose } = useResourceWatcher(load, {
+    shortPollingInterval: POLL_DELAY,
+    enableBackgroundPolling: false,
+});
 
-function clearPollTimeout() {
-    if (timeout) {
-        clearTimeout(timeout);
-    }
-}
-
-function load() {
-    services
-        .getInstalledRepositories({
+async function load() {
+    try {
+        items.value = await services.getInstalledRepositories({
             filter: (x: InstallingRepository) => x.status !== "Installed",
-        })
-        .then((repositories: InstallingRepository[]) => {
-            items.value = repositories;
-            loading.value = false;
-            schedulePoll();
-        })
-        .catch((e: unknown) => {
-            error.value = e;
         });
+        loading.value = false;
+    } catch (e) {
+        error.value = e;
+        dispose();
+    }
 }
 
 function onQuery(q: string) {
@@ -89,11 +77,9 @@ function uninstallRepository(repository: InstallingRepository) {
     });
 }
 
-load();
+startWatchingResource();
 
-onBeforeUnmount(() => {
-    clearPollTimeout();
-});
+onUnmounted(dispose);
 </script>
 
 <template>

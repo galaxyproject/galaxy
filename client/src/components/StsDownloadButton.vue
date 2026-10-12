@@ -5,13 +5,14 @@
 */
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios, { type AxiosResponse } from "axios";
-import { computed, onBeforeUnmount, ref } from "vue";
+import axios from "axios";
+import { computed, ref, watch } from "vue";
 
 import type { ComponentColor, ComponentSize } from "@/components/BaseComponents/componentVariants";
 import { useConfig } from "@/composables/config";
+import { useShortTermStorage } from "@/composables/shortTermStorage";
+import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { Toast } from "@/composables/toast";
-import { getAppRoot } from "@/onload/loadConfig";
 import { withPrefix } from "@/utils/redirect";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -61,8 +62,10 @@ const props = withDefaults(defineProps<Props>(), {
 const { config, isConfigLoaded } = useConfig();
 
 const waiting = ref(false);
+const storageRequestId = ref<string>();
 
-let timeout: ReturnType<typeof setTimeout> | undefined;
+const { waitForTask, isCompleted, hasFailed, taskStatus } = useShortTermStorageMonitor();
+const { downloadObjectByRequestId } = useShortTermStorage();
 
 const canDownload = computed(() => {
     if (!config.value.enable_celery_tasks) {
@@ -71,38 +74,19 @@ const canDownload = computed(() => {
     return true;
 });
 
-function onDownload() {
+async function onDownload() {
     if (!config.value.enable_celery_tasks) {
         window.open(withPrefix(props.fallbackUrl ?? ""));
-    } else {
-        waiting.value = true;
-        axios.post(props.downloadEndpoint, props.postParameters).then(handleInitialize).catch(handleError);
+        return;
     }
-}
-
-function handleInitialize(response: AxiosResponse) {
-    const storageRequestId = response.data.storage_request_id;
-    pollStorageRequestId(storageRequestId);
-}
-
-function pollStorageRequestId(storageRequestId: string) {
-    const url = `${getAppRoot()}api/short_term_storage/${storageRequestId}/ready`;
-    axios
-        .get(url)
-        .then((r) => {
-            handlePollResponse(r, storageRequestId);
-        })
-        .catch(handleError);
-}
-
-function handlePollResponse(response: AxiosResponse, storageRequestId: string) {
-    const ready = response.data;
-    if (ready) {
-        const url = `${getAppRoot()}api/short_term_storage/${storageRequestId}`;
-        window.location.assign(url);
-        waiting.value = false;
-    } else {
-        pollAfterDelay(storageRequestId);
+    waiting.value = true;
+    try {
+        const response = await axios.post(props.downloadEndpoint, props.postParameters);
+        const requestId: string = response.data.storage_request_id;
+        storageRequestId.value = requestId;
+        waitForTask(requestId, POLL_DELAY);
+    } catch (err) {
+        handleError(err);
     }
 }
 
@@ -111,21 +95,17 @@ function handleError(err: unknown) {
     waiting.value = false;
 }
 
-function clearPollTimeout() {
-    if (timeout) {
-        clearTimeout(timeout);
+watch(isCompleted, (completed) => {
+    if (completed && storageRequestId.value) {
+        downloadObjectByRequestId(storageRequestId.value);
+        waiting.value = false;
     }
-}
+});
 
-function pollAfterDelay(storageRequestId: string) {
-    clearPollTimeout();
-    timeout = setTimeout(() => {
-        pollStorageRequestId(storageRequestId);
-    }, POLL_DELAY);
-}
-
-onBeforeUnmount(() => {
-    clearPollTimeout();
+watch(hasFailed, (failed) => {
+    if (failed) {
+        handleError(taskStatus.value);
+    }
 });
 </script>
 
