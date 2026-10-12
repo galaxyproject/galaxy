@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
+import { expect } from "storybook/test";
 
 import { http } from "@/api/client/__mocks__/http";
 
@@ -48,6 +49,14 @@ export const ExistingGroup: Story = {};
 
 /** The group was purged before the form opened, so there is nothing to edit. */
 export const GroupGone: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Explain that the group no longer exists", async () => {
+            await expect(await canvas.findByRole("alert", {}, { timeout: 5000 })).toHaveTextContent(
+                /^Group with the provided id was not found\.$/,
+            );
+            await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+        });
+    },
     parameters: {
         msw: {
             handlers: {
@@ -61,6 +70,14 @@ export const GroupGone: Story = {
 
 /** The group was purged while the form loaded, so there is nothing left to edit and the form isn't shown. */
 export const GroupGoneWhileUsersLoad: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Refuse to edit a group removed while its members loaded", async () => {
+            await expect(await canvas.findByRole("alert", {}, { timeout: 5000 })).toHaveTextContent(
+                /^Group with the id provided was not found\.$/,
+            );
+            await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+        });
+    },
     parameters: {
         msw: {
             handlers: {
@@ -82,5 +99,36 @@ export const RolesFailToLoad: Story = {
                 ),
             },
         },
+    },
+};
+
+export const KeepsSavedNameWhileEditing: Story = {
+    play: async ({ canvas, userEvent, step }) => {
+        const title = `Group '${GROUP.name}'`;
+        await step("Open the saved group", async () => {
+            await expect(await canvas.findByText(title, { exact: false }, { timeout: 5000 })).toBeVisible();
+        });
+        await step("Edit the name while keeping the saved name in the title", async () => {
+            const name = canvas.getByDisplayValue(GROUP.name);
+            await userEvent.clear(name);
+            await userEvent.type(name, "Renamed");
+            await expect(name).toHaveValue("Renamed");
+            await expect(canvas.getByText(title, { exact: false })).toBeVisible();
+        });
+    },
+};
+
+export const RefusesEmptyName: Story = {
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Clear the name of the loaded group", async () => {
+            const name = await canvas.findByDisplayValue(GROUP.name, {}, { timeout: 5000 });
+            await userEvent.clear(name);
+            await expect(name).toHaveValue("");
+        });
+        await step("Ask for a name before saving", async () => {
+            await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+            await expect(await canvas.findByRole("alert")).toHaveTextContent(/^Please enter a group name\.$/);
+            await expect(canvas.getByRole("button", { name: "Save" })).toBeVisible();
+        });
     },
 };
