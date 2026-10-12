@@ -17,35 +17,37 @@ const DEFAULT_OPTIONS = {
 } as const;
 
 function mockWorkflowsIndex() {
-    const requestedUrls: URL[] = [];
+    const queries: Record<string, string>[] = [];
 
     server.use(
-        http.get("/api/workflows", ({ request, response }: any) => {
-            requestedUrls.push(new URL(request.url));
+        http.get("/api/workflows", ({ request, response }) => {
+            queries.push(Object.fromEntries(new URL(request.url).searchParams));
             return response(200).json([]);
-        }) as any,
+        }),
     );
 
-    return requestedUrls;
+    return queries;
 }
 
 describe("workflows API", () => {
     describe("loadWorkflows", () => {
         it("omits show_shared unless it is requested", async () => {
-            const requestedUrls = mockWorkflowsIndex();
+            const queries = mockWorkflowsIndex();
 
             await loadWorkflows({ ...DEFAULT_OPTIONS });
 
-            expect(requestedUrls[0]?.searchParams.has("show_shared")).toBe(false);
+            expect(queries).toHaveLength(1);
+            expect(queries[0]).not.toHaveProperty("show_shared");
         });
 
         it("passes show_shared through when requested", async () => {
-            const requestedUrls = mockWorkflowsIndex();
+            const queries = mockWorkflowsIndex();
 
             await loadWorkflows({ ...DEFAULT_OPTIONS, showShared: true, filterText: "is:shared_with_me" });
 
-            expect(requestedUrls[0]?.searchParams.get("show_shared")).toBe("true");
-            expect(requestedUrls[0]?.searchParams.get("search")).toBe("is:shared_with_me");
+            expect(queries).toHaveLength(1);
+            expect(queries[0]).toHaveProperty("show_shared", "true");
+            expect(queries[0]).toHaveProperty("search", "is:shared_with_me");
         });
     });
 });
