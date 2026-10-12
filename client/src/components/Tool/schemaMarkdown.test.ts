@@ -29,6 +29,7 @@ describe("schema Markdown descriptions", () => {
             },
         });
         expect(schema).not.toHaveProperty("markdownDescription");
+        expect(schema.properties.inputs).not.toHaveProperty("markdownDescription");
     });
 
     it("keeps an explicit Markdown description", () => {
