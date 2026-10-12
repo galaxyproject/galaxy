@@ -28,6 +28,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -364,6 +365,26 @@ function toIconSize(size: BootstrapSize | undefined): SizeProp | undefined {
  */
 const allowedTitleLines = computed(() => props.titleNLines);
 
+const titleLink = ref<{ $el: HTMLElement } | null>(null);
+const titleLinkElement = computed(() => titleLink.value?.$el ?? null);
+const titleClamped = ref(false);
+
+/**
+ * Full name shown under the click hint, only when the clamped title hides part of it
+ */
+const titleTooltipName = computed(() => {
+    if (typeof props.title !== "object" || !titleClamped.value) {
+        return "";
+    }
+    return props.title.label === localize(props.title.title) ? "" : props.title.label;
+});
+
+function measureTitle() {
+    const link = titleLinkElement.value;
+    // 1px threshold, as in v-g-tooltip.onoverflow, for subpixel line-clamp heights
+    titleClamped.value = !!props.titleNLines && !!link && link.scrollHeight > link.clientHeight + 1;
+}
+
 const hasExtraActions = computed(() => props.extraActions?.some((ea) => ea.visible ?? true) ?? false);
 
 const hasBadges = computed(() => props.badges?.some((b) => b.visible ?? true) ?? false);
@@ -432,7 +453,18 @@ function setHeaderLayout(layout: GCardHeaderLayout) {
     });
 }
 
-useResizeObserver([headerElement, badgeListElement, indicatorsElement], measureHeader);
+useResizeObserver([headerElement, badgeListElement, indicatorsElement, titleLinkElement], () => {
+    measureTitle();
+    measureHeader();
+});
+
+watch(
+    [() => (typeof props.title === "object" ? props.title.label : undefined), () => props.titleNLines],
+    measureTitle,
+    {
+        flush: "post",
+    },
+);
 
 watch([() => props.selectable, () => props.showBookmark, hasExtraActions, badgesElement], measureHeader, {
     flush: "post",
@@ -521,8 +553,7 @@ function onKeyDown(event: KeyboardEvent) {
                                         <BLink
                                             v-if="typeof title === 'object'"
                                             :id="getElementId(props.id, 'title-link')"
-                                            v-g-tooltip.hover
-                                            :title="localize(title.title)"
+                                            ref="titleLink"
                                             :class="{ 'g-card-title-truncate': props.titleNLines }"
                                             @click.stop.prevent="title.handler && title.handler()">
                                             {{ title.label }}
@@ -562,6 +593,22 @@ function onKeyDown(event: KeyboardEvent) {
                                             </GButton>
                                         </slot>
                                     </Heading>
+
+                                    <!-- Outside the heading, so the hidden tooltip text is not part of its name -->
+                                    <GTooltip
+                                        v-if="typeof title === 'object'"
+                                        :id="getElementId(props.id, 'title-tooltip')"
+                                        class="g-card-title-tooltip"
+                                        :reference="titleLinkElement">
+                                        <div class="g-card-title-tooltip-hint">{{ localize(title.title) }}</div>
+                                        <!-- Hidden from the link's description, since the link text already reads the name -->
+                                        <div
+                                            v-if="titleTooltipName"
+                                            class="g-card-title-tooltip-name"
+                                            aria-hidden="true">
+                                            {{ titleTooltipName }}
+                                        </div>
+                                    </GTooltip>
                                 </slot>
                             </div>
 
@@ -1049,6 +1096,16 @@ function onKeyDown(event: KeyboardEvent) {
         .g-card-description :deep(img) {
             max-width: 100%;
             height: auto;
+        }
+
+        .g-card-title-tooltip {
+            // Matches v-g-tooltip, since GTooltip grows to the full name's width
+            max-width: 300px;
+            overflow-wrap: anywhere;
+
+            .g-card-title-tooltip-name {
+                margin-top: var(--spacing-2);
+            }
         }
 
         .g-card-title-truncate {

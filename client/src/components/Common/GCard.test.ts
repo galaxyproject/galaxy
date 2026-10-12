@@ -246,4 +246,67 @@ describe("GCard", () => {
             expect(title.classes()).toContain("g-card-title-truncate");
         });
     });
+
+    describe("clickable title tooltip", () => {
+        const NAME = "Differential expression of liver samples, batch 2, trimmed and aligned to GRCh38";
+
+        function setHeight(element: Element, scrollHeight: number, clientHeight: number) {
+            Object.defineProperty(element, "scrollHeight", { configurable: true, value: scrollHeight });
+            Object.defineProperty(element, "clientHeight", { configurable: true, value: clientHeight });
+        }
+
+        async function mountTitle(scrollHeight: number, clientHeight: number, hint = "Preview Workflow") {
+            resizeCallbacks.length = 0;
+            const wrapper = mountCard({ title: { label: NAME, title: hint, handler: vi.fn() }, titleNLines: 2 });
+            setHeight(wrapper.find("#g-card-title-link-card").element, scrollHeight, clientHeight);
+            resizeCallbacks.forEach((measure) => measure());
+            await wrapper.vm.$nextTick();
+            return wrapper;
+        }
+
+        it("shows the click hint, then the full name, when the title is cut off", async () => {
+            const tooltip = (await mountTitle(60, 40)).find("#g-card-title-tooltip-card");
+
+            const hint = tooltip.find(".g-card-title-tooltip-hint");
+            const name = tooltip.find(".g-card-title-tooltip-name");
+            expect(hint.text()).toBe("Preview Workflow");
+            expect(name.text()).toBe(NAME);
+            expect(hint.element.compareDocumentPosition(name.element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+        });
+
+        it("shows only the click hint when the whole title fits", async () => {
+            const tooltip = (await mountTitle(40, 40)).find("#g-card-title-tooltip-card");
+
+            expect(tooltip.find(".g-card-title-tooltip-hint").text()).toBe("Preview Workflow");
+            expect(tooltip.find(".g-card-title-tooltip-name").exists()).toBe(false);
+        });
+
+        it("does not repeat the name when the hint already is the name", async () => {
+            const tooltip = (await mountTitle(60, 40, NAME)).find("#g-card-title-tooltip-card");
+
+            expect(tooltip.find(".g-card-title-tooltip-hint").text()).toBe(NAME);
+            expect(tooltip.find(".g-card-title-tooltip-name").exists()).toBe(false);
+        });
+
+        it("keeps the full name as the link's accessible name and the tooltip as its description", async () => {
+            const wrapper = await mountTitle(60, 40);
+            const link = wrapper.find("#g-card-title-link-card");
+            const tooltip = wrapper.find("#g-card-title-tooltip-card");
+
+            expect(link.text()).toBe(NAME);
+            expect(link.attributes("aria-label")).toBeUndefined();
+            expect(link.attributes("title")).toBeUndefined();
+            expect(link.attributes("aria-describedby")).toBe("g-card-title-tooltip-card");
+            expect(tooltip.find(".g-card-title-tooltip-hint").attributes("aria-hidden")).toBeUndefined();
+            expect(tooltip.find(".g-card-title-tooltip-name").attributes("aria-hidden")).toBe("true");
+        });
+
+        it("shows the tooltip when the link gets keyboard focus", async () => {
+            const wrapper = await mountTitle(60, 40);
+
+            await wrapper.find("#g-card-title-link-card").trigger("focus");
+
+            expect(wrapper.find("#g-card-title-tooltip-card").attributes("data-show")).toBe("true");
+        });
+    });
 });
