@@ -1557,7 +1557,7 @@ class InputParameterModule(WorkflowModule):
                 restrictions_cond.cases = restrictions_cond_cases
                 when_this_type.inputs["restrictions"] = restrictions_cond
 
-            if param_type == "integer":
+            if param_type in ("integer", "float"):
                 specify_multiple = BooleanToolParameter(
                     None,
                     dict(
@@ -1568,6 +1568,7 @@ class InputParameterModule(WorkflowModule):
                     ),
                 )
                 when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
+            if param_type == "integer":
                 when_this_type.inputs["min"] = IntegerToolParameter(
                     None,
                     {
