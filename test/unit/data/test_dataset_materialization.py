@@ -676,6 +676,26 @@ def test_deferred_zarr_materialized_over_http_from_consolidated_metadata(
     assert materialized_hda.metadata.store_root == ""
 
 
+@pytest.mark.parametrize("array_name", ["a b", "a#b", "a?b", "a%20b"])
+@pytest.mark.parametrize("write_store", [write_zarr_v3_store, write_zarr_v2_store])
+def test_deferred_zarr_over_http_with_keys_needing_url_encoding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    directory_http_server: DirectoryHttpServer,
+    write_store: Callable[..., list[str]],
+    array_name: str,
+) -> None:
+    written = write_store(directory_http_server.served / "store.zarr", array_name=array_name)
+
+    materialized_hda = _materialize_zarr_over_http(directory_http_server, monkeypatch, tmp_path)
+
+    assert materialized_hda.dataset
+    assert materialized_hda.dataset.state == "ok", materialized_hda.info
+    assert _relative_files(materialized_hda.extra_files_path) == sorted(written)
+    chunk = next(path for path in written if path.startswith(f"{array_name}/") and "zarr" not in path)
+    assert (Path(materialized_hda.extra_files_path) / chunk).read_bytes() == b"\x01\x02"
+
+
 def test_denied_zarr_chunk_is_an_error_when_the_server_reports_missing_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, directory_http_server: DirectoryHttpServer
 ) -> None:

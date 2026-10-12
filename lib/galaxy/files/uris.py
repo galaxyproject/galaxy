@@ -13,7 +13,10 @@ from collections.abc import (
 from contextlib import contextmanager
 from typing import Optional
 from urllib.error import HTTPError
-from urllib.parse import urlparse
+from urllib.parse import (
+    quote,
+    urlparse,
+)
 
 import requests
 from requests import HTTPError as RequestsHTTPError
@@ -146,6 +149,8 @@ class UriDirectoryReader:
         self._uri = uri.rstrip("/")
         self._file_source, root_path = ensure_file_sources(file_sources).get_file_source_path(self._uri)
         self._root_path = root_path.rstrip("/")
+        # File sources that take the whole URL as the path need each file's path percent-encoded.
+        self._quote_paths = urlparse(self._root_path).scheme.lower() in ("http", "https", "ftp")
         self._user_context = user_context
         self._missing_statuses: tuple[int, ...] = (404,)
 
@@ -189,7 +194,10 @@ class UriDirectoryReader:
         target_path = os.path.join(target_dir, rel_path)
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
         try:
-            self._file_source.realize_to(f"{self._root_path}/{rel_path}", target_path, user_context=self._user_context)
+            source_path = quote(rel_path) if self._quote_paths else rel_path
+            self._file_source.realize_to(
+                f"{self._root_path}/{source_path}", target_path, user_context=self._user_context
+            )
         except FileNotFoundError:
             found = False
         except (HTTPError, RequestsHTTPError) as e:
