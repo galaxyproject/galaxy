@@ -69,7 +69,10 @@ from galaxy.schema.dataset_protection import (
 )
 from galaxy.tool_util_models.tool_source import FileSourceConfigFile
 from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import BaseDataToolParameter
+from galaxy.tools.parameters.basic import (
+    BaseDataToolParameter,
+    DataToolParameter,
+)
 from galaxy.util import now
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
@@ -208,6 +211,30 @@ def _dataset_instances(value: Any) -> list[DatasetInstance]:
         # Collections, collection elements and collection adapters.
         return list(value.dataset_instances)
     return []
+
+
+def _existing_conversion(dataset_instance: DatasetInstance, formats: list[Any]) -> DatasetInstance | None:
+    """The existing conversion of the dataset to one of ``formats``, as the tool action finds it."""
+    direct_match, target_ext, converted_dataset = dataset_instance.find_conversion_destination(formats)
+    if not direct_match and target_ext and converted_dataset:
+        return converted_dataset
+    return None
+
+
+def _read_datasets(
+    input: BaseDataToolParameter, dataset_instance: DatasetInstance
+) -> list[tuple[DatasetInstance, bool]]:
+    """The datasets a tool reads for an input dataset, and whether it reads them encrypted.
+
+    Explicit conversions (``<conversion>``) are passed to the tool next to the input.
+    """
+    # Implicit conversions replace the input in the job parameters already.
+    read = [(dataset_instance, any(is_crypt4gh_file_ext(ext) for ext in input.extensions))]
+    if isinstance(input, DataToolParameter):
+        for _, conversion_ext, conversion_datatypes in input.conversions:
+            if converted_dataset := _existing_conversion(dataset_instance, conversion_datatypes):
+                read.append((converted_dataset, is_crypt4gh_file_ext(conversion_ext)))
+    return read
 
 
 class GrantRecord:
@@ -383,15 +410,15 @@ class DatasetProtectionManager:
         def visitor(input: Any, value: Any, **kwargs: Any) -> None:
             if not isinstance(input, BaseDataToolParameter):
                 return
-            accepts_encrypted = any(is_crypt4gh_file_ext(ext) for ext in input.extensions)
-            for dataset_instance in _dataset_instances(value):
-                dataset = dataset_instance.dataset
-                if dataset is None or not self.is_protected(dataset_instance):
-                    continue
-                if accepts_encrypted:
-                    encrypted[dataset.id] = dataset_instance
-                else:
-                    decrypted[dataset.id] = dataset_instance
+            for input_instance in _dataset_instances(value):
+                for dataset_instance, read_encrypted in _read_datasets(input, input_instance):
+                    dataset = dataset_instance.dataset
+                    if dataset is None or not self.is_protected(dataset_instance):
+                        continue
+                    if read_encrypted:
+                        encrypted[dataset.id] = dataset_instance
+                    else:
+                        decrypted[dataset.id] = dataset_instance
 
         visit_input_values(tool.inputs, param_values, visitor)
         if encrypted.keys() & decrypted.keys():
