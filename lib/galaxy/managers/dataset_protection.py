@@ -221,6 +221,10 @@ def _existing_conversion(dataset_instance: DatasetInstance, formats: list[Any]) 
     return None
 
 
+def _format_ext(format: Any) -> str:
+    return format if isinstance(format, str) else format.file_ext
+
+
 def _read_datasets(
     input: BaseDataToolParameter, dataset_instance: DatasetInstance
 ) -> list[tuple[DatasetInstance, bool]]:
@@ -344,6 +348,34 @@ class DatasetProtectionManager:
         if grant is None or grant.is_expired(scheme.expiry_margin):
             return None
         return grant
+
+    def retire_unusable_conversion(
+        self, user: User | None, dataset_instance: DatasetInstance, converted: DatasetInstance, formats: list[Any]
+    ) -> bool:
+        """Whether the dataset has to be converted again, because the user can't decrypt this conversion.
+
+        Conversions are decrypted with the grants of the jobs that converted them, users can't renew
+        those. Every unusable conversion of the dataset is retired then, also those of converter
+        dependencies, so they are converted again with the grant of the user on the dataset.
+        """
+        if user is None or not self.is_protected(converted) or converted.state != DatasetInstance.states.OK:
+            return False
+        if any(is_crypt4gh_file_ext(_format_ext(format)) for format in formats):
+            # Passed to the tool encrypted.
+            return False
+        if self.get_usable_grant(user, converted) is not None:
+            return False
+        for association in dataset_instance.implicitly_converted_datasets:
+            conversion = association.dataset or association.dataset_ldda
+            if (
+                not association.deleted
+                and conversion is not None
+                and conversion.state == DatasetInstance.states.OK
+                and self.is_protected(conversion)
+                and self.get_usable_grant(user, conversion) is None
+            ):
+                association.deleted = True
+        return True
 
     def register_user_grant(
         self, user: User, dataset_instance: DatasetInstance, payload: Crypt4GHGrantPayload
