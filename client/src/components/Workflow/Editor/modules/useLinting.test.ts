@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { runInTestScope } from "@tests/vitest/effectScope";
+import { disposePinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { type Ref, ref } from "vue";
 
 import type { Creator } from "@/api/workflows";
@@ -10,7 +11,8 @@ import type { Steps } from "@/stores/workflowStepStore";
 import lintStepsData from "../test-data/lint_steps.json";
 import { useLintData } from "./useLinting";
 
-const steps: Steps = lintStepsData as unknown as Steps;
+// The lint fixture intentionally contains partial/malformed steps (including null state and object outputs).
+const steps = lintStepsData as unknown as Steps;
 
 describe("useLintData", () => {
     let stepsRef: Ref<Steps>;
@@ -18,25 +20,33 @@ describe("useLintData", () => {
     beforeEach(() => {
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         setActivePinia(pinia);
-        stepsRef = ref(steps);
+        onTestFinished(() => disposePinia(pinia));
+        stepsRef = ref(structuredClone(steps));
     });
+
+    interface LintInputs {
+        steps: Ref<Steps>;
+        annotation: Ref<string | null>;
+        readme: Ref<string | null>;
+        license: Ref<string | null>;
+        creator: Ref<Creator[] | null>;
+    }
+
+    function createLintData({
+        steps = stepsRef,
+        annotation = ref("workflow annotation"),
+        readme = ref("workflow readme"),
+        license = ref("MIT"),
+        creator = ref<Creator[] | null>([{ class: "Person", name: "Test Creator" }]),
+    }: Partial<LintInputs> = {}) {
+        return runInTestScope(() =>
+            useLintData(ref("test-workflow"), steps, ref(testDatatypesMapper), annotation, readme, license, creator),
+        );
+    }
 
     describe("priority issue counting", () => {
         it("counts priority issues correctly with all metadata provided", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             // Priority issues that exist in our test setup:
             // - untypedParameters: exists=true (has steps), resolved=false (has untyped param)
@@ -47,15 +57,12 @@ describe("useLintData", () => {
         });
 
         it("counts priority issues correctly with no metadata provided", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref(null),
-                ref(null),
-                ref(null),
-                ref(null),
-            );
+            const lintData = createLintData({
+                annotation: ref(null),
+                readme: ref(null),
+                license: ref(null),
+                creator: ref(null),
+            });
 
             // Priority issues remain the same regardless of metadata
             expect(lintData.totalPriorityIssues.value).toBe(3);
@@ -64,20 +71,7 @@ describe("useLintData", () => {
 
         it("correctly handles empty steps scenario", () => {
             const emptyStepsRef = ref({});
-            const lintData = useLintData(
-                ref("test-workflow"),
-                emptyStepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ steps: emptyStepsRef });
 
             // With no steps:
             // - untypedParameters: exists=false (no steps)
@@ -91,59 +85,20 @@ describe("useLintData", () => {
         });
 
         it("correctly identifies untyped parameters", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             expect(lintData.untypedParameterWarnings.value).toHaveLength(1);
-            expect(lintData.untypedParameterWarnings.value[0]!.name).toBe("untyped_parameter");
+            expect(lintData.untypedParameterWarnings.value[0]?.name).toBe("untyped_parameter");
         });
 
         it("correctly identifies disconnected inputs", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             expect(lintData.disconnectedInputs.value).toHaveLength(1);
         });
 
         it("correctly identifies unlabeled outputs", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             // Step 1 has workflow_outputs with no label
             expect(lintData.unlabeledOutputs.value).toHaveLength(1);
@@ -152,20 +107,7 @@ describe("useLintData", () => {
 
     describe("attribute issue counting", () => {
         it("counts all attribute issues as resolved when all metadata is provided", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             // Attribute issues always exist: annotation, readme, creator, license
             expect(lintData.totalAttributeIssues.value).toBe(4);
@@ -174,15 +116,12 @@ describe("useLintData", () => {
         });
 
         it("counts unresolved attribute issues when no metadata is provided", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref(null),
-                ref(null),
-                ref(null),
-                ref(null),
-            );
+            const lintData = createLintData({
+                annotation: ref(null),
+                readme: ref(null),
+                license: ref(null),
+                creator: ref(null),
+            });
 
             // Attribute issues: annotation, readme, creator, license all exist but none resolved
             expect(lintData.totalAttributeIssues.value).toBe(4);
@@ -191,20 +130,7 @@ describe("useLintData", () => {
 
         it("counts annotationLength issue when annotation is too long", () => {
             const longAnnotation = "a".repeat(300); // More than 250 characters
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref(longAnnotation),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ annotation: ref(longAnnotation) });
 
             // Now we should have 5 attribute issues: annotation, annotationLength, readme, creator, license
             expect(lintData.totalAttributeIssues.value).toBe(5);
@@ -215,20 +141,7 @@ describe("useLintData", () => {
 
         it("does not count annotationLength issue when annotation is within limit", () => {
             const shortAnnotation = "a".repeat(100); // Less than 250 characters
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref(shortAnnotation),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ annotation: ref(shortAnnotation) });
 
             // Should have 4 attribute issues: annotation, readme, creator, license
             // annotationLength doesn't exist when annotation is within limit
@@ -237,20 +150,7 @@ describe("useLintData", () => {
         });
 
         it("verifies individual check flags", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             expect(lintData.checkAnnotation.value).toBe(true);
             expect(lintData.checkAnnotationLength.value).toBe(true);
@@ -260,15 +160,12 @@ describe("useLintData", () => {
         });
 
         it("verifies individual check flags when metadata is missing", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref(null),
-                ref(null),
-                ref(null),
-                ref(null),
-            );
+            const lintData = createLintData({
+                annotation: ref(null),
+                readme: ref(null),
+                license: ref(null),
+                creator: ref(null),
+            });
 
             expect(lintData.checkAnnotation.value).toBe(false);
             expect(lintData.checkAnnotationLength.value).toBe(false);
@@ -279,23 +176,10 @@ describe("useLintData", () => {
     });
 
     describe("reactive updates", () => {
-        it("reactively updates counts when annotation changes", async () => {
+        it("reactively updates counts when annotation changes", () => {
             const annotation = ref<string | null>(null);
 
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                annotation,
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ annotation });
 
             // Initially no annotation
             expect(lintData.resolvedAttributeIssues.value).toBe(3); // readme, license, creator
@@ -305,23 +189,10 @@ describe("useLintData", () => {
             expect(lintData.resolvedAttributeIssues.value).toBe(4); // All resolved
         });
 
-        it("reactively updates counts when readme changes", async () => {
+        it("reactively updates counts when readme changes", () => {
             const readme = ref<string | null>(null);
 
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                readme,
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ readme });
 
             // Initially no readme
             expect(lintData.resolvedAttributeIssues.value).toBe(3); // annotation, license, creator
@@ -331,23 +202,10 @@ describe("useLintData", () => {
             expect(lintData.resolvedAttributeIssues.value).toBe(4); // All resolved
         });
 
-        it("reactively adds annotationLength issue when annotation becomes too long", async () => {
+        it("reactively adds annotationLength issue when annotation becomes too long", () => {
             const annotation = ref<string | null>("Short annotation");
 
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                annotation,
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ annotation });
 
             // Initially annotation is short
             expect(lintData.totalAttributeIssues.value).toBe(4);
@@ -359,23 +217,10 @@ describe("useLintData", () => {
             expect(lintData.resolvedAttributeIssues.value).toBe(4); // annotation still resolved, but not annotationLength
         });
 
-        it("reactively updates when license changes", async () => {
+        it("reactively updates when license changes", () => {
             const license = ref<string | null>(null);
 
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                license,
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData({ license });
 
             // Initially no license
             expect(lintData.resolvedAttributeIssues.value).toBe(3); // annotation, readme, creator
@@ -385,18 +230,10 @@ describe("useLintData", () => {
             expect(lintData.resolvedAttributeIssues.value).toBe(4); // All resolved
         });
 
-        it("reactively updates when creator changes", async () => {
+        it("reactively updates when creator changes", () => {
             const creator = ref<Creator[] | null>(null);
 
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                creator,
-            );
+            const lintData = createLintData({ creator });
 
             // Initially no creator
             expect(lintData.resolvedAttributeIssues.value).toBe(3); // annotation, readme, license
@@ -409,20 +246,7 @@ describe("useLintData", () => {
 
     describe("warning detection", () => {
         it("returns refs for all warning types", () => {
-            const lintData = useLintData(
-                ref("test-workflow"),
-                stepsRef,
-                ref(testDatatypesMapper),
-                ref("workflow annotation"),
-                ref("workflow readme"),
-                ref("MIT"),
-                ref([
-                    {
-                        class: "Person",
-                        name: "Test Creator",
-                    },
-                ]),
-            );
+            const lintData = createLintData();
 
             // All warning arrays should be refs (even if empty)
             expect(lintData.untypedParameterWarnings.value).toBeDefined();
