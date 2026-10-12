@@ -3,6 +3,7 @@ import { withGalaxyInstance } from "@tests/test-data/galaxyInstance";
 import type { UseScrollReturn } from "@vueuse/core";
 import { zoomIdentity } from "d3-zoom";
 import { HttpResponse } from "msw";
+import { expect, waitFor, within } from "storybook/test";
 import { h, markRaw, provide, ref } from "vue";
 
 import { http } from "@/api/client/__mocks__/http";
@@ -67,12 +68,26 @@ export const ActiveTool: Story = { args: { activeNodeId: 0 } };
 export const Subworkflow: Story = { args: { step: SUBWORKFLOW_STEP, contentId: null, name: "Read quality control" } };
 
 /** A workflow opened on a server where FastQC is no longer installed. */
-export const MissingTool: Story = { args: { step: MISSING_TOOL_STEP } };
+export const MissingTool: Story = {
+    args: { step: MISSING_TOOL_STEP },
+    play: async ({ canvas, step }) => {
+        await step("Show why the missing tool cannot run", async () => {
+            await expect(await canvas.findByRole("alert")).toHaveTextContent(/^Tool is not installed$/);
+        });
+    },
+};
 
 /** Existing connections survive even though the missing tool's terminals cannot be resolved. */
 export const MissingToolWithConnections: Story = {
     args: { step: MISSING_TOOL_STEP },
     parameters: editorParameters({ missingToolConnections: true }),
+    play: async ({ canvas, step }) => {
+        await step("Keep the existing terminal labels beside the missing-tool error", async () => {
+            await expect(await canvas.findByRole("alert")).toHaveTextContent(/^Tool is not installed$/);
+            await expect(canvas.getByText("input1", { exact: true })).toBeVisible();
+            await expect(canvas.getByText("out_file1", { exact: true })).toBeVisible();
+        });
+    },
 };
 
 export const WithRecommendations: Story = {
@@ -94,5 +109,36 @@ export const WithRecommendations: Story = {
                 }),
             },
         },
+    },
+};
+
+export const OpensRecommendationsWithKeyboard: Story = {
+    ...WithRecommendations,
+    play: async ({ canvas, canvasElement, userEvent, step }) => {
+        const page = within(canvasElement.ownerDocument.body);
+        await step("Reach tool recommendations from the keyboard", async () => {
+            await expect(canvas.getByText("FastQC", { exact: true })).toBeVisible();
+            await expect(page.queryByRole("dialog", { name: "tool recommendations" })).not.toBeInTheDocument();
+            // Each button keeps its own name; focusing it shows its tooltip.
+            await userEvent.tab();
+            await expect(canvas.getByRole("button", { name: "clone node" })).toHaveFocus();
+            await expect(await page.findByRole("tooltip", { name: "Duplicate" })).toBeVisible();
+            await userEvent.tab();
+            await expect(canvas.getByRole("button", { name: "destroy node" })).toHaveFocus();
+            await expect(await page.findByRole("tooltip", { name: "Remove" })).toBeVisible();
+            await userEvent.tab();
+            await expect(canvas.getByRole("button", { name: "tool recommendations" })).toHaveFocus();
+            const popover = await page.findByRole("dialog", { name: "tool recommendations" });
+            await expect(await within(popover).findByText("No tool recommendations", { exact: true })).toBeVisible();
+            await userEvent.tab();
+            await waitFor(() => expect(popover).toHaveFocus());
+        });
+        await step("Dismiss recommendations and return to their button", async () => {
+            await userEvent.keyboard("{Escape}");
+            await waitFor(() =>
+                expect(page.queryByRole("dialog", { name: "tool recommendations" })).not.toBeInTheDocument(),
+            );
+            await expect(canvas.getByRole("button", { name: "tool recommendations" })).toHaveFocus();
+        });
     },
 };
