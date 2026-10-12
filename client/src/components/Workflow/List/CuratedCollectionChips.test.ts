@@ -1,13 +1,15 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { CuratedWorkflowCollection } from "@/api/curatedWorkflows";
 
 import CuratedCollectionChips from "./CuratedCollectionChips.vue";
 
 const localVue = getLocalVue();
 
-const COLLECTIONS = [
+const COLLECTIONS: CuratedWorkflowCollection[] = [
     { name: "Microbiome", count: 21 },
     { name: "Epigenetics", count: 12 },
     { name: "Transcriptomics", count: 11 },
@@ -30,9 +32,9 @@ function fakeOffset(element: HTMLElement, property: "offsetTop" | "offsetHeight"
 }
 
 async function mountChips(active?: string) {
-    const wrapper = mount(CuratedCollectionChips as object, {
-        localVue,
-        propsData: { collections: COLLECTIONS, active },
+    const wrapper = mount(CuratedCollectionChips, {
+        global: localVue,
+        props: { collections: COLLECTIONS, active },
     });
     await flushPromises();
     return wrapper;
@@ -55,13 +57,14 @@ describe("CuratedCollectionChips", () => {
     afterEach(() => {
         vi.restoreAllMocks();
     });
+    enableAutoUnmount(afterEach);
 
     it("keeps to one row and offers the rest behind a +N more button", async () => {
         const wrapper = await mountChips();
 
         expect(hiddenChips(wrapper)).toEqual(["Transcriptomics", "Imaging", "Virology"]);
-        expect(wrapper.find(".curated-workflow-collection-hidden").attributes("tabindex")).toBe("-1");
-        const more = wrapper.find(".curated-workflow-collections-more");
+        expect(wrapper.get(".curated-workflow-collection-hidden").attributes("tabindex")).toBe("-1");
+        const more = wrapper.get(".curated-workflow-collections-more");
         expect(more.text()).toBe("+3 more");
         expect(more.classes()).not.toContain("g-pressed");
     });
@@ -69,13 +72,13 @@ describe("CuratedCollectionChips", () => {
     it("shows every chip once expanded, and folds them away again", async () => {
         const wrapper = await mountChips();
 
-        await wrapper.find(".curated-workflow-collections-more").trigger("click");
+        await wrapper.get(".curated-workflow-collections-more").trigger("click");
         await flushPromises();
 
         expect(hiddenChips(wrapper)).toEqual([]);
         expect(wrapper.find(".curated-workflow-collections-more").exists()).toBe(false);
 
-        await wrapper.find(".curated-workflow-collections-less").trigger("click");
+        await wrapper.get(".curated-workflow-collections-less").trigger("click");
         await flushPromises();
 
         expect(hiddenChips(wrapper)).toEqual(["Transcriptomics", "Imaging", "Virology"]);
@@ -93,13 +96,13 @@ describe("CuratedCollectionChips", () => {
     it("marks +N more as selected when the active collection is folded away", async () => {
         const wrapper = await mountChips("imaging");
 
-        expect(wrapper.find(".curated-workflow-collections-more").classes()).toContain("g-pressed");
+        expect(wrapper.get(".curated-workflow-collections-more").classes()).toContain("g-pressed");
     });
 
     it("asks to toggle a collection when its chip is clicked", async () => {
         const wrapper = await mountChips();
 
-        await wrapper.find('[data-collection="Epigenetics"]').trigger("click");
+        await wrapper.get('[data-collection="Epigenetics"]').trigger("click");
 
         expect(wrapper.emitted("toggle")).toEqual([["Epigenetics"]]);
     });
