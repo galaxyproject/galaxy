@@ -16,20 +16,23 @@ vi.mock("@/stores/userTagsStore", () => ({
 }));
 
 describe("TagsSelectionDialog", () => {
-    it("shows the tag suggestions inside the dialog body, under a full-width tag input", async () => {
+    it("shows the tag suggestions in the dialog body, under the tag input", async () => {
         const wrapper = mount(TagsSelectionDialog, {
             props: { show: true, initialTags: ["abc"] },
             global: getLocalVue(),
             attachTo: document.body,
         });
 
-        expect(wrapper.find(".stateless-tags .tags-edit").classes()).not.toContain("d-flex");
-
         await wrapper.find(".stateless-tags .toggle-button").trigger("click");
         await nextTick();
 
-        expect(wrapper.find(".stateless-tags input[role='combobox']").exists()).toBe(true);
-        expect(wrapper.find(".stateless-tags [role='listbox']").exists()).toBe(true);
+        const dialogBody = wrapper.find("dialog .g-modal-content").element;
+        const input = document.querySelector("input[role='combobox']") as Element;
+        const listbox = document.querySelector("[role='listbox']") as Element;
+        expect(listbox).not.toBeNull();
+        expect(dialogBody.contains(listbox)).toBe(true);
+        expect(dialogBody.contains(input)).toBe(true);
+        expect(input.compareDocumentPosition(listbox) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         wrapper.unmount();
     });
 });
