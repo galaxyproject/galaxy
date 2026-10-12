@@ -1,13 +1,13 @@
 import { emittedArg } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
-import { nextTick } from "vue";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { colors } from "./colors";
 
 import ColorSelector from "./ColorSelector.vue";
 
 describe("ColorSelector", () => {
+    enableAutoUnmount(afterEach);
     it("shows a button for each color and 'none'", () => {
         const wrapper = mount(ColorSelector, { props: { color: "none" } });
         const buttons = wrapper.findAll("button");
@@ -19,19 +19,14 @@ describe("ColorSelector", () => {
         const allSelected = wrapper.findAll(".selected");
         expect(allSelected.length).toBe(1);
 
-        let selected = allSelected[0];
-        expect(selected.element.getAttribute("title")).toBe("No Color");
+        expect(wrapper.get(".selected").attributes("title")).toBe("No Color");
 
         const colorNames = Object.keys(colors);
 
-        for (let i = 0; i < colorNames.length; i++) {
-            const color = colorNames[i];
-            wrapper.setProps({ color });
-            await nextTick();
+        for (const color of colorNames) {
+            await wrapper.setProps({ color });
 
-            selected = wrapper.find(".selected");
-
-            expect(selected.element.getAttribute("title")).toContain(color);
+            expect(wrapper.get(".selected").attributes("title")).toContain(color);
         }
     });
 
@@ -40,10 +35,9 @@ describe("ColorSelector", () => {
 
         const colorNames = Object.keys(colors);
 
-        for (let i = 0; i < colorNames.length; i++) {
-            const color = colorNames[i];
-            await wrapper.find(`[title="Color ${color}"]`).trigger("click");
-            expect(emittedArg(wrapper, "set-color", i)).toBe(color);
+        for (const [index, color] of colorNames.entries()) {
+            await wrapper.get(`[title="Color ${color}"]`).trigger("click");
+            expect(emittedArg(wrapper, "set-color", index)).toBe(color);
         }
     });
 });
