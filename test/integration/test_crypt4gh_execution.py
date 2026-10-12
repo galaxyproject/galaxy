@@ -65,16 +65,22 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         self.service.failures.clear()
         self.user = generate_keypair()
 
-    def _upload_encrypted(self, history_id: str, plaintext: bytes, user: Keypair | None = None) -> tuple[dict, bytes]:
+    def _upload_encrypted(
+        self,
+        history_id: str,
+        plaintext: bytes,
+        user: Keypair | None = None,
+        name: str = "reads.fastqsanger.c4gh",
+    ) -> tuple[dict, bytes]:
         encrypted = encrypt(plaintext, (user or self.user).public)
         dataset = self.dataset_populator.new_dataset(
             history_id,
             content=io.BytesIO(encrypted),
-            name="reads.fastqsanger.c4gh",
+            name=name,
             file_type="auto",
             wait=True,
         )
-        assert dataset["extension"] == "fastqsanger.c4gh"
+        assert dataset["extension"] == name.split(".", 1)[1]
         return dataset, encrypted
 
     def _authorize(
@@ -97,8 +103,8 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         response = self._put(f"datasets/{dataset_id}/protection", payload, json=True)
         self._assert_status_code_is(response, 200)
 
-    def _upload_authorized(self, history_id: str, plaintext: bytes) -> dict:
-        dataset, encrypted = self._upload_encrypted(history_id, plaintext)
+    def _upload_authorized(self, history_id: str, plaintext: bytes, name: str = "reads.fastqsanger.c4gh") -> dict:
+        dataset, encrypted = self._upload_encrypted(history_id, plaintext, name=name)
         self._authorize(dataset["id"], encrypted)
         return dataset
 
@@ -270,6 +276,16 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         assert second["copied_from_job_id"] == first["id"]
         assert self._decrypted_content(history_id, output) == PLAINTEXT_1
         assert self.service.routes_called().count("recrypt_header_to_job_key") == 1
+
+    def test_explicitly_converted_inputs_are_decrypted(self, history_id):
+        dataset = self._upload_authorized(history_id, b">read1\nACGT\n", name="reads.fasta.c4gh")
+        response = self.dataset_populator.run_tool_raw(
+            "explicit_conversion", {"input1": {"src": "hda", "id": dataset["id"]}}, history_id
+        )
+        job, output = self._wait_for_job(history_id, response)
+
+        assert job["state"] == "ok", job
+        assert self._decrypted_content(history_id, output) == b"read1\n"
 
     def test_other_users_jobs_decrypting_inputs_are_not_reused(self, history_id):
         recipient = generate_keypair()
