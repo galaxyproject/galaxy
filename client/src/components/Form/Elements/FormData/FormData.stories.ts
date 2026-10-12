@@ -1,4 +1,6 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/vue3-vite";
+import { expectOptions, openOptions, pickOption } from "@tests/test-data/multiselect";
+import { expect } from "storybook/test";
 import { type Component, defineComponent, h, ref } from "vue";
 
 import { testDatatypesMapper, typesAndMappingHandler } from "@/components/Datatypes/test_fixtures";
@@ -100,10 +102,16 @@ export const NoDatasetsInWorkflowRun: Story = { args: { options: {}, workflowRun
 
 export const MultipleDatasets: Story = {
     args: { multiple: true, optional: true, value: selected(["hda", "hda2"], ["hda", "hda3"]) },
+
+    // TODO a11y: tabindex, target-size (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
 
 export const MultipleDatasetsSelectedOutOfOrder: Story = {
     args: { ...MultipleDatasets.args, value: selected(["hda", "hda2"], ["hda", "hda3"], ["hda", "hda1"]) },
+
+    // TODO a11y: tabindex, target-size (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
 
 export const MultipleDatasetsAndElementsIntermixed: Story = {
@@ -112,6 +120,9 @@ export const MultipleDatasetsAndElementsIntermixed: Story = {
         options: datasetsAndDatasetElements,
         value: selected(["hda", "hda1"], ["dce", "dce4"], ["dce", "dce2"], ["hda", "hda2"], ["dce", "dce3"]),
     },
+
+    // TODO a11y: tabindex, target-size (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
 
 export const CollectionElementThatIsADataset: Story = { args: { value: selected(["dce", "dce1"]) } };
@@ -130,6 +141,9 @@ export const CollectionOnCollectionInput: Story = {
 
 export const TwoCollectionElementsThatAreDatasets: Story = {
     args: { value: selected(["dce", "dce1"], ["dce", "dce4"]) },
+
+    // TODO a11y: tabindex, target-size (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
 
 export const EmptyCollectionInput: Story = { args: { type: "data_collection" } };
@@ -140,6 +154,9 @@ export const InWorkflowEditor: Story = { args: { flavor: "module" } };
 
 export const CollectionOnMultipleDatasetsInput: Story = {
     args: { multiple: true, value: selected(["hdca", "hdca5"]) },
+
+    // TODO a11y: tabindex, target-size (2026-10-10 audit).
+    parameters: { a11y: { test: "todo" } },
 };
 
 export const PinnedSelectionOutsideCurrentPage: Story = {
@@ -153,3 +170,74 @@ export const PinnedSelectionOutsideCurrentPage: Story = {
 };
 
 export const FilteredByTag: Story = { args: { tag: "tag1" } };
+
+const DATASET_LABELS = [
+    "dceName4 (as dataset)",
+    "dceName1 (as dataset)",
+    "1: hdaName1 tag1",
+    "2: hdaName2 tag1 tag2",
+    "3: hdaName3 tag2 tag3",
+    "4: hdaName4",
+];
+const COLLECTION_LABELS = [
+    "dceName3 (as dataset collection)",
+    "dceName2 (as dataset collection)",
+    "5: hdcaName5",
+    "6: hdcaName6",
+];
+
+/** Select a dataset, then switch the input to a dataset collection. */
+export const SelectsDatasetAndCollection: Story = {
+    play: async (context) => {
+        await context.step("Select a dataset and see the parent retain it", async () => {
+            await expectOptions(context, DATASET_LABELS, ["dceName4 (as dataset)"]);
+            await pickOption(context, "4: hdaName4");
+            await expectOptions(context, DATASET_LABELS, ["4: hdaName4"]);
+        });
+        await context.step("Switch to collections and select a collection", async () => {
+            await context.userEvent.click(context.canvas.getByRole("button", { name: "Dataset collection" }));
+            await openOptions(context);
+            // The filter worker keeps dataset options until the collection result arrives.
+            await expect(
+                await context.canvas.findByRole("option", { name: "6: hdcaName6" }, { timeout: 5000 }),
+            ).toBeVisible();
+            await expectOptions(context, COLLECTION_LABELS, ["dceName3 (as dataset collection)"]);
+            await pickOption(context, "6: hdcaName6");
+            await expectOptions(context, COLLECTION_LABELS, ["6: hdcaName6"]);
+        });
+        await context.userEvent.keyboard("{Escape}");
+    },
+};
+
+/** In the workflow editor, multiple datasets can run in matched order or against every other dataset. */
+export const ChangesBatchLinking: Story = {
+    args: { ...InWorkflowEditor.args },
+    play: async (context) => {
+        await context.step("Select multiple datasets for the batch input", async () => {
+            await expectOptions(context, DATASET_LABELS, ["dceName4 (as dataset)"]);
+            await context.userEvent.click(context.canvas.getByRole("button", { name: "Multiple datasets" }));
+            await pickOption(context, "4: hdaName4");
+            await expectOptions(context, DATASET_LABELS, ["dceName4 (as dataset)", "4: hdaName4"]);
+            await context.userEvent.keyboard("{Escape}");
+        });
+        await context.step("Run datasets against all other datasets", async () => {
+            const linked = context.canvas.getByText("Datasets will be run in matched order with other datasets.");
+            await expect(linked).toBeVisible();
+            await expect(context.canvas.getByRole("switch")).toBeChecked();
+            await context.userEvent.click(linked);
+            await expect(context.canvas.getByRole("switch")).not.toBeChecked();
+            await expect(context.canvas.getByText("Dataset will be run against *all* other datasets.")).toBeVisible();
+        });
+        await context.step("Return to matched order", async () => {
+            await context.userEvent.click(
+                context.canvas.getByText("Dataset will be run against *all* other datasets."),
+            );
+            await expect(context.canvas.getByRole("switch")).toBeChecked();
+            await expect(
+                context.canvas.getByText("Datasets will be run in matched order with other datasets."),
+            ).toBeVisible();
+            await expectOptions(context, DATASET_LABELS, ["dceName4 (as dataset)", "4: hdaName4"]);
+            await context.userEvent.keyboard("{Escape}");
+        });
+    },
+};
