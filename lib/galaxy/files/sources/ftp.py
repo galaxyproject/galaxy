@@ -86,7 +86,9 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         if url.startswith(f"ftp://{host or ''}"):
             props = self._extract_url_props(url)
             config.host = host or props["host"]
-            config.port = port or props["port"]
+            # A configured port is the default 21 unless set, so it cannot be told
+            # apart from an unset one. An explicit port in the url wins instead.
+            config.port = props["port"] or port
             config.user = user or props["user"]
             config.passwd = passwd or props["passwd"]
             rel_path = props["path"] or url
@@ -102,7 +104,7 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         result = urllib.parse.urlparse(url)
         return {
             "host": result.hostname,
-            "port": result.port or 21,
+            "port": result.port,
             "user": result.username,
             "passwd": result.password,
             "path": result.path,
@@ -114,10 +116,11 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         port = self.template_config.port
         root = self.template_config.root or ""
         root = root.rstrip("/")
-        if host and port and url.startswith(f"ftp://{host}:{port}"):
-            score = len(f"ftp://{host}:{port}")
         # For security, we need to ensure that a partial match doesn't work e.g. ftp://{host}something/myfiles
-        elif host and (url.startswith(f"ftp://{host}/") or url == f"ftp://{host}"):
+        # or ftp://{host}:{port}1/myfiles, which would be realized with this source's credentials.
+        if host and port and _matches_authority(url, f"ftp://{host}:{port}"):
+            score = len(f"ftp://{host}:{port}")
+        elif host and _matches_authority(url, f"ftp://{host}"):
             score = len(f"ftp://{host}")
         elif not host and url.startswith("ftp://"):
             score = len("ftp://")
@@ -126,6 +129,10 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         if root and url.startswith(f"ftp://{host}{root}/"):
             score += len(root)
         return score
+
+
+def _matches_authority(url: str, authority: str) -> bool:
+    return url == authority or url.startswith(f"{authority}/")
 
 
 __all__ = ("FtpFilesSource",)

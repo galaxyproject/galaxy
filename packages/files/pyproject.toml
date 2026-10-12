@@ -44,6 +44,7 @@ keywords = ["Galaxy"]
 [project.optional-dependencies]
 test = [
     "pytest",
+    "pyftpdlib",
     "gcsfs",
     "responses",
     "s3fs>=2023.1.0",
