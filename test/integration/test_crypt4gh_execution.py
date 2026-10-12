@@ -379,6 +379,41 @@ steps:
         assert second["inputs"]["input1_table"]["id"] != first["inputs"]["input1_table"]["id"]
         assert self._decrypted_content(history_id, output) == b"read1\n"
 
+    def test_workflows_on_authorized_inputs_run_every_step(self, history_id):
+        dataset = self._upload_authorized(history_id, b">read1\nACGT\n", name="reads.fasta.c4gh")
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  reads:
+    type: data
+outputs:
+  result:
+    outputSource: concatenated/out_file1
+steps:
+  copied:
+    tool_id: cat
+    in:
+      input1: reads
+  converted:
+    tool_id: explicit_conversion
+    in:
+      input1: copied/out_file1
+  concatenated:
+    tool_id: cat
+    in:
+      input1: converted/output1
+""")
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id, history_id=history_id, inputs={"reads": {"src": "hda", "id": dataset["id"]}}, inputs_by="name"
+        )
+        invocation = self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+
+        for step in self.workflow_populator.get_invocation(invocation_id, step_details=True)["steps"][1:]:
+            assert [job["state"] for job in step["jobs"]] == ["ok"], step
+        result = invocation["outputs"]["result"]
+        # Only the uploaded dataset was authorized, every step decrypted its inputs.
+        assert self._decrypted_content(history_id, result) == b"read1\n"
+
     def test_other_users_jobs_decrypting_inputs_are_not_reused(self, history_id):
         recipient = generate_keypair()
         encrypted = encrypt(PLAINTEXT_1, self.user.public, recipient.public)
