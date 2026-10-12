@@ -3,6 +3,7 @@ import { getFakeCollectionSummary } from "@tests/test-data/collections";
 import { withCurrentUser } from "@tests/test-data/currentUser";
 import { getFakeDatasetDetails } from "@tests/test-data/datasets";
 import { http as rawHttp, HttpResponse } from "msw";
+import { expect } from "storybook/test";
 
 import { http } from "@/api/client/__mocks__/http";
 
@@ -26,6 +27,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const RunningDataset: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Read the fetched dataset", async () => {
+            await expect(await canvas.findByText("Alignment output", { exact: true }, { timeout: 5000 })).toBeVisible();
+            await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+            await expect(canvas.queryByText("Loading dataset", { exact: true })).not.toBeInTheDocument();
+        });
+    },
     parameters: {
         msw: {
             handlers: {
@@ -46,6 +54,18 @@ export const RunningDataset: Story = {
 };
 
 export const PopulatingCollection: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Read the fetched collection and its dataset count", async () => {
+            await expect(
+                await canvas.findByText("Alignment collection", { exact: true }, { timeout: 5000 }),
+            ).toBeVisible();
+            const description = canvas.getByText(/a list with 2/);
+            await expect(description).toBeVisible();
+            await expect(description).toHaveTextContent(/^a list with 2 txt datasets$/);
+            await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+            await expect(canvas.queryByText("Loading dataset", { exact: true })).not.toBeInTheDocument();
+        });
+    },
     args: { itemSrc: "hdca" },
     parameters: {
         msw: {
@@ -66,6 +86,15 @@ export const PopulatingCollection: Story = {
 };
 
 export const DatasetAccessDenied: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Explain why the dataset is inaccessible", async () => {
+            await expect(await canvas.findByRole("alert", {}, { timeout: 5000 })).toHaveTextContent(
+                /^HistoryDatasetAssociation is not accessible by user$/,
+            );
+            await expect(canvas.queryByText("Alignment output", { exact: true })).not.toBeInTheDocument();
+            await expect(canvas.queryByText("Loading dataset", { exact: true })).not.toBeInTheDocument();
+        });
+    },
     parameters: {
         msw: {
             handlers: {
@@ -86,6 +115,15 @@ export const DatasetAccessDenied: Story = {
 };
 
 export const CollectionHistoryAccessDenied: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Explain why the collection's history is inaccessible", async () => {
+            await expect(await canvas.findByRole("alert", {}, { timeout: 5000 })).toHaveTextContent(
+                /^History is not accessible by user$/,
+            );
+            await expect(canvas.queryByText("Alignment collection", { exact: true })).not.toBeInTheDocument();
+            await expect(canvas.queryByText("Loading dataset", { exact: true })).not.toBeInTheDocument();
+        });
+    },
     args: { itemSrc: "hdca" },
     parameters: {
         msw: {
@@ -102,12 +140,28 @@ export const CollectionHistoryAccessDenied: Story = {
 };
 
 export const DatasetNetworkFailure: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Finish loading the dataset with a visible network error", async () => {
+            const error = await canvas.findByRole("alert", {}, { timeout: 5000 });
+            await expect(error).toBeVisible();
+            await expect(error).toHaveTextContent(/^Failed to fetch$/);
+            await expect(canvas.queryByText("Loading dataset", { exact: true })).not.toBeInTheDocument();
+        });
+    },
     parameters: {
         msw: { handlers: { item: rawHttp.get("/api/datasets/:dataset_id", () => HttpResponse.error()) } },
     },
 };
 
 export const CollectionNetworkFailure: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Finish loading the collection with a visible network error", async () => {
+            const error = await canvas.findByRole("alert", {}, { timeout: 5000 });
+            await expect(error).toBeVisible();
+            await expect(error).toHaveTextContent(/^Failed to fetch$/);
+            await expect(canvas.queryByText("Loading dataset", { exact: true })).not.toBeInTheDocument();
+        });
+    },
     args: { itemSrc: "hdca" },
     parameters: {
         msw: { handlers: { item: rawHttp.get("/api/dataset_collections/:hdca_id", () => HttpResponse.error()) } },
