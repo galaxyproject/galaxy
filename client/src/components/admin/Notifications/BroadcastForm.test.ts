@@ -1,11 +1,11 @@
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -33,25 +33,23 @@ vi.mock("vue-router", () => ({
 beforeEach(() => {
     mockPush.mockClear();
 });
+enableAutoUnmount(afterEach);
 
-async function mountBroadcastForm(props?: object) {
+async function mountBroadcastForm(props: Partial<InstanceType<typeof BroadcastForm>["$props"]> = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
+    onTestFinished(() => disposePinia(pinia));
 
-    const wrapper = mount(BroadcastForm as object, {
-        props: {
-            ...props,
-        },
-        global: localVue,
-        pinia,
-        stubs: {
-            FontAwesomeIcon: true,
-            // FormElement is rendered for real (not stubbed): the assertions below
-            // interact with its underlying <input> elements via setValue(), which a
-            // stub root element can't support.
-            GDateTime: true,
-            LoadingSpan: true,
-            BroadcastContainer: true,
+    const wrapper = mount(BroadcastForm, {
+        props,
+        global: {
+            ...withPlugins(localVue, pinia),
+            stubs: {
+                FontAwesomeIcon: true,
+                // Keep FormElement real so setValue reaches its input/textarea controls.
+                GDateTime: true,
+                LoadingSpan: true,
+                BroadcastContainer: true,
+            },
         },
     });
 
@@ -65,10 +63,9 @@ const { server, http } = useServerMock();
 describe("BroadcastForm.vue", () => {
     function expectSubmitButton(wrapper: VueWrapper, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
-        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
-        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
-            enabled ? "" : "Please fill all required fields",
-        );
+        const button = wrapper.get(SUBMIT_BUTTON_SELECTOR);
+        expect(button.attributes("aria-disabled")).toBe(enabled ? undefined : "true");
+        expect(button.attributes("data-title")).toBe(enabled ? "" : "Please fill all required fields");
     }
 
     async function createBroadcast(
@@ -85,21 +82,21 @@ describe("BroadcastForm.vue", () => {
 
         expectSubmitButton(wrapper, false);
 
-        await wrapper.find(SUBJECT_INPUT_SELECTOR).setValue("Test subject");
-        await wrapper.find(MESSAGE_INPUT_SELECTOR).setValue("Test message");
+        await wrapper.get(SUBJECT_INPUT_SELECTOR).setValue("Test subject");
+        await wrapper.get(MESSAGE_INPUT_SELECTOR).setValue("Test message");
 
         if (actionsLink) {
-            await wrapper.find(ACTION_LINK_SELECTOR).trigger("click");
+            await wrapper.get(ACTION_LINK_SELECTOR).trigger("click");
 
             await flushPromises();
 
-            await wrapper.find("#broadcast-action-link-name-0").setValue("Test link name");
-            await wrapper.find("#broadcast-action-link-link-0").setValue("https://test.link");
+            await wrapper.get("#broadcast-action-link-name-0").setValue("Test link name");
+            await wrapper.get("#broadcast-action-link-link-0").setValue("https://test.link");
         }
 
         expectSubmitButton(wrapper, true);
 
-        await wrapper.find(SUBMIT_BUTTON_SELECTOR).trigger("click");
+        await wrapper.get(SUBMIT_BUTTON_SELECTOR).trigger("click");
 
         await flushPromises();
 
@@ -137,10 +134,10 @@ describe("BroadcastForm.vue", () => {
 
         await flushPromises();
 
-        expect((wrapper.find(SUBJECT_INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
+        expect(wrapper.get<HTMLInputElement>(SUBJECT_INPUT_SELECTOR).element.value).toBe(
             FAKE_BROADCAST.content.subject,
         );
-        expect((wrapper.find(MESSAGE_INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
+        expect(wrapper.get<HTMLTextAreaElement>(MESSAGE_INPUT_SELECTOR).element.value).toBe(
             FAKE_BROADCAST.content.message,
         );
         expect(wrapper.find("#broadcast-action-link-name-0").exists()).toBeTruthy();
@@ -162,11 +159,11 @@ describe("BroadcastForm.vue", () => {
         const { wrapper, mockRouter } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
 
         const newSubject = generateRandomString();
-        await wrapper.find(SUBJECT_INPUT_SELECTOR).setValue(newSubject);
+        await wrapper.get(SUBJECT_INPUT_SELECTOR).setValue(newSubject);
 
         expectSubmitButton(wrapper, true);
 
-        await wrapper.find(SUBMIT_BUTTON_SELECTOR).trigger("click");
+        await wrapper.get(SUBMIT_BUTTON_SELECTOR).trigger("click");
 
         await flushPromises();
 
@@ -187,7 +184,7 @@ describe("BroadcastForm.vue", () => {
         expect(wrapper.find(PUBLISHED_WARNING_SELECTOR).exists()).toBeFalsy();
     });
 
-    it("should show the published published when editing a published broadcast", async () => {
+    it("should show the published warning when editing a published broadcast", async () => {
         const FAKE_BROADCAST = generateNewBroadcast({ published: true });
         server.use(
             http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
