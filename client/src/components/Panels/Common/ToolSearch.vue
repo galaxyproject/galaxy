@@ -63,6 +63,7 @@ interface RequestPayload {
     tools: Tool[];
     query: string;
     currentPanel: Record<string, ToolPanelItem>;
+    favoriteToolIds: string[];
 }
 
 interface SearchEventQuery {
@@ -140,7 +141,7 @@ function parseFavoritesQuery(query: string) {
 function handlePost(event: SearchEvent) {
     const { type } = event.data;
     if (type === "searchTools") {
-        const { tools, query, currentPanel } = event.data.payload;
+        const { tools, query, currentPanel, favoriteToolIds } = event.data.payload;
         const favoritesQuery = parseFavoritesQuery(query);
         if (favoritesQuery && !favoritesQuery.isFavoritesOnly) {
             const favoriteToolIdSet = new Set(currentFavorites.value.tools);
@@ -162,7 +163,7 @@ function handlePost(event: SearchEvent) {
             } as unknown as MessageEvent);
             return;
         }
-        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel);
+        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel, favoriteToolIds);
         // send the result back to the main thread
         onMessage({
             data: {
@@ -234,6 +235,7 @@ watch(
                     tools: props.toolsList,
                     query: props.query,
                     currentPanel: props.currentPanel,
+                    favoriteToolIds: [...currentFavorites.value.tools],
                 },
             });
         }
@@ -253,6 +255,7 @@ function checkQuery(q: string) {
                     tools: props.toolsList,
                     query: q,
                     currentPanel: props.currentPanel,
+                    favoriteToolIds: [...currentFavorites.value.tools],
                 },
             });
         }

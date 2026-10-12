@@ -409,6 +409,7 @@ export function getValidPanelItems(
  * @param tools - toolbox
  * @param query - a search query
  * @param currentPanel - current ToolPanel with { section_id: { tools: [tool ids] }, ... }
+ * @param favoriteToolIds - the user's favorite tool ids, preferred when collapsing tool versions
  * @returns an object containing
  * - results: array of tool ids that match the query
  * - resultPanel: a ToolPanel with only the results for the currentPanel
@@ -420,6 +421,7 @@ export function searchTools(
     tools: Tool[],
     query: string,
     currentPanel: Record<string, ToolPanelItem>,
+    favoriteToolIds: string[] = [],
 ): {
     results: string[];
     resultPanel: Record<string, Tool | ToolSection>;
@@ -432,22 +434,29 @@ export function searchTools(
     const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
     // Placed versions of one tool would otherwise render as duplicates (#23151).
     const orderById = new Map(matchedResults.map((match) => [match.id, match.order]));
-    const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(idResults, resultPanel, tools, orderById);
+    const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(
+        idResults,
+        resultPanel,
+        tools,
+        orderById,
+        new Set(favoriteToolIds),
+    );
     return { results, resultPanel: dedupedPanel, closestTerm: closestTerm };
 }
 
 /**
  * Collapses search results that belong to the same tool lineage (the same tool
  * installed at multiple versions) down to a single result. The best-ranked version
- * wins; among equally ranked versions the latest one wins, so the result does not
- * depend on the order the tools API lists versions in. Also prunes the sectioned
- * `resultPanel` so the dropped ids no longer render, removing any section left
- * empty as a result.
+ * wins; among equally ranked versions a favorited one wins, then the latest one, so
+ * the result does not depend on the order the tools API lists versions in. Also
+ * prunes the sectioned `resultPanel` so the dropped ids no longer render, removing
+ * any section left empty as a result.
  *
  * @param idResults ordered result tool ids from `createSortedResultPanel`
  * @param resultPanel sectioned result panel from `createSortedResultPanel`
  * @param tools the searched tools, used to resolve each id's version
  * @param orderById search rank of each result id (higher ranks first)
+ * @param favoriteToolIds favorited tool ids, preferred over newer versions of equal rank
  * @returns the de-duplicated `results` and matching `resultPanel`
  */
 export function dedupeResultsByToolLineage(
@@ -455,13 +464,14 @@ export function dedupeResultsByToolLineage(
     resultPanel: Record<string, Tool | ToolSection>,
     tools: Tool[],
     orderById: Map<string, number> = new Map(),
+    favoriteToolIds: Set<string> = new Set(),
 ): { results: string[]; resultPanel: Record<string, Tool | ToolSection> } {
     const toolById = new Map(tools.map((tool) => [tool.id, tool]));
     const keptByLineage = new Map<string, string>();
     for (const id of idResults) {
         const lineage = getVersionlessToolId(id, toolById.get(id));
         const keptId = keptByLineage.get(lineage);
-        if (keptId === undefined || isPreferredLineageResult(id, keptId, toolById, orderById)) {
+        if (keptId === undefined || isPreferredLineageResult(id, keptId, toolById, orderById, favoriteToolIds)) {
             keptByLineage.set(lineage, id);
         }
     }
@@ -499,11 +509,16 @@ function isPreferredLineageResult(
     keptId: string,
     toolById: Map<string, Tool>,
     orderById: Map<string, number>,
+    favoriteToolIds: Set<string>,
 ) {
     const candidateOrder = orderById.get(candidateId) ?? 0;
     const keptOrder = orderById.get(keptId) ?? 0;
     if (candidateOrder !== keptOrder) {
         return candidateOrder > keptOrder;
+    }
+    const candidateFavorite = favoriteToolIds.has(candidateId);
+    if (candidateFavorite !== favoriteToolIds.has(keptId)) {
+        return candidateFavorite;
     }
     return compareToolVersions(toolById.get(candidateId)?.version, toolById.get(keptId)?.version) > 0;
 }

@@ -200,7 +200,7 @@ describe("ToolBox search", () => {
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__"]);
     });
 
-    it("keeps a favorited older tool version in a #favorites search", async () => {
+    it("keeps a favorited older tool version in #favorites and plain searches", async () => {
         const latestZipVersion = {
             ...toolsList.find((tool) => tool.id === "__ZIP_COLLECTION__")!,
             id: "toolshed.example.org/repos/dev/zip_collection/zip/1.0",
@@ -235,6 +235,16 @@ describe("ToolBox search", () => {
             item.getAttribute("data-tool-id"),
         );
         expect(toolIds).toEqual([olderZipVersion.id]);
+
+        await input.setValue("Zip");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const plainToolIds = Array.from(wrapper.element.querySelectorAll("a[data-tool-id]")).map((item) =>
+            item.getAttribute("data-tool-id"),
+        );
+        expect(plainToolIds).toContain(olderZipVersion.id);
+        expect(plainToolIds).not.toContain(latestZipVersion.id);
     });
 
     it("collapses favorite results during search in My panel", async () => {

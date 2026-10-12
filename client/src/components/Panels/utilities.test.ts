@@ -557,6 +557,17 @@ describe("searchTools tool-lineage de-duplication", () => {
         // 3.8 is an exact name match and outranks the newer 3.9, which only starts with the query
         const { results } = searchTools(tools, "pyGenomeTracks", twoSectionPanel);
         expect(results).toEqual([pgt38]);
+
+        // Search rank still beats a favorited version.
+        const { results: withFavorite } = searchTools(tools, "pyGenomeTracks", twoSectionPanel, [pgt39]);
+        expect(withFavorite).toEqual([pgt38]);
+    });
+
+    it("keeps a favorited version over a newer, equally ranked one", () => {
+        const { results, resultPanel } = searchTools(twoVersionTools, "pyGenomeTracks", twoSectionPanel, [pgt38]);
+
+        expect(results).toEqual([pgt38]);
+        expect(Object.keys(resultPanel)).toEqual(["graph_display_data"]);
     });
 
     it("keeps distinct tools that merely share a search term", () => {
