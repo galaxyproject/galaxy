@@ -5902,11 +5902,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         Returns dict of { "dependency" => HDA }
         """
         # List of string of dependencies
-        try:
-            depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
-        except KeyError:
-            depends_list = []
-        return {dep: self.get_converted_dataset(trans, dep, use_cached_job=use_cached_job) for dep in depends_list}
+        deps = trans.app.datatypes_registry.get_converter_deps(self.extension, target_ext)
+        return {
+            dep: self.get_converted_dataset(trans, dep_ext, use_cached_job=use_cached_job)
+            for dep, dep_ext in deps.items()
+        }
 
     def get_converted_dataset(
         self,
@@ -5933,17 +5933,14 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             return converted_dataset
         deps = {}
         # List of string of dependencies
-        try:
-            depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
-        except KeyError:
-            depends_list = []
+        depends_on = trans.app.datatypes_registry.get_converter_deps(self.extension, target_ext)
         # Conversion is possible but hasn't been done yet, run converter.
         # Check if we have dependencies
         try:
-            for dependency in depends_list:
+            for dependency, dependency_ext in depends_on.items():
                 dep_dataset = self.get_converted_dataset(
                     trans,
-                    dependency,
+                    dependency_ext,
                     target_context=target_context,
                     history=history,
                     include_errored=include_errored,

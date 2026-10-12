@@ -931,10 +931,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         input_src = payload.get("src")
         input_id = payload.get("id")
         # List of string of dependencies
-        try:
-            deps = trans.app.datatypes_registry.converter_deps[source_type][target_type]
-        except KeyError:
-            deps = {}
+        deps = trans.app.datatypes_registry.get_converter_deps(source_type, target_type)
         # Generate parameter dictionary
         params, input_name = get_params_and_input_name(converter, deps)
         params = {}
