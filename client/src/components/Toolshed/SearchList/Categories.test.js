@@ -1,6 +1,6 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import Categories from "./Categories.vue";
@@ -26,12 +26,10 @@ vi.mock("../services", () => ({
 }));
 
 describe("Categories", () => {
-    let localVue;
-    beforeEach(() => {
-        localVue = getLocalVue();
-    });
+    const localVue = getLocalVue();
+    enableAutoUnmount(afterEach);
 
-    it("test categories loading", () => {
+    it("shows the loading message while categories load", () => {
         const wrapper = mount(Categories, {
             props: {
                 loading: true,
@@ -40,10 +38,10 @@ describe("Categories", () => {
             global: localVue,
         });
         // LoadingSpan isn't stubbed, so check the real component's props directly.
-        expect(wrapper.findComponent(LoadingSpan).props("message")).toBe("Loading categories");
+        expect(wrapper.getComponent(LoadingSpan).props("message")).toBe("Loading categories");
     });
 
-    it("test categories table", async () => {
+    it("renders category names, descriptions and repository counts in order", async () => {
         const wrapper = mount(Categories, {
             props: {
                 loading: false,
@@ -55,13 +53,13 @@ describe("Categories", () => {
         const links = wrapper.findAll("a");
         expect(links.length).toBe(2);
 
-        expect(links.at(0).text()).toContain("name_0");
-        expect(links.at(1).text()).toContain("name_1");
+        expect(nth(links, 0).text()).toContain("name_0");
+        expect(nth(links, 1).text()).toContain("name_1");
 
         const rows = wrapper.findAll("tr");
         expect(rows.length).toBe(3);
-        const cells = rows.at(1).findAll("td");
-        expect(cells.at(1).text()).toBe("description_0");
-        expect(cells.at(2).text()).toBe("repositories_0");
+        const cells = nth(rows, 1).findAll("td");
+        expect(nth(cells, 1).text()).toBe("description_0");
+        expect(nth(cells, 2).text()).toBe("repositories_0");
     });
 });
