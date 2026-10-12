@@ -1,8 +1,10 @@
 import { emittedArg } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import axios from "axios";
 import flushPromises from "flush-promises";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+
+import { ensureDefined } from "@/utils/assertions";
 
 import VisualizationFrame from "./VisualizationFrame.vue";
 
@@ -14,28 +16,40 @@ const PLUGIN = {
 vi.mock("axios", () => ({ default: { get: vi.fn(async () => ({ data: PLUGIN })) } }));
 vi.mock("@/onload/loadConfig", () => ({ getAppRoot: () => "/" }));
 
-let mounted = [];
-
 function mountFrame(props) {
-    const wrapper = mount(VisualizationFrame, {
-        propsData: { name: "example", config: {}, ...props },
-        attachTo: document.body,
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    onTestFinished(() => target.remove());
+    return mount(VisualizationFrame, {
+        props: { name: "example", config: {}, ...props },
+        attachTo: target,
     });
-    mounted.push(wrapper);
+}
+
+function incomingOf(wrapper) {
+    const document = ensureDefined(wrapper.get("iframe").element.contentDocument);
+    return JSON.parse(ensureDefined(document.getElementById("app")).getAttribute("data-incoming"));
+}
+
+const postFrom = (wrapper, data) =>
+    window.dispatchEvent(new MessageEvent("message", { data, source: wrapper.get("iframe").element.contentWindow }));
+
+afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+});
+
+enableAutoUnmount(afterEach);
+
+async function messagingFrame() {
+    const wrapper = mountFrame({ config: { dataset_id: "d1" } });
+    await flushPromises();
+    vi.useFakeTimers();
     return wrapper;
 }
 
-const incomingOf = (wrapper) =>
-    JSON.parse(wrapper.find("iframe").element.contentDocument.getElementById("app").getAttribute("data-incoming"));
-
-const postFrom = (wrapper, data) =>
-    window.dispatchEvent(new MessageEvent("message", { data, source: wrapper.find("iframe").element.contentWindow }));
-
-afterEach(() => {
-    mounted.forEach((wrapper) => wrapper.unmount());
-    mounted = [];
-    vi.useRealTimers();
-});
+const settle = () => vi.advanceTimersByTimeAsync(400);
 
 describe("what the frame hands the plugin", () => {
     it("names the saved visualization it was opened from, and nothing when there is none", async () => {
@@ -65,8 +79,6 @@ describe("several visualizations on one page", () => {
         vi.useFakeTimers();
         return { first, second };
     }
-
-    const settle = () => vi.advanceTimersByTimeAsync(400);
 
     it("routes each update to the visualization that sent it", async () => {
         const { first, second } = await twoFrames();
@@ -111,17 +123,8 @@ describe("several visualizations on one page", () => {
 });
 
 describe("what a message is allowed to say", () => {
-    async function frame() {
-        const wrapper = mountFrame({ config: { dataset_id: "d1" } });
-        await flushPromises();
-        vi.useFakeTimers();
-        return wrapper;
-    }
-
-    const settle = () => vi.advanceTimersByTimeAsync(400);
-
     it("reports saved state without describing the visualization", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, { from: "galaxy-visualization", visualization_saved: false });
         await settle();
         expect(wrapper.emitted("saved")).toEqual([[false]]);
@@ -129,13 +132,13 @@ describe("what a message is allowed to say", () => {
     });
 
     it("reports saved state at once, without waiting out the debounce", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, { from: "galaxy-visualization", visualization_saved: false });
         expect(wrapper.emitted("saved")).toEqual([[false]]);
     });
 
     it("describes the visualization only when the message carries a config", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, { from: "galaxy-visualization", visualization_config: { a: 1 }, visualization_saved: true });
         await settle();
         expect(emittedArg(wrapper, "change").visualization_config).toEqual({ a: 1 });
@@ -144,17 +147,8 @@ describe("what a message is allowed to say", () => {
 });
 
 describe("what counts as a change to the visualization", () => {
-    async function frame() {
-        const wrapper = mountFrame({ config: { dataset_id: "d1" } });
-        await flushPromises();
-        vi.useFakeTimers();
-        return wrapper;
-    }
-
-    const settle = () => vi.advanceTimersByTimeAsync(400);
-
     it("a saved report alone is not one, so a host rebuilding cannot lose the config", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, { from: "galaxy-visualization", container: "app", visualization_saved: false });
         await settle();
         expect(wrapper.emitted("change")).toBeFalsy();
@@ -162,21 +156,21 @@ describe("what counts as a change to the visualization", () => {
     });
 
     it("a title alone is not one either: a rename travels with the config it renames", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, { from: "galaxy-visualization", visualization_title: "renamed" });
         await settle();
         expect(wrapper.emitted("change")).toBeFalsy();
     });
 
     it("a field the host does not know is not one, so a new status field stays inert", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, { from: "galaxy-visualization", visualization_busy: true });
         await settle();
         expect(wrapper.emitted("change")).toBeFalsy();
     });
 
     it("a config carries the title and the id along with it", async () => {
-        const wrapper = await frame();
+        const wrapper = await messagingFrame();
         postFrom(wrapper, {
             from: "galaxy-visualization",
             visualization_config: { a: 1 },
