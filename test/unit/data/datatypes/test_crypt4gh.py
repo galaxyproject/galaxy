@@ -258,3 +258,11 @@ def test_wrapped_datatypes_convert_like_their_inner_datatype():
     assert "csv" in plain
     wrapped = registry.get_converters_by_datatype("sam.c4gh")
     assert wrapped == {f"{target_ext}.c4gh": converter for target_ext, converter in plain.items()}
+
+
+def test_wrapped_converters_need_their_dependencies_encrypted():
+    registry = example_datatype_registry_for_sample(crypt4gh_enabled=True)
+    registry.converter_deps = {"bed": {"tabix": ["bgzip"]}}
+    assert registry.get_converter_deps("bed", "tabix") == {"bgzip": "bgzip"}
+    assert registry.get_converter_deps("bed.c4gh", "tabix.c4gh") == {"bgzip": "bgzip.c4gh"}
+    assert registry.get_converter_deps("bed", "bgzip") == {}

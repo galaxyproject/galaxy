@@ -1036,6 +1036,21 @@ class Registry:
             self._converters_by_datatype[ext] = converters
         return self._converters_by_datatype[ext]
 
+    def get_converter_deps(self, source_ext: str, target_ext: str) -> dict[str, str]:
+        """The datatypes a converter from ``source_ext`` to ``target_ext`` needs converted first.
+
+        Maps each dependency (the converter parameter name) to the extension to convert to.
+        """
+        inner_source_ext = unwrap_crypt4gh_file_ext(source_ext) if self.crypt4gh_enabled else None
+        inner_target_ext = unwrap_crypt4gh_file_ext(target_ext) if inner_source_ext is not None else None
+        if inner_source_ext is not None and inner_target_ext is not None:
+            # Wrapped converters are the inner ones, their dependencies get encrypted too.
+            return {
+                dep: wrap_crypt4gh_file_ext(dep_ext)
+                for dep, dep_ext in self.get_converter_deps(inner_source_ext, inner_target_ext).items()
+            }
+        return {dep: dep for dep in self.converter_deps.get(source_ext, {}).get(target_ext, [])}
+
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
         converters = self.get_converters_by_datatype(source_ext)
