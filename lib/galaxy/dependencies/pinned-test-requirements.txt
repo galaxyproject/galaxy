@@ -105,8 +105,11 @@ psutil==7.2.1 ; sys_platform != 'cygwin'
 psycopg==3.3.2
 pyasn1==0.6.2
 pyasn1-modules==0.4.2
+pyasynchat==1.0.5 ; python_full_version >= '3.12'
+pyasyncore==1.0.5 ; python_full_version >= '3.12'
 pycparser==3.0 ; implementation_name != 'PyPy' and implementation_name != 'pypy' and os_name == 'nt'
 pyee==13.0.0
+pyftpdlib==2.2.0
 pygments==2.19.2
 pyparsing==3.3.2
 pyshacl==0.30.1
