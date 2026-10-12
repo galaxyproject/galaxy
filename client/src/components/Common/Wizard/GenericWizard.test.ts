@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, type PropType } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -9,7 +9,7 @@ import { useWizard } from "./useWizard";
 
 import GenericWizard from "./GenericWizard.vue";
 
-const Host = defineComponent({
+const WizardHost = defineComponent({
     props: {
         description: { type: String, required: true },
         containerComponent: { type: String as PropType<"BCard" | "div">, default: undefined },
@@ -27,18 +27,22 @@ const Host = defineComponent({
     },
 });
 
+beforeEach(() => vi.mocked(sanitizeHtml).mockClear());
+enableAutoUnmount(afterEach);
+
+const global = getLocalVue();
+
 describe("GenericWizard", () => {
     it("renders the description markdown through v-sanitize-html with the links profile", () => {
-        vi.mocked(sanitizeHtml).mockClear();
-        mount(Host as object, {
-            localVue: getLocalVue(),
-            propsData: { description: "Pick **one** of the [options](https://example.org)" },
+        mount(WizardHost, {
+            global,
+            props: { description: "Pick **one** of the [options](https://example.org)" },
         });
 
-        const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes(">options</a>"));
-        expect(call?.[1]).toBe("links");
-        expect(call?.[0]).toContain("<strong>one</strong>");
-        expect(call?.[0]).toContain('target="_blank"');
+        const descriptionCall = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes(">options</a>"));
+        expect(descriptionCall?.[1]).toBe("links");
+        expect(descriptionCall?.[0]).toContain("<strong>one</strong>");
+        expect(descriptionCall?.[0]).toContain('target="_blank"');
     });
 
     it("keeps completed steps named when their number becomes an icon", async () => {
@@ -72,20 +76,20 @@ describe("GenericWizard", () => {
     });
 
     it("wraps the wizard in a card by default", () => {
-        const wrapper = mount(Host as object, { localVue: getLocalVue(), propsData: { description: "Pick one" } });
+        const wrapper = mount(WizardHost, { global, props: { description: "Pick one" } });
 
-        const container = wrapper.find(".wizard-container");
+        const container = wrapper.get(".wizard-container");
         expect(container.element.tagName).toBe("DIV");
         expect(container.classes()).toContain("card");
     });
 
     it("uses a plain div when asked to", () => {
-        const wrapper = mount(Host as object, {
-            localVue: getLocalVue(),
-            propsData: { description: "Pick one", containerComponent: "div" },
+        const wrapper = mount(WizardHost, {
+            global,
+            props: { description: "Pick one", containerComponent: "div" },
         });
 
-        const container = wrapper.find(".wizard-container");
+        const container = wrapper.get(".wizard-container");
         expect(container.element.tagName).toBe("DIV");
         expect(container.classes()).not.toContain("card");
     });
