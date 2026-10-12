@@ -42,7 +42,7 @@ const props = defineProps<{
     /** Displayed size; unset keeps the surrounding font size */
     size?: ComponentSize;
     /** Render as a toggle switch instead of a checkbox */
-    toggle?: boolean;
+    switch?: boolean;
     /** Value attribute for the checkbox input, rendered as a string whenever it is set */
     value?: unknown;
 }>();
@@ -76,7 +76,7 @@ const isChecked = computed(() => (group ? group.isChecked(props.value) : (props.
 
 const isDisabled = computed(() => props.disabled || Boolean(group?.disabled.value));
 
-const isSwitch = computed(() => props.toggle || Boolean(group?.switches.value));
+const isSwitch = computed(() => props.switch || Boolean(group?.switches.value));
 
 const inputName = computed(() => props.name ?? group?.name.value);
 

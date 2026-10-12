@@ -144,14 +144,14 @@ describe("GCheckbox", () => {
         expect(targets.every((target) => target === wrapper.find("label").element)).toBe(true);
     });
 
-    it("renders as a switch in toggle mode", () => {
-        const wrapper = mount(GCheckbox, { props: { modelValue: false, toggle: true } });
+    it("renders as a switch in switch mode", () => {
+        const wrapper = mount(GCheckbox, { props: { modelValue: false, switch: true } });
 
         expect(wrapper.classes()).toContain("g-switch");
         expect(wrapper.find("input").attributes("role")).toBe("switch");
     });
 
-    it("keeps the native checkbox role outside toggle mode", () => {
+    it("keeps the native checkbox role outside switch mode", () => {
         const wrapper = mount(GCheckbox, { props: { modelValue: false } });
 
         expect(wrapper.classes()).not.toContain("g-switch");
