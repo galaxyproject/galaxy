@@ -1,11 +1,13 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 import Multiselect from "vue-multiselect";
 
 import SingleItemSelector from "./SingleItemSelector.vue";
 
 const localVue = getLocalVue();
+
+enableAutoUnmount(afterEach);
 
 const ITEMS = [
     { id: "a", text: "Alpha" },
@@ -36,7 +38,7 @@ describe("SingleItemSelector", () => {
             expect(span.props("message")).toBe("Loading Things...");
         });
 
-        it("does not show the selector while loading", () => {
+        it("shows a loading message when items are already available", () => {
             const wrapper = mountComponent({ loading: true, items: ITEMS });
             expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
         });
@@ -57,18 +59,18 @@ describe("SingleItemSelector", () => {
     describe("initial selection", () => {
         it("selects the first item by default when no currentItem is given", () => {
             const wrapper = mountComponent({ items: ITEMS });
-            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[0]);
+            expect(wrapper.getComponent(Multiselect).props("modelValue")).toEqual(ITEMS[0]);
         });
 
         it("selects the matching currentItem when provided", () => {
             const wrapper = mountComponent({ items: ITEMS, currentItem: ITEMS[1] });
-            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[1]);
+            expect(wrapper.getComponent(Multiselect).props("modelValue")).toEqual(ITEMS[1]);
         });
 
         it("falls back to the currentItem object itself when it is not in items", () => {
             const externalItem = { id: "z", text: "External" };
             const wrapper = mountComponent({ items: ITEMS, currentItem: externalItem });
-            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(externalItem);
+            expect(wrapper.getComponent(Multiselect).props("modelValue")).toEqual(externalItem);
         });
     });
 
@@ -77,7 +79,7 @@ describe("SingleItemSelector", () => {
             const wrapper = mountComponent({ items: ITEMS });
 
             // Open the dropdown then click the third option
-            await wrapper.find(".multiselect").trigger("focus");
+            await wrapper.get(".multiselect").trigger("focus");
             const options = wrapper.findAll(".multiselect__option");
             await options[2]!.trigger("click");
 
@@ -92,16 +94,16 @@ describe("SingleItemSelector", () => {
 
         it("lists an exact match before partial matches", async () => {
             const wrapper = mountComponent({ items: EXTENSIONS });
-            const multiselect = wrapper.findComponent(Multiselect);
+            const multiselect = wrapper.getComponent(Multiselect);
 
-            await wrapper.find(".multiselect").trigger("focus");
-            await wrapper.find(".multiselect__input").setValue("fasta");
+            await wrapper.get(".multiselect").trigger("focus");
+            await wrapper.get(".multiselect__input").setValue("fasta");
 
             expect((multiselect.props("options") as { id: string }[]).map((item) => item.id)).toEqual([
                 "fasta",
                 "csfasta",
             ]);
-            const firstOption = wrapper.find("[data-test-id='single-item-selector-option']");
+            const firstOption = wrapper.get("[data-test-id='single-item-selector-option']");
             expect(firstOption.attributes("data-id")).toBe("fasta");
         });
 
@@ -111,10 +113,10 @@ describe("SingleItemSelector", () => {
                 { id: "hg19", text: "Human Feb. 2009 (GRCh37/hg19) (hg19)" },
             ];
             const wrapper = mountComponent({ items: dbKeys });
-            const multiselect = wrapper.findComponent(Multiselect);
+            const multiselect = wrapper.getComponent(Multiselect);
 
-            await wrapper.find(".multiselect").trigger("focus");
-            await wrapper.find(".multiselect__input").setValue("hg19");
+            await wrapper.get(".multiselect").trigger("focus");
+            await wrapper.get(".multiselect__input").setValue("hg19");
 
             expect((multiselect.props("options") as { id: string }[]).map((item) => item.id)).toEqual([
                 "hg19",
@@ -124,11 +126,11 @@ describe("SingleItemSelector", () => {
 
         it("restores the full item list when the search is cleared", async () => {
             const wrapper = mountComponent({ items: EXTENSIONS });
-            const multiselect = wrapper.findComponent(Multiselect);
+            const multiselect = wrapper.getComponent(Multiselect);
 
-            await wrapper.find(".multiselect").trigger("focus");
-            await wrapper.find(".multiselect__input").setValue("fasta");
-            await wrapper.find(".multiselect__input").setValue("");
+            await wrapper.get(".multiselect").trigger("focus");
+            await wrapper.get(".multiselect__input").setValue("fasta");
+            await wrapper.get(".multiselect__input").setValue("");
 
             expect(multiselect.props("options")).toEqual(EXTENSIONS);
         });
@@ -144,7 +146,7 @@ describe("SingleItemSelector", () => {
             ];
             await wrapper.setProps({ items: newItems, currentItem: undefined });
 
-            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(newItems[0]);
+            expect(wrapper.getComponent(Multiselect).props("modelValue")).toEqual(newItems[0]);
         });
 
         it("updates selection when currentItem prop changes", async () => {
@@ -152,17 +154,17 @@ describe("SingleItemSelector", () => {
 
             await wrapper.setProps({ currentItem: ITEMS[2] });
 
-            expect(wrapper.findComponent(Multiselect).props("modelValue")).toEqual(ITEMS[2]);
+            expect(wrapper.getComponent(Multiselect).props("modelValue")).toEqual(ITEMS[2]);
         });
     });
 
     // The upload table renders one selector per row, so a fixed id would repeat.
     it("gives each selector its own id", () => {
-        const first = mount(SingleItemSelector as object, { props: { items: ITEMS }, global: localVue });
-        const second = mount(SingleItemSelector as object, { props: { items: ITEMS }, global: localVue });
+        const first = mountComponent({ items: ITEMS });
+        const second = mountComponent({ items: ITEMS });
 
-        const firstId = first.findComponent(Multiselect).props("id");
+        const firstId = first.getComponent(Multiselect).props("id");
         expect(firstId).toBeTruthy();
-        expect(second.findComponent(Multiselect).props("id")).not.toBe(firstId);
+        expect(second.getComponent(Multiselect).props("id")).not.toBe(firstId);
     });
 });
