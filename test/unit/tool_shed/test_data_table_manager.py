@@ -5,11 +5,13 @@ from unittest import mock
 
 import pytest
 
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.tools.data_table_manager import (
     _parse_table_columns,
     DataTableColumnMismatch,
     ShedToolDataTableManager,
 )
+from galaxy.tool_shed.unittest_utils import StandaloneInstallationTarget
 from galaxy.tool_util.data import (
     TabularToolDataTable,
     ToolDataTableManager,
@@ -277,3 +279,23 @@ def test_parse_table_columns_matches_parse_column_spec():
     cols.text = "value, path"
     parsed = _parse_table_columns(elem)
     assert parsed == {"value": 0, "path": 1}
+
+
+def test_generate_repository_info_elem_from_repository(tmp_path):
+    stdtm = ShedToolDataTableManager(StandaloneInstallationTarget(tmp_path))
+    repo = ToolShedRepository(
+        tool_shed="toolshed.g2.bx.psu.edu",
+        name="data_manager_manual",
+        installed_changeset_revision="f7b5ea5d11d7",
+        owner="iuc",
+    )
+
+    elem = stdtm.generate_repository_info_elem_from_repository(repo, parent_elem=None)
+
+    assert elem.tag == "tool_shed_repository"
+    assert [(child.tag, child.text) for child in elem] == [
+        ("tool_shed", "toolshed.g2.bx.psu.edu"),
+        ("repository_name", "data_manager_manual"),
+        ("repository_owner", "iuc"),
+        ("installed_changeset_revision", "f7b5ea5d11d7"),
+    ]

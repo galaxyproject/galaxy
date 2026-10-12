@@ -32,7 +32,7 @@ const emit = defineEmits<{
     (e: "input", value: OnCompleteAction[]): void;
 }>();
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
 
 const notificationSystemEnabled = computed(

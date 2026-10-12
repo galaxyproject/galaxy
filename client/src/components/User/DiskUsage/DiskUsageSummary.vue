@@ -17,7 +17,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 const quotaUsageStore = useQuotaUsageStore();

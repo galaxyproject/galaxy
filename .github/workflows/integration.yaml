@@ -114,6 +114,18 @@ jobs:
           echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
+      - name: Pull Docker Hub images through mirror.gcr.io
+        # Google's cache of Docker Hub, so that tests don't fail on Docker Hub
+        # rate limits and outages. The daemon falls back to Docker Hub for images
+        # that are not cached. Must run before anything starts containers, as
+        # restarting the daemon stops them. Apptainer pulls are not affected.
+        run: |
+          [ -s /etc/docker/daemon.json ] || echo '{}' | sudo tee /etc/docker/daemon.json
+          jq '."registry-mirrors" = ["https://mirror.gcr.io"]' /etc/docker/daemon.json > "$RUNNER_TEMP/daemon.json"
+          sudo mv "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info --format '{{.RegistryConfig.Mirrors}}' | grep -q mirror.gcr.io
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Clean dotnet folder for space

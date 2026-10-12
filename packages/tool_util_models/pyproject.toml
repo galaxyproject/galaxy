@@ -16,7 +16,7 @@ dependencies = [
     "pydantic>=2.7.4",
     "pydantic-extra-types",
     "regex",
-    "typing-extensions",
+    "typing-extensions>=4.13",  # for TypeForm
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

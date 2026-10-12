@@ -590,11 +590,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_history(self, assert_ok=True):
         def history_becomes_terminal(driver=None):
             current_history_id = self.current_history_id()
-            state = self.api_get(f"histories/{current_history_id}")["state"]
-            if state not in ["running", "queued", "new", "ready"]:
-                return state
-            else:
+            history = self.api_get(f"histories/{current_history_id}?keys=state,contents_active")
+            state = history["state"]
+            # On Postgres a new item's hid is committed before its row; in between,
+            # the history reports "ok" with no contents at all.
+            if state in ["running", "queued", "new", "ready"] or not any(history["contents_active"].values()):
                 return None
+            return state
 
         final_state = self._wait_on_custom(
             history_becomes_terminal, "history to become terminal", wait_type=WAIT_TYPES.JOB_COMPLETION

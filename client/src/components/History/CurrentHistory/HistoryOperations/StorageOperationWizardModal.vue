@@ -43,7 +43,7 @@ const objectStoreStore = useObjectStoreStore();
 const quotaUsageStore = useQuotaUsageStore();
 const storageOperationsStore = useStorageOperationsStore();
 const { loading: objectStoresLoading, loadErrorMessage } = storeToRefs(objectStoreStore);
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const selectedTargetObjectStoreId = ref<string | null>(null);
 const storagePreview = ref<StorageOperationPreviewResponse | null>(null);

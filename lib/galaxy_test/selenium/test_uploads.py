@@ -96,6 +96,28 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.assert_item_name(1, "Test List")
 
     @selenium_test
+    def test_upload_list_multiple_files_keeps_element_content(self):
+        file_names = ["1.tabular", "2.tabular"]
+        uploader = self.upload_context("local-file")
+        for file_name in file_names:
+            uploader.stage_local_file(self.get_filename(file_name))
+        uploader.to_list("Test List").start()
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_id = self.current_history_id()
+        collection = self.dataset_populator.get_history_collection_details(history_id, hid=1)
+        elements = collection["elements"]
+        # List elements are reversed to match the history panel display order (newest HID first)
+        assert [element["element_identifier"] for element in elements] == list(reversed(file_names))
+        for element in elements:
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=element["object"]["id"])
+            with open(self.get_filename(element["element_identifier"])) as f:
+                expected_content = f.read()
+            assert (
+                content.rstrip() == expected_content.rstrip()
+            ), f"Element {element['element_identifier']} has wrong content"
+
+    @selenium_test
     def test_upload_pair(self):
         uploader = self.upload_context("local-file")
         uploader.stage_local_file(self.get_filename("1.tabular"))

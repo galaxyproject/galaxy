@@ -111,6 +111,11 @@ def _release_request_sessions(sessions: list) -> None:
             log.warning("Failed to release request-scoped DB session before streaming", exc_info=True)
 
 
+def release_request_sessions() -> None:
+    """Return this request's pooled DB connection(s) before long non-DB work, e.g. reading a large request body."""
+    _release_request_sessions(_live_request_sessions())
+
+
 class GalaxyFileResponse(FileResponse):
     """
     Augments starlette FileResponse with x-accel-redirect/x-sendfile and byte-range handling.
@@ -123,6 +128,8 @@ class GalaxyFileResponse(FileResponse):
 
     nginx_x_accel_redirect_base: str | None = None
     apache_xsendfile: bool | None = None
+    # Each chunk is a threadpool read and an ASGI send; starlette's 64 KiB makes large downloads hop-bound.
+    chunk_size = 1024 * 1024
 
     def __init__(
         self,

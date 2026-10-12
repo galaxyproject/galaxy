@@ -694,7 +694,9 @@ def test_sync_user_profile_may_assign_an_admin_address():
     sync_user_profile(strategy=strategy, details={"email": "Admin@example.com", "username": "newname"}, user=user)
 
     assert user.email == "Admin@example.com"
-    assert trans.app.security_agent.get_private_user_role(user).name == "Admin@example.com"
+    private_role = trans.app.security_agent.get_private_user_role(user)
+    assert private_role is not None
+    assert private_role.name == "Admin@example.com"
 
 
 def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):

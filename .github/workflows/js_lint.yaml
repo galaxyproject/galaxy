@@ -40,6 +40,9 @@ jobs:
       - name: Run ESLint
         run: pnpm run eslint
         working-directory: client
+      - name: Check component style imports
+        run: pnpm run check-style-imports
+        working-directory: client
       - name: Run prettier checks
         run: pnpm run format-check
         working-directory: client
