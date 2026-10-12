@@ -41,7 +41,7 @@ describe("GCheckboxGroup", () => {
         const { wrapper } = mountWithModel(["b"], { options: OPTIONS });
         const checked = inputs(wrapper).map((input) => (input.element as HTMLInputElement).checked);
 
-        expect(wrapper.findComponent(GCheckboxGroup).props("modelValue")).toEqual(["b"]);
+        expect(wrapper.findComponent(GCheckboxGroup).props()).toMatchObject({ modelValue: ["b"] });
         expect(checked).toEqual([false, true, false]);
     });
 

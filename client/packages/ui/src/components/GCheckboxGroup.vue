@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 /**
  * A group of checkboxes bound to one array with v-model.
  *
@@ -36,7 +36,7 @@ interface Props {
      * The v-model value: values of the checked boxes, in the order they were checked
      * @default []
      */
-    modelValue?: unknown[];
+    modelValue?: T[];
     /**
      * Name shared by every checkbox input
      * @default an auto-generated unique name
@@ -46,7 +46,7 @@ interface Props {
      * Checkboxes to render before the default slot
      * @default []
      */
-    options?: CheckboxGroupOption[];
+    options?: CheckboxGroupOption<T>[];
     /**
      * Size of every checkbox in the group
      * @default undefined (surrounding font size)
@@ -67,7 +67,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     label: undefined,
-    modelValue: () => [],
+    modelValue: () => [] as T[],
     name: undefined,
     options: () => [],
     size: undefined,
@@ -76,7 +76,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "update:modelValue", value: unknown[]): void;
+    (e: "update:modelValue", value: T[]): void;
 }>();
 
 const uid = useUid("g-checkbox-group-");
@@ -87,9 +87,10 @@ function isChecked(value: unknown) {
     return props.modelValue.some((selected) => looseEqual(selected, value));
 }
 
+// GCheckbox children are untyped, so their value is trusted to be a T
 function toggle(value: unknown, checked: boolean) {
     const others = props.modelValue.filter((selected) => !looseEqual(selected, value));
-    emit("update:modelValue", checked ? [...others, value] : others);
+    emit("update:modelValue", checked ? [...others, value as T] : others);
 }
 
 provide(checkboxGroupKey, {
