@@ -546,7 +546,8 @@ Vitest's default stacked hooks, `afterEach` runs in reverse registration order:
 register restoration first and `enableAutoUnmount(afterEach)` last, in the same
 scope. For an already mocked shared function such as `sanitizeHtml`, retain its
 initial mock implementation and restore it after unmounting; clearing call history
-or resetting to an empty mock does not restore that implementation.
+or resetting to an empty mock does not restore that implementation. See
+`TrsTool.test.ts` and `WorkflowHelpDisplay.test.ts` for this ordering.
 
 #### Best Practices Summary
 
