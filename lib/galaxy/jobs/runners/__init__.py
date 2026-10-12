@@ -750,7 +750,7 @@ class BaseJobRunner:
                 # the remote_tool_eval traceback as a job-level error (not a
                 # tool error) since the tool never actually ran.
                 eval_traceback_path = os.path.join(
-                    job_wrapper.working_directory, "metadata", "outputs_populated", "traceback.txt"
+                    job_wrapper.working_directory, "metadata", "outputs_populated", "remote_tool_eval_traceback.txt"
                 )
                 if os.path.exists(eval_traceback_path):
                     with open(eval_traceback_path) as tb:

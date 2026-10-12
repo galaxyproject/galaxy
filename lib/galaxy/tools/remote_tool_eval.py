@@ -137,8 +137,11 @@ def main() -> None:
         evaluate_tool(tmpdir, working_directory, import_store_directory)
     except Exception:
         os.makedirs(export_store_directory, exist_ok=True)
-        with open(os.path.join(export_store_directory, "traceback.txt"), "w") as out:
-            out.write(traceback.format_exc())
+        # traceback.txt fails the metadata import, the second file tells Galaxy the tool never ran:
+        # the metadata script writes traceback.txt on its own failures too.
+        for filename in ("traceback.txt", "remote_tool_eval_traceback.txt"):
+            with open(os.path.join(export_store_directory, filename), "w") as out:
+                out.write(traceback.format_exc())
         raise
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)

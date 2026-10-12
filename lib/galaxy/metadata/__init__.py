@@ -24,8 +24,6 @@ if TYPE_CHECKING:
 
 log = getLogger(__name__)
 
-# An existing traceback.txt comes from remote_tool_eval.py; that failure is the
-# root cause, so don't let the secondary metadata failure overwrite it.
 SET_METADATA_SCRIPT = """
 import os
 import traceback
@@ -40,10 +38,8 @@ except Exception:
     METADATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "metadata")
     EXPORT_STORE_DIRECTORY = os.path.join(METADATA_DIRECTORY, "outputs_populated")
     os.makedirs(EXPORT_STORE_DIRECTORY, exist_ok=True)
-    traceback_path = os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt")
-    if not os.path.exists(traceback_path):
-        with open(traceback_path, "w") as out:
-            out.write(traceback.format_exc())
+    with open(os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt"), "w") as out:
+        out.write(traceback.format_exc())
     raise
 """
 
