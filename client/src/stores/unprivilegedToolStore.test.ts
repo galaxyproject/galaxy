@@ -1,18 +1,15 @@
 import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import flushPromises from "flush-promises";
 import { http as mswHttp } from "msw";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, expect, it, vi } from "vitest";
+import { createPinia, disposePinia, setActivePinia } from "pinia";
+import { beforeEach, expect, it, onTestFinished, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { Toast } from "@/composables/toast";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 
-const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
-
-vi.mock("@/composables/toast", () => ({
-    useToast: () => ({ error: toastError }),
-}));
+vi.mock("@/composables/toast");
 
 const { server, http } = useServerMock();
 
@@ -22,9 +19,14 @@ const FAILURES = {
     server: () => HttpResponse.json({ err_code: 500001, err_msg: "Internal error" }, { status: 500 }),
 };
 
+let pinia: ReturnType<typeof createPinia>;
+
 beforeEach(() => {
-    setActivePinia(createPinia());
-    toastError.mockClear();
+    const ownedPinia = createPinia();
+    pinia = ownedPinia;
+    setActivePinia(ownedPinia);
+    onTestFinished(() => disposePinia(ownedPinia));
+    vi.mocked(Toast.error).mockClear();
 });
 
 it.each([
@@ -32,7 +34,7 @@ it.each([
     ["forbidden", false],
     ["server", true],
 ] as const)("loads again after a %s failure, reporting it: %s", async (failure, reported) => {
-    useUserStore().setCurrentUser(getFakeRegisteredUser());
+    useUserStore(pinia).setCurrentUser(getFakeRegisteredUser());
     let failedRequests = 0;
     server.use(
         mswHttp.get("/api/unprivileged_tools", () => {
@@ -40,15 +42,15 @@ it.each([
             return FAILURES[failure]();
         }),
     );
-    const store = useUnprivilegedToolStore();
+    const store = useUnprivilegedToolStore(pinia);
     await vi.waitFor(() => expect(failedRequests).toBe(1));
     await flushPromises();
     expect(store.canUseUnprivilegedTools).toBe(false);
     expect(store.isLoaded).toBe(false);
     if (reported) {
-        expect(toastError).toHaveBeenCalledWith(expect.any(String), "Failed to check access to custom tools");
+        expect(Toast.error).toHaveBeenCalledWith(expect.any(String), "Failed to check access to custom tools");
     } else {
-        expect(toastError).not.toHaveBeenCalled();
+        expect(Toast.error).not.toHaveBeenCalled();
     }
 
     server.use(http.get("/api/unprivileged_tools", () => HttpResponse.json([])));
@@ -65,9 +67,9 @@ it("does not query custom tools for an anonymous user", async () => {
             return HttpResponse.json([]);
         }),
     );
-    const userStore = useUserStore();
+    const userStore = useUserStore(pinia);
     userStore.currentUser = getFakeAnonymousUser();
-    const store = useUnprivilegedToolStore();
+    const store = useUnprivilegedToolStore(pinia);
     await store.load(true);
     await flushPromises();
 
@@ -83,11 +85,11 @@ it("loads custom tools once the registered user is known", async () => {
             return HttpResponse.json([]);
         }),
     );
-    const store = useUnprivilegedToolStore();
+    const store = useUnprivilegedToolStore(pinia);
     await flushPromises();
     expect(requests).toBe(0);
 
-    useUserStore().setCurrentUser(getFakeRegisteredUser());
+    useUserStore(pinia).setCurrentUser(getFakeRegisteredUser());
     await vi.waitFor(() => expect(store.canUseUnprivilegedTools).toBe(true));
     expect(requests).toBe(1);
 });
