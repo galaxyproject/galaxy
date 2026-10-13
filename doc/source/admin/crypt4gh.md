@@ -399,6 +399,11 @@ Limitations:
   same job.
 - Extra files of outputs that copy encrypted inputs of the job can't be
   decrypted in later jobs, those outputs can only be passed encrypted.
+- Implicit conversions of encrypted datasets (`bam.c4gh` from `sam.c4gh`) can
+  only be decrypted by the user whose job converted them. Users who can't
+  decrypt the existing conversion get a new one, which replaces it. Users taking
+  turns on the same dataset, such as a library dataset, convert it again each
+  time.
 - Workflow steps changing the datatype of encrypted outputs set the matching
   encrypted datatype (`tabular` becomes `tabular.c4gh`), like for outputs
   encrypted when the job ran. They don't change unencrypted datasets to
