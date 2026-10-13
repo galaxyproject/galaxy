@@ -222,11 +222,12 @@ onUnmounted(() => {
 watch(
     () => currentFavorites.value.tools,
     () => {
-        const favoritesQuery = parseFavoritesQuery(props.query);
-        if (!favoritesQuery) {
+        // Plain searches re-run too, since favorites decide which tool version is shown.
+        if (!props.query || props.query.trim().length < MIN_QUERY_LENGTH) {
             return;
         }
-        if (favoritesQuery.isFavoritesOnly) {
+        const favoritesQuery = parseFavoritesQuery(props.query);
+        if (favoritesQuery?.isFavoritesOnly) {
             post({ type: "favoriteTools" });
         } else {
             post({
