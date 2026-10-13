@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BFormSelect, BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
+import { BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { fetchCollectionElements, fetchCollectionSummary } from "@/api/datasetCollections";
+
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 
 interface CollectionElementPickerProps {
     hdcaId: string;
@@ -33,6 +35,13 @@ watch(
 );
 const value = computed(() => selectedValue.value || Object.keys(dceToId.value || {}).at(0));
 
+const elementOptions = computed(() =>
+    Object.entries(dceToId.value || {}).map(([elementId, identifier]) => ({
+        value: elementId,
+        text: identifier ?? "",
+    })),
+);
+
 function handleInput(value: string) {
     selectedValue.value = value;
 }
@@ -46,11 +55,13 @@ function handleInput(value: string) {
                     <BNavText class="mr-3">Select Element</BNavText>
                 </BNavbarNav>
                 <BNavForm>
-                    <BFormSelect
-                        class="form-control-sm"
-                        :value="value"
-                        :options="dceToId"
-                        @input="handleInput"></BFormSelect>
+                    <GSelect
+                        aria-label="Select Element"
+                        class="w-auto"
+                        size="small"
+                        :model-value="value"
+                        :options="elementOptions"
+                        @update:model-value="handleInput" />
                 </BNavForm>
             </div>
         </BNavbar>
