@@ -169,6 +169,14 @@ def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> boo
     return expiration is not None and expiration <= now() + margin
 
 
+def _needs_grant(record: dict[str, Any]) -> bool:
+    """Whether an output has files sealed to the job's compute keypair, or extra files copying encrypted inputs.
+
+    Outputs only copying an encrypted input are used with the grant of the input's copy.
+    """
+    return bool(record["compute_header"] or record["extra_files"])
+
+
 def _summarize(errors: list[str], limit: int = 3) -> str:
     """Errors for job and dataset info, outputs of large collections may all fail the same way."""
     summary = " ".join(errors[:limit])
@@ -656,11 +664,13 @@ class DatasetProtectionManager:
                 _purge(dataset_instance)
         if errors:
             return _summarize(errors)
-        if job.user and protected and not (expires_at and sidecar.get("key_ref")):
-            # Users couldn't decrypt the outputs in further jobs, without knowing why.
-            return "The key service didn't say until when the outputs of this job can be decrypted in further jobs."
-        if job.user and expires_at:
-            self._record_output_grants(job, sidecar.get("key_ref"), expires_at, protected)
+        needing_grants = [(instance, record) for instance, record in protected if _needs_grant(record)]
+        if job.user and needing_grants:
+            key_ref = sidecar.get("key_ref")
+            if not (expires_at and key_ref):
+                # Users couldn't decrypt the outputs in further jobs, without knowing why.
+                return "The key service didn't say until when the outputs of this job can be decrypted in further jobs."
+            self._record_output_grants(job, key_ref, expires_at, needing_grants)
         return None
 
     def fail_job(self, job: Job, job_directory: str) -> str | None:
@@ -719,17 +729,12 @@ class DatasetProtectionManager:
     def _record_output_grants(
         self,
         job: Job,
-        key_ref: str | None,
+        key_ref: str,
         expires_at: datetime,
         protected: list[tuple[DatasetInstance, dict[str, Any]]],
     ) -> None:
-        if not protected or not key_ref:
-            return
         assert job.user
         for dataset_instance, record in protected:
-            if not record["compute_header"] and not record["extra_files"]:
-                # Encrypted already by the tool, e.g. a copy of an encrypted input.
-                continue
             scheme = self.scheme_for(dataset_instance)
             assert scheme and dataset_instance.dataset
             grant = self._get_or_create_grant(job.user, dataset_instance.dataset, scheme.name)
