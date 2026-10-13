@@ -38,11 +38,13 @@ class TestWorkbookMapping(SeleniumTestCase, UsesUploadActivity):
     def _file_names(self, column_index: int) -> list[str]:
         return [url.rsplit("/", 1)[-1] for url in self.rule_builder_column_values(column_index)]
 
+    def _assert_creating_datasets(self) -> None:
+        self.components.rule_builder.collection_name_input.assert_absent()
+
     def _assert_creating_collections(self) -> None:
         self.components.rule_builder.collection_name_input.wait_for_visible()
 
     def _assert_example_1_mapping(self) -> None:
-        self.components.rule_builder.collection_name_input.assert_absent()
         mapping = self._mapping(3)
         self._assert_mapping(mapping, 0, "name", [0])
         self._assert_mapping(mapping, 1, "url", [1])
@@ -52,6 +54,7 @@ class TestWorkbookMapping(SeleniumTestCase, UsesUploadActivity):
     def test_dataset_mapping_from_workbook(self):
         """Dataset name, URL and genome columns are recognized by their headers."""
         self.upload_context("rule").upload_workbook(self._workbook(1))
+        self._assert_creating_datasets()
         self._assert_example_1_mapping()
 
     @selenium_test
@@ -60,6 +63,7 @@ class TestWorkbookMapping(SeleniumTestCase, UsesUploadActivity):
         rule_import = self.upload_context("rule").creating("datasets").from_source("workbook")
         assert "type=datasets" in rule_import.workbook_download_url()
         rule_import.upload_workbook_from_card(self._workbook(1))
+        self._assert_creating_datasets()
         self._assert_example_1_mapping()
 
     @selenium_test
@@ -115,6 +119,15 @@ class TestWorkbookMapping(SeleniumTestCase, UsesUploadActivity):
         self._assert_mapping(mapping, 1, "list_identifiers", [1, 2])
         self._assert_mapping(mapping, 2, "paired_identifier", [3])
 
-        runs = ["SRR5680996", "SRR5680997", "SRR5681007", "SRR5681006", "SRR5680998", "SRR5681008"]
-        assert self._file_names(0) == [f"{r}_{i}.fastq.gz" for r in runs for i in "12"]
+        rows = [
+            ("SRR5680996", "H3K4me3", "rep1"),
+            ("SRR5680997", "H3K27me3", "rep2"),
+            ("SRR5681007", "H3K27me3", "rep1"),
+            ("SRR5681006", "H3K4me3", "rep2"),
+            ("SRR5680998", "CTCF", "rep1"),
+            ("SRR5681008", "CTCF", "rep2"),
+        ]
+        assert self._file_names(0) == [f"{run}_{i}.fastq.gz" for run, _, _ in rows for i in "12"]
+        assert self.rule_builder_column_values(1) == [outer for _, outer, _ in rows for _ in range(2)]
+        assert self.rule_builder_column_values(2) == [inner for _, _, inner in rows for _ in range(2)]
         assert self.rule_builder_column_values(3) == ["1", "2"] * 6
