@@ -1,27 +1,36 @@
-import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it, vi } from "vitest";
+
+import * as JobOutputsStories from "./JobOutputs.stories";
 
 import JobOutputs from "./JobOutputs.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 vi.mock("components/providers/DatasetCollectionProvider");
 
-enableAutoUnmount(afterEach);
+const stories = composeStories(JobOutputsStories);
+const mountStory = useStoryMount();
 
-function mountJobOutputs(props, stubs = {}) {
-    return shallowMount(JobOutputs, {
+async function mountJobOutputs(story, props, stubs = {}) {
+    const root = mountStory(story, {
         props,
-        global: { renderStubDefaultSlot: true, stubs },
+        global: {
+            renderStubDefaultSlot: true,
+            stubs: { Heading: true, GenericHistoryItem: true, GButton: true, ...stubs },
+        },
     });
+    await vi.waitFor(() => root.getComponent(JobOutputs));
+    return root.getComponent(JobOutputs);
 }
 
 describe("JobInformation/JobOutputs.vue", () => {
-    it("displays a titled table with one collection output", () => {
+    it("displays a titled table with one collection output", async () => {
         const props = {
             jobOutputs: { list_output: [{ label: "List Output", value: { id: "1", src: "hdca" } }] },
             title: "my cool title",
         };
-        const wrapper = mountJobOutputs(props);
+        const wrapper = await mountJobOutputs(stories.CollectionOutput, props);
         const jobOutputsTable = wrapper.get("#job-outputs");
         expect(wrapper.get("heading-stub").text()).toBe("my cool title");
         expect(jobOutputsTable).toBeTruthy();
@@ -29,7 +38,7 @@ describe("JobInformation/JobOutputs.vue", () => {
         expect(rows.length).toBe(2);
     });
 
-    it("shows dataset and collection outputs while excluding hidden outputs", () => {
+    it("shows dataset and collection outputs while excluding hidden outputs", async () => {
         const props = {
             jobOutputs: {
                 list_output: [{ label: "List Output", value: { id: "1", src: "hdca" } }],
@@ -37,7 +46,7 @@ describe("JobInformation/JobOutputs.vue", () => {
                 __hidden_output: [{ label: "hidden Output", value: { id: "2", src: "hda" } }],
             },
         };
-        const wrapper = mountJobOutputs(props);
+        const wrapper = await mountJobOutputs(stories.MixedOutputs, props);
         expect(wrapper.find("heading-stub").exists()).toBeFalsy();
         const jobOutputsTable = wrapper.get("#job-outputs");
         expect(jobOutputsTable).toBeTruthy();
@@ -68,7 +77,7 @@ describe("JobInformation/JobOutputs.vue", () => {
             paginate: true,
         };
         // Real GButton so the click runs through its handler.
-        const wrapper = mountJobOutputs(props, { GButton });
+        const wrapper = await mountJobOutputs(stories.ManyOutputs, props, { GButton });
         expect(wrapper.get("heading-stub").text()).toContain(
             "(showing 10 of " + Object.keys(props.jobOutputs).length + ")",
         );
