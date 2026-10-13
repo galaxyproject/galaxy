@@ -59,6 +59,8 @@ export function useJobConsoleOutput(
      * enough, since switching away from a job and back to it reuses the same id for a new restart.
      */
     let restartCount = 0;
+    /** Set once the current job's output is complete (terminal, or the destination can't report it). */
+    let finished = false;
 
     async function fetchConsoleOutput(id: string) {
         const {
@@ -89,7 +91,10 @@ export function useJobConsoleOutput(
     const watcher = useResourceWatcher<string>(
         async (id?: unknown) => {
             const fetchRestartCount = restartCount;
-            if (typeof id !== "string" || id !== currentJobId) {
+            if (typeof id !== "string" || id !== currentJobId || finished) {
+                // `useResourceWatcher` restarts a stopped watcher when the tab becomes visible again,
+                // without the job id. Nothing is left to fetch, so stop instead of polling a no-op.
+                watcher.stopWatchingResource();
                 return;
             }
             try {
@@ -99,6 +104,7 @@ export function useJobConsoleOutput(
                 }
                 if (result === null) {
                     error.value = null;
+                    finished = true;
                     watcher.stopWatchingResource();
                     return;
                 }
@@ -111,6 +117,7 @@ export function useJobConsoleOutput(
                 state.value = result.state;
                 error.value = null;
                 if (stateIsTerminal({ state: state.value })) {
+                    finished = true;
                     watcher.stopWatchingResource();
                 }
             } catch (e) {
@@ -127,6 +134,7 @@ export function useJobConsoleOutput(
         watcher.stopWatchingResource();
         restartCount++;
         currentJobId = id;
+        finished = false;
         stdout.value = "";
         stderr.value = "";
         state.value = undefined;

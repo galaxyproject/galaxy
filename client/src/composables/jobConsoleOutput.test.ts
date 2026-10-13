@@ -91,6 +91,28 @@ describe("useJobConsoleOutput", () => {
         expect(callCount).toBe(1);
     });
 
+    it("does not keep a timer running when the tab regains focus after the output is complete", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
+                callCount++;
+                return response(200).json(buildConsoleOutput({ state: "ok", stdout: "done\n" }));
+            }),
+        );
+
+        mountJobConsoleOutput(ref<string | undefined>("job1"));
+        await flushPromises();
+        expect(vi.getTimerCount()).toBe(0);
+
+        // `useResourceWatcher` restarts a stopped watcher (without its job id) on refocus
+        Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+        document.dispatchEvent(new Event("visibilitychange"));
+        await advanceTimersAndFlush(10000);
+
+        expect(callCount).toBe(1);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
     it("keeps polling after a failed request instead of treating it as terminal", async () => {
         let callCount = 0;
         server.use(
