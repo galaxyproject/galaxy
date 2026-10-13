@@ -65,21 +65,16 @@ def test_parquet_set_peek():
         assert "3 lines" in dataset.blurb
 
 
-def test_parquet_set_peek_with_utf8_decodable_binary(tmp_path):
-    pa = pytest.importorskip("pyarrow")
-    pq = pytest.importorskip("pyarrow.parquet")
-    source = tmp_path / "boolean.parquet"
-    pq.write_table(pa.table({"x": [True]}), source, compression=None, store_schema=False, write_statistics=False)
-    # Valid UTF-8 is not sufficient to identify a text file.
-    assert source.read_bytes().decode("utf-8").startswith("PAR1")
-    dataset = make_parquet_dataset(str(source))
-
+def test_parquet_set_peek_with_utf8_decodable_binary():
     parquet = Parquet()
-    parquet.set_meta(dataset)
-    parquet.set_peek(dataset)
-
-    assert dataset.peek == "Parquet data"
-    assert "1 column, 1 line" in dataset.blurb
+    with get_parquet_dataset("utf8_decodable.parquet") as dataset:
+        with open(dataset.get_file_name(), "rb") as fh:
+            # Valid UTF-8 is not sufficient to identify a text file.
+            assert fh.read().decode("utf-8").startswith("PAR1")
+        parquet.set_meta(dataset)
+        parquet.set_peek(dataset)
+        assert dataset.peek == "Parquet data"
+        assert "1 column, 1 line" in dataset.blurb
 
 
 def _varint(value):
@@ -126,25 +121,11 @@ def test_parquet_set_meta_ignores_malformed_footer(tmp_path):
 
     Parquet().set_meta(dataset)
 
-    assert not hasattr(dataset.metadata, "line_count")
+    assert not hasattr(dataset.metadata, "data_lines")
 
 
-def test_read_parquet_file_metadata_nested_schema(tmp_path):
-    pa = pytest.importorskip("pyarrow")
-    pq = pytest.importorskip("pyarrow.parquet")
-    table = pa.table(
-        {
-            "id": pa.array([1, 2], pa.int64()),
-            "point": pa.array([{"x": 1.0, "y": 2.0}, {"x": 3.0, "y": 4.0}]),
-            "tags": pa.array([["a"], ["b", "c"]]),
-            "attributes": pa.array([[("k", 1)], []], pa.map_(pa.string(), pa.int32())),
-            "flag": pa.array([True, False]),
-        }
-    )
-    source = tmp_path / "nested.parquet"
-    pq.write_table(table, source, row_group_size=1)
-
-    num_rows, column_names = _read_parquet_file_metadata(_read_parquet_footer_metadata(str(source)))
-
+def test_read_parquet_file_metadata_nested_schema():
+    with get_input_files("nested_columns.parquet") as input_files:
+        num_rows, column_names = _read_parquet_file_metadata(_read_parquet_footer_metadata(input_files[0]))
     assert num_rows == 2
     assert column_names == ["id", "point", "tags", "attributes", "flag"]

@@ -72,7 +72,6 @@ keywords = ["Galaxy"]
 test = [
     "galaxy-config",
     "hvac",
-    "pyarrow==24.0.0",
     "pytest",
     "roc-validator",
 ]

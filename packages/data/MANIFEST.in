@@ -229,6 +229,8 @@ include src/galaxy/datatypes/test/eg2.agp
 include src/galaxy/datatypes/test/2.chain
 include src/galaxy/datatypes/test/1.fastq
 include src/galaxy/datatypes/test/example.parquet
+include src/galaxy/datatypes/test/nested_columns.parquet
+include src/galaxy/datatypes/test/utf8_decodable.parquet
 include src/galaxy/datatypes/test/hopper_1bit.pbm
 include src/galaxy/datatypes/test/test.dta2d
 include src/galaxy/datatypes/test/IIT2mean_top_2000bytes.trk
