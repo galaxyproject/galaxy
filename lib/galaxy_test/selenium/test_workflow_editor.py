@@ -353,6 +353,24 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         editor.collection_type_custom_input.assert_absent()
 
     @selenium_test
+    def test_collection_input_bare_collection_types(self):
+        # "paired" and "list" also match "list:paired" - each must still save as itself
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+
+        for collection_type in ["paired", "list"]:
+            self.workflow_editor_set_collection_type(collection_type)
+            # the step rebuild is async with no UI marker - let it land before saving
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.assert_workflow_has_changes_and_save()
+            assert self._current_collection_type() == collection_type
+
+    @selenium_test
     def test_collection_input_collection_type_help_modal(self):
         editor = self.components.workflow_editor
         input_node = editor.node._(label="input1")
