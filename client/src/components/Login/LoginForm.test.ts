@@ -58,6 +58,40 @@ describe("LoginForm", () => {
         );
     });
 
+    it("submits new account confirmation with the session CSRF token", async () => {
+        let confirmationBody: URLSearchParams | undefined;
+        server.use(
+            http.untyped.post(/.*\/authnz\/keycloak\/create_user$/, async ({ request }) => {
+                confirmationBody = new URLSearchParams(await request.text());
+                return HttpResponse.json({ redirect_uri: "/" });
+            }),
+        );
+        const navigate = vi.spyOn(window.location, "assign").mockImplementation(() => {});
+        const previousSearch = window.location.search;
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: "?confirm=true&provider=keycloak&confirmation_id=pending",
+        });
+        try {
+            const wrapper = await mountLoginForm();
+            await flushPromises();
+            await wrapper.find("input[type='checkbox']").setChecked();
+            await wrapper.find("button[name='confirm']").trigger("click");
+            await flushPromises();
+            expect(confirmationBody?.get("session_csrf_token")).toBe("sessionCsrfToken");
+            expect(confirmationBody?.get("confirmation_id")).toBe("pending");
+            wrapper.destroy();
+        } finally {
+            navigate.mockRestore();
+            Object.defineProperty(window.location, "search", {
+                configurable: true,
+                writable: true,
+                value: previousSearch,
+            });
+        }
+    });
+
     it("basics", async () => {
         const wrapper = await mountLoginForm();
 
