@@ -1,6 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
+import { composeStories } from "@storybook/vue3-vite";
 import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeTool } from "@tests/test-data/tools";
 import { advanceTimersAndFlush, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -11,6 +14,8 @@ import { useServerMock } from "@/api/client/__mocks__";
 import type { JobRequest, JobResponse, ResponseVal } from "@/api/jobs";
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 import { useConfig } from "@/composables/config";
+
+import * as ToolSuccessStories from "./ToolSuccess.stories";
 
 import ToolSuccess from "./ToolSuccess.vue";
 import ToolSuccessOutputs from "./ToolSuccessOutputs.vue";
@@ -33,13 +38,6 @@ vi.mock("axios", () => ({
     },
 }));
 
-vi.mock("@/stores/toolStore", () => ({
-    useToolStore: () => ({
-        getToolNameById: () => TEST_TOOL_NAME,
-        getToolForId: () => ({ is_workflow_compatible: true }),
-    }),
-}));
-
 const { server, http } = useServerMock();
 enableAutoUnmount(afterEach);
 
@@ -54,6 +52,8 @@ beforeEach(() => {
     );
 });
 
+const stories = composeStories(ToolSuccessStories);
+const mountStory = useStoryMount();
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 
@@ -85,6 +85,14 @@ async function mountToolSuccess(latestResponse: ResponseVal | null, currentUser:
         createSpy: vi.fn,
         stubActions: false,
         initialState: {
+            toolStore: {
+                toolsById: {
+                    [jobInformationResponse.tool_id]: getFakeTool({
+                        id: jobInformationResponse.tool_id,
+                        name: TEST_TOOL_NAME,
+                    }),
+                },
+            },
             jobStore: {
                 latestResponse,
             },
@@ -125,16 +133,18 @@ describe("ToolSuccess", () => {
             vi.mocked(useConfig).mockReturnValue({
                 config: { value: { enable_tool_recommendations: enabled } },
             } as ReturnType<typeof useConfig>);
-            const wrapper = await mountToolSuccess(
-                {
-                    jobDef: TEST_JOB_DEF,
-                    jobResponse: TEST_JOB_RESPONSE,
-                },
-                currentUser,
-            );
+            const root =
+                currentUser && !currentUser.isAnonymous
+                    ? mountStory(enabled ? stories.WithRecommendations : stories.WithoutRecommendations, {
+                          router,
+                          global: { stubs: { ToolRecommendation: true, Webhook: true } },
+                      })
+                    : await mountToolSuccess({ jobDef: TEST_JOB_DEF, jobResponse: TEST_JOB_RESPONSE }, currentUser);
+            await flushPromises();
+            const wrapper = root.getComponent(ToolSuccess);
             expect(wrapper.findComponent(ToolRecommendation).exists()).toBe(expected);
             expect(wrapper.findComponent(JobInformation).exists()).toBe(true);
-            wrapper.unmount();
+            root.unmount();
         });
     });
 
