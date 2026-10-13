@@ -7,9 +7,6 @@ from urllib.parse import (
     urlsplit,
 )
 
-from requests.exceptions import InvalidURL
-from requests.utils import unquote_unreserved
-
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
@@ -34,17 +31,16 @@ log = logging.getLogger(__name__)
 # same character set http.client refuses in a request line.
 _DISALLOWED_URL_CHARACTERS = re.compile(r"[\x00-\x20\x7f]")
 
+# RFC 3986 reserved characters plus "%" and "~", the safe set requests.utils.requote_uri uses.
+# Keeping "%" leaves existing escapes, valid or not, exactly as given.
+_URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
+
 
 def _requote_http_url(url: str) -> str:
-    # Percent-encode characters such as <, > and " the way requests does, leaving scheme and host untouched.
+    # Percent-encode characters such as <, > and " after the host, leaving scheme and host untouched.
     parts = urlsplit(url)
     authority_end = len(parts.scheme) + len("://") + len(parts.netloc)
-    try:
-        path = unquote_unreserved(url[authority_end:])
-    except InvalidURL:
-        # requote_uri's fallback would double-encode valid escapes; send the URL as given.
-        return url
-    return url[:authority_end] + quote(path, safe="!#$%&'()*+,/:;=?@[]~")
+    return url[:authority_end] + quote(url[authority_end:], safe=_URL_SAFE_CHARACTERS)
 
 
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -89,7 +85,8 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         config = context.config
         request_url = source_path
         if urlsplit(source_path).scheme.lower() in ("http", "https"):
-            if _DISALLOWED_URL_CHARACTERS.search(source_path):
+            # The fragment is not sent to the server, so it may contain spaces.
+            if _DISALLOWED_URL_CHARACTERS.search(source_path.split("#", 1)[0]):
                 raise ValueError(
                     f"URL contains unencoded characters (e.g. spaces): {source_path}. "
                     "The URL source should properly percent-encode the path."
