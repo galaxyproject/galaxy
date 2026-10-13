@@ -9,6 +9,7 @@ import time
 from collections.abc import Mapping
 from typing import (
     Any,
+    cast,
     Literal,
 )
 
@@ -16,6 +17,7 @@ from sqlalchemy import (
     delete,
     select,
 )
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 from galaxy.exceptions import AuthenticationFailed
@@ -113,7 +115,7 @@ class FlowState:
         # would allow two workers to complete the same authentication attempt.
         # Skip ORM synchronization: EXISTS cannot be evaluated in Python, and
         # only the affected-row count is needed; the loaded record is not reused.
-        result = self.session.execute(
+        stmt = (
             delete(PSAPartial)
             .where(
                 PSAPartial.id == record.id,
@@ -127,6 +129,7 @@ class FlowState:
             )
             .execution_options(synchronize_session=False)
         )
+        result = cast(CursorResult, self.session.execute(stmt))  # type: ignore[redundant-cast, unused-ignore]
         self.session.commit()
         if result.rowcount != 1:
             raise InvalidFlow()
