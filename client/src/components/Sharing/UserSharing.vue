@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BCardGroup, BFormSelect, BFormSelectOption, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BCard, BCardGroup, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
@@ -15,6 +15,7 @@ import { assertArray } from "@/utils/assertions";
 import GAlert from "../BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import GSelect from "../BaseComponents/GSelect.vue";
 
 const props = defineProps<{
     item: AnyShareableItemWithStatus;
@@ -254,13 +255,16 @@ defineExpose({
                 header-bg-variant="primary"
                 header-text-variant="white"
                 class="mb-4">
-                <BFormSelect v-model="selectedSharingOption" data-description="sharing permissions change required how">
-                    <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
-                    <BFormSelectOption value="make_accessible_to_shared">
+                <GSelect
+                    v-model="selectedSharingOption"
+                    aria-label="How would you like to proceed?"
+                    data-description="sharing permissions change required how">
+                    <option value="make_public">Make datasets public</option>
+                    <option value="make_accessible_to_shared">
                         Make datasets private to me and users this {{ modelClass }} is shared with
-                    </BFormSelectOption>
-                    <BFormSelectOption value="no_changes"> Share {{ modelClass }} anyways </BFormSelectOption>
-                </BFormSelect>
+                    </option>
+                    <option value="no_changes">Share {{ modelClass }} anyways</option>
+                </GSelect>
             </BCard>
 
             <BCardGroup deck>
