@@ -51,6 +51,7 @@ driver = [
 ]
 test = [
     "pytest",
+    "pytest-mock",
 ]
 
 [project.urls]

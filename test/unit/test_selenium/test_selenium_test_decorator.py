@@ -1,8 +1,7 @@
 """Exercise ``selenium_test`` and screenshot routing with real stories and no browser.
 
-The story lifecycle itself is tested in ``test_story.py``; this covers the glue in
-``galaxy_test.selenium.framework``. Skipped in the standalone galaxy-selenium
-suite, which does not ship galaxy_test.
+The story lifecycle itself is tested with galaxy-selenium; this covers the glue in
+``galaxy_test.selenium.framework``.
 """
 
 import os
@@ -16,9 +15,6 @@ from galaxy.selenium.stories import (
     NoopStory,
     Story,
 )
-
-pytest.importorskip("galaxy_test.selenium.framework")
-
 from galaxy_test.selenium import framework
 
 
