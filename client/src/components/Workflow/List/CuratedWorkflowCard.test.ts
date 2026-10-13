@@ -1,133 +1,107 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { deferred } from "@tests/vitest/deferred";
+import { createTestRouter, nth } from "@tests/vitest/helpers";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { nextTick } from "vue";
 
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
-import { setMockConfig } from "@/composables/__mocks__/config";
+import { Services } from "@/components/Workflow/services";
+import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
-import { useUserStore } from "@/stores/userStore";
-import { ApiError } from "@/utils/simple-error";
+import { useConfigStore } from "@/stores/configurationStore";
+import { ensureDefined } from "@/utils/assertions";
+
+import * as CuratedWorkflowCardStories from "./CuratedWorkflowCard.stories";
 
 import CuratedWorkflowCard from "./CuratedWorkflowCard.vue";
 import GCard from "@/components/Common/GCard.vue";
 
-const importTrsToolFromUrl = vi.fn();
-const copyWorkflow = vi.fn();
-
-vi.mock("@/composables/config");
-
-vi.mock("@/components/Workflow/services", () => ({
-    Services: class MockServices {
-        importTrsToolFromUrl(...args: unknown[]) {
-            return importTrsToolFromUrl(...args);
-        }
-    },
-}));
-
-vi.mock("@/components/Workflow/workflows.services", () => ({
-    copyWorkflow: (...args: unknown[]) => copyWorkflow(...args),
-}));
+// Spied, not replaced: imports still reach the story's handlers.
+const importTrsToolFromUrl = vi.spyOn(Services.prototype, "importTrsToolFromUrl");
+vi.mock("@/components/Workflow/workflows.services", { spy: true });
 
 vi.mock("@/components/Workflow/redirectPath", () => ({
     getRedirectOnImportPath: () => "/workflows/list",
 }));
 
-let toastError: ReturnType<typeof vi.spyOn>;
+const stories = composeStories(CuratedWorkflowCardStories);
+const mountStory = useStoryMount();
+
+const toastError = vi.spyOn(Toast, "error");
 let routerPush: ReturnType<typeof vi.spyOn>;
 
-const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
+const CATALOG_WORKFLOW = ensureDefined(stories.CatalogWorkflow.args.workflow);
+const PINNED_TRS_URL = CATALOG_WORKFLOW.trs_url;
+const BRANCH_TRS_URL = CATALOG_WORKFLOW.trs_fallback_url;
 
-const VELOCYTO_TRS =
-    "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fvelocyto%2Fmain/versions";
-const PINNED_TRS_URL = `${VELOCYTO_TRS}/v0.1`;
-const BRANCH_TRS_URL = `${VELOCYTO_TRS}/main`;
+type CardStory = StoryOf<typeof stories>;
 
-const FAKE_USER = getFakeRegisteredUser();
-const ANONYMOUS_USER = getFakeAnonymousUser();
+function mountCard(
+    story: CardStory,
+    props: { workflow?: CuratedWorkflow; gridView?: boolean; installationRequested?: boolean } = {},
+) {
+    const router = createTestRouter();
+    // Stubbed so the assertions can see navigation; a real push would also
+    // warn about redundant routes across repeated mounts.
+    routerPush = vi.spyOn(router, "push").mockResolvedValue(undefined);
+    return mountStory(story, { router, props });
+}
+
+function workflowOf(story: CardStory): CuratedWorkflow {
+    return ensureDefined(story.args.workflow);
+}
 
 function iwcWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflow {
-    return {
-        id: "velocyto-velocyto-on10x-filtered-barcodes",
-        name: "Velocyto on 10x filtered barcodes",
-        description: "A curated single cell workflow",
-        tags: ["single-cell"],
-        collections: ["Single Cell"],
-        number_of_steps: 5,
-        update_time: "2026-01-01T00:00:00",
-        release: "0.1",
-        doi: "10.5281/zenodo.1234567",
-        external_url: "https://iwc.galaxyproject.org/workflow/velocyto/",
-        owner: null,
-        stored_workflow_id: null,
-        trs_url: PINNED_TRS_URL,
-        trs_fallback_url: BRANCH_TRS_URL,
-        missing_tools: [],
-        ...overrides,
-    };
+    return { ...CATALOG_WORKFLOW, ...overrides };
 }
 
 function localWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflow {
-    return iwcWorkflow({
-        id: "f2db41e1fa331b3e",
-        name: "Locally curated workflow",
-        stored_workflow_id: "f2db41e1fa331b3e",
-        owner: "curator",
-        external_url: null,
-        doi: null,
-        release: null,
-        trs_url: null,
-        trs_fallback_url: null,
-        missing_tools: null,
-        ...overrides,
-    });
+    return { ...workflowOf(stories.HostedHere), ...overrides };
 }
 
-function mountCard(
+function mountWorkflowCard(
     workflow: CuratedWorkflow,
     isAnonymous = false,
     props: { gridView?: boolean; installationRequested?: boolean } = {},
 ) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
+    return mountCard(isAnonymous ? stories.Anonymous : stories.CatalogWorkflow, { workflow, ...props });
+}
 
-    const userStore = useUserStore();
-    // An anonymous user is a non-null object without an email, not a null user.
-    userStore.currentUser = isAnonymous ? ANONYMOUS_USER : { ...FAKE_USER };
-
-    const wrapper = mount(CuratedWorkflowCard as object, {
-        propsData: { workflow, ...props },
-        localVue,
-        router,
-        pinia,
+async function mountRequestCard(
+    workflow: CuratedWorkflow,
+    isAnonymous = false,
+    props: { installationRequested?: boolean } = {},
+    enabled = true,
+) {
+    const wrapper = mountWorkflowCard(workflow, isAnonymous, props);
+    await flushPromises();
+    useConfigStore().setConfiguration({
+        enable_notification_system: true,
+        enable_tool_installation_request_form: enabled,
     });
+    await nextTick();
     return wrapper;
 }
 
 function importActionOf(wrapper: ReturnType<typeof mountCard>) {
-    const action = wrapper
-        .findComponent(GCard)
-        .props("primaryActions")
-        ?.find((action: { id: string }) => action.id === "curated-import");
-    if (!action?.handler) {
-        throw new Error("No curated-import action with a handler on the card");
-    }
-    return { ...action, handler: action.handler };
+    const action = ensureDefined(
+        ensureDefined(wrapper.getComponent(GCard).props("primaryActions")).find(
+            (action) => action.id === "curated-import",
+        ),
+    );
+    return { ...action, handler: ensureDefined(action.handler) };
 }
 
 async function clickImport(wrapper: ReturnType<typeof mountCard>, workflow: CuratedWorkflow) {
-    await wrapper.find(`#g-card-action-curated-import-${workflow.id}`).trigger("click");
+    await wrapper.get(`#g-card-action-curated-import-${workflow.id}`).trigger("click");
     await flushPromises();
 }
 
 function badgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
-    const badges = wrapper.findComponent(GCard).props("badges") ?? [];
-    return badges.find((badge: { id: string }) => badge.id === id);
+    const badges = wrapper.getComponent(GCard).props("badges") ?? [];
+    return badges.find((badge) => badge.id === id);
 }
 
 function missingToolsOf(wrapper: ReturnType<typeof mountCard>, workflow: CuratedWorkflow) {
@@ -143,53 +117,41 @@ function extraActionById(wrapper: ReturnType<typeof mountCard>, id: string) {
 }
 
 function actionIds(wrapper: ReturnType<typeof mountCard>): string[] {
-    const card = wrapper.findComponent(GCard);
+    const card = wrapper.getComponent(GCard);
     const actions = [
         ...(card.props("primaryActions") ?? []),
         ...(card.props("secondaryActions") ?? []),
         ...(card.props("extraActions") ?? []),
     ];
-    return actions.map((action: { id: string }) => action.id);
+    return actions.map((action) => action.id);
 }
 
 describe("CuratedWorkflowCard", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         importTrsToolFromUrl.mockReset();
-        copyWorkflow.mockReset();
-        setMockConfig({});
-        // Stubbed so the assertions can see navigation; a real push would also
-        // warn about redundant routes across repeated mounts.
-        routerPush = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
-        toastError = vi.spyOn(Toast, "error").mockImplementation(() => {});
-        // spyOn hands back the existing spy, so calls would otherwise leak between tests.
+        vi.mocked(copyWorkflow).mockReset();
         toastError.mockClear();
-    });
-
-    afterEach(() => {
-        routerPush.mockRestore();
     });
 
     it("renders the title as plain text with no preview link", () => {
         // A catalog row's id is an IWC slug, so a preview modal keyed on it would 404.
-        const workflow = iwcWorkflow();
-        const wrapper = mountCard(workflow);
-        const title = wrapper.find(`#g-card-title-${workflow.id}`);
+        const wrapper = mountCard(stories.CatalogWorkflow);
+        const title = wrapper.get(`#g-card-title-${CATALOG_WORKFLOW.id}`);
 
         expect(title.text()).toContain("Velocyto on 10x filtered barcodes");
-        expect(wrapper.find(`#g-card-title-link-${workflow.id}`).exists()).toBe(false);
+        expect(wrapper.find(`#g-card-title-link-${CATALOG_WORKFLOW.id}`).exists()).toBe(false);
         expect(title.find("a").exists()).toBe(false);
     });
 
     it("marks the card so Selenium's workflow-card count is unaffected", () => {
-        const wrapper = mountCard(iwcWorkflow());
+        const card = mountCard(stories.CatalogWorkflow).getComponent(CuratedWorkflowCard);
 
-        expect(wrapper.classes()).toContain("curated-workflow-card");
-        expect(wrapper.classes()).not.toContain("workflow-card");
+        expect(card.classes()).toContain("curated-workflow-card");
+        expect(card.classes()).not.toContain("workflow-card");
     });
 
     it("offers import and external links for a catalog row", () => {
-        const ids = actionIds(mountCard(iwcWorkflow()));
+        const ids = actionIds(mountCard(stories.CatalogWorkflow));
 
         expect(ids).toContain("curated-import");
         expect(ids).toContain("curated-external-link");
@@ -198,7 +160,7 @@ describe("CuratedWorkflowCard", () => {
     });
 
     it("keeps the IWC link out of the overflow menu", () => {
-        const card = mountCard(iwcWorkflow()).findComponent(GCard);
+        const card = mountWorkflowCard(iwcWorkflow()).findComponent(GCard);
         const ids = (props: "secondaryActions" | "extraActions") =>
             (card.props(props) ?? []).map((action: { id: string }) => action.id);
 
@@ -208,7 +170,7 @@ describe("CuratedWorkflowCard", () => {
 
     it("keeps only runnability beside the title and moves steps and version to the footer", () => {
         const workflow = iwcWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountWorkflowCard(workflow);
 
         const titleRowIds = (wrapper.findComponent(GCard).props("badges") ?? []).map(
             (badge: { id: string }) => badge.id,
@@ -223,28 +185,28 @@ describe("CuratedWorkflowCard", () => {
     it("leaves the colored tags to list view", () => {
         const workflow = iwcWorkflow();
 
-        expect(mountCard(workflow, false, { gridView: true }).findComponent(GCard).props("tags")).toEqual([]);
-        expect(mountCard(workflow).findComponent(GCard).props("tags")).toEqual(workflow.tags);
+        expect(mountWorkflowCard(workflow, false, { gridView: true }).findComponent(GCard).props("tags")).toEqual([]);
+        expect(mountWorkflowCard(workflow).findComponent(GCard).props("tags")).toEqual(workflow.tags);
     });
 
     it("clamps the description to plain text instead of a show-more toggle", () => {
         const workflow = iwcWorkflow({ description: "Runs <b>Velocyto</b>   on 10X data" });
-        const description = mountCard(workflow).find(".curated-description");
+        const description = mountWorkflowCard(workflow).find(".curated-description");
 
         expect(description.text()).toBe("Runs Velocyto on 10X data");
         expect(description.attributes("title")).toBe("Runs Velocyto on 10X data");
     });
 
     it("decodes the entities a sanitized local annotation carries", () => {
-        const description = mountCard(localWorkflow({ description: "R&amp;D notes for &lt;10X&gt; runs" })).find(
-            ".curated-description",
-        );
+        const description = mountWorkflowCard(
+            localWorkflow({ description: "R&amp;D notes for &lt;10X&gt; runs" }),
+        ).find(".curated-description");
 
         expect(description.text()).toBe("R&D notes for <10X> runs");
     });
 
     it("offers run and view for a workflow hosted on this Galaxy", () => {
-        const ids = actionIds(mountCard(localWorkflow()));
+        const ids = actionIds(mountCard(stories.HostedHere));
 
         expect(ids).toContain("curated-run");
         expect(ids).toContain("curated-import");
@@ -255,30 +217,28 @@ describe("CuratedWorkflowCard", () => {
     it("enables import for a registered user", () => {
         // Without this the handler tests below would still pass if the action
         // were disabled and therefore unclickable.
-        const importAction = importActionOf(mountCard(iwcWorkflow()));
+        const importAction = importActionOf(mountCard(stories.CatalogWorkflow));
 
         expect(importAction.disabled).toBe(false);
     });
 
     it("disables import for a catalog row with no TRS URL to import", () => {
-        const importAction = importActionOf(mountCard(iwcWorkflow({ trs_url: null })));
+        const importAction = importActionOf(mountCard(stories.NotImportable));
 
         expect(importAction.disabled).toBe(true);
     });
 
     it("disables import for anonymous users", () => {
-        const importAction = importActionOf(mountCard(iwcWorkflow(), true));
+        const importAction = importActionOf(mountCard(stories.Anonymous));
 
         expect(importAction.disabled).toBe(true);
         expect(importAction.title).toBe("Log in to import this workflow");
     });
 
     it("imports a catalog row through TRS with the values the server supplied", async () => {
-        importTrsToolFromUrl.mockResolvedValue({ id: "abc123", message: "Imported", status: "ok" });
-        const workflow = iwcWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountCard(stories.CatalogWorkflow);
 
-        await clickImport(wrapper, workflow);
+        await clickImport(wrapper, CATALOG_WORKFLOW);
 
         expect(importTrsToolFromUrl).toHaveBeenCalledTimes(1);
         expect(importTrsToolFromUrl).toHaveBeenCalledWith(PINNED_TRS_URL);
@@ -293,10 +253,9 @@ describe("CuratedWorkflowCard", () => {
         importTrsToolFromUrl.mockReturnValue(new Promise((resolve) => (finishImport = resolve)));
         const toastSuccess = vi.spyOn(Toast, "success").mockImplementation(() => {});
         toastSuccess.mockClear();
-        const workflow = iwcWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountCard(stories.CatalogWorkflow);
 
-        await clickImport(wrapper, workflow);
+        await clickImport(wrapper, CATALOG_WORKFLOW);
         wrapper.unmount();
         finishImport({ id: "abc123", message: "Imported", status: "ok" });
         await flushPromises();
@@ -307,26 +266,20 @@ describe("CuratedWorkflowCard", () => {
     });
 
     it("surfaces a failed TRS import instead of navigating", async () => {
-        importTrsToolFromUrl.mockRejectedValue(new ApiError("dockstore is down", 502));
-        const workflow = iwcWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountCard(stories.DockstoreUnreachable);
 
-        await clickImport(wrapper, workflow);
+        await clickImport(wrapper, workflowOf(stories.DockstoreUnreachable));
 
         // Only a missing release falls back; any other failure is reported as is.
         expect(importTrsToolFromUrl).toHaveBeenCalledTimes(1);
         expect(routerPush).not.toHaveBeenCalled();
-        expect(toastError).toHaveBeenCalled();
+        expect(toastError).toHaveBeenCalledWith(expect.stringContaining("could not be reached"));
     });
 
     it("falls back to the branch when the release is not on the TRS server yet", async () => {
-        importTrsToolFromUrl
-            .mockRejectedValueOnce(new ApiError("version not found", 404))
-            .mockResolvedValueOnce({ id: "abc123", message: "Imported", status: "ok" });
-        const workflow = iwcWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountCard(stories.ReleaseNotOnDockstoreYet);
 
-        await clickImport(wrapper, workflow);
+        await clickImport(wrapper, workflowOf(stories.ReleaseNotOnDockstoreYet));
 
         expect(importTrsToolFromUrl.mock.calls).toEqual([[PINNED_TRS_URL], [BRANCH_TRS_URL]]);
         expect(routerPush).toHaveBeenCalledWith("/workflows/list");
@@ -334,29 +287,27 @@ describe("CuratedWorkflowCard", () => {
     });
 
     it("reports a missing release when there is no branch to fall back to", async () => {
-        importTrsToolFromUrl.mockRejectedValue(new ApiError("version not found", 404));
-        const workflow = iwcWorkflow({ trs_fallback_url: null });
-        const wrapper = mountCard(workflow);
+        const wrapper = mountCard(stories.NotOnDockstore);
 
-        await clickImport(wrapper, workflow);
+        await clickImport(wrapper, workflowOf(stories.NotOnDockstore));
 
         expect(importTrsToolFromUrl).toHaveBeenCalledTimes(1);
         expect(routerPush).not.toHaveBeenCalled();
-        expect(toastError).toHaveBeenCalled();
+        expect(toastError).toHaveBeenCalledWith(expect.stringContaining("responded with HTTP 404"));
     });
 
     it("asks to filter by a collection when its badge is clicked", async () => {
-        const wrapper = mountCard(iwcWorkflow());
+        const wrapper = mountCard(stories.CatalogWorkflow);
 
-        const badge = wrapper.find("[id^='g-card-badge-curated-collection-']");
+        const badge = wrapper.get("[id^='g-card-badge-curated-collection-']");
         expect(badge.text()).toContain("Single Cell");
         await badge.trigger("click");
 
-        expect(wrapper.emitted("collectionClick")).toEqual([["Single Cell"]]);
+        expect(wrapper.getComponent(CuratedWorkflowCard).emitted("collectionClick")).toEqual([["Single Cell"]]);
     });
 
     it("says a workflow is ready to run when nothing is missing", () => {
-        const wrapper = mountCard(iwcWorkflow({ missing_tools: [] }));
+        const wrapper = mountCard(stories.CatalogWorkflow);
 
         expect(badgeById(wrapper, "curated-runnable")).toMatchObject({ label: "Ready to run", variant: "success" });
         expect(badgeById(wrapper, "curated-missing-tools")).toBeUndefined();
@@ -370,7 +321,7 @@ describe("CuratedWorkflowCard", () => {
                 "wig_to_bigWig",
             ],
         });
-        const wrapper = mountCard(workflow);
+        const wrapper = mountWorkflowCard(workflow);
         const missing = missingToolsOf(wrapper, workflow);
 
         expect(missing.text()).toBe("Needs 3 tools");
@@ -381,7 +332,7 @@ describe("CuratedWorkflowCard", () => {
 
     it("keeps import enabled when tools are missing, so an admin can import and install them", () => {
         const workflow = iwcWorkflow({ missing_tools: ["wig_to_bigWig"] });
-        const wrapper = mountCard(workflow);
+        const wrapper = mountWorkflowCard(workflow);
 
         expect(missingToolsOf(wrapper, workflow).text()).toBe("Needs 1 tool");
         expect(importActionOf(wrapper).disabled).toBe(false);
@@ -396,7 +347,7 @@ describe("CuratedWorkflowCard", () => {
 
         it("runs the user's copy instead of offering an import", () => {
             const workflow = iwcWorkflow({ imported_workflow_id: "abc123", imported_version: "v0.1" });
-            const wrapper = mountCard(workflow);
+            const wrapper = mountWorkflowCard(workflow);
             const card = wrapper.findComponent(GCard);
 
             expect(primaryIds(wrapper)).toEqual(["curated-run"]);
@@ -411,7 +362,7 @@ describe("CuratedWorkflowCard", () => {
             ["the releases differ only numerically, not as text", "0.10", "v0.9"],
         ])("offers the newer release as another import when %s", (_, release, imported) => {
             const workflow = iwcWorkflow({ release, imported_workflow_id: "abc123", imported_version: imported });
-            const wrapper = mountCard(workflow);
+            const wrapper = mountWorkflowCard(workflow);
 
             expect(primaryIds(wrapper)).toEqual(["curated-run", "curated-import"]);
             expect(importActionOf(wrapper).label).toBe(`Import v${release}`);
@@ -425,7 +376,7 @@ describe("CuratedWorkflowCard", () => {
             ["a copy of the same release", "0.10", "v0.10"],
             ["the same release written with a patch number", "0.1", "v0.1.0"],
         ])("offers no update for %s", (_, release, imported) => {
-            const wrapper = mountCard(
+            const wrapper = mountWorkflowCard(
                 iwcWorkflow({ release, imported_workflow_id: "abc123", imported_version: imported }),
             );
 
@@ -433,7 +384,7 @@ describe("CuratedWorkflowCard", () => {
         });
 
         it("does not call a copy imported from the branch out of date", () => {
-            const wrapper = mountCard(
+            const wrapper = mountWorkflowCard(
                 iwcWorkflow({ release: "0.2", imported_workflow_id: "abc123", imported_version: "main" }),
             );
 
@@ -444,23 +395,19 @@ describe("CuratedWorkflowCard", () => {
     describe("asking the admins for missing tools", () => {
         const MISSING = ["toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17"];
 
-        beforeEach(() => {
-            setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
-        });
-
         it("asks the list to request the tools, from the menu or the missing-tools note", async () => {
             const workflow = iwcWorkflow({ missing_tools: MISSING });
-            const wrapper = mountCard(workflow);
+            const wrapper = await mountRequestCard(workflow);
 
             await missingToolsOf(wrapper, workflow).find("button").trigger("click");
             extraActionById(wrapper, "curated-request-tools").handler!();
 
-            expect(wrapper.emitted("requestTools")).toEqual([[workflow], [workflow]]);
+            expect(wrapper.getComponent(CuratedWorkflowCard).emitted("requestTools")).toEqual([[workflow], [workflow]]);
         });
 
-        it("stops offering the request once it has been sent", () => {
+        it("stops offering the request once it has been sent", async () => {
             const workflow = iwcWorkflow({ missing_tools: MISSING });
-            const wrapper = mountCard(workflow, false, { installationRequested: true });
+            const wrapper = await mountRequestCard(workflow, false, { installationRequested: true });
 
             expect(extraActionById(wrapper, "curated-request-tools")).toMatchObject({
                 label: "Installation requested",
@@ -469,21 +416,22 @@ describe("CuratedWorkflowCard", () => {
             expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(false);
         });
 
-        it("offers nothing when the workflow lacks no tools", () => {
-            expect(actionIds(mountCard(iwcWorkflow({ missing_tools: [] })))).not.toContain("curated-request-tools");
+        it("offers nothing when the workflow lacks no tools", async () => {
+            expect(actionIds(await mountRequestCard(iwcWorkflow({ missing_tools: [] })))).not.toContain(
+                "curated-request-tools",
+            );
         });
 
-        it("offers nothing when the request form is off", () => {
-            setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: false });
+        it("offers nothing when the request form is off", async () => {
             const workflow = iwcWorkflow({ missing_tools: MISSING });
-            const wrapper = mountCard(workflow);
+            const wrapper = await mountRequestCard(workflow, false, {}, false);
 
             expect(actionIds(wrapper)).not.toContain("curated-request-tools");
             expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(false);
         });
 
-        it("offers nothing to anonymous users", () => {
-            const wrapper = mountCard(iwcWorkflow({ missing_tools: MISSING }), true);
+        it("offers nothing to anonymous users", async () => {
+            const wrapper = await mountRequestCard(iwcWorkflow({ missing_tools: MISSING }), true);
 
             expect(actionIds(wrapper)).not.toContain("curated-request-tools");
         });
@@ -491,29 +439,33 @@ describe("CuratedWorkflowCard", () => {
 
     it("shows no runnability badge when the server did not check", () => {
         const workflow = localWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountWorkflowCard(workflow);
 
         expect(badgeById(wrapper, "curated-runnable")).toBeUndefined();
         expect(missingToolsOf(wrapper, workflow).exists()).toBe(false);
     });
 
     it("copies a locally hosted workflow instead of importing it through TRS", async () => {
-        const workflow = localWorkflow();
-        const wrapper = mountCard(workflow);
+        const wrapper = mountCard(stories.HostedHere);
 
-        await clickImport(wrapper, workflow);
+        await clickImport(wrapper, workflowOf(stories.HostedHere));
 
         expect(copyWorkflow).toHaveBeenCalledWith("f2db41e1fa331b3e", "curator");
         expect(importTrsToolFromUrl).not.toHaveBeenCalled();
+        expect(toastError).not.toHaveBeenCalled();
     });
 
     it.each([
-        ["catalog", iwcWorkflow, importTrsToolFromUrl],
-        ["local", localWorkflow, copyWorkflow],
-    ])("ignores repeat clicks while a %s import is in flight", async (_kind, makeWorkflow, importCall) => {
-        let finishImport: (value: unknown) => void = () => {};
-        importCall.mockReturnValue(new Promise((resolve) => (finishImport = resolve)));
-        const wrapper = mountCard(makeWorkflow());
+        ["catalog", stories.CatalogWorkflow, importTrsToolFromUrl],
+        ["local", stories.HostedHere, vi.mocked(copyWorkflow)],
+    ])("ignores repeat clicks while a %s import is in flight", async (_kind, story, importCall) => {
+        const pending = deferred<unknown>();
+        importCall.mockReturnValue(pending.promise as never);
+        const wrapper = mountCard(story);
+        onTestFinished(async () => {
+            pending.resolve({ id: "abc123", message: "Imported", status: "success" });
+            await flushPromises();
+        });
         const importAction = () => importActionOf(wrapper);
 
         const first = importAction().handler();
@@ -522,7 +474,7 @@ describe("CuratedWorkflowCard", () => {
         await importAction().handler();
         expect(importCall).toHaveBeenCalledTimes(1);
 
-        finishImport({ id: "abc123", message: "Imported", status: "ok" });
+        pending.resolve({ id: "abc123", message: "Imported", status: "success" });
         await first;
         await flushPromises();
         expect(importAction().disabled).toBe(false);
