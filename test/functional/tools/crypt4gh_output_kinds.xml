@@ -21,7 +21,8 @@ echo '<html/>' > '$composite' &&
 cp '$galaxy_json' galaxy.json
     ]]></command>
     <configfiles>
-        <configfile name="galaxy_json">{"type": "new_primary_dataset", "filename": "with_metadata.report.tsv", "name": "with metadata", "ext": "tabular", "metadata": {"columns": 99}}
+        <configfile name="galaxy_json">{"type": "new_primary_dataset", "filename": "with_metadata.report.tsv", "name": "with metadata", "ext": "tabular", "info": "decrypted content", "metadata": {"columns": 99}}
+{"type": "dataset", "dataset_id": $declared.dataset.dataset.id, "info": "decrypted content"}
 </configfile>
     </configfiles>
     <inputs>

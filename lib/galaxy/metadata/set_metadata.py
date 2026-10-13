@@ -586,9 +586,8 @@ def set_metadata_portable(
                     if not dataset.dataset.purged:
                         set_meta(dataset, file_dict)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
-                meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
-                if meta:
-                    context = ExpressionContext(meta, expression_context)
+                if file_dict:
+                    context = ExpressionContext(file_dict, expression_context)
                 else:
                     context = expression_context
                 dataset.blurb = "done"

@@ -104,9 +104,11 @@ decrypts and encrypts the data. The following are **outside** the protection:
   network. Only make vetted tools available on destinations running protected
   jobs, and block network egress from jobs. Galaxy only refuses tools it gives
   the user's file sources to, such as the remote export tool.
-- **Tool-provided output names and info.** Names and info set by tools through
-  `galaxy.json` are stored in the database in clear. Metadata provided this way is
-  ignored for encrypted outputs.
+- **Output names and collection element identifiers.** They are stored in the
+  database in clear. Tools set them through `galaxy.json` or the names of the
+  files they write, which can come from the data, for example sample names read
+  from the input. Consider this when vetting tools. Info and metadata provided by
+  tools are ignored for encrypted outputs, like their stdout and stderr.
 - **Administrators of the compute hosts**, and anyone else with access to the job
   directories while jobs run.
 - **A shared filesystem.** When the compute hosts share the job directories with
