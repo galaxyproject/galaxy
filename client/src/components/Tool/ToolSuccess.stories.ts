@@ -98,8 +98,53 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+async function expectSubmission(canvasElement: HTMLElement) {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+        expect(canvasElement.querySelector(".job-header-title")).toHaveTextContent(
+            "Concatenate multiple datasets or collections",
+        ),
+    );
+    expect(canvasElement.querySelector(".job-information-state-badge")).toHaveTextContent("new");
+    canvasElement.querySelector("#tool-run-outputs")?.scrollIntoView();
+    expect(await canvas.findByText("Concatenate multiple datasets or collections on data 1 and data 2")).toBeVisible();
+    const outputRows = canvasElement.querySelectorAll("#tool-run-outputs .outputs-grid > *");
+    expect(outputRows).toHaveLength(1);
+    expect(outputRows[0]!.querySelector(".id.hid")).toHaveTextContent(/^3:$/);
+    expect(outputRows[0]).toHaveTextContent("Concatenate multiple datasets or collections on data 1 and data 2");
+    const job = await canvas.findByTitle(`Job API ID: ${QUEUED_CAT_JOB.id}`);
+    expect(job).toBeVisible();
+    expect(job).toHaveTextContent(QUEUED_CAT_JOB.id.slice(-8));
+    const detailsLink = canvas.getByRole("link", { name: /View full details/i });
+    expect(detailsLink).toBeVisible();
+    expect(detailsLink).toHaveAttribute("href", `/jobs/${QUEUED_CAT_JOB.id}/view`);
+}
+
 /** Concatenating two inputs queues one job and offers compatible tools to run next. */
-export const WithRecommendations: Story = {};
+export const WithRecommendations: Story = {
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        await step("Show the submitted tool, queued output and job", async () => {
+            await expectSubmission(canvasElement);
+        });
+        await step("Offer a compatible next tool for this submission", async () => {
+            expect(
+                await canvas.findByRole("heading", { name: "Tool Recommendation" }, { timeout: 5000 }),
+            ).toBeVisible();
+            expect(await canvas.findByText("Cut", { exact: true }, { timeout: 5000 })).toBeVisible();
+            const description = canvas.getByText(/For further analysis/);
+            expect(description).toBeVisible();
+            expect(description).toHaveTextContent(/You have used cat1 tool\./);
+        });
+    },
+};
 
 /** An instance with recommendations disabled still shows the queued job and its output. */
-export const WithoutRecommendations: Story = { parameters: recommendations(false) };
+export const WithoutRecommendations: Story = {
+    parameters: recommendations(false),
+    play: async ({ canvasElement, step }) => {
+        await step("Keep the submitted tool, queued output and job visible", async () => {
+            await expectSubmission(canvasElement);
+        });
+    },
+};
