@@ -174,6 +174,23 @@ def test_cancelled_job_without_streams(finishing_job, job_state):
     assert state.job_wrapper.finish.call_args.args[:2] == ("", "Job cancelled")
 
 
+def test_protection_setup_failure_fails_the_job(finishing_job):
+    runner, state, job = finishing_job
+    job.protection_scheme = "crypt4gh"
+    dataset_protection = state.job_wrapper.app.dataset_protection
+    dataset_protection.setup_failure.return_value = "Could not decrypt the protected inputs of this job: expired"
+    dataset_protection.fail_job.return_value = None
+
+    finish(runner, state)
+
+    assert job.state == job.states.ERROR
+    assert job.info == (
+        "Galaxy failed to prepare this job, so the tool was not run: "
+        "Could not decrypt the protected inputs of this job: expired"
+    )
+    assert not job.traceback
+
+
 def test_readable_empty_streams_finish_successfully(finishing_job, tmp_path):
     runner, state, job = finishing_job
     for stream in ("stdout", "stderr"):
