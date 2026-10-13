@@ -214,6 +214,7 @@ def test_unlisted_extra_files_are_refused(tmp_path, service, user):
         ("expired_key", "has expired"),
         ("other_users_header", "could not open the header"),
         ("server_error", "HTTP 500"),
+        ("no_expiration", "expiration date"),
     ],
 )
 def test_stage_inputs_failures_leave_no_plaintext(tmp_path, service, user, setup, message):
@@ -230,6 +231,8 @@ def test_stage_inputs_failures_leave_no_plaintext(tmp_path, service, user, setup
         other_key_ref = service.get_compute_key_info(generate_keypair().public)
         other = _protected_input(tmp_path, service, user, other_key_ref, dataset_id=3)
         bad_input.primary.compute_header = other.primary.compute_header
+    elif setup == "no_expiration":
+        service.omitted_fields.add("crypt4gh_compute_keypair_expiration_date")
     else:
         service.failures["recrypt_header_to_job_key"] = [500] * 10
     plan = _plan(tmp_path, service, plan_key_ref, [good_input, bad_input], retries=1)
