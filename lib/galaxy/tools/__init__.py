@@ -2734,6 +2734,10 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         pass
 
+    def output_parameter_json(self, out_data: OutDataDictT, param_dict) -> tuple[str, str] | None:
+        """Return the compute-side output path to seed with JSON parameters, and that JSON."""
+        return None
+
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: str | None = None):
         pass
 
@@ -3244,9 +3248,7 @@ class OutputParameterJSONTool(Tool):
                 rval[key] = str(value)
         return rval
 
-    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
-        if param_dict is None:
-            param_dict = {}
+    def output_parameter_json(self, out_data: OutDataDictT, param_dict) -> tuple[str, str]:
         json_params = {}
         json_params["param_dict"] = self._prepare_json_param_dict(
             param_dict
@@ -3277,9 +3279,8 @@ class OutputParameterJSONTool(Tool):
             if json_filename is None:
                 json_filename = file_name
         if json_filename is None:
-            raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
-        with open(json_filename, "w") as out:
-            out.write(json.dumps(json_params))
+            raise Exception("Must call 'output_parameter_json' with 'out_data' containing at least one entry.")
+        return json_filename, json.dumps(json_params)
 
 
 class UserDefinedTool(Tool):
@@ -3477,21 +3478,7 @@ class DataSourceTool(OutputParameterJSONTool):
         data_type = param_dict.get("data_type")
         name = param_dict.get("name")
 
-        json_params = {}
-        json_params["param_dict"] = self._prepare_json_param_dict(
-            param_dict
-        )  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
-        json_params["output_data"] = []
-        json_params["job_config"] = dict(
-            GALAXY_DATATYPES_CONF_FILE=param_dict.get("GALAXY_DATATYPES_CONF_FILE"),
-            GALAXY_ROOT_DIR=param_dict.get("GALAXY_ROOT_DIR"),
-            TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file,
-        )
-        json_filename = None
         for out_name, data in out_data.items():
-            # use wrapped dataset to access certain values
-            wrapped_data = param_dict.get(out_name)
-            # allow multiple files to be created
             cur_base_param_name = f"GALAXY|{out_name}|"
             cur_name = param_dict.get(f"{cur_base_param_name}name", name)
             cur_dbkey = param_dict.get(f"{cur_base_param_name}dkey", dbkey)
@@ -3505,24 +3492,6 @@ class DataSourceTool(OutputParameterJSONTool):
                 data.dbkey = cur_dbkey
             if cur_data_type:
                 data.extension = cur_data_type
-            file_name = str(wrapped_data)
-            extra_files_path = str(wrapped_data.files_path)
-            assert data.dataset is not None
-            data_dict = dict(
-                out_data_name=out_name,
-                ext=data.ext,
-                dataset_id=data.dataset.id,
-                hda_id=data.id,
-                file_name=file_name,
-                extra_files_path=extra_files_path,
-            )
-            json_params["output_data"].append(data_dict)
-            if json_filename is None:
-                json_filename = file_name
-        if json_filename is None:
-            raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
-        with open(json_filename, "w") as out:
-            out.write(json.dumps(json_params))
 
 
 class AsyncDataSourceTool(DataSourceTool):
