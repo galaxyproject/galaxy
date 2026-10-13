@@ -16,11 +16,15 @@ from galaxy.tools.parameters import (
     params_to_strings,
     ToolInputsT,
 )
-from galaxy.tools.parameters.basic import TextToolParameter
+from galaxy.tools.parameters.basic import (
+    SelectToolParameter,
+    TextToolParameter,
+)
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
     Repeat,
+    Section,
 )
 from galaxy.util import XML
 from galaxy.workflow.extract import _connect_parameter_inputs
@@ -90,6 +94,95 @@ def test_parameter_connections_require_selected_source_from_same_invocation(grou
     else:
         assert not consumer_step.input_connections
         assert value == "recorded value"
+
+
+@pytest.mark.parametrize("group", [None, "repeat", "section", "conditional"])
+@pytest.mark.parametrize("selection", ["default", "advanced"])
+def test_connected_conditional_selector_preserves_case_and_child_connections(group, selection):
+    conditional = Conditional("options")
+    conditional.test_param = SelectToolParameter(
+        None,
+        XML(
+            '<param name="selector" type="select">'
+            '<option value="default">Default</option><option value="advanced">Advanced</option></param>'
+        ),
+    )
+    for case_name in ("default", "advanced"):
+        case = ConditionalWhen()
+        case.value = case_name
+        case.inputs = {"text": TextToolParameter(None, XML('<param name="text" type="text"/>'))}
+        conditional.cases.append(case)
+    inputs: ToolInputsT = {"options": conditional}
+    current_case = conditional.get_current_case(selection)
+    values: dict[str, Any] = {
+        "options": {"__current_case__": current_case, "selector": selection, "text": "recorded value"}
+    }
+    prefix = ""
+    if group == "repeat":
+        repeat = Repeat("repeat")
+        repeat.title = "Repeat"
+        repeat.inputs = inputs
+        inputs = {"repeat": repeat}
+        values = {"repeat": [{"__index__": 0, **values}]}
+        prefix = "repeat_0|"
+    elif group == "section":
+        section = Section("section")
+        section.inputs = inputs
+        inputs = {"section": section}
+        values = {"section": values}
+        prefix = "section|"
+    elif group == "conditional":
+        outer = Conditional("outer")
+        outer.test_param = TextToolParameter(None, XML('<param name="selector" type="text"/>'))
+        case = ConditionalWhen()
+        case.value = "selected"
+        case.inputs = inputs
+        outer.cases = [case]
+        inputs = {"outer": outer}
+        values = {"outer": {"__current_case__": 0, "selector": "selected", **values}}
+        prefix = "outer|"
+    tool = SimpleNamespace(
+        inputs=inputs,
+        params_from_strings=partial(params_from_strings, inputs, app=None),
+        params_to_strings=partial(params_to_strings, inputs),
+    )
+    trans = SimpleNamespace(app=SimpleNamespace(toolbox=Mock()), user=None)
+    trans.app.toolbox.tool_for_job.return_value = tool
+    original_source = model.WorkflowStep()
+    original_source.id = 10
+    original_consumer = model.WorkflowStep()
+    original_consumer.id = 11
+    for name in ("selector", "text"):
+        connection = original_consumer.add_connection(f"{prefix}options|{name}", "text_out", original_source)
+        connection.output_step_id = original_source.id
+    source_job, source_step = _job_step(original_source, 1)
+    consumer_job, consumer_step = _job_step(original_consumer, 1)
+    consumer_step.tool_inputs = params_to_strings(inputs, values, None)
+
+    _connect_parameter_inputs(
+        cast(ProvidesHistoryContext, trans), [(source_job, source_step), (consumer_job, consumer_step)]
+    )
+
+    assert {connection.input_name for connection in consumer_step.input_connections} == {
+        f"{prefix}options|selector",
+        f"{prefix}options|text",
+    }
+    assert all(connection.output_step is source_step for connection in consumer_step.input_connections)
+    state = {key: loads(value) for key, value in consumer_step.tool_inputs.items()}
+    if group == "repeat":
+        state = state["repeat"][0]
+    elif group == "section":
+        state = state["section"]
+    elif group == "conditional":
+        state = state["outer"]
+    assert state["options"] == {
+        "__current_case__": current_case,
+        "selector": selection,
+        "text": {"__class__": "ConnectedValue"},
+    }
+    # Deserialization must also retain the selected case and its children.
+    restored = params_from_strings(inputs, consumer_step.tool_inputs, app=None)
+    assert params_to_strings(inputs, restored, None) == consumer_step.tool_inputs
 
 
 def test_standalone_job_does_not_need_invocation():

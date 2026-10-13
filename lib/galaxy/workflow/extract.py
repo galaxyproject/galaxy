@@ -191,7 +191,8 @@ def _connect_parameter_inputs(trans: ProvidesHistoryContext, job_steps: list[tup
                 _connect(step, prefixed_name, source_pair)
             return ConnectedValue()
 
-        visit_input_values(tool.inputs, values, reconnect)
+        # Keep selectors serializable; their connections still supply values at runtime.
+        visit_input_values(tool.inputs, values, reconnect, replace_conditional_test_values=False)
         step.tool_inputs = tool.params_to_strings(values, trans.app)
 
 

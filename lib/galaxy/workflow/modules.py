@@ -2947,7 +2947,8 @@ class ToolModule(WorkflowModule):
                 elif (is_data and connections is None) or prefixed_name in input_connections_by_name:
                     return ConnectedValue()
 
-            visit_input_values(self.tool.inputs, self.state.inputs, callback)
+            # Connected selectors still need a concrete case when saving tool state.
+            visit_input_values(self.tool.inputs, self.state.inputs, callback, replace_conditional_test_values=False)
         else:
             raise ToolMissingException(f"Tool {self.tool_id} missing. Cannot add dummy datasets.", tool_id=self.tool_id)
 
