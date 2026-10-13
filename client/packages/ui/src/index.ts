@@ -2,6 +2,7 @@
 // Galaxy client consumes it through a Vite source alias, and the Tool Shed frontend through a
 // file: dependency. See README.md.
 
+export { type CheckboxGroupOption } from "./components/checkboxGroupContext";
 export {
     type ColorVariant,
     type ComponentColor,
@@ -19,6 +20,7 @@ export { default as GAlert } from "./components/GAlert.vue";
 export { default as GButton } from "./components/GButton.vue";
 export { default as GButtonGroup } from "./components/GButtonGroup.vue";
 export { default as GCheckbox } from "./components/GCheckbox.vue";
+export { default as GCheckboxGroup } from "./components/GCheckboxGroup.vue";
 export { default as GCollapse } from "./components/GCollapse.vue";
 export { default as GDropdown } from "./components/GDropdown.vue";
 export { default as GDropdownDivider } from "./components/GDropdownDivider.vue";

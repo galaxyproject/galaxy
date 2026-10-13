@@ -184,8 +184,16 @@
       dropTarget.addEventListener("dragover", function (e) {
         e.preventDefault();
       });
+      // Feedback a zone shows only while a drag is over it.
+      dropTarget.addEventListener("dragenter", function () {
+        dropTarget.classList.add("dragging-over");
+      });
+      dropTarget.addEventListener("dragleave", function () {
+        dropTarget.classList.remove("dragging-over");
+      });
       dropTarget.addEventListener("drop", function (e) {
         e.preventDefault();
+        dropTarget.classList.remove("dragging-over");
         dropTarget.textContent =
           "Dropped: " + e.dataTransfer.getData("text/plain");
       });

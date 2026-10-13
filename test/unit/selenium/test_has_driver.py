@@ -737,6 +737,32 @@ class TestActionChainsAndKeys:
         zone = has_driver_instance.find_element_by_id("rerender-drop-zone")
         assert zone.text == "Dropped: dragged-payload"
 
+    def test_drag_over(self, has_driver_instance, base_url):
+        """The zone's dragover feedback is readable while the drag is held, and the drop still lands."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        source = has_driver_instance.find_element_by_id("drag-source")
+        target = has_driver_instance.find_element_by_id("drop-target")
+
+        with has_driver_instance.drag_over(source, target):
+            assert "dragging-over" in (target.get_attribute("class") or "")
+
+        assert "dragging-over" not in (target.get_attribute("class") or "")
+        assert target.text == "Dropped: dragged-payload"
+
+    def test_drag_over_drops_when_block_raises(self, has_driver_instance, base_url):
+        """An exception inside the block still completes the drop, and propagates."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        source = has_driver_instance.find_element_by_id("drag-source")
+        target = has_driver_instance.find_element_by_id("drop-target")
+
+        with pytest.raises(RuntimeError, match="raised mid-drag"):
+            with has_driver_instance.drag_over(source, target):
+                raise RuntimeError("raised mid-drag")
+
+        assert target.text == "Dropped: dragged-payload"
+
     def test_move_to_and_click(self, has_driver_instance, base_url):
         """Test moving to element and clicking via ActionChains."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")

@@ -1,3 +1,5 @@
+import type { RouteRecordRaw } from "vue-router";
+
 import { getGalaxyInstance } from "@/app";
 import adminFormsGridConfig from "@/components/Grid/configs/adminForms";
 import adminGroupsGridConfig from "@/components/Grid/configs/adminGroups";
@@ -34,7 +36,7 @@ import RegisterForm from "@/components/Register/RegisterForm.vue";
 import Toolshed from "@/components/Toolshed/Index.vue";
 import Admin from "@/entry/analysis/modules/Admin.vue";
 
-export default [
+const adminRoutes: RouteRecordRaw[] = [
     {
         path: "/admin",
         component: Admin,
@@ -246,3 +248,5 @@ export default [
         ],
     },
 ];
+
+export default adminRoutes;

@@ -1021,8 +1021,8 @@ def build_collection_model_for_type(collection_type: str) -> type[DataCollection
     model = create_model(
         safe_name,
         __base__=DataCollectionInternalJsonBase,
-        collection_type=(cast(TypeForm[str], Literal[collection_type]), ...),
-        elements=(elements_type, ...),
+        collection_type=cast(TypeForm[str], Literal[collection_type]),
+        elements=elements_type,
     )
 
     return model

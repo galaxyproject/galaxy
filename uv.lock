@@ -3131,6 +3131,7 @@ dependencies = [
 test = [
     { name = "mock-ssh-server" },
     { name = "pkce" },
+    { name = "pykube-ng" },
     { name = "pykwalify" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -3177,10 +3178,11 @@ requires-dist = [
     { name = "paramiko", specifier = "!=2.9.0,!=2.9.1" },
     { name = "pebble", specifier = "!=5.2.1,!=5.2.2" },
     { name = "pkce", marker = "extra == 'test'" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.15.15" },
+    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
     { name = "pydantic", specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.99.0" },
     { name = "pyjwt" },
+    { name = "pykube-ng", marker = "extra == 'test'", specifier = "==23.6.0" },
     { name = "pykwalify", marker = "extra == 'test'" },
     { name = "pysam", specifier = ">=0.21" },
     { name = "pytest", marker = "extra == 'test'" },
@@ -3370,6 +3372,7 @@ dependencies = [
 [package.optional-dependencies]
 test = [
     { name = "gcsfs" },
+    { name = "pyftpdlib" },
     { name = "pytest" },
     { name = "responses" },
     { name = "s3fs" },
@@ -3383,6 +3386,7 @@ requires-dist = [
     { name = "gcsfs", marker = "extra == 'test'" },
     { name = "pkg-resources-backport" },
     { name = "pydantic", specifier = ">=2.7.4" },
+    { name = "pyftpdlib", marker = "extra == 'test'" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "responses", marker = "extra == 'test'" },
     { name = "s3fs", marker = "extra == 'test'", specifier = ">=2023.1.0" },
@@ -3498,6 +3502,7 @@ test = [
     { name = "boto3" },
     { name = "cloudbridge" },
     { name = "pytest" },
+    { name = "pytest-httpserver" },
 ]
 
 [package.metadata]
@@ -3512,6 +3517,7 @@ requires-dist = [
     { name = "galaxy-util", extras = ["config-template"], editable = "packages/util" },
     { name = "pydantic", specifier = ">=2.7.4" },
     { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-httpserver", marker = "extra == 'test'" },
     { name = "python-irodsclient", marker = "extra == 'all'" },
     { name = "python-irodsclient", marker = "extra == 'irods'" },
     { name = "pyyaml" },
@@ -3546,6 +3552,7 @@ dependencies = [
     { name = "galaxy-tool-util-models" },
     { name = "galaxy-util" },
     { name = "pydantic", extra = ["email"] },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -3559,6 +3566,7 @@ requires-dist = [
     { name = "galaxy-util", editable = "packages/util" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.7.4" },
     { name = "pytest", marker = "extra == 'test'" },
+    { name = "typing-extensions", specifier = ">=4.13" },
 ]
 provides-extras = ["test"]
 
@@ -3953,7 +3961,7 @@ requires-dist = [
     { name = "pydantic-extra-types" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "regex" },
-    { name = "typing-extensions" },
+    { name = "typing-extensions", specifier = ">=4.13" },
 ]
 provides-extras = ["test"]
 
@@ -4371,6 +4379,8 @@ dev = [
     { name = "onedatafilerestclient" },
     { name = "pkce" },
     { name = "playwright" },
+    { name = "pyftpdlib" },
+    { name = "pykube-ng" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -4416,6 +4426,8 @@ test = [
     { name = "onedatafilerestclient" },
     { name = "pkce" },
     { name = "playwright" },
+    { name = "pyftpdlib" },
+    { name = "pykube-ng" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -4530,7 +4542,7 @@ requires-dist = [
     { name = "pillow" },
     { name = "pkg-resources-backport" },
     { name = "psutil" },
-    { name = "pulsar-galaxy-lib", specifier = ">=0.15.15" },
+    { name = "pulsar-galaxy-lib", specifier = ">=0.16.0" },
     { name = "pycryptodome" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.7.4" },
     { name = "pydantic-ai", specifier = ">=1.56.0" },
@@ -4556,7 +4568,7 @@ requires-dist = [
     { name = "s3fs", specifier = ">=2023.1.0" },
     { name = "schema-salad", specifier = ">=8.7.20240905150001" },
     { name = "slowapi" },
-    { name = "social-auth-core", specifier = ">=4.5.0" },
+    { name = "social-auth-core", specifier = ">=4.5.0,<6" },
     { name = "sortedcontainers" },
     { name = "sqlalchemy", specifier = ">=2.0.37,!=2.0.41,<2.1" },
     { name = "sqlparse" },
@@ -4565,7 +4577,7 @@ requires-dist = [
     { name = "svgwrite" },
     { name = "tifffile" },
     { name = "tuspyserver" },
-    { name = "typing-extensions" },
+    { name = "typing-extensions", specifier = ">=4.13" },
     { name = "uvicorn", specifier = "!=0.28.0" },
     { name = "uvloop", specifier = ">=0.21.0" },
     { name = "webob", specifier = ">=1.8.9" },
@@ -4595,6 +4607,8 @@ dev = [
     { name = "onedatafilerestclient", specifier = "==21.2.5.2" },
     { name = "pkce" },
     { name = "playwright", specifier = ">=1.48.0" },
+    { name = "pyftpdlib" },
+    { name = "pykube-ng", specifier = "==23.6.0" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -4635,6 +4649,8 @@ test = [
     { name = "onedatafilerestclient", specifier = "==21.2.5.2" },
     { name = "pkce" },
     { name = "playwright", specifier = ">=1.48.0" },
+    { name = "pyftpdlib" },
+    { name = "pykube-ng", specifier = "==23.6.0" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -8839,7 +8855,7 @@ wheels = [
 
 [[package]]
 name = "pulsar-galaxy-lib"
-version = "0.15.16"
+version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-cloud-batch" },
@@ -8854,9 +8870,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "webob" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/df/c8ccf720d0c704a014ed02a24bb4bd2b69678ac7d75c6a9aaefe309bed77/pulsar_galaxy_lib-0.15.16.tar.gz", hash = "sha256:0197451c7013d485a35a3a425469f2b84585089ebd0d82d9280c242efc64dce7", size = 248900, upload-time = "2026-10-08T17:01:08.1Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/42/15/063a2c2b4ad4f7d7c98840e541e01e7695bfcaeb7b892922d2b1ccad7e37/pulsar_galaxy_lib-0.16.0.tar.gz", hash = "sha256:f777b2e6e711bda76c38149c70ad259b9f0fc4d61738c9509483494ce77f3773", size = 251789, upload-time = "2026-10-11T22:01:30.42Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/fe/622d2da859acbe4f12d38f1f0f61a3278a170bf3325e262818f120d4c72a/pulsar_galaxy_lib-0.15.16-py3-none-any.whl", hash = "sha256:77d2c9a84ae5c2657e769105e52e0f56a3d89df147d1acd545b3cdb1c2758b41", size = 259219, upload-time = "2026-10-08T17:01:04.981Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/70/2380d13709a220d948278472c7ccc57a135a821c8f47643ea9f71e3a0f0e/pulsar_galaxy_lib-0.16.0-py3-none-any.whl", hash = "sha256:6488d4eb0fd8ad59e922296a30e20e91c79e644356c2d308dd3a1e9cd8a98a32", size = 265054, upload-time = "2026-10-11T22:01:26.693Z" },
 ]
 
 [[package]]
@@ -8917,6 +8933,27 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e9/e6/78ebbb10a8c8e4b61a59249394a4a594c1a7af95593dc933a349c8d00964/pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", size = 307892, upload-time = "2025-03-28T02:41:22.17Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/8d/d529b5d697919ba8c11ad626e835d4039be708a35b0d22de83a269a6682c/pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a", size = 181259, upload-time = "2025-03-28T02:41:19.028Z" },
+]
+
+[[package]]
+name = "pyasynchat"
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyasyncore" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ec/d2/b41df9021c12ca314146abcde7bdd3d9d37d44cc01559d7f13df459ee586/pyasynchat-1.0.5.tar.gz", hash = "sha256:36665473ae730dac51e6d7dad70f8295962120c830ab692f0a31efba32687e24", size = 9959, upload-time = "2026-01-05T20:05:27.712Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/e8/e5ad498cb6a834c16af910e259926fd545dd7873a2da451f3a2bb228d7ee/pyasynchat-1.0.5-py3-none-any.whl", hash = "sha256:35b7859515693e479e8d95ebe9f32cbf4d6312ab7599ced39fc24699e51de46f", size = 7869, upload-time = "2026-01-05T20:05:26.613Z" },
+]
+
+[[package]]
+name = "pyasyncore"
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/43/035dfe0cb01687c1940fdc008f46a43c41067e226e862df49327469764a0/pyasyncore-1.0.5.tar.gz", hash = "sha256:dd483d5103a6d59b66b86e0ca2334ad43dca732ff23a0ac5d63c88c52510542e", size = 15854, upload-time = "2026-01-05T19:59:31.893Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1f/ab/b10cee56269ae150763f3f83b3e9305a11f42f50b3dcd58eeb8f7988f0bb/pyasyncore-1.0.5-py3-none-any.whl", hash = "sha256:269bbc5252671827387636822841a1fb721ec6e858b23a3e12cf92eb1f97da2a", size = 10237, upload-time = "2026-01-05T19:59:30.824Z" },
 ]
 
 [[package]]
@@ -9332,6 +9369,16 @@ wheels = [
 ]
 
 [[package]]
+name = "pyftpdlib"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyasynchat", marker = "python_full_version >= '3.12'" },
+    { name = "pyasyncore", marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f9/42/8751c5f58ae59b09e070da4fa322ae9693a340d2cc456b5a380b2c1ee47a/pyftpdlib-2.2.0.tar.gz", hash = "sha256:4ba0642078792df63dd3b2e9c8f838f2a3ecf428c7518d5921c0530d53512acf", size = 189150, upload-time = "2026-02-07T23:09:26.519Z" }
+
+[[package]]
 name = "pygithub"
 version = "2.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -9371,6 +9418,20 @@ wheels = [
 [package.optional-dependencies]
 crypto = [
     { name = "cryptography" },
+]
+
+[[package]]
+name = "pykube-ng"
+version = "23.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/10/ee/c78cd9b1a574b63ce365b6a6f066082dbbc8aee93aacc83d7bc32aed7919/pykube-ng-23.6.0.tar.gz", hash = "sha256:46de8e17ed87c1a1014667d60e7d94a1f3fa2b8037b41e67d32c28b5869af35d", size = 26058, upload-time = "2023-06-16T18:02:22.247Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/b9/4292259e80f93163d9ba0c69ccb3d44cf240acbdcb18adbc81a8f8d2e3d6/pykube_ng-23.6.0-py3-none-any.whl", hash = "sha256:63f20f634bfcd83966edec32f892286f75dffb817a2c097434ecc039e558ec8f", size = 26181, upload-time = "2023-06-16T18:02:23.649Z" },
 ]
 
 [[package]]

@@ -599,7 +599,8 @@ history_export_tasks:
     next_button: '.go-next-btn'
     back_button: '.go-back-btn'
     export_button: '.go-next-btn.btn-primary'
-    select_format: '[data-export-format="${format}"]'
+    # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
+    select_format: '[data-export-format="${format}"] .card-title'
     select_destination: '[data-history-export-destination="${destination}"]'
     exported_file_name: '#exported-file-name'
 
@@ -607,6 +608,9 @@ last_export_record:
   selectors:
     details: '.export-record-details'
     export_format: '.record-archive-format'
+    export_format_named:
+      type: xpath
+      selector: '//*[contains(@class, "record-archive-format")][normalize-space(text())="${format}"]'
     up_to_date_icon: '.record-up-to-date-icon'
     outdated_icon: '.record-outdated-icon'
     preparing_export_badge: '#g-card-badge-in-progress-latest-export-record'
@@ -826,10 +830,10 @@ tool_form:
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
     parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] i.multiselect__tag-icon'
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
-    parameter_number_list_input:
+    parameter_value_list_input:
       type: xpath
-      selector: (//div[@id="form-element-${parameter}"]//div[@data-description="number list row"])[${index}]//input[@type="number"]
-    parameter_number_list_add:
+      selector: (//div[@id="form-element-${parameter}"]//div[@data-description="value list row"])[${index}]//input[not(@type="range")]
+    parameter_value_list_add:
       type: xpath
       selector: //div[@id="form-element-${parameter}"]//button[@data-description="add value"]
 
@@ -1034,10 +1038,10 @@ workflow_run:
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
-    simplified_number_list_input:
+    simplified_value_list_input:
       type: xpath
-      selector: (//div[@data-label="${label}"]//div[@data-description="number list row"])[${index}]//input[@type="number"]
-    simplified_number_list_add:
+      selector: (//div[@data-label="${label}"]//div[@data-description="value list row"])[${index}]//input[not(@type="range")]
+    simplified_value_list_add:
       type: xpath
       selector: //div[@data-label="${label}"]//button[@data-description="add value"]
     input_select_field:
@@ -1199,6 +1203,14 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Remove Tags']//input
+    email_notification:
+      type: xpath
+      selector: >
+        //div[@data-label='Email notification']
+    output_cleanup:
+      type: xpath
+      selector: >
+        //div[@data-label='Output cleanup']
     tool_version_button: ".tool-versions"
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
@@ -1291,7 +1303,8 @@ invocations:
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
-    export_output_format: '[data-export-format="${type}"]'
+    # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
+    export_output_format: '[data-export-format="${type}"] .card-title'
     export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
@@ -1839,6 +1852,10 @@ file_set_wizard:
     source_dataset_as_table: '[data-import-source-from="dataset_as_table"]'
     source_remote_files: '[data-import-source-from="remote_files"]'
     source_workbook: '[data-import-source-from="workbook"]'
+    workbook_download_link: '[data-description="workbook download link"]'
+    workbook_shortcut_file_input: '[data-description="workbook shortcut file input"]'
+    workbook_card_file_input: '[data-description="workbook card file input"]'
+    which_builder: '[data-which-builder="${builder}"]'
     paste_textarea: '.paste-data textarea'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_submit_button: '.wizard-actions .go-next-btn.btn-primary'

@@ -1,9 +1,16 @@
 import { defineStore } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { hasHelp as hasHelpTextFromYaml, help as helpTextFromYaml } from "@/components/Help/terms";
+import { memoizeUntilRejected } from "@/utils/sharedPromise";
 
 import { useDatatypeStore } from "./datatypeStore";
+
+const DATATYPE_TERM_PREFIX = "galaxy.datatypes.extensions.";
+
+function isDatatypeTerm(term: string): boolean {
+    return term.startsWith(DATATYPE_TERM_PREFIX);
+}
 
 interface DatatypeDescription {
     ext: string;
@@ -21,6 +28,7 @@ interface RawDatatypeDescription {
 
 export const useHelpTermsStore = defineStore("helpTermsStore", () => {
     const initialized = ref(false);
+    const loadFailed = ref(false);
     const datatypeDescriptions = ref<DatatypeDescription[] | null>(null as DatatypeDescription[] | null);
     const datatypeStore = useDatatypeStore();
 
@@ -58,28 +66,36 @@ export const useHelpTermsStore = defineStore("helpTermsStore", () => {
         }
     }
 
-    async function ensureInitialized() {
-        if (!initialized.value) {
+    async function loadDatatypeDescriptions() {
+        loadFailed.value = false;
+        try {
             await datatypeStore.fetchUploadDatatypes();
-            const rawDatatypes = datatypeStore.getUploadDatatypes as RawDatatypeDescription[];
-            datatypeDescriptions.value = rawDatatypes.map((datatype: RawDatatypeDescription) => {
-                return {
-                    ext: datatype.id,
-                    description: datatype.description || null,
-                    descriptionUrl: datatype.description_url || null,
-                } as DatatypeDescription;
-            });
-            initialized.value = true;
+        } catch (err) {
+            loadFailed.value = true;
+            throw err;
         }
+        const rawDatatypes = datatypeStore.getUploadDatatypes as RawDatatypeDescription[];
+        datatypeDescriptions.value = rawDatatypes.map((datatype: RawDatatypeDescription) => {
+            return {
+                ext: datatype.id,
+                description: datatype.description || null,
+                descriptionUrl: datatype.description_url || null,
+            } as DatatypeDescription;
+        });
+        initialized.value = true;
     }
 
+    /** Load datatype descriptions, needed only for `galaxy.datatypes.extensions.*` terms. Retried after a failure. */
+    const ensureInitialized = memoizeUntilRejected(loadDatatypeDescriptions);
+
+    /** True until datatype descriptions are loaded or the last load failed. */
     const loading = computed(() => {
-        return !initialized.value;
+        return !initialized.value && !loadFailed.value;
     });
 
     function hasHelpText(term: string): boolean {
-        if (term.startsWith("galaxy.datatypes.extensions.")) {
-            const extension = term.substring("galaxy.datatypes.extensions.".length);
+        if (isDatatypeTerm(term)) {
+            const extension = term.substring(DATATYPE_TERM_PREFIX.length);
             return datatypeDescriptionForExtension(extension) != null;
         } else {
             return hasHelpTextFromYaml(term);
@@ -87,8 +103,8 @@ export const useHelpTermsStore = defineStore("helpTermsStore", () => {
     }
 
     function helpText(term: string): string | null {
-        if (term.startsWith("galaxy.datatypes.extensions.")) {
-            const extension = term.substring("galaxy.datatypes.extensions.".length);
+        if (isDatatypeTerm(term)) {
+            const extension = term.substring(DATATYPE_TERM_PREFIX.length);
             const description = datatypeDescriptionForExtension(extension);
             if (!description) {
                 return null;
@@ -109,10 +125,22 @@ export const useHelpTermsStore = defineStore("helpTermsStore", () => {
 
 export function useHelpForTerm(uri: Ref<string>) {
     const termsStore = useHelpTermsStore();
-    termsStore.ensureInitialized();
+
+    watch(
+        uri,
+        (term) => {
+            if (isDatatypeTerm(term)) {
+                // A failure ends loading without help; the next datatype term retries.
+                termsStore.ensureInitialized().catch((err) => {
+                    console.log("Error: unable to load datatypes", err);
+                });
+            }
+        },
+        { immediate: true },
+    );
 
     const loading = computed(() => {
-        return termsStore.loading;
+        return isDatatypeTerm(uri.value) && termsStore.loading;
     });
     const hasHelp = computed(() => {
         return termsStore.hasHelpText(uri.value);

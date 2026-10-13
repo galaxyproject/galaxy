@@ -25,8 +25,12 @@ from galaxy.model.dataset_collections.adapters import (
     CollectionAdapter,
     PromoteCollectionElementToCollectionAdapter,
 )
-from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
+from galaxy.tool_util.parameters import (
+    RequestInternalDereferencedToolState,
+    RequestInternalToolState,
+)
 from galaxy.util.permutations import (
+    assert_matched_lengths,
     build_combos,
     input_classification,
     is_in_state,
@@ -359,6 +363,26 @@ def split_inputs_nested(inputs, nested_dict, classifier):
 ExpandedAsyncT = tuple[
     list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], matching.MatchingCollections | None
 ]
+
+
+def validate_matched_batch_lengths(tool, incoming: RequestInternalToolState) -> None:
+    """Fail fast on linked dataset batches of different lengths before expansion is queued.
+
+    Collection map-overs are left to collection matching at expansion time.
+    """
+
+    def classifier(value, input_key):
+        if (
+            isinstance(value, dict)
+            and value.get("__class__") == "Batch"
+            and value.get("linked", True)
+            and not __collection_multirun_parameter(value)
+        ):
+            return input_classification.MATCHED, value["values"]
+        return input_classification.SINGLE, value
+
+    _, matched_multi_inputs, _ = split_inputs_nested(tool.inputs, copy.deepcopy(incoming.input_state), classifier)
+    assert_matched_lengths({key: len(values) for key, values in matched_multi_inputs.items()})
 
 
 def expand_meta_parameters_async(app, tool, incoming: RequestInternalDereferencedToolState) -> ExpandedAsyncT:

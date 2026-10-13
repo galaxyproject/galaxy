@@ -151,6 +151,19 @@ describe("StatelessTags", () => {
         expect(toastWarning).toHaveBeenCalledWith(expect.any(String), "Invalid Tag");
     });
 
+    it("shows the suggestions inside the editor when asked to", async () => {
+        const wrapper = mountWithProps({
+            disabled: false,
+            listInFlow: true,
+        });
+
+        wrapper.find(toggleButton).trigger("click");
+        await wrapper.vm.$nextTick();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.find(selectors.multiselect).findAll(selectors.options)).toHaveLength(autocompleteTags.length);
+    });
+
     it("hides too many tags", async () => {
         const wrapper = mountWithProps({
             value: ["tag_1", "tag_2", "tag_3", "tag_4", "tag_5", "tag_6"],

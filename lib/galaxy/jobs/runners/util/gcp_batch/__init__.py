@@ -4,6 +4,7 @@ from string import Template
 
 from galaxy.util.resources import resource_string
 from .helpers import (
+    compute_gpu_machine_type,
     compute_machine_type,
     convert_cpu_to_milli,
     convert_duration_to_seconds,
@@ -14,9 +15,11 @@ from .helpers import (
     DEFAULT_MEMORY_MIB,
     DEFAULT_NFS_MOUNT_PATH,
     DEFAULT_NFS_PATH,
+    gpu_count_for_machine_type,
     parse_docker_volumes_param,
     parse_volume_spec,
     parse_volumes_param,
+    resolve_gpu_count,
     resolve_max_run_duration,
     sanitize_label_value,
 )
@@ -33,11 +36,14 @@ __all__ = (
     "DEFAULT_NFS_MOUNT_PATH",
     "DEFAULT_NFS_PATH",
     "DIRECT_SCRIPT_TEMPLATE",
+    "compute_gpu_machine_type",
     "compute_machine_type",
     "convert_cpu_to_milli",
     "convert_memory_to_mib",
     "convert_duration_to_seconds",
+    "gpu_count_for_machine_type",
     "parse_docker_volumes_param",
+    "resolve_gpu_count",
     "resolve_max_run_duration",
     "parse_volume_spec",
     "parse_volumes_param",

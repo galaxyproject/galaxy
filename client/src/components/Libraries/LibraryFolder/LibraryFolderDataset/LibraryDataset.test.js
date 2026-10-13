@@ -34,6 +34,11 @@ const mockDatatypesProvider = {
         return () => slots.default?.({ loading: false, item: ["xml"] });
     },
 };
+const mockFailedDatatypesProvider = {
+    setup(_props, { slots }) {
+        return () => slots.default?.({ loading: false, item: [], error: "unavailable" });
+    },
+};
 const mockDbKeyProvider = {
     setup(_props, { slots }) {
         return () => slots.default?.({ loading: false, item: ["?"] });
@@ -65,7 +70,13 @@ const UNRESTRICTED_MESSAGE = '[data-test-id="unrestricted-msg"]';
 const DATASET_TABLE = '[data-test-id="dataset-table"]';
 const PEEK_VIEW = '[data-test-id="peek-view"]';
 
-async function mountLibraryDatasetWrapper(localVue, router, expectDatasetId, isAdmin = false) {
+async function mountLibraryDatasetWrapper(
+    localVue,
+    router,
+    expectDatasetId,
+    isAdmin = false,
+    datatypesProvider = mockDatatypesProvider,
+) {
     const pinia = createPinia();
     const propsData = {
         dataset_id: expectDatasetId,
@@ -76,7 +87,7 @@ async function mountLibraryDatasetWrapper(localVue, router, expectDatasetId, isA
         router,
         propsData,
         stubs: {
-            DatatypesProvider: mockDatatypesProvider,
+            DatatypesProvider: datatypesProvider,
             DbKeyProvider: mockDbKeyProvider,
         },
         pinia,
@@ -167,5 +178,22 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
         await flushPromises();
 
         expect(wrapper.find(DATASET_TABLE).html()).toContain("<input");
+    });
+
+    it("shows the current datatype and a load error when datatypes fail to load", async () => {
+        const wrapper = await mountLibraryDatasetWrapper(
+            localVue,
+            router,
+            UNRESTRICTED_DATASET_ID,
+            false,
+            mockFailedDatatypesProvider,
+        );
+        await wrapper.find(MODIFY_BUTTON).trigger("click");
+        await flushPromises();
+
+        const error = wrapper.find('[data-test-id="datatypes-error"]');
+        expect(error.exists()).toBe(true);
+        expect(error.text()).toContain(EXPECTED_DATASET_DATA.file_ext);
+        expect(error.text()).toContain("Unable to load datatypes");
     });
 });

@@ -16,7 +16,7 @@ def _build_app(tmp_path, url_prefix):
     config = Bunch(
         galaxy_url_prefix=url_prefix,
         tus_upload_store=str(tmp_path),
-        tus_upload_store_job_files=None,
+        job_files_tus_upload_dir=str(tmp_path),
         new_file_path=str(tmp_path),
         maximum_upload_file_size=1024,
     )

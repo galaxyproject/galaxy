@@ -19,6 +19,7 @@ dependencies = [
     "galaxy-tool-util-models",
     "galaxy-util",
     "pydantic[email]>=2.7.4",
+    "typing-extensions>=4.13",  # for TypeForm
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

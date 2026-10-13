@@ -57,10 +57,10 @@ galaxy.job\_metrics.instrumenters.meminfo module
    :undoc-members:
    :show-inheritance:
 
-galaxy.job\_metrics.instrumenters.pulsar\_transfer module
-----------------------------------------------------------
+galaxy.job\_metrics.instrumenters.pulsar module
+-----------------------------------------------
 
-.. automodule:: galaxy.job_metrics.instrumenters.pulsar_transfer
+.. automodule:: galaxy.job_metrics.instrumenters.pulsar
    :members:
    :undoc-members:
    :show-inheritance:

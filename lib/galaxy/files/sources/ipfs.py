@@ -1,4 +1,3 @@
-import posixpath
 from typing import Literal
 
 from fsspec import AbstractFileSystem
@@ -12,6 +11,7 @@ from galaxy.files.sources._fsspec import (
     FsspecBaseFileSourceConfiguration,
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
+    normalize_rooted_relative_path,
 )
 from galaxy.util.config_templates import TemplateExpansion
 
@@ -28,14 +28,6 @@ def _normalize_root(value: str) -> str:
     if root in (".", "..") or any(c.isspace() or c in "/\\%?#" for c in root):
         raise ValueError("IPFS root must be a single CID, without a URL or subpath.")
     return root
-
-
-def _normalize_relative_path(path: str) -> str:
-    # Normalize a relative path: an absolute normpath would hide leading '..'.
-    relative = posixpath.normpath(path.lstrip("/"))
-    if relative == ".." or relative.startswith("../"):
-        raise MessageException("Invalid path: outside configured IPFS root.")
-    return "" if relative == "." else relative
 
 
 class IPFSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -84,7 +76,7 @@ class IPFSFilesSource(FsspecFilesSource[IPFSFileSourceTemplateConfiguration, IPF
         )
 
     def _to_filesystem_path(self, path: str, config: IPFSFileSourceConfiguration) -> str:
-        relative_path = _normalize_relative_path(path)
+        relative_path = normalize_rooted_relative_path(path, "IPFS")
         return f"{config.root}/{relative_path}" if relative_path else config.root
 
     def _adapt_entry_path(self, filesystem_path: str, config: IPFSFileSourceConfiguration) -> str:
@@ -94,7 +86,7 @@ class IPFSFilesSource(FsspecFilesSource[IPFSFileSourceTemplateConfiguration, IPF
         root_prefix = f"{config.root}/"
         if not normalized_path.startswith(root_prefix):
             raise MessageException(f"Unexpected IPFS listing entry outside configured root: {filesystem_path!r}")
-        relative_path = _normalize_relative_path(normalized_path[len(root_prefix) :])
+        relative_path = normalize_rooted_relative_path(normalized_path[len(root_prefix) :], "IPFS")
         return f"/{relative_path}"
 
     def _write_from(

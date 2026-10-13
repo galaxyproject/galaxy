@@ -2,9 +2,11 @@
 
 import logging
 import os
+import re
 from collections.abc import Callable
 from typing import (
     Any,
+    ClassVar,
     Literal,
     TYPE_CHECKING,
 )
@@ -28,7 +30,10 @@ except ImportError:
     TransferConfig = None  # type: ignore[assignment,unused-ignore,misc]
     Config = None  # type: ignore[assignment,unused-ignore,misc]
 
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    chunk_iterable,
+)
 from galaxy.util.s3_checksum import s3_checksum_config_kwargs
 from ._caching_base import (
     CachingConcreteObjectStore,
@@ -46,6 +51,9 @@ NO_BOTO_ERROR_MESSAGE = (
     "S3/Swift object store configured, but no boto3 dependency available."
     "Please install and properly configure boto or modify object store configuration."
 )
+
+# XML 1.0 forbids these characters; CR is also unsafe because XML normalizes it to LF.
+_UNSAFE_XML_KEY_CHARACTERS = re.compile(r"[\x00-\x08\x0b-\x1f\ud800-\udfff\ufffe\uffff]")
 
 log = logging.getLogger(__name__)
 # This object store generates a lot of logging by default, fairly sure it is an anti-pattern
@@ -167,6 +175,8 @@ class S3ObjectStore(CachingConcreteObjectStore):
     _client: "S3Client"
     store_type = "boto3"
     cloud = True
+    # Share backend capability across stores without disabling batching for other endpoints.
+    _single_delete_endpoints: ClassVar[set[str]] = set()
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
@@ -362,10 +372,54 @@ class S3ObjectStore(CachingConcreteObjectStore):
             return False
 
     def _delete_remote_all(self, rel_path: str) -> bool:
+        endpoint = self._client.meta.endpoint_url.rstrip("/")
         try:
-            for key in self._keys(rel_path):
-                self._client.delete_object(Bucket=self.bucket, Key=key)
-            return True
+            success = True
+            # S3 accepts at most 1,000 keys per delete request.
+            for keys in chunk_iterable(self._keys(rel_path), size=1000):
+                batch_keys = []
+                for key in keys:
+                    if _UNSAFE_XML_KEY_CHARACTERS.search(key):
+                        if not self._delete_existing_remote(key):
+                            success = False
+                    else:
+                        batch_keys.append(key)
+                if not batch_keys:
+                    continue
+                use_batch_delete = endpoint not in self._single_delete_endpoints
+                if use_batch_delete:
+                    try:
+                        response = self._client.delete_objects(
+                            Bucket=self.bucket, Delete={"Objects": [{"Key": key} for key in batch_keys], "Quiet": True}
+                        )
+                    except ClientError as e:
+                        code = e.response["Error"]["Code"]
+                        if code not in ("MissingContentMD5", "NotImplemented"):
+                            raise
+                        # Some S3-compatible backends reject batch deletes or their checksum headers.
+                        log.warning(
+                            "S3 bucket '%s' rejected batch deletion (%s); falling back to individual deletes",
+                            self.bucket,
+                            code,
+                        )
+                        self._single_delete_endpoints.add(endpoint)
+                        use_batch_delete = False
+                if not use_batch_delete:
+                    for key in batch_keys:
+                        if not self._delete_existing_remote(key):
+                            success = False
+                    continue
+                # A successful request can still contain individual object failures.
+                for error in response.get("Errors", []):
+                    log.error(
+                        "Could not delete blob '%s' from S3 bucket '%s': %s: %s",
+                        error["Key"],
+                        self.bucket,
+                        error["Code"],
+                        error.get("Message", ""),
+                    )
+                    success = False
+            return success
         except ClientError:
             log.exception("Could not delete blob '%s' from S3", rel_path)
             return False

@@ -3754,6 +3754,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a file required to stage a job.
+         * @description Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, authorized by `job_key` - not part of Galaxy's stable, user facing API.
+         */
+        get: operations["index_api_jobs__job_id__files_get"];
+        put?: never;
+        /**
+         * Populate an output or working directory file of a job.
+         * @description Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, authorized by `job_key` - not part of Galaxy's stable, user facing API.
+         */
+        post: operations["create_api_jobs__job_id__files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs/{job_id}/inputs": {
         parameters: {
             query?: never;
@@ -8858,19 +8882,106 @@ export interface components {
              */
             type: "change_dbkey";
         };
+        /**
+         * ChatCompletionAllowedToolChoiceParam
+         * @description Constrains the tools available to the model to a pre-defined set.
+         */
+        ChatCompletionAllowedToolChoiceParam: {
+            allowed_tools: components["schemas"]["ChatCompletionAllowedToolsParam"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "allowed_tools";
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionAllowedToolsParam
+         * @description Constrains the tools available to the model to a pre-defined set.
+         */
+        ChatCompletionAllowedToolsParam: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "auto" | "required";
+            /** Tools */
+            tools: {
+                [key: string]: unknown;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionNamedToolChoiceCustomParam
+         * @description Specifies a tool the model should use.
+         *
+         *     Use to force the model to call a specific custom tool.
+         */
+        ChatCompletionNamedToolChoiceCustomParam: {
+            custom: components["schemas"]["Custom"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "custom";
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionNamedToolChoiceParam
+         * @description Specifies a tool the model should use.
+         *
+         *     Use to force the model to call a specific function.
+         */
+        ChatCompletionNamedToolChoiceParam: {
+            function: components["schemas"]["Function"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "function";
+        } & {
+            [key: string]: unknown;
+        };
         /** ChatCompletionRequest */
         ChatCompletionRequest: {
             /** Max Tokens */
             max_tokens?: number | null;
             /** Messages */
             messages: components["schemas"]["ChatMessage"][];
+            /** Parallel Tool Calls */
+            parallel_tool_calls?: boolean | null;
+            /** Reasoning Effort */
+            reasoning_effort?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max") | null;
             /**
              * Stream
              * @default false
              */
             stream: boolean | null;
+            stream_options?: components["schemas"]["ChatCompletionStreamOptionsParam"] | null;
+            /** Tool Choice */
+            tool_choice?:
+                | ("none" | "auto" | "required")
+                | components["schemas"]["ChatCompletionAllowedToolChoiceParam"]
+                | components["schemas"]["ChatCompletionNamedToolChoiceParam"]
+                | components["schemas"]["ChatCompletionNamedToolChoiceCustomParam"]
+                | null;
             /** Tools */
             tools?: components["schemas"]["ChatTool"][] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionStreamOptionsParam
+         * @description Options for streaming response. Only set this when you set `stream: true`.
+         */
+        ChatCompletionStreamOptionsParam: {
+            /** Include Obfuscation */
+            include_obfuscation?: boolean;
+            /** Include Usage */
+            include_usage?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -8936,7 +9047,7 @@ export interface components {
         /** ChatMessage */
         ChatMessage: {
             /** Content */
-            content?: string | null;
+            content?: string | components["schemas"]["ChatTextPart"][] | null;
             /**
              * Role
              * @enum {string}
@@ -9017,6 +9128,18 @@ export interface components {
              * @description The response to the chat query.
              */
             response: string;
+        };
+        /** ChatTextPart */
+        ChatTextPart: {
+            /** Text */
+            text: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "text";
+        } & {
+            [key: string]: unknown;
         };
         /** ChatTool */
         ChatTool: {
@@ -10598,6 +10721,13 @@ export interface components {
              * @description The requested page of curated workflows.
              */
             workflows?: components["schemas"]["CuratedWorkflow"][];
+        };
+        /** Custom */
+        Custom: {
+            /** Name */
+            name: string;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * CustomArchivedHistoryView
@@ -13685,6 +13815,7 @@ export interface components {
                 | "github"
                 | "iiif"
                 | "ipfs"
+                | "xrootd"
                 | "mavedb"
                 | "omero"
                 | "ssh"
@@ -14081,6 +14212,13 @@ export interface components {
             src: "ftp_import";
             /** Tags */
             tags?: string[] | null;
+        };
+        /** Function */
+        Function: {
+            /** Name */
+            name: string;
+        } & {
+            [key: string]: unknown;
         };
         /** GenerateTourResponse */
         GenerateTourResponse: {
@@ -27072,6 +27210,7 @@ export interface components {
                 | "github"
                 | "iiif"
                 | "ipfs"
+                | "xrootd"
                 | "mavedb"
                 | "omero"
                 | "ssh"
@@ -45244,6 +45383,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobErrorSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_jobs__job_id__files_get: {
+        parameters: {
+            query?: {
+                /** @description Path to file. */
+                path?: string | null;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the job. */
+                job_key?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_jobs__job_id__files_post: {
+        parameters: {
+            query?: {
+                /** @description Path to file. */
+                path?: string | null;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the job. */
+                job_key?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": {
+                    /** @description File stored by nginx_upload_module to use as contents. */
+                    __file_path?: string;
+                    /** @description Job key, if not given as a query parameter. */
+                    job_key?: string;
+                    /** @description Path to file to create, if not given as a query parameter. */
+                    path?: string;
+                    /** @description Completed job files TUS upload to use as contents. */
+                    session_id?: string;
+                };
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Alias of `file`.
+                     */
+                    __file?: string;
+                    /** @description File stored by nginx_upload_module to use as contents. */
+                    __file_path?: string;
+                    /**
+                     * Format: binary
+                     * @description Contents of the file to create.
+                     */
+                    file?: string;
+                    /** @description Job key, if not given as a query parameter. */
+                    job_key?: string;
+                    /** @description Path to file to create, if not given as a query parameter. */
+                    path?: string;
+                    /** @description Completed job files TUS upload to use as contents. */
+                    session_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Request Error */

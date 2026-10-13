@@ -866,7 +866,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return self.service.get_user_full(trans, user_id, deleted)
 
     @expose_api
-    def get_information(self, trans: GalaxyWebTransaction, id, **kwd):
+    def get_information(self, trans: GalaxyWebTransaction, id: str, **kwd: Any) -> dict[str, Any]:
         """
         GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
@@ -882,18 +882,18 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
+        assert username is not None
         inputs = []
-        user_info = {
+        user_info: dict[str, Any] = {
             "email": email,
             "username": username,
         }
-        is_galaxy_app = trans.webapp.name == "galaxy"
         allow_profile_edit = (
             trans.app.config.enable_account_interface
             and not trans.app.config.use_remote_user
             and not trans.app.config.disable_local_accounts
         )
-        if not is_galaxy_app or (allow_profile_edit and not self.user_manager.logins_resolve_accounts_by_email()):
+        if allow_profile_edit and not self.user_manager.logins_resolve_accounts_by_email():
             inputs.append(
                 {
                     "id": "email_input",
@@ -908,93 +908,73 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     ),
                 }
             )
-        if is_galaxy_app:
-            if allow_profile_edit:
-                inputs.append(
-                    {
-                        "id": "name_input",
-                        "name": "username",
-                        "type": "text",
-                        "label": "Public name",
-                        "value": username,
-                        "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes (".", "_", "-").',
-                    }
-                )
-            info_form_models = self.get_all_forms(
-                trans, filter=dict(deleted=False), form_type=FormDefinition.types.USER_INFO
+        if allow_profile_edit:
+            inputs.append(
+                {
+                    "id": "name_input",
+                    "name": "username",
+                    "type": "text",
+                    "label": "Public name",
+                    "value": username,
+                    "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes (".", "_", "-").',
+                }
             )
-            if info_form_models:
-                info_form_id = trans.security.encode_id(user.values.form_definition.id) if user.values else None
-                info_field: dict[str, Any] = {
-                    "type": "conditional",
-                    "name": "info",
-                    "cases": [],
-                    "test_param": {
-                        "name": "form_id",
-                        "label": "User type",
-                        "type": "select",
-                        "value": info_form_id,
-                        "help": "",
-                        "data": [],
-                    },
-                }
-                for f in info_form_models:
-                    values = None
-                    if info_form_id == trans.security.encode_id(f.id) and user.values:
-                        values = user.values.content
-                    info_form = f.populate(user=user, values=values, security=trans.security)
-                    info_field["test_param"]["data"].append({"label": info_form["name"], "value": info_form["id"]})
-                    info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
-                inputs.append(info_field)
+        info_form_models = self.get_all_forms(
+            trans, filter=dict(deleted=False), form_type=FormDefinition.types.USER_INFO
+        )
+        if info_form_models:
+            info_form_id = (
+                trans.security.encode_id(user.values.form_definition.id)
+                if user.values and user.values.form_definition
+                else None
+            )
+            info_field: dict[str, Any] = {
+                "type": "conditional",
+                "name": "info",
+                "cases": [],
+                "test_param": {
+                    "name": "form_id",
+                    "label": "User type",
+                    "type": "select",
+                    "value": info_form_id,
+                    "help": "",
+                    "data": [],
+                },
+            }
+            for f in info_form_models:
+                values = None
+                if info_form_id == trans.security.encode_id(f.id) and user.values:
+                    values = user.values.content
+                info_form = f.populate(user=user, values=values, security=trans.security)
+                info_field["test_param"]["data"].append({"label": info_form["name"], "value": info_form["id"]})
+                info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
+            inputs.append(info_field)
 
-            if trans.app.config.enable_account_interface and trans.app.config.enable_user_addresses:
-                address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
-                for field in AddressField.fields():
-                    address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
-                address_repeat: dict[str, Any] = {
-                    "title": "Address",
-                    "name": "address",
-                    "type": "repeat",
-                    "inputs": address_inputs,
-                    "cache": [],
-                }
-                address_values = [address.to_dict(trans) for address in user.addresses]
-                for address in address_values:
-                    address_cache = []
-                    for input in address_inputs:
-                        input_copy = input.copy()
-                        input_copy["value"] = address.get(input["name"])
-                        address_cache.append(input_copy)
-                    address_repeat["cache"].append(address_cache)
-                inputs.append(address_repeat)
-                user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
+        if trans.app.config.enable_account_interface and trans.app.config.enable_user_addresses:
+            address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
+            for field in AddressField.fields():
+                address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
+            address_repeat: dict[str, Any] = {
+                "title": "Address",
+                "name": "address",
+                "type": "repeat",
+                "inputs": address_inputs,
+                "cache": [],
+            }
+            address_values = [address.to_dict(trans) for address in user.addresses]
+            for address in address_values:
+                address_cache = []
+                for input in address_inputs:
+                    input_copy = input.copy()
+                    input_copy["value"] = address.get(input["name"])
+                    address_cache.append(input_copy)
+                address_repeat["cache"].append(address_cache)
+            inputs.append(address_repeat)
+            user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
 
-            # Build input sections for extra user preferences
-            for item in self.extra_preferences_manager.legacy_form_inputs(user):
-                inputs.append(item)
-        else:
-            if user.active_repositories:
-                inputs.append(
-                    dict(
-                        id="name_input",
-                        name="username",
-                        label="Public name:",
-                        type="hidden",
-                        value=username,
-                        help="You cannot change your public name after you have created a repository in this tool shed.",
-                    )
-                )
-            else:
-                inputs.append(
-                    dict(
-                        id="name_input",
-                        name="username",
-                        label="Public name:",
-                        type="text",
-                        value=username,
-                        help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes (".", "_", "-"). You cannot change your public name after you have created a repository in this tool shed.',
-                    )
-                )
+        # Build input sections for extra user preferences
+        for item in self.extra_preferences_manager.legacy_form_inputs(user):
+            inputs.append(item)
         user_info["inputs"] = inputs
         return user_info
 
@@ -1139,7 +1119,9 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     "label": action.action,
                     "help": action.description,
                     "options": role_tuples,
-                    "value": [a.role.id for a in user.default_permissions if a.action == action.action],
+                    "value": [
+                        a.role.id for a in user.default_permissions if a.action == action.action and a.role is not None
+                    ],
                 }
             )
         return {"inputs": inputs}
@@ -1259,7 +1241,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
 
-    def _get_user(self, trans: ProvidesUserContext, id):
+    def _get_user(self, trans: ProvidesUserContext, id: str) -> User:
         user = self.get_user(trans, id)
         if not user:
             raise exceptions.RequestParameterInvalidException("Invalid user id specified.")

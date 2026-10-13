@@ -231,6 +231,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # taken address, so that it does not reveal which addresses belong to administrators.
             raise exceptions.RequestParameterInvalidException(f"User with email '{new_email}' already exists.")
         private_role = trans.app.security_agent.get_private_user_role(user)
+        assert private_role is not None
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
         user.email = new_email
