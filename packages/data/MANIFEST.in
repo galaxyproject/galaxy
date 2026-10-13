@@ -74,6 +74,10 @@ include src/galaxy/datatypes/converters/biom.xml
 include src/galaxy/datatypes/converters/hg17.len
 include src/galaxy/datatypes/converters/vcf_bgzip_to_tabix_converter.xml
 include src/galaxy/datatypes/converters/parquet_to_csv_converter.xml
+include src/galaxy/datatypes/converters/parquet_to_tabular_converter.xml
+include src/galaxy/datatypes/converters/parquet_to_tsv_converter.xml
+include src/galaxy/datatypes/converters/tabular_to_parquet_converter.xml
+include src/galaxy/datatypes/converters/tsv_to_parquet_converter.xml
 include src/galaxy/datatypes/converters/cram_to_bam_converter.xml
 include src/galaxy/datatypes/converters/smi_to_mol_converter.xml
 include src/galaxy/datatypes/converters/tabular_to_csv.xml
