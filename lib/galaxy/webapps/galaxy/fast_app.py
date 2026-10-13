@@ -63,6 +63,10 @@ api_tags_metadata = [
     {"name": "datasets", "description": "Operations on datasets."},
     {"name": "dataset collections"},
     {
+        "name": "widgets",
+        "description": "Galaxy Widgets: views of single Galaxy resources served without chrome under `/widgets/`.",
+    },
+    {
         "name": "datatypes",
         "description": "Operations with supported data types.",
     },

@@ -12,10 +12,12 @@ function single(value: LocationQueryValue | LocationQueryValue[] | undefined) {
 }
 
 /**
- * The routes of the widgets app, relative to `/widgets/`. Each widget is bounded to its resource.
+ * The routes of the widgets app, relative to `/widgets/`. Each route serves a widget listed by
+ * `/api/widgets` under its id, and is bounded to its resource.
  */
 export const widgetRoutes: RouteRecordRaw[] = [
     {
+        name: "history_graph",
         path: `/histories/:history_id(${ID})/graph`,
         component: () => import("./HistoryGraph.vue"),
         props: (route) => ({
