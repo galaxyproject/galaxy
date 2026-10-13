@@ -99,7 +99,7 @@ class DriverWrapper(GalaxySeleniumContext):
     def default_timeout(self):
         return 15
 
-    def finish(self):
+    def finish(self) -> None:
         """Clean up driver and display resources."""
         exception = None
 

@@ -1,17 +1,26 @@
 #!/usr/bin/env python
 import argparse
-import datetime
 import os
 import sys
 import time
-from contextlib import nullcontext
 from typing import Any
 
+from galaxy.navigation.tours import (
+    get_tour_id_from_path,
+    load_tour_from_path,
+)
 from galaxy.selenium import cli
-from galaxy.selenium.navigates_galaxy import TourCallbackProtocol
+from galaxy.selenium.context import GalaxySeleniumContext
+from galaxy.selenium.stories import (
+    run_directory,
+    Story,
+    write_story,
+)
+from galaxy.selenium.stories.tours import StoryTourCallback
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 
-DESCRIPTION = "Walk a Galaxy tour and dump screenshots."
+DESCRIPTION = "Walk a Galaxy tour and write it up as a story of highlighted screenshots."
+FAILURE_DOCUMENTATION = "## Tour Failed\n\nThe tour stopped after the step above."
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -20,38 +29,46 @@ def main(argv: list[str] | None = None) -> None:
 
     args = _arg_parser().parse_args(argv)
     driver_wrapper = cli.DriverWrapper(args)
-    output = args.output
-    assert output is not None
-    output = output.replace("TIMESTAMP", datetime.datetime.now().strftime("%Y%m%d%H%M%s"))
-    if os.path.exists(output):
-        raise Exception("Output directory %s exists, skipping")
-    else:
-        os.makedirs(output)
-    callback = DumpTourCallback(driver_wrapper, output)
-    driver_wrapper.run_tour(args.tour, tour_callback=callback)
+    try:
+        story = dump_tour(driver_wrapper, args.tour, args.output)
+    finally:
+        driver_wrapper.finish()
+    print(f"Wrote {story.output_directory}")
 
 
-class DumpTourCallback(TourCallbackProtocol):
-    driver_wrapper: cli.DriverWrapper
+def dump_tour(context: GalaxySeleniumContext, tour_path: str, output: str) -> Story:
+    """Walk the tour, writing its story into a fresh run directory under ``output``."""
+    tour = load_tour_from_path(tour_path, resolve_components=False)
+    tour_id = get_tour_id_from_path(tour_path)
+    directory = run_directory(os.path.abspath(output), f"{tour_id}_")
+    story = Story(tour.get("name") or tour_id, tour.get("description") or "", directory)
+    context.story = story
+    try:
+        context.run_tour(tour_path, tour_callback=DumpTourCallback(context))
+    except Exception:
+        write_story(story, failure_documentation=FAILURE_DOCUMENTATION)
+        raise
+    write_story(story)
+    return story
 
-    def __init__(self, driver_wrapper: cli.DriverWrapper, output: str) -> None:
-        self.driver_wrapper = driver_wrapper
-        self.output = output
 
+class DumpTourCallback(StoryTourCallback):
     def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
+        # Let the page settle before capturing, and the highlight clear before the step's clicks.
         time.sleep(0.5)
-        # Border the element the step is about, so the dump reads as documentation
-        # rather than a sequence of indistinguishable full-page screenshots.
-        highlight = self.driver_wrapper.highlight_element(element) if element is not None else nullcontext()
-        with highlight:
-            self.driver_wrapper.save_screenshot(f"{self.output}/{step_index}.png")
+        super().handle_step(step, step_index, element)
         time.sleep(0.5)
 
 
 def _arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("tour", metavar="TOUR", help="tour to walk")
-    parser.add_argument("-o", "--output", default="tour_dump_TIMESTAMP", help="directory to dump tour to")
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="tour_dumps",
+        help="directory to write each run's story into; 'latest' links the newest",
+    )
     parser = cli.add_selenium_arguments(parser)
     return parser
 
