@@ -142,7 +142,6 @@ function onChange(event: Event) {
 }
 
 .g-radio-input {
-    // 3px + 13px input + label margin puts the text 24px in, as BootstrapVue's custom radios did
     margin: 0 3px 0 0;
     accent-color: var(--color-blue-600, #25537b);
     cursor: pointer;
