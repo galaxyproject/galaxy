@@ -13,7 +13,10 @@ from datetime import (
 from sqlalchemy import select
 
 from galaxy.model import DatasetProtectionGrant
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    LibraryPopulator,
+)
 from galaxy_test.driver import integration_util
 
 
@@ -50,6 +53,7 @@ class TestCrypt4GHGrantsIntegration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def _upload_protected(self, history_id: str) -> dict:
         return self.dataset_populator.new_dataset(
@@ -127,6 +131,23 @@ class TestCrypt4GHGrantsIntegration(integration_util.IntegrationTestCase):
         )
         details = self.dataset_populator.get_history_dataset_details(history_id, content_id=encrypted["id"])
         assert details["extension"] == "fastqsanger.c4gh"
+
+    def _to_library(self, hda_id: str) -> str:
+        library = self.library_populator.new_private_library("Crypt4GHDatatypes")
+        response = self._post(f"folders/{library['root_folder_id']}/contents", {"from_hda_id": hda_id}, json=True)
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def test_library_datasets_keep_their_encryption(self, history_id):
+        encrypted = self._to_library(self._upload_protected(history_id)["id"])
+        response = self._patch(f"libraries/datasets/{encrypted}", {"file_ext": "fastqsanger"}, json=True)
+        self._assert_status_code_is(response, 400)
+        assert "only be changed to another encrypted datatype" in response.json()["err_msg"]
+
+        plain = self._to_library(self.dataset_populator.new_dataset(history_id, content="1\t2\n", wait=True)["id"])
+        response = self._patch(f"libraries/datasets/{plain}", {"file_ext": "tabular.c4gh"}, json=True)
+        self._assert_status_code_is(response, 400)
+        assert "can't be changed to an encrypted datatype" in response.json()["err_msg"]
 
     def test_plain_dataset_is_not_protected(self, history_id):
         dataset = self.dataset_populator.new_dataset(history_id, content="1\t2\n", wait=True)
