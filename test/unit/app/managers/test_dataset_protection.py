@@ -507,3 +507,13 @@ def test_grant_status_shows_until_when_jobs_can_use_the_grant(tmp_path):
     status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
     assert status.ready
     assert status.expires_at == expires_at - timedelta(days=1)
+
+    # Extra files kept from the output's job expire with its keypair, authorizing again doesn't renew it.
+    job_expiration = datetime(2099, 10, 10, 12)
+    grant.grant_data = {
+        "compute_header": "compute",
+        "extra_files": {"part.txt": "job header"},
+        "extra_files_key": {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()},
+    }
+    status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
+    assert status.expires_at == job_expiration - timedelta(days=1)
