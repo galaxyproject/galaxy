@@ -122,6 +122,7 @@ pyee==13.0.1
 pyeventsystem==0.1.0
 pyftpdlib==2.2.0
 pygments==2.21.0
+pykube-ng==23.6.0
 pyparsing==3.3.3
 pyshacl==0.40.1
 pysocks==1.7.1
