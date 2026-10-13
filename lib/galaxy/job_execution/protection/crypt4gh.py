@@ -22,7 +22,10 @@ import shutil
 import threading
 import time
 from collections.abc import Iterator
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    wait,
+)
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -185,6 +188,19 @@ class _HeaderThenBody(io.RawIOBase):
         return len(data)
 
 
+def _decrypt_staged(protected_file: ProtectedFile, response: dict[str, Any], job_secret_key: bytes) -> None:
+    """Decrypt an input next to the tool, with the header the key service recrypted for the job key."""
+    from crypt4gh import lib as crypt4gh_lib
+
+    job_header = base64.b64decode(response["crypt4gh_header"])
+    os.makedirs(os.path.dirname(protected_file.staged_path), exist_ok=True)
+    with (
+        _body_with_header(protected_file.source_path, job_header) as stream,
+        open(protected_file.staged_path, "wb") as plaintext,
+    ):
+        crypt4gh_lib.decrypt([(0, job_secret_key, None)], stream, plaintext)
+
+
 @contextmanager
 def _body_with_header(path: str, header: bytes) -> Iterator[BinaryIO]:
     with open(path, "rb") as encrypted:
@@ -303,10 +319,7 @@ class Crypt4GHJobRuntime:
         )
 
     def stage_inputs(self) -> None:
-        from crypt4gh import (
-            lib as crypt4gh_lib,
-            sodium,
-        )
+        from crypt4gh import sodium
 
         os.umask(0o077)
         os.makedirs(self.plan.inputs_directory, exist_ok=True)
@@ -323,15 +336,16 @@ class Crypt4GHJobRuntime:
                         files,
                     )
                 )
-            output_response = self._check_responses(files, responses)
-            for (protected_file, _), response in zip(files, responses):
-                job_header = base64.b64decode(response["crypt4gh_header"])
-                os.makedirs(os.path.dirname(protected_file.staged_path), exist_ok=True)
-                with (
-                    _body_with_header(protected_file.source_path, job_header) as stream,
-                    open(protected_file.staged_path, "wb") as plaintext,
-                ):
-                    crypt4gh_lib.decrypt([(0, job_secret_key, None)], stream, plaintext)
+                output_response = self._check_responses(files, responses)
+                # Large inputs (e.g. paired reads) are decrypted concurrently. Every file finishes before
+                # failing, so the cleanup doesn't race with files still being written.
+                futures = [
+                    executor.submit(_decrypt_staged, protected_file, response, job_secret_key)
+                    for (protected_file, _), response in zip(files, responses)
+                ]
+                wait(futures)
+                for future in futures:
+                    future.result()
             self._write_state(output_response)
         except ProtectionError:
             self.cleanup_inputs()
