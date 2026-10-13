@@ -103,6 +103,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
     output_discovery_job_message,
+    unknown_datatype_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
@@ -1526,7 +1527,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.blurb = "tool error"
                 dataset.info = message
                 dataset.mark_unhidden()
-                if dataset.ext == "auto":
+                if dataset.ext in ("auto", "_sniff_"):
                     dataset.extension = "data"
                 try:
                     self.__update_output(job, dataset)
@@ -1543,6 +1544,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         dep_job_assoc.job,
                         "Execution of this dataset's job is paused because its input datasets are in an error state.",
                     )
+            self._set_unknown_output_extensions_to_data(job)
             job.set_final_state(job.states.ERROR)
             job.command_line = self.command_line
             job.info = message
@@ -2007,6 +2009,34 @@ class MinimalJobWrapper(HasResourceParameters):
             job.object_store_id_overrides = object_store_id_overrides
             self._setup_working_directory(job=job)
 
+    def _set_unknown_output_extensions_to_data(self, job: Job) -> None:
+        """Set outputs whose extension is not a registered datatype, and all their copies, to ``data``.
+
+        Each replaced extension is recorded as an ``unknown_datatype`` job message.
+        """
+        datatypes_registry = self.app.datatypes_registry
+        replaced: dict[str, int] = {}
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            extension = dataset_assoc.dataset.extension
+            # auto is resolved on materialization of deferred outputs
+            if (
+                not extension
+                or extension == "auto"
+                or datatypes_registry.get_datatype_by_extension(extension) is not None
+            ):
+                continue
+            dataset = dataset_assoc.dataset.dataset
+            assert dataset is not None
+            for dataset_instance in dataset.history_associations + dataset.library_associations:
+                if dataset_instance.extension == extension:
+                    dataset_instance.extension = "data"
+            replaced[extension] = replaced.get(extension, 0) + 1
+        if replaced:
+            job.job_messages = [
+                *(job.job_messages or []),
+                *(unknown_datatype_job_message(extension, count) for extension, count in replaced.items()),
+            ]
+
     def _finish_dataset(
         self,
         output_name: str,
@@ -2391,6 +2421,7 @@ class MinimalJobWrapper(HasResourceParameters):
             stderr=job.stderr,
         )
 
+        self._set_unknown_output_extensions_to_data(job)
         self._fix_output_permissions()
 
         # Empirically, we need to update job.user and

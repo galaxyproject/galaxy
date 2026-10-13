@@ -1,5 +1,6 @@
 <tool id="output_format_input" name="output_format_input" version="1.0" profile="21.01">
-  <!-- test format="input" for the profile version where the format is set to "input"
+  <!-- test format="input" for the profile version where the format is set to "input",
+       which is not a datatype and becomes "data" at job finish
        (for legacy tools, i.e. profile <16.04, the format of a random input is used) -->
   <description></description>
   <command>
@@ -14,11 +15,11 @@
   <tests>
     <test>
       <param name="input" value="simple_line.txt" ftype="txt" />
-      <output name="output" file="simple_line.txt" ftype="input"/>
+      <output name="output" file="simple_line.txt" ftype="data"/>
     </test>
     <test>
       <param name="input" value="simple_line.txt" ftype="tabular" />
-      <output name="output" file="simple_line.txt" ftype="input"/>
+      <output name="output" file="simple_line.txt" ftype="data"/>
     </test>
   </tests>
   <help>

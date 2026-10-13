@@ -38,6 +38,7 @@ JobMessageTypeLiteral = Literal[
     "output_collection_security",
     "output_discovery",
     "stdio_read_error",
+    "unknown_datatype",
 ]
 
 
@@ -76,6 +77,11 @@ class StdioReadErrorJobMessage(JobMessage):
     errno: int | None
 
 
+class UnknownDatatypeJobMessage(JobMessage):
+    type: Literal["unknown_datatype"]
+    extension: str
+
+
 AnyJobMessage = (
     ExitCodeJobMessage
     | RegexJobMessage
@@ -83,6 +89,7 @@ AnyJobMessage = (
     | OutputCollectionSecurityJobMessage
     | OutputDiscoveryJobMessage
     | StdioReadErrorJobMessage
+    | UnknownDatatypeJobMessage
 )
 
 
@@ -95,6 +102,17 @@ def output_discovery_job_message(reason: str | None = None) -> OutputDiscoveryJo
         desc=desc,
         code_desc=None,
         error_level=StdioErrorLevel.FATAL,
+    )
+
+
+def unknown_datatype_job_message(extension: str, count: int) -> UnknownDatatypeJobMessage:
+    datasets = "1 output dataset" if count == 1 else f"{count} output datasets"
+    return UnknownDatatypeJobMessage(
+        type="unknown_datatype",
+        desc=f"Extension '{extension}' is not a datatype on this Galaxy server, {datasets} set to 'data'",
+        code_desc=None,
+        error_level=StdioErrorLevel.WARNING,
+        extension=extension,
     )
 
 
