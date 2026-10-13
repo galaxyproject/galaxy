@@ -336,6 +336,10 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 ``resource_params``
 : A dictionary of parameters specified by the user using ``job_resource_params_conf.xml`` (if configured).
+  The sample file declares ``processors``, ``memory``, ``gpus``, ``time`` and ``project``. A rule can map these
+  onto destination parameters for any runner. Some runners also read them directly: the GCP Batch runner uses
+  ``processors``, ``mem``, ``walltime`` and ``gpus``, and a ``gpus`` value entered by the user, including 0,
+  takes precedence over the ``gpus`` destination parameter. A blank field falls through to the destination.
 
 ``workflow_invocation_uuid``
 : A randomly generated UUID for the workflow invocation generating this job - this can be
