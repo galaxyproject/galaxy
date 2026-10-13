@@ -8,16 +8,13 @@ BACKEND_DESCRIPTION = "Browser automation backend to use (selenium or playwright
 
 import argparse
 from typing import Literal
-from urllib.parse import urljoin
 
+from .context import GalaxySeleniumContext
 from .driver_factory import (
     ConfiguredDriver,
     virtual_display_if_enabled,
 )
-from .navigates_galaxy import (
-    galaxy_timeout_handler,
-    NavigatesGalaxy,
-)
+from .navigates_galaxy import galaxy_timeout_handler
 
 
 def add_selenium_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -65,7 +62,7 @@ def add_selenium_arguments(parser: argparse.ArgumentParser) -> argparse.Argument
     return parser
 
 
-class DriverWrapper(NavigatesGalaxy):
+class DriverWrapper(GalaxySeleniumContext):
     """Adapt argparse command-line options to a browser automation driver."""
 
     def __init__(self, args: argparse.Namespace) -> None:
@@ -92,21 +89,11 @@ class DriverWrapper(NavigatesGalaxy):
             headless=args.selenium_headless,
             backend_type=backend_type,
         )
-        self.target_url = args.galaxy_url
+        self.url = self.target_url_from_selenium = args.galaxy_url
 
-    @property
-    def _driver_impl(self):
-        """Provide driver implementation from configured_driver."""
-        return self.configured_driver.driver_impl
-
-    def build_url(self, url="", for_selenium: bool = True):
-        return urljoin(self.target_url, url)
-
-    def screenshot(self, label: str) -> None:
-        """No-op in this context, not saving debugging/testing screenshots.
-
-        Consider a verbose or debug option for saving these.
-        """
+    def _screenshot_path(self, label: str, extension=".png") -> str | None:
+        # Screenshots are only kept when a story is assigned.
+        return None
 
     @property
     def default_timeout(self):

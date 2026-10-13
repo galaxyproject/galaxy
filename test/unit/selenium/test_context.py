@@ -1,14 +1,19 @@
 """Unit tests for context.py - GalaxySeleniumContextImpl outside the test framework."""
 
+import argparse
 import os
 import zipfile
 from unittest.mock import Mock
 
 from galaxy.selenium import (
+    cli,
     driver_factory,
     jupyter_context,
 )
-from galaxy.selenium.context import GalaxySeleniumContextImpl
+from galaxy.selenium.context import (
+    GalaxySeleniumContext,
+    GalaxySeleniumContextImpl,
+)
 from galaxy.selenium.navigates_galaxy import WAIT_TYPES
 from galaxy.selenium.stories import Story
 from .util import skip_unless_playwright_browser_cached
@@ -70,3 +75,31 @@ def test_assigned_story_collects_screenshots_in_its_directory(tmp_path, monkeypa
     context.story.finalize()
     with zipfile.ZipFile(f"{story_dir}.zip") as archive:
         assert {"000_upload.png", "001_done.png"} <= set(archive.namelist())
+
+
+def _cli_driver_wrapper(monkeypatch) -> cli.DriverWrapper:
+    monkeypatch.setattr(driver_factory, "get_playwright_driver", lambda **kwds: Mock())
+    parser = cli.add_selenium_arguments(argparse.ArgumentParser())
+    args = parser.parse_args(["--backend", "playwright", "--galaxy_url", "http://example.org/galaxy/"])
+    return cli.DriverWrapper(args)
+
+
+def test_cli_driver_wrapper_is_a_context(monkeypatch):
+    wrapper = _cli_driver_wrapper(monkeypatch)
+    assert isinstance(wrapper, GalaxySeleniumContext)
+    assert wrapper.build_url("api/version") == "http://example.org/galaxy/api/version"
+    assert wrapper.build_url("api/version", for_selenium=False) == "http://example.org/galaxy/api/version"
+
+
+def test_cli_screenshots_go_only_to_an_assigned_story(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    wrapper = _cli_driver_wrapper(monkeypatch)
+    saved: list[str] = []
+    monkeypatch.setattr(wrapper, "save_screenshot", saved.append)
+
+    assert wrapper.screenshot("before") is None
+    assert saved == []
+
+    wrapper.story = Story("T", "", str(tmp_path))
+    assert wrapper.screenshot("upload", "The upload button") == str(tmp_path / "000_upload.png")
+    assert saved == [str(tmp_path / "000_upload.png")]
