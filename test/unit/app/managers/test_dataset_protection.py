@@ -197,6 +197,21 @@ def test_finish_job_fails_on_expiration_dates_without_timezone(tmp_path):
     manager.sa_session.add.assert_not_called()
 
 
+def test_finish_job_fails_without_expiration_date(tmp_path):
+    output, record = _protected_output(tmp_path)
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    sidecar_path = os.path.join(str(tmp_path), SIDECAR_FILE)
+    with open(sidecar_path) as f:
+        sidecar = json.load(f)
+    sidecar["key_expiration"] = None
+    with open(sidecar_path, "w") as f:
+        json.dump(sidecar, f)
+    manager = _manager()
+    error = manager.finish_job(_job(output), str(tmp_path))
+    assert error and "can be decrypted in further jobs" in error
+    manager.sa_session.add.assert_not_called()
+
+
 def test_finish_job_records_no_grants_for_outputs_encrypted_by_the_tool(tmp_path):
     output, record = _protected_output(tmp_path)
     record["compute_header"] = None

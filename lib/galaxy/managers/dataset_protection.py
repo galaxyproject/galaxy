@@ -650,6 +650,9 @@ class DatasetProtectionManager:
                 _purge(dataset_instance)
         if errors:
             return _summarize(errors)
+        if job.user and protected and not (expires_at and sidecar.get("key_ref")):
+            # Users couldn't decrypt the outputs in further jobs, without knowing why.
+            return "The key service didn't say until when the outputs of this job can be decrypted in further jobs."
         if job.user and expires_at:
             self._record_output_grants(job, sidecar.get("key_ref"), expires_at, protected)
         return None
