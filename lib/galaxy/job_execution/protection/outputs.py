@@ -92,17 +92,7 @@ class OutputProtector:
                 raise ProtectionError("outputs of protected jobs can't be linked data")
             ext = self._protected_ext(dataset_instance.extension, path)
             result = self._protect_file(path)
-            extra_files: dict[str, str | None] = {}
-            if extra_files_path and os.path.isdir(extra_files_path):
-                futures = {
-                    relpath: self._file_executor.submit(
-                        self.runtime.protect_file, os.path.join(extra_files_path, relpath)
-                    )
-                    for relpath in iter_relpaths(extra_files_path)
-                }
-                # Let every file finish before failing, the files are discarded then.
-                wait(futures.values())
-                extra_files = {relpath: future.result().compute_header for relpath, future in futures.items()}
+            extra_files = self._protect_extra_files(extra_files_path)
         except Exception as e:
             message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
             if not link_data:
@@ -118,6 +108,36 @@ class OutputProtector:
             "compute_header": result.compute_header,
             "extra_files": extra_files,
         }
+
+    def protect_extra_files(self, dataset_instance: "DatasetInstance", extra_files_path: str | None) -> None:
+        """Encrypt the extra files of an output protected earlier without them, see :meth:`protect`.
+
+        Outputs assigned a discovered file (assign_primary_output) are protected before their
+        extra files are located.
+        """
+        record = self.records[self._uuid(dataset_instance)]
+        if record["outcome"] != OUTCOME_PROTECTED or record["extra_files"]:
+            return
+        try:
+            record["extra_files"] = self._protect_extra_files(extra_files_path)
+        except Exception as e:
+            message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
+            self._discard_extra_files(extra_files_path)
+            self.records[self._uuid(dataset_instance)] = {"outcome": OUTCOME_FAILED}
+            self.errors.append(f"Output '{dataset_instance.name}' could not be protected: {message}")
+            raise ProtectionError(message) from e
+
+    def _protect_extra_files(self, extra_files_path: str | None) -> dict[str, str | None]:
+        """Encrypt every extra file in place, return their compute headers by relative path."""
+        if not extra_files_path or not os.path.isdir(extra_files_path):
+            return {}
+        futures = {
+            relpath: self._file_executor.submit(self.runtime.protect_file, os.path.join(extra_files_path, relpath))
+            for relpath in iter_relpaths(extra_files_path)
+        }
+        # Let every file finish before failing, the files are discarded then.
+        wait(futures.values())
+        return {relpath: future.result().compute_header for relpath, future in futures.items()}
 
     def protect_all(self, outputs: list[tuple["DatasetInstance", str, str | None, bool]]) -> None:
         """Protect several outputs concurrently, see :meth:`protect`: ``(dataset_instance, path, extra_files_path, link_data)``."""
@@ -202,11 +222,18 @@ class OutputProtector:
         assert dataset_instance.dataset
         return str(dataset_instance.dataset.uuid)
 
-    @staticmethod
-    def _discard(path: str, extra_files_path: str | None) -> None:
+    @classmethod
+    def _discard(cls, path: str, extra_files_path: str | None) -> None:
         try:
             if os.path.exists(path):
                 os.remove(path)
+        except OSError:
+            log.exception("Could not remove an output that failed to be protected")
+        cls._discard_extra_files(extra_files_path)
+
+    @staticmethod
+    def _discard_extra_files(extra_files_path: str | None) -> None:
+        try:
             if extra_files_path and os.path.isdir(extra_files_path):
                 shutil.rmtree(extra_files_path)
         except OSError:
