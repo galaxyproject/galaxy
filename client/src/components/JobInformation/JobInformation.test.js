@@ -87,13 +87,18 @@ describe("JobInformation/JobInformation.vue", () => {
         });
     });
 
-    it("job messages", async () => {
-        const rendered_link = jobInfoTable.findAll(`#job-messages .job-message`);
-        expect(rendered_link.length).toBe(jobResponse.job_messages.length);
-        for (let i = 0; i < rendered_link.length; i++) {
-            const msg = rendered_link.at(i).text();
-            expect(jobResponse.job_messages.includes(msg));
-        }
+    it("numbers each job message and lists its fields", async () => {
+        const messages = jobInfoTable.findAll("#job-messages .job-message");
+        expect(messages.length).toBe(jobResponse.job_messages.length);
+        messages.forEach((message, index) => {
+            expect(message.text()).toMatch(new RegExp(`^Job Message ${index + 1}:`));
+            const expected = jobResponse.job_messages[index];
+            expect(message.findAll("li").map((field) => field.text())).toEqual([
+                `type: ${expected.type}`,
+                `desc: ${expected.desc}`,
+                `error_level: ${expected.error_level}`,
+            ]);
+        });
     });
 
     it("explains stream read failures and displays structured diagnostics", async () => {
