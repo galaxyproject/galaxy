@@ -31,11 +31,11 @@ const sections = computed<{ group?: string; types: KnownCollectionType[] }[]>(()
 
 <template>
     <div class="collection-type-cards" :class="{ 'collection-type-cards-grouped': !types }">
-        <section v-for="{ group, types } in sections" :key="group" class="collection-type-group">
+        <section v-for="{ group, types: sectionTypes } in sections" :key="group" class="collection-type-group">
             <h3 v-if="group" class="collection-type-group-title">{{ group }}</h3>
             <div class="collection-type-card-grid" :class="{ 'collection-type-card-grid-ungrouped': !group }">
                 <BCard
-                    v-for="known in types"
+                    v-for="known in sectionTypes"
                     :key="known.collectionType"
                     :data-collection-type="known.collectionType"
                     class="collection-type-card wizard-selection-card"

@@ -1098,11 +1098,7 @@ const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
 
 function collectionTypeToText(collectionType: string): string {
-    if (COLLECTION_TYPE_SHORT_LABELS[collectionType]) {
-        return COLLECTION_TYPE_SHORT_LABELS[collectionType].toLowerCase();
-    } else {
-        return collectionType;
-    }
+    return COLLECTION_TYPE_SHORT_LABELS[collectionType] ?? collectionType;
 }
 
 const warningListAmount = 4;

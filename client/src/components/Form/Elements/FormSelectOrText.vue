@@ -125,7 +125,7 @@ function onSelect(value: string | null) {
         edited.value = false;
         return;
     }
-    const selected = props.options[selectOptions.value.findIndex((option) => option.value === value)]!.value;
+    const selected = props.options.find((_, index) => optionValue(index) === value)!.value;
     otherMode.value = false;
     text.value = selected ?? "";
     emit("input", selected);
