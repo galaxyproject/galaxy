@@ -122,6 +122,24 @@ def _copied_extra_files_message(dataset_instance: DatasetInstance) -> str:
     )
 
 
+def _lacks_extra_files(grant: DatasetProtectionGrant) -> bool:
+    """Whether the dataset's extra files were protected by another user's job: users only authorize the primary file."""
+    if grant.grant_data.get("extra_files"):
+        return False
+    return any(
+        other.grant_data.get("extra_files")
+        for other in grant.dataset.protection_grants
+        if other.scheme == grant.scheme and other.user_id != grant.user_id
+    )
+
+
+def _lacked_extra_files_message(dataset_instance: DatasetInstance) -> str:
+    return (
+        f"The extra files of dataset '{_shown_name(dataset_instance)}' were encrypted by a job of another user and "
+        "can only be decrypted in their jobs. Use it in tools accepting encrypted datasets."
+    )
+
+
 def _unsupported_tool_message(tool: "Tool") -> str:
     return f"Tool '{tool.name}' can't be used with encrypted datasets."
 
@@ -513,6 +531,8 @@ class DatasetProtectionManager:
                 )
             if grant.grant_data.get("copied_extra_files"):
                 raise RequestParameterInvalidException(_copied_extra_files_message(dataset_instance))
+            if _lacks_extra_files(grant):
+                raise RequestParameterInvalidException(_lacked_extra_files_message(dataset_instance))
 
     def authorize_job(
         self,
@@ -554,6 +574,8 @@ class DatasetProtectionManager:
                 )
             if grant.grant_data.get("copied_extra_files"):
                 raise ProtectionError(_copied_extra_files_message(dataset_instance))
+            if _lacks_extra_files(grant):
+                raise ProtectionError(_lacked_extra_files_message(dataset_instance))
             if _extra_files_expire(grant, scheme.expiry_margin + margin):
                 raise ProtectionError(
                     f"The extra files of dataset '{_shown_name(dataset_instance)}' can't be decrypted anymore: their "

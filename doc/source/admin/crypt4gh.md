@@ -393,6 +393,8 @@ Limitations:
   but their extra files are authorized by the job that wrote them: further jobs
   can use them until that job's compute key expires, about 7 days later.
   Authorizing such an output again (key icon) only renews its primary file.
+  Other users, even ones sharing the keypair, can't decrypt these extra files:
+  their jobs are refused.
 - The same encrypted dataset can't be passed both decrypted and encrypted to the
   same job.
 - Extra files of outputs that copy encrypted inputs of the job can't be

@@ -461,6 +461,38 @@ def test_only_tools_keeping_decrypted_data_in_galaxy_decrypt_inputs():
     assert not _can_decrypt_inputs(cast(Tool, Bunch(tool_type="default", config_files=[file_sources])))
 
 
+def _grant_on(dataset, user_id, **grant_data):
+    grant = Bunch(user_id=user_id, scheme="crypt4gh", dataset=dataset, grant_data={"compute_header": "h", **grant_data})
+    dataset.protection_grants.append(grant)
+    return grant
+
+
+@pytest.mark.parametrize(
+    "creator_extra_files,own_extra_files,refused",
+    [
+        ({"index.html": "h"}, {}, True),
+        ({"index.html": "h"}, {"index.html": "h"}, False),
+        ({}, {}, False),
+    ],
+)
+def test_jobs_refuse_extra_files_protected_for_another_user(tmp_path, creator_extra_files, own_extra_files, refused):
+    # Users sharing a keypair can authorize each other's outputs, but only the primary file.
+    output, _ = _protected_output(tmp_path)
+    output.dataset.protection_grants = []
+    _grant_on(output.dataset, 1, extra_files=creator_extra_files)
+    own_grant = _grant_on(output.dataset, 2, extra_files=own_extra_files)
+    manager = _manager()
+    manager.inputs_needing_decryption = mock.MagicMock(return_value=[output])
+    manager.get_usable_grant = mock.MagicMock(return_value=own_grant)
+    tool = cast(Tool, Bunch(tool_type="default", config_files=[]))
+
+    if refused:
+        with pytest.raises(RequestParameterInvalidException, match="encrypted by a job of another user"):
+            manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+    else:
+        manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+
+
 def test_many_errors_are_summarized(tmp_path):
     output, _ = _protected_output(tmp_path)
     _write_sidecar(str(tmp_path), {}, errors=[f"Output '{i}' could not be protected." for i in range(1000)])

@@ -379,9 +379,7 @@ class Crypt4GHJobRuntime:
             if source_extra and os.path.isdir(source_extra):
                 if any(relpath not in protected_input.extra_files for relpath in iter_relpaths(source_extra)):
                     # Every file of a protected dataset must be protected, refuse to guess.
-                    raise ProtectionError(
-                        "A protected input has extra files that cannot be decrypted, authorize the dataset again."
-                    )
+                    raise ProtectionError("A protected input has extra files that this job can't decrypt.")
         return files
 
     def _check_responses(
