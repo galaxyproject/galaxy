@@ -73,6 +73,14 @@ describe("FormSelectOrText", () => {
         expect((textField(wrapper).element as HTMLInputElement).value).toBe("banana");
     });
 
+    it("shows an empty value the select doesn't list in the text field", () => {
+        const wrapper = mountWithValue("");
+        expect(selectedLabel(wrapper)).toBe("Other fruit...");
+        expect((textField(wrapper).element as HTMLInputElement).value).toBe("");
+        expect(lastAlert(wrapper)).toBe("Enter a value.");
+        expect(emitted(wrapper)).toEqual([]);
+    });
+
     it("emits an option picked from the select, including null", async () => {
         const wrapper = mountWithValue("apple");
         await pick(wrapper, "Apple pie");

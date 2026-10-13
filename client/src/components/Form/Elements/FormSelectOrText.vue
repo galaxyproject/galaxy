@@ -97,7 +97,7 @@ watch(
         }
         text.value = value ?? "";
         edited.value = false;
-        otherMode.value = Boolean(value) && !isListed(value!);
+        otherMode.value = value !== null && !isListed(value);
     },
     { immediate: true },
 );
