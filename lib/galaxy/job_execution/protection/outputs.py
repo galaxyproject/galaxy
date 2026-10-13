@@ -149,7 +149,11 @@ class OutputProtector:
 
         def protect(output: tuple["DatasetInstance", str, str | None, bool]) -> None:
             if failed.is_set():
-                # The job fails anyway, don't keep calling the key service. Galaxy purges what isn't protected.
+                # The job fails anyway, don't keep calling the key service. Galaxy purges what isn't protected,
+                # remove the plaintext like for failed outputs.
+                _, path, extra_files_path, link_data = output
+                if not link_data:
+                    self._discard(path, extra_files_path)
                 return
             try:
                 self.protect(*output)
@@ -158,8 +162,12 @@ class OutputProtector:
                 raise
 
         with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES) as executor:
-            # Raises the first error once the outputs being protected are done.
-            list(executor.map(protect, outputs))
+            # Not executor.map(): it cancels the outputs left after an error, their plaintext would stay.
+            futures = [executor.submit(protect, output) for output in outputs]
+            wait(futures)
+        for future in futures:
+            # Raises the first error once every output is protected or discarded.
+            future.result()
 
     def _protect_file(self, path: str) -> ProtectedFileResult:
         return self._file_executor.submit(self.runtime.protect_file, path).result()

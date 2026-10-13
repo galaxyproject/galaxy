@@ -543,8 +543,10 @@ def test_output_protector_discards_failed_outputs_when_protecting_concurrently(t
     assert protector.errors
     for dataset_instance, path, _, _ in outputs:
         record = protector.records.get(str(dataset_instance.dataset.uuid))
-        # Failed outputs are removed. Outputs not attempted after the failure have no record, Galaxy purges them.
-        assert record is None or (record["outcome"] == "failed" and not os.path.exists(path))
+        # Failed outputs are removed, and so are outputs not attempted after the failure: they have no record,
+        # Galaxy purges them.
+        assert record is None or record["outcome"] == "failed"
+        assert not os.path.exists(path)
 
 
 @pytest.mark.parametrize("slots,workers", [(None, 1), ("4", 4), ("64", 8), ("not a number", 1)])
