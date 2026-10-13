@@ -448,6 +448,26 @@ Headers, plans, keys and the compute service's requests and responses are never
 logged. The `crypt4gh` library's own logging is limited to warnings, since it logs
 session keys at debug level.
 
+### Plaintext left behind
+
+Removing the decrypted data is best effort. Nothing runs on a compute host that
+crashes, loses power or is cut off from Galaxy while a protected job runs: its
+decrypted inputs, and whatever the tool wrote in the job directory, stay on the
+host's disk until someone removes them. Files tools write outside the job
+directory, such as in `$TMPDIR`, are never removed by Galaxy.
+
+Rather than relying on removal alone, make leftover plaintext unreadable or short
+lived on the compute hosts:
+
+- Put the job directories on memory-backed storage (tmpfs), so a crash or reboot
+  wipes them. Decrypted inputs are always written to `_protected` in the job
+  directory.
+- Or put them on scratch storage encrypted with a key generated at boot (e.g.
+  dm-crypt), so data left after a crash can't be read.
+- Set `tmp_dir: true` on destinations running protected jobs, so temporary files
+  of tools are created in the job directory and removed with it.
+- Periodically remove `_protected` directories of jobs that are no longer running.
+
 ## Telling users
 
 Users need the recryptor service running on their machine in user mode, with
