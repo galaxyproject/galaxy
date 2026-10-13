@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { withCurrentHistory } from "@tests/test-data/currentHistory";
+import { exactly } from "@tests/test-data/text";
 import { expect, waitFor, within } from "storybook/test";
 import { h, ref } from "vue";
 
@@ -84,4 +85,75 @@ export const CompactPage: Story = {
 /** Report templates insert workflow labels; history drag payloads are ignored in this mode. */
 export const WorkflowReportTemplate: Story = {
     args: { mode: "report", steps: reportSteps, title: "RNA-seq workflow report" },
+};
+
+/** Native history drags insert both object types without discarding existing page notes. */
+export const InsertsDraggedHistoryItems: Story = {
+    args: PageWithExistingContent.args,
+    play: async ({ canvasElement, userEvent, step }) => {
+        await step("Insert a dataset and collection without losing existing notes", async () => {
+            const canvas = within(canvasElement);
+            const editor = canvas.getByRole("textbox", { name: "markdown text editor" });
+            const notes = PageWithExistingContent.args!.markdownText!;
+            await expect(editor).toHaveValue(notes);
+            await userEvent.click(editor);
+            await userEvent.keyboard("{Control>}{Home}{/Control}");
+            await expect(editor).toHaveProperty("selectionStart", 0);
+            const datasetName = MARKDOWN_DATASET.name;
+            const collectionName = MARKDOWN_COLLECTION.name;
+            if (!datasetName || !collectionName) {
+                throw new Error("The draggable history fixtures must have names.");
+            }
+            const dataset = canvas.getByText(datasetName, { exact: true });
+            const collection = canvas.getByText(collectionName, { exact: true });
+            const dragIntoEditor = (source: HTMLElement) => {
+                const dataTransfer = new DataTransfer();
+                source.dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer }));
+                try {
+                    editor.dispatchEvent(new DragEvent("dragenter", { bubbles: true, cancelable: true, dataTransfer }));
+                    editor.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer }));
+                } finally {
+                    source.dispatchEvent(new DragEvent("dragend", { bubbles: true, dataTransfer }));
+                }
+            };
+            dragIntoEditor(dataset);
+            const withDataset = `\n\`\`\`galaxy\nhistory_dataset_display(history_dataset_id=${MARKDOWN_DATASET.id})\n\`\`\`\n${notes}`;
+            await waitFor(() => expect(editor).toHaveValue(withDataset), { timeout: 5000 });
+            await userEvent.click(editor);
+            await userEvent.keyboard("{Control>}{Home}{/Control}");
+            await expect(editor).toHaveProperty("selectionStart", 0);
+            dragIntoEditor(collection);
+            const withCollection = `\n\`\`\`galaxy\nhistory_dataset_collection_display(history_dataset_collection_id=${MARKDOWN_COLLECTION.id})\n\`\`\`\n${withDataset}`;
+            await waitFor(() => expect(editor).toHaveValue(withCollection), { timeout: 5000 });
+        });
+    },
+};
+
+/** Choosing a history dataset inserts its fenced directive at the end of existing notes. */
+export const InsertsChosenDataset: Story = {
+    args: PageWithExistingContent.args,
+    play: async ({ canvasElement, userEvent, step }) => {
+        await step("Choose a dataset and insert its directive after the existing notes", async () => {
+            const canvas = within(canvasElement);
+            const editor = canvas.getByRole("textbox", { name: "markdown text editor" });
+            const notes = PageWithExistingContent.args!.markdownText!;
+            await expect(editor).toHaveValue(notes);
+            await userEvent.click(editor);
+            await userEvent.keyboard("{Control>}{End}{/Control}");
+            await expect(editor).toHaveProperty("selectionStart", notes.length);
+            const body = within(document.body);
+            await expect(body.queryByRole("dialog")).not.toBeInTheDocument();
+            await userEvent.click(canvas.getByText("Dataset", { exact: true }));
+            const dialog = await body.findByRole("dialog");
+            const dataset = await within(dialog).findByText(
+                exactly(`3: ${MARKDOWN_DATASET.name}`),
+                {},
+                { timeout: 5000 },
+            );
+            await userEvent.click(dataset);
+            const inserted = `${notes}\n\`\`\`galaxy\nhistory_dataset_display(history_dataset_id=${MARKDOWN_DATASET.id})\n\`\`\`\n`;
+            await waitFor(() => expect(editor).toHaveValue(inserted), { timeout: 5000 });
+            await waitFor(() => expect(body.queryByRole("dialog")).not.toBeInTheDocument());
+        });
+    },
 };
