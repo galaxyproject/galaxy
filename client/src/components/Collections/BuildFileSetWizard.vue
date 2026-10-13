@@ -286,7 +286,10 @@ const {
                         @dragover.prevent="isDragging = true"
                         @dragleave.prevent="isDragging = false" />
                 </a>
-                <HiddenWorkbookUploadInput ref="uploadRef" @onFileUpload="onFileUpload" />
+                <HiddenWorkbookUploadInput
+                    ref="uploadRef"
+                    data-description="workbook shortcut file input"
+                    @onFileUpload="onFileUpload" />
             </h2>
         </template>
         <div v-if="wizard.isCurrent('select-what')">

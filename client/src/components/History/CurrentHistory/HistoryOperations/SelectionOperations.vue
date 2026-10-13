@@ -95,8 +95,12 @@
             @ok="changeDatatypeOfSelected"
             @cancel="resetDatatype">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
-            <DatatypesProvider v-slot="{ item: datatypes, loading: loadingDatatypes }">
+            <DatatypesProvider v-slot="{ item: datatypes, loading: loadingDatatypes, error: datatypesError }">
+                <GAlert v-if="datatypesError" show variant="danger">
+                    Unable to load datatypes: {{ datatypesError }}
+                </GAlert>
                 <SingleItemSelector
+                    v-else
                     collection-name="Data Types"
                     :loading="loadingDatatypes"
                     :items="datatypes"
@@ -117,6 +121,7 @@
                 :key="showAddTagsModal"
                 :value="selectedTags"
                 class="tags"
+                list-in-flow
                 @input="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
@@ -133,8 +138,9 @@
                 :key="showRemoveTagsModal"
                 :value="selectedTags"
                 class="tags"
+                list-in-flow
                 @input="(tags) => (selectedTags = tags)" />
-            <GTip :tips="['Press Enter after typing each tag.']" />
+            <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <StorageOperationWizardModal
             v-model:show="showStorageOperationModal"
@@ -181,6 +187,7 @@ import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import { useUserStore } from "@/stores/userStore";
 
 import StorageOperationWizardModal from "./StorageOperationWizardModal.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
@@ -193,6 +200,7 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     components: {
+        GAlert,
         CollectionCreatorIndex,
         DbKeyProvider,
         DatatypesProvider,

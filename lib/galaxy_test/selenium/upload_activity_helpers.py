@@ -177,10 +177,7 @@ class _UploadStaging:
 
     def stage_local_file(self, test_path: str, metadata: UploadMetadata | None = None) -> LocalUploadItem:
         file_input = self.driver_wrapper.wait_for_selector("#local-file-input")
-        if self.driver_wrapper.backend_type == "playwright":
-            file_input.element_handle.set_input_files(test_path)
-        else:
-            file_input.send_keys(test_path)
+        self.driver_wrapper.set_file_input(file_input, test_path)
         return self._create_item(LocalUploadItem, metadata)
 
     def stage_paste_content(self, content: str, metadata: UploadMetadata | None = None) -> PasteContentUploadItem:
@@ -406,10 +403,7 @@ class UploadContext(_UploadStaging):
 
         self._select_composite_slot_mode(row=slot, mode="local")
         file_input = self.components.upload_activity.composite_slot_file_input(row=slot).wait_for_present()
-        if self.driver_wrapper.backend_type == "playwright":
-            file_input.element_handle.set_input_files(file_path)
-        else:
-            file_input.send_keys(file_path)
+        self.driver_wrapper.set_file_input(file_input, file_path)
         return self
 
     def _select_composite_type(self, composite_type: str) -> None:
@@ -783,10 +777,7 @@ class ExploreZipContext(BaseUploadContext):
 
     def explore_local_zip(self, test_path: str) -> "ExploreZipContext":
         file_input = self._wizard.local_file_input.wait_for_present()
-        if self._context.driver_wrapper.backend_type == "playwright":
-            file_input.element_handle.set_input_files(test_path)
-        else:
-            file_input.send_keys(test_path)
+        self._context.driver_wrapper.set_file_input(file_input, test_path)
         return self
 
     def explore_remote_zip(self, url: str) -> "ExploreZipContext":
@@ -905,6 +896,37 @@ class RuleImportContext:
     def wait_for_builder(self) -> "RuleImportContext":
         self.components.rule_builder.menu_button_filter.wait_for_visible()
         return self
+
+    def workbook_download_url(self) -> str:
+        """URL of the download link on step 1 of the workbook page."""
+        link = self.components.file_set_wizard.workbook_download_link.wait_for_visible()
+        return link.get_attribute("href")
+
+    def workbook_for_collection_type(self, collection_type: str) -> "RuleImportContext":
+        """Pick the collection type to generate a workbook template for, and continue.
+
+        Only reached when creating collections - the datasets wizard skips this step.
+        """
+        wizard = self.components.file_set_wizard
+        wizard.which_builder(builder=collection_type).wait_for_and_click()
+        wizard.wizard_next_button.wait_for_and_click()
+        return self
+
+    def upload_workbook(self, test_path: str) -> "RuleImportContext":
+        """Upload a completed workbook with the shortcut in the wizard header.
+
+        The shortcut is available from every step and skips to the rule builder.
+        Note it also resets what is being created from the workbook's own headers.
+        """
+        file_input = self.components.file_set_wizard.workbook_shortcut_file_input.wait_for_present()
+        self.driver_wrapper.set_file_input(file_input, test_path)
+        return self.wait_for_builder()
+
+    def upload_workbook_from_card(self, test_path: str) -> "RuleImportContext":
+        """Upload a completed workbook from step 3 of the workbook page."""
+        file_input = self.components.file_set_wizard.workbook_card_file_input.wait_for_present()
+        self.driver_wrapper.set_file_input(file_input, test_path)
+        return self.wait_for_builder()
 
 
 # Mapping of upload method IDs to their corresponding context classes

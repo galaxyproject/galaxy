@@ -779,8 +779,8 @@ onMounted(async () => {
 
         <TagsSelectionDialog
             :show="showBulkAddTagsModal"
-            :title="`Add tags to ${selectedHistories.length} selected history${
-                selectedHistories.length > 1 ? 's' : ''
+            :title="`Add tags to ${selectedHistories.length} selected ${
+                selectedHistories.length > 1 ? 'histories' : 'history'
             }`"
             @cancel="onToggleBulkTags"
             @ok="onBulkTagsAdd" />

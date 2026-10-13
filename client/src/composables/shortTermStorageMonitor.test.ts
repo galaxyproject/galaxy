@@ -1,6 +1,7 @@
 import { suppressDebugConsole } from "@tests/vitest/helpers";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { effectScope } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
@@ -10,6 +11,7 @@ import type { StoredTaskStatus } from "./genericTaskMonitor";
 const PENDING_TASK_ID = "pending-fake-task-id";
 const COMPLETED_TASK_ID = "completed-fake-task-id";
 const REQUEST_FAILED_TASK_ID = "request-failed-fake-task-id";
+const IN_FLIGHT_TASK_ID = "in-flight-fake-task-id";
 
 const { server, http } = useServerMock();
 
@@ -81,6 +83,71 @@ describe("useShortTermStorageMonitor", () => {
         expect(isRunning.value).toBe(false);
         expect(isCompleted.value).toBe(true);
         expect(hasFailed.value).toBe(false);
+    });
+
+    describe("stopping while a status request is in flight", () => {
+        let statusRequests: number;
+        let releasePendingRequest: () => void;
+
+        beforeEach(() => {
+            statusRequests = 0;
+            const pendingRequest = new Promise<void>((resolve) => (releasePendingRequest = resolve));
+            server.use(
+                http.get("/api/short_term_storage/{storage_request_id}/ready", async ({ response, params }) => {
+                    if (params.storage_request_id !== IN_FLIGHT_TASK_ID) {
+                        return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
+                    }
+                    statusRequests += 1;
+                    await pendingRequest;
+                    return response(200).json(false);
+                }),
+            );
+        });
+
+        async function expectNoFurtherPolling() {
+            vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+            try {
+                releasePendingRequest();
+                await flushPromises();
+                vi.advanceTimersByTime(1000);
+                await flushPromises();
+                expect(statusRequests).toBe(1);
+            } finally {
+                vi.useRealTimers();
+            }
+        }
+
+        it("should not resume polling after stopWaitingForTask", async () => {
+            const { waitForTask, stopWaitingForTask } = useShortTermStorageMonitor();
+
+            waitForTask(IN_FLIGHT_TASK_ID, 100);
+            await vi.waitFor(() => expect(statusRequests).toBe(1));
+            stopWaitingForTask();
+
+            await expectNoFurtherPolling();
+        });
+
+        it("should not resume polling after its effect scope is disposed", async () => {
+            const scope = effectScope();
+            const { waitForTask, taskStatus } = scope.run(() => useShortTermStorageMonitor())!;
+
+            waitForTask(IN_FLIGHT_TASK_ID, 100);
+            await vi.waitFor(() => expect(statusRequests).toBe(1));
+            scope.stop();
+
+            await expectNoFurtherPolling();
+            expect(taskStatus.value).toBeUndefined();
+        });
+
+        it("should not start polling once its effect scope is disposed", async () => {
+            const scope = effectScope();
+            const { waitForTask } = scope.run(() => useShortTermStorageMonitor())!;
+            scope.stop();
+
+            waitForTask(IN_FLIGHT_TASK_ID, 100);
+            await flushPromises();
+            expect(statusRequests).toBe(0);
+        });
     });
 
     describe("isFinalState", () => {
