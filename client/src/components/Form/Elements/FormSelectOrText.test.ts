@@ -150,6 +150,13 @@ describe("FormSelectOrText", () => {
         expect(lastAlert(wrapper)).toBe("Enter a value.");
     });
 
+    it("treats blank text as empty", async () => {
+        const wrapper = mountWithValue("banana");
+        await type(wrapper, "   ");
+        expect(emitted(wrapper)).toEqual([]);
+        expect(lastAlert(wrapper)).toBe("Enter a value.");
+    });
+
     it("asks for a value without marking the empty text field invalid until it is typed in", async () => {
         const wrapper = mountWithValue(null);
         await pick(wrapper, "Other fruit...");

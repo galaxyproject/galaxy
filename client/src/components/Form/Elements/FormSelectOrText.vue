@@ -28,7 +28,7 @@ const props = withDefaults(
         otherHelp?: string;
         otherPlaceholder?: string;
         /**
-         * Returns an error for text that must not be saved. Empty text is never saved. This is a client-side
+         * Returns an error for text that must not be saved. Blank text is never saved. This is a client-side
          * function, so only forms built in the client can set it.
          */
         validate?: (text: string) => string | undefined;
@@ -76,7 +76,7 @@ const textError = computed(() => {
     if (!otherMode.value) {
         return undefined;
     }
-    return props.validate?.(text.value) ?? (text.value ? undefined : "Enter a value.");
+    return props.validate?.(text.value) ?? (text.value.trim() ? undefined : "Enter a value.");
 });
 
 const textInvalid = computed(() => Boolean(textError.value) && (edited.value || Boolean(text.value)));
