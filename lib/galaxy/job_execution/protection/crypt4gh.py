@@ -188,6 +188,15 @@ class _HeaderThenBody(io.RawIOBase):
         return len(data)
 
 
+def _decrypt_workers() -> int:
+    """Threads decrypting inputs: decryption takes the CPU and I/O allocated to the job, as the tool does."""
+    try:
+        slots = int(os.environ.get("GALAXY_SLOTS", "1"))
+    except ValueError:
+        slots = 1
+    return max(1, min(slots, MAX_CONCURRENT_REQUESTS))
+
+
 def _decrypt_staged(protected_file: ProtectedFile, response: dict[str, Any], job_secret_key: bytes) -> None:
     """Decrypt an input next to the tool, with the header the key service recrypted for the job key."""
     from crypt4gh import lib as crypt4gh_lib
@@ -336,9 +345,10 @@ class Crypt4GHJobRuntime:
                         files,
                     )
                 )
-                output_response = self._check_responses(files, responses)
-                # Large inputs (e.g. paired reads) are decrypted concurrently. Every file finishes before
-                # failing, so the cleanup doesn't race with files still being written.
+            output_response = self._check_responses(files, responses)
+            # Large inputs (e.g. paired reads) are decrypted concurrently, within the job's slots. Every file
+            # finishes before failing, so the cleanup doesn't race with files still being written.
+            with ThreadPoolExecutor(max_workers=_decrypt_workers()) as executor:
                 futures = [
                     executor.submit(_decrypt_staged, protected_file, response, job_secret_key)
                     for (protected_file, _), response in zip(files, responses)
