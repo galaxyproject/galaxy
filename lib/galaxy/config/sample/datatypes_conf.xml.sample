@@ -105,8 +105,8 @@
     </datatype>
     <datatype extension="parquet" type="galaxy.datatypes.binary:Parquet" display_in_upload="true">
       <converter file="parquet_to_csv_converter.xml" target_datatype="csv"/>
-      <converter file="parquet_to_tabular_converter.xml" target_datatype="tsv"/>
       <converter file="parquet_to_tabular_converter.xml" target_datatype="tabular"/>
+      <converter file="parquet_to_tsv_converter.xml" target_datatype="tsv"/>
       <visualization plugin="atlas" />
     </datatype>
     <datatype extension="arrow" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="Apache Arrow IPC file format" description_url="https://arrow.apache.org/docs/format/Columnar.html#ipc-file-format"/>
