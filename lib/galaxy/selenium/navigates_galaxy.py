@@ -1371,10 +1371,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def workflow_editor_set_collection_type(self, collection_type: str | None, custom: bool = False) -> None:
         """Set the open collection input's type - ``None`` for any type, ``custom`` to type it in."""
         editor = self.components.workflow_editor
-        self.select_set_value(
-            editor.collection_type_select,
-            "Custom collection type" if custom else (collection_type or "Any collection type"),
-        )
+        if custom:
+            search = "Custom collection type"
+        elif collection_type is None:
+            search = "Any collection type"
+        else:
+            # options are labelled "<label> (<type>)" - a bare type such as paired would first match list:paired
+            search = f"({collection_type})"
+        self.select_set_value(editor.collection_type_select, search)
         # the options fade out over the custom type input
         editor.collection_type_select_options.wait_for_absent_or_hidden()
         if custom:
@@ -1392,7 +1396,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         elif collection_type is None:
             expected = "Any collection type"
         else:
-            # typing sample_sheet:paired also matches sample_sheet:paired_or_unpaired, so check the exact type
+            # match the whole "(type)" suffix - sample_sheet:paired is a prefix of sample_sheet:paired_or_unpaired
             expected = f"({collection_type})"
         selected = editor.collection_type_selected
         selected.wait_for_visible()
