@@ -1,15 +1,16 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
-import { disposePinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
-import { nextTick, ref } from "vue";
+import { composeStories } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import { flushPromises } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { h, nextTick, ref } from "vue";
 
-import { useServerMock } from "@/api/client/__mocks__";
 import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { ensureDefined } from "@/utils/assertions";
+
+import * as ActivitySettingsStories from "./ActivitySettings.stories";
 
 import ActivitySettings from "./ActivitySettings.vue";
 
@@ -22,27 +23,32 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const { server, http } = useServerMock();
-const activityItemSelector = ".activity-settings-item";
-const localVue = getLocalVue();
-
-function createOwnedPinia() {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    onTestFinished(() => {
-        disposePinia(pinia);
-        setActivePinia(undefined);
-    });
-    return pinia;
-}
-
-function mountActivitySettings(activityBarId, pinia) {
-    return mount(ActivitySettings, {
-        global: {
-            ...withPlugins(localVue, pinia),
-            stubs: { FontAwesomeIcon: { template: "<div></div>" } },
+const queryControls = new WeakMap();
+let nextQuery;
+const stories = composeStories(ActivitySettingsStories, {
+    render: (args) => ({
+        setup() {
+            const query = nextQuery;
+            return () => h(ActivitySettings, { ...args, query: query.value });
         },
+    }),
+});
+const mountStory = useStoryMount();
+const activityItemSelector = ".activity-settings-item";
+
+async function mountActivitySettings(activityBarId, story = stories.BuiltInActivities) {
+    nextQuery = ref("");
+    const query = nextQuery;
+    const root = mountStory(story, {
         props: { query: "", activityBarId },
+        // Preserve the original synthetic icon-attribute contract only in units.
+        // Standalone stories use actual built-in icons and dataset bookmarks.
+        global: { stubs: { FontAwesomeIcon: { template: "<div></div>" } } },
     });
+    await vi.waitFor(() => root.getComponent(ActivitySettings));
+    const wrapper = root.getComponent(ActivitySettings);
+    queryControls.set(wrapper, query);
+    return wrapper;
 }
 
 function testActivity(id, newOptions = {}) {
@@ -65,13 +71,14 @@ function activityTitle(id) {
 }
 
 async function testSearch(wrapper, query, result) {
-    await wrapper.setProps({ query });
+    // Update the mounted child through its parent without remounting story decorators.
+    ensureDefined(queryControls.get(wrapper)).value = query;
+    await nextTick();
     const filtered = wrapper.findAll(activityItemSelector);
     expect(filtered.length).toBe(result);
 }
 
 describe("ActivitySettings", () => {
-    enableAutoUnmount(afterEach);
     let activityStore;
     let wrapper;
 
@@ -81,15 +88,8 @@ describe("ActivitySettings", () => {
             mockConfig.value = originalConfig;
         });
         mockConfig.value = { interactivetools_enable: true, llm_api_configured: true };
-        const pinia = createOwnedPinia();
-        // Mock the response of the API call
-        server.use(
-            http.get("/api/unprivileged_tools", ({ response }) => {
-                return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
-            }),
-        );
+        wrapper = await mountActivitySettings("test-activity-bar");
         activityStore = useActivityStore("test-activity-bar");
-        wrapper = mountActivitySettings("test-activity-bar", pinia);
         await activityStore.sync();
     });
 
@@ -182,10 +182,12 @@ describe("ActivitySettings", () => {
 
         async function mountSettings(config, { canUseUnprivilegedTools }) {
             mockConfig.value = config;
-            const pinia = createOwnedPinia();
+            const settings = await mountActivitySettings(
+                "test-activity-bar-gates",
+                canUseUnprivilegedTools ? stories.CustomToolsPermitted : stories.BuiltInActivities,
+            );
             useUnprivilegedToolStore().canUseUnprivilegedTools = canUseUnprivilegedTools;
             const store = useActivityStore("test-activity-bar-gates");
-            const settings = mountActivitySettings("test-activity-bar-gates", pinia);
             await store.sync();
             await flushPromises();
             return { settings, store };
