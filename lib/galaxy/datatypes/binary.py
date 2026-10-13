@@ -3796,7 +3796,7 @@ class RData(CompressedArchive):
     True
     >>> from galaxy.util.bunch import Bunch
     >>> dataset = Bunch()
-    >>> dataset.metadata = Bunch
+    >>> dataset.metadata = Bunch()
     >>> dataset.get_file_name = lambda : fname
     >>> dataset.has_data = lambda: True
     >>> RData().set_meta(dataset)
@@ -3859,7 +3859,7 @@ class RDS(CompressedArchive):
     True
     >>> from galaxy.util.bunch import Bunch
     >>> dataset = Bunch()
-    >>> dataset.metadata = Bunch
+    >>> dataset.metadata = Bunch()
     >>> dataset.get_file_name = lambda : get_test_fname('int-r4.rds')
     >>> dataset.has_data = lambda: True
     >>> RDS().set_meta(dataset)
