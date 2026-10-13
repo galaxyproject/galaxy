@@ -117,6 +117,22 @@ describe("userStore", () => {
             expect(userStore.getDecodedId("abc")).toBe(123);
         });
 
+        it("falls back to the bootstrapped Galaxy user in embedded views, where the store's user is never loaded", async () => {
+            const windowWithGalaxy = window as unknown as { _galaxyInstance?: unknown };
+            windowWithGalaxy._galaxyInstance = { user: { isAdmin: () => true } };
+            try {
+                const userStore = useUserStore();
+                expect(userStore.currentUser).toBeNull();
+
+                expect(userStore.getDecodedId("abc")).toBeNull(); // not yet resolved
+                await flushPromises();
+                expect(callCount).toBe(1);
+                expect(userStore.getDecodedId("abc")).toBe(123);
+            } finally {
+                delete windowWithGalaxy._galaxyInstance;
+            }
+        });
+
         it("clears cached decoded ids on $reset so a new user doesn't see a stale result", async () => {
             const userStore = useUserStore();
             userStore.currentUser = getFakeRegisteredUser({ is_admin: true });

@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import { useHashedUserId } from "@/composables/hashedUserId";
 import { useKeyedCache } from "@/composables/keyedCache";
 import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
@@ -362,8 +363,19 @@ export const useUserStore = defineStore("userStore", () => {
         return normalized;
     }
 
+    /** Whether the user may decode ids (is an admin), or `null` while that is still unknown.
+     * Embedded views (e.g. scratchbook iframes) deliberately leave `currentUser` unloaded, so fall
+     * back to the user the legacy Galaxy instance bootstrapped from `/context`. */
+    function canDecodeIds(): boolean | null {
+        if (currentUser.value !== null) {
+            return isAdmin.value;
+        }
+        const legacyUser = getGalaxyInstance()?.user;
+        return legacyUser ? Boolean(legacyUser.isAdmin()) : null;
+    }
+
     async function fetchdecodedIdById(params: { id: string }) {
-        if (isAdmin.value) {
+        if (canDecodeIds()) {
             return await decodeIdById(params.id);
         }
         return null;
@@ -371,8 +383,8 @@ export const useUserStore = defineStore("userStore", () => {
 
     const { getItemById: getDecodedId, storedItems: decodedIdCache } = useKeyedCache<number | null>(
         fetchdecodedIdById,
-        // Only fetch a decoded id if the current user is known and the item is undefined (not yet cached).
-        () => (item?: number | null) => currentUser.value !== null && item === undefined,
+        // Only fetch a decoded id if the user is known and the item is undefined (not yet cached).
+        () => (item?: number | null) => canDecodeIds() !== null && item === undefined,
     );
 
     return {
