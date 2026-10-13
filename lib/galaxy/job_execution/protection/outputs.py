@@ -180,8 +180,8 @@ class OutputProtector:
 
     @staticmethod
     def without_tool_metadata(attributes: dict[str, Any] | None) -> dict[str, Any]:
-        """Tool provided attributes of an output, without the metadata: that may be derived from the decrypted data."""
-        return {key: value for key, value in (attributes or {}).items() if key != "metadata"}
+        """Tool provided attributes of an output, without those that may be derived from the decrypted data."""
+        return {key: value for key, value in (attributes or {}).items() if key not in ("metadata", "info")}
 
     def protected_ext(self, dataset_instance: "DatasetInstance") -> str | None:
         """Extension of an output protected earlier, ``None`` for other datasets."""
