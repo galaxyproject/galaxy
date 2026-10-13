@@ -84,6 +84,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_route("/history", controller="history", action="view")
     webapp.add_route("/history/view/{id}", controller="history", action="view")
 
+    webapp.add_route("/widgets/{path:.*}", controller="root", action="client", app_name="widgets")
+
     # Force /activate to go to the controller
     webapp.add_route("/activate", controller="user", action="activate")
 
