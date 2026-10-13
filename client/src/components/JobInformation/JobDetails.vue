@@ -19,8 +19,10 @@ const props = defineProps<{
 
 const id = computed(() => props.job?.id || props.jobId);
 
-// Curious as to why we're trying to access info and remote_host like this, when they don't exist on
-// `JobBaseModel`? Maybe in the admin view we fetch more properties? (leaving as is for now)
+// `traceback`, `info` and `remote_host` aren't on `JobBaseModel`: they're only present on the
+// `admin_job_list` job objects passed in by the admin jobs table. `JobInformation` can't show the
+// traceback itself since the `/api/jobs/{job_id}` response model doesn't include it.
+const traceback = computed(() => (props.job && "traceback" in props.job ? (props.job.traceback as string) : null));
 const info = computed(() => (props.job && "info" in props.job ? (props.job?.info as string) : null));
 const remoteHost = computed(() => (props.job && "remote_host" in props.job ? (props.job.remote_host as string) : null));
 </script>
@@ -31,6 +33,7 @@ const remoteHost = computed(() => (props.job && "remote_host" in props.job ? (pr
         <JobInformation :job-id="id" include-times :invocation-id="invocationId">
             <template v-slot:extra-code-rows>
                 <!-- only needed for admin job component -->
+                <CodeRow v-if="traceback" :code-label="'Traceback'" :code-item="traceback" />
                 <CodeRow v-if="info" :code-label="'Info'" :code-item="info" />
                 <CodeRow v-if="remoteHost" :code-label="'Remote Host'" :code-item="remoteHost" />
             </template>
