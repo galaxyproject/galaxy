@@ -156,6 +156,7 @@ provide(radioGroupKey, {
     &.g-stacked {
         flex-direction: column;
         align-items: flex-start;
+        row-gap: 0;
     }
 
     // Joined like GButtonGroup: square inner corners, no doubled borders
