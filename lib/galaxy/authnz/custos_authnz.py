@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import json
 import logging
 import os
 import time
@@ -12,7 +11,10 @@ from datetime import (
 from typing import (
     Optional,
 )
-from urllib.parse import quote
+from urllib.parse import (
+    quote,
+    urlencode,
+)
 
 import jwt
 from oauthlib.common import generate_nonce
@@ -27,9 +29,14 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
-from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util import requests
+from galaxy.web import url_for
 from . import IdentityProvider
+from .flow_state import (
+    authentication_id,
+    FlowState,
+    InvalidFlow,
+)
 
 try:
     import pkce
@@ -37,9 +44,6 @@ except ImportError:
     pkce = None  # type: ignore[assignment, unused-ignore]
 
 log = logging.getLogger(__name__)
-STATE_COOKIE_NAME = "galaxy-oidc-state"
-NONCE_COOKIE_NAME = "galaxy-oidc-nonce"
-VERIFIER_COOKIE_NAME = "galaxy-oidc-verifier"
 KEYCLOAK_BACKENDS = {"custos", "cilogon", "keycloak"}
 
 
@@ -177,6 +181,7 @@ class OIDCAuthnzBase(IdentityProvider):
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
+        code_verifier = None
         if idphint is not None:
             extra_params["idphint"] = idphint
         if self.config.pkce_support:
@@ -188,15 +193,15 @@ class OIDCAuthnzBase(IdentityProvider):
             code_verifier, code_challenge = pkce.generate_pkce_pair(96)
             extra_params["code_challenge"] = code_challenge
             extra_params["code_challenge_method"] = "S256"
-            trans.set_cookie(value=code_verifier, name=VERIFIER_COOKIE_NAME)
         if self.config.extra_params:
             extra_params.update(self.config.extra_params)
         authorization_url, state = oauth2_session.authorization_url(base_authorize_url, **extra_params)
-        trans.set_cookie(value=state, name=STATE_COOKIE_NAME)
-        trans.set_cookie(value=nonce, name=NONCE_COOKIE_NAME)
+        FlowState(trans.sa_session, trans.galaxy_session, self.config.provider).save(
+            "authentication", {"nonce": nonce_hash, "code_verifier": code_verifier}, identifier=authentication_id(state)
+        )
         return authorization_url
 
-    def _process_token(self, trans, oauth2_session, token, validate_nonce=True):
+    def _process_token(self, trans, oauth2_session, token, validate_nonce=True, nonce=None):
         processed_token = {}
         processed_token["access_token"] = token["access_token"]
         processed_token["id_token"] = token["id_token"]
@@ -206,32 +211,51 @@ class OIDCAuthnzBase(IdentityProvider):
             (datetime.now() + timedelta(seconds=token["refresh_expires_in"])) if "refresh_expires_in" in token else None
         )
 
-        # Get nonce from token['id_token'] and validate. 'nonce' in the
-        # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
-        # cookie.
-        id_token_decoded = self._decode_token_no_signature(processed_token["id_token"])
+        # Tokens come directly from the configured token endpoint after a bound
+        # authorization-code exchange. Validate claims here, never at confirmation.
         if validate_nonce:
-            nonce_hash = id_token_decoded["nonce"]
-            self._validate_nonce(trans, nonce_hash)
-
-        # Get userinfo and lookup/create Galaxy user record
-        if id_token_decoded.get("email", None):
+            if not self.config.issuer:
+                raise InvalidFlow()
+            id_token_decoded = jwt.decode(
+                processed_token["id_token"],
+                audience=self.config.client_id,
+                issuer=self.config.issuer,
+                options={
+                    "verify_signature": False,
+                    "verify_exp": True,
+                    "verify_aud": True,
+                    "verify_iss": True,
+                    "require": ["exp", "iat", "sub", "aud", "iss"],
+                },
+            )
+            if not nonce or id_token_decoded.get("nonce") != nonce:
+                raise InvalidFlow()
+            if id_token_decoded.get("azp", self.config.client_id) != self.config.client_id:
+                raise InvalidFlow()
+        else:
+            id_token_decoded = self._decode_token_no_signature(processed_token["id_token"])
+        if not isinstance(id_token_decoded["sub"], str) or not id_token_decoded["sub"]:
+            raise InvalidFlow()
+        if id_token_decoded.get("email"):
             userinfo = id_token_decoded
         else:
             userinfo = self._get_userinfo(oauth2_session)
+            if userinfo.get("sub") != id_token_decoded["sub"]:
+                raise InvalidFlow()
+        if not isinstance(userinfo.get("email"), str) or not userinfo["email"]:
+            raise InvalidFlow()
+        processed_token["identity_expires_at"] = id_token_decoded["exp"]
         processed_token["email"] = userinfo["email"]
         processed_token["user_id"] = userinfo["sub"]
         processed_token["username"] = self._username_from_userinfo(trans, userinfo)
         return processed_token
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
-        # Take state value to validate from token. OAuth2Session.fetch_token
-        # will validate that the state query parameter value on the URL matches
-        # this value.
-        state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
-        oauth2_session = self._create_oauth2_session(state=state_cookie)
-        token = self._fetch_token(oauth2_session, trans)
-        processed_token = self._process_token(trans, oauth2_session, token)
+        flow_state = FlowState(trans.sa_session, trans.galaxy_session, self.config.provider)
+        authentication = flow_state.consume("authentication", authentication_id(state_token))
+        oauth2_session = self._create_oauth2_session(state=state_token)
+        token = self._fetch_token(oauth2_session, trans, code_verifier=authentication.get("code_verifier"))
+        processed_token = self._process_token(trans, oauth2_session, token, nonce=authentication.get("nonce"))
 
         user_id = processed_token["user_id"]
         email = processed_token["email"]
@@ -262,7 +286,19 @@ class OIDCAuthnzBase(IdentityProvider):
                         )
                         return login_redirect_url, None
                 elif self.config.require_create_confirmation:
-                    login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config.provider}"
+                    pending = dict(processed_token)
+                    for key in ("expiration_time", "refresh_expiration_time"):
+                        pending[key] = pending[key].isoformat() if pending[key] else None
+                    confirmation_id = flow_state.save(
+                        "confirmation", pending, expires_at=processed_token["identity_expires_at"]
+                    )
+                    login_redirect_url = (
+                        url_for("/login/start")
+                        + "?"
+                        + urlencode(
+                            {"confirm": "true", "confirmation_id": confirmation_id, "provider": self.config.provider}
+                        )
+                    )
                     return login_redirect_url, None
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
@@ -310,52 +346,46 @@ class OIDCAuthnzBase(IdentityProvider):
 
         return redirect_url, custos_authnz_token.user
 
-    def create_user(self, token, trans, login_redirect_url):
-        token_dict = json.loads(token)
-
-        access_token = token_dict["access_token"]
-        id_token = token_dict["id_token"]
-        refresh_token = token_dict["refresh_token"] if "refresh_token" in token_dict else None
-        expiration_time = datetime.now() + timedelta(
-            seconds=token_dict.get("expires_in", 3600)
-        )  # might be a problem cause times no long valid
-        refresh_expiration_time = (
-            (datetime.now() + timedelta(seconds=token_dict["refresh_expires_in"]))
-            if "refresh_expires_in" in token_dict
-            else None
-        )
-
-        # Get nonce from token['id_token'] and validate. 'nonce' in the
-        # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
-        # cookie.
-        userinfo = self._decode_token_no_signature(id_token)
-
-        # Get userinfo and create Galaxy user record
-        email = userinfo["email"]
-        # Check if username if already taken
-        username = self._username_from_userinfo(trans, userinfo)
-        user_id = userinfo["sub"]
-
+    def create_user(self, confirmation_id, trans, login_redirect_url):
+        data = self._consume_confirmation(confirmation_id, trans)
+        email, user_id = data["email"], data["user_id"]
+        if trans.sa_session.query(User).where(
+            func.lower(User.email) == email.lower()
+        ).first() or self._get_custos_authnz_token(trans.sa_session, user_id, self.config.provider):
+            raise InvalidFlow()
+        username = self._username_from_userinfo(trans, {"email": email, "preferred_username": data["username"]})
         user = trans.app.user_manager.create(email=email, username=username)
         if trans.app.config.user_activation_on:
             trans.app.user_manager.send_activation_email(trans, email, username)
-
         custos_authnz_token = CustosAuthnzToken(
+            user=user,
             external_user_id=user_id,
             provider=self.config.provider,
-            access_token=access_token,
-            id_token=id_token,
-            refresh_token=refresh_token,
-            expiration_time=expiration_time,
-            refresh_expiration_time=refresh_expiration_time,
+            access_token=data["access_token"],
+            id_token=data["id_token"],
+            refresh_token=data["refresh_token"],
+            expiration_time=datetime.fromisoformat(data["expiration_time"]),
+            refresh_expiration_time=(
+                datetime.fromisoformat(data["refresh_expiration_time"]) if data["refresh_expiration_time"] else None
+            ),
         )
-        add_object_to_object_session(custos_authnz_token, user)
-        custos_authnz_token.user = user
-
-        trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
-        trans.sa_session.commit()
+        try:
+            trans.sa_session.commit()
+        except Exception:
+            trans.sa_session.rollback()
+            raise
         return login_redirect_url, user
+
+    def cancel_user_creation(self, confirmation_id, trans):
+        self._consume_confirmation(confirmation_id, trans)
+
+    def _consume_confirmation(self, confirmation_id, trans):
+        if not trans.app.config.enable_oidc or not self.config.require_create_confirmation or trans.user:
+            raise InvalidFlow()
+        return FlowState(trans.sa_session, trans.galaxy_session, self.config.provider).consume(
+            "confirmation", confirmation_id
+        )
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
         try:
@@ -400,7 +430,7 @@ class OIDCAuthnzBase(IdentityProvider):
         session.verify = self._get_verify_param()
         return session
 
-    def _fetch_token(self, oauth2_session, trans):
+    def _fetch_token(self, oauth2_session, trans, code_verifier=None):
         if self.config.iam_client_secret:
             # Custos uses the Keycloak client secret to get the token
             client_secret = self.config.iam_client_secret
@@ -418,8 +448,8 @@ class OIDCAuthnzBase(IdentityProvider):
             "verify": self._get_verify_param(),
         }
         if self.config.pkce_support:
-            code_verifier = trans.get_cookie(name=VERIFIER_COOKIE_NAME)
-            trans.set_cookie("", name=VERIFIER_COOKIE_NAME, age=-1)
+            if not code_verifier:
+                raise InvalidFlow()
             params["code_verifier"] = code_verifier
         return oauth2_session.fetch_token(token_endpoint, **params)
 
@@ -434,14 +464,6 @@ class OIDCAuthnzBase(IdentityProvider):
     @staticmethod
     def _hash_nonce(nonce):
         return hashlib.sha256(util.smart_str(nonce)).hexdigest()
-
-    def _validate_nonce(self, trans, nonce_hash):
-        nonce_cookie = trans.get_cookie(name=NONCE_COOKIE_NAME)
-        # Delete the nonce cookie
-        trans.set_cookie("", name=NONCE_COOKIE_NAME, age=-1)
-        nonce_cookie_hash = self._hash_nonce(nonce_cookie)
-        if nonce_hash != nonce_cookie_hash:
-            raise Exception("Nonce mismatch. Check that configured redirect_uri matches the URL you are using.")
 
     def _load_config(self, headers: Optional[dict] = None, params: Optional[dict] = None):
         if not headers:

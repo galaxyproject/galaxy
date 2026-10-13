@@ -20,7 +20,9 @@ from galaxy.util.resources import (
 from .custos_authnz import (
     CustosAuthFactory,
     KEYCLOAK_BACKENDS,
+    OIDCAuthnzBase,
 )
+from .flow_state import InvalidFlow
 from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
@@ -366,12 +368,14 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def create_user(self, provider, token, trans, login_redirect_url):
+    def create_user(self, provider, confirmation_id, trans, login_redirect_url):
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, (None, None)
-            return success, message, backend.create_user(token, trans, login_redirect_url)
+            if not isinstance(backend, OIDCAuthnzBase):
+                raise InvalidFlow()
+            return success, message, backend.create_user(confirmation_id, trans, login_redirect_url)
         except exceptions.AuthenticationFailed:
             log.exception("Error creating user")
             raise
@@ -379,6 +383,12 @@ class AuthnzManager:
             msg = f"An error occurred when creating a user with `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
             return False, msg, (None, None)
+
+    def cancel_user_creation(self, provider, confirmation_id, trans):
+        success, message, backend = self._get_authnz_backend(provider)
+        if not success or not isinstance(backend, OIDCAuthnzBase):
+            raise InvalidFlow()
+        backend.cancel_user_creation(confirmation_id, trans)
 
     def _assert_jwt_contains_scopes(self, user, jwt, required_scopes):
         if not jwt:

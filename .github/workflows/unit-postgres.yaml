@@ -59,3 +59,8 @@ jobs:
       - name: Run test migrate database
         run: ./run_tests.sh -unit test/unit/app/test_migrate_database.py
         working-directory: 'galaxy root'
+      - name: Run OIDC flow-state tests with PostgreSQL
+        env:
+          GALAXY_TEST_OIDC_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
+        run: ./run_tests.sh -unit test/unit/authnz/test_flow_state.py
+        working-directory: 'galaxy root'
