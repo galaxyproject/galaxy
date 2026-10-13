@@ -15,7 +15,6 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 import { type AnyWorkflow, type Creator, hasCreator } from "@/api/workflows";
-import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 import { isUrl } from "@/utils/url";
@@ -120,15 +119,11 @@ const creatorBadges = computed<BadgeData[] | undefined>(() => {
     }
 });
 
-const { success } = useToast();
-
 function onCopyLink() {
     if (sourceType.value == "url") {
-        copy(props.workflow.source_metadata?.url);
-        success("URL copied");
+        copy(props.workflow.source_metadata?.url, "URL copied");
     } else if (sourceType.value.includes("trs")) {
-        copy(props.workflow.source_metadata?.trs_tool_id);
-        success("TRS ID copied");
+        copy(props.workflow.source_metadata?.trs_tool_id, "TRS ID copied");
     }
 }
 

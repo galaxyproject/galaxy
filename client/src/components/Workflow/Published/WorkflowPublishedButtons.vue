@@ -33,7 +33,7 @@ const sharedWorkflow = computed(() => {
 });
 
 function copyLink() {
-    copy(fullLink.value);
+    copy(fullLink.value, "Link copied to clipboard");
 }
 
 const editButtonTitle = computed(() => {
