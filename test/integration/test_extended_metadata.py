@@ -301,6 +301,7 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
             )
             assert "Galaxy failed to prepare this job, so the tool was not run" in output["misc_info"]
             assert "Error occurred while building command line" in output["misc_info"]
+            assert "NotFound: cannot find 'out_file2'" in output["misc_info"]
 
     def test_purge_while_job_running(self):
         # pass extra_sleep, since templating the command line will fail if the output

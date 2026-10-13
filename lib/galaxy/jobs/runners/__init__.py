@@ -4,6 +4,7 @@ Base classes for job runner plugins.
 
 import datetime
 import errno
+import json
 import os
 import string
 import subprocess
@@ -700,6 +701,20 @@ class BaseJobRunner:
             stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
         )
 
+    def _read_remote_tool_eval_error(self, job_wrapper) -> dict[str, str] | None:
+        error_path = os.path.join(
+            job_wrapper.working_directory, "metadata", "outputs_populated", "remote_tool_eval_error.json"
+        )
+        try:
+            with open(error_path) as error_file:
+                error = json.load(error_file)
+            return {"message": str(error["message"]), "traceback": str(error["traceback"])}
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("(%s) Failed to read remote tool evaluation error", job_wrapper.get_id_tag())
+            return None
+
     def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
         try:
@@ -743,29 +758,10 @@ class BaseJobRunner:
                     log.warning("(%s/%s) %s (%s)", job_id, external_job_id, desc, path)
             tool_stdout = tool_streams["stdout"]
             tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
+            eval_error = None
             if any(error["errno"] == errno.ENOENT for error in stdio_errors):
-                # tool_stdout/tool_stderr are missing — this can happen when
-                # remote_tool_eval.py fails and the && chain prevents cd working, so the
-                # shell redirection creates files at the wrong path.  Surface
-                # the remote_tool_eval traceback as a job-level error (not a
-                # tool error) since the tool never actually ran.
-                eval_traceback_path = os.path.join(
-                    job_wrapper.working_directory, "metadata", "outputs_populated", "remote_tool_eval_traceback.txt"
-                )
-                if os.path.exists(eval_traceback_path):
-                    with open(eval_traceback_path) as tb:
-                        eval_traceback_lines = tb.read().strip().splitlines()
-                    # The full traceback is already part of job_stderr, only surface the final exception line.
-                    eval_error = eval_traceback_lines[-1] if eval_traceback_lines else "unknown error"
-                    job_wrapper.fail(
-                        f"Galaxy failed to prepare this job, so the tool was not run: {eval_error}",
-                        tool_stdout="",
-                        tool_stderr="",
-                        exit_code=exit_code,
-                        job_stdout=job_stdout,
-                        job_stderr=job_stderr,
-                    )
-                    return
+                # When remote_tool_eval.py fails the tool never runs, so its streams are never written.
+                eval_error = self._read_remote_tool_eval_error(job_wrapper)
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -804,8 +800,16 @@ class BaseJobRunner:
             if stdio_errors:
                 # Finishing may require metadata that was never produced. Fail with the
                 # collected diagnostics before another collection error can obscure them.
+                if eval_error:
+                    message = f"Galaxy failed to prepare this job, so the tool was not run: {eval_error['message']}"
+                    # fail() refreshes the job, so persist the traceback first.
+                    job.traceback = eval_error["traceback"]
+                    self.sa_session.add(job)
+                    self.sa_session.commit()
+                else:
+                    message = "\n".join(error["desc"] for error in stdio_errors if error["desc"])
                 job_wrapper.fail(
-                    "\n".join(error["desc"] for error in stdio_errors if error["desc"]),
+                    message,
                     tool_stdout=tool_stdout,
                     tool_stderr=tool_stderr,
                     exit_code=exit_code,

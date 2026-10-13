@@ -123,6 +123,16 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
         out.write(f"{version_command_line or ''}{command_line}")
 
 
+def describe_exception_chain(exc: BaseException) -> str:
+    # Wrappers like ToolTemplatingException hide the actual problem (e.g. a Cheetah NotFound) in their cause.
+    descriptions = [str(exc) or type(exc).__name__]
+    current = exc.__cause__ or (None if exc.__suppress_context__ else exc.__context__)
+    while current is not None and len(descriptions) < 10:
+        descriptions.append(f"{type(current).__name__}: {current}")
+        current = current.__cause__ or (None if current.__suppress_context__ else current.__context__)
+    return " <- ".join(descriptions)
+
+
 def main() -> None:
     tmpdir = tempfile.mkdtemp()
     working_directory = os.getcwd()
@@ -133,15 +143,21 @@ def main() -> None:
     metadata_directory = os.path.join(working_directory, "metadata")
     import_store_directory = os.path.join(metadata_directory, "outputs_new")
     export_store_directory = os.path.join(metadata_directory, "outputs_populated")
+    error_path = os.path.join(export_store_directory, "remote_tool_eval_error.json")
+    # The metadata directory survives a re-run of the job script, drop an error left by an earlier attempt.
+    if os.path.exists(error_path):
+        os.remove(error_path)
     try:
         evaluate_tool(tmpdir, working_directory, import_store_directory)
-    except Exception:
+    except Exception as e:
         os.makedirs(export_store_directory, exist_ok=True)
-        # traceback.txt fails the metadata import, the second file tells Galaxy the tool never ran:
-        # the metadata script writes traceback.txt on its own failures too.
-        for filename in ("traceback.txt", "remote_tool_eval_traceback.txt"):
-            with open(os.path.join(export_store_directory, filename), "w") as out:
-                out.write(traceback.format_exc())
+        formatted_traceback = traceback.format_exc()
+        # traceback.txt fails the metadata import, but the metadata script writes it on its own failures too,
+        # so the error file tells Galaxy the tool never ran.
+        with open(os.path.join(export_store_directory, "traceback.txt"), "w") as out:
+            out.write(formatted_traceback)
+        with open(error_path, "w") as out:
+            json.dump({"message": describe_exception_chain(e), "traceback": formatted_traceback}, out)
         raise
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
