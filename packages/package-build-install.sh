@@ -16,7 +16,7 @@ META=false
 WHEELHOUSE=
 
 # Use one environment for package build dependencies and the installed Galaxy.
-: "${VENV=../.venv}"
+: "${VENV:=.venv}"
 case "$VENV" in
     /*) ;;
     *) VENV="$(pwd)/$VENV" ;;
