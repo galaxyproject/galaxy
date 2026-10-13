@@ -12139,7 +12139,7 @@ export interface components {
         DatasetProtectionStatus: {
             /**
              * Expires At
-             * @description Expiration (UTC) of the current user's grant, if any.
+             * @description Until when (UTC) the current user's grant can be used by jobs, if any. Jobs need it to stay valid for as long as they may run.
              */
             expires_at?: string | null;
             /**
