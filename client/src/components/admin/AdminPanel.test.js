@@ -18,6 +18,14 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
+vi.mock("@/onload/loadConfig", async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        getAppRoot: () => "/galaxy/",
+    };
+});
+
 vi.mock("vue-router", async (importOriginal) => {
     const actual = await importOriginal();
     return {
@@ -83,6 +91,7 @@ describe("AdminPanel", () => {
                 items: [
                     { id: "monitor", type: "link", title: "Cluster Monitor", url: "/monitor", target: "iframe" },
                     { id: "docs", type: "link", title: "Docs", url: "https://example.org", target: "new_tab" },
+                    { id: "welcome", type: "link", title: "Welcome", url: "/static/welcome.html", target: "new_tab" },
                 ],
             },
         ];
@@ -101,5 +110,9 @@ describe("AdminPanel", () => {
         expect(external.attributes("href")).toBe("https://example.org");
         expect(external.attributes("target")).toBe("_blank");
         expect(external.text()).toBe("Docs");
+
+        // A Galaxy-relative URL gets the configured URL prefix, like framed links do through CenterFrame.
+        const local = wrapper.find("a#admin-link-ext-anvil-welcome");
+        expect(local.attributes("href")).toBe("/galaxy/static/welcome.html");
     });
 });
