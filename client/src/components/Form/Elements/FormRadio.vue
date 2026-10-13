@@ -1,8 +1,9 @@
 <script setup>
-import { BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
 const emit = defineEmits(["input"]);
 const props = defineProps({
@@ -30,10 +31,10 @@ const hasOptions = computed(() => {
 </script>
 
 <template>
-    <BFormRadioGroup v-if="hasOptions" v-model="currentValue" stacked>
-        <BFormRadio v-for="(option, index) in options" :key="index" :value="option.value">
+    <GRadioGroup v-if="hasOptions" v-model="currentValue" stacked>
+        <GRadio v-for="(option, index) in options" :key="index" :value="option.value">
             {{ option.label }}
-        </BFormRadio>
-    </BFormRadioGroup>
+        </GRadio>
+    </GRadioGroup>
     <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>
