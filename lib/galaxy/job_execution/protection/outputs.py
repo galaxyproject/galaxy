@@ -94,12 +94,9 @@ class OutputProtector:
             result = self._protect_file(path)
             extra_files = self._protect_extra_files(extra_files_path)
         except Exception as e:
-            message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
             if not link_data:
                 self._discard(path, extra_files_path)
-            self.records[uuid] = {"outcome": OUTCOME_FAILED}
-            self.errors.append(f"Output '{dataset_instance.name}' could not be protected: {message}")
-            raise ProtectionError(message) from e
+            raise self._failed(dataset_instance, e) from e
         dataset_instance.extension = ext
         self.records[uuid] = {
             "outcome": OUTCOME_PROTECTED,
@@ -121,11 +118,18 @@ class OutputProtector:
         try:
             record["extra_files"] = self._protect_extra_files(extra_files_path)
         except Exception as e:
-            message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
             self._discard_extra_files(extra_files_path)
-            self.records[self._uuid(dataset_instance)] = {"outcome": OUTCOME_FAILED}
-            self.errors.append(f"Output '{dataset_instance.name}' could not be protected: {message}")
-            raise ProtectionError(message) from e
+            raise self._failed(dataset_instance, e) from e
+
+    def _failed(self, dataset_instance: "DatasetInstance", error: Exception) -> ProtectionError:
+        """Record that an output could not be protected, its plaintext must be discarded already."""
+        if isinstance(error, ProtectionError):
+            message = str(error)
+        else:
+            message = f"Unexpected error ({type(error).__name__})"
+        self.records[self._uuid(dataset_instance)] = {"outcome": OUTCOME_FAILED}
+        self.errors.append(f"Output '{dataset_instance.name}' could not be protected: {message}")
+        return ProtectionError(message)
 
     def _protect_extra_files(self, extra_files_path: str | None) -> dict[str, str | None]:
         """Encrypt every extra file in place, return their compute headers by relative path."""
