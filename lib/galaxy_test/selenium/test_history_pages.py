@@ -1,7 +1,6 @@
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -365,7 +364,6 @@ class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
         assert "history_dataset_display" in value
         self.screenshot("history_page_drag_drop_dataset")
 
-    @selenium_only("Needs a held-drag gesture - asserts dragover styling mid-drag via action_chains")
     @selenium_test
     @managed_history
     def test_drag_drop_visual_feedback(self):
@@ -381,15 +379,12 @@ class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
         dataset_element = dataset_selector.wait_for_visible()
         editor = self.components.pages.history.markdown_editor.wait_for_visible()
 
-        ac = self.action_chains()
-        ac.click_and_hold(dataset_element).move_to_element(editor).perform()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        with self.drag_over(dataset_element, editor):
+            self.sleep_for(self.wait_types.UX_RENDER)
 
-        classes = editor.get_attribute("class")
-        assert "page-dragover-success" in classes
-        self.screenshot("history_page_drag_over_highlight")
-
-        ac.release().perform()
+            classes = editor.get_attribute("class")
+            assert "page-dragover-success" in classes
+            self.screenshot("history_page_drag_over_highlight")
 
     # --- View / Preview / Rename Tests ---
 

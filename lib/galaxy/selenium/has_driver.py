@@ -381,6 +381,28 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         seletools_drag_and_drop(self.driver, source, target)
 
+    def drag_over(self, source: WebElementProtocol, target: WebElementProtocol):
+        """
+        Hold a drag of source over target, dropping on exit.
+
+        A real pointer drag rather than the scripted one drag_and_drop uses:
+        the point is to hand control back to the test mid-drag, which a single
+        scripted sequence cannot do.
+
+        See HasDriverProtocol.drag_over.
+        """
+        chain = self.action_chains()
+        chain.click_and_hold(source).move_to_element(target).perform()
+
+        @contextmanager
+        def _drag_over_context():
+            try:
+                yield
+            finally:
+                chain.release().perform()
+
+        return _drag_over_context()
+
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
         Move to an element and click it using ActionChains.
