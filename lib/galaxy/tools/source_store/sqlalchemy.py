@@ -17,6 +17,7 @@ from collections.abc import (
     Callable,
     Iterator,
 )
+from contextlib import nullcontext
 from datetime import datetime
 from typing import (
     Any,
@@ -144,9 +145,11 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
         self._ensure_sqlite_parent_directory(url)
 
-        # Re-entrant: update_index_entry calls store_index while holding it.
-        self._write_lock = threading.RLock()
         is_sqlite = make_url(url).drivername.split("+")[0] == "sqlite"
+        # Re-entrant: update_index_entry calls store_index while holding it.
+        # Covers this instance only; other instances writing the same file
+        # rely on the busy timeout. Server databases handle concurrent writers.
+        self._write_lock: threading.RLock | nullcontext[None] = threading.RLock() if is_sqlite else nullcontext()
         connect_args = {"timeout": SQLITE_BUSY_TIMEOUT_SECONDS} if is_sqlite else {}
         self._engine = create_engine(url, future=True, connect_args=connect_args)
         if not read_only and not self._is_remote_engine():
