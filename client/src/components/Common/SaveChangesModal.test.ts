@@ -1,4 +1,6 @@
+import { composeStories } from "@storybook/vue3-vite";
 import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, disposePinia, getActivePinia, setActivePinia } from "pinia";
@@ -7,6 +9,8 @@ import { nextTick } from "vue";
 import type * as VueRouter from "vue-router";
 
 import { useToast } from "@/composables/toast";
+
+import * as SaveChangesModalStories from "./SaveChangesModal.stories";
 
 import SaveChangesModal from "./SaveChangesModal.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -39,6 +43,8 @@ function callGuard(mockRegister: typeof mockOnBeforeRouteLeave, toFullPath: stri
     return next;
 }
 
+const stories = composeStories(SaveChangesModalStories);
+const mountStory = useStoryMount();
 const localVue = getLocalVue();
 
 function mountModal(onSave: () => Promise<unknown>, onDiscard: () => void) {
@@ -64,6 +70,18 @@ function footerButtons(wrapper: ModalWrapper): VueWrapper<InstanceType<typeof GB
 function buttonsDisabled(wrapper: ModalWrapper) {
     return footerButtons(wrapper).map((button) => button.props("disabled"));
 }
+
+describe("Saved page story", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("lets navigation through when there are no unsaved changes", () => {
+        const wrapper = mountStory(stories.SavedPage).getComponent(SaveChangesModal);
+        const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
+
+        expect(next).toHaveBeenCalledWith();
+        expect(wrapper.getComponent(GModal).props("show")).toBe(false);
+    });
+});
 
 describe("SaveChangesModal reusable component", () => {
     let onSave: ReturnType<typeof vi.fn<() => Promise<unknown>>>;
@@ -95,13 +113,6 @@ describe("SaveChangesModal reusable component", () => {
     async function makeDirty() {
         await wrapper.setProps({ hasChanges: true });
     }
-
-    it("lets navigation through when there are no unsaved changes", () => {
-        const next = callGuard(mockOnBeforeRouteLeave, "/pages/list");
-
-        expect(next).toHaveBeenCalledWith();
-        expect(wrapper.getComponent(GModal).props("show")).toBe(false);
-    });
 
     it("blocks navigation and opens the modal when there are unsaved changes", async () => {
         await makeDirty();
