@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { faRedo, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import type { JobBaseModel, ShowFullJobResponse } from "@/api/jobs";
 import { useJobDetails } from "@/composables/jobDetails.js";
-import { useToolStore } from "@/stores/toolStore";
+import { useRerunnableTool } from "@/composables/rerunnableTool";
 
 import GButton from "../BaseComponents/GButton.vue";
 
@@ -23,31 +23,31 @@ const props = defineProps<{
 const fetchJobId = computed(() => (props.job === undefined ? props.jobId : undefined));
 const { job: fetchedJob } = useJobDetails(fetchJobId, { full: false });
 const job = computed(() => (props.job !== undefined ? props.job : fetchedJob.value));
-const toolStore = useToolStore();
 
 const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
 
-const tool = computed(() => (job.value ? toolStore.getToolForId(job.value.tool_id) : undefined));
-const toolLoading = computed(() => !!job.value && !tool.value);
+const {
+    canRerun: canRerunJob,
+    loading: toolLoading,
+    error: toolError,
+} = useRerunnableTool(computed(() => job.value?.tool_id));
 
-const canRerunJob = computed(() => !!tool.value?.is_workflow_compatible);
-
-watch(
-    () => job.value?.tool_id,
-    (toolId) => {
-        if (toolId && !toolStore.getToolForId(toolId)) {
-            toolStore.fetchToolForId(toolId);
-        }
-    },
-    { immediate: true },
-);
+const disabledTitle = computed(() => {
+    if (toolLoading.value) {
+        return "Checking if this job can be rerun...";
+    }
+    if (toolError.value) {
+        return `Could not check if this job can be rerun: ${toolError.value}`;
+    }
+    return "This job cannot be rerun";
+});
 </script>
 
 <template>
     <GButton
         v-if="job"
         title="Run Job Again"
-        :disabled-title="toolLoading ? 'Checking if this job can be rerun...' : 'This job cannot be rerun'"
+        :disabled-title="disabledTitle"
         :disabled="toolLoading || !canRerunJob"
         size="small"
         color="blue"
@@ -55,7 +55,10 @@ watch(
         :transparent="!props.outline"
         :pressed="route.fullPath === rerunUrl"
         :to="rerunUrl">
-        <FontAwesomeIcon fixed-width :icon="toolLoading ? faSpinner : faRedo" :spin="toolLoading" />
+        <!-- Separate icons rather than a dynamic `icon` prop: an in-place patch of `FontAwesomeIcon`'s
+            icon doesn't always re-render, leaving the spinner after the check settles while disabled. -->
+        <FontAwesomeIcon v-if="toolLoading" fixed-width :icon="faSpinner" spin />
+        <FontAwesomeIcon v-else fixed-width :icon="faRedo" />
         <span class="text-nowrap">Run again</span>
     </GButton>
 </template>

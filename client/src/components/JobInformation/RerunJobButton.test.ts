@@ -80,6 +80,27 @@ describe("RerunJobButton.vue", () => {
         expect(wrapper.find(SELECTORS.BUTTON).classes()).toContain("g-disabled");
     });
 
+    it("settles to disabled with an explanation if the tool can't be fetched", async () => {
+        server.use(
+            http.get("/api/tools/:tool_id", () =>
+                HttpResponse.json({ err_msg: "Tool not found", err_code: 404 }, { status: 404 }),
+            ),
+        );
+
+        const wrapper = mountRerunJobButton();
+        await flushPromises();
+        expect(wrapper.find(SELECTORS.BUTTON).exists()).toBe(true);
+        // The tool store fetches via axios, whose rejection needs more than a microtask flush
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.SPINNER).exists()).toBe(false);
+
+        const button = wrapper.find(SELECTORS.BUTTON);
+        expect(button.classes()).toContain("g-disabled");
+        expect(button.attributes("title")).toContain("Could not check if this job can be rerun");
+    });
+
     it("does not re-fetch the tool if it's already cached in the store", async () => {
         let toolFetchCount = 0;
         server.use(
