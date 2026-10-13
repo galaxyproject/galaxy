@@ -45,7 +45,7 @@ DEFAULT_NOMAD_URL = "https://nomad-lab.eu/prod/v1"
 # the two top-level folders of nomad-fsspec
 DATASETS = "datasets"
 UPLOADS = "uploads"
-# fsspec keeps every listing until it is read again; one instance serves a whole thread
+# listings kept by the instance that serves a thread; nomad-fsspec drops the oldest past this
 MAX_LISTINGS = 100
 
 
@@ -129,8 +129,10 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         parts = _parts(path)
         if parts == [UPLOADS] and not context.config.token:
             raise AuthenticationRequired(f"My uploads needs a NOMAD token, and {self.label} has none.")
-        if recursive and parts in ([], [DATASETS]):
-            raise RequestParameterInvalidException("Recursive listing of all public NOMAD datasets is not supported.")
+        if recursive and len(parts) < _upload_depth(parts):
+            # each upload walked costs NOMAD requests, and its ZIP may be read only every 5 seconds
+            raise RequestParameterInvalidException("NOMAD folders can only be listed recursively inside an upload.")
+        query = query.strip() if query else None
         return super()._list(context, path, recursive, write_intent, limit, offset, query, sort_by)
 
     def _realize_to(
@@ -139,12 +141,11 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         native_path: str,
         context: FilesSourceRuntimeContext[NomadFileSourceConfiguration],
     ) -> None:
-        fs = self._open_fs(context, self._get_cache_options(context.config))
         folder = RequestParameterInvalidException(f"{source_path} is a folder in NOMAD; select a file inside it.")
         parts = _parts(source_path)
-        # path segments up to and including the upload id
-        if len(parts) <= (3 if parts[:1] == [DATASETS] else 2):
+        if len(parts) <= _upload_depth(parts):
             raise folder
+        fs = self._open_fs(context, self._get_cache_options(context.config))
         try:
             fs.get_file(source_path, native_path)
         except IsADirectoryError as e:
@@ -154,6 +155,8 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         except PermissionError as e:
             hint = f" Check the NOMAD token of {self.label}." if context.config.token else ""
             raise AuthenticationRequired(f"NOMAD refused access to {source_path}.{hint}") from e
+        except Exception as e:
+            raise MessageException(f"Could not import {source_path} from NOMAD. Reason: {e}") from e
 
     def _info_to_entry(self, info: dict[str, Any], config: NomadFileSourceConfiguration) -> AnyRemoteEntry:
         entry = super()._info_to_entry(info, config)
@@ -165,14 +168,16 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         self, fs: AbstractFileSystem, path: str, query: str, config: NomadFileSourceConfiguration
     ) -> list[AnyRemoteEntry]:
         # paths are NOMAD ids, so search the names users see instead of globbing paths
-        entries = self._list_directory(fs, path, config)
         parts = _parts(path)
         if len(parts) == 2 and parts[0] == DATASETS:
             # a dataset lists its uploads by id, so NOMAD searches their names; the page is named later
-            found = set(cast("NomadFileSystemType", fs).search_uploads(parts[1], query.strip()))
-            return [entry for entry in entries if entry.path.rsplit("/", 1)[-1] in found]
-        needle = query.strip().casefold()
-        return [entry for entry in entries if needle in entry.name.casefold()]
+            found = cast("NomadFileSystemType", fs).search_uploads(parts[1], query)
+            return [
+                self._info_to_entry({"name": f"/{DATASETS}/{parts[1]}/{upload_id}", "type": "directory"}, config)
+                for upload_id in sorted(found)
+            ]
+        needle = query.casefold()
+        return [entry for entry in self._list_directory(fs, path, config) if needle in entry.name.casefold()]
 
     def _enrich_entries(
         self, fs: AbstractFileSystem, entries: list[AnyRemoteEntry], config: NomadFileSourceConfiguration
@@ -204,6 +209,11 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
 
 def _parts(path: str) -> list[str]:
     return [part for part in path.split("/") if part]
+
+
+def _upload_depth(parts: list[str]) -> int:
+    # path segments up to and including the upload id
+    return 3 if parts[:1] == [DATASETS] else 2
 
 
 __all__ = ("NomadFilesSource",)

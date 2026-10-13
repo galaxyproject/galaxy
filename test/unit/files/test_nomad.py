@@ -9,6 +9,7 @@ import pytest
 from galaxy.exceptions import (
     AuthenticationRequired,
     ConfigDoesNotAllowException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
 )
@@ -50,6 +51,8 @@ class FakeNomadFileSystem:
     def get_file(self, rpath, lpath):
         if any(name == rpath for listing in TREE.values() for name, _ in listing):
             raise IsADirectoryError(errno.EISDIR, "Is a directory", rpath)
+        if rpath.endswith("slow.txt"):
+            raise RuntimeError("NOMAD at 10.1.2.3 did not answer in time")
         if rpath not in FILES:
             raise FileNotFoundError(errno.ENOENT, "No such file or directory", rpath)
         with open(lpath, "wb") as f:
@@ -89,6 +92,7 @@ def test_a_dataset_names_the_page_shown_and_searches_names_in_nomad():
         ("up2", "/datasets/ds1/up2"),
     ]
     assert _list(source, "/datasets/ds1", query=" DEMO-data ") == [("nomad-demo-data.zip", "/datasets/ds1/up1")]
+    assert len(_list(source, "/datasets/ds1", query="  ")) == 2
     assert _list(source, "/datasets", query="EXAMPLE") == [("demo example data", "/datasets/ds1")]
 
 
@@ -106,8 +110,8 @@ def test_refusals_keep_their_status():
     assert refused.value.status_code == 403
     with pytest.raises(ObjectNotFound):
         _list(_source(), "/datasets/no-such-dataset")
-    for path in ("/", "/datasets"):
-        with pytest.raises(RequestParameterInvalidException, match="Recursive"):
+    for path in ("/", "/datasets", "/datasets/ds1", "/uploads"):
+        with pytest.raises(RequestParameterInvalidException, match="recursively inside an upload"):
             _list(_source(token="secret"), path, recursive=True)
 
 
@@ -119,3 +123,5 @@ def test_only_files_inside_an_upload_are_imported(tmp_path):
     for folder in ("/datasets/ds1", "/datasets/ds1/up1", "/uploads/up9", "/datasets/ds1/up1/sub"):
         with pytest.raises(RequestParameterInvalidException, match="is a folder in NOMAD"):
             source.realize_to(folder, os.path.join(tmp_path, "x"), user_context=user_context_fixture())
+    with pytest.raises(MessageException, match="did not answer in time"):
+        source.realize_to("/datasets/ds1/up1/slow.txt", str(target), user_context=user_context_fixture())
