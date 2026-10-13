@@ -151,6 +151,14 @@ describe("FormSelectOrText", () => {
         expect((textField(wrapper).element as HTMLInputElement).value).toBe("banana");
     });
 
+    it("moves a selected value the options stop listing to the text field", async () => {
+        const wrapper = mountWithValue("apple");
+        await wrapper.setProps({ options: OPTIONS.filter((option) => option.value !== "apple") });
+        expect(selectedLabel(wrapper)).toBe("Other fruit...");
+        expect((textField(wrapper).element as HTMLInputElement).value).toBe("apple");
+        expect(emitted(wrapper)).toEqual([]);
+    });
+
     it("doesn't emit empty text and asks for a value", async () => {
         const wrapper = mountWithValue("banana");
         await type(wrapper, "");

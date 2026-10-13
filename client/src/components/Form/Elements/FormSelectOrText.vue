@@ -102,6 +102,18 @@ watch(
     { immediate: true },
 );
 
+watch(
+    () => props.options,
+    () => {
+        // a selected value the options no longer list moves to the text field rather than blanking the select
+        if (!otherMode.value && props.value !== null && !isListed(props.value)) {
+            text.value = props.value;
+            edited.value = false;
+            otherMode.value = true;
+        }
+    },
+);
+
 function onSelect(value: string | null) {
     if (value === null) {
         // deselecting the current option
