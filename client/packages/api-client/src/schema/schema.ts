@@ -6885,6 +6885,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/widgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists the widgets this Galaxy serves
+         * @description **Warning**: This API is unstable and may change without notice.
+         *
+         *     `/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, showing only an error inside the page. Consumers check this list for the widgets and parameters an instance supports instead of hardcoding routes per Galaxy version.
+         */
+        get: operations["index_api_widgets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflow_landings": {
         parameters: {
             query?: never;
@@ -28538,6 +28560,36 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             revision: string;
+        };
+        /** Widget */
+        Widget: {
+            /**
+             * Description
+             * @description What the widget shows.
+             */
+            description: string;
+            /**
+             * Identifier
+             * @description Stable identifier of the widget.
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name of the widget.
+             */
+            name: string;
+            /**
+             * Parameters Schema
+             * @description JSON Schema of the parameters object. Path parameters fill the braces in `path`, all others go in the query.
+             */
+            parameters_schema: {
+                [key: string]: unknown;
+            };
+            /**
+             * Path
+             * @description Path template relative to `<galaxy root>/widgets/`, with path parameters in braces.
+             */
+            path: string;
         };
         /** WorkflowEngineVersion */
         WorkflowEngineVersion: {
@@ -55361,6 +55413,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserModel"] | null;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_widgets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Widget"][];
                 };
             };
             /** @description Request Error */
