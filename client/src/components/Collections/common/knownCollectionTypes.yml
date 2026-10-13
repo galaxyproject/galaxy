@@ -114,6 +114,10 @@
       description: >-
         A list of forward and reverse dataset pairs where each pair also carries a row of typed metadata described by
         its column definitions.
+      notes:
+        workflow_input: >-
+          Only sample sheets can be connected to this input, but a sample sheet of paired datasets can be connected to
+          a list of paired datasets input.
     - collection_type: sample_sheet:paired_or_unpaired
       label: Sample Sheet of Paired and Unpaired Datasets
       short_label: mixed sample sheet of paired and unpaired
@@ -124,6 +128,10 @@
       description: >-
         A mix of single datasets and dataset pairs where each element also carries a row of typed metadata described
         by its column definitions.
+      notes:
+        workflow_input: >-
+          Only sample sheets can be connected to this input, including a sample sheet of datasets or of paired
+          datasets. A mixed sample sheet can be connected to a mixed list input.
     - collection_type: sample_sheet:record
       label: Sample Sheet of Records
       short_label: sample sheet of records
@@ -133,3 +141,7 @@
         element_plural: records
       description: >-
         A list of records where each record also carries a row of typed metadata described by its column definitions.
+      notes:
+        workflow_input: >-
+          Only sample sheets can be connected to this input, but a sample sheet of records can be connected to a list
+          of records input.

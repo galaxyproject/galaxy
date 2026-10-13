@@ -85,6 +85,14 @@ describe("knownCollectionTypes", () => {
         expect(describeKnownCollectionType(mixed!, "builder")).toBe(mixed!.description);
     });
 
+    it("says what connects to every sample sheet workflow input", () => {
+        const sampleSheets = KNOWN_COLLECTION_TYPES.filter((known) => known.collectionType.startsWith("sample_sheet"));
+        expect(sampleSheets).toHaveLength(4);
+        for (const known of sampleSheets) {
+            expect(known.notes.workflow_input).toContain("Only sample sheets can be connected");
+        }
+    });
+
     it("finds collection types in the order asked for", () => {
         expect(findKnownCollectionTypes(["list:list", "list"]).map((known) => known.label)).toEqual([
             "Nested List of Datasets",
