@@ -89,6 +89,7 @@ keywords = ["Galaxy"]
 test = [
     "mock-ssh-server",
     "pkce",
+    "pykube-ng==23.6.0",  # Match the conditional Kubernetes runner dependency.
     "pykwalify",
     "pytest",
     "pytest-asyncio",

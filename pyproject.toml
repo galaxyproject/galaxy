@@ -141,6 +141,7 @@ test = [
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
     "pyftpdlib",
+    "pykube-ng==23.6.0",  # Match the conditional Kubernetes runner dependency.
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
