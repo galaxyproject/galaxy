@@ -92,7 +92,7 @@ const toolSuccessOutputsCollapsed = useUserLocalStorage("tool-success-outputs-co
                 :show-recommendation="showRecommendation" />
 
             <div v-if="jobResponse.produces_entry_points" id="tool-entry-points">
-                <ToolEntryPoints :job-id="viewedJobId" :job="viewedJob" />
+                <ToolEntryPoints :job-id="viewedJobId" :job="viewedJob" :other-jobs-count="nJobs > 1 ? nJobs - 1 : 0" />
             </div>
 
             <div id="job-execution-details">

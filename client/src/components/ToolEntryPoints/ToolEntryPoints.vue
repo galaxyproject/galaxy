@@ -27,6 +27,9 @@ const props = defineProps<{
     /** A job object. `undefined` fetches/polls it here instead; `null` means
      * the parent confirms there's deliberately no job yet (also skips fetching). */
     job?: JobBaseModel | ShowFullJobResponse | null;
+    /** How many other jobs from this same run also produce Interactive Tool sessions. When set
+     * and > 1, shown as a badge on the card so a batch run's other sessions aren't missed. */
+    otherJobsCount?: number;
 }>();
 
 const { entryPointsForJob } = storeToRefs(useEntryPointStore());
@@ -40,6 +43,14 @@ const badges = computed<CardBadge[]>(() => {
     const label = total > 1 ? `${active}/${total} active` : `${active} active`;
 
     return [{ id: "entry-points-counter", label, variant: "outline-info", title: "" }];
+});
+
+const otherJobsHint = computed(() => {
+    if (!props.otherJobsCount) {
+        return null;
+    }
+    const plural = props.otherJobsCount > 1 ? "s" : "";
+    return `${props.otherJobsCount} other job${plural} in this run also have Interactive Tool sessions | paginate above to view them.`;
 });
 
 const primaryActions = computed(() => {
@@ -104,6 +115,12 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
 
 <template>
     <DetailBlock :header-icon="faLaptop" title="Interactive Tools">
+        <template v-slot:header-indicators>
+            <span v-if="otherJobsHint" class="other-jobs-hint" :title="otherJobsHint">
+                <FontAwesomeIcon :icon="faLayerGroup" />
+                +{{ props.otherJobsCount }} job{{ props.otherJobsCount! > 1 ? "s" : "" }}, paginate to view
+            </span>
+        </template>
         <template v-slot:custom-content>
             <GCard
                 :content-class="currentStatus.class === 'fa-spin' ? 'entry-points-card-loading' : undefined"
@@ -162,6 +179,16 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
     :deep(.entry-points-card-loading) {
         background-color: var(--color-blue-200);
     }
+}
+
+.other-jobs-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--color-blue-600);
+    white-space: nowrap;
 }
 
 .entry-points-grid {
