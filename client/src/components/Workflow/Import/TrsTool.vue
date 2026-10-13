@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormSelect } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -9,6 +8,7 @@ import { useMarkdown } from "@/composables/markdown";
 import type { TrsTool, TrsToolVersion } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 
 interface Props {
     trsTool: TrsTool;
@@ -110,11 +110,12 @@ function importSelectedVersion() {
             <b>Select a version</b>
 
             <div class="d-flex align-items-center gap-2 mt-2">
-                <BFormSelect
+                <GSelect
                     v-model="selectedVersion"
-                    :options="versionOptions"
+                    aria-label="Select a version"
                     class="workflow-version-select"
-                    style="max-width: 300px" />
+                    style="max-width: 300px"
+                    :options="versionOptions" />
 
                 <GButton
                     v-if="showImportButton"
