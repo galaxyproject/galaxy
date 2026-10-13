@@ -1858,9 +1858,31 @@ Unzipping won't be done for compressed data types, e.g.
 
 The value of a select parameter should be specified as the value of one of the
 legal options. If more than one option is selected (`multiple="true"`) they
-should be given as comma separated list. For optional selects
-(`optional="true"`) the case that no option is selected can be specified with
-`value=""`.
+should be given as comma separated list.
+
+For optional selects (`optional="true"`), use `value_json="null"` to explicitly
+leave the parameter unset. This works for both single and multiple selects:
+
+```xml
+<param name="outputs" value_json="null" />
+```
+
+For multiple selects (`multiple="true"`), use `value_json="[]"` to explicitly
+supply an empty list of selected options:
+
+```xml
+<param name="outputs" value_json="[]" />
+```
+
+Use these explicit JSON forms instead of `value=""`. `value=""` supplies the
+empty string as an option value, which is not a legal option unless the select
+defines `<option value="">`. On an optional single select it fails test
+validation from profile `24.2`. Tool profiles before `26.1` interpret
+`value=""` on a multiple select as an empty list, but linting flags this legacy
+convention and profile `26.1` and later reject it.
+
+Omit the test's `param` element to use the input parameter's default instead;
+this may select options if the tool declares them with `selected="true"`.
 
 While in general it is preferred to specify the selected cases by their values it
 is also possible to specify them by their name (i.e. the content of the
@@ -1892,7 +1914,9 @@ values that can be assigned to an input parameter.</xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">This variant of the value parameters can be
 used to load typed parameters. This string will be loaded as JSON and its type will
-attempt to be preserved through API requests to Galaxy.</xs:documentation>
+attempt to be preserved through API requests to Galaxy. For example, use
+``value_json="null"`` for an unset optional select or ``value_json="[]"`` for an
+empty multiple-select list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ftype" type="Format">

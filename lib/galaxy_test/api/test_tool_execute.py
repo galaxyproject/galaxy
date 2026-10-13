@@ -835,6 +835,17 @@ def test_select_multiple_does_not_select_first_by_default(
         ).with_contents_stripped("None")
 
 
+@requires_tool_id("gx_select_multiple")
+@requires_tool_id("gx_select_multiple_optional")
+def test_select_multiple_empty_list(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
+    # an explicit empty list (value_json="[]" in tool tests) selects nothing, like null
+    empty_list = tool_input_format.when.any({"parameter": []})
+    for required_tool in required_tools:
+        required_tool.execute().with_inputs(empty_list).assert_has_single_job.with_output(
+            "output"
+        ).with_contents_stripped("None")
+
+
 @requires_tool_id("gx_genomebuild_multiple")
 def test_genomebuild_multiple_is_optional_by_default(
     required_tool: RequiredTool, tool_input_format: DescribeToolInputs
