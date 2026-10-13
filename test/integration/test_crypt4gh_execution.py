@@ -236,9 +236,14 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
         with_metadata = self.dataset_populator.get_history_dataset_details(
             history_id, content_id=job["outputs"]["__new_primary_file_reports|with_metadata__"]["id"]
         )
-        # Tool provided metadata may come from decrypted data, it is ignored.
+        # Tool provided metadata and info may come from decrypted data, they are ignored.
         assert with_metadata["extension"] == "tabular.c4gh"
         assert with_metadata.get("metadata_columns") != 99
+        assert "decrypted content" not in (with_metadata["misc_info"] or "")
+        declared = self.dataset_populator.get_history_dataset_details(
+            history_id, content_id=job["outputs"]["declared"]["id"]
+        )
+        assert "decrypted content" not in (declared["misc_info"] or "")
         composite = self.dataset_populator.get_history_dataset_details(
             history_id, content_id=job["outputs"]["composite"]["id"]
         )
