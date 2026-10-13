@@ -93,7 +93,10 @@ export default {
                 return;
             }
             const pre = this.$refs.pre;
-            this.needsToggle = !!pre && pre.scrollWidth > pre.clientWidth;
+            // The collapsed preview is `nowrap`, which folds line breaks into spaces, so short
+            // multi-line content fits without overflowing but still needs expanding to read it.
+            const isMultiline = !!this.codeItem && this.codeItem.trimEnd().includes("\n");
+            this.needsToggle = !!pre && (isMultiline || pre.scrollWidth > pre.clientWidth);
         },
         observePre() {
             // .observe() on an already-observed element is a no-op, so it's safe to call this
