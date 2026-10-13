@@ -2,6 +2,10 @@ import logging
 import re
 import urllib.request
 from typing import Union
+from urllib.parse import (
+    quote,
+    urlsplit,
+)
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -22,6 +26,21 @@ from . import (
 )
 
 log = logging.getLogger(__name__)
+
+# ASCII control characters, space, and DEL must be percent-encoded in a URL;
+# same character set http.client refuses in a request line.
+_DISALLOWED_URL_CHARACTERS = re.compile(r"[\x00-\x20\x7f]")
+
+# RFC 3986 reserved characters plus "%" and "~", the safe set requests.utils.requote_uri uses.
+# Keeping "%" leaves existing escapes, valid or not, exactly as given.
+_URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
+
+
+def _requote_http_url(url: str) -> str:
+    # Percent-encode characters such as <, > and " after the host, leaving scheme and host untouched.
+    parts = urlsplit(url)
+    authority_end = len(parts.scheme) + len("://") + len(parts.netloc)
+    return url[:authority_end] + quote(url[authority_end:], safe=_URL_SAFE_CHARACTERS)
 
 
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -64,17 +83,17 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
     ):
         config = context.config
-        req = urllib.request.Request(source_path, headers=config.http_headers)
-        try:
-            page = urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
-        except Exception as e:
-            if "control characters" in str(e):
+        request_url = source_path
+        if urlsplit(source_path).scheme.lower() in ("http", "https"):
+            # The fragment is not sent to the server, so it may contain spaces.
+            if _DISALLOWED_URL_CHARACTERS.search(source_path.split("#", 1)[0]):
                 raise ValueError(
                     f"URL contains unencoded characters (e.g. spaces): {source_path}. "
                     "The URL source should properly percent-encode the path."
-                ) from e
-            raise
-
+                )
+            request_url = _requote_http_url(source_path)
+        req = urllib.request.Request(request_url, headers=config.http_headers)
+        page = urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT)
         with page:
             # Verify url post-redirects is still allowlisted
             validate_non_local(page.geturl(), self._allowlist or config.fetch_url_allowlist)
