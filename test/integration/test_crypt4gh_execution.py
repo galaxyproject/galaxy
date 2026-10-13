@@ -243,6 +243,10 @@ class TestCrypt4GHExecutionIntegration(BaseCrypt4GHExecutionIntegrationTestCase)
             history_id, content_id=job["outputs"]["composite"]["id"]
         )
         assert self._decrypted_content(history_id, composite, filename="part.txt") == PLAINTEXT_1
+        assigned = self.dataset_populator.get_history_dataset_details(
+            history_id, content_id=job["outputs"]["assigned"]["id"]
+        )
+        assert self._decrypted_content(history_id, assigned, filename="part.txt") == PLAINTEXT_1
 
     def test_outputs_encrypted_by_the_tool_are_not_encrypted_again(self, history_id):
         decrypted = self._upload_authorized(history_id, PLAINTEXT_1)
