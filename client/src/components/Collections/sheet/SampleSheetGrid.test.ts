@@ -3,17 +3,19 @@ import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import type { ColDef, ValueSetterParams } from "ag-grid-community";
 import flushPromises from "flush-promises";
+import { HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, toRaw } from "vue";
 
-import type { SampleSheetColumnDefinitions } from "@/api";
+import type { HDCADetailed, SampleSheetColumnDefinitions } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { SampleSheetCollectionType } from "@/api/datasetCollections";
 import type { InitialElements } from "@/components/Collections/wizard/types";
 import { Toast } from "@/composables/toast";
 
 import type { AgRowData } from "./useSampleSheetGrid";
+import { parseWorkbook, workbookForCollection } from "./workbooks";
 
 import SampleSheetGrid from "./SampleSheetGrid.vue";
 
@@ -111,6 +113,7 @@ function setCell(column: ColDef, rows: AgRowData[], rowIndex: number, newValue: 
         node: { rowIndex },
         colDef: column,
         api: {
+            refreshCells: vi.fn(),
             forEachNode: (callback: (node: { rowIndex: number; data: AgRowData }) => void) =>
                 rows.forEach((data, index) => callback({ rowIndex: index, data: toRaw(data) })),
         },
@@ -225,6 +228,191 @@ describe("SampleSheetGrid", () => {
 
         expect(editorValues()).toEqual(["a", "renamed"]);
     });
+
+    it("updates references in other rows and self references when renaming, but keeps them on a rejected rename", async () => {
+        const wrapper = await mountGrid(URIS, [{ name: "reference", type: "element_identifier", optional: true }]);
+        const rows = gridRows(wrapper);
+        const reference = gridColumn(wrapper, "reference");
+        setCell(reference, rows, 0, "a");
+        setCell(reference, rows, 1, "a");
+        const identifier = gridColumn(wrapper, "list_identifiers");
+        expect(setCell(identifier, rows, 0, "b")).toBe(false);
+        expect(rows.map((row) => row.reference)).toEqual(["a", "a"]);
+        expect(setCell(identifier, rows, 0, "renamed")).toBe(true);
+        expect(rows.map((row) => row.reference)).toEqual(["renamed", "renamed"]);
+        (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+        expect(wrapper.emitted("on-fetch-target")![0]![0]).toMatchObject({
+            elements: [
+                { name: "renamed", row: ["renamed"] },
+                { name: "b", row: ["renamed"] },
+            ],
+        });
+    });
+
+    it("rejects a rename that violates a referencing column's restrictions", async () => {
+        const wrapper = await mountGrid(URIS, [
+            { name: "reference", type: "element_identifier", optional: true, restrictions: ["a", "b"] },
+        ]);
+        const rows = gridRows(wrapper);
+        expect(setCell(gridColumn(wrapper, "reference"), rows, 1, "a")).toBe(true);
+        expect(setCell(gridColumn(wrapper, "list_identifiers"), rows, 0, "renamed")).toBe(false);
+        expect(rows[0]!.list_identifiers).toBe("a");
+        expect(rows[1]!.reference).toBe("a");
+        expect(toastError).toHaveBeenCalledWith(
+            "Cannot rename this identifier because a referencing column does not allow the new value.",
+        );
+        (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+        expect(wrapper.emitted("on-fetch-target")![0]![0]).toMatchObject({
+            elements: [
+                { name: "a", row: [""] },
+                { name: "b", row: ["a"] },
+            ],
+        });
+    });
+
+    it.each(["int", "string"] as const)(
+        "clears an existing optional restricted %s value in the payload",
+        async (type) => {
+            const value = type === "int" ? 1 : "treated";
+            const wrapper = await mountGrid(URIS, [{ name: "condition", type, optional: true, restrictions: [value] }]);
+            const rows = gridRows(wrapper);
+            const column = gridColumn(wrapper, "condition");
+            expect(setCell(column, rows, 0, value)).toBe(true);
+            expect(setCell(column, rows, 0, "")).toBe(true);
+            expect(rows[0]!.condition).toBeNull();
+            if (type === "string") {
+                expect(column.cellEditorParams).toEqual({ values: ["", value] });
+            }
+            (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+            expect(wrapper.emitted("on-fetch-target")![0]![0]).toMatchObject({
+                elements: [
+                    { name: "a", row: [null] },
+                    { name: "b", row: [type === "int" ? null : ""] },
+                ],
+            });
+        },
+    );
+
+    it("imports a URI sheet with a metadata column named __model_object", async () => {
+        const wrapper = await mountGrid(URIS, [{ name: "__model_object", type: "string", optional: false }]);
+        const rows = gridRows(wrapper);
+        expect(setCell(gridColumn(wrapper, "__model_object"), rows, 0, "treated")).toBe(true);
+        (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+        expect(wrapper.emitted("on-fetch-target")![0]![0]).toMatchObject({
+            elements: [
+                { name: "a", url: "https://example.org/a.fastq", row: ["treated"] },
+                { name: "b", url: "https://example.org/b.fastq", row: [""] },
+            ],
+        });
+    });
+
+    it.each(["sample_sheet", "sample_sheet:paired"] as const)(
+        "reloads a downloaded %s collection workbook and submits its edited metadata",
+        async (collectionType) => {
+            const paired = collectionType === "sample_sheet:paired";
+            const object = paired
+                ? {
+                      model_class: "DatasetCollection",
+                      collection_type: "paired",
+                      elements: [
+                          { element_identifier: "forward", object: { id: "hda1" } },
+                          { element_identifier: "reverse", object: { id: "hda2" } },
+                      ],
+                  }
+                : { model_class: "HistoryDatasetAssociation", id: "hda1" };
+            const collection = {
+                id: "hdca1",
+                name: "source",
+                elements: [
+                    { element_identifier: "a", object },
+                    { element_identifier: "b", object: { ...object, id: "hda3" } },
+                ],
+            } as unknown as HDCADetailed;
+            const columns = [
+                { name: "__model_object", type: "string", optional: false },
+            ] as SampleSheetColumnDefinitions;
+            const wrapper = await mountGrid(collection, columns, collectionType);
+            const download = vi.fn();
+            const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:workbook");
+            const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+            const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+            server.use(
+                http.post("/api/dataset_collections/{hdca_id}/sample_sheet_workbook", async ({ request, params }) => {
+                    download((params as { hdca_id: string }).hdca_id, await request.json());
+                    return new HttpResponse<never>(null);
+                }),
+                http.post("/api/sample_sheet_workbook/parse", async ({ request, response }) => {
+                    expect(await request.json()).toMatchObject({
+                        prefix_columns_type: "ModelObjects",
+                        content: "edited-workbook",
+                    });
+                    return response(200).json({
+                        rows: [
+                            { list_identifiers: "b", __model_object: "control" },
+                            { list_identifiers: "a", __model_object: "treated" },
+                        ],
+                        extra_columns: [],
+                        parse_log: [],
+                    });
+                }),
+            );
+            try {
+                await wrapper.find(".below-grid-link a").trigger("click");
+                await flushPromises();
+                expect(download).toHaveBeenCalledWith("hdca1", { column_definitions: columns });
+                const { data } = await parseWorkbook(collectionType, columns, "ModelObjects", "edited-workbook");
+                expect(data).toBeDefined();
+                await wrapper.setProps({ initialElements: workbookForCollection(data!, collection) });
+                await flushPromises();
+                expect((grid(wrapper).props("columnDefs") as ColDef[]).some((column) => column.field === "url")).toBe(
+                    false,
+                );
+                expect(setCell(gridColumn(wrapper, "__model_object"), gridRows(wrapper), 1, "edited")).toBe(true);
+                (wrapper.vm as unknown as { attemptCreate: () => void }).attemptCreate();
+                expect(wrapper.emitted("on-fetch-target")).toBeUndefined();
+                const payload = wrapper.emitted("on-collection-create-payload")![0]![0];
+                expect(payload).toMatchObject({
+                    collection_type: collectionType,
+                    rows: { b: ["control"], a: ["edited"] },
+                });
+                expect(payload).toMatchObject({
+                    element_identifiers: paired
+                        ? [
+                              {
+                                  name: "b",
+                                  src: "new_collection",
+                                  element_identifiers: [
+                                      { name: "forward", src: "hda", id: "hda1" },
+                                      { name: "reverse", src: "hda", id: "hda2" },
+                                  ],
+                              },
+                              {
+                                  name: "a",
+                                  src: "new_collection",
+                                  element_identifiers: [
+                                      { name: "forward", src: "hda", id: "hda1" },
+                                      { name: "reverse", src: "hda", id: "hda2" },
+                                  ],
+                              },
+                          ]
+                        : [
+                              { name: "b", src: "hda", id: "hda3" },
+                              { name: "a", src: "hda", id: "hda1" },
+                          ],
+                });
+                const badWorkbook = { ...data!, rows: [{ list_identifiers: "missing" }] };
+                expect(() => workbookForCollection(badWorkbook, collection)).toThrow("Unknown or duplicate");
+                expect(() =>
+                    workbookForCollection({ ...data!, rows: [data!.rows[0]!, data!.rows[0]!] }, collection),
+                ).toThrow("Unknown or duplicate");
+            } finally {
+                createObjectURL.mockRestore();
+                revokeObjectURL.mockRestore();
+                click.mockRestore();
+                wrapper.unmount();
+            }
+        },
+    );
 
     describe("create payloads", () => {
         async function fetchTarget(wrapper: Wrapper) {

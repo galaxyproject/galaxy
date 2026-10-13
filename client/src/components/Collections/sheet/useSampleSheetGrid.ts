@@ -4,14 +4,16 @@ import { ref, watch } from "vue";
 import type { DCESummary, SampleSheetColumnDefinition } from "@/api";
 import type { SampleSheetColumnValueT } from "@/api/datasetCollections";
 
+export const MODEL_OBJECT = Symbol("sample sheet model object");
+
 export type UriRow = Record<string, unknown> & {
     url: string;
     url_1?: string;
     list_identifiers: string;
-    __model_object?: never;
+    [MODEL_OBJECT]?: never;
 };
 
-export type ModelObjectRow = Record<string, unknown> & { __model_object: DCESummary };
+export type ModelObjectRow = Record<string, unknown> & { [MODEL_OBJECT]: DCESummary };
 
 export type AgRowData = UriRow | ModelObjectRow;
 
@@ -36,9 +38,9 @@ export function useSampleSheetGrid(buildRows: () => AgRowData[]) {
 export function modelObjectIdentifierColumn(headerName: string): ColDef {
     return {
         headerName,
-        field: "__model_object",
+        colId: "model-object-identifier",
         editable: false,
-        valueFormatter: (params) => params.data.__model_object.element_identifier,
+        valueGetter: (params) => params.data[MODEL_OBJECT].element_identifier,
     };
 }
 
@@ -69,11 +71,15 @@ export function parseSampleSheetValue(
     columnDefinition: SampleSheetColumnDefinition,
 ): ParsedCellValue {
     const text = newValue === null || newValue === undefined ? "" : String(newValue);
+    if (
+        text === "" &&
+        columnDefinition.optional &&
+        (columnDefinition.type !== "string" || columnDefinition.restrictions)
+    ) {
+        return valid(null);
+    }
     if (columnDefinition.restrictions && !columnDefinition.restrictions.map(String).includes(text)) {
         return INVALID;
-    }
-    if (text === "" && columnDefinition.optional && columnDefinition.type !== "string") {
-        return valid(null);
     }
     switch (columnDefinition.type) {
         case "int": {

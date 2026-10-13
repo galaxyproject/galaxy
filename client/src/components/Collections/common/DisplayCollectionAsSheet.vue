@@ -5,6 +5,7 @@ import { computed } from "vue";
 import type { SampleSheetColumnDefinition } from "@/api";
 import {
     type AgRowData,
+    MODEL_OBJECT,
     modelObjectIdentifierColumn,
     SAMPLE_SHEET_GRID_STYLE,
     toAgGridColumnDefinition,
@@ -30,7 +31,7 @@ const columnDefinitions = computed(() => (collection.value?.column_definitions ?
 
 const { rowData } = useSampleSheetGrid(() =>
     (collection.value?.elements ?? []).map((element) => {
-        const row: AgRowData = { __model_object: element };
+        const row: AgRowData = { [MODEL_OBJECT]: element };
         columnDefinitions.value.forEach((colDef, colIndex) => {
             row[colDef.name] = element.columns ? element.columns[colIndex] : null;
         });

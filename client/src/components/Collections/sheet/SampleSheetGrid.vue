@@ -35,7 +35,9 @@ import localize from "@/utils/localization";
 
 import {
     type AgRowData,
+    MODEL_OBJECT,
     modelObjectIdentifierColumn,
+    type ModelObjectRow,
     parseSampleSheetValue,
     SAMPLE_SHEET_GRID_STYLE,
     toAgGridColumnDefinition,
@@ -106,18 +108,24 @@ function uriRow(initialElement: string[]): UriRow {
 
 const { rowData } = useSampleSheetGrid(() => {
     const initialElements = props.initialElements;
-    if ("rows" in initialElements) {
+    if ("elements" in initialElements) {
+        return initialElements.elements.map((element, index) => ({
+            ...initialColumnValues(),
+            ...("rows" in initialElements ? initialElements.rows[index] : {}),
+            [MODEL_OBJECT]: element,
+        }));
+    } else if ("rows" in initialElements) {
         // The workbook parser supplies URI and identifier fields in its open-ended row schema.
         return initialElements.rows.map((parsedRow) => ({ ...parsedRow }) as UriRow);
-    } else if ("elements" in initialElements) {
-        return initialElements.elements.map((element) => ({ __model_object: element, ...initialColumnValues() }));
     } else {
         return initialElements.map(uriRow);
     }
 });
 
 function elementIdentifierFromRow(row: AgRowData): string {
-    return row.__model_object ? row.__model_object.element_identifier : row.list_identifiers;
+    return mode.value === "model_objects"
+        ? (row as ModelObjectRow)[MODEL_OBJECT].element_identifier
+        : (row as UriRow).list_identifiers;
 }
 
 const elementIdentifiers = computed<string[]>(() => rowData.value.map(elementIdentifierFromRow).filter(Boolean));
@@ -144,6 +152,39 @@ function leadingColumns(): ColDef[] {
     }));
     const identifierColumn: ColDef = { headerName: "Element identifier", field: "list_identifiers", editable: true };
     enforceColumnUniqueness(identifierColumn);
+    const setIdentifier = identifierColumn.valueSetter as (params: ValueSetterParams) => boolean;
+    identifierColumn.valueSetter = (params) => {
+        const previous = params.data.list_identifiers;
+        const referenceColumns = columnDefinitionList.value.filter((column) => column.type === "element_identifier");
+        let invalidReference = false;
+        for (const column of referenceColumns) {
+            params.api.forEachNode((node) => {
+                if (
+                    previous &&
+                    node.data[column.name] === previous &&
+                    !parseSampleSheetValue(params.newValue, column).valid
+                ) {
+                    invalidReference = true;
+                }
+            });
+        }
+        if (invalidReference) {
+            Toast.error("Cannot rename this identifier because a referencing column does not allow the new value.");
+            return false;
+        }
+        if (!setIdentifier(params)) {
+            return false;
+        }
+        for (const column of referenceColumns) {
+            params.api.forEachNode((node) => {
+                if (previous && node.data[column.name] === previous) {
+                    node.data[column.name] = params.newValue;
+                }
+            });
+        }
+        params.api.refreshCells();
+        return true;
+    };
     return [...uriColumns, identifierColumn];
 }
 
@@ -170,7 +211,7 @@ function metadataColumn(colDef: SampleSheetColumnDefinition): ColDef {
         });
     } else if (colDef.restrictions && colDef.type === "string") {
         column.cellEditor = "agSelectCellEditor";
-        column.cellEditorParams = { values: colDef.restrictions };
+        column.cellEditorParams = { values: colDef.optional ? ["", ...colDef.restrictions] : colDef.restrictions };
     }
     return column;
 }
@@ -276,16 +317,17 @@ function urlElementForRow(row: AgRowData, elementIdentifier: string, uri: string
 }
 
 function fetchElementForRow(row: AgRowData): UrlDataElement | NestedElement {
-    if (row.__model_object) {
+    if (mode.value === "model_objects") {
         throw new Error("Cannot fetch a model object row");
     }
     const elementIdentifier = elementIdentifierFromRow(row);
-    const uri = row.url;
+    const uriRow = row as UriRow;
+    const uri = uriRow.url;
     let element: UrlDataElement | NestedElement;
     if (!isPaired.value) {
         element = urlElementForRow(row, elementIdentifier, uri, 0);
     } else {
-        const uri2 = row.url_1;
+        const uri2 = uriRow.url_1;
         let childElements;
         if (uri2) {
             childElements = [urlElementForRow(row, "forward", uri, 0), urlElementForRow(row, "reverse", uri2, 1)];
@@ -317,7 +359,7 @@ function attemptCreateViaFetch() {
 function elementsForCreateApi(): CollectionElementIdentifiers {
     if (props.collectionType == "sample_sheet") {
         return rowData.value.map((row) => {
-            const hda = row.__model_object?.object;
+            const hda = row[MODEL_OBJECT]?.object;
             if (!hda || hda.model_class === "DatasetCollection") {
                 throw new Error("Expected a dataset row");
             }
@@ -325,7 +367,7 @@ function elementsForCreateApi(): CollectionElementIdentifiers {
         });
     } else if (isPaired.value) {
         return rowData.value.map((row) => {
-            const childCollection = row.__model_object?.object;
+            const childCollection = row[MODEL_OBJECT]?.object;
             if (!childCollection || childCollection.model_class !== "DatasetCollection") {
                 throw new Error("Expected a collection row");
             }

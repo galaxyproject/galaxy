@@ -108,6 +108,12 @@ function initializeTabularVersionOfTarget() {
         table = fetchTargetToTable(props.target);
     } catch {
         richSupportForTarget.value = false;
+        viewMode.value = "raw";
+        gridRowData.value = [];
+        gridColumns.value = [];
+        columnsRef.value = [];
+        collectionTypeRef.value = undefined;
+        autoDecompressRef.value = undefined;
         return;
     }
     const { columns, rows, collectionType } = table;
@@ -135,7 +141,7 @@ const defaultColDef = ref<ColDef>({
 });
 
 function asTarget(): AnyFetchTarget {
-    if (modified.value) {
+    if (modified.value && richSupportForTarget.value) {
         const newTable: FetchTable = {
             columns: columnsRef.value,
             rows: gridRowData.value as RowsType,
