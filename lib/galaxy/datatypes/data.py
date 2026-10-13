@@ -65,6 +65,7 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
+from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -1391,6 +1392,26 @@ class Directory(Data):
         """
         return False
 
+    def content_root(self, dataset: HasMetadata) -> str:
+        """Return the folder holding the dataset's content, relative to its extra files path.
+
+        Content is moved to the root when a dataset is created, so this is empty except for
+        datasets created before that with their content in a wrapper folder, which is left
+        in place and recorded in metadata (see ``ZarrDirectory``).
+        """
+        return ""
+
+    def content_path(self, dataset: HasExtraFilesAndMetadata, extra_files_path: str | None = None) -> str:
+        """Return the path of the folder holding the dataset's content.
+
+        ``extra_files_path`` replaces the dataset's own, e.g. with its path on a compute node.
+        """
+        if extra_files_path is None:
+            extra_files_path = dataset.extra_files_path
+        if content_root := self.content_root(dataset):
+            return os.path.join(extra_files_path, content_root)
+        return extra_files_path
+
     def groom_directory_content(self, extra_files_path: str) -> None:
         """Move content wrapped in a single folder up to the root of ``extra_files_path``."""
         wrapper = self.content_wrapper_name(extra_files_path)
@@ -1439,6 +1460,17 @@ class ZarrDirectory(Directory):
     edam_format = "format_3915"
     file_ext = "zarr"
 
+    # Published tool wrappers read the store as $input.extra_files_path/$input.metadata.store_root.
+    # It is empty unless the dataset was created with its store in a wrapper folder.
+    MetadataElement(
+        name="store_root",
+        default="",
+        desc="Name of the root folder where the zarr store is located",
+        readonly=True,
+        optional=False,
+        visible=False,
+    )
+
     MetadataElement(
         name="zarr_format",
         default=None,
@@ -1456,8 +1488,11 @@ class ZarrDirectory(Directory):
             dataset.blurb = "file purged from disk"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        # The store sits at the root of extra_files_path (see groom_directory_content).
-        format_version = self._get_format_version(dataset.extra_files_path)
+        # New datasets have their store moved to the root (see groom_directory_content);
+        # existing ones are not moved, so record where their store is.
+        store_root = self.content_wrapper_name(dataset.extra_files_path) or ""
+        dataset.metadata.store_root = store_root
+        format_version = self._get_format_version(os.path.join(dataset.extra_files_path, store_root))
         if not format_version:
             log.debug("Could not determine Zarr format version")
             return
@@ -1477,7 +1512,7 @@ class ZarrDirectory(Directory):
         **kwd,
     ):
         if preview:
-            metadata_file_path = self._find_zarr_metadata_file(dataset.extra_files_path)
+            metadata_file_path = self._find_zarr_metadata_file(self.content_path(dataset))
             if metadata_file_path:
                 headers = kwd.get("headers", {})
                 headers["content-type"] = "application/json"
@@ -1506,6 +1541,11 @@ class ZarrDirectory(Directory):
 
     def is_content_root(self, path: str) -> bool:
         return self._find_zarr_metadata_file(path) is not None
+
+    def content_root(self, dataset: HasMetadata) -> str:
+        store_root = dataset.metadata.store_root or ""
+        # Tools can provide metadata too; never point outside the dataset.
+        return store_root if safe_relpath(store_root) else ""
 
     def sniff_directory(self, path: str) -> bool:
         return self._get_format_version(path) is not None

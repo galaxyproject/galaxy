@@ -84,6 +84,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         max_metadata_value_size=0,
         max_discovered_files=None,
         validate_outputs: bool = False,
+        groom_directory_content: bool = True,
         object_store_conf=None,
         tool=None,
         job: galaxy.model.Job | None = None,
@@ -166,6 +167,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         max_metadata_value_size=0,
         max_discovered_files=None,
         validate_outputs: bool = False,
+        groom_directory_content: bool = True,
         object_store_conf=None,
         tool=None,
         job: galaxy.model.Job | None = None,
@@ -205,6 +207,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             outputs[name] = {
                 "filename_override": _get_filename_override(output_fnames, dataset.get_file_name(sync_cache=False)),
                 "validate": validate_outputs,
+                # False for existing datasets, whose content must stay where it is.
+                "groom_directory_content": groom_directory_content,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
                 "model_class": (

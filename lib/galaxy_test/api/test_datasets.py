@@ -478,9 +478,9 @@ class TestDatasetsApi(ApiTestCase):
         extra_files_response.raise_for_status()
         assert extra_files_response.text == fasta_contents
 
-    def test_zarr_store_moved_up_after_datatype_change(self, history_id: str):
-        # A plain directory keeps its wrapper folder; changing it to zarr sets metadata
-        # again, which moves the store up to the root.
+    def test_zarr_store_root_recorded_after_datatype_change(self, history_id: str):
+        # A plain directory keeps its wrapper folder. Changing it to zarr sets metadata on an
+        # existing dataset, whose files are left in place, so store_root names the wrapper.
         with open(TestDataResolver().get_filename("wrapped_store.zarr.zip"), "rb") as archive:
             payload = {
                 "history_id": history_id,
@@ -513,12 +513,18 @@ class TestDatasetsApi(ApiTestCase):
         details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id)
         assert details["extension"] == "zarr"
         assert str(details["metadata_zarr_format"]) == "2"
+        assert details["metadata_store_root"] == "wrapped.zarr"
         extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset_id)
-        assert ".zgroup" in {extra_file["path"] for extra_file in extra_files}
-        # Viewers such as Vizarr request files relative to the store.
-        display_response = self._get(f"histories/{history_id}/contents/{dataset_id}/display?filename=.zgroup")
+        assert "wrapped.zarr/.zgroup" in {extra_file["path"] for extra_file in extra_files}
+        # Viewers such as Vizarr request files relative to the store root.
+        display_response = self._get(
+            f"histories/{history_id}/contents/{dataset_id}/display?filename=wrapped.zarr/.zgroup"
+        )
         display_response.raise_for_status()
         assert "zarr_format" in display_response.text
+        preview_response = self._get(f"histories/{history_id}/contents/{dataset_id}/display?preview=true")
+        preview_response.raise_for_status()
+        assert "zarr_format" in preview_response.text
 
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(

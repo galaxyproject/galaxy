@@ -276,13 +276,15 @@ class DatatypesApp:
         self.datatypes_registry = datatypes_registry
 
 
-def _adapt_input(extension, deferred_uri=None):
+def _adapt_input(extension, deferred_uri=None, metadata=None):
     registry = example_datatype_registry_for_sample()
     set_datatypes_registry(registry)
     hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
     hda.id = 1
     assert hda.dataset is not None
     hda.dataset.file_size = Decimal(4)
+    for name, value in (metadata or {}).items():
+        setattr(hda.metadata, name, value)
     if deferred_uri:
         hda.dataset.state = Dataset.states.DEFERRED
         hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
@@ -304,6 +306,18 @@ def test_adapt_dataset_directory_datatypes(extension):
     assert result.class_ == "Directory"
     assert result.path == "/job/inputs/dataset_1_files"
     assert result.format == extension
+
+
+@pytest.mark.parametrize("extension", ["zarr", "ome_zarr"])
+def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
+    # Datasets created before stores were moved to the root are left as they are.
+    result = _adapt_input(extension, metadata={"store_root": "wrapped.zarr"})
+    assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
+
+
+def test_adapt_dataset_ignores_a_store_root_outside_the_dataset():
+    result = _adapt_input("zarr", metadata={"store_root": "../elsewhere"})
+    assert result.path == "/job/inputs/dataset_1_files"
 
 
 def test_adapt_dataset_deferred_input_has_location_and_no_path():

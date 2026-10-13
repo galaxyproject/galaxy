@@ -116,7 +116,8 @@ def setup_for_runtimeify(
             )
         hda_entry, index = find_input(value.id, extensions)
         assert hda_entry.dataset is not None
-        is_directory = isinstance(hda_entry.datatype, Directory)
+        datatype = hda_entry.datatype
+        is_directory = isinstance(datatype, Directory)
         properties: dict[str, Any] = {
             "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
@@ -128,13 +129,14 @@ def setup_for_runtimeify(
         if hda_entry.has_deferred_data:
             # Not materialized: the tool consumes the source URI and there is no local path.
             properties["location"] = hda_entry.deferred_source_uri
-        elif is_directory:
-            # A directory dataset's content sits at the root of its extra files.
-            properties["path"] = (
+        elif isinstance(datatype, Directory):
+            # The content sits at the root of the extra files, or in the folder an older dataset recorded.
+            extra_files_path = (
                 compute_environment.input_extra_files_rewrite(hda_entry)
                 if compute_environment
                 else hda_entry.extra_files_path
             )
+            properties["path"] = datatype.content_path(hda_entry, extra_files_path)
         else:
             properties["path"] = (
                 compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()

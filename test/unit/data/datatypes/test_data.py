@@ -4,6 +4,7 @@ Unit tests for base DataTypes.
 """
 
 import os
+from types import SimpleNamespace
 from typing import Any
 
 from galaxy.datatypes.anvio import AnvioStructureDB
@@ -166,3 +167,45 @@ def test_zarr_format_version_ignores_non_object_metadata(tmp_path):
     (tmp_path / ".zgroup").write_text("[1, 2]")
 
     assert ZarrDirectory()._get_format_version(str(tmp_path)) is None
+
+
+def _zarr_dataset(extra_files_path, **metadata):
+    metadata = {"store_root": None, "zarr_format": None, **metadata}
+    return SimpleNamespace(extra_files_path=str(extra_files_path), metadata=SimpleNamespace(**metadata))
+
+
+def test_zarr_set_meta_records_an_empty_store_root_for_a_store_at_the_root(tmp_path):
+    (tmp_path / ".zgroup").write_text('{"zarr_format": 2}')
+    dataset = _zarr_dataset(tmp_path)
+
+    ZarrDirectory().set_meta(dataset)
+
+    assert dataset.metadata.store_root == ""
+    assert dataset.metadata.zarr_format == 2
+
+
+def test_zarr_set_meta_leaves_a_wrapped_store_in_place_and_records_it(tmp_path):
+    # Metadata is also set on existing datasets, whose files may be shared and are not moved.
+    (tmp_path / "wrapped.zarr").mkdir()
+    (tmp_path / "wrapped.zarr" / ".zgroup").write_text('{"zarr_format": 2}')
+    dataset = _zarr_dataset(tmp_path)
+
+    ZarrDirectory().set_meta(dataset)
+
+    assert os.listdir(tmp_path) == ["wrapped.zarr"]
+    assert dataset.metadata.store_root == "wrapped.zarr"
+    assert dataset.metadata.zarr_format == 2
+    assert ZarrDirectory().content_path(dataset) == str(tmp_path / "wrapped.zarr")
+
+
+def test_zarr_content_path_stays_inside_the_dataset(tmp_path):
+    dataset = _zarr_dataset(tmp_path, store_root="../elsewhere")
+
+    assert ZarrDirectory().content_path(dataset) == str(tmp_path)
+
+
+def test_directory_content_path_is_the_extra_files_path(tmp_path):
+    dataset = SimpleNamespace(extra_files_path=str(tmp_path), metadata=SimpleNamespace())
+
+    assert Directory().content_path(dataset) == str(tmp_path)
+    assert Directory().content_path(dataset, "/compute/dataset_1_files") == "/compute/dataset_1_files"
