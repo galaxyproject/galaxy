@@ -87,6 +87,9 @@ Galaxy can't check that a submitted grant actually opens the dataset: that would
 require Galaxy to decrypt the header. An invalid grant only causes its submitter's
 own jobs to fail.
 
+Data libraries can hold encrypted datasets, and users import them into a history and authorize them from it. A grant covers
+every copy of the dataset its user can access, the library dataset included.
+
 ## What is and isn't protected
 
 At rest, in Galaxy's object stores, encrypted datasets and the outputs of jobs
