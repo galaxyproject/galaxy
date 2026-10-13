@@ -153,6 +153,9 @@ protected jobs need, in addition to the requirements below:
 - Outputs staged to the remote job directory: don't map outputs to the `none`
   file action. Don't set `outputs_to_working_directory` either, Pulsar relocates
   outputs anyway.
+- No remote tool evaluation (`tool_evaluation_strategy: remote`): on Pulsar the
+  tool runs right after being evaluated, its inputs couldn't be decrypted in
+  between.
 - `crypt4gh` installed on the Pulsar host (see [Installation](#installation)), and
   the compute service reachable from it.
 
@@ -233,6 +236,10 @@ destinations must also use:
 - No `live_tool_output_reporting`, which would serve the tool's output, possibly
   decrypted data, to everyone who can see the job while it runs.
 - `remote_metadata: true` and `rewrite_parameters: true` on Pulsar destinations.
+
+With remote tool evaluation (`tool_evaluation_strategy: remote`), tools are
+evaluated on the compute host before their inputs are decrypted, as on the Galaxy
+server: the command line Galaxy stores can't contain decrypted data.
 
 How jobs connect to the compute service is set with these destination
 parameters:

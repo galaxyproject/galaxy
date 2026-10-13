@@ -295,6 +295,26 @@ class TestCommandFactory(TestCase):
         with pytest.raises(ProtectionError, match="embed_metadata_in_job"):
             self.__command()
 
+    def test_protected_job_evaluates_the_tool_before_decrypting_inputs(self):
+        self.include_work_dir_outputs = False
+        self.include_metadata = True
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        self.job_wrapper.remote_command_line = True
+        plan = "/jobs/1/configs/protection_plan.json"
+        self.job_wrapper.protection_plan_path = plan
+        command = self.__command()
+        # The command line written by remote_tool_eval.py is stored by Galaxy.
+        assert command.index("remote_tool_eval.py") < command.index(f"stage-in {plan}")
+        assert command.index(f"stage-in {plan}") < command.index(MOCK_COMMAND_LINE)
+
+    def test_protected_job_refuses_remote_tool_evaluation_on_pulsar(self):
+        self.include_metadata = True
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        self.job_wrapper.remote_command_line = True
+        self.job_wrapper.protection_plan_path = "/jobs/1/configs/protection_plan.json"
+        with pytest.raises(ProtectionError, match="remote tool evaluation"):
+            self.__command(remote_command_params={"pulsar_version": "0.15.0"})
+
     def _assert_command_is(self, expected_command, **command_kwds):
         command = self.__command(**command_kwds)
         assert command == expected_command

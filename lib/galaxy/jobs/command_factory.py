@@ -137,8 +137,6 @@ def build_command(
         # but Pulsar automatically changes into the working dir, whereas Galaxy does not.
         commands_builder.prepend_command("cd working")
 
-    __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
-
     protected_stage_command = __protected_stage_command(job_wrapper, for_pulsar=for_pulsar)
     if protected_stage_command and not (include_metadata and job_wrapper.requires_setting_metadata):
         # Outputs are encrypted while collecting metadata: that must happen in the job, on the compute host,
@@ -147,10 +145,20 @@ def build_command(
             "This job uses encrypted datasets but its destination can't run it securely: metadata must be "
             "collected within the job (embed_metadata_in_job). Contact your Galaxy administrator."
         )
+    if protected_stage_command and for_pulsar and job_wrapper.remote_command_line:
+        # The tool script runs right after evaluating it there, the inputs couldn't be decrypted in between.
+        raise ProtectionError(
+            "This job uses encrypted datasets but its destination can't run it securely: Pulsar destinations "
+            "can't use remote tool evaluation. Contact your Galaxy administrator."
+        )
     if protected_stage_command:
         # Decrypt protected inputs on the host, before (and outside of any container of) the tool.
         # The tool only runs if that worked.
         commands_builder.run_only_if(protected_stage_command("stage-in"))
+
+    # Tools are evaluated before their inputs are decrypted, as on the Galaxy server: the command line,
+    # stored by Galaxy, can't hold decrypted data.
+    __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
     if container_monitor_command := job_wrapper.container_monitor_command(container):
         commands_builder.prepend_command(container_monitor_command)
