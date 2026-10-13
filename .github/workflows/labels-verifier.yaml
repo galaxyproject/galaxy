@@ -28,6 +28,7 @@ jobs:
   update-milestone:
     if: github.repository_owner == 'galaxyproject' && github.event.pull_request.merged == true
     permissions:
+      contents: read
       issues: write
       pull-requests: write
     runs-on: ubuntu-latest
@@ -48,21 +49,40 @@ jobs:
               return;
             }
 
-            // Sort the milestones by number in descending order
-            const sortedMilestones = milestones.sort((a, b) => b.number - a.number);
+            const parseVersion = (s) => {
+              const match = /^(\d+)\.(\d+)$/.exec(s);
+              return match ? [Number(match[1]), Number(match[2])] : null;
+            };
+            const compareVersions = (a, b) => a[0] - b[0] || a[1] - b[1];
+            // Open release milestones, oldest version first
+            const versionedMilestones = milestones
+              .map((milestone) => ({ milestone, version: parseVersion(milestone.title) }))
+              .filter(({ version }) => version)
+              .sort((a, b) => compareVersions(a.version, b.version));
             // Every merged pull request should be assigned to the milestone
             // corresponding to the Galaxy release it will first appear in, see:
             // https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
-            let targetMilestone = null;
-            // If targeting 'dev', use the latest (highest number) open milestone
+            // That is the oldest open milestone at or above the minimum version.
+            let minVersion = null;
             if (targetBranch === 'dev') {
-              targetMilestone = sortedMilestones[0];
+              // dev feeds the oldest release that has no release branch yet
+              const { data: refs } = await github.rest.git.listMatchingRefs({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: 'heads/release_',
+              });
+              const branchVersions = refs
+                .map((ref) => parseVersion(ref.ref.replace('refs/heads/release_', '')))
+                .filter((version) => version)
+                .sort(compareVersions);
+              const newestBranch = branchVersions[branchVersions.length - 1];
+              minVersion = newestBranch ? [newestBranch[0], newestBranch[1] + 1] : [0, 0];
+            } else if (/^release_\d+\.\d+$/.test(targetBranch)) {
+              minVersion = parseVersion(targetBranch.replace('release_', ''));
             }
-            // If targeting 'release_\d+.\d+' and there are multiple open
-            // milestones, use the second latest open milestone
-            else if (/^release_\d+\.\d+$/.test(targetBranch)) {
-              targetMilestone = sortedMilestones[1] || sortedMilestones[0];
-            }
+            const targetMilestone = minVersion
+              ? versionedMilestones.find(({ version }) => compareVersions(version, minVersion) >= 0)?.milestone
+              : null;
 
             // Update the Pull Request with the selected milestone
             if (targetMilestone) {
