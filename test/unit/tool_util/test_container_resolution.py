@@ -9,19 +9,37 @@ from galaxy.tool_util.deps.container_resolvers.mulled import (
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
     MulledDockerContainerResolver,
+    MulledSingularityContainerResolver,
+)
+from galaxy.tool_util.deps.container_resolvers.oci_arch import (
+    destination_platform,
+    platform_to_oci_arch,
+    pull_arch,
 )
 from galaxy.tool_util.deps.containers import ContainerRegistry
 from galaxy.tool_util.deps.dependencies import (
     AppInfo,
     ToolInfo,
 )
-from galaxy.tool_util.deps.requirements import ToolRequirement
+from galaxy.tool_util.deps.requirements import (
+    ContainerDescription,
+    ToolRequirement,
+)
+from galaxy.tool_util.deps.singularity_util import (
+    pull_singularity_command,
+    singularity_supports_arch,
+)
 
 SINGULARITY_IMAGES = (
     "foo:1.0--bar",
     "baz:2.22",
     "mulled-v2-fe8a3b846bc50d24e5df78fa0b562c43477fe9ce:9f946d13f673ab2903cb0da849ad42916d619d18-0",
 )
+
+
+@pytest.fixture(autouse=True)
+def no_registry_queries(mocker):
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.registry.registry_image_architectures", return_value=None)
 
 
 @pytest.fixture
@@ -150,6 +168,187 @@ def test_cached_singularity_container_resolver_dir_mtime_cached(mocker):
         container_description.identifier
         == "/singularity/mulled/mulled-v2-fe8a3b846bc50d24e5df78fa0b562c43477fe9ce:9f946d13f673ab2903cb0da849ad42916d619d18-0"
     )
+
+
+@pytest.mark.parametrize(
+    "subdir,arch",
+    [
+        ("linux-64", "amd64"),
+        ("linux-aarch64", "arm64"),
+        ("linux-ppc64le", "ppc64le"),
+        ("linux-s390x", "s390x"),
+        ("linux-riscv64", "riscv64"),
+        ("osx-arm64", "arm64"),
+        ("osx-64", "amd64"),
+        ("win-64", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_platform_to_oci_arch(subdir, arch):
+    assert platform_to_oci_arch(subdir) == arch
+
+
+def test_destination_platform_rejects_path_components():
+    assert destination_platform({"platform": "linux-aarch64"}) == "linux-aarch64"
+    assert destination_platform({}) is None
+    assert destination_platform(None) is None
+    assert destination_platform({"platform": "../etc"}) is None
+
+
+def _singularity_listdir(mocker, cache_by_dir):
+    mocker.patch("os.listdir", side_effect=lambda path: cache_by_dir.get(path, []))
+    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.safe_makedirs")
+
+
+def _foo_tool_info():
+    return ToolInfo(requirements=[ToolRequirement(name="foo", version="1.0", type="package")])
+
+
+def test_cached_singularity_container_resolver_platform(mocker):
+    _singularity_listdir(
+        mocker,
+        {"/singularity/mulled": ["foo:1.0--amd"], "/singularity/mulled/linux-aarch64": ["foo:1.0--arm"]},
+    )
+    resolver = CachedMulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path="/"))
+    description = resolver.resolve(
+        enabled_container_types=["singularity"],
+        tool_info=_foo_tool_info(),
+        destination_info={"platform": "linux-aarch64"},
+    )
+    assert description
+    assert description.identifier == "/singularity/mulled/linux-aarch64/foo:1.0--arm"
+
+
+def test_cached_singularity_container_resolver_no_platform_uses_plain_path(mocker):
+    _singularity_listdir(
+        mocker,
+        {"/singularity/mulled": ["foo:1.0--amd"], "/singularity/mulled/linux-aarch64": ["foo:1.0--arm"]},
+    )
+    resolver = CachedMulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path="/"))
+    for destination_info in (None, {}, {"other": "x"}):
+        description = resolver.resolve(
+            enabled_container_types=["singularity"], tool_info=_foo_tool_info(), destination_info=destination_info
+        )
+        assert description
+        assert description.identifier == "/singularity/mulled/foo:1.0--amd"
+
+
+def test_cached_singularity_container_resolver_platform_without_image(mocker):
+    _singularity_listdir(mocker, {"/singularity/mulled": ["foo:1.0--amd"]})
+    resolver = CachedMulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path="/"))
+    description = resolver.resolve(
+        enabled_container_types=["singularity"],
+        tool_info=_foo_tool_info(),
+        destination_info={"platform": "linux-aarch64"},
+    )
+    assert description is None
+
+
+def test_platform_cache_directory_created_on_demand(tmp_path):
+    app_info = AppInfo(container_image_cache_path=str(tmp_path))
+    resolver = CachedMulledSingularityContainerResolver(app_info=app_info)
+    assert not (tmp_path / "singularity" / "mulled" / "linux-ppc64le").exists()
+    resolver.resolve(
+        enabled_container_types=["singularity"],
+        tool_info=_foo_tool_info(),
+        destination_info={"platform": "linux-ppc64le"},
+    )
+    assert (tmp_path / "singularity" / "mulled" / "linux-ppc64le").is_dir()
+
+
+def test_mulled_singularity_pull_uses_arch_and_platform_directory(mocker):
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.safe_makedirs")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="/usr/bin/singularity")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.targets_to_mulled_name", return_value="foo:1.0--bar")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.oci_arch.server_oci_arch", return_value="amd64")
+    mocker.patch("galaxy.tool_util.deps.singularity_util.singularity_supports_arch", return_value=True)
+    mocker.patch("os.listdir", return_value=[])
+    mocker.patch("os.path.exists", return_value=True)
+    shell = mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.shell")
+    resolver = MulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path="/cache"))
+    resolver.resolve(
+        enabled_container_types=["singularity"],
+        tool_info=_foo_tool_info(),
+        install=True,
+        destination_info={"platform": "linux-aarch64"},
+    )
+    cmds = shell.call_args.kwargs["cmds"]
+    assert cmds[:4] == ["singularity", "build", "--arch", "arm64"]
+    assert cmds[4] == "/cache/singularity/mulled/linux-aarch64/foo:1.0--bar"
+    assert cmds[5] == "docker://quay.io/biocontainers/foo:1.0--bar"
+
+
+def test_mulled_singularity_pull_without_platform_has_no_arch(mocker):
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.safe_makedirs")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="/usr/bin/singularity")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.targets_to_mulled_name", return_value="foo:1.0--bar")
+    mocker.patch("os.listdir", return_value=[])
+    mocker.patch("os.path.exists", return_value=True)
+    shell = mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.shell")
+    resolver = MulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path="/cache"))
+    resolver.resolve(enabled_container_types=["singularity"], tool_info=_foo_tool_info(), install=True)
+    cmds = shell.call_args.kwargs["cmds"]
+    assert "--arch" not in cmds
+    assert cmds[2] == "/cache/singularity/mulled/foo:1.0--bar"
+
+
+def test_pull_omits_arch_of_server(mocker):
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.oci_arch.server_oci_arch", return_value="arm64")
+    assert pull_arch("linux-aarch64") is None
+    assert pull_arch("linux-64") == "amd64"
+    assert pull_arch("win-64") is None
+
+
+def test_pull_command_without_arch_support_warns(mocker, caplog, tmp_path):
+    mocker.patch("galaxy.tool_util.deps.singularity_util.singularity_supports_arch", return_value=False)
+    target = str(tmp_path / "x.sif")
+    cmds = pull_singularity_command("docker://quay.io/biocontainers/foo:1.0", target, arch="arm64")
+    assert cmds == ["singularity", "build", target, "docker://quay.io/biocontainers/foo:1.0"]
+    assert "does not support --arch" in caplog.text
+
+
+def test_singularity_supports_arch_parses_help(mocker):
+    singularity_supports_arch.cache_clear()
+    mocker.patch(
+        "galaxy.tool_util.deps.singularity_util.subprocess.run",
+        return_value=mocker.Mock(stdout="  --arch string  architecture", stderr=""),
+    )
+    assert singularity_supports_arch("singularity") is True
+    singularity_supports_arch.cache_clear()
+    mocker.patch("galaxy.tool_util.deps.singularity_util.subprocess.run", side_effect=FileNotFoundError)
+    assert singularity_supports_arch("singularity") is False
+    singularity_supports_arch.cache_clear()
+
+
+def test_explicit_cached_singularity_platform_pull(mocker, tmp_path):
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.explicit.which", create=True)
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="/usr/bin/singularity")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.oci_arch.server_oci_arch", return_value="amd64")
+    mocker.patch("galaxy.tool_util.deps.singularity_util.singularity_supports_arch", return_value=True)
+    shell = mocker.patch("galaxy.tool_util.deps.container_resolvers.explicit.shell")
+    resolver = CachedExplicitSingularityContainerResolver(app_info=AppInfo(container_image_cache_path=str(tmp_path)))
+    tool_info = ToolInfo(container_descriptions=[ContainerDescription("quay.io/biocontainers/foo:1.0", type="docker")])
+    description = resolver.resolve(
+        enabled_container_types=["singularity"],
+        tool_info=tool_info,
+        install=True,
+        destination_info={"platform": "linux-aarch64"},
+    )
+    cache_path = str(
+        tmp_path / "singularity" / "explicit" / "linux-aarch64" / "docker:" / "quay.io" / "biocontainers" / "foo:1.0"
+    )
+    assert description is not None
+    assert description.identifier == cache_path
+    assert shell.call_args.args[0] == [
+        "singularity",
+        "build",
+        "--arch",
+        "arm64",
+        cache_path,
+        "docker://quay.io/biocontainers/foo:1.0",
+    ]
 
 
 def test_dir_mtime_cache_directory_listing_shared_across_registries(tmp_path, mocker):

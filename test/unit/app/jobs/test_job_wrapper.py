@@ -3,9 +3,11 @@ import os
 from contextlib import contextmanager
 from types import SimpleNamespace
 from typing import (
+    Any,
     cast,
     TYPE_CHECKING,
 )
+from unittest import mock
 from uuid import uuid4
 
 from galaxy.app_unittest_utils.tools_support import (
@@ -18,6 +20,10 @@ from galaxy.jobs import (
     TaskWrapper,
 )
 from galaxy.jobs.handler import BaseJobHandlerQueue
+from galaxy.jobs.job_destination import (
+    JobDestination,
+    PlatformDependencyError,
+)
 from galaxy.model import (
     Base,
     Job,
@@ -25,6 +31,11 @@ from galaxy.model import (
     User,
 )
 from galaxy.objectstore import BaseObjectStore
+from galaxy.tool_util.deps.requirements import (
+    ToolRequirement,
+    ToolRequirements,
+)
+from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tools import ToolBox
 from galaxy.tools.parameters.basic import DirectoryUriToolParameter
 from galaxy.util import XML
@@ -104,6 +115,82 @@ class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
         return JobWrapper(self.job, self.queue)
 
 
+class TestJobWrapperPlatform(AbstractTestCases.BaseWrapperTestCase):
+    """The ``platform`` destination parameter reaches the dependency resolution."""
+
+    def _wrapper(self):
+        return JobWrapper(self.job, self.queue)
+
+    def _dependency_commands(self, params, requirements=None, resolved=None):
+        wrapper = self._wrapper()
+        tool = cast(Any, self.app.toolbox).get(TEST_TOOL_ID)
+        tool.requirements = requirements or ToolRequirements([])
+        tool.resolved = resolved or {}
+        destination = JobDestination(id="dest", runner="local", params=params)
+        with mock.patch.object(JobWrapper, "job_destination", new=destination):
+            return wrapper.dependency_shell_commands, tool
+
+    @staticmethod
+    def _requirements(*names):
+        return ToolRequirements([ToolRequirement(name=n, version="1.0", type="package") for n in names])
+
+    def test_no_platform_param_keeps_call_unchanged(self):
+        commands, tool = self._dependency_commands({}, self._requirements("bwa"))
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+        assert list(tool.build_calls[0]) == ["job_directory"]
+        assert tool.resolve_calls == []
+
+    def test_platform_param_is_passed_to_the_tool(self):
+        _, tool = self._dependency_commands({"platform": "linux-aarch64"})
+        assert tool.resolve_calls[0]["platform"] == "linux-aarch64"
+        assert tool.build_calls == []
+
+    def test_unresolved_requirements_are_listed_exactly(self):
+        requirements = self._requirements("bwa", "samtools", "bedtools")
+        resolved = {"samtools": Bunch(name="samtools")}
+        with self.assertRaises(PlatformDependencyError) as ctx:
+            self._dependency_commands({"platform": "osx-arm64"}, requirements=requirements, resolved=resolved)
+        message = str(ctx.value)
+        assert "osx-arm64" in message
+        assert "bwa=1.0" in message
+        assert "bedtools=1.0" in message
+        assert "samtools" not in message
+        assert "dest" in message
+
+    def test_check_uses_the_one_resolution_of_the_command_generation(self):
+        requirements = self._requirements("bwa")
+        resolved = {"bwa": Bunch(name="bwa")}
+        commands, tool = self._dependency_commands(
+            {"platform": "linux-aarch64"}, requirements=requirements, resolved=resolved
+        )
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+        # one resolution with the job directory of the tool context, no second resolution for the check
+        assert len(tool.resolve_calls) == 1
+        assert tool.resolve_calls[0]["job_directory"]
+        assert self.app.toolbox.dependency_manager.calls == []
+
+    def test_fully_resolved_platform_is_fine(self):
+        requirements = self._requirements("bwa", "samtools")
+        resolved = {"bwa": Bunch(name="bwa"), "samtools": Bunch(name="samtools")}
+        commands, _ = self._dependency_commands({"platform": "osx-arm64"}, requirements, resolved)
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+
+    def test_container_destinations_are_checked_too(self):
+        # Whether a container runs the job is decided by the command factory, which only asks for the
+        # dependency commands of jobs that need them. Enabling a container type on the destination is no reason to skip.
+        requirements = self._requirements("bwa")
+        for params in (
+            {"platform": "osx-arm64", "docker_enabled": True},
+            {"platform": "osx-arm64", "singularity_enabled": "true"},
+        ):
+            with self.assertRaises(PlatformDependencyError):
+                self._dependency_commands(params, requirements)
+
+    def test_unresolved_platform_without_requirements_is_fine(self):
+        commands, _ = self._dependency_commands({"platform": "osx-arm64"})
+        assert commands == TEST_DEPENDENCIES_COMMANDS
+
+
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
     def setUp(self):
         super().setUp()
@@ -160,6 +247,11 @@ class MockTool:
             has_complete_file_source_uri_discovery=lambda: True,
             iter_referenced_file_source_uris=lambda param_dict: (),
         )
+        self.requirements = ToolRequirements([])
+        self.commands_to_return = TEST_DEPENDENCIES_COMMANDS
+        self.build_calls: list[dict] = []
+        self.resolve_calls: list[dict] = []
+        self.resolved: dict = {}
 
     def params_from_strings(self, param_dict):
         return param_dict
@@ -167,13 +259,39 @@ class MockTool:
     def get_job_destination(self, params):
         return Bunch(runner="local", id="local", params={})
 
-    def build_dependency_shell_commands(self, job_directory):
-        return TEST_DEPENDENCIES_COMMANDS
+    def build_dependency_shell_commands(self, job_directory, platform=None):
+        call = {"job_directory": job_directory}
+        if platform is not None:
+            call["platform"] = platform
+        self.build_calls.append(call)
+        return self.commands_to_return
+
+    def resolve_dependency_shell_commands(self, job_directory, platform=None):
+        self.resolve_calls.append({"job_directory": job_directory, "platform": platform})
+        dependencies = {
+            r: self.resolved.get(r.name) or NullDependency(name=r.name, version=r.version)
+            for r in self.requirements.packages
+        }
+        if any(isinstance(d, NullDependency) for d in dependencies.values()):
+            return [], dependencies
+        return self.commands_to_return, dependencies
+
+
+class MockDependencyManager:
+    """Records the requirement resolutions that do not go through the tool."""
+
+    def __init__(self):
+        self.calls: list = []
+
+    def requirements_to_dependencies(self, requirements, **kwds):
+        self.calls.append((requirements, kwds))
+        return {}
 
 
 class MockToolbox:
     def __init__(self, test_tool):
         self.test_tool = test_tool
+        self.dependency_manager = MockDependencyManager()
 
     def get(self, tool_id, default=None):
         assert tool_id == TEST_TOOL_ID

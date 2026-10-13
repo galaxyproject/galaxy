@@ -35,6 +35,8 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
+    # True for resolvers that honor the ``platform`` keyword of a resolve call (conda subdir of the job destination).
+    supports_platforms = False
     config_options: dict[str, Any] = {}
     read_only = True
 

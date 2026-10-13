@@ -1,11 +1,16 @@
+import logging
 import os
 import shlex
+import subprocess
+from functools import cache
 from typing import (
     TYPE_CHECKING,
 )
 
 if TYPE_CHECKING:
     from .container_volumes import DockerVolume
+
+log = logging.getLogger(__name__)
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
@@ -22,6 +27,32 @@ DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
+@cache
+def singularity_supports_arch(singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND) -> bool:
+    """Whether ``<singularity_cmd> build`` accepts ``--arch`` (Singularity 3.x CE and Apptainer do)."""
+    try:
+        result = subprocess.run(
+            [singularity_cmd, "build", "--help"], capture_output=True, text=True, timeout=60, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return "--arch" in (result.stdout or "") + (result.stderr or "")
+
+
+def _arch_arguments(arch: str | None, singularity_cmd: str) -> list[str]:
+    if not arch:
+        return []
+    if not singularity_supports_arch(singularity_cmd):
+        log.warning(
+            "%s does not support --arch, pulling for architecture '%s' without it, the image may have the "
+            "architecture of the Galaxy server",
+            singularity_cmd,
+            arch,
+        )
+        return []
+    return ["--arch", arch]
+
+
 def pull_mulled_singularity_command(
     docker_image_identifier: str,
     cache_directory: str,
@@ -29,6 +60,7 @@ def pull_mulled_singularity_command(
     singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    arch: str | None = None,
 ) -> list[str]:
     command_parts = []
     command_parts += _singularity_prefix(
@@ -41,7 +73,9 @@ def pull_mulled_singularity_command(
         prefix = f"docker://quay.io/{namespace}/"
         if docker_image_identifier.startswith(prefix):
             save_path = docker_image_identifier[len(prefix) :]
-    command_parts.extend(["build", os.path.join(cache_directory, save_path), docker_image_identifier])
+    command_parts.append("build")
+    command_parts.extend(_arch_arguments(arch, singularity_cmd))
+    command_parts.extend([os.path.join(cache_directory, save_path), docker_image_identifier])
     return command_parts
 
 
@@ -51,12 +85,15 @@ def pull_singularity_command(
     singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    arch: str | None = None,
 ) -> list[str]:
     # Make sure cache dir exists
     dirname = os.path.dirname(os.path.normpath(cache_path))
     os.makedirs(dirname, exist_ok=True)
     command_parts = _singularity_prefix(singularity_cmd, sudo, sudo_cmd)
-    command_parts.extend(["build", cache_path, image_identifier])
+    command_parts.append("build")
+    command_parts.extend(_arch_arguments(arch, singularity_cmd))
+    command_parts.extend([cache_path, image_identifier])
     return command_parts
 
 

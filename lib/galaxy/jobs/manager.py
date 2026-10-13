@@ -48,6 +48,15 @@ class JobManager:
             log.debug("Initializing job handler")
             self.job_handler = handler.JobHandler(self.app)
             self.job_handler.start()
+            self._start_dependency_background_tasks()
+
+    def _start_dependency_background_tasks(self):
+        # Work such as backfilling conda platform environments belongs to the processes that run jobs, a
+        # short-lived process that only builds the toolbox would end while it holds locks.
+        toolbox = getattr(self.app, "toolbox", None)
+        dependency_manager = getattr(toolbox, "dependency_manager", None)
+        if dependency_manager is not None:
+            dependency_manager.start_background_tasks()
 
     def _queue_callback(self, job, tool_id):
         self.job_handler.job_queue.put(job.id, tool_id)

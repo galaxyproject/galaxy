@@ -30,6 +30,20 @@ RUNTIME_SECONDS_KEY = "runtime_seconds"
 CONTAINER_ID = "container_id"
 CONTAINER_TYPE = "container_type"
 RESUBMISSION_COUNT_KEY = "resubmission_count"
+PLATFORM_KEY = "platform"
+
+# (uname -s, uname -m) to conda subdir
+UNAME_TO_CONDA_PLATFORM = {
+    ("Linux", "x86_64"): "linux-64",
+    ("Linux", "aarch64"): "linux-aarch64",
+    ("Linux", "arm64"): "linux-aarch64",
+    ("Linux", "ppc64le"): "linux-ppc64le",
+    ("Linux", "riscv64"): "linux-riscv64",
+    ("Linux", "s390x"): "linux-s390x",
+    ("Darwin", "x86_64"): "osx-64",
+    ("Darwin", "arm64"): "osx-arm64",
+    ("FreeBSD", "amd64"): "freebsd-64",
+}
 
 
 class CorePluginFormatter(JobMetricFormatter):
@@ -49,6 +63,8 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric("Container ID", value)
         if key == CONTAINER_TYPE:
             return FormattedMetric("Container Type", value)
+        if key == PLATFORM_KEY:
+            return FormattedMetric("Platform", value)
         value = int(value)
         if key == RESUBMISSION_COUNT_KEY:
             if not value and not self.show_zero_resubmissions:
@@ -91,6 +107,7 @@ class CorePlugin(InstrumentPlugin):
         commands = []
         commands.append(self.__record_galaxy_slots_command(job_directory))
         commands.append(self.__record_galaxy_memory_mb_command(job_directory))
+        commands.append(self.__record_platform_command(job_directory))
         commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "start"))
         return commands
 
@@ -109,6 +126,9 @@ class CorePlugin(InstrumentPlugin):
         start = self.__read_seconds_since_epoch(job_directory, "start")
         end = self.__read_seconds_since_epoch(job_directory, "end")
         properties.update(self.__read_container_details(job_directory))
+        platform = self.__read_platform(job_directory)
+        if platform is not None:
+            properties[PLATFORM_KEY] = platform
         if start is not None and end is not None:
             properties[START_EPOCH_KEY] = start
             properties[END_EPOCH_KEY] = end
@@ -129,6 +149,23 @@ class CorePlugin(InstrumentPlugin):
                 return json.load(fh)
         except FileNotFoundError:
             return {}
+
+    def __platform_file(self, job_directory):
+        return self._instrument_file_path(job_directory, "platform")
+
+    def __record_platform_command(self, job_directory):
+        return f"""echo "$(uname -s) $(uname -m)" > '{self.__platform_file(job_directory)}' """
+
+    def __read_platform(self, job_directory) -> str | None:
+        try:
+            with open(self.__platform_file(job_directory)) as fh:
+                parts = fh.read().split()
+        except OSError:
+            return None
+        if len(parts) != 2:
+            return None
+        system, machine = parts
+        return UNAME_TO_CONDA_PLATFORM.get((system, machine)) or f"{system}-{machine}".lower()
 
     def __record_galaxy_slots_command(self, job_directory):
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)

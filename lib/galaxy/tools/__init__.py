@@ -2661,12 +2661,35 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 **kwds,
             )
 
-    def build_dependency_shell_commands(self, job_directory=None, metadata=False):
+    def build_dependency_shell_commands(self, job_directory=None, metadata=False, platform=None):
         """
         Return a list of commands to be run to populate the current environment to include this tools requirements.
+
+        ``platform`` is an optional conda subdir (for example ``linux-aarch64``) selecting the
+        conda environments of that platform, ``None`` uses the platform Galaxy runs on.
         """
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             requirements=self.requirements,
+            platform=platform,
+            **self._dependency_resolution_kwds(job_directory=job_directory, metadata=metadata),
+        )
+
+    def resolve_dependency_shell_commands(self, job_directory=None, metadata=False, platform=None):
+        """
+        Return the commands of :meth:`build_dependency_shell_commands` together with the dependency of each
+        requirement (a ``NullDependency`` for a requirement that does not resolve) from one resolution
+        that has the full context of the tool.
+
+        The commands are only built if all requirements resolved.
+        """
+        return self.app.toolbox.dependency_manager.resolve_dependency_shell_commands(
+            requirements=self.requirements,
+            platform=platform,
+            **self._dependency_resolution_kwds(job_directory=job_directory, metadata=metadata),
+        )
+
+    def _dependency_resolution_kwds(self, job_directory=None, metadata=False):
+        return dict(
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,

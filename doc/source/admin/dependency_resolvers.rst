@@ -179,6 +179,11 @@ Conda Dependency Resolver
       auto_init: <true|false>
       copy_dependencies: <true|false>
       read_only: <true|false>
+      platforms: [conda subdir, conda subdir...]
+      platforms_backfill: <true|false>
+      platforms_retry_days: <days>
+      platform_overrides: {conda subdir: {variable: value}}
+      codesign_exec: <path to code signer>
 
 The ``conda`` dependency resolver is used to find (and optionally install-on-demand) dependencies using the `Conda
 Package Manager <https://conda.io/>`__.  For a very detailed discussion of Conda dependency resolution, check out the
@@ -227,6 +232,32 @@ copy_dependencies
 read_only
     If ``true``, Galaxy will not attempt to install or uninstall requirement sets into this environment.
 
+platforms
+    Additional conda platforms (subdirs such as ``linux-aarch64`` or ``osx-arm64``) for which Galaxy creates every
+    environment it installs, as a list or a comma separated string (default: value of the global ``conda_platforms``
+    option or none). See `Heterogeneous clusters: one conda prefix, several platforms`_.
+
+platforms_backfill
+    If ``true`` and ``auto_install`` is on, a background thread creates the foreign copies of environments that exist
+    only for the native platform, see `Backfill of existing environments`_ (default: value of the global
+    ``conda_platforms_backfill`` option or ``true``).
+
+platforms_retry_days
+    Number of days a failed foreign create is left alone by the backfill (default: value of the global
+    ``conda_platforms_retry_days`` option or ``7``).
+
+platform_overrides
+    Environment variables that Conda gets when it solves for a foreign platform, as a mapping from platform to
+    variables, given as YAML or as a JSON string. Galaxy sets ``CONDA_OVERRIDE_GLIBC=2.17`` for ``linux-*`` and
+    ``CONDA_OVERRIDE_OSX=11.0`` for ``osx-*`` platforms, because the virtual packages of the host would otherwise
+    decide which builds are installable. Entries of this option replace these defaults, for example
+    ``{"linux-aarch64": {"CONDA_OVERRIDE_GLIBC": "2.28"}}`` (default: none).
+
+codesign_exec
+    Path of the code signer for ``osx-*`` environments, called as ``<codesign_exec> sign <file>`` (default: value of the
+    global ``conda_codesign_exec`` option, otherwise ``rcodesign`` from ``PATH``). See `Signing of macOS
+    environments`_.
+
 The conda resolver will search for Conda environments named::
 
     __<requirement_name>@<requirement_version>
@@ -252,6 +283,269 @@ be automatically installed at tool runtime), use the following:
       auto_init: true
       auto_install: true
       prefix: /galaxy/conda
+
+Heterogeneous clusters: one conda prefix, several platforms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Many sites share the Conda prefix with all compute nodes over NFS. Nodes of a different platform (for example
+``linux-aarch64`` next to ``linux-64``, or Apple silicon next to Linux) cannot run the binaries of the platform Galaxy
+is installed on. With the ``platforms`` option Galaxy installs every tool environment for each configured platform
+into the same prefix, and the job script of a job selects the environment of the platform it runs on. The compute
+nodes need no Conda installation and no configuration beyond access to the shared prefix.
+The job information page shows the platform that ran a job as the Platform metric.
+
+Configure the platforms globally in ``galaxy.yml``:
+
+.. code-block:: yaml
+
+    galaxy:
+      conda_platforms: linux-aarch64,osx-arm64
+
+or per resolver:
+
+.. code-block:: yaml
+
+    - type: conda
+      prefix: /shared/galaxy/conda
+      platforms: [linux-aarch64, osx-arm64]
+
+The platform Galaxy runs on is always included and keeps the layout of a single-platform installation:
+``<conda_prefix>/envs/<environment name>``. Each foreign platform has its own Conda base at
+``<conda_prefix>/platforms/<platform>/`` with the environments in
+``<conda_prefix>/platforms/<platform>/envs/<environment name>``. Whenever Galaxy installs an environment for a
+requirement set, it installs it independently for every configured platform: a native ``conda create`` and one
+``conda create --platform`` with ``CONDA_SUBDIR`` set per foreign platform. A success on a foreign platform is recorded in
+a marker file. A create that fails is logged and recorded in a ``.failed`` file next to the environment directory
+(``<conda_prefix>/envs/<environment name>.failed`` for the native platform), and the other platforms are created
+regardless. A package that has no build for the platform of the head therefore still gets its environments on the
+platforms that have it. The first job of such a tool fails on the native destination, because Galaxy installs at job time
+on the destination it already chose; later jobs route to a platform that has the environment. The creates of one
+environment run under a POSIX file lock on ``<conda_prefix>/.locks/<environment name>.lock``, so that concurrent installs
+of the same requirement set wait for each other. The operating system releases the lock when the holding process dies, so
+a killed process leaves no stale lock behind, and the lock file stays in place. An environment that already exists for a
+platform is not created again. A foreign environment counts as installed once its marker is written and the Conda base of
+its platform exists.
+
+With ``auto_install`` on, a request for a foreign platform whose environment is missing creates the environment on
+demand. The request takes the lock of the environment, so it waits for an install of the same requirement set that is in
+progress and creates only the platforms that are still missing. The request succeeds when the environment of the
+requested platform exists afterwards, whatever happened on the other platforms. With Pulsar-side resolution the platform
+of the manager is installed on demand in this way; a Pulsar with a platform per manager relies on it, because its first
+job on an arm manager can arrive while the first job on an x86 manager is still installing. A request does not retry a foreign create whose ``.failed`` file is younger than
+``platforms_retry_days`` and resolves to nothing instead. Without ``auto_install`` a missing foreign environment
+resolves to nothing.
+
+Two deployment modes
+....................
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 43 43
+
+   * -
+     - Mode 1: Galaxy resolves
+     - Mode 2: Pulsar resolves
+   * - Platform list
+     - ``conda_platforms`` in ``galaxy.yml``
+     - ``platforms`` in the conda resolver of the Pulsar ``dependency_resolvers_conf.xml``
+   * - Platform of a job
+     - ``platform`` parameter of the destination, or the routing helper
+     - ``platform`` of the Pulsar manager
+   * - Selection
+     - The destination, which can be chosen by ``platform_destination``
+     - Galaxy selects the manager through the URL ``.../managers/<name>/`` and sends only the requirements
+   * - Conda prefix
+     - Shared between the Galaxy head and the compute nodes
+     - Local to the Pulsar server, the Galaxy head needs no shared file system
+   * - Destination types
+     - Slurm, CLI, local, and Pulsar with ``dependency_resolution: local``
+     - Pulsar with ``dependency_resolution: remote``
+
+Tools with several requirements
+...............................
+
+Activating one environment replaces the previous one, so all requirements of a tool must be in a single environment.
+For the native platform this is the merged ``mulled-v1-<hash>`` environment or, without it, an environment in the job
+directory (``conda-env``) that Galaxy builds from the environments of the individual requirements. A foreign platform
+works the same way. If the merged environment of the platform exists it is activated, and with ``auto_install`` it is
+created on demand. Otherwise the individual environments of the platform are combined in the job directory: Galaxy runs
+the conda of the head node for the platform (``CONDA_SUBDIR``, the virtual package overrides and ``--platform``) with
+``--offline`` and the packages from the shared package cache, which the creation of the individual environments filled,
+and signs the result for ``osx-*`` platforms. Routing therefore counts a platform as available for a tool with several
+requirements if the merged environment exists for it, or if all individual environments exist and the conda base of the
+platform is present.
+
+Backfill of existing environments
+.................................
+
+Environments that exist for the native platform before ``platforms`` is set receive their foreign copies in the
+background. With ``auto_install`` on and ``platforms_backfill`` true (global option ``conda_platforms_backfill``), a
+daemon thread starts in each job handler process, goes through the ``__*`` and ``mulled-v1-*`` environments in
+``<conda_prefix>/envs`` and creates each one for every configured platform that lacks it, under the same lock as a
+regular install. The package specs come from the ``# update specs:`` line of the first transaction in
+``conda-meta/history`` of the native environment, which holds the specs of the create command; for a ``__name@version``
+environment without such a line they follow from the name. Galaxy logs the start and the end of the backfill with the
+numbers of environments checked, created, failed and skipped.
+
+A foreign create that fails leaves ``<conda_prefix>/platforms/<platform>/envs/<environment name>.failed`` with a
+timestamp and the tail of the conda output. The backfill does not try that environment and platform again until the
+file is ``platforms_retry_days`` old (global option ``conda_platforms_retry_days``, default 7), so a failing solve is
+not repeated at every start and a transient failure is retried eventually. A new install of the environment always
+tries again and removes the file on success. For a native create that failed, the file is
+``<conda_prefix>/envs/<environment name>.failed``. The backfill treats such an environment like an existing one and
+creates it for the foreign platforms, taking the specs from the ``__name@version`` name because no history file exists;
+merged ``mulled-v1-*`` environments without history are skipped. Job routing leaves out a platform with a recent
+failure when nothing is installed yet.
+
+Signing of macOS environments
+.............................
+
+Conda rewrites the install prefix inside Mach-O binaries and dylibs, which invalidates their code signature. Apple
+silicon refuses to run such files. Conda re-signs them only when it runs on macOS. For ``osx-64`` and ``osx-arm64``
+Galaxy therefore signs these files on the head node after each successful create, using ``rcodesign`` from the
+`apple-codesign <https://github.com/indygreg/apple-platform-rs>`_ project, which produces the same ad-hoc signature as
+``codesign -s -`` and runs on Linux. The files are taken from the ``conda-meta`` records of the environment: those
+with ``file_mode: binary`` and a ``prefix_placeholder``. Among these only Mach-O files (including fat binaries,
+recognized by their magic number) are signed, each with ``rcodesign sign <file>``; terminfo files and static archives
+are left alone. The number of signed and skipped files, and of failed signatures, is logged. If a file cannot be
+signed, the environment is kept but is not marked as usable, so
+jobs do not resolve to it.
+
+``rcodesign`` is distributed as a static Linux binary on the
+`release page <https://github.com/indygreg/apple-platform-rs/releases>`_ (``x86_64-unknown-linux-musl`` or
+``aarch64-unknown-linux-musl``). Galaxy uses the first ``rcodesign`` on ``PATH``. Another signer or location is set
+with the ``codesign_exec`` resolver option or globally with ``conda_codesign_exec`` in ``galaxy.yml``; the program is
+called as ``<codesign_exec> sign <file>``.
+
+If no signer is available and an ``osx-*`` platform is configured, Galaxy logs one warning at startup. The macOS
+environments are then created but left unsigned and are not marked as usable. Linux platforms are not affected.
+
+Platform of a job destination
+.............................
+
+A destination in ``job_conf.yml`` (or an XML ``<param>``) sets the ``platform`` parameter:
+
+.. code-block:: yaml
+
+    execution:
+      environments:
+        slurm_arm:
+          runner: slurm
+          native_specification: '-p arm'
+          platform: linux-aarch64
+
+When Galaxy builds the job script for a job on this destination, the activation commands point to the Conda base and
+environment of ``linux-aarch64``. Destinations without the parameter use the platform Galaxy runs on and behave as
+before. The destination of a job is assigned in the job handler before the runner builds the command line, so the
+parameter applies to static and dynamic destinations alike. The parameter is stored with the job and is applied again
+after a Galaxy restart. If a tool has package requirements and none resolves to an environment for the platform of the
+destination, the job fails with a message naming the platform, the destination and exactly those requirements that do
+not resolve. The check uses the same resolution that produces the activation commands, so it sees the same tool
+context (installed Tool Shed dependencies, tool directory). It runs whenever the job script gets dependency commands:
+for jobs without a container, including jobs on a destination that enables a container type but found no container
+for the tool, and for containers that resolve dependencies themselves. A job in a container that brings its own
+software gets no dependency commands and no check. For a destination with a platform other than the one
+Galaxy runs on, only the Conda resolver and the container resolvers take part in the resolution; resolvers without
+platform support (such as ``galaxy_packages`` or ``lmod``) are skipped.
+
+Jobs that resolve dependencies remotely (Pulsar with ``dependency_resolution: remote``) do not use the parameter.
+
+Routing jobs to destinations by platform
+........................................
+
+A dynamic destination rule can select a destination from the environments that exist for a tool. The function
+``galaxy.jobs.platform_routing.platform_destination`` takes the destinations in order of preference and returns the
+first one whose platform has the environments of all package requirements of the tool. The ``job_conf.yml``
+destination:
+
+.. code-block:: yaml
+
+    execution:
+      environments:
+        platform_router:
+          runner: dynamic
+          type: python
+          function: route_by_platform
+
+and the rule in a module of the configured ``rules_module`` (``galaxy.jobs.rules`` by default):
+
+.. code-block:: python
+
+    from galaxy.jobs.platform_routing import platform_destination
+
+
+    def route_by_platform(app, tool, job):
+        return platform_destination(app, tool, job, ["slurm_x86", "slurm_arm", "pulsar_mac"])
+
+The platform of each listed destination is read from its ``platform`` parameter. A mapping from destination id to
+platform can be passed instead of the list. Tools without package requirements get the first destination. If no
+destination matches, the function returns the ``default`` argument when it is given and otherwise raises a
+``JobMappingException`` that fails the job with a message listing the installed and the offered platforms, or naming
+``conda_platforms`` when no platforms are configured. A listed destination without a ``platform`` parameter raises a
+``JobMappingException`` naming that destination.
+
+With ``auto_install: true`` on the conda resolver, a tool whose environments are not installed on any platform yet goes
+to the first destination of the native platform. Its first job installs the environments for all configured platforms,
+and later jobs of the tool can be routed to destinations of other platforms. Without ``auto_install`` the environments
+have to be installed beforehand (admin dependency API or UI), otherwise the function raises as described.
+``DependencyManager.platforms_for_requirements`` is the underlying check. It consults only the file system.
+
+Containers
+..........
+
+Docker needs no configuration for heterogeneous clusters. The registry serves a manifest list and the Docker daemon of
+the node pulls the image of its own architecture.
+
+Singularity and Apptainer images are files, and Galaxy pulls them on the server into the image cache. A destination with a
+``platform`` parameter gets its images from a cache directory of that platform. The resolvers ``cached_mulled_singularity``,
+``mulled_singularity``, ``build_mulled_singularity`` and ``cached_explicit_singularity`` look up and store images in
+``<cache_directory>/<platform>/``, for example
+``<container_image_cache_path>/singularity/mulled/linux-aarch64/``, and create the directory on demand. Destinations
+without ``platform`` keep using ``<cache_directory>/``, so an existing cache stays valid. The job script of the
+destination runs the ``.sif`` file from the directory of its platform.
+
+When the architecture of the platform differs from the one of the Galaxy server, Galaxy pulls with
+``singularity build --arch <architecture>`` (the same option exists in Apptainer). The architectures are ``amd64`` for
+``linux-64`` and ``osx-64``, ``arm64`` for ``linux-aarch64`` and ``osx-arm64``, and ``ppc64le``, ``s390x`` and ``riscv64``
+for the platforms of the same name. If the installed binary does not know ``--arch``, Galaxy logs a warning and pulls
+without it, which yields the architecture of the server. The ``build_mulled_singularity`` resolver builds images only for
+the architecture of the server and looks up the images of other platforms in their directory without building.
+A ``docker://`` reference of the explicit ``explicit_singularity`` resolver is pulled by the node at run time and
+therefore has the architecture of the node.
+
+Before a pull for a platform with a known architecture, Galaxy reads the manifest of the image from the registry
+(manifest list or index, or the config of a single manifest) and refuses to pull when the architecture is missing. The
+resolver then yields no container for that destination and the next resolver is tried; the log names the image and the
+architectures it is published for. This check is necessary because ``--arch`` on an image without a variant for that
+architecture does not fail: Apptainer writes an image labelled for the requested architecture that contains the binaries
+of another one, which the node rejects. If the registry cannot be reached or does not answer, Galaxy logs this at debug
+level and pulls without the check. The check applies to the ``mulled_singularity`` and ``cached_explicit_singularity``
+resolvers and to the ``docker://`` references of ``explicit_singularity``.
+
+BioContainers on quay.io currently publishes images for ``amd64`` only, as single manifests without manifest lists.
+Container-based tools on ``arm64`` nodes need images from elsewhere, for example multi-architecture images from Docker
+Hub declared in the tool as ``<container type="docker">python:3.12-alpine</container>``, or images built by the site.
+To have such an explicit image cached per platform on the Galaxy server and pulled with ``--arch``, list
+``cached_explicit_singularity`` in the ``container_resolvers`` configuration before ``explicit_singularity``, which hands
+the ``docker://`` reference to the node instead. Platform routing does not check whether an image exists: a tool without
+package requirements, or with a container, goes to the first destination.
+
+Limits
+......
+
+* Foreign environments are created when a requirement set is installed while the option is set, or on demand by a
+  request for the foreign platform. Both need ``auto_install``. Without it, environments installed earlier lack their
+  foreign copies until they are installed again.
+* Packages that have no build for a platform cannot be installed there. Galaxy skips that platform for the tool and
+  the tool routes to destinations of other platforms.
+* Environments for macOS that are cross-installed from Linux are only usable once their patched binaries are signed,
+  see `Signing of macOS environments`_. Without a code signer Galaxy does not mark them as usable.
+* Windows platforms are not supported.
+* The metadata commands of a job run with the dependencies of the native platform.
+* The job script runs Galaxy's own virtual environment for setting metadata when it is reachable from the node, and that
+  virtual environment is platform-specific. On nodes of another platform the step reports ``python: command not found``
+  and Galaxy sets the metadata itself afterwards, so jobs still finish. Providing a virtual environment per platform or
+  setting the metadata on the server avoids the message.
 
 Lmod Dependency Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~

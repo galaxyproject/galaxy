@@ -34,7 +34,10 @@ from galaxy.job_execution.output_collect import (
     read_exit_code_from,
 )
 from galaxy.jobs.command_factory import build_command
-from galaxy.jobs.job_destination import JobDestination
+from galaxy.jobs.job_destination import (
+    JobDestination,
+    PlatformDependencyError,
+)
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
@@ -327,6 +330,10 @@ class BaseJobRunner:
             )
         except (ParameterValueError, ExpressionTemplateError) as e:
             log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
+            job_wrapper.fail(unicodify(e), exception=False)
+            return False
+        except PlatformDependencyError as e:
+            log.info("(%s) %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:

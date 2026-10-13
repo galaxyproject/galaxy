@@ -34,6 +34,11 @@ from . import (
     ContainerResolver,
     ResolutionCache,
 )
+from .oci_arch import (
+    destination_platform,
+    pull_arch,
+)
+from .registry import missing_architecture
 from ..conda_util import CondaTarget
 from ..container_classes import (
     Container,
@@ -542,8 +547,25 @@ class SingularityCliContainerResolver(CliContainerResolver):
         if not cache_directory_path:
             assert self.app_info.container_image_cache_path
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
+        self._cacher_class = cacher_class
         self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
+        self._platform_cache_directories: dict[str, CacheDirectory] = {}
         safe_makedirs(self.cache_directory.path)
+
+    def cache_directory_for(self, platform: str | None) -> CacheDirectory:
+        """Cache directory for images of ``platform``: ``<cache_directory>/<platform>``, created on demand.
+
+        Without a platform this is the plain cache directory.
+        """
+        if not platform:
+            return self.cache_directory
+        platform_cache = self._platform_cache_directories.get(platform)
+        if platform_cache is None:
+            path = os.path.join(self.cache_directory.path, platform)
+            safe_makedirs(path)
+            platform_cache = self._cacher_class(path, hash_func=self.hash_func)
+            self._platform_cache_directories[platform] = platform_cache
+        return platform_cache
 
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):
@@ -590,8 +612,9 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
 
         targets = mulled_targets(tool_info)
         log.debug(f"Image name for tool {tool_info.tool_id}: {image_name(targets, self.hash_func)}")
+        cache_directory = self.cache_directory_for(destination_platform(kwds.get("destination_info")))
         return singularity_cached_container_description(
-            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell
+            targets, cache_directory, hash_func=self.hash_func, shell=self.shell
         )
 
     def __str__(self) -> str:
@@ -656,6 +679,9 @@ class MulledDockerContainerResolver(CliContainerResolver):
         resolution_cache = kwds.get("resolution_cache")
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
+        destination_info_arg = kwds.get("destination_info")
+        platform = destination_platform(destination_info_arg) if self.container_type == "singularity" else None
+        platform_kwds: dict[str, Any] = {"platform": platform} if platform else {}
 
         targets = mulled_targets(tool_info)
         log.debug(f"Image name for tool {tool_info.tool_id}: {image_name(targets, self.hash_func)}")
@@ -685,8 +711,9 @@ class MulledDockerContainerResolver(CliContainerResolver):
                 namespace=self.namespace,
                 hash_func=self.hash_func,
                 resolution_cache=resolution_cache,
+                **platform_kwds,
             ):
-                destination_info = {}
+                destination_info = destination_info_arg or {}
                 destination_for_container_type = kwds.get("destination_for_container_type")
                 if destination_for_container_type:
                     destination_info = destination_for_container_type(self.container_type)
@@ -698,14 +725,17 @@ class MulledDockerContainerResolver(CliContainerResolver):
                     None,
                     container_description,
                 )
-                self.pull(container)
-            if not self.auto_install:
+                if platform and missing_architecture(container_description.identifier, platform):
+                    return None
+                self.pull(container, **platform_kwds)
+            if not self.auto_install or platform:
                 container_description = (
                     self.cached_container_description(
                         targets,
                         namespace=self.namespace,
                         hash_func=self.hash_func,
                         resolution_cache=resolution_cache,
+                        **platform_kwds,
                     )
                     or container_description
                 )
@@ -737,9 +767,10 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
         namespace: str,
         hash_func: Literal["v1", "v2"],
         resolution_cache: ResolutionCache | None = None,
+        platform: str | None = None,
     ) -> ContainerDescription | None:
         return singularity_cached_container_description(
-            targets, cache_directory=self.cache_directory, hash_func=hash_func
+            targets, cache_directory=self.cache_directory_for(platform), hash_func=hash_func
         )
 
     @property
@@ -747,14 +778,15 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
         # Only needs access to path, doesn't require CLI
         return True
 
-    def pull(self, container: Container) -> None:
+    def pull(self, container: Container, platform: str | None = None) -> None:
         if self.cli_available:
             assert isinstance(container, SingularityContainer)
+            cache_directory = self.cache_directory_for(platform)
             cmds = container.build_mulled_singularity_pull_command(
-                cache_directory=self.cache_directory.path, namespace=self.namespace
+                cache_directory=cache_directory.path, namespace=self.namespace, arch=pull_arch(platform)
             )
             shell(cmds=cmds)
-            self.cache_directory.invalidate_cache()
+            cache_directory.invalidate_cache()
 
     def __str__(self) -> str:
         return f"MulledSingularityContainerResolver[namespace={self.namespace}]"
@@ -852,10 +884,20 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
         if len(targets) == 0:
             return None
 
+        platform = destination_platform(kwds.get("destination_info"))
+        cache_directory = self.cache_directory_for(platform)
         if self.auto_install or install:
-            mull_targets(targets, involucro_context=self.involucro_context, **self._mulled_kwds)
+            if pull_arch(platform):
+                log.warning(
+                    "Not building singularity image for platform '%s': images can only be built for the "
+                    "architecture of the Galaxy server",
+                    platform,
+                )
+            else:
+                mulled_kwds = dict(self._mulled_kwds, singularity_image_dir=cache_directory.path)
+                mull_targets(targets, involucro_context=self.involucro_context, **mulled_kwds)
         return singularity_cached_container_description(
-            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell
+            targets, cache_directory, hash_func=self.hash_func, shell=self.shell
         )
 
     def __str__(self) -> str:
