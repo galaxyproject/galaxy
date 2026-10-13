@@ -837,13 +837,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # Ensure a private role and default permissions are set for remote users (remote user creation bug existed prior to 2009)
             self.app.security_agent.get_private_user_role(user, auto_create=True)
             if self.app_type == "galaxy":
-                if not user.default_permissions:
-                    self.app.security_agent.user_set_default_permissions(
-                        user,
-                        history=True,
-                        dataset=True,
-                        default_access_private=self.app.config.new_user_dataset_access_role_default_private,
-                    )
+                self.app.security_agent.create_user_role(user, self.app)
         elif user is None:
             session = self.session()
             random.seed()
@@ -856,9 +850,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if self.app_type == "galaxy":
-                self.app.security_agent.user_set_default_permissions(
-                    user, default_access_private=self.app.config.new_user_dataset_access_role_default_private
-                )
+                self.app.security_agent.create_user_role(user, self.app)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 

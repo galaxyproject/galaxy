@@ -597,6 +597,25 @@ class TestUserManager(BaseTestCase):
         user = self.user_manager.get_or_create_remote_user("remote@example.org")
         assert self._default_access_roles(user) == [self.app.security_agent.get_private_user_role(user)]
 
+    def test_existing_remote_user_without_default_permissions_keeps_existing_data(self):
+        self.app.config.use_remote_user = True
+        self.app.config.new_user_dataset_access_role_default_private = True
+        security_agent = self.app.security_agent
+        user = model.User(email="remote@example.org", username="remote", password="*")
+        history = model.History(user=user)
+        hda = model.HistoryDatasetAssociation(history=history, sa_session=self.trans.sa_session, create_dataset=True)
+        self.trans.sa_session.add_all([user, history, hda])
+        self.trans.sa_session.commit()
+        private_role = security_agent.get_private_user_role(user, auto_create=True)
+        security_agent.set_dataset_permission(
+            hda.dataset, {security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action: [private_role]}
+        )
+        assert not user.default_permissions
+        user = self.user_manager.get_or_create_remote_user("remote@example.org")
+        assert self._default_access_roles(user) == [private_role]
+        assert not history.default_permissions
+        assert security_agent.dataset_is_public(hda.dataset)
+
     def _default_access_roles(self, user):
         access = self.app.security_agent.permitted_actions.DATASET_ACCESS.action
         return [dup.role for dup in user.default_permissions if dup.action == access]
