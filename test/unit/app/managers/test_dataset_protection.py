@@ -400,3 +400,40 @@ def test_many_errors_are_summarized(tmp_path):
     assert error and error.startswith("Output '0' could not be protected. Output '1'")
     assert "(998 more errors)" in error
     assert len(error) < 300
+
+
+def _conversion_of(tmp_path):
+    source, _ = _protected_output(tmp_path, "source.dat")
+    converted, _ = _protected_output(tmp_path, "converted.dat")
+    converted.dataset.id = 2
+    association = Bunch(deleted=False, dataset=converted, dataset_ldda=None)
+    source.implicitly_converted_datasets = [association]
+    return source, converted, association
+
+
+def _grants_on(*datasets):
+    grant = DatasetProtectionGrant(
+        key_ref="cnk:abcdef0123456789",
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3),
+        grant_data={"compute_header": "compute"},
+    )
+    ids = {dataset.dataset.id for dataset in datasets}
+    return lambda user, dataset, scheme: grant if dataset.id in ids else None
+
+
+def test_conversions_the_user_cant_decrypt_are_converted_again(tmp_path):
+    source, converted, association = _conversion_of(tmp_path)
+    manager = _manager()
+    manager.get_grant = mock.MagicMock(side_effect=_grants_on(source))
+    user = cast(User, Bunch(id=1))
+    assert manager.retire_unusable_conversion(user, cast(DatasetInstance, source), converted, ["tabular"])
+    assert association.deleted
+
+
+def test_users_who_cant_decrypt_the_dataset_keep_its_conversions(tmp_path):
+    # e.g. the conversion of another user, running a tool on their dataset.
+    source, converted, association = _conversion_of(tmp_path)
+    manager = _manager()
+    user = cast(User, Bunch(id=1))
+    assert not manager.retire_unusable_conversion(user, cast(DatasetInstance, source), converted, ["tabular"])
+    assert not association.deleted
