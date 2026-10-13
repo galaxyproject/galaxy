@@ -158,6 +158,24 @@ export async function copyDataset(
     if (error) {
         rethrowSimple(error);
     }
+    // Copies inherit the source item's visibility; a copy should always be visible
+    // in the destination history regardless of whether the source was hidden.
+    if (data && "visible" in data && data.visible === false && typeof data.id === "string") {
+        return await unhideHistoryContentItem(historyId, type, data.id);
+    }
+    return data;
+}
+
+async function unhideHistoryContentItem(historyId: string, type: HistoryContentType, id: string) {
+    const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/{type}s/{id}", {
+        params: {
+            path: { history_id: historyId, type, id },
+        },
+        body: { visible: true },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 

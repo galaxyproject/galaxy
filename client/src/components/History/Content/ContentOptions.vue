@@ -76,7 +76,7 @@ const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 // own `HistoryDatasetCollectionAssociation`, so only their individual
 // dataset elements remain copyable once you drill into them.
 const showCopyToCurrentHistory = computed(
-    () => !props.writable && isCollection.value && props.isHistoryItem && !!props.itemId,
+    () => !props.writable && isCollection.value && props.isHistoryItem && !props.isDeleted && !!props.itemId,
 );
 
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));

@@ -62,6 +62,9 @@ const showVisualizations = computed(() => {
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
 });
+const showCopyToCurrentHistory = computed(() => {
+    return !props.writable && !props.item.deleted && !props.item.purged;
+});
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
 });
@@ -198,7 +201,7 @@ async function copyToCurrentHistory() {
                 </GButton>
 
                 <GButton
-                    v-if="!writable"
+                    v-if="showCopyToCurrentHistory"
                     class="px-1"
                     :disabled="copyingDataset"
                     title="Copy to Current History"
