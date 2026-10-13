@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeHistorySummaryExtended } from "@tests/test-data";
 import { getFakeFileSource } from "@tests/test-data/fileSources";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import type { components } from "@/api";
 import { http } from "@/api/client/__mocks__/http";
@@ -28,6 +28,8 @@ const importedHistory = getFakeHistorySummaryExtended({
 });
 const currentHistory = getFakeHistorySummaryExtended({ ...CURRENT_HISTORY, user_id: TOOLBOX_USER.id });
 const currentHistoryJobId = "b8a3fb13e55e4590";
+const historyArchiveUrl = "https://usegalaxy.org/api/histories/exported_history/exports/archive.tar.gz";
+const invocationArchiveUrl = "https://usegalaxy.org/api/invocations/exported_invocation/exports/archive.tar.gz";
 
 const importJob = {
     id: "b8a3fb13e55e4589",
@@ -47,6 +49,14 @@ function fileSources(plugins: BrowsableFilesSourcePlugin[]) {
             },
         },
     };
+}
+
+interface HistoryImportStoryState {
+    historyImportCompletes?: boolean;
+}
+
+function completedImport(): HistoryImportStoryState {
+    return { historyImportCompletes: true };
 }
 
 const meta = {
@@ -92,13 +102,16 @@ const meta = {
             },
         },
     },
-    afterEach: async ({ canvasElement, args }) => {
+    afterEach: async ({ canvasElement, args, parameters }) => {
+        const state = parameters as HistoryImportStoryState;
         await waitFor(
             () =>
                 expect(
-                    within(canvasElement).getByRole("button", {
-                        name: args.invocationImport ? "Import invocation" : "Import history",
-                    }),
+                    state.historyImportCompletes
+                        ? within(canvasElement).getByText("Done!", { exact: true })
+                        : within(canvasElement).getByRole("button", {
+                              name: args.invocationImport ? "Import invocation" : "Import history",
+                          }),
                 ).toBeVisible(),
             { timeout: 5000 },
         );
@@ -115,3 +128,79 @@ export const HistoryWithoutRepository: Story = { parameters: fileSources([]) };
 
 /** Workflow invocation archives can be imported into the current history or a new one. */
 export const InvocationWithRepository: Story = { args: { invocationImport: true } };
+
+export const ReplacesPublishedHistoryUrlWithArchive: Story = {
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        await canvas.findByRole("button", { name: "Import history" }, { timeout: 5000 });
+        const input = canvas.getByRole("textbox");
+        await step("Explain why a published-history URL is not an archive", async () => {
+            await userEvent.type(input, "https://usegalaxy.org/u/some_user/h/exported_history");
+            const warning = await canvas.findByRole("alert");
+            expect(warning).toHaveTextContent(
+                "It looks like you are trying to import a published history from another galaxy instance. You can only import histories via an archive URL.",
+            );
+            expect(within(warning).getByRole("link", { name: /Read more on the GTN/ })).toBeVisible();
+        });
+        await step("Replace it with an archive URL", async () => {
+            await userEvent.clear(input);
+            await userEvent.type(input, historyArchiveUrl);
+            await waitFor(() => {
+                expect(input).toHaveValue(historyArchiveUrl);
+                expect(canvas.getByRole("button", { name: "Import history" })).not.toHaveAttribute(
+                    "aria-disabled",
+                    "true",
+                );
+                expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+            });
+        });
+    },
+};
+
+export const ImportsArchiveIntoNewHistory: Story = {
+    parameters: completedImport(),
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        const submit = await canvas.findByRole("button", { name: "Import history" }, { timeout: 5000 });
+        await step("Import the history archive", async () => {
+            await userEvent.type(canvas.getByRole("textbox"), historyArchiveUrl);
+            expect(submit).not.toHaveAttribute("aria-disabled", "true");
+            await userEvent.click(submit);
+        });
+        await step("Show the imported history after its real job response completes", async () => {
+            await canvas.findByText("Done!", { exact: true }, { timeout: 5000 });
+            expect(await canvas.findByText("History for Workflow Import", { exact: true })).toBeVisible();
+            expect(canvas.getByRole("link", { name: "your histories" })).toBeVisible();
+            expect(canvas.getByRole("link", { name: "your histories" })).toHaveAttribute("href", "/histories/list");
+            expect(canvas.queryByRole("button", { name: "Import history" })).not.toBeInTheDocument();
+        });
+    },
+};
+
+export const ImportsInvocationIntoCurrentHistory: Story = {
+    ...InvocationWithRepository,
+    parameters: completedImport(),
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        const submit = await canvas.findByRole("button", { name: "Import invocation" }, { timeout: 5000 });
+        await step("Choose the current history for the invocation archive", async () => {
+            await userEvent.click(canvas.getByRole("radio", { name: "Import into the current history." }));
+            expect(canvas.getByRole("radio", { name: "Import into the current history." })).toBeChecked();
+            expect(canvas.getByRole("radio", { name: "Import into a new history." })).not.toBeChecked();
+            await userEvent.type(canvas.getByRole("textbox"), invocationArchiveUrl);
+            expect(submit).not.toHaveAttribute("aria-disabled", "true");
+            await userEvent.click(submit);
+        });
+        await step("Show the invocation's target history after import", async () => {
+            await canvas.findByText("Done!", { exact: true }, { timeout: 5000 });
+            expect(await canvas.findByText("RNA-seq run", { exact: true })).toBeVisible();
+            expect(canvas.queryByText("History for Workflow Import", { exact: true })).not.toBeInTheDocument();
+            expect(canvas.getByRole("link", { name: "your invocations" })).toBeVisible();
+            expect(canvas.getByRole("link", { name: "your invocations" })).toHaveAttribute(
+                "href",
+                "/workflows/invocations",
+            );
+            expect(canvas.queryByRole("button", { name: "Import invocation" })).not.toBeInTheDocument();
+        });
+    },
+};
