@@ -240,3 +240,24 @@ def test_file_source_http_keeps_non_ascii_host_unchanged(tmp_path):
 def test_file_source_http_keeps_url_with_invalid_escape_unchanged(tmp_path):
     test_url = "https://www.elsewhere.org/a%20b?x=%zz&d=50%off"
     assert _realize_capturing_request_url(test_url, tmp_path) == test_url
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_encodes_unsafe_characters_next_to_invalid_escape(tmp_path):
+    test_url = "https://www.elsewhere.org/a%20b?x<=1&d=50%off"
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert requested_url == "https://www.elsewhere.org/a%20b?x%3C=1&d=50%off"
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_keeps_escaped_unreserved_characters(tmp_path):
+    test_url = "https://www.elsewhere.org/a%7Eb%41.txt?sig=x%2Dy<z"
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert requested_url == "https://www.elsewhere.org/a%7Eb%41.txt?sig=x%2Dy%3Cz"
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_allows_spaces_in_fragment(tmp_path):
+    test_url = "https://www.elsewhere.org/file.txt#human label"
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert urllib.parse.urlsplit(requested_url).path == "/file.txt"
