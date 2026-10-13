@@ -1,6 +1,6 @@
 import type { Decorator } from "@storybook/vue3-vite";
 import { getFakeWorkflowSummary } from "@tests/test-data/workflows";
-import { HttpResponse } from "msw";
+import { http as mswHttp, HttpResponse } from "msw";
 import { h } from "vue";
 import { http } from "@/api/client/__mocks__/http";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -72,6 +72,29 @@ export const invocationGraphHandlers = {
     ),
     typesAndMapping: typesAndMappingHandler,
 };
+
+/** Answers the details each listed step loads: the input step, scheduled with no jobs, so nothing polls. */
+export const invocationStepHandler = http.get("/api/invocations/steps/{step_id}", ({ params, response }) =>
+    response.untyped(HttpResponse.json({ ...INPUT_STEP, id: params.step_id })),
+);
+
+/** Answers the workflow fetch with the invoked workflow, for views that fetch it themselves. */
+export const invokedWorkflowHandler = http.get("/api/workflows/{workflow_id}", ({ response }) =>
+    response.untyped(HttpResponse.json(INVOKED_WORKFLOW)),
+);
+
+/**
+ * nginx's rate limit refuses the graph's workflow download, as Galaxy's Sentry saw it. Plain `msw`, since
+ * the typed handlers stamp failures with Galaxy's request id, and a proxy's page carries none.
+ */
+export const workflowGraphRateLimited = mswHttp.get(
+    "/api/workflows/:workflow_id/download",
+    () =>
+        new HttpResponse(
+            "<html><head><title>429 Too Many Requests</title></head><body><center><h1>429 Too Many Requests</h1></center><hr><center>nginx</center></body></html>",
+            { status: 429, headers: { "Content-Type": "text/html" } },
+        ),
+);
 
 /** The workflow graph draws its nodes with the app's legacy Galaxy instance. */
 export const withGalaxyInstance: Decorator = (story) => ({
