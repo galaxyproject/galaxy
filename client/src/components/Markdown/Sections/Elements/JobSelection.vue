@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { BFormSelect, BInputGroup, BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
+import { BInputGroup, BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
 
 import type { SelectOption } from "./handlesMappingJobs";
+
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 
 interface JobSelectionProps {
     jobId?: string;
     implicitCollectionJobsId?: string;
     selectJobOptions: SelectOption[];
-    value?: String | undefined;
+    value?: string;
 }
 
 const emit = defineEmits<{
@@ -31,11 +33,13 @@ defineProps<JobSelectionProps>();
                     </BNavbarNav>
                     <BNavForm>
                         <BInputGroup size="sm">
-                            <BFormSelect
-                                :value="value"
+                            <GSelect
+                                aria-label="Select Job"
                                 class="text-right"
+                                size="small"
+                                :model-value="value"
                                 :options="selectJobOptions"
-                                @input="handleInput"></BFormSelect>
+                                @update:model-value="handleInput" />
                         </BInputGroup>
                     </BNavForm>
                 </div>
