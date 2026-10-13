@@ -885,7 +885,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         cards = self.components.histories.history_cards.all()
 
         for card in cards:
-            card_name = card.find_element(By.CSS_SELECTOR, '[id^="g-card-title-link-history-"]').text
+            card_name = card.find_element(By.CSS_SELECTOR, '[id^="g-card-title-text-history-"]').text
             if card_name in item_names:
                 checkbox = card.find_element(By.CSS_SELECTOR, 'input[id^="g-card-select-history-"]')
                 # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable

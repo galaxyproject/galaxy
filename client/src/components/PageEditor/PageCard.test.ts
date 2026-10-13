@@ -34,7 +34,10 @@ describe("PageCard", () => {
 
         const title = wrapper.find(getSelector("title", FAKE_PAGE_SUMMARY.id));
         expect(title.text()).toBe("My Analysis");
-        expect(title.attributes("title")).toBe("Edit Notebook");
+        // The tooltip links to the title once the title's element is mounted
+        await wrapper.vm.$nextTick();
+        const tooltipId = title.attributes("aria-describedby");
+        expect(wrapper.find(`#${tooltipId}`).text()).toBe("Edit Notebook");
 
         // Click to emit edit event
         await title.trigger("click");
