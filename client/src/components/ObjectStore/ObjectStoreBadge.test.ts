@@ -1,10 +1,13 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { advanceTooltipHoverDelay } from "@tests/vitest/tooltipTestUtils";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import purify from "dompurify";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 import { MESSAGES } from "@/components/ObjectStore/badgeMessages";
+import { vGTooltip } from "@/directives/vGTooltip";
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 import ObjectStoreBadge from "./ObjectStoreBadge.vue";
@@ -12,108 +15,146 @@ import ObjectStoreBadge from "./ObjectStoreBadge.vue";
 const localVue = getLocalVue(true);
 
 const TEST_MESSAGE = "This is a test message for the badge.";
-
-async function mountBadge(badge: ObjectStoreBadgeType) {
-    return mount(ObjectStoreBadge as object, {
-        props: { badge },
-        global: localVue,
-        attachTo: document.body,
-    });
-}
-
-// The popover relocates out of the wrapper, so it's queried off the document.
-function getTooltip() {
-    return document.body.querySelector(".popover")?.textContent;
-}
-
-describe("ObjectStoreBadge", () => {
-    afterEach(() => {
-        document.body.innerHTML = "";
-    });
-
-    it("should render a valid badge for more_secure type", async () => {
-        await mountBadge({ type: "more_secure", message: TEST_MESSAGE, source: "admin" });
-
-        const tooltip = getTooltip();
-
-        expect(tooltip).toContain(TEST_MESSAGE);
-        expect(tooltip).toContain(MESSAGES.more_secure);
-    });
-
-    it("should render a valid badge for less_secure type", async () => {
-        await mountBadge({ type: "less_secure", message: TEST_MESSAGE, source: "admin" });
-
-        const tooltip = getTooltip();
-
-        expect(tooltip).toContain(TEST_MESSAGE);
-        expect(tooltip).toContain(MESSAGES.less_secure);
-    });
-
-    it("should gracefully handle unspecified/null badge messages", async () => {
-        await mountBadge({ type: "more_secure", message: null, source: "admin" });
-
-        const tooltip = getTooltip();
-
-        expect(tooltip).toContain("This storage has been marked as more secure by the Galaxy administrator.");
-        expect(tooltip).toContain(MESSAGES.more_secure);
-    });
-});
+const LINKED_MESSAGE = "Read our **policy** on the [Archive Tier Storage](https://example.org/archive) page.";
+const LINKED_TEXT = "Read our policy on the Archive Tier Storage page.";
 
 enableAutoUnmount(afterEach);
 
-describe("ObjectStoreBadge popover", () => {
+describe("ObjectStoreBadge", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        // DOMPurify misbehaves under happy-dom, so it passes content through, like the global sanitizeHtml mock.
+        vi.spyOn(purify, "sanitize").mockImplementation((html) => String(html));
+    });
+
     afterEach(() => {
         vi.useRealTimers();
+        vi.restoreAllMocks();
         document.body.innerHTML = "";
     });
 
-    async function hoverBadge(message: string | null, interactive?: boolean) {
-        vi.useFakeTimers();
-        const wrapper = mount(ObjectStoreBadge, {
-            props: { badge: { type: "short_term", message, source: "admin" }, interactive },
-            global: localVue,
+    function mountBadge(badge: ObjectStoreBadgeType, interactive?: boolean) {
+        return mount(ObjectStoreBadge, {
+            props: { badge, interactive },
+            global: { ...localVue, directives: { "g-tooltip": vGTooltip } },
             attachTo: document.body,
         });
-        const trigger = wrapper.get(".object-store-badge-wrapper");
-        await trigger.trigger("mouseenter");
-        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
-        const popover = document.body.querySelector(".popover") as HTMLElement;
-        return { trigger, popover };
     }
 
-    it("shows the admin message as its own paragraph, with Markdown links you can reach", async () => {
-        const { trigger, popover } = await hoverBadge(
-            "Read our **policy** on the [Archive Tier Storage](https://example.org/archive) page.",
-        );
+    function getTrigger(wrapper: ReturnType<typeof mountBadge>) {
+        return wrapper.get(".object-store-badge-wrapper");
+    }
+
+    // The popover relocates, and the tooltip is added, at the end of the page.
+    async function hoverBadge(badge: ObjectStoreBadgeType, interactive?: boolean) {
+        const wrapper = mountBadge(badge, interactive);
+        await nextTick();
+        await getTrigger(wrapper).trigger("mouseenter");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const shown = document.body.querySelector<HTMLElement>(".popover, .g-tooltip-d")!;
+        return { wrapper, trigger: getTrigger(wrapper), shown };
+    }
+
+    function paragraphs(element: HTMLElement) {
+        return Array.from(element.querySelectorAll("p")).map((p) => p.textContent);
+    }
+
+    it("should render a valid badge for more_secure type", async () => {
+        const { shown } = await hoverBadge({ type: "more_secure", message: TEST_MESSAGE, source: "admin" });
+        expect(shown.textContent).toContain(TEST_MESSAGE);
+        expect(shown.textContent).toContain(MESSAGES.more_secure);
+    });
+
+    it("should render a valid badge for less_secure type", async () => {
+        const { shown } = await hoverBadge({ type: "less_secure", message: TEST_MESSAGE, source: "admin" });
+        expect(shown.textContent).toContain(TEST_MESSAGE);
+        expect(shown.textContent).toContain(MESSAGES.less_secure);
+    });
+
+    it("should gracefully handle unspecified/null badge messages", async () => {
+        const { shown } = await hoverBadge({ type: "more_secure", message: null, source: "admin" });
+        expect(shown.textContent).toContain("This storage has been marked as more secure by the Galaxy administrator.");
+        expect(shown.textContent).toContain(MESSAGES.more_secure);
+    });
+
+    it("shows the admin message as its own paragraph, with Markdown links you can tab to", async () => {
+        const { trigger, shown } = await hoverBadge({ type: "short_term", message: LINKED_MESSAGE, source: "admin" });
         expect(trigger.element.tagName).toBe("BUTTON");
         expect(trigger.attributes("aria-label")).toBe(MESSAGES.short_term);
         expect(trigger.attributes("aria-haspopup")).toBe("dialog");
-        expect(trigger.attributes("aria-controls")).toBe(popover.id);
-        expect(popover.getAttribute("role")).toBe("dialog");
-        expect(popover.getAttribute("aria-label")).toBe(MESSAGES.short_term);
-        const paragraphs = Array.from(popover.querySelectorAll("p")).map((p) => p.textContent);
-        expect(paragraphs).toEqual([MESSAGES.short_term, "Read our policy on the Archive Tier Storage page."]);
-        expect(popover.textContent).not.toContain("<p>");
-        expect(popover.querySelector("strong")?.textContent).toBe("policy");
-        expect(popover.querySelector("a")?.getAttribute("href")).toBe("https://example.org/archive");
+        expect(trigger.attributes("aria-controls")).toBe(shown.id);
+        expect(trigger.attributes("aria-describedby")).toBeUndefined();
+        expect(shown.getAttribute("role")).toBe("dialog");
+        expect(shown.getAttribute("aria-label")).toBe(MESSAGES.short_term);
+        expect(paragraphs(shown)).toEqual([MESSAGES.short_term, LINKED_TEXT]);
+        expect(shown.textContent).not.toContain("<p>");
+        expect(shown.querySelector("strong")?.textContent).toBe("policy");
+        const link = shown.querySelector("a")!;
+        expect(link.getAttribute("href")).toBe("https://example.org/archive");
+
+        (trigger.element as HTMLElement).focus();
+        const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+        trigger.element.dispatchEvent(tab);
+        expect(tab.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(link);
     });
 
-    it("shows only the stock sentence, as a tooltip, when there is no admin message", async () => {
-        const { trigger, popover } = await hoverBadge(null);
-        expect(trigger.element.tagName).toBe("BUTTON");
-        expect(popover.getAttribute("role")).toBe("tooltip");
-        expect(trigger.attributes("aria-describedby")).toBe(popover.id);
-        const paragraphs = Array.from(popover.querySelectorAll("p")).map((p) => p.textContent);
-        expect(paragraphs).toEqual([MESSAGES.short_term]);
+    it("shows only the stock sentence in a tooltip, without a Tab stop, when there is no admin message", async () => {
+        const { trigger, shown } = await hoverBadge({ type: "short_term", message: null, source: "admin" });
+        expect(trigger.element.tagName).toBe("SPAN");
+        expect(trigger.attributes("role")).toBe("img");
+        expect(trigger.attributes("tabindex")).toBeUndefined();
+        expect(trigger.attributes("aria-haspopup")).toBeUndefined();
+        expect(trigger.attributes("aria-label")).toBe(MESSAGES.short_term);
+        expect(shown.getAttribute("role")).toBe("tooltip");
+        expect(trigger.attributes("aria-describedby")).toBe(shown.id);
+        expect(paragraphs(shown)).toEqual([MESSAGES.short_term]);
+        expect(document.body.querySelector(".popover")).toBeNull();
     });
 
-    it("uses a hover-only tooltip and an unfocusable trigger when not interactive", async () => {
-        const { trigger, popover } = await hoverBadge("The data stored here is purged after a month.", false);
+    it("shows a linked message in a tooltip that closes on leaving the badge when not interactive", async () => {
+        const { trigger, shown } = await hoverBadge(
+            { type: "short_term", message: LINKED_MESSAGE, source: "admin" },
+            false,
+        );
         expect(trigger.element.tagName).toBe("SPAN");
         expect(trigger.attributes("tabindex")).toBeUndefined();
+        expect(trigger.attributes("aria-haspopup")).toBeUndefined();
+        expect(trigger.attributes("aria-label")).toBe(`${MESSAGES.short_term} ${LINKED_TEXT}`);
+        expect(shown.getAttribute("role")).toBe("tooltip");
+        expect(paragraphs(shown)).toEqual([MESSAGES.short_term, LINKED_TEXT]);
+        expect(shown.querySelector("a")?.getAttribute("href")).toBe("https://example.org/archive");
+        expect(document.body.querySelector(".popover")).toBeNull();
+
+        // Unlike a popover, it isn't kept open by moving onto it, so it can't outlive an enclosing popover.
+        await trigger.trigger("mouseleave");
+        expect(shown.isConnected).toBe(false);
+    });
+
+    // ObjectStoreBadges keys badges by position, and a relocated dataset's storage info is replaced in place.
+    it("switches between popover and tooltip when a reused badge gains or loses its message", async () => {
+        const withMessage: ObjectStoreBadgeType = { type: "short_term", message: LINKED_MESSAGE, source: "admin" };
+        const wrapper = mountBadge(withMessage);
+        await nextTick();
+        expect(getTrigger(wrapper).attributes("aria-haspopup")).toBe("dialog");
+
+        await wrapper.setProps({ badge: { ...withMessage, message: null } });
+        await nextTick();
+        let trigger = getTrigger(wrapper);
+        expect(trigger.element.tagName).toBe("SPAN");
+        expect(trigger.attributes("aria-haspopup")).toBeUndefined();
+        expect(trigger.attributes("aria-controls")).toBeUndefined();
         expect(trigger.attributes("aria-label")).toBe(MESSAGES.short_term);
-        expect(popover.getAttribute("role")).toBe("tooltip");
-        expect(trigger.attributes("aria-describedby")).toBe(popover.id);
-        expect(popover.textContent).toContain("The data stored here is purged after a month.");
+        expect(document.body.querySelector(".popover")).toBeNull();
+
+        await wrapper.setProps({ badge: withMessage });
+        await nextTick();
+        trigger = getTrigger(wrapper);
+        const popover = document.body.querySelector(".popover")!;
+        expect(trigger.element.tagName).toBe("BUTTON");
+        expect(trigger.attributes("aria-haspopup")).toBe("dialog");
+        expect(trigger.attributes("aria-controls")).toBe(popover.id);
+        expect(trigger.attributes("aria-describedby")).toBeUndefined();
+        expect(popover.getAttribute("role")).toBe("dialog");
     });
 });
