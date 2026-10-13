@@ -26,16 +26,21 @@ import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 
-const props = defineProps<{
-    /** The icon to display in the detail block header */
-    headerIcon: IconDefinition;
-    /** The title to display in the detail block header */
-    title: string;
-    /** If `true`, the content is collapsible */
-    collapsible?: boolean;
-    /** Controls collapse state externally (e.g. to persist it). Omit to manage it internally. */
-    collapsed?: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        /** The icon to display in the detail block header */
+        headerIcon: IconDefinition;
+        /** The title to display in the detail block header */
+        title: string;
+        /** If `true`, the content is collapsible */
+        collapsible?: boolean;
+        /** Controls collapse state externally (e.g. to persist it). Omit to manage it internally. */
+        collapsed?: boolean;
+    }>(),
+    // `collapsed` must default to `undefined` (not Vue's implicit `false` for booleans) so that
+    // omitting it actually leaves the collapse state uncontrolled.
+    { collapsed: undefined },
+);
 
 const emit = defineEmits<{
     (e: "update:collapsed", value: boolean): void;

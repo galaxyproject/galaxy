@@ -7,7 +7,7 @@ import { useRoute } from "vue-router";
 import { fetchInvocationForJob } from "@/api/invocations";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
-import { useToolStore } from "@/stores/toolStore";
+import { useRerunnableTool } from "@/composables/rerunnableTool";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
@@ -40,7 +40,9 @@ const props = withDefaults(
          * it open). Omit to toggle it locally, uncontrolled and unpersisted. */
         collapsed?: boolean;
     }>(),
-    { invocationId: undefined },
+    // `collapsed` must default to `undefined` (not Vue's implicit `false` for booleans), otherwise
+    // the component always considers itself controlled and can't toggle on its own.
+    { invocationId: undefined, collapsed: undefined },
 );
 
 const emit = defineEmits<{
@@ -48,7 +50,6 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
-const toolStore = useToolStore();
 
 /** Whether the collapsible job information card is collapsed. */
 const internalCollapsed = ref(false);
@@ -70,6 +71,9 @@ const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 const invocationLookupError = ref<string | null>(null);
 
 const { job, error } = useJobDetails(toRef(props, "jobId"));
+
+// Only resolve the tool (possibly fetching it) when the rerun indicator is actually requested
+const { canRerun } = useRerunnableTool(computed(() => (props.includeRerunIndicator ? job.value?.tool_id : undefined)));
 
 const jobIsRunning = computed(() => job.value?.state === "running");
 
@@ -107,7 +111,7 @@ const primaryActions = computed<CardAction[]>(() => {
             variant: "link",
         });
     }
-    if (props.includeRerunIndicator && job.value && toolStore.getToolForId(job.value.tool_id)?.is_workflow_compatible) {
+    if (props.includeRerunIndicator && job.value && canRerun.value) {
         actions.push({
             id: "job-info-card-rerun",
             class: "text-decoration-none",
@@ -144,21 +148,29 @@ watch(
     (newId, oldId) => {
         if (!props.invocationId && newId !== oldId) {
             fetchedInvocationId.value = undefined;
+            invocationLookupError.value = null;
         }
     },
 );
 
-// Fetches the invocation for the given job id to get the associated invocation id
+// Fetches the invocation for the given job id to get the associated invocation id. Watches whether
+// the job has loaded rather than the job object itself, which changes on every poll.
 watch(
-    job,
-    async (newJob) => {
-        const jobId = props.jobId;
-        if (!newJob || !jobId || fetchedInvocationId.value !== undefined) {
+    [() => props.jobId, () => !!job.value],
+    async ([jobId, jobLoaded], _old, onCleanup) => {
+        // A lookup still in flight when the job changes belongs to the old job. Comparing ids isn't
+        // enough: switching away and back to the same job would accept the original lookup.
+        let cancelled = false;
+        onCleanup(() => (cancelled = true));
+        if (!jobLoaded || !jobId || fetchedInvocationId.value !== undefined) {
             return;
         }
         let invocation;
         try {
             invocation = await fetchInvocationForJob(jobId);
+            if (cancelled) {
+                return;
+            }
             invocationLookupError.value = null;
             if (invocation) {
                 fetchedInvocationId.value = invocation.id;
@@ -167,6 +179,9 @@ watch(
                 fetchedInvocationId.value = null;
             }
         } catch (e) {
+            if (cancelled) {
+                return;
+            }
             invocationLookupError.value = errorMessageAsString(e);
             fetchedInvocationId.value = null;
         }
