@@ -64,5 +64,8 @@ class DatasetProtectionStatus(Model):
     ] = False
     expires_at: Annotated[
         datetime | None,
-        Field(description="Expiration (UTC) of the current user's grant, if any."),
+        Field(
+            description="Until when (UTC) the current user's grant can be used by jobs, if any. "
+            "Jobs need it to stay valid for as long as they may run."
+        ),
     ] = None

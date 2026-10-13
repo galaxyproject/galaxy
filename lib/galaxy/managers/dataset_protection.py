@@ -748,5 +748,6 @@ class DatasetProtectionManager:
             protected=True,
             scheme=scheme.name,
             ready=grant is not None,
-            expires_at=grant.expires_at if grant else None,
+            # The key service refuses keypairs close to their expiration already.
+            expires_at=grant.expires_at - scheme.expiry_margin if grant else None,
         )
