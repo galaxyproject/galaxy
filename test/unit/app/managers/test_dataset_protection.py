@@ -212,10 +212,19 @@ def test_finish_job_fails_without_expiration_date(tmp_path):
     manager.sa_session.add.assert_not_called()
 
 
-def test_finish_job_records_no_grants_for_outputs_encrypted_by_the_tool(tmp_path):
+@pytest.mark.parametrize("expiration", [True, False])
+def test_finish_job_records_no_grants_for_outputs_encrypted_by_the_tool(tmp_path, expiration):
     output, record = _protected_output(tmp_path)
     record["compute_header"] = None
     _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
+    if not expiration:
+        # They need no grant, so no expiration either.
+        sidecar_path = os.path.join(str(tmp_path), SIDECAR_FILE)
+        with open(sidecar_path) as f:
+            sidecar = json.load(f)
+        sidecar["key_expiration"] = None
+        with open(sidecar_path, "w") as f:
+            json.dump(sidecar, f)
     manager = _manager()
     assert manager.finish_job(_job(output), str(tmp_path)) is None
     manager.sa_session.add.assert_not_called()
