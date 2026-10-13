@@ -4194,7 +4194,9 @@
     By default, users' data will be private. Setting this to false
     makes it public. This only affects users created after the option
     is set; existing users and data are unchanged. Users can change
-    the default for their new histories in their user preferences.
+    the default for their new histories in their user preferences. To
+    make existing users' data private as well, run the
+    galaxy-make-data-private script.
 :Default: ``true``
 :Type: bool
 
