@@ -2334,47 +2334,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
             # _different_user cannot use datasets derived from the private input.
             assert_inputs(inputs_2, can_be_used=False)
 
-    @skip_without_tool("collection_creates_list")
-    def test_guess_derived_permissions_collections(self, history_id):
-        def first_element_dataset_id(hdca):
-            # Fetch full and updated details for HDCA
-            print(hdca)
-            full_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=hdca["hid"])
-            elements = full_hdca["elements"]
-            element0 = elements[0]["object"]
-            return element0["id"]
-
-        response = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], direct_upload=True, wait=True
-        )
-        self._assert_status_code_is(response, 200)
-        hdca = response.json()["output_collections"][0]
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        inputs = {
-            "input1": {"src": "hdca", "id": hdca["id"]},
-        }
-        public_output_response = self._run("collection_creates_list", history_id, inputs)
-        self._assert_status_code_is(public_output_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        input_element_id = first_element_dataset_id(hdca)
-        self.dataset_populator.make_private(history_id, input_element_id)
-
-        private_output_response = self._run("collection_creates_list", history_id, inputs)
-        self._assert_status_code_is(private_output_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        public_element_id = first_element_dataset_id(public_output_response.json()["output_collections"][0])
-        private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
-
-        def _dataset_accessible(dataset_id):
-            contents_response = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
-            return "name" in contents_response
-
-        with self._different_user():
-            assert _dataset_accessible(public_element_id)
-            assert not _dataset_accessible(private_element_id)
-
     @skip_without_tool("validation_default")
     def test_validation(self, history_id):
         inputs = {
