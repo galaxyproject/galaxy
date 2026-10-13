@@ -121,6 +121,7 @@
                 :key="showAddTagsModal"
                 :value="selectedTags"
                 class="tags"
+                list-in-flow
                 @input="(tags) => (selectedTags = tags)" />
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
@@ -137,8 +138,9 @@
                 :key="showRemoveTagsModal"
                 :value="selectedTags"
                 class="tags"
+                list-in-flow
                 @input="(tags) => (selectedTags = tags)" />
-            <GTip :tips="['Press Enter after typing each tag.']" />
+            <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <StorageOperationWizardModal
             v-model:show="showStorageOperationModal"
