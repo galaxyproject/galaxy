@@ -117,6 +117,9 @@ rmsxflipbook:
 seqviz:
     package: "@galaxyproject/seqviz"
     version: 0.0.2
+smilesdrawer:
+    package: "@galaxyproject/smilesdrawer"
+    version: 0.0.0
 tabulator:
     package: "@galaxyproject/tabulator"
     version: 0.0.11
