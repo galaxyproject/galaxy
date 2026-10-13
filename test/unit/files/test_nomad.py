@@ -110,8 +110,8 @@ def test_refusals_keep_their_status():
     assert refused.value.status_code == 403
     with pytest.raises(ObjectNotFound):
         _list(_source(), "/datasets/no-such-dataset")
-    for path in ("/", "/datasets", "/datasets/ds1", "/uploads"):
-        with pytest.raises(RequestParameterInvalidException, match="recursively inside an upload"):
+    for path in ("/", "/datasets/ds1", "/datasets/ds1/up1", "/uploads"):
+        with pytest.raises(RequestParameterInvalidException, match="Recursive listing is not supported"):
             _list(_source(token="secret"), path, recursive=True)
 
 

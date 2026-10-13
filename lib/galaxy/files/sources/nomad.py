@@ -129,9 +129,8 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         parts = _parts(path)
         if parts == [UPLOADS] and not context.config.token:
             raise AuthenticationRequired(f"My uploads needs a NOMAD token, and {self.label} has none.")
-        if recursive and len(parts) < _upload_depth(parts):
-            # each upload walked costs NOMAD requests, and its ZIP may be read only every 5 seconds
-            raise RequestParameterInvalidException("NOMAD folders can only be listed recursively inside an upload.")
+        if recursive:
+            raise RequestParameterInvalidException("Recursive listing is not supported for NOMAD file sources.")
         query = query.strip() if query else None
         return super()._list(context, path, recursive, write_intent, limit, offset, query, sort_by)
 
