@@ -6,15 +6,21 @@ import { copy } from "@/utils/clipboard";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
-const props = defineProps<{
-    text: string;
-    message: string;
-    title?: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        text: string;
+        message: string;
+        title?: string;
+        transparent?: boolean;
+    }>(),
+    {
+        transparent: true,
+    },
+);
 </script>
 
 <template>
-    <GButton transparent icon-only :title="props.title" @click="copy(props.text, props.message)">
+    <GButton :transparent="props.transparent" icon-only :title="props.title" @click="copy(props.text, props.message)">
         <FontAwesomeIcon :icon="faCopy" aria-hidden="true" />
     </GButton>
 </template>

@@ -68,12 +68,11 @@ async function attemptKeyDeletion() {
                             data-test-id="api-key-input" />
 
                         <BInputGroupAppend>
-                            <BInputGroupText>
-                                <CopyToClipboard
-                                    message="Key was copied to clipboard"
-                                    :text="props.item.key"
-                                    title="Copy key" />
-                            </BInputGroupText>
+                            <CopyToClipboard
+                                message="Key was copied to clipboard"
+                                :text="props.item.key"
+                                title="Copy key"
+                                :transparent="false" />
 
                             <GButton v-g-tooltip.hover title="Show/hide key" icon-only @click="hover = !hover">
                                 <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
