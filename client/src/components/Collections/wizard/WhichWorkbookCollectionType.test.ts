@@ -30,6 +30,12 @@ describe("WhichWorkbookCollectionType", () => {
         ]);
     });
 
+    it("keeps the advanced list types on a row of their own", () => {
+        const wrapper = mountWithValue();
+        const rows = wrapper.findAll(".collection-type-card-grid");
+        expect(rows.map((row) => row.findAll("[data-collection-type]").length)).toEqual([2, 3]);
+    });
+
     it.each(["list", "list:paired", "list:paired_or_unpaired", "list:list", "list:list:paired"])(
         "picks %s",
         async (collectionType) => {

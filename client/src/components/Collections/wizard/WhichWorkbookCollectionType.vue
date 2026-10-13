@@ -13,10 +13,19 @@ defineProps<Props>();
 </script>
 
 <template>
-    <CollectionTypeCards
-        :value="value"
-        :types="['list', 'list:paired', 'list:paired_or_unpaired', 'list:list', 'list:list:paired']"
-        context="builder"
-        hide-type
-        @select="emit('onChange', $event)" />
+    <div class="w-100">
+        <CollectionTypeCards
+            :value="value"
+            :types="['list', 'list:paired']"
+            context="builder"
+            hide-type
+            @select="emit('onChange', $event)" />
+        <CollectionTypeCards
+            class="mt-3"
+            :value="value"
+            :types="['list:paired_or_unpaired', 'list:list', 'list:list:paired']"
+            context="builder"
+            hide-type
+            @select="emit('onChange', $event)" />
+    </div>
 </template>
