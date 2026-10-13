@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeCollectionSummary } from "@tests/test-data/collections";
 import { getFakeDatasetDetails } from "@tests/test-data/datasets";
 import { HttpResponse } from "msw";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import type { HDCADetailed } from "@/api";
 import { http } from "@/api/client/__mocks__/http";
@@ -123,10 +123,84 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** A job produces a list of aligned sample datasets. */
-export const CollectionOutput: Story = {};
+export const CollectionOutput: Story = {
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        await step("Distinguish the tool output label from the collection's name", async () => {
+            await canvas.findByRole("heading", { name: "Job Outputs" }, { timeout: 5000 });
+            const rows = within(canvas.getByRole("table")).getAllByRole("row").slice(1);
+            expect(rows).toHaveLength(1);
+            const cells = within(rows[0]!).getAllByRole("cell");
+            expect(cells[0]?.textContent?.trim()).toBe("Aligned reads");
+            expect(
+                await within(cells[1]!).findByText("Aligned sample reads", { exact: true }, { timeout: 5000 }),
+            ).toBeVisible();
+        });
+    },
+};
 
 /** Dataset and collection outputs appear together; discovered primary files stay hidden. */
-export const MixedOutputs: Story = { args: { jobOutputs: mixedOutputs, title: undefined } };
+export const MixedOutputs: Story = {
+    args: { jobOutputs: mixedOutputs, title: undefined },
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        await step("Show the visible collection and dataset in tool output order", async () => {
+            await canvas.findByText("Aligned sample reads", { exact: true }, { timeout: 5000 });
+            const rows = within(canvas.getByRole("table")).getAllByRole("row").slice(1);
+            expect(rows).toHaveLength(2);
+            const collectionCells = within(rows[0]!).getAllByRole("cell");
+            const datasetCells = within(rows[1]!).getAllByRole("cell");
+            expect(collectionCells[0]?.textContent?.trim()).toBe("Aligned reads");
+            expect(datasetCells[0]?.textContent?.trim()).toBe("Alignment report");
+            expect(
+                await within(collectionCells[1]!).findByText(
+                    "Aligned sample reads",
+                    { exact: true },
+                    { timeout: 5000 },
+                ),
+            ).toBeVisible();
+            datasetCells[1]!.scrollIntoView({ behavior: "instant", block: "center" });
+            expect(
+                await within(datasetCells[1]!).findByText("Alignment summary", { exact: true }, { timeout: 5000 }),
+            ).toBeVisible();
+        });
+    },
+};
 
 /** Fifteen separately named report outputs initially show ten, with a control to reveal the rest. */
 export const ManyOutputs: Story = { args: { jobOutputs: manyOutputs, paginate: true } };
+
+export const RevealsAllReports: Story = {
+    ...ManyOutputs,
+    play: async ({ canvasElement, step }) => {
+        const canvas = within(canvasElement);
+        const reportNames = Array.from(
+            { length: 15 },
+            (_, index) => `Quality report ${String(index + 1).padStart(2, "0")}`,
+        );
+        await step("Start with the first ten reports in order", async () => {
+            await canvas.findByRole("heading", { name: "Job Outputs (showing 10 of 15)" }, { timeout: 5000 });
+            const rows = within(canvas.getByRole("table")).getAllByRole("row").slice(1, -1);
+            expect(rows.map((row) => within(row).getAllByRole("cell")[0]?.textContent?.trim())).toEqual(
+                reportNames.slice(0, 10),
+            );
+            expect(canvas.getByRole("button", { name: "Show 5 more outputs" })).toBeVisible();
+        });
+        await step("Reveal the remaining reports and load each actual dataset", async () => {
+            const reveal = canvas.getByRole("button", { name: "Show 5 more outputs" });
+            reveal.scrollIntoView({ behavior: "instant", block: "center" });
+            await userEvent.click(reveal);
+            await canvas.findByRole("heading", { name: "Job Outputs" });
+            const rows = within(canvas.getByRole("table")).getAllByRole("row").slice(1);
+            expect(rows.map((row) => within(row).getAllByRole("cell")[0]?.textContent?.trim())).toEqual(reportNames);
+            expect(canvas.queryByRole("button", { name: /Show .* more outputs/ })).not.toBeInTheDocument();
+            for (const [index, row] of rows.entries()) {
+                const cell = within(row).getAllByRole("cell")[1]!;
+                cell.scrollIntoView({ behavior: "instant", block: "center" });
+                expect(
+                    await within(cell).findByText(reportNames[index]!, { exact: true }, { timeout: 5000 }),
+                ).toBeVisible();
+            }
+        });
+    },
+};
