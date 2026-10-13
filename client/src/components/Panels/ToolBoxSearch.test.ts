@@ -200,6 +200,103 @@ describe("ToolBox search", () => {
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__"]);
     });
 
+    it("keeps a favorited older tool version in #favorites and plain searches", async () => {
+        const latestZipVersion = {
+            ...toolsList.find((tool) => tool.id === "__ZIP_COLLECTION__")!,
+            id: "toolshed.example.org/repos/dev/zip_collection/zip/1.0",
+            version: "1.0",
+        };
+        const olderZipVersion = {
+            ...latestZipVersion,
+            id: "toolshed.example.org/repos/dev/zip_collection/zip/0.9",
+            version: "0.9",
+        };
+        const { wrapper } = mountToolBox({
+            tools: [...toolsList, latestZipVersion, olderZipVersion],
+            toolSections: {
+                default: {
+                    ...toolsListInPanel,
+                    collection_operations: {
+                        ...(toolsListInPanel.collection_operations as ToolSection),
+                        tools: [latestZipVersion.id, olderZipVersion.id],
+                    },
+                },
+            },
+            favorites: { tools: [olderZipVersion.id] },
+        });
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("#favorites Zip");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const toolIds = Array.from(wrapper.element.querySelectorAll("a[data-tool-id]")).map((item) =>
+            item.getAttribute("data-tool-id"),
+        );
+        expect(toolIds).toEqual([olderZipVersion.id]);
+
+        await input.setValue("Zip");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const plainToolIds = Array.from(wrapper.element.querySelectorAll("a[data-tool-id]")).map((item) =>
+            item.getAttribute("data-tool-id"),
+        );
+        expect(plainToolIds).toContain(olderZipVersion.id);
+        expect(plainToolIds).not.toContain(latestZipVersion.id);
+    });
+
+    it("updates the shown tool version in a plain search when favorites change", async () => {
+        const latestZipVersion = {
+            ...toolsList.find((tool) => tool.id === "__ZIP_COLLECTION__")!,
+            id: "toolshed.example.org/repos/dev/zip_collection/zip/1.0",
+            version: "1.0",
+        };
+        const olderZipVersion = {
+            ...latestZipVersion,
+            id: "toolshed.example.org/repos/dev/zip_collection/zip/0.9",
+            version: "0.9",
+        };
+        const { wrapper, userStore } = mountToolBox({
+            tools: [...toolsList, latestZipVersion, olderZipVersion],
+            toolSections: {
+                default: {
+                    ...toolsListInPanel,
+                    collection_operations: {
+                        ...(toolsListInPanel.collection_operations as ToolSection),
+                        tools: [latestZipVersion.id, olderZipVersion.id],
+                    },
+                },
+            },
+        });
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("Zip");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const shownToolIds = () =>
+            Array.from(wrapper.element.querySelectorAll("a[data-tool-id]")).map((item) =>
+                item.getAttribute("data-tool-id"),
+            );
+        expect(shownToolIds()).toContain(latestZipVersion.id);
+        expect(shownToolIds()).not.toContain(olderZipVersion.id);
+
+        userStore.currentPreferences = { favorites: { tools: [olderZipVersion.id] } };
+        await flushPromises();
+
+        expect(shownToolIds()).toContain(olderZipVersion.id);
+        expect(shownToolIds()).not.toContain(latestZipVersion.id);
+
+        userStore.currentPreferences = { favorites: { tools: [] } };
+        await flushPromises();
+
+        expect(shownToolIds()).toContain(latestZipVersion.id);
+        expect(shownToolIds()).not.toContain(olderZipVersion.id);
+    });
+
     it("collapses favorite results during search in My panel", async () => {
         const { wrapper } = mountToolBox({ favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } });
         await flushPromises();

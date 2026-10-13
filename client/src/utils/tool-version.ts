@@ -39,6 +39,14 @@ export function extractBaseToolId(toolId: string): string {
 }
 
 /**
+ * Compares two tool versions with a natural (numeric-aware) sort; negative when `a` is older than `b`.
+ * A missing version counts as "0".
+ */
+export function compareToolVersions(a: string | undefined, b: string | undefined): number {
+    return (a || "0").localeCompare(b || "0", undefined, { numeric: true });
+}
+
+/**
  * Filters a list of tools to show only the latest version from each lineage
  */
 export function filterLatestToolVersions(tools: Tool[]): Tool[] {
@@ -61,12 +69,7 @@ export function filterLatestToolVersions(tools: Tool[]): Tool[] {
             latestTools.push(toolGroup[0]);
         } else if (toolGroup.length > 1) {
             // Sort by version (descending) and take the first one
-            const sorted = toolGroup.sort((a, b) => {
-                // Compare versions using natural sort
-                const versionA = a.version || "0";
-                const versionB = b.version || "0";
-                return versionB.localeCompare(versionA, undefined, { numeric: true });
-            });
+            const sorted = toolGroup.sort((a, b) => compareToolVersions(b.version, a.version));
             if (sorted[0]) {
                 latestTools.push(sorted[0]);
             }
