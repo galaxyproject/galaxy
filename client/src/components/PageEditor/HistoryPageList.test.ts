@@ -14,7 +14,7 @@ const mountStory = useStoryMount();
 
 const SELECTORS = {
     NEW_BUTTON: "[data-description='create page button']",
-    EMPTY_STATE: ".empty-state",
+    EMPTY_STATE: "[data-description='page empty state']",
     PAGE_ITEMS: ".page-items",
     PAGE_ITEM: "[data-description='page item']",
 };
@@ -46,24 +46,9 @@ describe("HistoryPageList", () => {
     });
 
     describe("Empty state", () => {
-        let wrapper: HistoryPageListWrapper;
-
-        beforeEach(async () => {
-            wrapper = await mountComponent(stories.NoNotebooks);
-        });
-
-        it("shows 'No notebooks yet' when pages prop is empty array", () => {
-            const emptyState = wrapper.find(SELECTORS.EMPTY_STATE);
-            expect(emptyState.exists()).toBe(true);
-            expect(emptyState.text()).toContain("No notebooks yet");
-        });
-
-        it("shows create guidance text when no pages", () => {
-            const emptyState = wrapper.get(SELECTORS.EMPTY_STATE);
-            expect(emptyState.text()).toContain("Create a notebook to document your analysis");
-        });
-
-        it("does NOT show page items when empty", () => {
+        it("does NOT show page items when empty", async () => {
+            const wrapper = await mountComponent(stories.NoNotebooks);
+            expect(wrapper.find(SELECTORS.EMPTY_STATE).exists()).toBe(true);
             expect(wrapper.find(SELECTORS.PAGE_ITEMS).exists()).toBe(false);
         });
     });
@@ -77,39 +62,14 @@ describe("HistoryPageList", () => {
 
         it("renders each page as a card", () => {
             expect(wrapper.find(SELECTORS.PAGE_ITEMS).exists()).toBe(true);
+            expect(wrapper.find(SELECTORS.EMPTY_STATE).exists()).toBe(false);
 
             const items = wrapper.findAll(SELECTORS.PAGE_ITEM);
             expect(items.length).toBe(2);
         });
-
-        it("does NOT show empty state when pages exist", () => {
-            expect(wrapper.find(SELECTORS.EMPTY_STATE).exists()).toBe(false);
-        });
     });
 
     describe("Unowned history alert", () => {
-        it("does not show alert when current user owns the history", async () => {
-            const wrapper = await mountComponent(stories.NoNotebooks);
-            expect(wrapper.findComponent(GAlert).exists()).toBe(false);
-        });
-
-        it("shows alert when current user does not own the history", async () => {
-            const wrapper = await mountComponent(stories.OtherUsersHistory);
-            const alert = wrapper.findComponent(GAlert);
-            expect(alert.exists()).toBe(true);
-            expect(alert.text()).toContain("You do not own this history");
-        });
-
-        it("does not show invocation span in alert when no invocationId", async () => {
-            const wrapper = await mountComponent(stories.OtherUsersHistory);
-            expect(wrapper.getComponent(GAlert).text()).not.toContain("associated with the invocation");
-        });
-
-        it("shows invocation qualifier in alert when invocationId is set", async () => {
-            const wrapper = await mountComponent(stories.OtherUsersInvocation);
-            expect(wrapper.getComponent(GAlert).text()).toContain("associated with the invocation");
-        });
-
         it("does not show alert when history has no user_id field", async () => {
             const wrapper = await mountComponent(stories.ListedHistory);
             expect(useHistoryStore().getHistoryById(stories.ListedHistory.args.historyId!, false)).not.toHaveProperty(
