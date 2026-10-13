@@ -1214,6 +1214,14 @@ class TestHistoryContentsApi(ApiTestCase):
         response = self._post(f"histories/{history_id}/contents_from_store_async", {}, json=True)
         self._assert_status_code_is(response, 400)
 
+    def test_contents_from_store_async_refuses_a_private_address(self, history_id):
+        response = self._post(
+            f"histories/{history_id}/contents_from_store_async",
+            {"store_content_uri": "http://10.0.0.1/store.tgz"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 403)
+
     def test_contents_from_store_async_needs_a_history_you_can_change(self):
         with self._different_user():
             other_history_id = self.dataset_populator.new_history()

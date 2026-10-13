@@ -30,6 +30,7 @@ from galaxy.celery.tasks import (
     write_history_content_to,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.files.uris import validate_uri_access
 from galaxy.managers import (
     datasets,
     folders,
@@ -615,6 +616,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             source_uri = uri
         else:
             raise exceptions.AdminRequiredException("Only an admin can import a store from anything but a web link.")
+        validate_uri_access(source_uri, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
         ensure_celery_tasks_enabled(trans.app.config)
         request = ImportModelStoreTaskRequest(
             user=trans.async_request_user,
