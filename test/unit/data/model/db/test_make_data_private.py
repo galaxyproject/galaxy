@@ -2,13 +2,12 @@ import pytest
 from sqlalchemy import select
 
 from galaxy import model as m
-from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.model.scripts.make_data_private import (
     ACCESS,
     MANAGE,
     run,
 )
-
+from galaxy.security.idencoding import IdEncodingHelper
 
 SECURITY = IdEncodingHelper(id_secret="secret")
 
