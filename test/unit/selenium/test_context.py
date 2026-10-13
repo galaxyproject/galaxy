@@ -16,19 +16,10 @@ from galaxy.selenium.context import (
 )
 from galaxy.selenium.navigates_galaxy import WAIT_TYPES
 from galaxy.selenium.stories import Story
+from .browserless import BrowserlessContext
 from .util import skip_unless_playwright_browser_cached
 
 CONFIG = {"driver": {"backend_type": "playwright", "headless": True}, "timeout_multiplier": 3}
-
-
-class BrowserlessContext(GalaxySeleniumContextImpl):
-    def __init__(self):
-        # Skip building a ConfiguredDriver, which would launch a browser.
-        pass
-
-    def save_screenshot(self, path: str) -> None:
-        with open(path, "wb") as f:
-            f.write(b"screenshot")
 
 
 def test_jupyter_init_from_config(monkeypatch, tmp_path):

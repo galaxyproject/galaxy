@@ -1,4 +1,4 @@
-"""Lifecycle of the story written for one test run."""
+"""Lifecycle of the story written for one run of a test or script."""
 
 import datetime
 import logging
@@ -13,11 +13,9 @@ from .story import (
 
 log = logging.getLogger(__name__)
 
-FAILURE_DOCUMENTATION = "## Test Failed\n\nSee the error directory for details."
-
 
 def run_directory(base_directory: str, name_prefix: str) -> str:
-    """Create a directory for one run's artifacts, named for the test and the time."""
+    """Create a directory for one run's artifacts, named for what ran and when."""
     os.makedirs(base_directory, exist_ok=True)
     prefix = name_prefix + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + "_"
     return tempfile.mkdtemp(prefix=prefix, dir=base_directory)
@@ -49,13 +47,16 @@ def story_for_run(base_directory: str | None, name_prefix: str, title: str, desc
     return Story(title, description, directory)
 
 
-def write_story(story: StoryBase, failed: bool = False) -> None:
-    """Finalize ``story`` and link it as ``latest``; never raises so artifacts can't mask the test result."""
+def write_story(story: StoryBase, failure_documentation: str | None = None) -> None:
+    """Finalize ``story`` and link it as ``latest``; never raises so artifacts can't mask the run's result.
+
+    ``failure_documentation`` is appended as markdown when the run failed.
+    """
     if not story.enabled:
         return
     try:
-        if failed:
-            story.add_documentation(FAILURE_DOCUMENTATION)
+        if failure_documentation:
+            story.add_documentation(failure_documentation)
         story.finalize()
     except Exception:
         log.exception("Failed to write story to %s", story.output_directory)

@@ -239,7 +239,7 @@ class TestStoryRuns:
         # A disabled story has no directory, so anything it wrote would land in cwd.
         monkeypatch.chdir(tmp_path)
         story = story_for_run(None, "test_example_", "T", "")
-        write_story(story, failed=True)
+        write_story(story, failure_documentation="## Run Failed")
 
         assert not story.enabled
         assert list(tmp_path.iterdir()) == []
@@ -280,10 +280,10 @@ class TestStoryRuns:
     def test_failed_write_marks_the_document(self, tmp_path):
         story = story_for_run(str(tmp_path), "test_example_", "T", "")
         story.add_documentation("Collected narration.")
-        write_story(story, failed=True)
+        write_story(story, failure_documentation="## Run Failed\n\nStopped here.")
 
         markdown = open(os.path.join(story.output_directory, "story.md")).read()
-        assert markdown.index("Collected narration.") < markdown.index("Test Failed")
+        assert markdown.index("Collected narration.") < markdown.index("## Run Failed\n\nStopped here.")
 
     def test_write_failure_is_swallowed_and_not_linked(self, tmp_path):
         story = Story("T", "", str(tmp_path / "missing"))

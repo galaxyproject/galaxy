@@ -154,6 +154,7 @@ TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFA
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
 GALAXY_TEST_STORIES_DIRECTORY = os.environ.get("GALAXY_TEST_STORIES_DIRECTORY", None)
+STORY_FAILURE_DOCUMENTATION = "## Test Failed\n\nSee the error directory for details."
 # Driver backend can be ["selenium", "playwright"]
 GALAXY_TEST_DRIVER_BACKEND = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
 # Test browser can be ["CHROME", "FIREFOX"]
@@ -347,7 +348,7 @@ def selenium_test(f):
                         f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}."
                     )
                 else:
-                    write_story(self.story, failed=True)
+                    write_story(self.story, failure_documentation=STORY_FAILURE_DOCUMENTATION)
                     raise
             else:
                 write_story(self.story)
