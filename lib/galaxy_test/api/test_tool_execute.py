@@ -444,6 +444,39 @@ def test_multirun_on_multiple_inputs(
 
 
 @requires_tool_id("cat|cat1")
+def test_multirun_on_multiple_inputs_mismatched_lengths(
+    required_tool: RequiredTool,
+    two_multi_run_datasets: TwoMultiRunsFixture,
+    tool_input_format: DescribeToolInputs,
+):
+    first_two = two_multi_run_datasets.first_two_datasets
+    second_one = two_multi_run_datasets.second_two_datasets[:1]
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": True, "values": first_two},
+                "queries_0|input2": {"batch": True, "values": second_one},
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": True, "values": first_two},
+                "queries": [{"input2": {"batch": True, "values": second_one}}],
+            }
+        )
+        .when.request(
+            {
+                "input1": {"__class__": "Batch", "values": first_two},
+                "queries": [{"input2": {"__class__": "Batch", "values": second_one}}],
+            }
+        )
+    )
+    required_tool.execute().with_inputs(inputs).assert_fails.with_status_code(400).with_error_containing(
+        "should be of equal length"
+    )
+
+
+@requires_tool_id("cat|cat1")
 def test_multirun_on_multiple_inputs_unlinked(
     required_tool: RequiredTool,
     two_multi_run_datasets: TwoMultiRunsFixture,
