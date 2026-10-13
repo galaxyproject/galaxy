@@ -1,10 +1,12 @@
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 import { defineComponent } from "vue";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 describe("vitest setup createStubs hook", () => {
+    enableAutoUnmount(afterEach);
+
     it("keeps v-model on a shallow-mounted component that opted out of compat v-model", async () => {
         const Parent = defineComponent({
             components: { GFormInput },
@@ -12,12 +14,12 @@ describe("vitest setup createStubs hook", () => {
             template: `<GFormInput v-model="name" />`,
         });
         const wrapper = shallowMount(Parent);
-        const input = wrapper.findComponent(GFormInput);
+        const input = wrapper.getComponent(GFormInput);
         expect(input.props("modelValue")).toBe("first");
 
         input.vm.$emit("update:modelValue", "second");
         await wrapper.vm.$nextTick();
-        expect((wrapper.vm as unknown as { name: string }).name).toBe("second");
+        expect(wrapper.vm.name).toBe("second");
     });
 
     it("still stubs components that keep compat v-model", () => {
