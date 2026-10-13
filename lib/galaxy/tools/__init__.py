@@ -158,7 +158,10 @@ from galaxy.tools.actions import (
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.evaluation import (
+    global_tool_errors,
+    OUTPUT_PARAMETER_JSON_NAME,
+)
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
@@ -3629,21 +3632,32 @@ class InteractiveTool(Tool):
         self.__remove_interactivetool_by_job(job)
 
 
-def _data_manager_bundle_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
-    """Return the compute-side extra-files roots for bundle outputs.
+def _data_manager_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
+    """Return the compute-side extra-files roots for data manager outputs.
 
-    Data managers running with ``outputs_to_working_directory`` receive an
-    extra-files path derived from the job working directory, not the path the
-    handler later obtains from the object store. Reconstruct that same path
-    here, using the rules in ``OutputsToWorkingDirectoryPathRewriter``.
+    Data managers running with ``outputs_to_working_directory`` or on a remote
+    compute environment receive an extra-files path that differs from the path
+    the handler later obtains from the object store. The staged output parameter
+    JSON records the paths handed to the job. Jobs prepared without it fall back
+    to the rules in ``OutputsToWorkingDirectoryPathRewriter``.
     """
+    job_working_directory = JobWorkingDirectory(job, app.object_store).resolve()
+    staged_parameters = os.path.join(job_working_directory, "configs", OUTPUT_PARAMETER_JSON_NAME)
+    if os.path.exists(staged_parameters):
+        with open(staged_parameters) as f:
+            output_data = json.load(f)["output_data"]
+        return {
+            output["out_data_name"]: output["extra_files_path"]
+            for output in output_data
+            if out_data[output["out_data_name"]].ext == "data_manager_json"
+        }
+
     outputs_to_working_directory = asbool(
         job.get_destination_configuration({}, app.config, "outputs_to_working_directory", False)
     )
     if not outputs_to_working_directory:
         return {}
 
-    job_working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
     outputs_directory = None if Version(job.galaxy_version or "19.05") < Version("20.01") else "outputs"
     if outputs_directory is not None:
         job_working_directory = os.path.join(job_working_directory, outputs_directory)
@@ -3685,11 +3699,11 @@ class DataManagerTool(OutputParameterJSONTool):
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
         data_manager_mode = param_dict.get("__data_manager_mode", "populate")
         if data_manager_mode == "populate":
-            data_manager.process_result(out_data)
+            data_manager.process_result(out_data, _data_manager_source_extra_files_paths(app, job, out_data))
         elif data_manager_mode == "dry_run":
             pass
         elif data_manager_mode == "bundle":
-            source_extra_files_paths = _data_manager_bundle_source_extra_files_paths(app, job, out_data)
+            source_extra_files_paths = _data_manager_source_extra_files_paths(app, job, out_data)
             for bundle_path, dataset in data_manager.write_bundle(out_data, source_extra_files_paths).items():
                 hda = cast(HistoryDatasetAssociation, dataset)
                 assert hda.dataset is not None
