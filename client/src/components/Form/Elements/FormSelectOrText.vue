@@ -50,6 +50,8 @@ const emit = defineEmits<{
 
 const otherMode = ref(false);
 const text = ref("");
+// an empty text field the user hasn't typed in yet is waiting for a value, so it isn't marked invalid
+const edited = ref(false);
 
 function optionValue(index: number) {
     return `option-${index}`;
@@ -77,6 +79,8 @@ const textError = computed(() => {
     return props.validate?.(text.value) ?? (text.value ? undefined : "Enter a value.");
 });
 
+const textInvalid = computed(() => Boolean(textError.value) && (edited.value || Boolean(text.value)));
+
 watch(textError, (message) => emit("alert", message), { immediate: true });
 onBeforeUnmount(() => emit("alert", undefined));
 
@@ -92,6 +96,7 @@ watch(
             return;
         }
         text.value = value ?? "";
+        edited.value = false;
         otherMode.value = Boolean(value) && !isListed(value!);
     },
     { immediate: true },
@@ -105,6 +110,7 @@ function onSelect(value: string | null) {
     if (value === OTHER_VALUE) {
         otherMode.value = true;
         text.value = props.value ?? "";
+        edited.value = false;
         return;
     }
     const selected = props.options[selectOptions.value.findIndex((option) => option.value === value)]!.value;
@@ -115,6 +121,7 @@ function onSelect(value: string | null) {
 
 function onText(value: string) {
     text.value = value;
+    edited.value = true;
     if (!textError.value) {
         emit("input", value);
     }
@@ -129,7 +136,7 @@ function onText(value: string) {
             <BFormInput
                 :id="`${id}-other`"
                 :value="text"
-                :state="textError ? false : null"
+                :state="textInvalid ? false : null"
                 :placeholder="otherPlaceholder"
                 :aria-label="otherLabel"
                 @input="onText" />

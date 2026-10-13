@@ -150,6 +150,23 @@ describe("FormSelectOrText", () => {
         expect(lastAlert(wrapper)).toBe("Enter a value.");
     });
 
+    it("asks for a value without marking the empty text field invalid until it is typed in", async () => {
+        const wrapper = mountWithValue(null);
+        await pick(wrapper, "Other fruit...");
+        expect(lastAlert(wrapper)).toBe("Enter a value.");
+        expect(textField(wrapper).classes()).not.toContain("is-invalid");
+
+        await type(wrapper, "kiwi");
+        await type(wrapper, "");
+        expect(textField(wrapper).classes()).toContain("is-invalid");
+    });
+
+    it("marks a saved value that fails validation invalid", () => {
+        const wrapper = mountWithValue("blood orange", (text) => (text.includes(" ") ? "No spaces" : undefined));
+        expect(lastAlert(wrapper)).toBe("No spaces");
+        expect(textField(wrapper).classes()).toContain("is-invalid");
+    });
+
     it("doesn't emit text that fails validation and alerts until it is fixed", async () => {
         const wrapper = mountWithValue("banana", (text) => (text.includes(" ") ? "No spaces" : undefined));
         await type(wrapper, "blood orange");
