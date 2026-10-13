@@ -20,6 +20,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.datasets import ensure_datatype_change_keeps_encryption
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
     LibraryDataset,
@@ -116,6 +117,9 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         if new_file_ext == "auto":
             self.ldda_manager.detect_datatype(trans, ldda)
         elif new_file_ext is not None and new_file_ext != ldda.extension:
+            ensure_datatype_change_keeps_encryption(
+                ldda, self.app.datatypes_registry.get_datatype_by_extension(new_file_ext)
+            )
             ldda.extension = new_file_ext
             self.ldda_manager.set_metadata(trans, ldda)
             changed = True
