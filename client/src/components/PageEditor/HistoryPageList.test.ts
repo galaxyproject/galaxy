@@ -1,69 +1,41 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
-import { shallowMount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { HistoryPageSummary } from "@/api/pages";
+import { useHistoryStore } from "@/stores/historyStore";
 
-import { FAKE_PAGE_SUMMARY, FAKE_PAGE_UNTITLED } from "./testData";
+import * as HistoryPageListStories from "./HistoryPageList.stories";
 
-import HistoryPageList from "./HistoryPageList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(HistoryPageListStories);
+const mountStory = useStoryMount();
 
 const SELECTORS = {
     NEW_BUTTON: "[data-description='create page button']",
     EMPTY_STATE: ".empty-state",
     PAGE_ITEMS: ".page-items",
     PAGE_ITEM: "[data-description='page item']",
-    UNOWNED_ALERT: "g-alert-stub",
 };
 
-setupMockHistoryBreadcrumbs();
-
-// Mocks for store methods
-const mockGetHistoryById = vi.fn();
-const mockMatchesCurrentUserId = vi.fn();
-
-vi.mock("@/stores/historyStore", () => ({
-    useHistoryStore: vi.fn(() => ({
-        getHistoryById: mockGetHistoryById,
-    })),
-}));
-
-vi.mock("@/stores/userStore", () => ({
-    useUserStore: vi.fn(() => ({
-        matchesCurrentUserId: mockMatchesCurrentUserId,
-        // PageCard (rendered per page item) also checks this to decide whether
-        // to show the "sharing" action, so the mock store needs it too.
-        matchesCurrentUsername: vi.fn(() => false),
-    })),
-}));
-
-async function mountComponent(propsData: { pages: HistoryPageSummary[]; invocationId?: string }) {
-    const wrapper = shallowMount(HistoryPageList as object, {
-        localVue,
-        propsData: { ...propsData, historyId: "history-1" },
-        pinia: createTestingPinia({ createSpy: vi.fn }),
-    });
+/** Mounts a story once its history is in the history store, so whether the user owns it is settled. */
+async function mountComponent(story: StoryOf<typeof stories>) {
+    const wrapper = mountStory(story);
+    const historyId = story.args.historyId!;
+    await vi.waitFor(() => expect(useHistoryStore().getHistoryById(historyId, false)).not.toBeNull());
     await flushPromises();
     return wrapper;
 }
 
-describe("HistoryPageList", () => {
-    beforeEach(() => {
-        // Default: history is owned by the current user, no alert shown
-        mockGetHistoryById.mockReturnValue({ id: "history-1", name: "Test History", user_id: "user-1" });
-        mockMatchesCurrentUserId.mockReturnValue(true);
-    });
+type HistoryPageListWrapper = Awaited<ReturnType<typeof mountComponent>>;
 
+describe("HistoryPageList", () => {
     describe("Header", () => {
-        let wrapper: VueWrapper;
+        let wrapper: HistoryPageListWrapper;
 
         beforeEach(async () => {
-            wrapper = await mountComponent({ pages: [] });
+            wrapper = await mountComponent(stories.NoNotebooks);
         });
 
         it("always shows 'New Notebook' button", () => {
@@ -74,10 +46,10 @@ describe("HistoryPageList", () => {
     });
 
     describe("Empty state", () => {
-        let wrapper: VueWrapper;
+        let wrapper: HistoryPageListWrapper;
 
         beforeEach(async () => {
-            wrapper = await mountComponent({ pages: [] });
+            wrapper = await mountComponent(stories.NoNotebooks);
         });
 
         it("shows 'No notebooks yet' when pages prop is empty array", () => {
@@ -87,7 +59,7 @@ describe("HistoryPageList", () => {
         });
 
         it("shows create guidance text when no pages", () => {
-            const emptyState = wrapper.find(SELECTORS.EMPTY_STATE);
+            const emptyState = wrapper.get(SELECTORS.EMPTY_STATE);
             expect(emptyState.text()).toContain("Create a notebook to document your analysis");
         });
 
@@ -97,12 +69,10 @@ describe("HistoryPageList", () => {
     });
 
     describe("Page list", () => {
-        let wrapper: VueWrapper;
+        let wrapper: HistoryPageListWrapper;
 
         beforeEach(async () => {
-            wrapper = await mountComponent({
-                pages: [FAKE_PAGE_SUMMARY, FAKE_PAGE_UNTITLED],
-            });
+            wrapper = await mountComponent(stories.WithNotebooks);
         });
 
         it("renders each page as a card", () => {
@@ -119,34 +89,33 @@ describe("HistoryPageList", () => {
 
     describe("Unowned history alert", () => {
         it("does not show alert when current user owns the history", async () => {
-            const wrapper = await mountComponent({ pages: [] });
-            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).exists()).toBe(false);
+            const wrapper = await mountComponent(stories.NoNotebooks);
+            expect(wrapper.findComponent(GAlert).exists()).toBe(false);
         });
 
         it("shows alert when current user does not own the history", async () => {
-            mockMatchesCurrentUserId.mockReturnValue(false);
-            const wrapper = await mountComponent({ pages: [] });
-            const alert = wrapper.find(SELECTORS.UNOWNED_ALERT);
+            const wrapper = await mountComponent(stories.OtherUsersHistory);
+            const alert = wrapper.findComponent(GAlert);
             expect(alert.exists()).toBe(true);
             expect(alert.text()).toContain("You do not own this history");
         });
 
         it("does not show invocation span in alert when no invocationId", async () => {
-            mockMatchesCurrentUserId.mockReturnValue(false);
-            const wrapper = await mountComponent({ pages: [] });
-            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).text()).not.toContain("associated with the invocation");
+            const wrapper = await mountComponent(stories.OtherUsersHistory);
+            expect(wrapper.getComponent(GAlert).text()).not.toContain("associated with the invocation");
         });
 
         it("shows invocation qualifier in alert when invocationId is set", async () => {
-            mockMatchesCurrentUserId.mockReturnValue(false);
-            const wrapper = await mountComponent({ pages: [], invocationId: "inv-1" });
-            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).text()).toContain("associated with the invocation");
+            const wrapper = await mountComponent(stories.OtherUsersInvocation);
+            expect(wrapper.getComponent(GAlert).text()).toContain("associated with the invocation");
         });
 
         it("does not show alert when history has no user_id field", async () => {
-            mockGetHistoryById.mockReturnValue({ id: "history-1", name: "Test History" });
-            const wrapper = await mountComponent({ pages: [] });
-            expect(wrapper.find(SELECTORS.UNOWNED_ALERT).exists()).toBe(false);
+            const wrapper = await mountComponent(stories.ListedHistory);
+            expect(useHistoryStore().getHistoryById(stories.ListedHistory.args.historyId!, false)).not.toHaveProperty(
+                "user_id",
+            );
+            expect(wrapper.findComponent(GAlert).exists()).toBe(false);
         });
     });
 });
