@@ -1201,6 +1201,23 @@ class TestScreenshots:
         assert restored == original_border
         assert "blue" in restored.lower()
 
+    def test_highlight_element_tolerates_a_replaced_element(self, has_driver_instance, base_url):
+        """Test a re-rendered (detached) element is skipped instead of failing the caller."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+        has_driver_instance.execute_script("arguments[0].outerHTML = arguments[0].outerHTML;", element)
+
+        with has_driver_instance.highlight_element(element):
+            pass
+
+    def test_highlight_element_tolerates_replacement_while_highlighted(self, has_driver_instance, base_url):
+        """Test the restore is skipped when the element is re-rendered inside the block."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        with has_driver_instance.highlight_element(element):
+            has_driver_instance.execute_script("arguments[0].outerHTML = arguments[0].outerHTML;", element)
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""

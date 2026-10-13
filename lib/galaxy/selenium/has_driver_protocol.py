@@ -596,7 +596,8 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         Return a context manager that draws a red border around an element.
 
         The element's previous border is restored on exit, whether or not the
-        block raised. Intended for annotating screenshots.
+        block raised. An element the page has since re-rendered is left
+        unhighlighted rather than raising. Intended for annotating screenshots.
 
         Usage:
             with driver.highlight_element(element):
