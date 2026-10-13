@@ -22,13 +22,13 @@ import FormError from "./Elements/FormError.vue";
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
-import FormNumberList from "./Elements/FormNumberList.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
+import FormValueList from "./Elements/FormValueList.vue";
 import FormElementHeader from "./FormElementHeader.vue";
 import FormElementHelpMarkdown from "./FormElementHelpMarkdown.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -99,7 +99,11 @@ const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.v
 const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
 const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
 
-const isMultipleInteger = computed(() => props.type === "integer" && Boolean(attrs.value.multiple));
+const valueListType = computed(() =>
+    (props.type === "integer" || props.type === "float" || props.type === "text") && attrs.value.multiple
+        ? props.type
+        : null,
+);
 
 const computedPlaceholder = computed(() => {
     if (!props.workflowRun) {
@@ -374,8 +378,8 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 </div>
                 <FormBoolean v-else-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
                 <FormHidden v-else-if="isHiddenType" :id="props.id" :value="currentValue" :info="attrs['info']" />
-                <FormNumberList
-                    v-else-if="isMultipleInteger"
+                <FormValueList
+                    v-else-if="valueListType"
                     :id="props.id"
                     :value="currentValue"
                     :max="attrs.max"
@@ -383,7 +387,8 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :placeholder="computedPlaceholder"
                     :optional="isOptional"
                     :show-state="props.workflowRun"
-                    type="integer"
+                    :type="valueListType"
+                    :datalist="attrs.datalist"
                     @input="(v: FormParameterValue) => (currentValue = v)" />
                 <FormNumber
                     v-else-if="props.type === 'integer' || props.type === 'float'"

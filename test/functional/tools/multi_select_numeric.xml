@@ -1,0 +1,23 @@
+<tool id="multi_select_numeric" name="multi_select_numeric" version="1.0.0">
+    <description>multiple select with numeric option values</description>
+    <command><![CDATA[echo '$select_numeric' > '$output']]></command>
+    <inputs>
+        <param name="select_numeric" type="select" multiple="true">
+            <option value="1">One</option>
+            <option value="2">Two</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="select_numeric" value="1,2" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="1,2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

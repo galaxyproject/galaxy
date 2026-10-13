@@ -26,10 +26,10 @@ tool_param_type = (
 def get_default_parameter(param_type: INPUT_PARAMETER_TYPES, multiple: bool = False) -> tool_param_type:
     """
     param_type is the type of parameter we want to build up, stored_parameter_type is the parameter_type
-    as stored in the tool state. ``multiple`` only applies to integer parameters.
+    as stored in the tool state. ``multiple`` only applies to integer and text parameters.
     """
     default_source: default_source_type = dict(name="default", label="Default Value", type=param_type, optional=False)
-    if param_type == "integer" and multiple:
+    if param_type in ("integer", "text") and multiple:
         default_source["multiple"] = True
     if param_type == "text":
         input_default_value: tool_param_type = TextToolParameter(None, default_source)
