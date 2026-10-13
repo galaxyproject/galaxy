@@ -481,3 +481,14 @@ def test_users_who_cant_decrypt_the_dataset_keep_its_conversions(tmp_path):
     user = cast(User, Bunch(id=1))
     assert not manager.retire_unusable_conversion(user, cast(DatasetInstance, source), converted, ["tabular"])
     assert not association.deleted
+
+
+def test_grant_status_shows_until_when_jobs_can_use_the_grant(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    expires_at = datetime(2099, 10, 14, 12)
+    grant = DatasetProtectionGrant(key_ref="cnk:1", expires_at=expires_at, grant_data={"compute_header": "compute"})
+    manager = _manager()
+    manager.get_grant = mock.MagicMock(return_value=grant)
+    status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
+    assert status.ready
+    assert status.expires_at == expires_at - timedelta(days=1)
