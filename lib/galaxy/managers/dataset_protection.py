@@ -355,7 +355,8 @@ class DatasetProtectionManager:
         if scheme is None or dataset is None or dataset.purged:
             return None
         grant = self.get_grant(user, dataset, scheme.name)
-        if grant is None or grant.is_expired(scheme.expiry_margin):
+        if grant is None or grant.is_expired(scheme.expiry_margin) or "compute_header" not in grant.grant_data:
+            # Without a compute header, the user still has to authorize the primary file.
             return None
         return grant
 
@@ -717,7 +718,7 @@ class DatasetProtectionManager:
             return
         assert job.user
         for dataset_instance, record in protected:
-            if not record["compute_header"]:
+            if not record["compute_header"] and not record["extra_files"]:
                 # Encrypted already by the tool, e.g. a copy of an encrypted input.
                 continue
             scheme = self.scheme_for(dataset_instance)
@@ -726,7 +727,13 @@ class DatasetProtectionManager:
             grant.key_ref = key_ref
             grant.expires_at = expires_at
             extra_files = {relpath: header for relpath, header in record["extra_files"].items() if header}
-            grant.grant_data = {"compute_header": record["compute_header"], "extra_files": extra_files}
+            grant.grant_data = {"extra_files": extra_files}
+            if record["compute_header"]:
+                grant.grant_data["compute_header"] = record["compute_header"]
+            elif extra_files:
+                # The primary file copies an encrypted input, the user authorizes it as any other dataset
+                # and the extra files keep the job's compute keypair.
+                grant.grant_data["extra_files_key"] = {"key_ref": key_ref, "expires_at": expires_at.isoformat()}
             if copied := sorted(relpath for relpath, header in record["extra_files"].items() if not header):
                 # Copies of encrypted inputs, their headers were never sealed to a compute key.
                 grant.grant_data["copied_extra_files"] = copied
