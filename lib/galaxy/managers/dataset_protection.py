@@ -105,9 +105,19 @@ def _can_decrypt_inputs(tool: "Tool") -> bool:
     return not any(isinstance(config_file, FileSourceConfigFile) for config_file in tool.config_files)
 
 
+def _shown_name(dataset_instance: DatasetInstance) -> str:
+    """The name of the dataset users see, for conversions the one of the dataset they convert."""
+    shown = dataset_instance
+    for association in getattr(dataset_instance, "implicitly_converted_parent_datasets", []):
+        if source := association.parent_hda or association.parent_ldda:
+            shown = source
+            break
+    return shown.name or ""
+
+
 def _copied_extra_files_message(dataset_instance: DatasetInstance) -> str:
     return (
-        f"The extra files of dataset '{dataset_instance.name}' copy encrypted inputs of the job that created "
+        f"The extra files of dataset '{_shown_name(dataset_instance)}' copy encrypted inputs of the job that created "
         "them and can't be decrypted. Use it in tools accepting encrypted datasets."
     )
 
@@ -357,6 +367,7 @@ class DatasetProtectionManager:
         Conversions are decrypted with the grants of the jobs that converted them, users can't renew
         those. Every unusable conversion of the dataset is retired then, also those of converter
         dependencies, so they are converted again with the grant of the user on the dataset.
+        Users who can't decrypt the dataset either keep the conversions, which may be another user's.
         """
         if user is None or not self.is_protected(converted) or converted.state != DatasetInstance.states.OK:
             return False
@@ -364,6 +375,9 @@ class DatasetProtectionManager:
             # Passed to the tool encrypted.
             return False
         if self.get_usable_grant(user, converted) is not None:
+            return False
+        if self.get_usable_grant(user, dataset_instance) is None:
+            # Their job is refused anyway.
             return False
         for association in dataset_instance.implicitly_converted_datasets:
             conversion = association.dataset or association.dataset_ldda
@@ -479,7 +493,7 @@ class DatasetProtectionManager:
             grant = self.get_usable_grant(user, dataset_instance) if user else None
             if grant is None:
                 raise RequestParameterInvalidException(
-                    f"Dataset '{dataset_instance.name}' is encrypted and you are not authorized to decrypt it in jobs. "
+                    f"Dataset '{_shown_name(dataset_instance)}' is encrypted and you are not authorized to decrypt it in jobs. "
                     "Authorize the dataset first (key icon)."
                 )
             if grant.grant_data.get("copied_extra_files"):
@@ -520,14 +534,14 @@ class DatasetProtectionManager:
             # Outputs are encrypted after the job ran, the key service must still accept the keypair then.
             if grant is None or grant.is_expired(scheme.expiry_margin + margin):
                 raise ProtectionError(
-                    f"You are not authorized to decrypt dataset '{dataset_instance.name}', or your authorization "
+                    f"You are not authorized to decrypt dataset '{_shown_name(dataset_instance)}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
                 )
             if grant.grant_data.get("copied_extra_files"):
                 raise ProtectionError(_copied_extra_files_message(dataset_instance))
             if _extra_files_expire(grant, scheme.expiry_margin + margin):
                 raise ProtectionError(
-                    f"The extra files of dataset '{dataset_instance.name}' can't be decrypted anymore: their "
+                    f"The extra files of dataset '{_shown_name(dataset_instance)}' can't be decrypted anymore: their "
                     "authorization comes from the job that created them, and it expires before this job can finish."
                 )
             grants.append(grant)
