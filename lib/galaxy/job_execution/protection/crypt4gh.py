@@ -387,6 +387,9 @@ class Crypt4GHJobRuntime:
                 output_response = response
         if output_response is None:
             raise ProtectionError("No protected input uses the compute key selected for the outputs.")
+        if not output_response.get("crypt4gh_compute_keypair_expiration_date"):
+            # Galaxy couldn't record until when the outputs can be decrypted in further jobs.
+            raise ProtectionError("The key service didn't return the expiration date of the compute key.")
         return output_response
 
     def _write_state(self, response: dict[str, Any]) -> None:

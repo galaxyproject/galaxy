@@ -104,6 +104,8 @@ class MockRecryptorService:
     requests: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
     # Routes answering with an error status, as {route: [status, ...]} consumed in order.
     failures: dict[str, list[int]] = field(default_factory=dict)
+    # Fields left out of successful responses.
+    omitted_fields: set[str] = field(default_factory=set)
     _server: ThreadingHTTPServer | None = None
 
     def get_compute_key_info(self, user_public: bytes, expires_in: timedelta = timedelta(days=7)) -> str:
@@ -153,6 +155,8 @@ class MockRecryptorService:
         }
         if route == "recrypt_header_to_job_key":
             response["crypt4gh_compute_public_key"] = compute.keypair.public_pem
+        for omitted in self.omitted_fields:
+            response.pop(omitted, None)
         return 200, response
 
     def routes_called(self) -> list[str]:
