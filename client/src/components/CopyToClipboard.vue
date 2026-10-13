@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { copy } from "@/utils/clipboard";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import type { ComponentSize } from "@/components/BaseComponents/componentVariants";
 
 const props = withDefaults(
     defineProps<{
@@ -12,6 +13,7 @@ const props = withDefaults(
         message: string;
         title?: string;
         transparent?: boolean;
+        size?: ComponentSize;
     }>(),
     {
         transparent: true,
@@ -20,7 +22,12 @@ const props = withDefaults(
 </script>
 
 <template>
-    <GButton :transparent="props.transparent" icon-only :title="props.title" @click="copy(props.text, props.message)">
-        <FontAwesomeIcon :icon="faCopy" aria-hidden="true" />
+    <GButton
+        :transparent="props.transparent"
+        icon-only
+        :size="props.size"
+        :title="props.title"
+        @click="copy(props.text, props.message)">
+        <FontAwesomeIcon :icon="faCopy" aria-hidden="true" fixed-width />
     </GButton>
 </template>

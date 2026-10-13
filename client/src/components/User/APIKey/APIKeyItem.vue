@@ -71,15 +71,21 @@ async function attemptKeyDeletion() {
                             <CopyToClipboard
                                 message="Key was copied to clipboard"
                                 :text="props.item.key"
+                                size="large"
                                 title="Copy key"
                                 :transparent="false" />
 
-                            <GButton v-g-tooltip.hover title="Show/hide key" icon-only @click="hover = !hover">
-                                <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
+                            <GButton
+                                v-g-tooltip.hover
+                                title="Show/hide key"
+                                size="large"
+                                icon-only
+                                @click="hover = !hover">
+                                <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" fixed-width />
                             </GButton>
 
-                            <GButton title="Delete api key" icon-only @click="attemptKeyDeletion">
-                                <FontAwesomeIcon :icon="faTrash" />
+                            <GButton title="Delete api key" size="large" icon-only @click="attemptKeyDeletion">
+                                <FontAwesomeIcon :icon="faTrash" fixed-width />
                             </GButton>
                         </BInputGroupAppend>
                     </BInputGroup>
