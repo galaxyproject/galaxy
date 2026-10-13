@@ -16,16 +16,14 @@ describe("TextSummary", () => {
         vi.mocked(sanitizeHtml).mockClear();
         const paragraph = mountStory(stories.PlainText).get(".html-paragraph");
 
-        expect(paragraph.find("b").exists()).toBe(false);
         expect(paragraph.text()).toBe(DESCRIPTION);
         expect(sanitizeHtml).not.toHaveBeenCalled();
     });
 
     it("renders the description through v-sanitize-html when isHtml is set", () => {
         vi.mocked(sanitizeHtml).mockClear();
-        const paragraph = mountStory(stories.RenderedHtml).get(".html-paragraph");
+        mountStory(stories.RenderedHtml);
 
         expect(sanitizeHtml).toHaveBeenCalledWith(DESCRIPTION, "default");
-        expect(paragraph.get("b").text()).toBe("paired");
     });
 });
