@@ -5,8 +5,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from mako.template import Template
-
 from galaxy import web
 from galaxy.tool_shed.util import basic_util
 from galaxy.tool_shed.util.hg_util import (
@@ -18,6 +16,7 @@ from galaxy.util import (
     rst_to_html,
     unicodify,
 )
+from galaxy.util.sanitize_html import sanitize_html
 from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revision
 
 if TYPE_CHECKING:
@@ -25,6 +24,19 @@ if TYPE_CHECKING:
     from tool_shed.webapp.model import Repository
 
 log = logging.getLogger(__name__)
+
+
+def render_readme(readme_file_name: str, text: str) -> str:
+    """Render repository-owner supplied README text as HTML that is safe to display."""
+    if not readme_file_name.endswith(".rst"):
+        return basic_util.to_html_string(text)
+    html = unicodify(rst_to_html(text))
+    # Substitute the legacy placeholders literally - README text must never be evaluated as a template.
+    if "${static_path}" in html:
+        html = html.replace("${static_path}", web.url_for("/static"))
+    if "${host_url}" in html:
+        html = html.replace("${host_url}", web.url_for("/", qualified=True))
+    return sanitize_html(html)
 
 
 def build_readme_files_dict(
@@ -77,20 +89,7 @@ def build_readme_files_dict(
                                 log.exception(
                                     "Exception in build_readme_files_dict, so images may not be properly displayed"
                                 )
-                        if readme_file_name.endswith(".rst"):
-                            text_of_reasonable_length = Template(
-                                rst_to_html(text_of_reasonable_length),
-                                input_encoding="utf-8",
-                                default_filters=["decode.utf8"],
-                                encoding_errors="replace",
-                            )
-                            text_of_reasonable_length = text_of_reasonable_length.render(
-                                static_path=web.url_for("/static"), host_url=web.url_for("/", qualified=True)
-                            )
-                            text_of_reasonable_length = unicodify(text_of_reasonable_length)
-                        else:
-                            text_of_reasonable_length = basic_util.to_html_string(text_of_reasonable_length)
-                        readme_files_dict[readme_file_name] = text_of_reasonable_length
+                        readme_files_dict[readme_file_name] = render_readme(readme_file_name, text_of_reasonable_length)
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
                     repo = repository.hg_repo
@@ -100,7 +99,9 @@ def build_readme_files_dict(
                         if fctx is not None and fctx != "DELETED":
                             try:
                                 text = unicodify(fctx.data())
-                                readme_files_dict[readme_file_name] = basic_util.size_string(text)
+                                readme_files_dict[readme_file_name] = render_readme(
+                                    readme_file_name, basic_util.size_string(text)
+                                )
                             except Exception:
                                 log.exception(
                                     "Error reading README file '%s' from repository manifest",

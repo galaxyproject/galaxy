@@ -11683,7 +11683,8 @@ class PSAPartial(Base, PartialMixin, RepresentById):
         """
         (Required by social_core.storage.PartialMixin interface)
         """
-        stmt = select(PSAPartial).where(PSAPartial.token == token).limit(1)
+        # Negative steps belong to browser-bound authentication state, not resumable pipelines.
+        stmt = select(PSAPartial).where(PSAPartial.token == token, PSAPartial.next_step >= 0).limit(1)
         return cls.sa_session.scalars(stmt).first()
 
     @classmethod
