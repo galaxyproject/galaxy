@@ -155,12 +155,18 @@ def _outputs_in_directory(job: Job, compute_environment: "ComputeEnvironment", d
     return True
 
 
-def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> bool:
-    """Whether extra files kept from an earlier grant use a compute keypair expiring within ``margin``."""
+def _extra_files_expiration(grant: DatasetProtectionGrant) -> datetime | None:
+    """Expiration of the compute keypair of extra files kept from an earlier grant, if any."""
     extra_files_key = grant.grant_data.get("extra_files_key")
     if not extra_files_key or not grant.grant_data.get("extra_files"):
-        return False
-    return datetime.fromisoformat(extra_files_key["expires_at"]) <= now() + margin
+        return None
+    return datetime.fromisoformat(extra_files_key["expires_at"])
+
+
+def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> bool:
+    """Whether extra files kept from an earlier grant use a compute keypair expiring within ``margin``."""
+    expiration = _extra_files_expiration(grant)
+    return expiration is not None and expiration <= now() + margin
 
 
 def _summarize(errors: list[str], limit: int = 3) -> str:
@@ -747,10 +753,15 @@ class DatasetProtectionManager:
         if scheme is None:
             return DatasetProtectionStatus(protected=False)
         grant = self.get_usable_grant(user, dataset_instance) if user else None
+        usable_until = None
+        if grant:
+            # Authorizing the dataset again doesn't renew the keypair of extra files kept from its job.
+            expirations = [grant.expires_at, _extra_files_expiration(grant)]
+            # The key service refuses keypairs close to their expiration already.
+            usable_until = min(e for e in expirations if e is not None) - scheme.expiry_margin
         return DatasetProtectionStatus(
             protected=True,
             scheme=scheme.name,
             ready=grant is not None,
-            # The key service refuses keypairs close to their expiration already.
-            expires_at=grant.expires_at - scheme.expiry_margin if grant else None,
+            expires_at=usable_until,
         )
