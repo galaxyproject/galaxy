@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCard, BCardFooter, BCardTitle } from "bootstrap-vue";
 import { computed, toRef, watch } from "vue";
 
 import { useJobStore } from "@/stores/jobStore";
-import localize from "@/utils/localization";
 
 import { useMappingJobs } from "./handlesMappingJobs";
 
 import JobSelection from "./JobSelection.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import JobMetrics from "@/components/JobMetrics/JobMetrics.vue";
-import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
+import ToolDetailsButton from "@/components/Tool/ToolDetailsButton.vue";
 
 interface JobMetricsProps {
     jobId?: string;
@@ -67,10 +63,7 @@ watch(
     <BCard nobody>
         <BCardTitle v-if="title">
             <b>{{ title }}</b>
-            <GLink v-if="toolId" ref="info" dark thin type="button" :aria-label="localize('Tool details')">
-                <FontAwesomeIcon :icon="faInfoCircle" size="sm" />
-            </GLink>
-            <ToolLinkPopover interactive :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />
+            <ToolDetailsButton v-if="toolId" :tool-id="toolId" :tool-version="toolVersion" />
         </BCardTitle>
         <JobSelection
             v-model="selectedJob"
