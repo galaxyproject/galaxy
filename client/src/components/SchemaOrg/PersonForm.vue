@@ -17,7 +17,7 @@
             </BFormInput>
         </div>
         <div role="group" class="form-group">
-            <BFormSelect v-model="addAttribute" :options="addAttributes" size="sm"></BFormSelect>
+            <GSelect v-model="addAttribute" aria-label="Add attribute" size="small" :options="addAttributes" />
         </div>
         <GButton type="submit" color="blue">Save</GButton>
         <GButton type="reset" color="red">Cancel</GButton>
@@ -27,11 +27,12 @@
 <script>
 import { faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BForm, BFormInput, BFormSelect } from "bootstrap-vue";
+import { BForm, BFormInput } from "bootstrap-vue";
 
 import ThingFormMixin from "./ThingFormMixin";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 
 const ATTRIBUTES_INFO = [
     { key: "name", label: "Name", placeholder: "name" },
@@ -55,9 +56,9 @@ export default {
     components: {
         BForm,
         BFormInput,
-        BFormSelect,
         FontAwesomeIcon,
         GButton,
+        GSelect,
     },
     mixins: [ThingFormMixin],
     props: {
