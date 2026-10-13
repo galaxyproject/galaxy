@@ -17,8 +17,9 @@ except ImportError as exc:
 
 
 def convert(infile, outfile):
-    # pyarrow re-exports write_csv at runtime but its stubs do not declare it.
-    csv.write_csv(parquet.read_table(infile), outfile)  # type: ignore[attr-defined]
+    # pyarrow re-exports write_csv at runtime but its stubs do not declare it;
+    # pyarrow is not installed in the type-checking environment.
+    csv.write_csv(parquet.read_table(infile), outfile)  # type: ignore[attr-defined,unused-ignore]
 
 
 def __main__():
