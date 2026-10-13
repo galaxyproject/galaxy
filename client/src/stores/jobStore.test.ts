@@ -584,4 +584,132 @@ describe("full job freshness", () => {
         await advanceTimersAndFlush(1000);
         expect(fullCalls).toBe(2);
     });
+
+    it("does not let a slow, older response overwrite a newer job state", async () => {
+        let releaseFull: () => void = () => {};
+        server.use(
+            http.get("/api/jobs/{job_id}", async ({ response, request }) => {
+                if (new URL(request.url).searchParams.get("full") === "true") {
+                    // The server snapshot was taken while the job was still running, but arrives late
+                    await new Promise<void>((resolve) => (releaseFull = resolve));
+                    return response(200).json({ ...buildJob("job", "running"), tool_stdout: "partial" });
+                }
+                return response(200).json(buildJob("job", "ok"));
+            }),
+        );
+        const store = useJobStore();
+        const slowFull = store.fetchJob({ id: "job", full: true });
+        await flushPromises();
+        store.pollJobUntilTerminal({ id: "job", full: false });
+        await flushPromises();
+        expect(store.getCachedJob("job")?.state).toBe("ok");
+
+        releaseFull();
+        await slowFull;
+        await advanceTimersAndFlush(3000);
+
+        const job = store.getCachedJob("job");
+        expect(job?.state).toBe("ok");
+        // Fields the cache lacked are still filled in from the older response
+        expect(job?.tool_stdout).toBe("partial");
+    });
+
+    it("does not orphan a newer poll when a superseded poll's final full fetch fails", async () => {
+        let requestCount = 0;
+        let releaseFull: () => void = () => {};
+        server.use(
+            http.get("/api/jobs/{job_id}", async ({ response, request }) => {
+                requestCount++;
+                if (new URL(request.url).searchParams.get("full") === "true") {
+                    await new Promise<void>((resolve) => (releaseFull = resolve));
+                    return response("4XX").json({ err_msg: "Forbidden", err_code: 403 }, { status: 403 });
+                }
+                return response(200).json(buildJob("job", "ok"));
+            }),
+        );
+        const store = useJobStore();
+        // A base poll is upgraded to full; its base fetch sees completion, so it fetches final full fields
+        const basePoll = store.pollJobUntilTerminal({ id: "job", full: false });
+        const fullPoll = store.pollJobUntilTerminal({ id: "job", full: true });
+        await flushPromises();
+        // Every caller leaves while that full fetch is pending, and a new caller starts a new poll
+        basePoll.stopWatchingJob();
+        fullPoll.stopWatchingJob();
+        const newPoll = store.pollJobUntilTerminal({ id: "job", full: true });
+        await flushPromises();
+
+        releaseFull();
+        await flushPromises();
+        newPoll.stopWatchingJob();
+        const requestsAfterRelease = requestCount;
+        await advanceTimersAndFlush(5000);
+
+        expect(requestCount).toBe(requestsAfterRelease);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("keeps a full poll going when its final full response is superseded by a newer base response", async () => {
+        let fullCalls = 0;
+        let releaseFinalFull: () => void = () => {};
+        server.use(
+            http.get("/api/jobs/{job_id}", async ({ response, request }) => {
+                if (new URL(request.url).searchParams.get("full") !== "true") {
+                    return response(200).json(buildJob("job", "ok"));
+                }
+                fullCalls++;
+                if (fullCalls === 1) {
+                    return response(200).json({ ...buildJob("job", "running"), tool_stdout: "partial" });
+                }
+                if (fullCalls === 2) {
+                    await new Promise<void>((resolve) => (releaseFinalFull = resolve));
+                }
+                return response(200).json({ ...buildJob("job", "ok"), tool_stdout: "FINAL OUTPUT" });
+            }),
+        );
+        const store = useJobStore();
+        await store.fetchJob({ id: "job", full: true });
+        // A base poll sees completion after a full consumer joined, so it fetches the final full fields...
+        store.pollJobUntilTerminal({ id: "job", full: false });
+        store.pollJobUntilTerminal({ id: "job", full: true });
+        await flushPromises();
+        // ...but a newer base request is applied before that full response arrives
+        await store.fetchJob({ id: "job", full: false });
+        releaseFinalFull();
+        await flushPromises();
+
+        await advanceTimersAndFlush(1000);
+
+        expect(store.getCachedJob("job")?.tool_stdout).toBe("FINAL OUTPUT");
+        expect(fullCalls).toBe(3);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("stops polling a finished job whose full responses keep being superseded", async () => {
+        let fullRequests = 0;
+        const pendingFull: Array<() => void> = [];
+        server.use(
+            http.get("/api/jobs/{job_id}", async ({ response, request }) => {
+                if (new URL(request.url).searchParams.get("full") !== "true") {
+                    return response(200).json(buildJob("job", "ok"));
+                }
+                fullRequests++;
+                await new Promise<void>((resolve) => pendingFull.push(resolve));
+                return response("4XX").json({ err_msg: "Forbidden", err_code: 403 }, { status: 403 });
+            }),
+        );
+        const store = useJobStore();
+        store.pollJobUntilTerminal({ id: "job", full: false });
+        store.pollJobUntilTerminal({ id: "job", full: true });
+
+        for (let tick = 0; tick < 10; tick++) {
+            await flushPromises();
+            // A newer base request is applied before each pending full response arrives
+            await store.fetchJob({ id: "job", full: false });
+            pendingFull.splice(0).forEach((release) => release());
+            await advanceTimersAndFlush(1000);
+        }
+
+        expect(vi.getTimerCount()).toBe(0);
+        expect(fullRequests).toBeLessThan(10);
+    });
 });

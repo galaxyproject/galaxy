@@ -49,6 +49,12 @@ export const useJobStore = defineStore("jobStore", () => {
      * *all* of them finish, not just whichever happens to resolve first. */
     const loadingCountsByJobId = ref<{ [id: string]: number }>({});
 
+    /** Requests are numbered in the order they start. A response is only written to the cache if no
+     * request for the same job that started *later* has already been applied, so a slow response
+     * carrying an older snapshot (e.g. `running`) can't overwrite a newer one (e.g. `ok`). */
+    let requestSequence = 0;
+    const appliedSequenceByJobId: { [id: string]: number } = {};
+
     function saveLatestResponse(newResponse: ResponseVal) {
         latestResponse.value = newResponse;
     }
@@ -96,10 +102,21 @@ export const useJobStore = defineStore("jobStore", () => {
         // remains true until all concurrent requests for the same job id (base and full) have completed.
         loadingCountsByJobId.value[params.id] = (loadingCountsByJobId.value[params.id] ?? 0) + 1;
 
+        const sequence = ++requestSequence;
+        const isStale = () => sequence < (appliedSequenceByJobId[params.id] ?? 0);
+
         const fetchPromise = (async () => {
             try {
                 const freshJob = await fetchJobFromApi(params);
                 const existingJob = storedJobs.value[params.id];
+                if (isStale() && existingJob) {
+                    // A newer response was already applied: only fill in fields the cache lacks
+                    // (e.g. full-only fields), never overwrite the newer state.
+                    const job = mergeJob(existingJob, freshJob);
+                    storedJobs.value[params.id] = job;
+                    return job;
+                }
+                appliedSequenceByJobId[params.id] = Math.max(sequence, appliedSequenceByJobId[params.id] ?? 0);
                 const job = mergeJob(freshJob, existingJob);
                 storedJobs.value[params.id] = job;
                 delete loadingErrors.value[params.id];
@@ -111,6 +128,10 @@ export const useJobStore = defineStore("jobStore", () => {
                 }
                 return job;
             } catch (error) {
+                if (isStale()) {
+                    // A newer request already succeeded; this failure says nothing about the job now.
+                    return storedJobs.value[params.id];
+                }
                 retryCounts[params.id] = (retryCounts[params.id] ?? 0) + 1;
                 loadingErrors.value[params.id] = error as Error;
                 return undefined;
@@ -133,6 +154,7 @@ export const useJobStore = defineStore("jobStore", () => {
         delete storedJobs.value[id];
         delete loadingErrors.value[id];
         delete retryCounts[id];
+        delete appliedSequenceByJobId[id];
     }
 
     // LRU tracking for `MAX_CACHED_JOBS`: a Map's keys iterate oldest-to-newest, and re-`set`ting
@@ -248,6 +270,18 @@ export const useJobStore = defineStore("jobStore", () => {
             return { stopWatchingJob: () => stopWatchingJob(id, runningPoll) };
         }
 
+        /** Stops this poll. Only removes its own `activePolls` entry: by the time an `await` resolves,
+         * the last caller may have stopped it and a new, unrelated poll may have taken its place. */
+        function endPoll() {
+            watcher.dispose();
+            if (activePolls.get(id) === pollEntry) {
+                activePolls.delete(id);
+            }
+        }
+
+        /** Ticks this poll has seen the job terminal without fresh full details yet (see below). */
+        let terminalTicksWithoutFull = 0;
+
         const watcher = useResourceWatcher(
             async () => {
                 // Read (not close over) the current requested level as a later call may have
@@ -255,26 +289,33 @@ export const useJobStore = defineStore("jobStore", () => {
                 const requestFull = activePolls.get(id)?.full ?? full;
                 let job = await fetchJob({ id, full: requestFull });
                 if (activePolls.get(id) !== pollEntry) {
+                    endPoll();
                     return;
                 }
                 if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
                     // An in-flight base request may finish after a full consumer joins.
                     // Fetch final full fields before stopping the shared poll.
-                    if (activePolls.get(id)?.full && !terminalFullJobIds.has(id)) {
+                    if (pollEntry.full && !terminalFullJobIds.has(id)) {
                         job = await fetchJob({ id, full: true });
-                    }
-                    if (job && TERMINAL_STATES.includes(job.state)) {
-                        watcher.dispose();
-                        if (activePolls.get(id) === pollEntry) {
-                            activePolls.delete(id);
+                        if (activePolls.get(id) !== pollEntry) {
+                            endPoll();
+                            return;
                         }
-                        return;
+                    }
+                    // A full poll is only done once a (non-stale) full response has observed completion;
+                    // otherwise keep polling so the next tick fetches the final full fields again. Cap
+                    // that, so full responses that keep being superseded can't poll a finished job forever.
+                    const satisfied = !pollEntry.full || terminalFullJobIds.has(id);
+                    if (job && TERMINAL_STATES.includes(job.state)) {
+                        if (satisfied || ++terminalTicksWithoutFull > MAX_RETRIES) {
+                            endPoll();
+                            return;
+                        }
                     }
                 }
                 if (!job && getJobLoadError.value(id) && !canRetryJob(id)) {
                     // Stop fetching if the fetch failed with a non-retryable error
-                    watcher.dispose();
-                    activePolls.delete(id);
+                    endPoll();
                 }
             },
             { shortPollingInterval: 1000, longPollingInterval: 1000 },
