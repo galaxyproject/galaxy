@@ -588,7 +588,7 @@ def set_metadata_portable(
                 if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     if not output_protector:
                         object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
-                    elif not stored_from_discovery and (extra_files_path := dataset.dataset.external_extra_files_path):
+                    elif extra_files_path := dataset.dataset.external_extra_files_path:
                         # Store exactly the extra files that were protected, not whatever directory
                         # collect_extra_files() would find.
                         object_store_update_actions.append(
@@ -686,6 +686,7 @@ def _protect_declared_output(
         # store, not from the declared file.
         dataset.extension = protected_ext
         dataset.dataset.external_filename = None
+        output_protector.protect_extra_files(dataset, dataset.dataset.external_extra_files_path)
         return True
     else:
         output_protector.protect(
