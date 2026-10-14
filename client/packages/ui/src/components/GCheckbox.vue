@@ -143,7 +143,12 @@ function onChange(event: Event) {
 
 .g-checkbox-input {
     margin: 0;
+    accent-color: var(--color-blue-600, #25537b);
     cursor: pointer;
+
+    &:not(:last-child) {
+        margin-right: 3px;
+    }
 
     .g-disabled & {
         cursor: not-allowed;
@@ -186,6 +191,7 @@ function onChange(event: Event) {
     appearance: none;
     box-sizing: border-box;
     flex-shrink: 0;
+    margin: 0;
     width: var(--g-switch-width);
     height: var(--g-switch-height);
     // Off-state border keeps >= 3:1 against the page (WCAG 1.4.11) and survives forced-colors mode
@@ -203,8 +209,8 @@ function onChange(event: Event) {
     &:checked {
         --g-switch-knob-color: #ffffff;
 
-        border-color: var(--color-blue-500, #197cd2);
-        background-color: var(--color-blue-500, #197cd2);
+        border-color: var(--color-blue-600, #25537b);
+        background-color: var(--color-blue-600, #25537b);
         background-position: right center;
     }
 
