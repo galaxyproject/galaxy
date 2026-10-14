@@ -1398,6 +1398,35 @@ def is_safe_local_redirect(path: Any) -> bool:
     return path[1:2] not in ("/", "\\")
 
 
+def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bool:
+    """May Galaxy send a browser to ``target`` after login?
+
+    Relative URLs that stay on this server are always accepted (see
+    :func:`is_safe_local_redirect`). An absolute ``https`` URL is accepted when its
+    host -- with the port, if it is not 443 -- is one of ``allowed_hosts``, the
+    admin-configured ``allowed_login_redirect_hosts``. Hosts match exactly and
+    case-insensitively.
+    """
+    if is_safe_local_redirect(target):
+        return True
+    if not allowed_hosts or not isinstance(target, str) or not target:
+        return False
+    # Browsers read a backslash as a slash in an https URL and Python does not, so the
+    # two disagree on where the host ends. Refuse instead of picking a side.
+    if target != target.strip() or CONTROL_CHARACTERS.search(target) or "\\" in target:
+        return False
+    try:
+        url = urlsplit(target)
+        port = url.port
+    except ValueError:
+        return False
+    # Credentials in the authority ("https://allowed@evil") are refused for the same reason.
+    if url.scheme != "https" or "@" in url.netloc or not url.hostname:
+        return False
+    host = url.hostname if port in (None, 443) else f"{url.hostname}:{port}"
+    return host in {allowed.lower() for allowed in allowed_hosts}
+
+
 def read_build_sites(filename, check_builds=True):
     """read db names to ucsc mappings from file, this file should probably be merged with the one above"""
     build_sites = []

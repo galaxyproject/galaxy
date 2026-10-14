@@ -4,7 +4,7 @@ import { getGalaxyInstance } from "@/app";
 import type { UploadMethod } from "@/components/Panels/Upload/types";
 import { getUploadMethod } from "@/components/Panels/Upload/uploadMethodRegistry";
 import { useUserStore } from "@/stores/userStore";
-import { safeRedirectPath } from "@/utils/redirect";
+import { redirectToUrl, safeLoginRedirect } from "@/utils/redirect";
 
 // Entry routes that exist to get you logged in -- never a destination to come back to.
 const LOGIN_ENTRY_ROUTES = ["/login/start", "/register/start"];
@@ -15,7 +15,8 @@ const LOGIN_ENTRY_ROUTES = ["/login/start", "/register/start"];
  * A pending `redirect` is honored rather than dropped, so a deep link survives the round
  * trip through login even when the user turns out to be signed in already. It has to be
  * root-relative: the router applies `base` itself, so a destination that already carries
- * the app root would end up with it twice.
+ * the app root would end up with it twice. The other option is an https URL on a host
+ * listed in `allowed_login_redirect_hosts`.
  *
  * This is a navigation guard rather than a route-level `redirect`, because vue-router
  * treats a `redirect` function returning undefined as "no match" and renders nothing --
@@ -27,7 +28,13 @@ export function redirectLoggedIn(to: Route, _from: Route, next: NavigationGuardN
         next();
         return;
     }
-    const redirect = safeRedirectPath(to.query.redirect);
+    const redirect = safeLoginRedirect(to.query.redirect, Galaxy.config?.allowed_login_redirect_hosts ?? []);
+    if (redirect && !redirect.startsWith("/")) {
+        // An allowed external site: leave the router.
+        next(false);
+        redirectToUrl(redirect);
+        return;
+    }
     next(redirect && !LOGIN_ENTRY_ROUTES.includes(redirect) ? redirect : "/");
 }
 

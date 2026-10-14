@@ -3985,6 +3985,26 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allowed_login_redirect_hosts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated list of external hosts that Galaxy may send users
+    to after they log in, e.g.
+    ``tools.example.org,portal.example.org:8443``.
+    A site can send users to Galaxy's login page with
+    ``/login/start?redirect=<url>``, and Galaxy returns them to
+    ``<url>`` once they have logged in, with a password or through
+    OIDC. Paths on this Galaxy server are always accepted. An absolute
+    URL is accepted only if it uses https and its host matches an
+    entry here exactly; add the port to the entry if it is not 443.
+    Wildcards are not supported. By default no external host is
+    allowed.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_local_account_creation``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

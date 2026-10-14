@@ -49,6 +49,20 @@ To check that PKCE is active, open the browser's developer tools before logging 
 
 Galaxy refuses the login itself when the callback arrives without the matching login state, so it never depends on the IdP enforcing PKCE. Users then see "Authentication has expired or is invalid. Please start logging in again." If the IdP rejects the verifier, users see "Authentication with `<provider>` was canceled or the authorization code has expired".
 
+## Sending users back after login
+
+A link to `<galaxy_url>/login/start?redirect=<target>` takes users to the login page and, once they have logged in with a password or through OIDC, on to `<target>`. Users who are already logged in go straight to `<target>`. Galaxy only follows targets it trusts, because anyone can put a link with a `redirect` parameter in front of users:
+
+* A path on this Galaxy server, such as `/workflows/list`, is always followed. Give it without `galaxy_url_prefix`.
+* An absolute URL is followed only if it uses `https` and its host is listed in `allowed_login_redirect_hosts` in `galaxy.yml`. Hosts must match exactly; give the port too if it is not 443. Wildcards are not supported.
+
+```yaml
+galaxy:
+  allowed_login_redirect_hosts: tools.example.org,portal.example.org:8443
+```
+
+Any other target sends users to the Galaxy home page instead. The option is empty by default, so no external site is trusted.
+
 ## Authentication Framework
 
 Galaxy is distributed with a plugin-driven authentication framework for which the default database authentication is
