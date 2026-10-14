@@ -32,7 +32,7 @@ class TestCollectionSheet(SeleniumTestCase):
         for row_index, expected_row in enumerate(expected_rows):
             row = tuple(
                 sheet.grid_cell(row_index=row_index, column_name=column_name).wait_for_text()
-                for column_name in ("__model_object", "replicate", "treatment")
+                for column_name in ("model-object-identifier", "replicate", "treatment")
             )
             assert row == expected_row
         self.screenshot("collection_sheet_view")
