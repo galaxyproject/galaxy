@@ -76,7 +76,7 @@ describe("FetchGrid", () => {
         expect(wrapper.findComponent({ name: "AgGridVue" }).props("rowData")).not.toBe(rows);
         wrapper.unmount();
     });
-    it("shows the rows of each new target", async () => {
+    it("gives the grid a fresh row array for each new target", async () => {
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         setActivePinia(pinia);
         const wrapper = mount(FetchGrid, {
@@ -87,10 +87,15 @@ describe("FetchGrid", () => {
         await flushPromises();
         await vi.waitFor(() => expect(wrapper.text()).toContain("http://example.com/a.txt"));
 
+        const grid = wrapper.findComponent({ name: "AgGridVue" });
+        let previousRows = grid.props("rowData");
         for (const url of ["http://example.com/b.txt", "http://example.com/c.txt"]) {
             await wrapper.setProps({ target: urlTarget(url) });
             await flushPromises();
             await vi.waitFor(() => expect(wrapper.text()).toContain(url));
+            const rows = grid.props("rowData");
+            expect(rows).not.toBe(previousRows);
+            previousRows = rows;
         }
         wrapper.unmount();
     });
