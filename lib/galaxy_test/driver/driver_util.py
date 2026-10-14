@@ -403,6 +403,9 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
         database_connection = os.environ[dburi_var]
         # only template if postgres - not mysql or sqlite
         do_template = prefer_template_database and database_connection.startswith("p")
+        if not do_template and (xdist_worker := os.environ.get("PYTEST_XDIST_WORKER")):
+            # Every pytest-xdist worker runs its own server, which needs its own database.
+            database_connection = _worker_database_connection(database_connection, xdist_worker)
         if do_template:
             database_template_parsed = urlparse(database_connection)
             template_name = database_template_parsed.path[1:]  # drop / from /galaxy
@@ -436,6 +439,12 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     if template_name:
         config["database_template"] = template_name
     return config
+
+
+def _worker_database_connection(database_connection: str, worker_id: str) -> str:
+    parsed = urlparse(database_connection)
+    root, ext = os.path.splitext(parsed.path)
+    return parsed._replace(path=f"{root}_{worker_id}{ext}").geturl()
 
 
 def install_database_conf(db_path, default_merged=False):
