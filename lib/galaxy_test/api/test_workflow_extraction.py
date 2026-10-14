@@ -15,6 +15,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import pytest
+
 from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -22,6 +24,7 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     summarize_instance_history_on_error,
     TOOL_WITH_SHELL_COMMAND,
+    WorkflowPopulator,
 )
 from galaxy_test.base.workflow_assertions import WorkflowStructureAssertions
 from .test_workflows import BaseWorkflowsApiTestCase
@@ -42,6 +45,7 @@ class _ExtractionHelpersMixin:
 
     dataset_populator: DatasetPopulator
     dataset_collection_populator: DatasetCollectionPopulator
+    workflow_populator: WorkflowPopulator
 
     if TYPE_CHECKING:
 
@@ -60,6 +64,119 @@ class _ExtractionHelpersMixin:
         step = next((s for s in tool_steps if s.get("tool_id") == tool_id), None)
         assert step is not None, f"No tool step with tool_id {tool_id!r}; have {[s.get('tool_id') for s in tool_steps]}"
         return step
+
+    def _run_expression_workflow(self, history_id):
+        self.workflow_populator.run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  parse:
+    tool_id: param_value_from_file
+    in:
+      input1: input
+    state:
+      param_type: text
+  expression:
+    tool_id: expression_null_handling_text
+    in:
+      text_input: parse/text_param
+  consume:
+    tool_id: param_text_option
+    state:
+      text_param:
+        $link: expression/text_out
+test_data:
+  input:
+    class: File
+    contents: original value
+""",
+            history_id=history_id,
+        )
+        contents = self._history_contents(history_id)
+        jobs = self._get("jobs", {"history_id": history_id, "order_by": "create_time"}).json()
+        tool_ids = ("param_value_from_file", "expression_null_handling_text", "param_text_option")
+        return contents[0], [self._job_id_for_tool(jobs, tool_id) for tool_id in tool_ids]
+
+    def _check_expression_workflow(self, downloaded):
+        tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=3)
+        parse = self._tool_step(tool_steps, "param_value_from_file")
+        expression = self._tool_step(tool_steps, "expression_null_handling_text")
+        consume = self._tool_step(tool_steps, "param_text_option")
+        assert _connection_step_id(expression["input_connections"]["text_input"]) == parse["id"]
+        assert _connection_step_id(consume["input_connections"]["text_param"]) == expression["id"]
+
+        workflow_id = self.workflow_populator.import_workflow(downloaded)["id"]
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="changed value", wait=True)
+            input_step = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)[0]
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id,
+                inputs={str(input_step["id"]): {"src": "hda", "id": hda["id"]}},
+            )
+            assert self.dataset_populator.get_history_dataset_content(history_id).strip() == "changed value"
+
+    def _run_connected_conditional_workflow(self, history_id, selection):
+        self.workflow_populator.run_workflow(
+            f"""
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  parse:
+    tool_id: param_value_from_file
+    in:
+      input1: input
+    state:
+      param_type: text
+  consume:
+    tool_id: output_filter_exception_1
+    in:
+      options|options: parse/text_param
+    state:
+      options:
+        options: {selection}
+test_data:
+  input:
+    class: File
+    contents: {selection}
+""",
+            history_id=history_id,
+            extra_invocation_kwds={"allow_tool_state_corrections": True},
+        )
+        contents = self._history_contents(history_id)
+        jobs = self._get("jobs", {"history_id": history_id, "order_by": "create_time"}).json()
+        tool_ids = ("param_value_from_file", "output_filter_exception_1")
+        return contents[0], [self._job_id_for_tool(jobs, tool_id) for tool_id in tool_ids]
+
+    def _check_connected_conditional_workflow(self, downloaded, selection):
+        tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
+        parse = self._tool_step(tool_steps, "param_value_from_file")
+        consume = self._tool_step(tool_steps, "output_filter_exception_1")
+        assert _connection_step_id(consume["input_connections"]["options|options"]) == parse["id"]
+        state = loads(consume["tool_state"])
+        options = state["options"]
+        if isinstance(options, str):
+            options = loads(options)
+        assert options["options"] == selection
+        assert options["__current_case__"] == (0 if selection == "default" else 1)
+
+        workflow_id = self.workflow_populator.import_workflow(downloaded)["id"]
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="default", wait=True)
+            input_step = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)[0]
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id,
+                inputs={str(input_step["id"]): {"src": "hda", "id": hda["id"]}},
+                request={"allow_tool_state_corrections": True},
+            )
+            jobs = self._get("jobs", {"history_id": history_id}).json()
+            consumer_id = self._job_id_for_tool(jobs, "output_filter_exception_1")
+            job = self.dataset_populator.get_job_details(consumer_id, full=True).json()
+            assert loads(job["params"]["options"])["options"] == "default"
 
     def _setup_extract_dataset_then_cat(self, history_id):
         """Build a list, extract its first element, and feed the result to cat1.
@@ -163,6 +280,22 @@ class _ExtractionHelpersMixin:
 
 
 class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
+    @skip_without_tool("param_value_from_file")
+    @skip_without_tool("output_filter_exception_1")
+    @pytest.mark.parametrize("selection", ["default", "advanced"])
+    def test_extract_connected_conditional_selector(self, history_id, selection):
+        hda, job_ids = self._run_connected_conditional_workflow(history_id, selection)
+        downloaded = self._extract_and_download_workflow(history_id, dataset_ids=[hda["hid"]], job_ids=job_ids)
+        self._check_connected_conditional_workflow(downloaded, selection)
+
+    @skip_without_tool("param_value_from_file")
+    @skip_without_tool("expression_null_handling_text")
+    @skip_without_tool("param_text_option")
+    def test_extract_expression_parameter_connections(self, history_id):
+        hda, job_ids = self._run_expression_workflow(history_id)
+        downloaded = self._extract_and_download_workflow(history_id, dataset_ids=[hda["hid"]], job_ids=job_ids)
+        self._check_expression_workflow(downloaded)
+
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_from_history(self, history_id):
@@ -812,6 +945,22 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
     payload carries encoded HDA / HDCA / job ids rather than HIDs, and the
     request goes to the new history-optional endpoint.
     """
+
+    @skip_without_tool("param_value_from_file")
+    @skip_without_tool("expression_null_handling_text")
+    @skip_without_tool("param_text_option")
+    def test_extract_expression_parameter_connections_by_ids(self, history_id):
+        hda, job_ids = self._run_expression_workflow(history_id)
+        downloaded = self._extract_and_download_workflow_by_ids(hda_ids=[hda["id"]], job_ids=job_ids)
+        self._check_expression_workflow(downloaded)
+
+    @skip_without_tool("param_value_from_file")
+    @skip_without_tool("output_filter_exception_1")
+    @pytest.mark.parametrize("selection", ["default", "advanced"])
+    def test_extract_connected_conditional_selector_by_ids(self, history_id, selection):
+        hda, job_ids = self._run_connected_conditional_workflow(history_id, selection)
+        downloaded = self._extract_and_download_workflow_by_ids(hda_ids=[hda["id"]], job_ids=job_ids)
+        self._check_connected_conditional_workflow(downloaded, selection)
 
     def _extract_and_download_workflow_by_ids(self, **payload):
         if "workflow_name" not in payload:
