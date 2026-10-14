@@ -69,17 +69,12 @@ def unwrap_crypt4gh_file_ext(file_ext: str) -> str | None:
     return _unwrap_crypt4gh_suffix(file_ext)
 
 
-def infer_crypt4gh_file_ext(filename: str, registry: DatatypeFilenameLookup, requested_ext: str = "auto") -> str:
-    """Determine the best Crypt4GH wrapper extension for *filename*.
+def infer_crypt4gh_file_ext(filename: str, registry: DatatypeFilenameLookup) -> str:
+    """The Crypt4GH wrapper extension a (Crypt4GH-enabled) registry gives *filename*, read as encrypted.
 
-    Priority:
-    1. The wrapper the (Crypt4GH-enabled) registry gives *filename*, read as encrypted.
-    2. Wrap the user-requested extension (if not ``auto``).
-    3. Fall back to the generic ``c4gh``.
+    Falls back to the generic ``c4gh`` when the file name doesn't tell the inner datatype.
     """
     file_ext: str = registry.get_datatype_from_filename(wrap_crypt4gh_file_ext(filename)).file_ext
-    if file_ext == CRYPT4GH_FILE_EXT and requested_ext != "auto":
-        return wrap_crypt4gh_file_ext(requested_ext)
     return file_ext
 
 
