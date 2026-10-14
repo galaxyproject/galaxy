@@ -647,18 +647,20 @@ class Registry:
                                 if sniffer_class is not None and sniffer_class not in sniffer_elem_classes:
                                     self.sniffer_elems.append(elem)
 
+    def _crypt4gh_inner_ext(self, ext: str) -> str | None:
+        """The inner extension of a typed Crypt4GH wrapper, None for anything else or when Crypt4GH is disabled."""
+        return unwrap_crypt4gh_file_ext(ext) if self.crypt4gh_enabled else None
+
     def get_datatype_from_filename(self, name):
         generic_datatype_instance = self.get_datatype_by_extension("data")
         # Check for Crypt4GH wrapper suffix first (e.g. "reads.fastq.c4gh").
-        if self.crypt4gh_enabled and (inner_name := unwrap_crypt4gh_file_ext(name)) is not None:
-            if "." not in inner_name:
-                return self.get_datatype_by_extension(CRYPT4GH_FILE_EXT) or generic_datatype_instance
+        if (inner_name := self._crypt4gh_inner_ext(name)) is not None:
             inner_datatype = self.get_datatype_from_filename(inner_name)
-            wrapped_extension = wrap_crypt4gh_file_ext(inner_datatype.file_ext)
-            return self.datatypes_by_extension.get(
-                wrapped_extension,
-                self.get_datatype_by_extension(CRYPT4GH_FILE_EXT) or generic_datatype_instance,
-            )
+            if inner_datatype is not generic_datatype_instance:
+                wrapped_extension = wrap_crypt4gh_file_ext(inner_datatype.file_ext)
+                if wrapped_extension in self.datatypes_by_extension:
+                    return self.datatypes_by_extension[wrapped_extension]
+            return self.get_datatype_by_extension(CRYPT4GH_FILE_EXT) or generic_datatype_instance
 
         max_extension_parts = 3
         if "." not in name:
@@ -1012,7 +1014,7 @@ class Registry:
         """Returns available converters by source type"""
         if ext not in self._converters_by_datatype:
             converters = {}
-            inner_ext = unwrap_crypt4gh_file_ext(ext) if self.crypt4gh_enabled else None
+            inner_ext = self._crypt4gh_inner_ext(ext)
             if inner_ext is not None:
                 # Converters of the inner datatype (e.g. sam -> bam) also serve the Crypt4GH-wrapped
                 # variant, their outputs get encrypted (sam.c4gh -> bam.c4gh).
@@ -1037,7 +1039,7 @@ class Registry:
 
         Maps each dependency (the converter parameter name) to the extension to convert to.
         """
-        inner_source_ext = unwrap_crypt4gh_file_ext(source_ext) if self.crypt4gh_enabled else None
+        inner_source_ext = self._crypt4gh_inner_ext(source_ext)
         inner_target_ext = unwrap_crypt4gh_file_ext(target_ext) if inner_source_ext is not None else None
         if inner_source_ext is not None and inner_target_ext is not None:
             # Wrapped converters are the inner ones, their dependencies get encrypted too.

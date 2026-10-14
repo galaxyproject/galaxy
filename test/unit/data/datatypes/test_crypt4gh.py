@@ -250,8 +250,19 @@ def test_upload_unchanged_when_disabled(tmp_path, disabled_registry):
     assert not is_crypt4gh_file_ext(response.ext)
 
 
-def test_infer_file_ext_falls_back_to_generic(enabled_registry):
-    assert infer_crypt4gh_file_ext("unknown.c4gh", enabled_registry) == "c4gh"
+@pytest.mark.parametrize(
+    "filename, file_ext",
+    [
+        ("reads.fastqsanger.c4gh", "fastqsanger.c4gh"),
+        ("reads.fq.crypt4gh", "fastqsanger.c4gh"),
+        ("reads.fastq.gz.c4gh", "fastqsanger.gz.c4gh"),
+        ("unknown.c4gh", "c4gh"),
+        ("sample.foo.c4gh", "c4gh"),
+    ],
+)
+def test_file_names_give_the_same_encrypted_datatype(enabled_registry, filename, file_ext):
+    assert infer_crypt4gh_file_ext(filename, enabled_registry) == file_ext
+    assert enabled_registry.get_datatype_from_filename(filename).file_ext == file_ext
 
 
 def _redetect(tmp_path, enabled_registry, extension, crypt4gh_inner_ext):
