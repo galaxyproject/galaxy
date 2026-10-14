@@ -7,6 +7,8 @@ name: Generated config files
 on:
   push:
     paths:
+      - 'lib/galaxy/config/**'
+      - 'lib/galaxy/dependencies/pinned-requirements.txt'
       - 'packages/config/src/galaxy/config/**'
       - 'packages/app/src/galaxy/dependencies/pinned-requirements.txt'
       - 'Makefile'
@@ -14,6 +16,8 @@ on:
       - '.github/workflows/config_drift.yaml'
   pull_request:
     paths:
+      - 'lib/galaxy/config/**'
+      - 'lib/galaxy/dependencies/pinned-requirements.txt'
       - 'packages/config/src/galaxy/config/**'
       - 'packages/app/src/galaxy/dependencies/pinned-requirements.txt'
       - 'Makefile'

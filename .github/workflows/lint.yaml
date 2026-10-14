@@ -8,6 +8,7 @@ on:
       - 'Makefile'
       - .flake8
       - .isort.cfg
+      - lib/galaxy/dependencies/**
       - packages/app/src/galaxy/dependencies/**
       - mypy.ini
       - pyproject.toml
@@ -20,6 +21,7 @@ on:
       - 'Makefile'
       - .flake8
       - .isort.cfg
+      - lib/galaxy/dependencies/**
       - packages/app/src/galaxy/dependencies/**
       - mypy.ini
       - pyproject.toml

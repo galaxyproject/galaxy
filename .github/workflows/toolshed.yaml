@@ -4,6 +4,7 @@ on:
     paths:
       - '**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
@@ -11,6 +12,7 @@ on:
     paths:
       - '**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
