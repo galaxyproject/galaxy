@@ -119,6 +119,9 @@ AUTH_PIPELINE = (
     "galaxy.authnz.psa_authnz.verify",
     # Checks if the current social-account is already associated in the site.
     "social_core.pipeline.social_auth.social_user",
+    # Custom Galaxy step: Fall back to the email's local part when the IdP sends
+    # no username claim; otherwise get_username substitutes a random string.
+    "galaxy.authnz.psa_authnz.username_from_email",
     # Make up a username for this person, appends a random string at the end if
     # there's any collision.
     "social_core.pipeline.user.get_username",
@@ -705,6 +708,18 @@ def contains_required_data(response=None, is_new=False, backend=None, **kwargs):
         # The solution is to revoke the consent by visiting the identity provider's
         # website, and then retry the login process.
         raise MalformedContents(err_msg=f"Missing refresh token. {hint_msg}")
+
+
+def username_from_email(details=None, user=None, **kwargs):
+    """
+    Pipeline step: derive a username from the email's local part for new users
+    whose IdP sends no username claim (e.g. no ``preferred_username``).
+    """
+    if user or not details or details.get("username") or not details.get("email"):
+        return
+    username = ready_name_for_url(details["email"].split("@")[0]).lower()
+    if username:
+        return {"details": {**details, "username": username}}
 
 
 def verify(strategy=None, response=None, details=None, **kwargs):
