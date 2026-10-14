@@ -13,8 +13,8 @@ FORK_ROOT=$(mktemp -d -t galaxy_release_test_XXXXXXXX)
 TEST_RELEASE_PREV=
 TEST_RELEASE_PREV_MINOR=
 TEST_RELEASE_CURR='99.0'
-TEST_RELEASE_NEXT='99.1'
-TEST_RELEASE_NEXT_NEXT='99.2'
+TEST_RELEASE_NEXT='100.0'
+TEST_RELEASE_NEXT_NEXT='100.1'
 
 : "${VENV:=${FORK_ROOT}/venv}"
 export VENV
@@ -206,7 +206,7 @@ function test_rc() {
     log "Test creation of ${TEST_RELEASE_CURR}.rc1..."
     (
         cd_fork work
-        log_exec "${REPO_ROOT}/scripts/release.sh" -r "$TEST_RELEASE_CURR"
+        log_exec "${REPO_ROOT}/scripts/release.sh" -r "$TEST_RELEASE_CURR" -n "$TEST_RELEASE_NEXT"
         # simulate merging RC PRs
         log_exec git push upstream refs/remotes/origin/version-${TEST_RELEASE_CURR}.rc1:refs/heads/release_${TEST_RELEASE_CURR}
         log_exec git push upstream refs/remotes/origin/version-${TEST_RELEASE_NEXT}.dev:refs/heads/dev

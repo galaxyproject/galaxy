@@ -27,6 +27,7 @@ BRANCH_CURR=$(git branch --show-current)
 
 : "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
 RELEASE_NEXT=
+RELEASE_NEXT_OPT=
 RELEASE_CURR_MINOR=
 RELEASE_CURR_MINOR_NEXT=
 RELEASE_CURR_MINOR_NEXT_DEV=
@@ -49,10 +50,13 @@ PACKAGE_VERSION_TEMPLATE="import packaging.version; print('.'.join(map(str, pack
 PACKAGE_DEV_VERSION_TEMPLATE="import packaging.version; print(packaging.version.parse('VERSION'))"
 
 
-while getopts ":clr:" opt; do
+while getopts ":cln:r:" opt; do
     case "$opt" in
         c)
             RELEASE_TYPE='rc'
+            ;;
+        n)
+            RELEASE_NEXT_OPT="$OPTARG"
             ;;
         r)
             RELEASE_CURR="$OPTARG"
@@ -61,7 +65,7 @@ while getopts ":clr:" opt; do
             RELEASE_TYPE='local'
             ;;
         *)
-            echo "usage: $(basename "$0") [-c (force rc)] [-l (local release)] [-r release version]"
+            echo "usage: $(basename "$0") [-c (force rc)] [-l (local release)] [-n next release version (new release branch only)] [-r release version]"
             exit 1
             ;;
     esac
@@ -527,7 +531,7 @@ function perform_version_update_dev() {
 
 function create_release_rc_initial() {
     RELEASE_TYPE='rc-initial'
-    RELEASE_NEXT="$(release_next "$RELEASE_CURR")"
+    RELEASE_NEXT="${RELEASE_NEXT_OPT:-$(release_next "$RELEASE_CURR")}"
     RELEASE_CURR_MINOR_NEXT='rc1'
     set_package_version_var
     user_verify_release
