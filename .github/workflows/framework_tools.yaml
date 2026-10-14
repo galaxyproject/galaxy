@@ -21,7 +21,7 @@ on:
       - '.github/workflows/framework_tools.yaml'
       - '.github/workflows/_report_scheduled_result.yaml'
   schedule:
-    # Run at midnight UTC every Tuesday, with extended metadata
+    # Run at midnight UTC every Tuesday, with extended metadata; this cron string is also matched below.
     - cron: '0 0 * * 2'
     # Run the legacy tool API too at 02:00 UTC daily
     - cron: '0 2 * * *'

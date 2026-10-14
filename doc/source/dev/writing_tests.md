@@ -277,11 +277,14 @@ section.
 ### Continuous Integration
 
 The Tool framework tests are run against each pull request to Galaxy using
-GitHub Actions, through the tool request API only. If any of these tests fail,
-the pull request will be marked red. This test suite is fairly stable and
-typically there are not transiently failed tests unrelated to the pull request
-being tested. The GitHub Actions workflow definition for these tests is located
-in ``.github/workflows/framework_tools.yaml`` below Galaxy's root.
+GitHub Actions; pull requests to ``dev`` test through the tool request API.
+Local runs default to the legacy tool API, so set
+``GALAXY_TEST_USE_LEGACY_TOOL_API=never`` to match pull request CI. If any of
+these tests fail, the pull request will be marked red. This test suite is
+fairly stable and typically there are not transiently failed tests unrelated to
+the pull request being tested. The GitHub Actions workflow definition for these
+tests is located in ``.github/workflows/framework_tools.yaml`` below Galaxy's
+root.
 
 The same workflow runs nightly on ``dev`` through both the tool request API and
 the legacy tool API; it can also be started by hand from the Actions tab. When
