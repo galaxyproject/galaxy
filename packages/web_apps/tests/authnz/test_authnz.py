@@ -10,6 +10,10 @@ from unittest.mock import (
 from urllib.parse import urlencode
 
 import pytest
+from packages.web_apps.tests.webapps.test_webapp_base import (
+    CORSParsingMockConfig,
+    StubGalaxyWebTransaction,
+)
 from social_core.backends.base import BaseAuth
 from social_core.exceptions import (
     AuthCanceled,
@@ -27,15 +31,6 @@ from galaxy.util import asbool
 from galaxy.web.framework import base as web_framework_base
 from galaxy.web.framework.base import Response
 from galaxy.webapps.base.webapp import WebApplication
-
-# TODO(workspace): shared test support should live in galaxy-test-base or a root
-# support module, not copies. Temporary local copy of test_webapp_base to avoid
-# cross-package `tests.webapps` relative import collision across many `tests/`
-# trees (see plans/workspace.md test ownership). Original: from ..webapps...
-from .test_webapp_base import (
-    CORSParsingMockConfig,
-    StubGalaxyWebTransaction,
-)
 
 
 @pytest.fixture
