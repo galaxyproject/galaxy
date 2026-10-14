@@ -185,32 +185,12 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     exit 1
 fi
 
-# Install the workspace closure before evaluating conditional dependencies.
-# Stage 1 (unconditional closure): install local workspace members so that
-# `import galaxy.dependencies` (and its galaxy.util / galaxy.config imports)
-# can resolve from installed packages. Stage 2 (below) then evaluates
-# conditional deps from config via galaxy_bootstrap_python.
-# `galaxy.dependencies` is provided by galaxy-app. Bootstrap imports require
-# installed workspace packages.
-# Set GALAXY_WORKSPACE_SYNC=0 to skip Stage 1 (offline / externally managed env).
+# Bootstrap imports require installed local packages. Explicitly skipped
+# dependency installation (including shutdown) must not sync the environment.
 : "${GALAXY_WORKSPACE_SYNC:=1}"
 
-# Run a python snippet using the environment's installed workspace packages.
-# There is no PYTHONPATH=lib fallback here: galaxy.dependencies/util/config all
-# moved to packages/*/src and are only importable once the workspace is synced
-# (or a released galaxy-app is installed). Missing setup must be reported, not
-# silently worked around with checkout source paths.
-galaxy_bootstrap_python() {
-    if python -c "import galaxy.dependencies" >/dev/null 2>&1; then
-        python "$@"
-    else
-        echo "ERROR: galaxy packages are not importable in the active environment." >&2
-        echo "Run 'uv sync --locked --inexact --package galaxy-app --all-extras' (or install released galaxy-app) before starting Galaxy." >&2
-        return 1
-    fi
-}
-
 sync_workspace_packages() {
+    [ "$FETCH_WHEELS" -eq 0 ] && return 0
     [ "$GALAXY_WORKSPACE_SYNC" = "0" ] && return 0
     if command -v uv >/dev/null 2>&1 && [ -f pyproject.toml ] && [ -f uv.lock ]; then
         # Sync the SERVER distribution closure (web-apps pulls galaxy-app and
@@ -278,8 +258,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
         set_galaxy_config_file_var
         conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
     fi
-    # Stage 2: evaluate conditional deps from installed workspace packages.
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(galaxy_bootstrap_python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
@@ -322,7 +301,7 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         # webapp.py picks it up via `import galaxy.web_client` and serves its
         # bundled dist/ directly -- no pnpm or staging required.
         # galaxy.version is provided by the installed galaxy-util package.
-        GALAXY_WEB_CLIENT_VERSION=$(galaxy_bootstrap_python -c "from galaxy.version import VERSION; print(VERSION)")
+        GALAXY_WEB_CLIENT_VERSION=$(python -c "from galaxy.version import VERSION; print(VERSION)")
         GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
         case "$GALAXY_WEB_CLIENT_VERSION" in
             *dev*|*rc*)
@@ -365,9 +344,8 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         fi
         # We need GALAXY_CONFIG_FILE here, ensure it's set.
         set_galaxy_config_file_var
-        # Set plugin path (use installed workspace packages; config_parse.py
-        # itself also prefers installed packages with a lib/ fallback).
-        GALAXY_PLUGIN_PATH=$(galaxy_bootstrap_python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
+        # Read the plugin path using installed workspace packages.
+        GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
         cd client
         # shellcheck disable=SC2086

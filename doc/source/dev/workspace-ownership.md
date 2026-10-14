@@ -178,11 +178,12 @@ Rationale:
 
 - `.ci/check_no_source_links.sh` fails on any tracked symlink under
   `packages/*/src/**` or `packages/*/tests/**` that is not in the allowed
-  categories above (nested fixture links under `*/test/` or `*/test-data/`,
-  the Mercurial fixture probe,
+  paths and targets above (datatype/parameter fixtures must point inside
+  `test-data/`, the Mercurial fixture probe must retain its local target,
   and the retained `functional_tools` / `bundled` / `static` / `templates` /
   `maf` / `navigation` / `linters` / `main` chains).
-- Run it with `tox -e check_no_source_links`.
+- It runs in `tox -e lint` (including CI); it can also be run separately
+  with `tox -e check_no_source_links`.
 
 To regenerate the tables in this document:
 

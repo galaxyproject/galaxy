@@ -126,38 +126,7 @@ Documentation = "https://docs.galaxyproject.org/"
 Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
-# Development profiles, all resolved from the single root workspace lock:
-#
-# - App startup:   `uv sync --locked --package galaxy-web-apps --all-extras`.
-#   Startup uses --inexact to preserve separately installed conditional deps.
-# - Backend tests: add --group dev to the app command (`dev` includes `test`).
-# - Tool Shed:     `uv sync --locked --package galaxy-tool-shed --all-extras`;
-#   start with run_tool_shed.sh.
-# - Browser tests: covered by the `test` group (playwright + pytest-playwright,
-#   selenium + axe-selenium-python).
-# - Docs:          covered by the `dev` group (Sphinx stack); docs CI installs
-#   sphinxcontrib-simpleversioning on top.
-# - Typecheck:     `uv sync --locked --group typecheck`, or install
-#   requirements/pinned-typecheck-requirements.txt into an existing environment.
-# - Lint:          intentionally NOT a dependency group: the pinned flake8/ruff
-#   tool set has transitive requirements incompatible with the application
-#   resolve. It lives in an isolated environment built from
-#   requirements/lint-requirements.txt and frozen as
-#   requirements/pinned-lint-requirements.txt by update_lint_requirements.sh.
-#
-# Tooling-only requirement exports (dev, test, typecheck, lint) live in the
-# repository-level requirements/ directory and are regenerated from this
-# workspace's uv.lock by packages/app/src/galaxy/dependencies/update.sh
-# (`uv export --frozen --no-annotate --no-hashes`). The runtime exports
-# (pinned-requirements.txt, conditional-requirements.txt,
-# conditional-constraints.txt) ship inside the galaxy-app wheel and remain in
-# packages/app/src/galaxy/dependencies/.
-#
-# Member extras (installable via `uv sync --locked --package <dist> --all-extras`
-# or `uv pip install '.[...]'` in the package directory; used by packages/test.sh):
-#   galaxy-util        image-util, template, jstree, config-template
-#   galaxy-tool-util   cwl, mulled, edam (plus extended-assertions, test)
-#   galaxy-objectstore irods, azure-blob, s3 (plus all, test)
+# See packages/README.md for workspace development profiles and requirement exports.
 [dependency-groups]
 test = [
     "aiocop",

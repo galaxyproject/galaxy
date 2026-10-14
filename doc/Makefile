@@ -56,7 +56,7 @@ source/admin/config_logging_default_yaml.rst: ../packages/config/src/galaxy/conf
 	printf '.. code-block:: yaml\n\n' > $@
 	printf '    galaxy:\n' >> $@
 	printf '      logging:\n        ' >> $@
-	PYTHONPATH=$(shell ls -d ../packages/*/src | tr '\n' ':') python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n        ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=2, default_flow_style=False).splitlines()))' >> $@
+	python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n        ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=2, default_flow_style=False).splitlines()))' >> $@
 
 clean:
 	-rm -rf $(BUILDDIR)/* $(GENERATED_RST)

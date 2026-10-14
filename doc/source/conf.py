@@ -26,14 +26,9 @@ SKIP_RELEASES = os.environ.get("GALAXY_DOCS_SKIP_RELEASES", False) == "1"
 
 # REQUIRED GALAXY INCLUDES
 
-import glob
-
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-# Sources moved from lib/ to per-package src directories; every package src
-# dir must be importable for autodoc. lib/ remains for leftover test fixtures.
-for _src_dir in sorted(glob.glob(os.path.join(REPO_ROOT, "packages", "*", "src"))):
-    sys.path.insert(1, _src_dir)
-sys.path.insert(1, os.path.join(REPO_ROOT, "lib"))
+# Only repository-owned galaxy_test support remains under lib/. Distributed
+# modules are supplied by the installed workspace members.
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

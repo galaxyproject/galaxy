@@ -25,9 +25,17 @@ VERIFY_PACKAGES=(wheel packaging)
 
 BRANCH_CURR=$(git branch --show-current)
 
-# Canonical version module owned by galaxy-util.
+# Release operations also inspect stable branches with the older source layout.
 function galaxy_version_file() {
-    echo packages/util/src/galaxy/version/__init__.py
+    local path
+    for path in packages/util/src/galaxy/version/__init__.py lib/galaxy/version/__init__.py lib/galaxy/version.py; do
+        if [ -f "$path" ]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    echo "No Galaxy version file in the checked-out branch" >&2
+    return 1
 }
 
 : "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"

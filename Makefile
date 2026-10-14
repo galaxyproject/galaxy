@@ -33,10 +33,9 @@ all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
 
 docs: ## Generate HTML documentation.
-# Run following commands to setup the Python portion of the requirements:
-#   $ ./scripts/common_startup.sh
-#   $ . .venv/bin/activate
-#   $ pip install -r requirements.txt -r requirements/dev-requirements.txt
+# Install the workspace docs profile first:
+#   $ uv sync --locked --all-packages --all-extras --group dev
+# See packages/README.md for the development profiles.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 

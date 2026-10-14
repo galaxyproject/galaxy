@@ -1,42 +1,37 @@
 #!/bin/bash
-# Fail on any tracked symlink under packages/*/src/** or packages/*/tests/**
-# that is not one of the documented allowed categories (see
-# doc/source/dev/workspace-ownership.md): nested fixture links under */test/
-# or */test-data/, and the retained functional_tools/bundled/static/
-# templates/maf/navigation/linters/main chains. Everything else must be a
-# real file.
+# Check staged package source/test links against the fixture and asset policy.
 set -euo pipefail
-
-project_dir=$(dirname "$0")/..
-cd "$project_dir"
+cd "$(dirname "$0")/.."
 
 violations=0
-while read -r path; do
+while IFS= read -r -d '' entry; do
+    read -r mode object stage <<< "${entry%%$'\t'*}"
+    [ "$mode" = 120000 ] || continue
+    path=${entry#*$'\t'}
     case "$path" in
         packages/*/src/*|packages/*/tests/*) ;;
         *) continue ;;
     esac
+    target=$(git cat-file blob "$object")
+    destination=$(python -c 'import os, sys; print(os.path.normpath(os.path.join(os.path.dirname(sys.argv[1]), sys.argv[2])))' "$path" "$target")
+    expected=
     case "$path" in
-        # Nested fixture links pointing at shared test data.
-        */test/*|*/test-data/*) continue ;;
-        # Mercurial fixture metadata must preserve its tracked probe symlink.
-        */tests/tool_shed/data/toolshed_community_files/*/.hg/wcache/checklink) continue ;;
-        # Retained chains documented in doc/source/dev/workspace-ownership.md.
-        */tools/util/maf_utilities.py|\
-        */tool_util/unittest_utils/functional_tools|\
-        */tools/bundled|\
-        */webapps/base/static|\
-        */webapps/base/templates|\
-        */navigation/navigation.yml|\
-        */tool_util/linters/*.sample|\
-        */galaxy/main/__init__.py) continue ;;
+        packages/data/src/galaxy/datatypes/test/*|packages/app/src/galaxy/tools/parameters/test/*)
+            case "$destination" in test-data/*) continue ;; esac ;;
+        packages/app/src/galaxy/tools/util/maf_utilities.py) expected=packages/data/src/galaxy/datatypes/util/maf_utilities.py ;;
+        packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools) expected=test/functional/tools ;;
+        packages/app/src/galaxy/tools/bundled) expected=tools ;;
+        packages/web_apps/src/galaxy/webapps/base/static) expected=static ;;
+        packages/web_apps/src/galaxy/webapps/base/templates) expected=templates ;;
+        packages/navigation/src/galaxy/navigation/navigation.yml) expected=client/src/utils/navigation/navigation.yml ;;
+        packages/tool_util/src/galaxy/tool_util/linters/datatypes_conf.xml.sample) expected=packages/config/src/galaxy/config/sample/datatypes_conf.xml.sample ;;
+        packages/app/src/galaxy/main/__init__.py) expected=scripts/galaxy-main ;;
+        packages/tool_shed/tests/tool_shed/data/toolshed_community_files/database/community_files/000/repo_1/.hg/wcache/checklink)
+            expected=${path%/*}/checklink-target ;;
     esac
-    echo "ERROR: disallowed source link: $path" >&2
-    violations=$((violations + 1))
-done < <(git ls-files -s | grep '^120000' | cut -f2)
-
-if [ "$violations" -gt 0 ]; then
-    echo "$violations disallowed symlink(s) under packages/*/src or packages/*/tests." >&2
-    echo "See doc/source/dev/workspace-ownership.md for the allowed categories." >&2
-    exit 1
-fi
+    if [ -z "$expected" ] || [ "$destination" != "$expected" ]; then
+        echo "ERROR: disallowed source link: $path -> $target" >&2
+        violations=$((violations + 1))
+    fi
+done < <(git ls-files -s -z)
+[ "$violations" -eq 0 ]
