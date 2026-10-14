@@ -193,12 +193,116 @@ const meta = {
 } satisfies Meta<typeof DatasetAttributes>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+type PlayContext = Parameters<NonNullable<Story["play"]>>[0];
+
+const TABS = ["Attributes", "Datatypes", "Permissions"];
+
+/** Waits for the form, then sees its tabs in order with "Attributes" open; returns its panel. */
+async function seeAttributesTab({ canvas, step }: PlayContext) {
+    let panel!: HTMLElement;
+    await step(`See the tabs ${TABS.join(", ")}, with "Attributes" open`, async () => {
+        await canvas.findByRole("textbox", { name: "Name" }, { timeout: 5000 });
+        const tabs = canvas.getAllByRole("tab");
+        await expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(TABS);
+        await expect(canvas.getByRole("tab", { name: "Attributes" })).toHaveAttribute("aria-selected", "true");
+        panel = canvas.getByRole("tabpanel");
+    });
+    return panel;
+}
+
+/** Opens tab `name`, whose `content` was hidden, and returns its panel. */
+async function openTab({ canvas, step, userEvent }: PlayContext, name: string, content: string) {
+    let panel!: HTMLElement;
+    await step(`Open the "${name}" tab: "${content}" shows`, async () => {
+        await expect(canvas.getByText(content)).not.toBeVisible();
+        await userEvent.click(canvas.getByRole("tab", { name }));
+        await expect(canvas.getByRole("tab", { name })).toHaveAttribute("aria-selected", "true");
+        panel = canvas.getByRole("tabpanel");
+        await expect(within(panel).getByText(content)).toBeVisible();
+    });
+    return panel;
+}
+
+/**
+ * The names of the buttons a viewer sees, in order, leaving out those inside form fields. A
+ * closed tab's buttons are hidden, so they aren't listed.
+ */
+function buttonNames({ canvas }: PlayContext) {
+    return canvas
+        .getAllByRole("button")
+        .filter((button) => !button.closest("[id^='form-element-']"))
+        .map((button) => button.textContent?.trim());
+}
+
+/**
+ * Reads each tab's fields and buttons. `converts` says whether the "Datatypes" tab also offers a
+ * converter.
+ */
+function offersEveryEditSection(converts: boolean) {
+    return async (context: PlayContext) => {
+        const { step } = context;
+        const attributes = await seeAttributesTab(context);
+        await step("See the attribute fields, with Save and Auto-detect", async () => {
+            for (const name of ["Name", "Info", "Annotation"]) {
+                await expect(within(attributes).getByRole("textbox", { name })).toBeVisible();
+            }
+            await expect(within(attributes).getByText("Database/Build")).toBeVisible();
+            await expect(buttonNames(context)).toEqual(["Save", "Auto-detect"]);
+        });
+        const datatypes = await openTab(context, "Datatypes", "Assign Datatype");
+        await step(
+            converts
+                ? 'See "Assign Datatype" with Save and Auto-detect, then "Convert to Datatype" with Create Dataset'
+                : 'See "Assign Datatype" with Save and Auto-detect, and no "Convert to Datatype"',
+            async () => {
+                await expect(within(datatypes).getByText("New Type")).toBeVisible();
+                if (converts) {
+                    await expect(within(datatypes).getByText("Convert to Datatype")).toBeVisible();
+                    await expect(within(datatypes).getByText("Target datatype")).toBeVisible();
+                    await expect(buttonNames(context)).toEqual(["Save", "Auto-detect", "Create Dataset"]);
+                } else {
+                    await expect(within(datatypes).queryByText("Convert to Datatype")).not.toBeInTheDocument();
+                    await expect(within(datatypes).queryByText("Target datatype")).not.toBeInTheDocument();
+                    await expect(buttonNames(context)).toEqual(["Save", "Auto-detect"]);
+                }
+            },
+        );
+        const permissions = await openTab(context, "Permissions", "manage permissions");
+        await step("See the access and manage permissions fields, with Save", async () => {
+            await expect(within(permissions).getByText("access")).toBeVisible();
+            await expect(buttonNames(context)).toEqual(["Save"]);
+        });
+        await openTab(context, "Attributes", "Info");
+    };
+}
 
 /** An owned BED dataset can edit metadata, change its datatype and manage role permissions. */
 export const EditableBed: Story = {};
 
+/** Each tab of the BED dataset's form, including its converter to GFF. */
+export const OffersEveryEditSection: Story = { play: offersEveryEditSection(true) };
+
+/** Saving the BED dataset's attributes shows Galaxy's confirmation. */
+export const SavesAttributes: Story = {
+    play: async (context) => {
+        const { canvas, step, userEvent } = context;
+        const attributes = await seeAttributesTab(context);
+        await step('Save: "Attributes updated." shows', async () => {
+            await expect(canvas.queryByRole("status")).not.toBeInTheDocument();
+            await userEvent.click(within(attributes).getByRole("button", { name: "Save" }));
+            await expect(await canvas.findByRole("status")).toHaveTextContent(/^\s*Attributes updated\.\s*$/);
+        });
+    },
+};
+
 /** A plain text dataset has editable attributes and permissions but no datatype converters. */
 export const TextWithoutConverters: Story = { args: { datasetId: textId } };
+
+/** Each tab of the text dataset's form: no converter. */
+export const OffersNoConverterForText: Story = {
+    args: { datasetId: textId },
+    play: offersEveryEditSection(false),
+};
 
 /** Uploading datasets reject edit-form loading until their upload finishes. */
 export const UploadInProgress: Story = {
@@ -211,6 +315,19 @@ export const UploadInProgress: Story = {
                 ),
             },
         },
+    },
+    play: async ({ canvas, step }) => {
+        await step("See why the form can't load, and no tabs, fields or buttons", async () => {
+            const alert = await canvas.findByRole("alert", {}, { timeout: 5000 });
+            await expect(alert).toHaveTextContent(uploadMessage);
+            await expect(canvas.getByRole("heading", { name: "Edit Dataset Attributes" })).toBeVisible();
+            await expect(canvas.queryByRole("tab")).not.toBeInTheDocument();
+            await expect(canvas.queryByRole("tabpanel")).not.toBeInTheDocument();
+            await expect(canvas.queryByRole("textbox")).not.toBeInTheDocument();
+            await expect(canvas.queryByRole("button")).not.toBeInTheDocument();
+            await expect(canvas.queryByText("Assign Datatype")).not.toBeInTheDocument();
+            await expect(canvas.queryByText("Convert to Datatype")).not.toBeInTheDocument();
+        });
     },
 };
 
