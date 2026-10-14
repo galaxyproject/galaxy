@@ -33,6 +33,11 @@ Resolve manifest conflicts first, then regenerate the lock with the pinned uv
 version and review the dependency diff. Do not hand-edit the lock or run an
 unrelated broad upgrade in a source-move change.
 
+Sources live in `packages/<name>/src` and unit tests in
+`packages/<name>/tests`. Keep Python code in its owning distribution; shared
+fixture and frontend asset links remain. Repository-wide test support stays
+in `lib/galaxy_test`, with composed application tests under `test/`.
+
 ### Development profiles
 
 Every profile resolves from the single root workspace lock. Tooling-only
