@@ -4,16 +4,14 @@ on:
     paths:
       - '**'
       - '!client/**'
-      - '!lib/galaxy_test/selenium/**'
-      - '!packages/**'
+      - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/docs.yaml'
   pull_request:
     paths:
       - '**'
       - '!client/**'
-      - '!lib/galaxy_test/selenium/**'
-      - '!packages/**'
+      - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/docs.yaml'
 concurrency:
@@ -47,12 +45,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: .tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Install Python dependencies
         run: |
           uv venv .venv
           . .venv/bin/activate
-          uv pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
+          uv pip install -r requirements.txt -r packages/app/src/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
       - name: Add Google Analytics to doc/source/conf.py
         run: |
           sed -i -e "/html_theme_options = {/a\
