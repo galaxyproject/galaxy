@@ -72,7 +72,6 @@ from galaxy.job_execution.protection import (
     ProtectionDestination,
     ProtectionError,
     ProtectionPlan,
-    RecryptorSettings,
 )
 from galaxy.job_execution.setup import (
     ensure_configs_directory,
@@ -1545,32 +1544,14 @@ class MinimalJobWrapper(HasResourceParameters):
         return path
 
     def _protection_destination(self) -> ProtectionDestination:
-        recryptor_url = self.get_destination_configuration("crypt4gh_recryptor_url")
-        recryptor = None
-        if recryptor_url:
-            recryptor = RecryptorSettings(
-                url=recryptor_url,
-                timeout=float(self.get_destination_configuration("crypt4gh_recryptor_timeout", 30)),
-                ca_cert=self.get_destination_configuration("crypt4gh_recryptor_ca_cert"),
-                client_cert=self.get_destination_configuration("crypt4gh_recryptor_client_cert"),
-                client_key=self.get_destination_configuration("crypt4gh_recryptor_client_key"),
-                verbose_errors=util.asbool(
-                    self.get_destination_configuration("crypt4gh_recryptor_verbose_errors", False)
-                ),
-            )
         is_pulsar = self._runs_on_pulsar()
-        return ProtectionDestination(
+        return ProtectionDestination.from_params(
+            self.job_destination.params,
             metadata_strategy=self.metadata_strategy or self.app.config.metadata_strategy,
             # Like the job handler: tools with parallelism are split into tasks, except on Pulsar.
             has_tasks=bool(self.can_split()) and not is_pulsar,
             is_pulsar=is_pulsar,
-            remote_metadata=util.asbool(self.job_destination.params.get("remote_metadata", False)),
-            rewrite_parameters=util.asbool(self.job_destination.params.get("rewrite_parameters", False)),
-            recryptor=recryptor,
             walltime=self.app.job_config.limits.walltime_delta,
-            live_tool_output_reporting=util.asbool(
-                self.job_destination.params.get("live_tool_output_reporting", False)
-            ),
         )
 
     def _runs_on_pulsar(self) -> bool:
