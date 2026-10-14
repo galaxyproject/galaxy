@@ -2,7 +2,7 @@
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BCard, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
@@ -18,6 +18,7 @@ import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
@@ -395,11 +396,12 @@ watch(operationMessage, () => {
                 <table class="grid-table">
                     <thead>
                         <th v-if="!!gridConfig.batch">
-                            <BFormCheckbox
+                            <GCheckbox
                                 class="m-2"
-                                :checked="selectedAll"
+                                aria-label="Select all for bulk actions"
+                                :model-value="selectedAll"
                                 :indeterminate="selectedIndeterminate"
-                                @change="onSelectAll" />
+                                @update:model-value="onSelectAll" />
                         </th>
                         <th
                             v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
@@ -429,11 +431,12 @@ watch(operationMessage, () => {
                     <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">
                         <tr :class="{ 'grid-dark-row': rowIndex % 2 }">
                             <td v-if="!!gridConfig.batch">
-                                <BFormCheckbox
-                                    :checked="selected.has(rowData)"
+                                <GCheckbox
+                                    :model-value="selected.has(rowData)"
                                     class="m-2 cursor-pointer"
+                                    aria-label="Select for bulk actions"
                                     data-description="grid selected"
-                                    @change="onSelect(rowData)" />
+                                    @update:model-value="onSelect(rowData)" />
                             </td>
                             <td
                                 v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
