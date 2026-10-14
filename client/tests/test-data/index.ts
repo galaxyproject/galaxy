@@ -1,4 +1,4 @@
-import type { AnonymousUser, HistorySummary, RegisteredUser } from "@/api";
+import type { AnonymousUser, HistorySummary, HistorySummaryExtended, RegisteredUser } from "@/api";
 
 export function getFakeRegisteredUser(data: Partial<RegisteredUser> = {}): RegisteredUser {
     return {
@@ -41,6 +41,16 @@ export function getFakeHistorySummary(data: Partial<HistorySummary> = {}): Histo
         tags: [],
         update_time: "2026-01-01T00:00:00",
         url: "/api/histories/fake_history_id",
+        ...data,
+    };
+}
+
+export function getFakeHistorySummaryExtended(data: Partial<HistorySummaryExtended> = {}): HistorySummaryExtended {
+    return {
+        ...getFakeHistorySummary(),
+        user_id: "fake_user_id",
+        size: 0,
+        contents_active: { active: 0, deleted: 0, hidden: 0 },
         ...data,
     };
 }
