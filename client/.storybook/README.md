@@ -21,7 +21,8 @@ keeps the `region` rule disabled for isolated components; full-page stories may
 explicitly enable it. AAA rules are not enabled globally.
 
 Legacy violations are marked with `parameters: { a11y: { test: "todo" } }`
-in the affected story, with a comment naming the observed rule. Remove each
+in the affected story, with a comment naming the observed rule. The initial
+[story-by-story audit](A11Y_AUDIT.md) records the exceptions. Remove each
 exception after fixing the component and rerunning its stories. `todo` still
 runs axe and shows warnings in Storybook, but **does not report violations or
 fail the CLI/CI run**. Avoid `off`, `manual: true`, broad DOM exclusions, and

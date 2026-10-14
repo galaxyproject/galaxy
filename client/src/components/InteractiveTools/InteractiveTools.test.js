@@ -113,6 +113,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
                 return HttpResponse.json({ status: "ok", message: "ok" });
             }),
         );
+        expect(wrapper.get(`#link-${toolId}`).text()).toContain(firstTool.name);
         await wrapper.get(`#stop-${toolId}`).trigger("click");
         await flushPromises();
 
@@ -134,6 +135,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         );
 
         // Try to stop the tool
+        expect(wrapper.get(`#link-${toolId}`).text()).toContain(firstTool.name);
         await wrapper.get(`#stop-${toolId}`).trigger("click");
         await flushPromises();
 
