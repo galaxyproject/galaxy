@@ -24,8 +24,8 @@ const JOBS = [
     { id: "job2", state: "queued", tool_id: "cat2", update_time: "2026-01-01T00:00:00" },
 ];
 
-async function mountJobsList(attachTo?: HTMLElement) {
-    vi.mocked(jobsProvider).mockResolvedValue(JOBS);
+async function mountJobsList(attachTo?: HTMLElement, jobs: object[] = JOBS) {
+    vi.mocked(jobsProvider).mockResolvedValue(jobs);
     vi.mocked(deleteJob).mockResolvedValue(true);
     const wrapper = mount(JobsList as object, {
         attachTo,
@@ -75,6 +75,78 @@ describe("JobsList", () => {
         expect(wrapper.find("#stop-message").exists()).toBe(false);
     });
 
+    it("selects and stops every unfinished job through the select-all box", async () => {
+        const wrapper = await mountJobsList();
+        vi.mocked(deleteJob).mockClear();
+        const selectAll = wrapper.find('.jobs-table thead input[type="checkbox"]');
+        const rows = wrapper.findAll('.jobs-table tbody input[type="checkbox"]');
+        expect(selectAll.attributes("aria-label")).toBe("Select all jobs");
+
+        await selectAll.setValue(true);
+        expect(rows.map((row) => (row.element as HTMLInputElement).checked)).toEqual([true, true]);
+        expect(selectAll.element).toHaveProperty("checked", true);
+        expect(selectAll.element).toHaveProperty("indeterminate", false);
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        await wrapper.find("#stop-message").element.closest("form")!.dispatchEvent(new Event("submit"));
+        await flushPromises();
+        expect(deleteJob).toHaveBeenCalledTimes(2);
+        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
+        expect(deleteJob).toHaveBeenCalledWith("job2", "maintenance");
+    });
+
+    it("clears every job through the select-all box", async () => {
+        const wrapper = await mountJobsList();
+        const selectAll = wrapper.find('.jobs-table thead input[type="checkbox"]');
+        const rows = wrapper.findAll('.jobs-table tbody input[type="checkbox"]');
+
+        await selectAll.setValue(true);
+        expect(rows.map((row) => (row.element as HTMLInputElement).checked)).toEqual([true, true]);
+
+        await selectAll.setValue(false);
+        expect(rows.map((row) => (row.element as HTMLInputElement).checked)).toEqual([false, false]);
+        expect(selectAll.element).toHaveProperty("checked", false);
+        expect(wrapper.find("#stop-message").exists()).toBe(false);
+    });
+
+    it("drops selected jobs that a refresh no longer lists", async () => {
+        const wrapper = await mountJobsList();
+        vi.mocked(deleteJob).mockClear();
+        await wrapper.find('.jobs-table thead input[type="checkbox"]').setValue(true);
+
+        vi.mocked(jobsProvider).mockResolvedValueOnce([JOBS[0]]);
+        await wrapper.find('form[name="jobs"]').trigger("submit");
+        await flushPromises();
+
+        const rows = wrapper.findAll('.jobs-table tbody input[type="checkbox"]');
+        expect(rows.map((row) => (row.element as HTMLInputElement).checked)).toEqual([true]);
+        const selectAll = wrapper.find('.jobs-table thead input[type="checkbox"]');
+        expect(selectAll.element).toHaveProperty("checked", true);
+        expect(selectAll.element).toHaveProperty("indeterminate", false);
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        await wrapper.find("#stop-message").element.closest("form")!.dispatchEvent(new Event("submit"));
+        await flushPromises();
+        expect(deleteJob).toHaveBeenCalledTimes(1);
+        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
+    });
+
+    it("marks the select-all box as partial when a refresh adds jobs", async () => {
+        const wrapper = await mountJobsList();
+        await wrapper.find('.jobs-table thead input[type="checkbox"]').setValue(true);
+
+        const newJob = { id: "job3", state: "new", tool_id: "cat3", update_time: "2026-01-01T00:00:00" };
+        vi.mocked(jobsProvider).mockResolvedValueOnce([...JOBS, newJob]);
+        await wrapper.find('form[name="jobs"]').trigger("submit");
+        await flushPromises();
+
+        const rows = wrapper.findAll('.jobs-table tbody input[type="checkbox"]');
+        expect(rows).toHaveLength(3);
+        const selectAll = wrapper.find('.jobs-table thead input[type="checkbox"]');
+        expect(selectAll.element).toHaveProperty("checked", false);
+        expect(selectAll.element).toHaveProperty("indeterminate", true);
+    });
+
     it("reloads every unfinished job when the time cutoff is switched off", async () => {
         const wrapper = await mountJobsList();
         const toggle = wrapper.find("#show-all-running");
@@ -94,6 +166,17 @@ describe("JobsList", () => {
 
         expect(wrapper.find("#stop-message").exists()).toBe(true);
         expect(wrapper.find(".g-table-details-row").exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it("keeps the select-all box unticked while no job is unfinished", async () => {
+        const finished = { id: "job3", state: "ok", tool_id: "cat3", update_time: "2026-01-01T00:00:00" };
+        const wrapper = await mountJobsList(document.body, [finished]);
+        const selectAll = wrapper.find('.jobs-table thead input[type="checkbox"]');
+
+        await selectAll.trigger("click");
+        expect(selectAll.element).toHaveProperty("checked", false);
+        expect(selectAll.attributes("disabled")).toBeDefined();
         wrapper.unmount();
     });
 });

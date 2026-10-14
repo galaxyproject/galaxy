@@ -122,7 +122,6 @@
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
         <JobsTable
-            v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
             :table-caption="runningTableCaption"
@@ -137,6 +136,7 @@
                 <GCheckbox
                     v-model="allSelected"
                     aria-label="Select all jobs"
+                    :disabled="!unfinishedJobs.length"
                     :indeterminate="indeterminate"
                     @update:model-value="toggleAll" />
             </template>
@@ -240,7 +240,6 @@ export default {
             jobs: [],
             finishedJobs: [],
             unfinishedJobs: [],
-            jobsItemsModel: [],
             finishedJobFields: [...commonJobFields, { key: "update_time", label: "Finished", sortable: true }],
             unfinishedJobFields: [
                 { key: "selected", label: "" },
@@ -297,7 +296,7 @@ export default {
             if (newVal.length === 0) {
                 this.indeterminate = false;
                 this.allSelected = false;
-            } else if (newVal.length === this.jobsItemsModel.length) {
+            } else if (newVal.length === this.unfinishedJobs.length) {
                 this.indeterminate = false;
                 this.allSelected = true;
             } else {
@@ -317,6 +316,9 @@ export default {
             });
             this.unfinishedJobs = unfinishedJobs;
             this.finishedJobs = finishedJobs;
+            // Always reassign so the select-all state is recomputed against the new list.
+            const unfinishedIds = unfinishedJobs.map((job) => job.id);
+            this.selectedStopJobIds = this.selectedStopJobIds.filter((id) => unfinishedIds.includes(id));
         },
     },
     created() {
@@ -428,7 +430,7 @@ export default {
                 : this.selectedStopJobIds.filter((id) => id !== jobId);
         },
         toggleAll(checked) {
-            this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
+            this.selectedStopJobIds = checked ? this.unfinishedJobs.map((job) => job.id) : [];
         },
     },
 };
