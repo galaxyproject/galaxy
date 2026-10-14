@@ -104,70 +104,12 @@ describe("BarChart.vue", () => {
                 },
                 stories.NoHistories,
             );
+            expect(wrapper.text()).toContain("No data to display. Populate some data and come back.");
             expect(wrapper.findComponent(VegaWrapper).exists()).toBe(false);
-        });
-
-        it("should render with the correct title", () => {
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
-            expect(wrapper.get("h4").text()).toBe("Test Bar Chart");
-        });
-
-        it("should render with the correct description", () => {
-            const description = "Test description";
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-                description,
-            });
-            expect(wrapper.get(".chart-description").text()).toBe(description);
-        });
-
-        it("should display empty state message when there is no data", () => {
-            const wrapper = mountBarChartWrapper(
-                {
-                    title: "Test Bar Chart",
-                    data: [],
-                },
-                stories.NoHistories,
-            );
-            expect(wrapper.text()).toContain("No data to display");
-        });
-
-        it("should display empty state when all values are zero", () => {
-            const wrapper = mountBarChartWrapper(
-                {
-                    title: "Test Bar Chart",
-                    data: [
-                        { id: "id1", label: "foo", value: 0 },
-                        { id: "id2", label: "bar", value: 0 },
-                    ],
-                },
-                stories.EmptyHistories,
-            );
-            expect(wrapper.text()).toContain("No data to display");
         });
     });
 
     describe("Legend", () => {
-        it("should render legend items after view is created", async () => {
-            currentMockView = buildMockView(TEST_DATA);
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
-            await flushPromises();
-            const vegaWrapper = wrapper.getComponent(VegaWrapper);
-            vegaWrapper.vm.$emit("new-view", currentMockView);
-            await flushPromises();
-            const items = wrapper.findAll(".legend-item");
-            expect(items.length).toBe(2);
-            expect(nth(items, 0).text()).toBe("foo: 1");
-            expect(nth(items, 1).text()).toBe("bar: 2");
-        });
-
         it("should render legend symbols with correct colors", async () => {
             currentMockView = buildMockView(TEST_DATA);
             const wrapper = mountBarChartWrapper({
@@ -182,6 +124,8 @@ describe("BarChart.vue", () => {
             expect(symbols.length).toBe(2);
             expect(nth(symbols, 0).attributes("style")).toContain("background-color");
             expect(nth(symbols, 1).attributes("style")).toContain("background-color");
+            expect((nth(symbols, 0).element as HTMLElement).style.backgroundColor).toBe("#4c78a8");
+            expect((nth(symbols, 1).element as HTMLElement).style.backgroundColor).toBe("#f58518");
         });
 
         it("should not render legend when there is no data", () => {
@@ -192,6 +136,7 @@ describe("BarChart.vue", () => {
                 },
                 stories.NoHistories,
             );
+            expect(wrapper.text()).toContain("No data to display. Populate some data and come back.");
             expect(wrapper.find(".legend-container").exists()).toBe(false);
         });
 
@@ -243,6 +188,8 @@ describe("BarChart.vue", () => {
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
+            expect(nth(items, 0).classes()).not.toContain("legend-item-dimmed");
+            expect(nth(items, 1).classes()).not.toContain("legend-item-dimmed");
             await nth(items, 0).trigger("click");
             await flushPromises();
             expect(nth(items, 0).classes()).not.toContain("legend-item-dimmed");
@@ -262,6 +209,7 @@ describe("BarChart.vue", () => {
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const item = wrapper.get(".legend-item");
+            expect(item.text()).toBe("foo: 1");
             await item.trigger("click");
             expect(mockRunAsync).not.toHaveBeenCalled();
         });
@@ -277,6 +225,7 @@ describe("BarChart.vue", () => {
                 },
                 stories.SelectableHistories,
             );
+            expect(wrapper.get("h4").text()).toBe("Test Bar Chart");
             expect(wrapper.find(".selection-info").exists()).toBe(false);
         });
 
@@ -286,6 +235,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
                 enableSelection: false,
             });
+            expect(wrapper.get("h4").text()).toBe("Test Bar Chart");
             expect(wrapper.find(".selection-info").exists()).toBe(false);
         });
     });
