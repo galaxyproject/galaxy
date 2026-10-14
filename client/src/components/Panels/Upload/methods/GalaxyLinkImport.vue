@@ -3,6 +3,7 @@ import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -22,7 +23,11 @@ const COULD_NOT_IMPORT =
 const { waitForTask, stopWaitingForTask, isRunning, isCompleted, hasFailed, failureReason, requestHasFailed } =
     useTaskMonitor();
 
+const { uploadBlockReason } = useTargetHistoryUploadState(computed(() => props.targetHistoryId));
+
 const link = ref("");
+// The history the last import went to, which stays the same if the target is changed afterwards.
+const importedHistoryId = ref<string>();
 const isStarting = ref(false);
 const startError = ref<string>();
 const trimmedLink = computed(() => link.value.trim());
@@ -39,15 +44,17 @@ watch(isCompleted, (completed) => {
 async function onImport() {
     isStarting.value = true;
     startError.value = undefined;
+    const historyId = props.targetHistoryId;
     try {
         const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents_from_store_async", {
-            params: { path: { history_id: props.targetHistoryId } },
+            params: { path: { history_id: historyId } },
             body: { store_content_uri: trimmedLink.value, model_store_format: "tar.gz", discarded_data: "forbid" },
         });
         if (error) {
             startError.value = errorMessageAsString(error);
             return;
         }
+        importedHistoryId.value = historyId;
         waitForTask(data.id, 3000);
     } catch (e) {
         startError.value = errorMessageAsString(e, COULD_NOT_IMPORT);
@@ -76,7 +83,7 @@ onUnmounted(stopWaitingForTask);
         <GButton
             color="blue"
             data-description="galaxy link import"
-            :disabled="!isWebLink || isImporting"
+            :disabled="!isWebLink || isImporting || Boolean(uploadBlockReason)"
             @click="onImport">
             Import
         </GButton>
@@ -92,9 +99,9 @@ onUnmounted(stopWaitingForTask);
             Galaxy could not check how the import is going. It may still finish, so look at the history before trying
             again.
         </GAlert>
-        <GAlert v-else-if="isCompleted" variant="success" class="mt-3" show>
+        <GAlert v-else-if="isCompleted && importedHistoryId" variant="success" class="mt-3" show>
             Done! The items were imported into
-            <SwitchToHistoryLink :history-id="props.targetHistoryId" :inline="true" :thin="false" />
+            <SwitchToHistoryLink :history-id="importedHistoryId" :inline="true" :thin="false" />
         </GAlert>
     </div>
 </template>

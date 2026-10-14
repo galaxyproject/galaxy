@@ -5,6 +5,7 @@ import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import GalaxyLinkImport from "./GalaxyLinkImport.vue";
 
@@ -27,15 +28,23 @@ function importEndsIn(state: string, reason = "") {
     return bodies;
 }
 
-async function importLink(link: string) {
+async function enterLink(link: string, targetHistory?: { deleted?: boolean; archived?: boolean }) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
+    if (targetHistory) {
+        useHistoryStore().setHistories([{ id: "hist_1", name: "Target", ...targetHistory } as never]);
+    }
     const localVue = getLocalVue();
     const wrapper = mount(GalaxyLinkImport as object, {
         props: { method: { id: "galaxy-link" }, targetHistoryId: "hist_1" },
         global: { ...withPlugins(localVue, pinia), stubs: { ...localVue.stubs, SwitchToHistoryLink: true } },
     });
     await wrapper.find('[data-description="galaxy link input"]').setValue(link);
+    return wrapper;
+}
+
+async function importLink(link: string) {
+    const wrapper = await enterLink(link);
     await wrapper.find('[data-description="galaxy link import"]').trigger("click");
     return wrapper;
 }
@@ -73,5 +82,23 @@ describe("GalaxyLinkImport", () => {
         const wrapper = await importLink("https://usegalaxy.org/api/short_term_storage/abc");
         await vi.waitFor(() => expect(wrapper.text()).toContain("could not check how the import is going"));
         expect(wrapper.text()).not.toContain("may have expired");
+    });
+
+    it("does not import into a deleted or archived history", async () => {
+        for (const targetHistory of [{ deleted: true }, { archived: true }, {}]) {
+            const wrapper = await enterLink("https://usegalaxy.org/api/short_term_storage/abc", targetHistory);
+            const blocked = Boolean(targetHistory.deleted || targetHistory.archived);
+            const button = wrapper.find('[data-description="galaxy link import"]');
+            expect(button.attributes("aria-disabled") === "true").toBe(blocked);
+            wrapper.unmount();
+        }
+    });
+
+    it("links the history the items went to, even after the target changes", async () => {
+        importEndsIn("SUCCESS");
+        const wrapper = await importLink("https://usegalaxy.org/api/short_term_storage/abc");
+        await vi.waitFor(() => expect(wrapper.text()).toContain("Done!"));
+        await wrapper.setProps({ targetHistoryId: "hist_2" } as never);
+        expect(wrapper.findComponent({ name: "SwitchToHistoryLink" }).props("historyId")).toBe("hist_1");
     });
 });
