@@ -66,7 +66,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: GALAXY_TEST_USE_LEGACY_TOOL_API="${{ matrix.use-legacy-api }}" ./run_tests.sh --coverage --framework-tools
+        run: GALAXY_TEST_USE_LEGACY_TOOL_API="${{ matrix.use-legacy-api }}" ./run_tests.sh --coverage --framework-tools -- -n 4
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
         with:

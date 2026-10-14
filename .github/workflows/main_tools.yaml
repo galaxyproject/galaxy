@@ -57,7 +57,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --coverage --main_tools
+        run: ./run_tests.sh --coverage --main_tools -- -n 4
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
         with:
