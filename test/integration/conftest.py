@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import threading
+from collections import defaultdict
 
 import pytest
 from beaker.cache import CacheManager
@@ -21,10 +22,7 @@ from galaxy_test.conftest import pytest_plugins  # noqa: F401
 from galaxy_test.conftest import (
     pytest_configure as _base_pytest_configure,
 )
-from galaxy_test.shard import (  # noqa: F401
-    pytest_collection_modifyitems,
-    pytest_report_collectionfinish,
-)
+from galaxy_test.shard import pytest_report_collectionfinish  # noqa: F401
 
 # Tests that share something outside their Galaxy instance -- a fixed host port, the AMQP
 # broker, the minikube cluster, the host's Docker image cache -- keyed by test file or class.
@@ -44,17 +42,50 @@ SHARED_RESOURCE_SCOPES = {
 }
 
 
+def shared_resource_scope(nodeid: str) -> str | None:
+    for prefix, scope in SHARED_RESOURCE_SCOPES.items():
+        if nodeid.startswith(f"{prefix}::"):
+            return scope
+    return None
+
+
 class SharedResourceScopeScheduling(LoadScopeScheduling):  # type: ignore[misc]  # pytest-xdist is untyped
     def _split_scope(self, nodeid: str) -> str:
-        for prefix, scope in SHARED_RESOURCE_SCOPES.items():
-            if nodeid.startswith(f"{prefix}::"):
-                return scope
-        return super()._split_scope(nodeid)
+        return shared_resource_scope(nodeid) or super()._split_scope(nodeid)
+
+
+def longest_scopes_first(items: list) -> list:
+    """Order items for --dist loadscope: the scopes with the most recorded work first.
+
+    Within a shared-resource scope, groups run in name order as they do in a serial run. Its tests
+    leave state behind for each other: test_containerized_jobs builds a mulled image that
+    test_container_resolvers expects to be absent from the Docker image cache.
+    """
+    durations = shard.load_durations()
+    scopes: dict[str, list] = defaultdict(list)
+    for item in items:
+        scopes[shared_resource_scope(item.nodeid) or shard.group_key(item)].append(item)
+
+    def seconds(scope_items: list) -> float:
+        group_keys = {shard.group_key(item) for item in scope_items}
+        return sum(durations.get(key, shard.DEFAULT_GROUP_SECONDS) for key in group_keys)
+
+    ordered = []
+    for _, scope_items in sorted(scopes.items(), key=lambda scope: (-seconds(scope[1]), scope[0])):
+        ordered.extend(sorted(scope_items, key=shard.group_key))
+    return ordered
 
 
 def pytest_configure(config):
     _base_pytest_configure(config)
     shard.pytest_configure(config)
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(config, items):
+    shard.pytest_collection_modifyitems(config, items)
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        items[:] = longest_scopes_first(items)
 
 
 @pytest.hookimpl(optionalhook=True)
