@@ -36,6 +36,7 @@ from galaxy.tools.runtime import (
     collection_to_runtime,
     setup_for_runtimeify,
 )
+from galaxy.workflow.modules import to_cwl
 
 
 @pytest.fixture
@@ -325,6 +326,39 @@ def test_adapt_dataset_deferred_input_has_location_and_no_path():
     assert result.class_ == "Directory"
     assert result.location == "https://example.org/data/folder"
     assert result.path is None
+
+
+@pytest.mark.parametrize("extension", ["directory", "zarr"])
+def test_to_cwl_directory_datatypes(extension):
+    # Tools run through /api/tools have no validated state and fall back to to_cwl.
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, extension)
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["class"] == "Directory"
+    assert properties["path"] == "/job/inputs/dataset_1_files"
+    assert properties["format"] == extension
+
+
+def test_to_cwl_zarr_store_in_a_recorded_wrapper_folder():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    hda.metadata.store_root = "wrapped.zarr"
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["path"] == "/job/inputs/dataset_1_files/wrapped.zarr"
+
+
+def test_to_cwl_file():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "txt")
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["class"] == "File"
+    assert properties["path"] == "/job/inputs/dataset_1.dat"
 
 
 def _hda(id: int, extension: str) -> HistoryDatasetAssociation:

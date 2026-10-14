@@ -36,11 +36,17 @@ class TestZarrStoreRootMetadataResetIntegration(IntegrationTestCase):
         for input_id in (dataset_id, copy_id):
             # Published wrappers read $input.extra_files_path/$input.metadata.store_root.
             assert ".zgroup" in self._run_and_read(history_id, "zarr_store_root_compat", input_id)
-            # YAML tools get the store's folder as the path of a class: Directory input.
-            assert ".zgroup" in self._request_and_read(history_id, "directory_or_file_user_defined", input_id)
+            # YAML tools get the store's folder as the path of a class: Directory input,
+            # through the tool request API and through /api/tools alike.
+            for listing in (
+                self._request_and_read(history_id, "directory_or_file_user_defined", input_id),
+                self._run_and_read(history_id, "directory_or_file_user_defined", input_id, input_name="input1"),
+            ):
+                assert ".zgroup" in listing
+                assert "class=Directory" in listing
 
-    def _run_and_read(self, history_id: str, tool_id: str, dataset_id: str) -> list[str]:
-        response = self.dataset_populator.run_tool(tool_id, {"input": {"src": "hda", "id": dataset_id}}, history_id)
+    def _run_and_read(self, history_id: str, tool_id: str, dataset_id: str, input_name: str = "input") -> list[str]:
+        response = self.dataset_populator.run_tool(tool_id, {input_name: {"src": "hda", "id": dataset_id}}, history_id)
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
         content = self.dataset_populator.get_history_dataset_content(
             history_id, dataset_id=response["outputs"][0]["id"]
