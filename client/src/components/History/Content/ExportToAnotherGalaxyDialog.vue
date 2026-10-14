@@ -42,6 +42,8 @@ const { trackDownloadRequestWithData } = useDownloadTracker();
 // This dialog lives as long as the page. Each export has its own monitor, so it is followed to its end even
 // after the dialog closes, and reopening an item shows its export again.
 const exports = shallowReactive(new Map<string, Export>());
+// Items whose export request has not come back yet, so reopening one does not start a second export.
+const starting = new Set<string>();
 
 const startError = ref<string>();
 
@@ -125,6 +127,9 @@ async function prepareExport(exportable: ExportableItem) {
 
 async function startExport(exportable: ExportableItem) {
     const key = keyOf(exportable);
+    if (starting.has(key)) {
+        return;
+    }
     const existing = exports.get(key);
     if (existing && !existing.monitor.hasFailed.value && Date.now() - existing.startedAt < REUSE_FOR_MS) {
         if (existing.monitor.requestHasFailed.value) {
@@ -135,6 +140,7 @@ async function startExport(exportable: ExportableItem) {
     existing?.monitor.stopWaitingForTask();
     exports.delete(key);
     let data;
+    starting.add(key);
     try {
         data = await prepareExport(exportable);
     } catch (e) {
@@ -142,6 +148,8 @@ async function startExport(exportable: ExportableItem) {
             startError.value = errorMessageAsString(e);
         }
         return;
+    } finally {
+        starting.delete(key);
     }
     const tracked: MonitoringData = {
         taskId: data.storage_request_id,

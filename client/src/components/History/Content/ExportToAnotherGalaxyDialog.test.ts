@@ -104,6 +104,29 @@ describe("ExportToAnotherGalaxyDialog", () => {
         expect(exportUrls).toHaveLength(1);
     });
 
+    it("does not start a second export when the item is reopened while the first is starting", async () => {
+        let answer: () => void = () => {};
+        const answered = new Promise<void>((resolve) => (answer = resolve));
+        exportEndsIn("SUCCESS");
+        server.use(
+            http.post(PREPARE, async ({ request, response }) => {
+                exportUrls.push(request.url);
+                await answered;
+                return response(200).json({ storage_request_id: "req1", task: { id: "task1" } } as never);
+            }),
+        );
+        const { wrapper, store } = mountDialog();
+        store.open(dataset("d1"));
+        await vi.waitFor(() => expect(exportUrls).toHaveLength(1));
+        store.close();
+        await flushPromises();
+        store.open(dataset("d1"));
+        await flushPromises();
+        answer();
+        await vi.waitFor(() => expect(linkInput(wrapper).exists()).toBe(true));
+        expect(exportUrls).toHaveLength(1);
+    });
+
     it("starts a fresh export after a failed one, without the old error", async () => {
         exportEndsIn("FAILURE", "Unknown error: the file is missing");
         const { wrapper, store } = mountDialog();
