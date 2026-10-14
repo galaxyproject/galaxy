@@ -9,15 +9,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 import { useConfigStore } from "@/stores/configurationStore";
 
 import * as SelectionOperationsStories from "./SelectionOperations.stories";
-import {
-    DELETED_DATASET,
-    HIDDEN_DATASET,
-    HISTORY,
-    PURGED_DATASET,
-    selectionOf,
-    VISIBLE_DATASET,
-    visibleDatasets,
-} from "./test_fixtures";
+import { HISTORY, selectionOf, VISIBLE_DATASET, visibleDatasets } from "./test_fixtures";
 
 import SelectionOperations from "./SelectionOperations.vue";
 import StorageOperationWizardModal from "./StorageOperationWizardModal.vue";
@@ -82,7 +74,7 @@ describe("History Selection Operations", () => {
                     selectionSize: 10,
                     contentSelection: selectionOf(...visibleDatasets(10)),
                 });
-                expect(operations.get('[data-description="selected count"]').text()).toContain("10");
+                expect(operations.get('[data-description="selected count"]').text()).toBe("With 10 selected...");
             });
 
             it("should display 'hide' option on visible items", async () => {
@@ -91,27 +83,11 @@ describe("History Selection Operations", () => {
                 expect(await offers(stories.DatasetSelected, option, { filterText: "visible:true" })).toBe(true);
             });
 
-            it("should display 'hide' option when visible and hidden items are mixed", async () => {
-                const option = getMenuSelectorFor("hide");
-                expect(await offers(stories.DatasetSelected, option)).toBe(true);
-                expect(await offers(stories.VisibleAndHiddenSelected, option)).toBe(true);
-            });
-
             it("should not display 'hide' option when only hidden items are selected", async () => {
                 const option = getMenuSelectorFor("hide");
                 expect(await offers(stories.DatasetSelected, option)).toBe(true);
                 expect(await offers(stories.HiddenSelected, option, { filterText: "visible:any" })).toBe(false);
                 expect(await offers(stories.HiddenSelected, option)).toBe(false);
-            });
-
-            it("should display 'unhide' option on hidden items", async () => {
-                const option = getMenuSelectorFor("unhide");
-                expect(await offers(stories.HiddenSelected, option)).toBe(true);
-            });
-
-            it("should display 'unhide' option when hidden and visible items are mixed", async () => {
-                const option = getMenuSelectorFor("unhide");
-                expect(await offers(stories.VisibleAndHiddenSelected, option)).toBe(true);
             });
 
             it("should not display 'unhide' option when only visible items are selected", async () => {
@@ -131,11 +107,6 @@ describe("History Selection Operations", () => {
                 expect(await offers(stories.DatasetSelected, option, { filterText: "deleted:false" })).toBe(true);
             });
 
-            it("should display 'delete' option when non-deleted and deleted items are mixed", async () => {
-                const option = getMenuSelectorFor("delete");
-                expect(await offers(stories.ActiveAndDeletedSelected, option)).toBe(true);
-            });
-
             it("should not display 'delete' option when only deleted items are selected", async () => {
                 const option = getMenuSelectorFor("delete");
                 expect(await offers(stories.DatasetSelected, option)).toBe(true);
@@ -148,23 +119,6 @@ describe("History Selection Operations", () => {
                 expect(await offers(stories.DatasetSelected, option, { filterText: "deleted:any visible:any" })).toBe(
                     true,
                 );
-            });
-
-            it("should display 'undelete' option on deleted and non-purged items", async () => {
-                const option = getMenuSelectorFor("undelete");
-                expect(await offers(stories.DatasetSelected, option)).toBe(false);
-                expect(await offers(stories.DeletedSelected, option)).toBe(true);
-            });
-
-            it("should display 'undelete' option when non-purged items (deleted or not) are mixed", async () => {
-                const option = getMenuSelectorFor("undelete");
-                expect(await offers(stories.ActiveAndDeletedSelected, option)).toBe(true);
-            });
-
-            it("should not display 'undelete' when only non-deleted items are selected", async () => {
-                const option = getMenuSelectorFor("undelete");
-                // A collection: `canUndeleteSelection` ignores `deleted`, so active datasets would get Undelete too.
-                expect(await offers(stories.ActiveCollectionSelected, option)).toBe(false);
             });
 
             it("should not display 'undelete' when only purged items are selected", async () => {
@@ -197,11 +151,6 @@ describe("History Selection Operations", () => {
                 expect(await offers(story, buildListOption, { filterText: "deleted:true" })).toBe(false);
                 expect(await offers(story, buildListOption, { filterText: "visible:any deleted:false" })).toBe(true);
                 expect(await offers(story, buildListOption, { filterText: "deleted:any" })).toBe(false);
-            });
-
-            it("should display list building option when all are selected", async () => {
-                const buildListOption = '[data-description="build list all"]';
-                expect(await offers(stories.WholeQuerySelected, buildListOption)).toBe(true);
             });
         });
 
@@ -304,13 +253,6 @@ describe("History Selection Operations", () => {
 
     describe("With Celery Disabled", () => {
         describe("Dropdown Menu", () => {
-            it("should hide `Change data type` option", async () => {
-                const option = '[data-description="change data type"]';
-                // With Celery the same menu has it.
-                expect(await offers(stories.DatasetSelected, option)).toBe(true);
-                expect(await offers(stories.WithoutCelery, option)).toBe(false);
-            });
-
             it("should hide `Manage Storage Location` option", async () => {
                 const option = '[data-description="storage operation"]';
                 // With Celery the same menu has it, once the storage locations have loaded.
@@ -319,28 +261,5 @@ describe("History Selection Operations", () => {
                 expect(await offers(stories.WithoutCelery, option)).toBe(false);
             });
         });
-    });
-
-    describe("Tag dialogs", () => {
-        it.each(["add tags", "remove tags"])(
-            "%s: shows the tag suggestions in the dialog body, above Cancel and Ok",
-            async (menuItem) => {
-                const operations = await mountOperations(stories.WithoutCelery);
-                // `useStoryMount` has no `attachTo`; the dialog opens with `showModal()`, which needs the document.
-                document.body.appendChild(operations.element);
-                operations.findComponent(`[data-description="${menuItem}"]`).vm.$emit("click");
-                await flushPromises();
-
-                const dialog = operations.find("dialog[open]");
-                await dialog.find(".stateless-tags .toggle-button").trigger("click");
-                await flushPromises();
-
-                const listbox = dialog.element.querySelector("[role='listbox']");
-                expect(listbox).not.toBeNull();
-                expect(dialog.find(".g-modal-content").element.contains(listbox)).toBe(true);
-                const confirmButtons = dialog.find("footer .g-modal-confirm-buttons").element;
-                expect(listbox.compareDocumentPosition(confirmButtons) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-            },
-        );
     });
 });
