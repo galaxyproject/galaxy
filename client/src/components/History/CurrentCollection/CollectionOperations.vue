@@ -5,6 +5,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import type { HDCASummary } from "@/api";
+import { getContentItemState } from "@/components/History/Content/model/states";
 import { getAppRoot } from "@/onload/loadConfig";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -23,14 +24,10 @@ const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
 const disableDownload = computed(() => props.dsc.populated_state !== "ok");
-// A hidden or deleted collection would be imported out of sight on the other Galaxy, and elements that are not
-// ok yet, like datasets, have no finished data to move.
+// A hidden or deleted collection would be imported out of sight on the other Galaxy, and, like a dataset, one that
+// the history does not show as ok yet has no finished data to move.
 const showExport = computed(
-    () =>
-        !disableDownload.value &&
-        props.dsc.visible &&
-        !props.dsc.deleted &&
-        Object.entries(props.dsc.elements_states ?? {}).every(([state, count]) => state === "ok" || !count),
+    () => !disableDownload.value && props.dsc.visible && !props.dsc.deleted && getContentItemState(props.dsc) === "ok",
 );
 
 const hasSampleSheet = computed(() => {
