@@ -668,7 +668,8 @@ class CommonConfigurationMixin:
     def _ensure_directory(self, path):
         if path not in [None, False] and not os.path.isdir(path):
             try:
-                os.makedirs(path)
+                # Another process starting with the same configuration may create it first.
+                os.makedirs(path, exist_ok=True)
             except Exception as e:
                 raise ConfigurationError(f"Unable to create missing directory: {path}\n{unicodify(e)}")
 
