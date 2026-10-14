@@ -17,15 +17,21 @@ so it can run on Pulsar and other remote compute hosts.
 
 import json
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import Final
+from typing import (
+    Any,
+    Final,
+)
 
 from pydantic import (
     BaseModel,
     Field,
 )
+
+from galaxy.util import asbool
 
 PROTECTED_DIRECTORY_NAME = "_protected"
 PLAN_FILENAME = "protection_plan.json"
@@ -42,6 +48,21 @@ class RecryptorSettings(BaseModel):
     client_key: str | None = None
     # Include the underlying errors, which may show the service's address, in messages users see.
     verbose_errors: bool = False
+
+    @classmethod
+    def from_params(cls, params: Mapping[str, Any]) -> "RecryptorSettings | None":
+        """Read the compute service of a job destination, ``None`` if it has none."""
+        url = params.get("crypt4gh_recryptor_url")
+        if not url:
+            return None
+        return cls(
+            url=url,
+            timeout=float(params.get("crypt4gh_recryptor_timeout", 30)),
+            ca_cert=params.get("crypt4gh_recryptor_ca_cert"),
+            client_cert=params.get("crypt4gh_recryptor_client_cert"),
+            client_key=params.get("crypt4gh_recryptor_client_key"),
+            verbose_errors=asbool(params.get("crypt4gh_recryptor_verbose_errors", False)),
+        )
 
 
 class ProtectedFile(BaseModel):
@@ -133,6 +154,28 @@ class ProtectionDestination:
     recryptor: RecryptorSettings | None
     walltime: timedelta | None = None
     live_tool_output_reporting: bool = False
+
+    @classmethod
+    def from_params(
+        cls,
+        params: Mapping[str, Any],
+        *,
+        metadata_strategy: str,
+        has_tasks: bool,
+        is_pulsar: bool,
+        walltime: timedelta | None,
+    ) -> "ProtectionDestination":
+        """Read the parameters of a job destination, along with what Galaxy decided for the job."""
+        return cls(
+            metadata_strategy=metadata_strategy,
+            has_tasks=has_tasks,
+            is_pulsar=is_pulsar,
+            remote_metadata=asbool(params.get("remote_metadata", False)),
+            rewrite_parameters=asbool(params.get("rewrite_parameters", False)),
+            recryptor=RecryptorSettings.from_params(params),
+            walltime=walltime,
+            live_tool_output_reporting=asbool(params.get("live_tool_output_reporting", False)),
+        )
 
     def check(self, outputs_in_job_directory: bool) -> None:
         problems = []
