@@ -1680,7 +1680,7 @@ upload_activity:
     paste_content_row_textarea: '[data-test-id="paste-content-textarea-${row}"]'
     row_remove_button: '[data-test-id="upload-row-${row}-remove"]'
     paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"]'
-    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + label'
+    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + .g-checkbox-label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
     target_history_change_link: '.target-history-banner .change-history-link'
     history_selector_modal: '.g-dialog'

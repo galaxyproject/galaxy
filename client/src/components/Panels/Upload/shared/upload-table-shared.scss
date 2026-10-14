@@ -63,12 +63,7 @@
 
 .options-header,
 .options-cell {
-    :deep(.custom-control) {
-        margin-right: 0;
-        margin-bottom: 0;
-    }
-
-    :deep(.custom-control-label) {
+    :deep(.g-checkbox-label) {
         white-space: nowrap;
     }
 }
