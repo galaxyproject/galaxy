@@ -1,8 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { composeStories } from "@storybook/vue3-vite";
 import { emittedArg } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { disposePinia, getActivePinia } from "pinia";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+
+import * as ChatInputStories from "./ChatInput.stories";
 
 import GButton from "../BaseComponents/GButton.vue";
 import ChatInput from "./ChatInput.vue";
@@ -14,17 +19,37 @@ vi.mock("@/stores/historyItemsStore", () => ({
     useHistoryItemsStore: () => ({ getHistoryItems: () => [] }),
 }));
 
+const stories = composeStories(ChatInputStories);
+const mountStory = useStoryMount();
+
 function mountInput(
     props: Partial<InstanceType<typeof ChatInput>["$props"]> = {},
     stubs: Record<string, boolean> = {
         LoadingSpan: true,
         MentionDropdown: true,
     },
+    live = false,
 ) {
+    const scenario = props.busy
+        ? stories.WaitingForAnswer
+        : props.disabled
+          ? stories.ConversationUnavailable
+          : props.value?.includes("\n")
+            ? stories.MultilineQuestion
+            : props.value?.trim()
+              ? stories.QuestionDraft
+              : stories.EmptyQuestion;
+    if (!live) {
+        const wrapper = mountStory(scenario, { props, global: { stubs } }).getComponent(ChatInput);
+        const pinia = getActivePinia();
+        onTestFinished(() => pinia && disposePinia(pinia));
+        return wrapper;
+    }
     return mount(ChatInput, {
         props: {
             value: "",
             busy: false,
+            ...scenario.args,
             ...props,
         },
         global: { stubs },
@@ -187,7 +212,7 @@ describe("ChatInput", () => {
         });
 
         it("grows when the value changes (typing / mention insert)", async () => {
-            const wrapper = mountInput({ value: "short" });
+            const wrapper = mountInput({ value: "short" }, undefined, true);
             const el = wrapper.get<HTMLTextAreaElement>("textarea").element;
 
             mockScrollHeight(el, 120);
@@ -198,7 +223,7 @@ describe("ChatInput", () => {
         });
 
         it("resets height to '' when value is cleared (e.g. after submit)", async () => {
-            const wrapper = mountInput({ value: "a\nb\nc\nd\ne" });
+            const wrapper = mountInput({ value: "a\nb\nc\nd\ne" }, undefined, true);
             const el = wrapper.get<HTMLTextAreaElement>("textarea").element;
 
             mockScrollHeight(el, 140);
