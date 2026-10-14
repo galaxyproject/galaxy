@@ -177,13 +177,20 @@ class AbstractTestCases:
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
         def _login_via_keycloak(
-            self, username, password, expected_codes=None, save_cookies=False, session=None, follow_callback=True
+            self,
+            username,
+            password,
+            expected_codes=None,
+            save_cookies=False,
+            session=None,
+            follow_callback=True,
+            next=None,
         ):
 
             if expected_codes is None:
                 expected_codes = [200, 404]
             session = session or requests.Session()
-            response = session.get(f"{self.url}authnz/{self.provider_name}/login")
+            response = session.get(f"{self.url}authnz/{self.provider_name}/login", params={"next": next})
             provider_url = response.json()["redirect_uri"]
             response = session.get(provider_url, verify=False)
             matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
@@ -210,6 +217,11 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
     provider_name = "keycloak"
 
+    @classmethod
+    def handle_galaxy_oidc_config_kwds(cls, config):
+        super().handle_galaxy_oidc_config_kwds(config)
+        config["allowed_login_redirect_hosts"] = "tools.example.org"
+
     def _get_keycloak_access_token(
         self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
     ):
@@ -233,6 +245,21 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = self._get("users/current")
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
+
+    def test_oidc_login_returns_to_allowed_destination(self):
+        # Link the identity first, so the logins below are repeat logins.
+        self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        for next, expected in [
+            ("/workflows/list", f"{self.url}workflows/list"),
+            ("https://tools.example.org/back?item=1", "https://tools.example.org/back?item=1"),
+            ("https://evil.example.com/", self.url),
+        ]:
+            session, response = self._login_via_keycloak(
+                KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False, next=next
+            )
+            response = session.get(response.headers["Location"], allow_redirects=False)
+            self._assert_status_code_is(response, 302)
+            assert parse.urljoin(self.url, response.headers["Location"]) == expected
 
     def test_oidc_login_username_sanitization(self):
         """Test that OIDC usernames with special characters are properly sanitized."""
@@ -483,9 +510,9 @@ class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakInteg
         sa_session = self._app.model.session
         assert sa_session.query(model.User).filter_by(email=f"{username}@galaxy.org").count() == 0
 
-    def _begin_confirmation(self, username):
+    def _begin_confirmation(self, username, next=None):
         session, response = self._login_via_keycloak(
-            username, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
+            username, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False, next=next
         )
         callback_url = response.headers["Location"]
         response = session.get(callback_url, allow_redirects=False)
@@ -538,6 +565,14 @@ class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakInteg
         assert extra_data is not None
         assert extra_data["access_token"]
         assert extra_data["refresh_token"]
+
+    def test_confirmation_returns_to_destination(self):
+        session, identifier = self._begin_confirmation("gxyuser_new_no_fixed", next="/workflows/list")
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["redirect_uri"] == "/workflows/list"
+        response = session.get(f"{self.url}api/users/current")
+        assert response.json()["email"] == "gxyuser_new_no_fixed@galaxy.org"
 
     def test_cancellation_prevents_confirmation_and_replay(self):
         session, identifier = self._begin_confirmation("gxyuser_brand_new")

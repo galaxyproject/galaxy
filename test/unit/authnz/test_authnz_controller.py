@@ -4,19 +4,29 @@ from unittest.mock import Mock
 
 import pytest
 from webob import Request
+from webob.exc import HTTPFound
 
 from galaxy.authnz.flow_state import InvalidFlow
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.web.framework.base import Response
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.controllers.authnz import OIDC
+from galaxy.webapps.galaxy.controllers.authnz import (
+    LOGIN_NEXT_COOKIE_NAME,
+    OIDC,
+)
+from galaxy.webapps.galaxy.controllers.root import RootController
+
+
+def url_for(path):
+    # Galaxy served below galaxy_url_prefix=/galaxy
+    return f"/galaxy{path}" if path.startswith("/") else path
 
 
 @pytest.fixture
 def trans(monkeypatch):
     trans = SimpleNamespace(
         app=SimpleNamespace(
-            config=SimpleNamespace(enable_oidc=True),
+            config=SimpleNamespace(enable_oidc=True, allowed_login_redirect_hosts=["tools.example.org"]),
             authnz_manager=Mock(spec=AuthnzManager),
         ),
         user=None,
@@ -24,9 +34,10 @@ def trans(monkeypatch):
         response=Response(),
         handle_user_login=Mock(),
         set_cookie=Mock(),
+        get_cookie=Mock(return_value=None),
     )
     trans.check_csrf_token = GalaxyWebTransaction.check_csrf_token.__get__(trans)
-    monkeypatch.setattr("galaxy.webapps.galaxy.controllers.authnz.url_for", lambda path: path)
+    monkeypatch.setattr("galaxy.webapps.galaxy.controllers.authnz.url_for", url_for)
     return trans
 
 
@@ -89,3 +100,81 @@ def test_cancellation_returns_empty_response_without_login(trans):
     assert result == {}
     trans.app.authnz_manager.cancel_user_creation.assert_called_once_with("keycloak", "pending", trans)
     trans.handle_user_login.assert_not_called()
+
+
+LOGIN_DESTINATIONS = [
+    (None, "/galaxy/"),
+    ("None", "/galaxy/"),
+    ("/", "/galaxy/"),
+    ("/workflows/list", "/galaxy/workflows/list"),
+    ("https://tools.example.org/back?item=1", "https://tools.example.org/back?item=1"),
+    (
+        "https://tools.example.org/app?confirm=1&next=/login/start",
+        "https://tools.example.org/app?confirm=1&next=/login/start",
+    ),
+    ("/login/start?redirect=/workflows/list", "/galaxy/login/start?redirect=/workflows/list"),
+    ("https://evil.example.com/", "/galaxy/"),
+    ("http://tools.example.org/back", "/galaxy/"),
+    ("//evil.example.com/", "/galaxy/"),
+    ("https://tools.example.org@evil.example.com/", "/galaxy/"),
+]
+
+
+@pytest.mark.parametrize("cookie,destination", LOGIN_DESTINATIONS)
+def test_callback_redirects_to_allowed_login_destination(trans, cookie, destination):
+    trans.get_cookie.return_value = cookie
+    user = object()
+
+    def callback(provider, state, code, trans, login_redirect_url, idphint):
+        return True, "", (login_redirect_url, user)
+
+    trans.app.authnz_manager.callback.side_effect = callback
+    trans.request = Request.blank("/authnz/keycloak/callback")
+    with pytest.raises(HTTPFound) as response:
+        object.__new__(OIDC).callback(trans, "keycloak", state="state", code="code")
+    assert response.value.location == destination
+    trans.handle_user_login.assert_called_once_with(user)
+    trans.set_cookie.assert_any_call(value="/", name=LOGIN_NEXT_COOKIE_NAME)
+
+
+def test_callback_stops_at_login_start_without_logging_in(trans):
+    stop = "/galaxy/login/start?confirm=true&provider=keycloak&confirmation_id=pending"
+    trans.app.authnz_manager.callback.return_value = (True, "", (stop, None))
+    trans.request = Request.blank("/authnz/keycloak/callback")
+    with pytest.raises(HTTPFound) as response:
+        object.__new__(OIDC).callback(trans, "keycloak", state="state", code="code")
+    assert response.value.location == stop
+    trans.handle_user_login.assert_not_called()
+    trans.set_cookie.assert_not_called()
+
+
+@pytest.mark.parametrize("cookie,destination", LOGIN_DESTINATIONS)
+def test_confirmation_returns_login_destination(trans, cookie, destination):
+    trans.get_cookie.return_value = cookie
+    trans.app.authnz_manager.create_user.side_effect = lambda provider, confirmation_id, trans, login_redirect_url: (
+        True,
+        "",
+        (login_redirect_url, object()),
+    )
+    result = request(trans, "create_user")
+    assert result == {"redirect_uri": destination}
+    trans.set_cookie.assert_any_call(value="/", name=LOGIN_NEXT_COOKIE_NAME)
+
+
+@pytest.mark.parametrize(
+    "redirect,login_next",
+    [
+        ("/workflows/list", "/workflows/list"),
+        ("https://tools.example.org/back", "https://tools.example.org/back"),
+        ("https://evil.example.com/", "/"),
+        ("//evil.example.com/", "/"),
+    ],
+)
+def test_single_provider_login_stores_allowed_destination(trans, redirect, login_next):
+    trans.app.config.oidc = {"keycloak": {}}
+    trans.app.auth_manager = SimpleNamespace(authenticators=[])
+    trans.app.authnz_manager.authenticate.return_value = (True, "", "https://idp.example/authorize")
+    with pytest.raises(HTTPFound) as response:
+        object.__new__(RootController).login(trans, redirect=redirect)
+    assert response.value.location == "https://idp.example/authorize"
+    trans.set_cookie.assert_called_once_with(value=login_next, name=LOGIN_NEXT_COOKIE_NAME, age=1)

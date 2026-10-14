@@ -15,7 +15,7 @@ from galaxy import (
 )
 from galaxy.authnz.flow_state import InvalidFlow
 from galaxy.util import (
-    is_safe_local_redirect,
+    is_safe_login_redirect,
     url_get,
 )
 from galaxy.web import url_for
@@ -28,6 +28,22 @@ log = logging.getLogger(__name__)
 
 PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
 LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
+
+
+def login_destination(trans) -> str:
+    """The URL to send the user to once this OIDC login completes.
+
+    The login-next cookie is set from a value the client sent, so it is checked against
+    ``allowed_login_redirect_hosts`` before use.
+    """
+    login_next = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
+    # The cookie can hold the literal string 'None', which is not a destination.
+    if not login_next or login_next == "None":
+        return url_for("/")
+    if is_safe_login_redirect(login_next, trans.app.config.allowed_login_redirect_hosts):
+        return url_for(login_next)
+    log.warning("Ignoring post-login redirect target that is not allowed: %s", login_next)
+    return url_for("/")
 
 
 class OIDC(BaseUIController):
@@ -107,16 +123,7 @@ class OIDC(BaseUIController):
     @web.expose
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else "anonymous"
-        login_next_cookie = trans.get_cookie(name=LOGIN_NEXT_COOKIE_NAME)
-        if login_next_cookie and login_next_cookie != "None" and is_safe_local_redirect(login_next_cookie):
-            # This cookie can sometimes be set to a literal string 'None', which we don't want to use as a redirect.
-            login_next = url_for(login_next_cookie)
-        else:
-            # Fallback to default redirect if no login_next cookie is found, or if it points
-            # somewhere we refuse to send the user -- this value reaches us from the client.
-            if login_next_cookie and login_next_cookie != "None":
-                log.warning("Ignoring post-login redirect target outside of Galaxy: %s", login_next_cookie)
-            login_next = url_for("/")
+        login_next = login_destination(trans)
         if not bool(kwargs):
             log.warning(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
@@ -154,12 +161,13 @@ class OIDC(BaseUIController):
             raise
         if success is False:
             return trans.show_error_message(message)
-        if "?confirm" in redirect_url:
-            return trans.response.send_redirect(url_for(redirect_url))
-        if "?connect_external_provider" in redirect_url:
-            return trans.response.send_redirect(url_for(redirect_url))
-        elif redirect_url is None:
+        if redirect_url is None:
             redirect_url = url_for("/")
+        # The backend returns complete URLs, which already carry galaxy_url_prefix. A
+        # login/start URL other than the destination means the login stopped for
+        # account confirmation or linking.
+        if redirect_url != login_next and redirect_url.startswith(f"{url_for('/login/start')}?"):
+            return trans.response.send_redirect(redirect_url)
 
         user = user if user is not None else trans.user
         if user is None:
@@ -173,7 +181,7 @@ class OIDC(BaseUIController):
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
         # Clear the login next cookie back to default.
         trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
-        return trans.response.send_redirect(url_for(redirect_url))
+        return trans.response.send_redirect(redirect_url)
 
     @web.expose
     def create_user(self, trans: "GalaxyWebTransaction", provider=None, **kwargs):
@@ -207,7 +215,7 @@ class OIDC(BaseUIController):
                 trans.app.authnz_manager.cancel_user_creation(provider, confirmation_id, trans)
                 return respond(200, {})
             success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(
-                provider, confirmation_id=confirmation_id, trans=trans, login_redirect_url=url_for("/")
+                provider, confirmation_id=confirmation_id, trans=trans, login_redirect_url=login_destination(trans)
             )
             if not success or user is None:
                 return respond(400, {"err_msg": str(InvalidFlow())})
@@ -215,6 +223,7 @@ class OIDC(BaseUIController):
             return respond(400, {"err_msg": str(InvalidFlow())})
         trans.handle_user_login(user)
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         return respond(200, {"redirect_uri": redirect_url or url_for("/")})
 
     @web.expose
