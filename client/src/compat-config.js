@@ -1,3 +1,4 @@
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { configureCompat } from "vue";
 
 // Shared by the app entry and the unit test setup, so components run the same
@@ -14,3 +15,8 @@ configureCompat({
     // and Vue 3 functional components (lucide icons) are plain functions.
     COMPONENT_ASYNC: false,
 });
+
+// FontAwesomeIcon builds its <svg> from `attrs`. With MODE 2's
+// INSTANCE_LISTENERS, `attrs` holds no `on*` listeners, so `@click` and other
+// listeners on an icon would never reach the svg.
+FontAwesomeIcon.compatConfig = { MODE: 3 };
