@@ -8,6 +8,7 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
+      - '.github/workflows/_report_scheduled_result.yaml'
   pull_request:
     paths:
       - '**'
@@ -16,6 +17,7 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
+      - '.github/workflows/_report_scheduled_result.yaml'
   schedule:
     # Run every supported Python version at 01:00 UTC daily
     - cron: '0 1 * * *'
@@ -41,11 +43,11 @@ jobs:
       fail-fast: false
       matrix:
         # Pull requests and pushes to dev run only the newest Python; ruff and mypy catch most code too new for the oldest.
-        # Release branches get no nightly run, so they keep every version.
+        # Release branches get no nightly run, so they keep the oldest and newest.
         python-version: >-
           ${{ fromJSON(
-          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.base_ref || github.ref_name, 'release_'))
-          && '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          || startsWith(github.base_ref || github.ref_name, 'release_') && '["3.10", "3.14"]'
           || '["3.14"]'
           ) }}
         test-install-client: ['galaxy_api', 'standalone']
@@ -115,7 +117,7 @@ jobs:
     uses: $/.github/workflows/_report_scheduled_result.yaml
     with:
       title: Scheduled Tool Shed tests are failing
-      labels: area/toolshed, kind/bug
+      labels: area/toolshed, area/testing, kind/bug
       description: |-
         The nightly run of the Tool Shed tests across every supported Python version failed.
 

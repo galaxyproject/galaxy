@@ -219,7 +219,7 @@ depot.galaxyproject.org, GitHub) should additionally skip when it is down; see
 
 The Python unit tests are run against each pull request to Galaxy using
 GitHub Actions, on the newest supported Python only (pull requests to release
-branches run every supported version). If any of these tests fail, the pull
+branches also run the oldest). If any of these tests fail, the pull
 request will be marked red. This test suite is moderately prone
 to having tests fail that are unrelated to the pull request being tested; if
 this test suite fails on a pull request with changes that seem to be unrelated
