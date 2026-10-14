@@ -1,88 +1,51 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import type { Pinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { describe, expect, it } from "vitest";
 
-import PageView from "./PageView.vue";
+import * as stories from "./PageView.stories";
+import { PUBLISHED_PAGE } from "./test_fixtures";
+
 import Heading from "@/components/Common/Heading.vue";
 import PublishedItem from "@/components/Common/PublishedItem.vue";
+import Markdown from "@/components/Markdown/Markdown.vue";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: ref({ enable_beta_markdown_export: false }),
-        isConfigLoaded: ref(true),
-    })),
-}));
+const composed = composeStories(stories);
+const { Published, Embedded, DisplayOnly } = composed;
+const mountStory = useStoryMount();
 
-vi.mock("vue-router", async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>;
-    return {
-        ...actual,
-        useRouter: vi.fn(() => ({ push: vi.fn() })),
-        useRoute: vi.fn(() => ({ params: {} })),
-    };
-});
+async function mountPageView(story: StoryOf<typeof composed>, props: Record<string, unknown> = {}) {
+    const wrapper = mountStory(story, { props });
+    await flushPromises();
+    return wrapper;
+}
 
-const mockUrlData = vi.fn();
-vi.mock("@/utils/url", () => ({
-    urlData: (...args: any[]) => mockUrlData(...args),
-}));
+type PageViewWrapper = Awaited<ReturnType<typeof mountPageView>>;
 
-const localVue = getLocalVue();
+/** The page's Markdown, which shows the page has loaded. */
+function loadedMarkdown(wrapper: PageViewWrapper) {
+    const markdown = wrapper.findComponent(Markdown);
+    expect(markdown.exists()).toBe(true);
+    return markdown;
+}
 
-const PAGE_ID = "page-1";
-const PAGE_DATA = {
-    id: PAGE_ID,
-    title: "Test Page",
-    name: "Test Page",
-    content: "# Hello World",
-    content_format: "markdown",
-    slug: "test-page",
-    username: "testuser",
-    model_class: "Page",
-};
-
-let pinia: Pinia;
-
-function mountComponent(propsData: { pageId: string; embed?: boolean; displayOnly?: boolean; showHeading?: boolean }) {
-    return shallowMount(PageView as object, {
-        localVue,
-        pinia,
-        propsData,
-        stubs: {
-            FontAwesomeIcon: true,
-            LoadingSpan: true,
-            Markdown: true,
-            PageHtml: true,
-        },
-    });
+/** Headings PageView renders itself, apart from the one inside the page's Markdown. */
+function ownHeadings(wrapper: PageViewWrapper) {
+    const markdown = loadedMarkdown(wrapper);
+    return wrapper.findAllComponents(Heading).filter((heading) => !markdown.element.contains(heading.element));
 }
 
 describe("PageView", () => {
-    beforeEach(() => {
-        pinia = createTestingPinia({ createSpy: vi.fn });
-        vi.clearAllMocks();
-        mockUrlData.mockResolvedValue(PAGE_DATA);
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
     describe("default mode (published page with chrome)", () => {
         it("renders PublishedItem wrapper", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID });
-            await flushPromises();
+            const wrapper = await mountPageView(Published);
+            loadedMarkdown(wrapper);
 
             expect(wrapper.findComponent(PublishedItem).exists()).toBe(true);
         });
 
         it("does not render embed container", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID });
-            await flushPromises();
+            const wrapper = await mountPageView(Published);
 
             expect(wrapper.find(".page-view.embed").exists()).toBe(false);
         });
@@ -90,16 +53,15 @@ describe("PageView", () => {
 
     describe("embed mode", () => {
         it("renders without PublishedItem wrapper", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID, embed: true });
-            await flushPromises();
+            const wrapper = await mountPageView(Embedded);
 
             expect(wrapper.findComponent(PublishedItem).exists()).toBe(false);
             expect(wrapper.find(".page-view.embed").exists()).toBe(true);
         });
 
         it("does not show edit toolbar", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID, embed: true });
-            await flushPromises();
+            const wrapper = await mountPageView(Embedded);
+            loadedMarkdown(wrapper);
 
             expect(wrapper.find(".page-display-toolbar").exists()).toBe(false);
         });
@@ -107,16 +69,14 @@ describe("PageView", () => {
 
     describe("displayOnly mode", () => {
         it("renders without PublishedItem wrapper", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountPageView(DisplayOnly);
 
             expect(wrapper.findComponent(PublishedItem).exists()).toBe(false);
             expect(wrapper.find(".page-view.embed").exists()).toBe(true);
         });
 
         it("shows edit toolbar with Edit Page button", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountPageView(DisplayOnly);
 
             const toolbar = wrapper.find(".page-display-toolbar");
             expect(toolbar.exists()).toBe(true);
@@ -127,19 +87,19 @@ describe("PageView", () => {
         });
 
         it("shows page title in toolbar", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID, displayOnly: true });
-            await flushPromises();
+            const wrapper = await mountPageView(DisplayOnly);
 
             const toolbar = wrapper.find(".page-display-toolbar");
-            expect(toolbar.text()).toContain("Test Page");
+            expect(toolbar.text()).toContain(PUBLISHED_PAGE.title);
         });
 
         it("hides duplicate heading when displayOnly", async () => {
-            const wrapper = mountComponent({ pageId: PAGE_ID, displayOnly: true, showHeading: true });
-            await flushPromises();
+            // The embed shows its own, so the check below can find one.
+            expect(ownHeadings(await mountPageView(Embedded, { showHeading: true }))).toHaveLength(1);
 
-            // The Heading component should not render because displayOnly suppresses it
-            expect(wrapper.findComponent(Heading).exists()).toBe(false);
+            const wrapper = await mountPageView(DisplayOnly, { showHeading: true });
+
+            expect(ownHeadings(wrapper)).toHaveLength(0);
         });
     });
 });
