@@ -99,11 +99,6 @@ describe("WorkflowComment", () => {
         expect(size()).toEqual({ w: 2000, h: 3000 });
     });
 
-    it("displays the correct comment type", () => {
-        expect(mountStory(stories.TextNote).getComponent(TextComment).isVisible()).toBe(true);
-        expect(mountStory(stories.MarkdownNote).getComponent(MarkdownComment).isVisible()).toBe(true);
-    });
-
     it("displays the new comment type after a live change", async () => {
         const wrapper = mountLiveComment(mount, TEXT_NOTE);
 

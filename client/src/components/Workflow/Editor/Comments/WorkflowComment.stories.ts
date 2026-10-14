@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/vue3-vite";
 import { zoomIdentity } from "d3-zoom";
+import { expect } from "storybook/test";
 import { computed, h, markRaw, provide, ref } from "vue";
 
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
@@ -50,7 +51,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** A plain text note, one line break kept. */
-export const TextNote: Story = {};
+export const TextNote: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Read the plain text note", async () => {
+            const note = await canvas.findByText(/Trim adapters before mapping/);
+            await expect(note).toBeVisible();
+            await expect(note).toHaveTextContent(/^Trim adapters before mapping\s*Check the fastp report first$/);
+        });
+    },
+};
 
 /** A Markdown note: a link opens in a new tab, and raw HTML shows as text. */
 export const MarkdownNote: Story = {
@@ -65,6 +74,24 @@ export const MarkdownNote: Story = {
                 text: "Reads are trimmed with **fastp**. Read the [RNA-seq tutorial](https://training.galaxyproject.org/training-material/topics/transcriptomics/) <b>before</b> changing its settings.",
             },
         },
+    },
+    play: async ({ canvas, step }) => {
+        await step("Read the Markdown note with a tutorial link", async () => {
+            const link = await canvas.findByRole("link", { name: "RNA-seq tutorial" });
+            await expect(link).toBeVisible();
+            await expect(link).toHaveAttribute(
+                "href",
+                "https://training.galaxyproject.org/training-material/topics/transcriptomics/",
+            );
+            await expect(link).toHaveAttribute("target", "_blank");
+            const tool = canvas.getByText("fastp", { exact: true });
+            await expect(tool).toBeVisible();
+            await expect(tool.tagName).toBe("STRONG");
+            await expect(canvas.getByRole("paragraph")).toHaveTextContent(
+                /^Reads are trimmed with fastp\. Read the RNA-seq tutorial <b>before<\/b> changing its settings\.$/,
+            );
+            await expect(canvas.queryByText("before", { exact: true })).not.toBeInTheDocument();
+        });
     },
 };
 
