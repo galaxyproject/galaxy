@@ -202,8 +202,9 @@ Extra options:
                        be used, and reported on stderr at the end of the run.
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy
                        functional tests).
- --skip-venv           Do not create .venv (passes this flag to
-                       common_startup.sh)
+ --no-sync             Use the existing test environment without syncing it.
+                       By default uv creates/syncs .venv; set
+                       UV_PROJECT_ENVIRONMENT to choose another environment.
  --external_url        External URL to use for Galaxy testing (only certain
                        tests).
  --external_master_key Master API key used to configure external tests.
@@ -317,19 +318,7 @@ GALAXY_TEST_SKIP_IF_REQUIRES_NEW_PUBLISHED_OBJECTS
 EOF
 }
 
-show_list() {
-    python tool_list.py
-    echo "==========================================================================================================================================="
-    echo "'${0##*/} -id bbb'               for testing one tool with id 'bbb' ('bbb' is the tool id)"
-    echo "'${0##*/} -sid ccc'              for testing one section with sid 'ccc' ('ccc' is the string after 'section::')"
-}
-
-exists() {
-    type "$1" >/dev/null 2>/dev/null
-}
-
 debug=""
-test_script="pytest"
 report_file="run_functional_tests.html"
 if [ -n "$GALAXY_TEST_COVERAGE" ]; then
     coverage_arg="--with-coverage"
@@ -344,11 +333,6 @@ structured_data_html=0
 GALAXY_TEST_AIOCOP=${GALAXY_TEST_AIOCOP:-1}
 export GALAXY_TEST_AIOCOP
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
-if [ "$SKIP_CLIENT_BUILD" = "1" ]; then
-    skip_client_build="--skip-client-build"
-else
-    skip_client_build=""
-fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
 if [ -n "$BUILD_NUMBER" ]; then
@@ -379,7 +363,7 @@ do
           GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="not cwl_conformance"
           report_file="./run_api_tests.html"
-          if [ $# -gt 1 ]; then
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               api_script=$2
               shift 2
           else
@@ -394,7 +378,7 @@ do
           marker="cwl_conformance"
           report_file="./run_cwl_tests.html"
           generate_cwl_conformance_tests=1
-          if [ $# -gt 1 ]; then
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               api_script=$2
               shift 2
           else
@@ -405,8 +389,8 @@ do
       -selenium|--selenium)
           GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_selenium_tests.html"
-          skip_client_build=""
-          if [ $# -gt 1 ]; then
+          SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               selenium_script=$2
               shift 2
           else
@@ -419,9 +403,9 @@ do
           GALAXY_TEST_DRIVER_BACKEND="playwright"
           export GALAXY_TEST_DRIVER_BACKEND
           report_file="./run_playwright_tests.html"
-          skip_client_build=""
+          SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
           install_playwright_browers=(chromium)
-          if [ $# -gt 1 ]; then
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               selenium_script=$2
               shift 2
           else
@@ -431,7 +415,7 @@ do
           ;;
       -t|-toolshed|--toolshed)
           report_file="run_toolshed_tests.html"
-          if [ $# -gt 1 ]; then
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               toolshed_script=$2
               shift 2
           else
@@ -563,7 +547,7 @@ do
             --ignore=packages/tool_shed/src/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
           install_playwright_browers=(chromium firefox)
-          if [ $# -gt 1 ]; then
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               unit_extra="$unit_extra $2"
               shift 2
           else
@@ -574,7 +558,7 @@ do
       -i|-integration|--integration)
           GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_integration_tests.html"
-          if [ $# -gt 1 ]; then
+          if [ $# -gt 1 ] && [[ "$2" != -* ]]; then
               integration_extra=$2
               shift 2
           else
@@ -592,22 +576,8 @@ do
           echo "Skipping Python test clean up."
           shift
           ;;
-      --skip-venv)
-          skip_venv='--skip-venv'
-          shift
-          ;;
-      --no-create-venv)
-          no_create_venv='--no-create-venv'
-          shift
-          ;;
-      --no-replace-pip|--replace-pip)
-          # Deprecated options
-          shift
-          ;;
-      --skip-common-startup)
-          # Don't run ./scripts/common_startup.sh (presumably it has already
-          # been done, or you know what you're doing).
-          skip_common_startup=1
+      --no-sync)
+          no_sync=1
           shift
           ;;
       --)
@@ -633,31 +603,9 @@ do
     esac
 done
 
-if [ -z "$skip_common_startup" ]; then
-    if [ -n "$GALAXY_TEST_DBURI" ]; then
-            GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
-            export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
-    fi
-    ./scripts/common_startup.sh $skip_venv $no_create_venv $skip_client_build --dev-wheels || exit 1
-    unset GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
-fi
-
-. ./scripts/common_startup_functions.sh
-
-setup_python
-
-# Collection imports tests from packages outside the server dependency closure.
-if [ -z "$skip_common_startup" ] && exists uv && [ -f uv.lock ]; then
-    uv sync --locked --inexact --all-packages --all-extras --group dev --active || exit 1
-fi
-
-if [ "$GALAXY_TEST_DRIVER_BACKEND" = "playwright" ] && [ ${#install_playwright_browers[@]} -eq 0 ]; then
-    # backend selected by environment rather than by the -playwright flag
-    install_playwright_browers=(chromium)
-fi
-
-if [ -n "$install_playwright_browers" ]; then
-    playwright install "${install_playwright_browers[@]}"
+# A plain pytest target also accepts the optional separator before pytest flags.
+if [ "${1:-}" = "--" ]; then
+    shift
 fi
 
 if [ -n "$framework_test" ] || [ -n "$data_managers_test" ] ; then
@@ -692,6 +640,39 @@ else
     exit 1
 fi
 
+# Use one locked workspace environment for collection and execution. Respect
+# an explicit environment or the active tox/uv environment before using .venv.
+export UV_PROJECT_ENVIRONMENT=${UV_PROJECT_ENVIRONMENT:-${GALAXY_VIRTUAL_ENV:-${VIRTUAL_ENV:-.venv}}}
+if [ -z "$no_sync" ]; then
+    python_args=()
+    if [ -n "${GALAXY_PYTHON:-${TEST_PYTHON:-}}" ]; then
+        python_args=(--python "${GALAXY_PYTHON:-$TEST_PYTHON}")
+    fi
+    uv sync --locked --inexact --all-packages --all-extras --no-default-groups --group test "${python_args[@]}" || exit 1
+fi
+. "$UV_PROJECT_ENVIRONMENT/bin/activate" || exit 1
+
+for sample in tool-data/shared/ucsc/{builds,manual_builds}.txt.sample; do
+    if [ ! -f "${sample%.sample}" ]; then
+        cp "$sample" "${sample%.sample}" || exit 1
+    fi
+done
+
+if [ "$SKIP_CLIENT_BUILD" = "0" ]; then
+    GALAXY_PLUGIN_PATH=${GALAXY_PLUGIN_PATH:-$(python scripts/config_parse.py --setting=plugin_path)} || exit 1
+    export GALAXY_PLUGIN_PATH
+    make VENV="$UV_PROJECT_ENVIRONMENT" client-production-maps || exit 1
+fi
+
+if [ "$GALAXY_TEST_DRIVER_BACKEND" = "playwright" ] && [ ${#install_playwright_browers[@]} -eq 0 ]; then
+    # backend selected by environment rather than by the -playwright flag
+    install_playwright_browers=(chromium)
+fi
+
+if [ -n "$install_playwright_browers" ]; then
+    playwright install "${install_playwright_browers[@]}"
+fi
+
 if [ -n "$xunit_report_file" ]; then
     xunit_args="--junit-xml $xunit_report_file"
 else
@@ -703,7 +684,7 @@ else
     structured_data_args=""
 fi
 if [ -n "$generate_cwl_conformance_tests" ]; then
-    make generate-cwl-conformance-tests
+    make generate-cwl-conformance-tests || exit 1
 fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$coverage_arg" = '--with-coverage' ]; then
@@ -715,7 +696,7 @@ else
     marker_args=()
 fi
 args=(-v $debug $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
-"$test_script" "${args[@]}"
+python -m pytest "${args[@]}"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 if [ -n "$coverage_arg" ] && [ -f .coverage ]; then

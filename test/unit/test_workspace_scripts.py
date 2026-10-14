@@ -1,6 +1,8 @@
 """Regression checks for workspace bootstrap and release lookup."""
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -36,3 +38,20 @@ def test_workspace_sync_respects_skipped_installation(fetch_wheels):
     result = subprocess.run(["sh"], input=mock + script[start:end], cwd=ROOT, text=True, capture_output=True)
     assert result.returncode == 0, result.stderr
     assert ("MOCK_UV" in result.stdout) == bool(fetch_wheels)
+
+
+@pytest.mark.parametrize("passes", [True, False])
+def test_runner_reuses_environment_and_preserves_test_status(tmp_path, passes):
+    probe = tmp_path / "test_probe.py"
+    probe.write_text(f"import sys\ndef test_probe():\n    assert sys.prefix == {sys.prefix!r}\n    assert {passes!r}\n")
+    report = tmp_path / "report.html"
+    env = {**os.environ, "UV_PROJECT_ENVIRONMENT": sys.prefix, "GALAXY_SKIP_CLIENT_BUILD": "1"}
+    result = subprocess.run(
+        ["bash", str(ROOT / "run_tests.sh"), "--no-sync", "--report_file", str(report), str(probe), "--", "-q"],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == (0 if passes else 1), result.stdout + result.stderr
+    assert report.is_file()
