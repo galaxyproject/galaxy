@@ -167,7 +167,8 @@ class TestFolderContentsApi(ApiTestCase):
     def test_index_permissions(self, history_id):
         folder_name = "Test Folder Contents Index permissions"
         folder_id = self._create_folder_in_library(folder_name)
-        _, hda_id = self._create_dataset_in_folder(history_id, folder_id)
+        # The upload applies the history's default permissions when it finishes, so wait before changing them.
+        _, hda_id = self._create_dataset_in_folder(history_id, folder_id, wait=True)
 
         self._make_dataset_private(hda_id)
 
