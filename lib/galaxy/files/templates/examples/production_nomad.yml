@@ -1,0 +1,20 @@
+- id: nomad
+  version: 0
+  name: NOMAD
+  description: |
+      Browse and import data from [NOMAD](https://nomad-lab.eu), a materials science repository.
+  secrets:
+      token:
+          label: NOMAD personal access token
+          optional: true
+          help: |
+              Optional. Without a token, you can browse the public datasets of NOMAD. With a token,
+              **My uploads** also lists your own uploads and those shared with you, published or not.
+
+              NOMAD has no page for creating tokens yet. Follow
+              [NOMAD's guide](https://docs.nomad-lab.eu/howto/manage/program/auth.html) to create a personal access
+              token with the `uploads:read` scope through its API.
+  configuration:
+      type: nomad
+      base_url: https://nomad-lab.eu/prod/v1
+      token: "{{ secrets.token }}"

@@ -17,6 +17,7 @@ from pydantic import Field
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
+    ObjectNotFound,
 )
 from galaxy.files.models import (
     AnyRemoteEntry,
@@ -172,6 +173,11 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
 
             return paginated_entries, total_count
 
+        except MessageException:
+            # already a Galaxy error with its own status, such as a refused address
+            raise
+        except FileNotFoundError as e:
+            raise ObjectNotFound(f"{path} was not found in {self.label}.") from e
         except PermissionError as e:
             raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
