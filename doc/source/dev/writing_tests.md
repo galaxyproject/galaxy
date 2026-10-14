@@ -277,11 +277,17 @@ section.
 ### Continuous Integration
 
 The Tool framework tests are run against each pull request to Galaxy using
-GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is fairly stable and typically there are not
-transiently failed tests unrelated to the pull request being tested. The
-GitHub actions workflow definition for these tests is located in
-``.github/workflows/framework_tools.yaml`` below Galaxy's root.
+GitHub Actions, through the tool request API only. If any of these tests fail,
+the pull request will be marked red. This test suite is fairly stable and
+typically there are not transiently failed tests unrelated to the pull request
+being tested. The GitHub Actions workflow definition for these tests is located
+in ``.github/workflows/framework_tools.yaml`` below Galaxy's root.
+
+The same workflow runs nightly on ``dev`` through both the tool request API and
+the legacy tool API; it can also be started by hand from the Actions tab. When
+a nightly or manual run on ``dev`` fails, the workflow opens an issue titled
+"Scheduled tool framework tests are failing" (or comments on the one already
+open), and closes it after the next such run passes.
 
 {#workflow_framework}
 ## Workflow Framework Tests

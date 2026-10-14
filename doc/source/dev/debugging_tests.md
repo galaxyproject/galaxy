@@ -41,9 +41,10 @@ file selects that workflow without starting the other broadly filtered suites.
 Reusable workflows, which only run through `workflow_call`, have a leading
 underscore; changes to one also run its callers. `_build_client.yaml` is called
 by Playwright, integration Selenium, startup tests, and the tool form harness;
-`_report_scheduled_result.yaml` by the unit and Tool Shed tests. A change that
-also touches source files still runs the suites selected by those source files.
-Scheduled and manually dispatched runs are independent of these path filters.
+`_report_scheduled_result.yaml` by the unit, Tool Shed and tool framework
+tests. A change that also touches source files still runs the suites selected
+by those source files. Scheduled and manually dispatched runs are independent
+of these path filters.
 
 When editing these filters, use ordered `paths` entries: include `**`, exclude
 unneeded directories and `.github/workflows/**`, then include the workflow's
