@@ -6,6 +6,11 @@ outside of any tool container, the plan is used to decrypt the inputs into the
 job's ``_protected`` directory before the tool runs, and to remove that plaintext
 again afterwards.
 
+Crypt4GH is the only protection scheme: the plan, :mod:`.crypt4gh` and the grants of
+:mod:`galaxy.managers.dataset_protection` are Crypt4GH's. The scheme recorded on jobs
+and grants leaves room for another one, which would bring its own plan, runtime and
+grant validation; the interface between them is best extracted then.
+
 This module must stay importable with the ``galaxy-job-execution`` package only,
 so it can run on Pulsar and other remote compute hosts.
 """
@@ -15,10 +20,7 @@ import os
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
-from typing import (
-    Literal,
-    Protocol,
-)
+from typing import Final
 
 from pydantic import (
     BaseModel,
@@ -28,6 +30,7 @@ from pydantic import (
 PROTECTED_DIRECTORY_NAME = "_protected"
 PLAN_FILENAME = "protection_plan.json"
 STATE_FILENAME = "state.json"
+CRYPT4GH_SCHEME: Final = "crypt4gh"
 
 
 class RecryptorSettings(BaseModel):
@@ -60,7 +63,6 @@ class ProtectedInput(BaseModel):
 
 
 class ProtectionPlan(BaseModel):
-    scheme: Literal["crypt4gh"]
     job_directory: str
     output_key_ref: str = Field(description="Compute keypair outputs get encrypted to.")
     recryptor: RecryptorSettings
@@ -171,29 +173,3 @@ class ProtectedFileResult:
     # Base64 header of the file encrypted to the compute keypair, i.e. the grant to compute on it again.
     # None for files that were encrypted already: users authorize them like uploads.
     compute_header: str | None
-
-
-class ProtectedJobRuntime(Protocol):
-    plan: ProtectionPlan
-
-    @property
-    def key_ref(self) -> str: ...
-
-    @property
-    def key_expiration(self) -> str | None: ...
-
-    def stage_inputs(self) -> None: ...
-
-    def protect_file(self, path: str) -> ProtectedFileResult: ...
-
-    def cleanup_inputs(self) -> None: ...
-
-    def cleanup(self) -> None: ...
-
-
-def load_runtime(plan: ProtectionPlan) -> ProtectedJobRuntime:
-    if plan.scheme == "crypt4gh":
-        from .crypt4gh import Crypt4GHJobRuntime
-
-        return Crypt4GHJobRuntime(plan)
-    raise ProtectionError(f"Unsupported protection scheme '{plan.scheme}'")
