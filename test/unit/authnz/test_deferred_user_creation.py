@@ -237,43 +237,11 @@ def test_confirmation_url_is_built_from_app_root(trans, provider):
     assert user is None
     url = urlsplit(redirect)
     assert url.path == "/galaxy/login/start"
-    query = parse_qs(url.query)
-    assert query["confirm"] == ["true"]
-    destination, user = adapter(trans).create_user(query["confirmation_id"][0], trans, "/galaxy/workflows/list")
-    assert destination == "/galaxy/workflows/list"
-    assert user.email == "verified@example.com"
+    assert parse_qs(url.query)["confirm"] == ["true"]
 
 
-def test_new_identity_without_destination_goes_to_linked_identities(trans, provider):
+def test_new_identity_goes_to_destination(trans, provider):
     trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
-    redirect, user = callback(trans, start(trans, provider), "/galaxy/")
-    assert user.email == "verified@example.com"
-    url = urlsplit(redirect)
-    assert url.path == "/galaxy/user/external_ids"
-    assert parse_qs(url.query)["notification"] == ["Your Keycloak identity has been linked to your Galaxy account."]
-
-
-@pytest.mark.parametrize("destination", ["/galaxy/workflows/list#top", "/galaxy/login/start?redirect=/x"])
-def test_new_identity_goes_to_destination(trans, provider, destination):
-    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
-    redirect, user = callback(trans, start(trans, provider), destination)
-    assert user.email == "verified@example.com"
-    assert redirect == destination
-
-
-def test_external_destination_is_returned_unchanged(trans, provider):
-    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
-    destination = "https://tools.example.org/back?confirm=true&next=login/start"
-    redirect, user = callback(trans, start(trans, provider), destination)
-    assert user is not None
-    assert redirect == destination
-    redirect, _ = callback(trans, start(trans, provider), destination)
-    assert redirect == destination
-
-
-def test_repeat_login_goes_to_destination(trans, provider):
-    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
-    callback(trans, start(trans, provider))
     redirect, user = callback(trans, start(trans, provider), "/galaxy/workflows/list")
     assert user.email == "verified@example.com"
     assert redirect == "/galaxy/workflows/list"

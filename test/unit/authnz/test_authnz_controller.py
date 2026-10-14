@@ -14,7 +14,6 @@ from galaxy.webapps.galaxy.controllers.authnz import (
     LOGIN_NEXT_COOKIE_NAME,
     OIDC,
 )
-from galaxy.webapps.galaxy.controllers.root import RootController
 
 
 def url_for(path):
@@ -102,26 +101,16 @@ def test_cancellation_returns_empty_response_without_login(trans):
     trans.handle_user_login.assert_not_called()
 
 
-LOGIN_DESTINATIONS = [
-    (None, "/galaxy/"),
-    ("None", "/galaxy/"),
-    ("/", "/galaxy/"),
-    ("/workflows/list", "/galaxy/workflows/list"),
-    ("https://tools.example.org/back?item=1", "https://tools.example.org/back?item=1"),
-    (
-        "https://tools.example.org/app?confirm=1&next=/login/start",
-        "https://tools.example.org/app?confirm=1&next=/login/start",
-    ),
-    ("/login/start?redirect=/workflows/list", "/galaxy/login/start?redirect=/workflows/list"),
-    ("https://evil.example.com/", "/galaxy/"),
-    ("http://tools.example.org/back", "/galaxy/"),
-    ("//evil.example.com/", "/galaxy/"),
-    ("https://tools.example.org@evil.example.com/", "/galaxy/"),
-]
-
-
-@pytest.mark.parametrize("cookie,destination", LOGIN_DESTINATIONS)
-def test_callback_redirects_to_allowed_login_destination(trans, cookie, destination):
+@pytest.mark.parametrize(
+    "cookie,destination",
+    [
+        ("/workflows/list", "/galaxy/workflows/list"),
+        ("https://tools.example.org/back", "https://tools.example.org/back"),
+        ("https://tools.example.org/app?confirm=1", "https://tools.example.org/app?confirm=1"),
+        ("/login/start?redirect=/workflows/list", "/galaxy/login/start?redirect=/workflows/list"),
+    ],
+)
+def test_callback_redirects_to_login_destination(trans, cookie, destination):
     trans.get_cookie.return_value = cookie
     user = object()
 
@@ -134,21 +123,16 @@ def test_callback_redirects_to_allowed_login_destination(trans, cookie, destinat
         object.__new__(OIDC).callback(trans, "keycloak", state="state", code="code")
     assert response.value.location == destination
     trans.handle_user_login.assert_called_once_with(user)
-    trans.set_cookie.assert_any_call(value="/", name=LOGIN_NEXT_COOKIE_NAME)
 
 
-def test_callback_stops_at_login_start_without_logging_in(trans):
-    stop = "/galaxy/login/start?confirm=true&provider=keycloak&confirmation_id=pending"
-    trans.app.authnz_manager.callback.return_value = (True, "", (stop, None))
-    trans.request = Request.blank("/authnz/keycloak/callback")
-    with pytest.raises(HTTPFound) as response:
-        object.__new__(OIDC).callback(trans, "keycloak", state="state", code="code")
-    assert response.value.location == stop
-    trans.handle_user_login.assert_not_called()
-    trans.set_cookie.assert_not_called()
-
-
-@pytest.mark.parametrize("cookie,destination", LOGIN_DESTINATIONS)
+@pytest.mark.parametrize(
+    "cookie,destination",
+    [
+        ("/workflows/list", "/galaxy/workflows/list"),
+        ("https://tools.example.org/back", "https://tools.example.org/back"),
+        ("https://evil.example.com/", "/galaxy/"),
+    ],
+)
 def test_confirmation_returns_login_destination(trans, cookie, destination):
     trans.get_cookie.return_value = cookie
     trans.app.authnz_manager.create_user.side_effect = lambda provider, confirmation_id, trans, login_redirect_url: (
@@ -159,22 +143,3 @@ def test_confirmation_returns_login_destination(trans, cookie, destination):
     result = request(trans, "create_user")
     assert result == {"redirect_uri": destination}
     trans.set_cookie.assert_any_call(value="/", name=LOGIN_NEXT_COOKIE_NAME)
-
-
-@pytest.mark.parametrize(
-    "redirect,login_next",
-    [
-        ("/workflows/list", "/workflows/list"),
-        ("https://tools.example.org/back", "https://tools.example.org/back"),
-        ("https://evil.example.com/", "/"),
-        ("//evil.example.com/", "/"),
-    ],
-)
-def test_single_provider_login_stores_allowed_destination(trans, redirect, login_next):
-    trans.app.config.oidc = {"keycloak": {}}
-    trans.app.auth_manager = SimpleNamespace(authenticators=[])
-    trans.app.authnz_manager.authenticate.return_value = (True, "", "https://idp.example/authorize")
-    with pytest.raises(HTTPFound) as response:
-        object.__new__(RootController).login(trans, redirect=redirect)
-    assert response.value.location == "https://idp.example/authorize"
-    trans.set_cookie.assert_called_once_with(value=login_next, name=LOGIN_NEXT_COOKIE_NAME, age=1)

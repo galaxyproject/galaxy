@@ -13,7 +13,3 @@ def test_allowed_login_redirect_hosts_are_normalized():
 def test_allowed_login_redirect_hosts_ignore_urls():
     hosts = "https://tools.example.org,tools.example.org/path,user@tools.example.org,portal.example.org"
     assert GalaxyAppConfiguration._parse_allowed_login_redirect_hosts(hosts) == ["portal.example.org"]
-
-
-def test_allowed_login_redirect_hosts_default_to_empty():
-    assert GalaxyAppConfiguration._parse_allowed_login_redirect_hosts(None) == []

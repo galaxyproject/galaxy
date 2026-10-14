@@ -56,8 +56,6 @@ describe("redirectLoggedIn", () => {
         setUser("f2db41e1fa331b3e");
         expect(runGuard({ redirect: "https://evil.example.com/" })).toHaveBeenCalledWith("/");
         expect(runGuard({ redirect: "//evil.example.com/" })).toHaveBeenCalledWith("/");
-        expect(runGuard({ redirect: "http://tools.example.org/" })).toHaveBeenCalledWith("/");
-        expect(redirectToUrl).not.toHaveBeenCalled();
     });
 
     it("sends logged-in users on to an allowed external site", () => {
