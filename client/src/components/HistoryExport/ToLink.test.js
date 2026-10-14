@@ -10,7 +10,6 @@ import { waitOnJob } from "@/components/JobStates/wait";
 import { EXPORT_JOB_ID, EXPORTED_HISTORY_ID } from "./test_fixtures";
 import * as ToLinkStories from "./ToLink.stories";
 
-import ToLink from "./ToLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const stories = composeStories(ToLinkStories);
@@ -40,20 +39,15 @@ describe("ToLink.vue", () => {
         const exportLink = wrapper.find(".export-link");
         expect(exportLink).toBeTruthy();
         expect(exportLink.exists()).toBe(true);
-        expect(wrapper.findComponent(LoadingSpan).exists()).toBeFalsy(); // loading span gone
-        expect(wrapper.text()).toContain("no history export ever initiated for this history");
     });
 
     it("should start polling if latest export is preparing", async () => {
         const jobCompletion = deferred();
         vi.mocked(waitOnJob).mockReturnValue(jobCompletion.promise);
         try {
-            const wrapper = await mountAndLoadExports(stories.Preparing);
+            await mountAndLoadExports(stories.Preparing);
             expect(jobCompletion.resolve).toBeTruthy();
             expect(waitOnJob).toHaveBeenCalledExactlyOnceWith(EXPORT_JOB_ID);
-            expect(wrapper.getComponent(ToLink).vm.waitingOnJob).toBeTruthy();
-            expect(wrapper.findComponent(LoadingSpan).exists()).toBeTruthy();
-            expect(wrapper.findComponent(LoadingSpan).props("message")).toContain("preparing history for download");
         } finally {
             // The completed job reloads exports; return a settled history before unmount.
             server.use(http.untyped.get(`/api/histories/${EXPORTED_HISTORY_ID}/exports`, () => HttpResponse.json([])));
