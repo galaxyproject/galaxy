@@ -1,17 +1,21 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getFakeTool } from "@tests/test-data/tools";
-import { createTestRouter, getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { createTestRouter } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { disposePinia, setActivePinia } from "pinia";
+import { disposePinia, getActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type * as VueRouter from "vue-router";
 
-import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import { useToolStore } from "@/stores/toolStore";
+import { ensureDefined } from "@/utils/assertions";
+
+import * as ToolsListStories from "./ToolsList.stories";
 
 import ToolsList from "./ToolsList.vue";
 import ToolsListTable from "./ToolsListTable.vue";
+
+const stories = composeStories(ToolsListStories);
+const mountStory = useStoryMount();
 
 const FILTER_INPUTS = {
     "[placeholder='any name']": "name-filter",
@@ -48,14 +52,6 @@ const MIXED_TAG_AND_ONTOLOGY_FILTER_SETTINGS = {
 };
 const MIXED_TAG_AND_ONTOLOGY_WHOOSH_QUERY =
     '(tool_tags:("join, subtract and group") AND edam_operations:("operation_3695"))';
-const toolsList = toolsListUntyped.map((tool) => {
-    // JSON imports widen the empty-string hidden flag to string.
-    if (tool.hidden !== "" && typeof tool.hidden !== "boolean") {
-        throw new Error(`Invalid hidden flag in tool fixture: ${tool.id}`);
-    }
-    return getFakeTool({ ...tool, hidden: tool.hidden });
-});
-
 const routerPushMock = vi.fn();
 
 // Keep real router exports for mounted RouterLinks while observing useRouter pushes.
@@ -69,27 +65,11 @@ vi.mock("vue-router", async (importOriginal) => {
     };
 });
 
-const localVue = getLocalVue();
 const router = createTestRouter();
 
 describe("ToolsList", () => {
     let fetchToolsMock: ReturnType<typeof useToolStore>["fetchTools"];
-    let pinia: ReturnType<typeof createTestingPinia>;
-
     beforeEach(() => {
-        pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        const ownedPinia = pinia;
-        onTestFinished(() => disposePinia(ownedPinia));
-        setActivePinia(pinia);
-
-        const toolStore = useToolStore(pinia);
-        toolStore.toolsById = Object.fromEntries(toolsList.map((tool) => [tool.id, tool]));
-        fetchToolsMock = vi.spyOn(toolStore, "fetchTools").mockResolvedValue();
-        vi.spyOn(toolStore, "fetchToolSections").mockResolvedValue();
-        vi.spyOn(toolStore, "fetchToolTagsMapping").mockResolvedValue();
-        vi.spyOn(toolStore, "fetchHelpForId").mockResolvedValue();
-
-        // Clear the router mock between tests
         routerPushMock.mockClear();
     });
 
@@ -101,21 +81,28 @@ describe("ToolsList", () => {
         vi.restoreAllMocks();
         routerPushMock.mockClear();
     });
-    enableAutoUnmount(afterEach);
     afterEach(async () => {
         // Settle child/store work before unmounting and disposing the stores it uses.
         await flushPromises();
     });
 
-    function mountToolsList(props: InstanceType<typeof ToolsList>["$props"] = {}) {
-        return mount(ToolsList, {
-            global: withPlugins(localVue, pinia, router),
+    async function mountToolsList(props: InstanceType<typeof ToolsList>["$props"] = {}) {
+        const wrapper = mountStory(stories.ToolCatalog, {
             props,
+            router,
+            // Exact query/payload tests retain the original controlled actions.
+            pinia: { stubActions: ["fetchTools", "fetchToolSections", "fetchToolTagsMapping", "fetchHelpForId"] },
         });
+        const pinia = ensureDefined(getActivePinia());
+        onTestFinished(() => disposePinia(pinia));
+        await vi.waitFor(() => expect(wrapper.findComponent(ToolsList).exists()).toBe(true));
+        fetchToolsMock = useToolStore(pinia).fetchTools;
+        await flushPromises();
+        return wrapper.getComponent(ToolsList);
     }
 
     it("performs an advanced search with a router push", async () => {
-        const wrapper = mountToolsList();
+        const wrapper = await mountToolsList();
 
         // By default, no search text, fetch tools is still called but without a query
         expect(fetchToolsMock).toHaveBeenCalledWith("");
@@ -145,21 +132,20 @@ describe("ToolsList", () => {
     });
 
     it("detects filters in the route and searches the backend", async () => {
-        mountToolsList(FILTER_SETTINGS);
+        await mountToolsList(FILTER_SETTINGS);
 
         expect(fetchToolsMock).toHaveBeenCalledWith(WHOOSH_QUERY);
     });
 
     it("detects repeated tag filters in the route and searches the backend", async () => {
-        mountToolsList(TAG_FILTER_SETTINGS);
+        await mountToolsList(TAG_FILTER_SETTINGS);
 
         expect(fetchToolsMock).toHaveBeenCalledWith(TAG_WHOOSH_QUERY);
     });
 
     it("emits repeated tag filters to the router query", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         routerPushMock.mockClear();
 
@@ -176,9 +162,8 @@ describe("ToolsList", () => {
     });
 
     it("autocompletes multi-word tags in the main search bar", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         routerPushMock.mockClear();
 
@@ -206,9 +191,8 @@ describe("ToolsList", () => {
     });
 
     it("does not re-open autocomplete for a complete multi-word tag missing only the closing quote", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         const input = wrapper.get<HTMLInputElement>("input.search-query");
         await input.setValue('tag:"data cleanup');
@@ -223,9 +207,8 @@ describe("ToolsList", () => {
     });
 
     it("quotes multi-word tag filters when a tool card tag is clicked", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         routerPushMock.mockClear();
 
@@ -246,7 +229,7 @@ describe("ToolsList", () => {
     });
 
     it("renders route-provided multi-word tags with quotes in the search bar", async () => {
-        const wrapper = mountToolsList({ tag: ["data cleanup"] });
+        const wrapper = await mountToolsList({ tag: ["data cleanup"] });
 
         await flushPromises();
 
@@ -259,7 +242,7 @@ describe("ToolsList", () => {
         // empty page. We fold `section=Get Data` into the tag filter; if no tag
         // exists with that name the result is empty (same as today), otherwise
         // the link keeps working.
-        const wrapper = mountToolsList({ section: "Get Data" });
+        const wrapper = await mountToolsList({ section: "Get Data" });
 
         await flushPromises();
 
@@ -268,9 +251,8 @@ describe("ToolsList", () => {
     });
 
     it("passes explicit boolean tag expressions through as raw search", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         routerPushMock.mockClear();
 
@@ -287,9 +269,8 @@ describe("ToolsList", () => {
     });
 
     it("preserves mixed quoted-tag and free-text input as raw search text", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         routerPushMock.mockClear();
 
@@ -306,9 +287,8 @@ describe("ToolsList", () => {
     });
 
     it("translates mixed tag and ontology search into a valid whoosh query", async () => {
+        const wrapper = await mountToolsList();
         vi.useFakeTimers();
-
-        const wrapper = mountToolsList();
 
         routerPushMock.mockClear();
 
