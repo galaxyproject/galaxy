@@ -147,6 +147,7 @@ provide(checkboxGroupKey, {
     &.g-stacked {
         flex-direction: column;
         align-items: flex-start;
+        row-gap: 0;
     }
 }
 </style>
