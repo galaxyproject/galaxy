@@ -23,8 +23,15 @@ const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
 const disableDownload = computed(() => props.dsc.populated_state !== "ok");
-// A hidden or deleted collection would be imported out of sight on the other Galaxy.
-const showExport = computed(() => !disableDownload.value && props.dsc.visible && !props.dsc.deleted);
+// A hidden or deleted collection would be imported out of sight on the other Galaxy, and elements that are not
+// ok yet, like datasets, have no finished data to move.
+const showExport = computed(
+    () =>
+        !disableDownload.value &&
+        props.dsc.visible &&
+        !props.dsc.deleted &&
+        Object.entries(props.dsc.elements_states ?? {}).every(([state, count]) => state === "ok" || !count),
+);
 
 const hasSampleSheet = computed(() => {
     return props.dsc.collection_type && props.dsc.collection_type.startsWith("sample_sheet");
