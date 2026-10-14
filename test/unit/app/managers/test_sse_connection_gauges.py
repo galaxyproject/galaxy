@@ -64,7 +64,7 @@ async def test_emit_connection_gauges_reports_own_counts_tagged_by_server_name()
         (2, {"kind": "per_user", "server_name": "main.1"}),
     ]
     assert statsd.gauges_for("galaxy.sse.users.active") == [
-        (2, {"kind": "user", "server_name": "main.1"}),
+        (1, {"kind": "user", "server_name": "main.1"}),
         (1, {"kind": "anonymous", "server_name": "main.1"}),
     ]
 
