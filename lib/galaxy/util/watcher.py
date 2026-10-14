@@ -6,7 +6,11 @@ import logging
 import os.path
 import threading
 import time
-from typing import Any
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -99,7 +103,7 @@ class _SharedObserver:
                 self.observer.unschedule(watch)
 
 
-_shared_observers: dict[Any, _SharedObserver] = {}
+_shared_observers: Dict[Any, _SharedObserver] = {}
 _shared_observers_lock = threading.Lock()
 
 
@@ -146,7 +150,7 @@ class BaseWatcher:
         self.observer_class = observer_class
         self.event_handler = event_handler_class(self)
         self.monitored_dirs = {}
-        self._shared_observer: _SharedObserver | None = None
+        self._shared_observer: Optional[_SharedObserver] = None
         self._dispatch_handler = _ExceptionLoggingEventHandler(self)
         self._watches = {}
 
