@@ -3,9 +3,15 @@
     <BForm @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
-            <span v-g-tooltip.hover title="Hide Attribute"
-                ><FontAwesomeIcon :icon="faEyeSlash" @click="onHide(attribute.key)"
-            /></span>
+            <GButton
+                v-g-tooltip.hover
+                transparent
+                icon-only
+                inline
+                title="Hide Attribute"
+                @click="onHide(attribute.key)">
+                <FontAwesomeIcon :icon="faEyeSlash" />
+            </GButton>
             <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>
             <BFormInput
                 :id="attribute.key"

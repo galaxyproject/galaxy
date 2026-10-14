@@ -6,6 +6,7 @@ import { computed, ref } from "vue";
 import type { JobExportHistoryArchiveModel } from "@/api/histories.export";
 import { copy } from "@/utils/clipboard";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
@@ -21,13 +22,16 @@ const link = computed(() => props.historyExport.external_download_permanent_url)
 <template>
     <span>
         <GLink class="generated-export-link" :href="link">{{ link }}</GLink>
-        <span v-g-tooltip.hover title="Copy export URL to your clipboard">
-            <FontAwesomeIcon
-                class="copy-export-link"
-                :icon="faLink"
-                style="cursor: pointer"
-                @click="() => copy(link, 'Export URL copied to your clipboard')" />
-        </span>
+        <GButton
+            v-g-tooltip.hover
+            class="copy-export-link"
+            transparent
+            icon-only
+            inline
+            title="Copy export URL to your clipboard"
+            @click="copy(link, 'Export URL copied to your clipboard')">
+            <FontAwesomeIcon :icon="faLink" />
+        </GButton>
         <i
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
             (<GLink class="font-italic show-job-link" thin @click="() => (details = true)">view job details</GLink>)

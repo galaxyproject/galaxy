@@ -7,6 +7,7 @@ import type { DatasetSource } from "@/api";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetSourceTransform from "@/components/DatasetInformation/DatasetSourceTransform.vue";
 
 interface Props {
@@ -37,9 +38,9 @@ function copyLink() {
             {{ source.source_uri }}
         </span>
 
-        <span v-g-tooltip.hover title="Copy URI">
-            <FontAwesomeIcon :icon="faCopy" style="cursor: pointer" @click="copyLink" />
-        </span>
+        <GButton v-g-tooltip.hover transparent icon-only inline title="Copy URI" @click="copyLink">
+            <FontAwesomeIcon :icon="faCopy" />
+        </GButton>
 
         <br />
 

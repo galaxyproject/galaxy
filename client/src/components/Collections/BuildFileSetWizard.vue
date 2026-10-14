@@ -276,15 +276,16 @@ const {
             </GAlert>
             <h2 data-galaxy-file-drop-target>
                 {{ title }}
-                <a v-g-tooltip.hover aria-label="Upload Completed Workbook" :title="dropWorkbookTitle" href="#">
-                    <FontAwesomeIcon
-                        class="workbook-upload-helper mr-1"
-                        :class="dropZoneClasses"
-                        :icon="faUpload"
-                        @click.prevent="browseFiles"
-                        @drop.prevent="handleDrop"
-                        @dragover.prevent="isDragging = true"
-                        @dragleave.prevent="isDragging = false" />
+                <a
+                    v-g-tooltip.hover
+                    aria-label="Upload Completed Workbook"
+                    :title="dropWorkbookTitle"
+                    href="#"
+                    @click.prevent="browseFiles"
+                    @drop.prevent="handleDrop"
+                    @dragover.prevent="isDragging = true"
+                    @dragleave.prevent="isDragging = false">
+                    <FontAwesomeIcon class="workbook-upload-helper mr-1" :class="dropZoneClasses" :icon="faUpload" />
                 </a>
                 <HiddenWorkbookUploadInput
                     ref="uploadRef"

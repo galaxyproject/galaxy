@@ -7,6 +7,7 @@ import { computed, ref } from "vue";
 import type { UserConcreteObjectStoreModel } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import ObjectStoreSelect from "./ObjectStoreSelect.vue";
 
@@ -49,8 +50,15 @@ const selectionText = computed(() => {
             <ObjectStoreSelect :object-stores="objectStores" @select="onSelect" />
         </GModal>
         <BLink href="#" @click="showModal = true">{{ selectionText }}</BLink>
-        <span v-if="value" v-g-tooltip.hover title="Remove Filter">
-            <FontAwesomeIcon :icon="faTimes" @click="onSelect(undefined)" />
-        </span>
+        <GButton
+            v-if="value"
+            v-g-tooltip.hover
+            transparent
+            icon-only
+            inline
+            title="Remove Filter"
+            @click="onSelect(undefined)">
+            <FontAwesomeIcon :icon="faTimes" />
+        </GButton>
     </span>
 </template>
