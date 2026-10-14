@@ -22,6 +22,7 @@ class FastAPIWidgets:
     @router.get(
         "/api/widgets",
         public=True,
+        unstable=True,
         summary="Lists the widgets this Galaxy serves",
         description="`/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, "
         "showing only an error inside the page. Consumers check this list for the widgets and parameters "
