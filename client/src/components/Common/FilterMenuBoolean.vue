@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BFormCheckbox, BFormGroup, BFormRadioGroup } from "bootstrap-vue";
+import { BFormGroup, BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
+
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 type FilterType = string | boolean | undefined;
 
@@ -58,7 +60,11 @@ const value = computed({
         <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
 
         <div v-if="isCheckbox" :data-description="`filter ${props.name}`">
-            <BFormCheckbox v-model="value" />
+            <!-- value is "any" when unset, which is not a checked state -->
+            <GCheckbox
+                :aria-label="props.filter.placeholder"
+                :model-value="value === true"
+                @update:model-value="value = $event" />
         </div>
         <BFormGroup v-else class="m-0">
             <BFormRadioGroup
