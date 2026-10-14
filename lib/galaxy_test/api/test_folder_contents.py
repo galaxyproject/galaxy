@@ -277,10 +277,9 @@ class TestFolderContentsApi(ApiTestCase):
                 content=f"{'0' * dataset_sizes[index]}",
                 ldda_message=ldda_messages[index],
                 file_type=file_types[index],
+                # The upload job finishing touches the library copy, so wait to keep update_time in creation order.
+                wait=True,
             )
-
-        # Wait for datasets to finish upload
-        self.dataset_populator.wait_for_history(history_id)
 
         # Folders always have priority (they show-up before any dataset regardless of the sorting) and they
         # can only be sorted by name, description and update_time, the other sorting attributes are ignored
