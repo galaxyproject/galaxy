@@ -5,6 +5,9 @@ Protected datasets are stored encrypted. Decrypting them for a job requires a
 to a compute keypair) that a user submits for themselves. Grants are bound to a
 ``(user, Dataset)`` pair and kept out of dataset metadata, so copying, sharing,
 importing or exporting a dataset never transfers the ability to decrypt it.
+
+Crypt4GH is the only protection scheme. Grants record their scheme, so that another
+one can be added next to it.
 """
 
 import base64
@@ -20,7 +23,6 @@ from datetime import (
 )
 from typing import (
     Any,
-    Protocol,
     TYPE_CHECKING,
 )
 
@@ -38,6 +40,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.job_execution.protection import (
+    CRYPT4GH_SCHEME,
     protected_inputs_directory,
     ProtectedFile,
     ProtectedInput,
@@ -96,6 +99,11 @@ GRANT_SOURCE_USER = "user"
 PROTECTED_TOOL_TYPES = ("default",)
 # Outputs are encrypted after the tool ran, the compute key must outlive the job.
 JOB_TTL_MARGIN = timedelta(hours=1)
+# Grants closer than this to their expiration can no longer be used by the key service:
+# crypt4gh-recryptor-service refuses compute keypairs expiring within a day.
+KEY_SERVICE_EXPIRY_MARGIN = timedelta(days=1)
+# The key service issues keypairs valid for 7 days, anything far beyond is not a real expiration.
+MAX_GRANT_LIFETIME = timedelta(days=31)
 
 
 def _can_decrypt_inputs(tool: "Tool") -> bool:
@@ -291,103 +299,70 @@ class GrantRecord:
         self.grant_data = grant_data
 
 
-class ProtectionScheme(Protocol):
-    name: str
-    # Grants closer than this to their expiration can no longer be used by the key service.
-    expiry_margin: timedelta
+def validate_crypt4gh_grant(payload: Crypt4GHGrantPayload) -> GrantRecord:
+    """Check the compute header returned by the user's key service, and that jobs can use its keypair."""
+    try:
+        header = base64.b64decode(payload.crypt4gh_compute_header, validate=True)
+    except ValueError:
+        raise RequestParameterInvalidException("crypt4gh_compute_header is not valid base64.")
+    try:
+        parsed_header = read_crypt4gh_header(io.BytesIO(header))
+    except ValueError as e:
+        raise RequestParameterInvalidException(f"crypt4gh_compute_header is not a Crypt4GH header: {e}")
+    if parsed_header != header:
+        raise RequestParameterInvalidException("crypt4gh_compute_header must contain only the Crypt4GH header.")
 
-    def handles(self, dataset_instance: DatasetInstance) -> bool: ...
-
-    def validate_user_grant(self, payload: Crypt4GHGrantPayload) -> GrantRecord: ...
-
-
-class Crypt4GHProtectionScheme:
-    name = "crypt4gh"
-    # crypt4gh-recryptor-service refuses compute keypairs expiring within a day.
-    expiry_margin = timedelta(days=1)
-    # The service issues keypairs valid for 7 days, anything far beyond is not a real expiration.
-    max_grant_lifetime = timedelta(days=31)
-
-    def handles(self, dataset_instance: DatasetInstance) -> bool:
-        return isinstance(dataset_instance.datatype, Crypt4GH)
-
-    def validate_user_grant(self, payload: Crypt4GHGrantPayload) -> GrantRecord:
-        try:
-            header = base64.b64decode(payload.crypt4gh_compute_header, validate=True)
-        except ValueError:
-            raise RequestParameterInvalidException("crypt4gh_compute_header is not valid base64.")
-        try:
-            parsed_header = read_crypt4gh_header(io.BytesIO(header))
-        except ValueError as e:
-            raise RequestParameterInvalidException(f"crypt4gh_compute_header is not a Crypt4GH header: {e}")
-        if parsed_header != header:
-            raise RequestParameterInvalidException("crypt4gh_compute_header must contain only the Crypt4GH header.")
-
-        expires_at = payload.crypt4gh_compute_keypair_expiration_date
-        current_time = now()
-        if expires_at <= current_time:
-            raise RequestParameterInvalidException("The compute keypair has already expired, recrypt the dataset.")
-        if expires_at <= current_time + self.expiry_margin:
-            # The key service would refuse to use it.
-            raise RequestParameterInvalidException(
-                "The compute keypair expires within a day, jobs can't use it. Authorize the dataset again, and "
-                "contact your Galaxy administrator if this keeps happening."
-            )
-        if expires_at > current_time + self.max_grant_lifetime:
-            raise RequestParameterInvalidException("crypt4gh_compute_keypair_expiration_date is too far in the future.")
-
-        return GrantRecord(
-            key_ref=payload.crypt4gh_compute_keypair_id,
-            expires_at=expires_at,
-            grant_data={"compute_header": payload.crypt4gh_compute_header},
+    expires_at = payload.crypt4gh_compute_keypair_expiration_date
+    current_time = now()
+    if expires_at <= current_time:
+        raise RequestParameterInvalidException("The compute keypair has already expired, recrypt the dataset.")
+    if expires_at <= current_time + KEY_SERVICE_EXPIRY_MARGIN:
+        # The key service would refuse to use it.
+        raise RequestParameterInvalidException(
+            "The compute keypair expires within a day, jobs can't use it. Authorize the dataset again, and "
+            "contact your Galaxy administrator if this keeps happening."
         )
+    if expires_at > current_time + MAX_GRANT_LIFETIME:
+        raise RequestParameterInvalidException("crypt4gh_compute_keypair_expiration_date is too far in the future.")
+
+    return GrantRecord(
+        key_ref=payload.crypt4gh_compute_keypair_id,
+        expires_at=expires_at,
+        grant_data={"compute_header": payload.crypt4gh_compute_header},
+    )
 
 
 class DatasetProtectionManager:
     def __init__(self, config: GalaxyAppConfiguration, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
-        self.schemes: dict[str, ProtectionScheme] = {}
-        if config.crypt4gh_enabled:
-            crypt4gh_scheme = Crypt4GHProtectionScheme()
-            self.schemes[crypt4gh_scheme.name] = crypt4gh_scheme
-
-    @property
-    def enabled(self) -> bool:
-        return bool(self.schemes)
-
-    def scheme_for(self, dataset_instance: DatasetInstance) -> ProtectionScheme | None:
-        for scheme in self.schemes.values():
-            if scheme.handles(dataset_instance):
-                return scheme
-        return None
+        self.enabled = bool(config.crypt4gh_enabled)
 
     def is_protected(self, dataset_instance: DatasetInstance) -> bool:
-        return self.scheme_for(dataset_instance) is not None
+        return self.enabled and isinstance(dataset_instance.datatype, Crypt4GH)
 
     def has_protected_inputs(self, job: Job) -> bool:
         """Whether any input of the job is protected, including collection elements."""
         associations: list[Any] = [*job.input_datasets, *job.input_library_datasets]
         return any(association.dataset and self.is_protected(association.dataset) for association in associations)
 
-    def get_grant(self, user: User, dataset: Dataset, scheme: str) -> DatasetProtectionGrant | None:
-        stmt = select(DatasetProtectionGrant).filter_by(user_id=user.id, dataset_id=dataset.id, scheme=scheme)
+    def get_grant(self, user: User, dataset: Dataset) -> DatasetProtectionGrant | None:
+        stmt = select(DatasetProtectionGrant).filter_by(user_id=user.id, dataset_id=dataset.id, scheme=CRYPT4GH_SCHEME)
         return self.sa_session.scalars(stmt).one_or_none()
 
-    def _get_or_create_grant(self, user: User, dataset: Dataset, scheme: str) -> DatasetProtectionGrant:
-        grant = self.get_grant(user, dataset, scheme)
+    def _get_or_create_grant(self, user: User, dataset: Dataset) -> DatasetProtectionGrant:
+        grant = self.get_grant(user, dataset)
         if grant is None:
-            grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=scheme)
+            grant = DatasetProtectionGrant(user=user, dataset=dataset, scheme=CRYPT4GH_SCHEME)
             self.sa_session.add(grant)
         return grant
 
     def get_usable_grant(self, user: User, dataset_instance: DatasetInstance) -> DatasetProtectionGrant | None:
         """Return the user's grant on this dataset if it can still be used by the key service."""
-        scheme = self.scheme_for(dataset_instance)
         dataset = dataset_instance.dataset
-        if scheme is None or dataset is None or dataset.purged:
+        if not self.is_protected(dataset_instance) or dataset is None or dataset.purged:
             return None
-        grant = self.get_grant(user, dataset, scheme.name)
-        if grant is None or grant.is_expired(scheme.expiry_margin) or "compute_header" not in grant.grant_data:
+        grant = self.get_grant(user, dataset)
+        if grant is None or grant.is_expired(KEY_SERVICE_EXPIRY_MARGIN) or "compute_header" not in grant.grant_data:
             # Without a compute header, the user still has to authorize the primary file.
             return None
         return grant
@@ -433,25 +408,24 @@ class DatasetProtectionManager:
         """
         if not self.enabled:
             raise ConfigDoesNotAllowException("Protected datasets are not enabled on this Galaxy server.")
-        scheme = self.scheme_for(dataset_instance)
-        if scheme is None or scheme.name != payload.scheme:
+        if not self.is_protected(dataset_instance):
             raise RequestParameterInvalidException(f"This dataset is not protected with the '{payload.scheme}' scheme.")
         dataset = dataset_instance.dataset
         if dataset is None or dataset.purged:
             raise RequestParameterInvalidException("Cannot grant access to a purged dataset.")
-        record = scheme.validate_user_grant(payload)
+        record = validate_crypt4gh_grant(payload)
 
         try:
-            self._store_user_grant(user, dataset, scheme.name, record)
+            self._store_user_grant(user, dataset, record)
         except IntegrityError:
             # Authorized concurrently (e.g. from another tab), replace the grant that was just stored.
             self.sa_session.rollback()
-            self._store_user_grant(user, dataset, scheme.name, record)
-        log.info("Registered %s grant for user %s on dataset %s", scheme.name, user.id, dataset.id)
+            self._store_user_grant(user, dataset, record)
+        log.info("Registered grant for user %s on dataset %s", user.id, dataset.id)
         return self.grant_status(user, dataset_instance)
 
-    def _store_user_grant(self, user: User, dataset: Dataset, scheme: str, record: GrantRecord) -> None:
-        grant = self._get_or_create_grant(user, dataset, scheme)
+    def _store_user_grant(self, user: User, dataset: Dataset, record: GrantRecord) -> None:
+        grant = self._get_or_create_grant(user, dataset)
         grant_data = dict(record.grant_data)
         if copied_extra_files := (grant.grant_data or {}).get("copied_extra_files"):
             grant_data["copied_extra_files"] = copied_extra_files
@@ -545,7 +519,7 @@ class DatasetProtectionManager:
         """Check the job may decrypt its protected inputs and build its protection plan.
 
         Returns ``None`` for jobs without inputs to decrypt, raises :class:`ProtectionError`
-        when the job must not run.
+        when the job must not run. Jobs decrypting their inputs are marked protected.
         """
         to_decrypt, passed_encrypted = self._protected_inputs(tool, param_values)
         if not to_decrypt:
@@ -557,17 +531,15 @@ class DatasetProtectionManager:
         destination = get_destination()
         destination.check(outputs_in_job_directory=_outputs_in_directory(job, compute_environment, job_directory))
         assert destination.recryptor
-        margin = JOB_TTL_MARGIN + (destination.walltime or timedelta(0))
+        # Outputs are encrypted after the job ran, the key service must still accept the keypair then.
+        margin = KEY_SERVICE_EXPIRY_MARGIN + JOB_TTL_MARGIN + (destination.walltime or timedelta(0))
 
         inputs_directory = protected_inputs_directory(job_directory)
         protected_inputs: list[ProtectedInput] = []
         grants: list[DatasetProtectionGrant] = []
         for dataset_instance in to_decrypt:
-            scheme = self.scheme_for(dataset_instance)
-            assert scheme
             grant = self.get_usable_grant(job.user, dataset_instance) if job.user else None
-            # Outputs are encrypted after the job ran, the key service must still accept the keypair then.
-            if grant is None or grant.is_expired(scheme.expiry_margin + margin):
+            if grant is None or grant.is_expired(margin):
                 raise ProtectionError(
                     f"You are not authorized to decrypt dataset '{_shown_name(dataset_instance)}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
@@ -576,7 +548,7 @@ class DatasetProtectionManager:
                 raise ProtectionError(_copied_extra_files_message(dataset_instance))
             if _lacks_extra_files(grant):
                 raise ProtectionError(_lacked_extra_files_message(dataset_instance))
-            if _extra_files_expire(grant, scheme.expiry_margin + margin):
+            if _extra_files_expire(grant, margin):
                 raise ProtectionError(
                     f"The extra files of dataset '{_shown_name(dataset_instance)}' can't be decrypted anymore: their "
                     "authorization comes from the job that created them, and it expires before this job can finish."
@@ -586,8 +558,8 @@ class DatasetProtectionManager:
                 self._protected_input(dataset_instance, grant, compute_environment, inputs_directory)
             )
 
+        job.protection_scheme = CRYPT4GH_SCHEME
         return ProtectionPlan(
-            scheme="crypt4gh",
             job_directory=job_directory,
             output_key_ref=max(grants, key=lambda grant: grant.expires_at).key_ref,
             recryptor=destination.recryptor,
@@ -757,9 +729,8 @@ class DatasetProtectionManager:
     ) -> None:
         assert job.user
         for dataset_instance, record in protected:
-            scheme = self.scheme_for(dataset_instance)
-            assert scheme and dataset_instance.dataset
-            grant = self._get_or_create_grant(job.user, dataset_instance.dataset, scheme.name)
+            assert dataset_instance.dataset
+            grant = self._get_or_create_grant(job.user, dataset_instance.dataset)
             grant.key_ref = key_ref
             grant.expires_at = expires_at
             extra_files = {relpath: header for relpath, header in record["extra_files"].items() if header}
@@ -776,8 +747,7 @@ class DatasetProtectionManager:
             grant.source = f"job:{job.id}"
 
     def grant_status(self, user: User | None, dataset_instance: DatasetInstance) -> DatasetProtectionStatus:
-        scheme = self.scheme_for(dataset_instance)
-        if scheme is None:
+        if not self.is_protected(dataset_instance):
             return DatasetProtectionStatus(protected=False)
         grant = self.get_usable_grant(user, dataset_instance) if user else None
         usable_until = None
@@ -785,10 +755,10 @@ class DatasetProtectionManager:
             # Authorizing the dataset again doesn't renew the keypair of extra files kept from its job.
             expirations = [grant.expires_at, _extra_files_expiration(grant)]
             # The key service refuses keypairs close to their expiration already.
-            usable_until = min(e for e in expirations if e is not None) - scheme.expiry_margin
+            usable_until = min(e for e in expirations if e is not None) - KEY_SERVICE_EXPIRY_MARGIN
         return DatasetProtectionStatus(
             protected=True,
-            scheme=scheme.name,
+            scheme=CRYPT4GH_SCHEME,
             ready=grant is not None,
             expires_at=usable_until,
         )

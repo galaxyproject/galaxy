@@ -12,10 +12,10 @@ import sys
 import traceback
 
 from galaxy.job_execution.protection import (
-    load_runtime,
     ProtectionError,
     ProtectionPlan,
 )
+from galaxy.job_execution.protection.crypt4gh import Crypt4GHJobRuntime
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def run(command: str, plan_path: str) -> int:
     try:
         plan = ProtectionPlan.read(plan_path)
         job_directory = plan.job_directory
-        runtime = load_runtime(plan)
+        runtime = Crypt4GHJobRuntime(plan)
         if command == "stage-in":
             runtime.stage_inputs()
         elif command == "cleanup-inputs":
