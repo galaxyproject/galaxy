@@ -82,23 +82,12 @@ class Crypt4GH(Binary):
     # --- Sniffing -----------------------------------------------------------
 
     def sniff(self, filename: str) -> bool:
-        """Return True if *filename* is a Crypt4GH file belonging to this datatype.
+        """Return True if *filename* is a Crypt4GH file.
 
-        For the generic ``c4gh`` wrapper, the magic-byte header check is
-        sufficient.  For typed wrappers (e.g. ``fastqsanger.c4gh``), the
-        original filename must also end with the expected inner extension
-        so that a generic file is not mis-attributed to a specific type.
+        The content of typed wrappers is encrypted, it can't tell them apart: only the
+        generic wrapper is in the sniff order.
         """
-        if not check_crypt4gh(filename):
-            return False
-        if self.file_ext == CRYPT4GH_FILE_EXT:
-            return True
-        basename = os.path.basename(filename)
-        unwrapped_name = unwrap_crypt4gh_file_ext(basename)
-        if unwrapped_name is None:
-            return False
-        inner_ext = unwrap_crypt4gh_file_ext(self.file_ext)
-        return inner_ext is not None and unwrapped_name.endswith(f".{inner_ext}")
+        return check_crypt4gh(filename)
 
     # --- Metadata -----------------------------------------------------------
 

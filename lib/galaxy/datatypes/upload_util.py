@@ -83,9 +83,10 @@ def handle_upload(
     # The converted path will be the same as the input path if no conversion was done (or in-place conversion is used)
     converted_path = None if converted_path == path else converted_path
 
-    # Validate datasets where the filetype was explicitly set using the filetype's sniffer (if any)
+    # Validate datasets where the filetype was explicitly set using the filetype's sniffer (if any).
+    # Encrypted uploads get the encrypted variant of the requested datatype, validate that one.
     if requested_ext != "auto":
-        datatype = registry.get_datatype_by_extension(requested_ext)
+        datatype = registry.get_datatype_by_extension(ext)
         # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
         if check_content and hasattr(datatype, "sniff"):
             try:
