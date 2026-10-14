@@ -86,6 +86,7 @@ class SSEConnectionManager:
     def __init__(self, statsd_client: VanillaGalaxyStatsdClient | None = None) -> None:
         self._connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._session_connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
+        self._anonymous_session_ids: set[int] = set()
         self._broadcast_connections: set[asyncio.Queue] = set()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._statsd_client = statsd_client
@@ -121,6 +122,8 @@ class SSEConnectionManager:
             self._connections[user_id].add(queue)
         if galaxy_session_id is not None:
             self._session_connections[galaxy_session_id].add(queue)
+            if user_id is None:
+                self._anonymous_session_ids.add(galaxy_session_id)
         self._broadcast_connections.add(queue)
         queue.put_nowait(SSEEvent(event="ready", data=""))
         log.debug(
@@ -154,6 +157,7 @@ class SSEConnectionManager:
             self._session_connections[galaxy_session_id].discard(queue)
             if not self._session_connections[galaxy_session_id]:
                 del self._session_connections[galaxy_session_id]
+                self._anonymous_session_ids.discard(galaxy_session_id)
                 self._purge_session_viewer_subscriptions(galaxy_session_id)
         self._broadcast_connections.discard(queue)
         log.debug(
@@ -319,6 +323,16 @@ class SSEConnectionManager:
             "galaxy.sse.connections.active",
             self.total_per_user_connections,
             tags={"kind": "per_user", "server_name": server_name},
+        )
+        self._statsd_client.gauge(
+            "galaxy.sse.users.active",
+            len(self._connections),
+            tags={"kind": "user", "server_name": server_name},
+        )
+        self._statsd_client.gauge(
+            "galaxy.sse.users.active",
+            len(self._anonymous_session_ids),
+            tags={"kind": "anonymous", "server_name": server_name},
         )
 
     # -- High-level streaming helper --

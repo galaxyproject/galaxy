@@ -3642,14 +3642,14 @@
 ``enable_sse_connection_metrics``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Description:
-    Emit the galaxy.sse.connections.active gauge from each web worker,
-    reporting how many Server-Sent Events connections that worker
-    currently holds (tagged by kind and server_name). Sampled on the
-    queue_metrics_interval cadence. Off by default so that enabling
-    statsd does not by itself start measuring SSE connections;
-    requires statsd_host to be set and queue_metrics_interval greater
-    than 0.
+    Emit the galaxy.sse.connections.active and galaxy.sse.users.active
+    gauges from each web worker, reporting its open Server-Sent Events
+    connections and distinct connected users. User counts are split into
+    logged-in users (`kind=user`) and anonymous browser sessions
+    (`kind=anonymous`); Sampled on the queue_metrics_interval cadence.
+    Off by default so that enabling statsd does not by itself start
+    measuring SSE connections; requires statsd_host to be set and
+    queue_metrics_interval greater than 0.
 :Default: ``false``
 :Type: bool
 

@@ -1,4 +1,4 @@
-"""Unit tests for the per-worker SSE connection-count gauge.
+"""Unit tests for per-worker SSE connection-count and active-user gauges.
 
 ``SSEConnectionManager.emit_connection_gauges`` is sampled inside each web
 worker (the only process that holds its connections), so these tests assert it
@@ -50,16 +50,50 @@ def _manager(statsd: FakeStatsdClient | None) -> SSEConnectionManager:
 async def test_emit_connection_gauges_reports_own_counts_tagged_by_server_name():
     statsd = FakeStatsdClient()
     manager = _manager(statsd)
-    # Two connections for a logged-in user, one anonymous (session-only).
+    # Two connections for a logged-in user, and two connections for the same anonymous user
+    # session.
     manager.connect(user_id=7)
     manager.connect(user_id=7)
+    manager.connect(user_id=None, galaxy_session_id=99)
     manager.connect(user_id=None, galaxy_session_id=99)
 
     manager.emit_connection_gauges("main.1")
 
     assert statsd.gauges_for("galaxy.sse.connections.active") == [
-        (3, {"kind": "broadcast", "server_name": "main.1"}),
+        (4, {"kind": "broadcast", "server_name": "main.1"}),
         (2, {"kind": "per_user", "server_name": "main.1"}),
+    ]
+    assert statsd.gauges_for("galaxy.sse.users.active") == [
+        (2, {"kind": "user", "server_name": "main.1"}),
+        (1, {"kind": "anonymous", "server_name": "main.1"}),
+    ]
+
+
+async def test_active_user_gauges_follow_last_connection_per_identity():
+    statsd = FakeStatsdClient()
+    manager = _manager(statsd)
+
+    user_connection_1 = manager.connect(user_id=7)
+    user_connection_2 = manager.connect(user_id=7)
+    anonymous_user_connection_1 = manager.connect(user_id=None, galaxy_session_id=99)
+    anonymous_user_connection_2 = manager.connect(user_id=None, galaxy_session_id=99)
+
+    manager.disconnect(7, user_connection_1)
+    manager.disconnect(None, anonymous_user_connection_1, galaxy_session_id=99)
+    manager.emit_connection_gauges("main.1")
+
+    assert statsd.gauges_for("galaxy.sse.users.active") == [
+        (1, {"kind": "user", "server_name": "main.1"}),
+        (1, {"kind": "anonymous", "server_name": "main.1"}),
+    ]
+
+    manager.disconnect(7, user_connection_2)
+    manager.disconnect(None, anonymous_user_connection_2, galaxy_session_id=99)
+    manager.emit_connection_gauges("main.1")
+
+    assert statsd.gauges_for("galaxy.sse.users.active")[-2:] == [
+        (0, {"kind": "user", "server_name": "main.1"}),
+        (0, {"kind": "anonymous", "server_name": "main.1"}),
     ]
 
 
