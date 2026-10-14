@@ -116,6 +116,16 @@ describe("GCard", () => {
             expect(ids).toEqual(expected);
         });
 
+        it("emits select from a named selection checkbox", async () => {
+            const wrapper = mountHeader();
+            const checkbox = wrapper.get("input#g-card-select-card");
+
+            expect(checkbox.attributes("aria-label")).toBe("Select for bulk actions");
+            await checkbox.setValue(true);
+
+            expect(wrapper.emitted("select")).toHaveLength(1);
+        });
+
         it("sizes the first row for header controls only when the card has them", () => {
             const withControls = mountHeader().find("#g-card-card-header .g-card-title-section");
             const withoutControls = mountCard({ badges: [{ id: "state", label: "ok", title: "State" }] }).find(

@@ -12,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useResizeObserver } from "@vueuse/core";
-import { BBadge, BFormCheckbox, BLink } from "bootstrap-vue";
+import { BBadge, BLink } from "bootstrap-vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
@@ -26,6 +26,7 @@ import { chooseHeaderLayout, type GCardHeaderLayout } from "./gCardHeaderLayout"
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
@@ -527,12 +528,14 @@ function onKeyDown(event: KeyboardEvent) {
                             ref="selectElement"
                             class="g-card-header-select g-card-header-line align-items-center d-flex flex-shrink-0">
                             <slot name="select">
-                                <BFormCheckbox
+                                <GCheckbox
                                     :id="getElementId(props.id, 'select')"
                                     v-g-tooltip.hover
-                                    :checked="selected"
+                                    class="g-card-select-checkbox"
+                                    :model-value="selected"
                                     :title="props.selectTitle || localize('Select for bulk actions')"
-                                    @change="emit('select')" />
+                                    :aria-label="props.selectTitle || localize('Select for bulk actions')"
+                                    @update:model-value="emit('select')" />
                             </slot>
                         </div>
 
@@ -1008,6 +1011,11 @@ function onKeyDown(event: KeyboardEvent) {
     .g-card-header-line {
         // One shared first-row height so the checkbox, title, badges and actions center on the same line.
         min-height: 1.5rem;
+    }
+
+    :deep(.g-card-select-checkbox) {
+        // Keeps the 1.5rem slot BootstrapVue's custom checkbox reserved, so titles stay where they were.
+        min-width: 1.5rem;
     }
 
     .g-card-title-section {
