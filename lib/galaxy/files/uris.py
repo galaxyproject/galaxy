@@ -45,9 +45,6 @@ from galaxy.util.path import safe_relpath
 
 log = logging.getLogger(__name__)
 
-# Concurrent requests used to fetch the files of a directory.
-DIRECTORY_FETCH_WORKERS = 8
-
 _thread_http_session = threading.local()
 
 
@@ -209,48 +206,16 @@ class UriDirectoryReader:
         unlink(target_path, ignore_errors=True)
         return found
 
-    def fetch_all(self, rel_paths: Iterable[str], target_dir: str, workers: int = DIRECTORY_FETCH_WORKERS) -> int:
-        """Fetch ``rel_paths`` under ``target_dir`` concurrently; return how many do not exist.
+    def fetch_all(self, rel_paths: Iterable[str], target_dir: str) -> int:
+        """Fetch ``rel_paths`` under ``target_dir`` one at a time; return how many do not exist.
 
-        ``rel_paths`` is consumed lazily, and each worker reuses its HTTP connections. The
-        first error stops all workers and is raised.
+        ``rel_paths`` is consumed lazily, and HTTP connections are reused for all requests.
         """
-        pending = iter(rel_paths)
-        lock = threading.Lock()
         missing = 0
-        errors: list[Exception] = []
-
-        def work() -> None:
-            nonlocal missing
-            with reuse_http_connections():
-                while True:
-                    with lock:
-                        if errors:
-                            return
-                        try:
-                            rel_path = next(pending, None)
-                        except Exception as e:
-                            errors.append(e)
-                            return
-                    if rel_path is None:
-                        return
-                    try:
-                        found = self.fetch(rel_path, target_dir)
-                    except Exception as e:
-                        with lock:
-                            errors.append(e)
-                        return
-                    if not found:
-                        with lock:
-                            missing += 1
-
-        threads = [threading.Thread(target=work, daemon=True) for _ in range(workers)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
-        if errors:
-            raise errors[0]
+        with reuse_http_connections():
+            for rel_path in rel_paths:
+                if not self.fetch(rel_path, target_dir):
+                    missing += 1
         return missing
 
 

@@ -61,22 +61,22 @@ def test_fetch_all_reuses_connections_and_counts_missing_files(
     # Missing files first: an error answer must not close the connection either.
     rel_paths = [f"missing{i}" for i in range(10)] + [str(i) for i in range(20)]
 
-    missing = _reader(served_directory.base_url).fetch_all(rel_paths, str(target), workers=2)
+    missing = _reader(served_directory.base_url).fetch_all(rel_paths, str(target))
 
     assert missing == 10
     assert sorted(os.listdir(target)) == sorted(str(i) for i in range(20))
     assert (target / "7").read_text() == "7"
-    # Each of the two workers reuses its connection for all its requests.
-    assert len(served_directory.client_ports) <= 2
+    # One connection is reused for all requests.
+    assert len(served_directory.client_ports) == 1
 
 
-def test_fetch_all_raises_the_first_error(served_directory: ServedDirectory, tmp_path: Path) -> None:
+def test_fetch_all_raises_errors(served_directory: ServedDirectory, tmp_path: Path) -> None:
     def rel_paths() -> Iterator[str]:
         yield "a"
         raise ValueError("cannot compute keys")
 
     with pytest.raises(ValueError, match="cannot compute keys"):
-        _reader(served_directory.base_url).fetch_all(rel_paths(), str(tmp_path), workers=2)
+        _reader(served_directory.base_url).fetch_all(rel_paths(), str(tmp_path))
 
 
 def test_fetch_refuses_unsafe_paths(served_directory: ServedDirectory, tmp_path: Path) -> None:
