@@ -2,5 +2,5 @@
 branch = True
 include =
     packages/*/src/galaxy/*
-    lib/galaxy_test/*
+    packages/*/src/galaxy_test/*
 disable_warnings = include-ignored

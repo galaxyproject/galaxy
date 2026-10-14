@@ -5,14 +5,11 @@ from typing import (
     Any,
 )
 
-from pytest import skip
-
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.util import (
     galaxy_directory,
-    in_packages,
 )
 from galaxy.util.unittest import TestCase
 from .util import dict_verify_each
@@ -198,11 +195,6 @@ class TestTestParsing(TestCase):
         self._verify_each(test_0, COLLECTION_TEST_PAIRED_Y_EXPECTATIONS)
 
     def test_bigwigtowig_converter(self):
-        # defines
-        if in_packages():
-            skip(
-                "skipping this mode for now - we need a framework test tool that skips names and just specifies arguments"
-            )
         tool_path = os.path.join(
             galaxy_directory(),
             "packages",
@@ -218,8 +210,6 @@ class TestTestParsing(TestCase):
         self._verify_each(test_dicts[1].to_dict(), BIGWIG_TO_WIG_EXPECTATIONS)
 
     def test_harmonize_bare_ftype_output_check(self):
-        if in_packages():
-            skip("tool not available when running from packages")
         tool_path = os.path.join(
             galaxy_directory(), "packages", "app", "src", "galaxy", "tools", "harmonize_two_collections_list.xml"
         )

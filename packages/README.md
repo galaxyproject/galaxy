@@ -35,8 +35,8 @@ unrelated broad upgrade in a source-move change.
 
 Sources live in `packages/<name>/src` and unit tests in
 `packages/<name>/tests`. Keep Python code in its owning distribution; shared
-fixture and frontend asset links remain. Repository-wide test support stays
-in `lib/galaxy_test`, with composed application tests under `test/`.
+fixture and frontend asset links remain. Shared pytest and sharding support lives in `packages/test_driver`;
+composed application tests and their fixtures live under `test/`.
 
 ### Development profiles
 

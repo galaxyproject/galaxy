@@ -1937,11 +1937,6 @@ def galaxy_directory() -> str:
     )
 
 
-def in_packages() -> bool:
-    galaxy_lib_path = Path(__file__).parent.parent.parent
-    return galaxy_lib_path.name != "lib"
-
-
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
     """
     Parse the ``directories_setting`` into a list of relative or absolute

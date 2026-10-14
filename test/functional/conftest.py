@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from galaxy_test.conftest import pytest_plugins  # noqa: F401
 from galaxy_test.driver.driver_util import GalaxyTestDriver
+from galaxy_test.driver.pytest import pytest_plugins  # noqa: F401
 from .test_toolbox_pytest import TestFrameworkTools
 
 

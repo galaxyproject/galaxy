@@ -11,8 +11,6 @@ from galaxy.util import (
 )
 from galaxy.util.unittest_utils.test_http_server import test_http_server as test_http_server  # noqa: F401
 from galaxy.web import statsd_client as statsd
-from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 pytest_plugins = ("celery.contrib.pytest",)
 
@@ -20,24 +18,6 @@ pytest_plugins = ("celery.contrib.pytest",)
 @pytest.fixture(scope="session", autouse=True)
 def celery_includes():
     yield ["galaxy.celery.tasks"]
-
-
-@pytest.fixture(scope="session")
-def real_driver():
-    if not os.environ.get("GALAXY_TEST_ENVIRONMENT_CONFIGURED"):
-        driver = GalaxyTestDriver()
-        driver.setup(ApiTestCase)
-        try:
-            yield driver
-        finally:
-            driver.tear_down()
-    else:
-        yield None
-
-
-@pytest.fixture(scope="class")
-def embedded_driver(real_driver, request):
-    request.cls._test_driver = real_driver
 
 
 def get_timings(test_uuid):
@@ -60,8 +40,8 @@ def get_timings(test_uuid):
 
 def pytest_configure(config):
     if config.pluginmanager.hasplugin("pytest_jsonreport"):
-        if config.getoption("json_report"):
-            config.pluginmanager.register(JsonReportHooks())
+        if config.getoption("json_report") and not config.pluginmanager.hasplugin("galaxy-json-report"):
+            config.pluginmanager.register(JsonReportHooks(), "galaxy-json-report")
 
 
 class JsonReportHooks:

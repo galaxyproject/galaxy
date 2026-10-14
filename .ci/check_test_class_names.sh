@@ -4,8 +4,8 @@ set -e
 TEST=$(mktemp)
 TEST_EXTRA_CLASSES=$(mktemp)
 
-pytest --collect-only --ignore=test/functional lib/galaxy_test/ packages/*/tests/ $(find test/ -mindepth 1 -maxdepth 1 -type d) > "$TEST"
-pytest -o python_classes='Test* *Test *TestCase' --collect-only --ignore=test/functional lib/galaxy_test/ packages/*/tests/ $(find test/ -mindepth 1 -maxdepth 1 -type d) > "$TEST_EXTRA_CLASSES"
+pytest --collect-only --ignore=test/functional packages/*/tests/ $(find test/ -mindepth 1 -maxdepth 1 -type d) > "$TEST"
+pytest -o python_classes='Test* *Test *TestCase' --collect-only --ignore=test/functional packages/*/tests/ $(find test/ -mindepth 1 -maxdepth 1 -type d) > "$TEST_EXTRA_CLASSES"
 
 n_tests=$(grep 'tests collected' "$TEST" | sed -e 's/[^0-9]*\([0-9]*\) tests collected.*/\1/')
 n_tests_extra_classes=$(grep 'tests collected' "$TEST_EXTRA_CLASSES" | sed -e 's/[^0-9]*\([0-9]*\) tests collected.*/\1/')

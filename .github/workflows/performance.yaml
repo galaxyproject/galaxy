@@ -63,7 +63,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --ci_test_metrics --structured_data_html --structured_data_report_file "test.json" --skip_flakey_fails -api lib/galaxy_test/performance
+        run: ./run_tests.sh --ci_test_metrics --structured_data_html --structured_data_report_file "test.json" --skip_flakey_fails -api test/performance
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v7
         if: failure()

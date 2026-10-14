@@ -32,7 +32,7 @@ can be found in ``client/README.md`` of the Galaxy codebase.
 | API | ``packages/test_api/src/galaxy_test/api/`` | ``./run_tests.sh -api`` | Backend tests via API |
 | Integration | ``test/integration/`` | ``./run_tests.sh -integration`` | Custom Galaxy config |
 | Framework | ``test/functional/tools/`` | ``./run_tests.sh -framework`` | Tool XML testing |
-| Workflow Framework | ``lib/galaxy_test/workflow/`` | ``./run_tests.sh -framework-workflows`` | Workflow evaluation |
+| Workflow Framework | ``test/workflow/`` | ``./run_tests.sh -framework-workflows`` | Workflow evaluation |
 | Selenium | ``packages/test_selenium/src/galaxy_test/selenium/`` | ``./run_tests.sh -selenium`` | UI tests (WebDriver) |
 | Playwright | ``packages/test_selenium/src/galaxy_test/selenium/`` | ``./run_tests.sh -playwright`` | UI tests (Playwright) |
 | Selenium Integration | ``test/integration_selenium/`` | ``./run_tests.sh -selenium`` | UI + custom config |
@@ -125,7 +125,7 @@ find the right documentation for a given test one wishes to write.
 
               Workflow framework tests verify workflow evaluation by running
               workflows and checking outputs. These are located in
-              ``lib/galaxy_test/workflow/``. Checkout
+              ``test/workflow/``. Checkout
               [Workflow Framework Tests](#workflow_framework) below for more
               information.
 
@@ -279,7 +279,7 @@ GitHub actions workflow definition for these tests is located in
 
 Similar to Tool Framework Tests, Workflow Framework Tests test Galaxy's
 workflow evaluation engine by running workflows and verifying outputs.
-These tests are located in ``lib/galaxy_test/workflow``.
+These tests are located in ``test/workflow``.
 
 Each workflow test consists of two files:
 

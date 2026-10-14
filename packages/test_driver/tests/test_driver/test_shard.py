@@ -1,6 +1,6 @@
 from collections import Counter
 
-from galaxy_test.shard import (
+from galaxy_test.driver.shard import (
     assign_groups_to_shards,
     build_groups,
     select_shard,

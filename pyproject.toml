@@ -222,7 +222,7 @@ exclude = [
     "packages/tool_shed/src/tool_shed/test/test_data/repos"
 ]
 line-length = 120
-src = ["lib", "packages/*/src"]
+src = ["packages/*/src"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),

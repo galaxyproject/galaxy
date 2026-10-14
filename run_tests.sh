@@ -424,7 +424,7 @@ do
           fi
           ;;
       -clean_pyc|--clean_pyc)
-          find lib -iname '*pyc' -exec rm -rf {} \;
+          find packages -iname '*pyc' -exec rm -rf {} \;
           find test -iname '*pyc' -exec rm -rf {} \;
           shift
           ;;
@@ -541,7 +541,7 @@ do
             --ignore packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools/
             --ignore packages/app/src/galaxy/tools/bundled
             --ignore packages/web_framework/src/galaxy/web/proxy/js/node_modules/
-            --ignore-glob=packages/test_*/src/* --ignore lib/galaxy_test
+            --ignore-glob=packages/test_*/src/*
             --ignore packages/tool_shed/src/tool_shed/test
             --ignore packages/tool_shed/src/tool_shed/webapp/controllers
             --ignore=packages/tool_shed/src/tool_shed/webapp/model/migrations/alembic/'
@@ -551,7 +551,7 @@ do
               unit_extra="$unit_extra $2"
               shift 2
           else
-              unit_extra="$unit_extra packages/*/src packages/*/tests lib test/unit"
+              unit_extra="$unit_extra packages/*/src packages/*/tests test/unit"
               shift 1
           fi
           ;;
@@ -621,7 +621,7 @@ elif [ -n "$framework_workflows_test" ]; then
     else
         selector=""
     fi
-    extra_args="lib/galaxy_test/workflow/test_framework_workflows.py $selector"
+    extra_args="test/workflow/test_framework_workflows.py $selector"
 elif [ -n "$selenium_script" ]; then
     extra_args="$selenium_script"
 elif [ -n "$toolshed_script" ]; then
@@ -688,7 +688,7 @@ if [ -n "$generate_cwl_conformance_tests" ]; then
 fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$coverage_arg" = '--with-coverage' ]; then
-    coverage_arg="--cov-report xml --cov=packages --cov=lib"
+    coverage_arg="--cov-report xml --cov=packages"
 fi
 if [ -n "$marker" ]; then
     marker_args=(-m "$marker")

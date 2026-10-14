@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from galaxy_test.conftest import (  # noqa: F401
+from galaxy_test.driver.pytest import (  # noqa: F401
     celery_includes,
     pytest_configure,
     pytest_plugins,

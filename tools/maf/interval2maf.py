@@ -32,7 +32,7 @@ import bx.align.maf
 import bx.intervals.io
 from bx.cookbook import doc_optparse
 
-from galaxy.tools.util import maf_utilities
+from galaxy.datatypes.util import maf_utilities
 
 
 def __main__():

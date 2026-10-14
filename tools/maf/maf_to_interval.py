@@ -9,7 +9,7 @@ import sys
 
 from bx.align import maf
 
-from galaxy.tools.util import maf_utilities
+from galaxy.datatypes.util import maf_utilities
 
 
 def __main__():

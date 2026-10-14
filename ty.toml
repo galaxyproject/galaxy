@@ -1,7 +1,7 @@
 # Workspace members are installed as editables by uv; ty discovers their
 # public import roots through the project environment.
 [src]
-include = ["packages", "lib", "test"]
+include = ["packages", "test"]
 exclude = [
     "packages/*/build",
     "packages/*/dist",

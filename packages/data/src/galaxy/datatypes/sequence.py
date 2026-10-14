@@ -1019,7 +1019,7 @@ class Maf(Alignment):
         """
         # these metadata values are not accessable by users, always overwrite
         # Imported here to avoid circular dependency
-        from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
+        from galaxy.datatypes.util.maf_utilities import build_maf_index_species_chromosomes
 
         indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes(dataset.get_file_name())
         if indexes is None:

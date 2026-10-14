@@ -6,7 +6,7 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 UPSTREAM?=galaxyproject
 SOURCE_DIR?=src/galaxy
-BUILD_SCRIPTS_DIR=scripts
+BUILD_SCRIPTS_DIR=../build_scripts
 DEV_RELEASE?=0
 VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
 PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
@@ -81,7 +81,7 @@ _lint:
 lint: _lint
 
 lint-dist:
-	uvx --with-requirements ../../requirements/dev-requirements.txt --from twine twine check $(DIST)/*
+	uvx --from twine==6.2.0 twine check $(DIST)/*
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)

@@ -163,9 +163,8 @@ and the tracked `uv.lock` is the only lockfile. Regenerate it from the
 manifests rather than hand-editing it. Use the uv version pinned in
 `.tool-versions` at the repository root.
 
-Package sources live under `packages/*/src` (the former `lib/` tree now only
-contains the root `galaxy_test` test-support package) and package test suites
-live under `packages/*/tests`; public import names are unchanged. Development commands:
+Package sources live under `packages/*/src` and package test suites under
+`packages/*/tests`; composed application tests live under `test/`. Development commands:
 
 ```
 $ uv lock --check                                          # verify the lock is up to date

@@ -163,11 +163,6 @@ def test_safe_loads():
     assert safe_loads(s) == {"foo": "bar"}
 
 
-def test_in_packages(monkeypatch):
-    util_path = Path(util.__file__).parent
-    assert util.in_packages() == (util_path.parent.parent.name != "lib")
-
-
 def test_galaxy_directory(monkeypatch):
     galaxy_dir = util.galaxy_directory()
     assert os.path.isabs(galaxy_dir)

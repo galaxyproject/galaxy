@@ -11,7 +11,7 @@ import sys
 import bx.intervals.io
 from bx.bitset import BitSet
 
-from galaxy.tools.util import maf_utilities
+from galaxy.datatypes.util import maf_utilities
 
 
 def __main__():

@@ -64,7 +64,7 @@ RUNS = [
         ".",
         sorted(glob.glob(os.path.join(ROOT, "packages/*/src")))
         + sorted(glob.glob(os.path.join(ROOT, "packages/*/tests")))
-        + ["lib", "test"],
+        + ["test"],
     )
 ]
 

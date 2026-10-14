@@ -62,7 +62,7 @@ area/security:
 area/testing:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy_test/**/*
+      - packages/test_*/**/*
       - run_tests.sh
       - test/**/*
       - test-data/**/*
@@ -100,7 +100,7 @@ area/toolshed:
     - any-glob-to-any-file:
       - client/src/toolshed/**/*
       - packages/web_apps/src/galaxy/webapps/galaxy/api/toolshed.py
-      - lib/toolshed/**/*
+      - packages/tool_shed/**/*
       - templates/webapps/tool_shed/**/*
 area/UI-UX:
   - all:
