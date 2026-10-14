@@ -12,6 +12,7 @@ from galaxy import (
     exceptions,
     web,
 )
+from galaxy.authnz.flow_state import InvalidFlow
 from galaxy.util import url_get
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
@@ -165,31 +166,46 @@ class OIDC(BaseUIController):
         return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
-    def create_user(self, trans, provider, **kwargs):
-        try:
-            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(
-                provider, token=kwargs.get("token", " "), trans=trans, login_redirect_url=url_for("/")
-            )
-        except exceptions.AuthenticationFailed as e:
-            return trans.response.send_redirect(
-                f"{trans.request.url_path + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}"
-            )
+    def create_user(self, trans, provider=None, **kwargs):
+        return self._complete_user_confirmation(trans, provider, kwargs)
 
-        if success is False:
-            return trans.show_error_message(message)
-        user = user if user is not None else trans.user
-        if user is None:
-            return trans.show_error_message(
-                f"An unknown error occurred when handling the callback from `{provider}` "
-                "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin."
+    @web.expose
+    def cancel_user_creation(self, trans, provider=None, **kwargs):
+        return self._complete_user_confirmation(trans, provider, kwargs, cancel=True)
+
+    def _complete_user_confirmation(self, trans, provider, kwargs, cancel=False):
+        def respond(status, data):
+            trans.response.status = status
+            trans.response.set_content_type("application/json")
+            trans.response.headers["Cache-Control"] = "no-store"
+            return json.dumps(data)
+
+        # Enforce these at the action, including the generic controller/action route.
+        if trans.request.method != "POST":
+            trans.response.headers["Allow"] = "POST"
+            return respond(405, {"err_msg": "Account confirmation requires POST."})
+        if not trans.app.config.enable_oidc or trans.user or not isinstance(provider, str) or not provider:
+            return respond(400, {"err_msg": str(InvalidFlow())})
+        payload = trans.request.POST
+        if trans.check_csrf_token(payload):
+            return respond(403, {"err_msg": "Invalid session token. Please reload the login page."})
+        if any(key in kwargs for key in ("token", "provider_token", "callback", "jsonp")):
+            return respond(400, {"err_msg": str(InvalidFlow())})
+        try:
+            confirmation_id = payload.get("confirmation_id")
+            if cancel:
+                trans.app.authnz_manager.cancel_user_creation(provider, confirmation_id, trans)
+                return respond(200, {})
+            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(
+                provider, confirmation_id=confirmation_id, trans=trans, login_redirect_url=url_for("/")
             )
+            if not success or user is None:
+                return respond(400, {"err_msg": str(InvalidFlow())})
+        except exceptions.AuthenticationFailed:
+            return respond(400, {"err_msg": str(InvalidFlow())})
         trans.handle_user_login(user)
-        # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
-        if redirect_url is None:
-            redirect_url = url_for("/")
-        return trans.response.send_redirect(url_for(redirect_url))
+        return respond(200, {"redirect_uri": redirect_url or url_for("/")})
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")

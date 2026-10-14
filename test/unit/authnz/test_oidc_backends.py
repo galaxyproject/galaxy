@@ -8,6 +8,8 @@ This test suite covers additional functionality such as:
 - Token verification
 """
 
+import secrets
+import string
 from unittest.mock import (
     Mock,
     patch,
@@ -75,9 +77,6 @@ class MockStrategy:
 
     def random_string(self, length=12):
         """Generate random string for state/nonce."""
-        import secrets
-        import string
-
         return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 
@@ -464,78 +463,8 @@ class TestRequireCreateConfirmation:
     to a confirmation page with the token stored for later use.
     """
 
-    def test_callback_user_not_created_when_does_not_exist(self):
-        """
-        Test that user is not created when require_create_confirmation is enabled.
-
-        This replicates the custos test: test_callback_user_not_created_when_does_not_exists
-        from test_custos_authnz.py (lines 395-427).
-
-        When a new user tries to login and require_create_confirmation is enabled,
-        they should be redirected to a confirmation page instead of having their
-        account created immediately.
-        """
-        # Setup strategy with require_create_confirmation enabled
-        strategy = MockStrategy(
-            {
-                "REQUIRE_CREATE_CONFIRMATION": True,
-                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-                "provider": "keycloak",
-            }
-        )
-
-        backend = Mock()
-        details = {"email": "newuser@example.com", "username": "newuser"}
-        response = {
-            "access_token": "test_access_token",
-            "id_token": "test_id_token",
-            "refresh_token": "test_refresh_token",
-            "expires_in": 3600,
-        }
-
-        # Mock the database query to return no existing user (new user scenario)
-        with patch("galaxy.authnz.psa_authnz.UserAuthnzToken") as mock_token:
-            mock_session = Mock()
-            mock_query = Mock()
-            mock_where = Mock()
-
-            # Chain the mock calls: query().where().first()
-            mock_session.query.return_value = mock_query
-            mock_query.where.return_value = mock_where
-            mock_where.first.return_value = None  # No existing user found
-
-            mock_token.sa_session = mock_session
-
-            # Call the pipeline step
-            result = check_user_creation_confirmation(
-                strategy=strategy,
-                backend=backend,
-                details=details,
-                response=response,
-                is_new=True,  # This is a new user
-                user=None,  # No user exists yet
-            )
-
-            # Assertions matching the original custos test
-            # 1. Should return a redirect URL (not None)
-            assert result is not None, "Should return redirect URL when confirmation required"
-
-            # 2. User should be None (not created)
-            # (This is implicit - the pipeline is interrupted)
-
-            # 3. Redirect URL should contain confirmation parameters
-            assert (
-                "http://localhost:8080/login/start?confirm=true&provider_token=" in result
-            ), "Should redirect to confirmation page"
-            assert "&provider=keycloak" in result, "Should include provider in redirect URL"
-
-            # 4. Token should be stored in session for later use
-            assert strategy.session.get("pending_oidc_token_keycloak") is not None, "Token should be stored in session"
-
     def test_user_created_normally_when_confirmation_not_required(self):
         """Test that user creation proceeds normally when confirmation is not required."""
-        from galaxy.authnz.psa_authnz import check_user_creation_confirmation
-
         # Setup strategy without require_create_confirmation
         strategy = MockStrategy(
             {
@@ -563,8 +492,6 @@ class TestRequireCreateConfirmation:
 
     def test_existing_user_continues_when_confirmation_required(self):
         """Test that existing users continue normally even when confirmation is required."""
-        from galaxy.authnz.psa_authnz import check_user_creation_confirmation
-
         # Setup strategy with require_create_confirmation enabled
         strategy = MockStrategy(
             {
@@ -596,8 +523,6 @@ class TestRequireCreateConfirmation:
         Test that when an existing user with the same email exists,
         the pipeline continues (doesn't trigger confirmation).
         """
-        from galaxy.authnz.psa_authnz import check_user_creation_confirmation
-
         # Setup
         strategy = MockStrategy(
             {

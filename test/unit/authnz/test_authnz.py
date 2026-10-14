@@ -5,6 +5,7 @@ import pytest
 from social_core.utils import setting_name
 
 from galaxy.authnz.managers import AuthnzManager
+from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import asbool
 
 
@@ -110,8 +111,6 @@ def test_psa_authnz_config(mock_app):
     oidc_contents, oidc_path = create_oidc_config()
     backend_contents, backend_path = create_backend_config(provider_name="oidc", **config_values)
     manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
-    from galaxy.authnz.psa_authnz import PSAAuthnz
-
     psa_authnz = PSAAuthnz(
         provider="oidc",
         oidc_config=manager.oidc_config,

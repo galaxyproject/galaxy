@@ -96,6 +96,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         )
         webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
         webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
+        webapp.add_route("/authnz/{provider}/cancel_user_creation", controller="authnz", action="cancel_user_creation")
         # Returns the provider specific logout url for currently logged in provider
         webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
         webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")

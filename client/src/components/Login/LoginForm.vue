@@ -279,6 +279,7 @@ function returnToLogin() {
             </template>
             <template v-else>
                 <NewUserConfirmation
+                    :session-csrf-token="sessionCsrfToken"
                     :registration-warning-message="registrationWarningMessage"
                     :terms-url="termsUrl"
                     @setRedirect="setRedirect" />

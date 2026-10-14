@@ -1,5 +1,6 @@
 import builtins
 import logging
+from typing import TYPE_CHECKING
 
 import jwt as pyjwt
 from social_core.exceptions import (
@@ -30,6 +31,9 @@ from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 OIDC_BACKEND_SCHEMA = resource_path(__name__, "xsd/oidc_backends_config.xsd")
 
@@ -370,19 +374,26 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def create_user(self, provider, token, trans, login_redirect_url):
+    def create_user(
+        self, provider: str, confirmation_id: str, trans: "ProvidesUserContext", login_redirect_url: str
+    ) -> tuple[bool, str, tuple[str | None, model.User | None]]:
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, (None, None)
-            return success, message, backend.create_user(token, trans, login_redirect_url)
+            return success, message, backend.create_user(confirmation_id, trans, login_redirect_url)
         except exceptions.AuthenticationFailed:
-            log.exception("Error creating user")
             raise
         except Exception:
             msg = f"An error occurred when creating a user with `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
             return False, msg, (None, None)
+
+    def cancel_user_creation(self, provider: str, confirmation_id: str, trans: "ProvidesUserContext") -> None:
+        success, message, backend = self._get_authnz_backend(provider)
+        if not success:
+            raise exceptions.AuthenticationFailed("Invalid authentication provider.")
+        backend.cancel_user_creation(confirmation_id, trans)
 
     def _assert_jwt_contains_scopes(self, user, jwt, required_scopes):
         if not jwt:
