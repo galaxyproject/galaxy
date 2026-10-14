@@ -1,4 +1,3 @@
-# Reusable workflow, only run through workflow_call; the leading underscore marks such files.
 name: Build client for selenium tests
 on:
   workflow_call:

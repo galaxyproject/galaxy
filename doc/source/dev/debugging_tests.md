@@ -39,7 +39,8 @@ Sometimes it is necessary to debug tests that work locally. There are a few diff
 For the broadly filtered test workflows, a change confined to their workflow
 file selects that workflow without starting the other broadly filtered suites. Changes to the shared
 `_build_client.yaml` workflow also run its callers: Playwright, integration
-Selenium, startup tests, and the tool form harness. A change that also touches
+Selenium, startup tests, and the tool form harness. Reusable workflows, which only run
+through `workflow_call`, have a leading underscore. A change that also touches
 source files still runs the suites selected by those source files. Scheduled
 and manually dispatched runs are independent of these path filters.
 
