@@ -1,0 +1,106 @@
+name: Report scheduled result
+on:
+  workflow_call:
+    inputs:
+      title:
+        description: Title of the tracking issue; open issues with this exact title are updated or closed.
+        required: true
+        type: string
+      labels:
+        description: Comma-separated labels for a new tracking issue. The first is used to find the open one.
+        required: true
+        type: string
+      description:
+        description: Markdown explaining what the failing run covers, placed at the top of a new tracking issue.
+        required: true
+        type: string
+      needs:
+        description: The calling job's needs context as JSON (toJSON(needs)); any result other than success is a failure.
+        required: true
+        type: string
+permissions: {}
+jobs:
+  report:
+    name: Report scheduled result
+    # Manual runs may target feature branches and forks shouldn't open issues upstream.
+    if: >-
+      github.repository_owner == 'galaxyproject'
+      && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Open, update, or close the tracking issue
+        uses: actions/github-script@v9
+        env:
+          TITLE: ${{ inputs.title }}
+          LABELS: ${{ inputs.labels }}
+          DESCRIPTION: ${{ inputs.description }}
+          NEEDS: ${{ inputs.needs }}
+        with:
+          script: |
+            const title = process.env.TITLE;
+            const labels = process.env.LABELS.split(",").map((label) => label.trim()).filter(Boolean);
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+            const failed = Object.values(JSON.parse(process.env.NEEDS)).some((need) => need.result !== "success");
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              ...repo,
+              state: "open",
+              labels: labels[0],
+              creator: "github-actions[bot]",
+              per_page: 100,
+            });
+            // Concurrent failing runs can each open an issue; a passing run closes all of them.
+            const tracking = openIssues.filter((issue) => issue.title === title);
+
+            if (failed) {
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+                ...repo,
+                run_id: context.runId,
+                attempt_number: context.runAttempt,
+                per_page: 100,
+              });
+              const failedJobs = jobs
+                .filter((job) => ["failure", "timed_out", "cancelled"].includes(job.conclusion))
+                .map((job) => job.name);
+              const failure = `${context.sha}: ${runUrl} (attempt ${context.runAttempt})`;
+              const failedJobsLine = failedJobs.length ? `Failed jobs: ${failedJobs.join(", ")}` : "";
+              if (tracking.length) {
+                await github.rest.issues.createComment({
+                  ...repo,
+                  issue_number: tracking[0].number,
+                  body: [`Still failing on ${failure}`, failedJobsLine].filter(Boolean).join("\n\n"),
+                });
+              } else {
+                await github.rest.issues.create({
+                  ...repo,
+                  title,
+                  labels,
+                  body: [
+                    process.env.DESCRIPTION,
+                    `Failed on ${failure}`,
+                    failedJobsLine,
+                    "Later failures are added as comments here; the next passing run closes this issue.",
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n"),
+                });
+              }
+            } else {
+              for (const issue of tracking) {
+                await github.rest.issues.createComment({
+                  ...repo,
+                  issue_number: issue.number,
+                  body: `Passing again on ${context.sha}: ${runUrl}`,
+                });
+                await github.rest.issues.update({
+                  ...repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                  state_reason: "completed",
+                });
+              }
+            }

@@ -71,73 +71,17 @@ jobs:
           name: Selenium debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'
   report:
-    name: Report scheduled result
     needs: [build-client, test]
-    # Manual runs may target feature branches and forks shouldn't open issues upstream.
-    if: >-
-      !cancelled()
-      && github.repository_owner == 'galaxyproject'
-      && github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
     permissions:
+      actions: read
       issues: write
-    steps:
-      - name: Open, update, or close the tracking issue
-        uses: actions/github-script@v9
-        env:
-          BUILD_RESULT: ${{ needs.build-client.result }}
-          TEST_RESULT: ${{ needs.test.result }}
-        with:
-          script: |
-            const title = "Scheduled Selenium tests are failing";
-            const labels = ["area/testing/selenium", "kind/bug"];
-            const repo = { owner: context.repo.owner, repo: context.repo.repo };
-            const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
-            const failed = process.env.BUILD_RESULT !== "success" || process.env.TEST_RESULT !== "success";
+    uses: $/.github/workflows/report_scheduled_result.yaml
+    with:
+      title: Scheduled Selenium tests are failing
+      labels: area/testing/selenium, kind/bug
+      description: |-
+        The weekly run of `lib/galaxy_test/selenium` on the Selenium backend failed.
 
-            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
-              ...repo,
-              state: "open",
-              labels: labels[0],
-              creator: "github-actions[bot]",
-              per_page: 100,
-            });
-            // Concurrent failing runs can each open an issue; a passing run closes all of them.
-            const tracking = openIssues.filter((issue) => issue.title === title);
-
-            if (failed) {
-              if (tracking.length) {
-                await github.rest.issues.createComment({
-                  ...repo,
-                  issue_number: tracking[0].number,
-                  body: `Still failing on ${context.sha}: ${runUrl} (attempt ${context.runAttempt})`,
-                });
-              } else {
-                await github.rest.issues.create({
-                  ...repo,
-                  title,
-                  labels,
-                  body: [
-                    `The weekly run of \`lib/galaxy_test/selenium\` on the Selenium backend failed on ${context.sha}: ${runUrl}`,
-                    "",
-                    "Pull requests run these tests under Playwright only, so this run is the only CI coverage of the Selenium backend and of tests marked `@selenium_only`.",
-                    "",
-                    "Later failures are added as comments here; the next passing run closes this issue.",
-                  ].join("\n"),
-                });
-              }
-            } else {
-              for (const issue of tracking) {
-                await github.rest.issues.createComment({
-                  ...repo,
-                  issue_number: issue.number,
-                  body: `Passing again on ${context.sha}: ${runUrl}`,
-                });
-                await github.rest.issues.update({
-                  ...repo,
-                  issue_number: issue.number,
-                  state: "closed",
-                  state_reason: "completed",
-                });
-              }
-            }
+        Pull requests run these tests under Playwright only, so this run is the only CI coverage of the Selenium backend and of tests marked `@selenium_only`.
+      needs: ${{ toJSON(needs) }}
