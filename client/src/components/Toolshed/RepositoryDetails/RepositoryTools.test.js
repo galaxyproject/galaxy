@@ -1,64 +1,37 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it } from "vitest";
 
-import RepositoryTools from "./RepositoryTools.vue";
+import * as RepositoryToolsStories from "./RepositoryTools.stories";
 
-const localVue = getLocalVue();
+const stories = composeStories(RepositoryToolsStories);
+const mountStory = useStoryMount();
 
 describe("RepositoryTools", () => {
-    enableAutoUnmount(afterEach);
-
     it("shows the tool ID and version in repository details", () => {
-        const wrapper = mount(RepositoryTools, {
-            props: {
-                tools: [
-                    {
-                        guid: "guid",
-                        id: "id",
-                        version: "version",
-                    },
-                ],
-            },
-            global: localVue,
-        });
+        const [tool] = stories.SingleTool.args.tools;
+        const wrapper = mountStory(stories.SingleTool);
         const cells = wrapper.findAll("td");
         const idCell = nth(cells, 0);
-        expect(idCell.text()).toBe("id");
+        expect(idCell.text()).toBe(tool.id);
         const versionCell = nth(cells, 1);
-        expect(versionCell.text()).toBe("version");
+        expect(versionCell.text()).toBe(tool.version);
+        expect(wrapper.findAll("tr").length).toBe(1);
+        expect(wrapper.find("a").exists()).toBe(false);
     });
 
     it("expands and collapses the repository tool versions", async () => {
-        const wrapper = mount(RepositoryTools, {
-            props: {
-                tools: [
-                    {
-                        guid: "guid_1",
-                        id: "id_1",
-                        version: "version_1",
-                    },
-                    {
-                        guid: "guid_2",
-                        id: "id_2",
-                        version: "version_2",
-                    },
-                    {
-                        guid: "guid_3",
-                        id: "id_3",
-                        version: "version_3",
-                    },
-                ],
-            },
-        });
+        const [firstTool, secondTool, thirdTool] = stories.SeveralTools.args.tools;
+        const wrapper = mountStory(stories.SeveralTools);
         const rows = wrapper.findAll("tr");
         expect(rows.length).toBe(3);
         const firstRow = nth(rows, 0);
-        expect(firstRow.get("td:first-child").text()).toBe("id_1");
-        expect(firstRow.get("td:last-child").text()).toBe("version_1");
+        expect(firstRow.get("td:first-child").text()).toBe(firstTool.id);
+        expect(firstRow.get("td:last-child").text()).toBe(firstTool.version);
         const secondRow = nth(rows, 1);
-        expect(secondRow.get("td:first-child").text()).toBe("id_2");
-        expect(secondRow.get("td:last-child").text()).toBe("version_2");
+        expect(secondRow.get("td:first-child").text()).toBe(secondTool.id);
+        expect(secondRow.get("td:last-child").text()).toBe(secondTool.version);
         const expandRow = nth(rows, 2);
         expect(expandRow.get("td:first-child").text()).toBe("Show more");
         expect(expandRow.get("td:last-child").text()).toBe("");
@@ -68,8 +41,8 @@ describe("RepositoryTools", () => {
         const expandedRows = wrapper.findAll("tr");
         expect(expandedRows.length).toBe(4);
         const thirdToolRow = nth(expandedRows, 3);
-        expect(thirdToolRow.get("td:first-child").text()).toBe("id_3");
-        expect(thirdToolRow.get("td:last-child").text()).toBe("version_3");
+        expect(thirdToolRow.get("td:first-child").text()).toBe(thirdTool.id);
+        expect(thirdToolRow.get("td:last-child").text()).toBe(thirdTool.version);
         const collapseRow = nth(expandedRows, 0);
         expect(collapseRow.get("td:first-child").text()).toBe("Show less");
         expect(collapseRow.get("td:last-child").text()).toBe("");
