@@ -4,13 +4,34 @@ import { describe, expect, it } from "vitest";
 
 import type { HDASummary } from "@/api";
 
+import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import ListDatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 
 describe("List dataset actions", () => {
+    it("offers removal without an inert selection control for fixed identifiers", async () => {
+        const element = { id: "a", hid: 1, name: "Dataset", extension: "txt" } as HDASummary;
+        const wrapper = mount(FixedIdentifierDatasetCollectionElementView, {
+            props: { element },
+            global: getLocalVue(),
+        });
+        expect(wrapper.find(".dataset-selection-button").exists()).toBe(false);
+        await wrapper.get("button.btn-sm").trigger("click");
+        expect(wrapper.emitted("element-is-discarded")?.[0]).toEqual([element]);
+    });
+
+    it("keeps non-selectable read-only rows out of the tab order", () => {
+        const element = { id: "a", name: "Dataset" } as HDASummary;
+        const wrapper = mount(ListDatasetCollectionElementView, {
+            props: { element, notEditable: true },
+            global: getLocalVue(),
+        });
+        expect(wrapper.element.tagName).toBe("DIV");
+        expect(wrapper.find("button").exists()).toBe(false);
+    });
     it("renders read-only pairing choices as keyboard-operable native buttons", async () => {
         const element = { id: "a", hid: 1, name: "Dataset", extension: "txt" } as HDASummary;
         const wrapper = mount(ListDatasetCollectionElementView, {
-            props: { element, notEditable: true },
+            props: { element, notEditable: true, selectable: true },
             global: getLocalVue(),
         });
         expect(wrapper.element.tagName).toBe("BUTTON");
@@ -24,7 +45,7 @@ describe("List dataset actions", () => {
     it("keeps selecting, renaming and removing independent", async () => {
         const element = { id: "a", hid: 1, name: "Dataset", extension: "txt" } as HDASummary;
         const wrapper = mount(ListDatasetCollectionElementView, {
-            props: { element, hasActions: true, selected: false },
+            props: { element, hasActions: true, selectable: true, selected: false },
             global: getLocalVue(),
         });
         expect(wrapper.attributes("role")).toBeUndefined();

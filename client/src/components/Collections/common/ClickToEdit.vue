@@ -106,11 +106,14 @@ function revertToOriginal() {
     min-height: 24px;
     background: transparent;
     color: inherit;
-    font: inherit;
     text-align: inherit;
     &:hover > * {
         text-decoration: underline;
     }
+}
+
+button.click-to-edit-label {
+    font: inherit;
 }
 
 .input-icon-wrapper {

@@ -11,6 +11,7 @@ import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 interface Props {
     element: HDASummary;
     selected?: boolean;
+    selectable?: boolean;
     hasActions?: boolean;
     notEditable?: boolean;
     hideExtension?: boolean;
@@ -46,16 +47,16 @@ watch(
 
 <template>
     <component
-        :is="notEditable && !hasActions ? 'button' : 'div'"
-        :type="notEditable && !hasActions ? 'button' : undefined"
-        :aria-pressed="notEditable && !hasActions ? (selected ? 'true' : 'false') : undefined"
+        :is="selectable && notEditable && !hasActions ? 'button' : 'div'"
+        :type="selectable && notEditable && !hasActions ? 'button' : undefined"
+        :aria-pressed="selectable && notEditable && !hasActions ? (selected ? 'true' : 'false') : undefined"
         class="d-flex justify-content-between"
         :data-hid="element.hid"
         :class="{ 'collection-element': !textOnly, 'with-actions': hasActions }"
         data-description="list dataset collection element"
-        @click="emit('element-is-selected', element)">
+        @click="selectable && emit('element-is-selected', element)">
         <button
-            v-if="hasActions"
+            v-if="hasActions && selectable"
             type="button"
             class="dataset-selection-button"
             :aria-label="`${localize('Select dataset')} ${elementName}`"

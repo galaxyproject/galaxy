@@ -191,6 +191,7 @@ onMounted(() => {
             <GButton
                 tooltip
                 :title="localize('History Size')"
+                :aria-label="`${localize('History Size')} (${niceHistorySize})`"
                 transparent
                 size="small"
                 color="blue"
@@ -221,6 +222,7 @@ onMounted(() => {
                 <GButton
                     v-g-tooltip.hover
                     :title="localize('Show active')"
+                    :aria-label="`${localize('Show active')} (${numItemsActive})`"
                     transparent
                     color="blue"
                     size="small"
@@ -235,6 +237,7 @@ onMounted(() => {
                     v-if="numItemsDeleted"
                     v-g-tooltip.hover
                     :title="localize('Include deleted')"
+                    :aria-label="`${localize('Include deleted')} (${numItemsDeleted})`"
                     transparent
                     color="blue"
                     size="small"
@@ -250,6 +253,7 @@ onMounted(() => {
                     v-if="numItemsHidden"
                     v-g-tooltip.hover
                     :title="localize('Include hidden')"
+                    :aria-label="`${localize('Include hidden')} (${numItemsHidden})`"
                     transparent
                     color="blue"
                     size="small"

@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { RegisteredUser } from "@/api";
+import type { HistorySummaryExtended, RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { setSseConnected, setSseHasEverConnected, sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -205,6 +205,36 @@ describe("HistoryCounter — refresh button", () => {
             const button = refreshButton(wrapper);
             expect(button.attributes("color")).toBe("red");
         });
+    });
+
+    it("names count controls with their actions and current counts", async () => {
+        setEnableSse(false);
+        const history: HistorySummaryExtended = {
+            ...baseHistory,
+            annotation: "",
+            count: 6,
+            model_class: "History",
+            tags: [],
+            url: "/api/histories/hist-1",
+            contents_active: { active: 3, deleted: 2, hidden: 1 },
+        };
+        const wrapper = mount(HistoryCounter, {
+            props: { history, lastChecked: new Date() },
+            global: { ...localVue, plugins: [pinia] },
+        });
+        await flushPromises();
+        for (const [description, label] of [
+            ["show active items button", "Show active (3)"],
+            ["include deleted items button", "Include deleted (2)"],
+            ["include hidden items button", "Include hidden (1)"],
+            ["storage dashboard button", "History Size (0 B)"],
+        ]) {
+            expect(wrapper.get(`button[data-description="${description}"]`).attributes("aria-label")).toBe(label);
+        }
+        await wrapper.setProps({ history: { ...history, contents_active: { active: 4, deleted: 5, hidden: 2 } } });
+        expect(wrapper.get('button[data-description="include deleted items button"]').attributes("aria-label")).toBe(
+            "Include deleted (5)",
+        );
     });
 
     it("emits reloadContents when the refresh button is clicked", async () => {

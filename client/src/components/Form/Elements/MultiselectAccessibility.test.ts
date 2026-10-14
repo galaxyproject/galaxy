@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 import Multiselect from "vue-multiselect";
 
 // Exercise Galaxy's dependency patch against the actual multiselect, without a stub.
@@ -35,6 +36,51 @@ describe("multiselect accessibility", () => {
         expect(input.attributes("aria-expanded")).toBe("false");
         expect(input.attributes("aria-controls")).toBeUndefined();
         expect(input.attributes("aria-activedescendant")).toBeUndefined();
+    });
+
+    it.each([true, false])("retains focus through tag removals (searchable=%s)", async (searchable) => {
+        wrapper = mount(Multiselect, {
+            global: getLocalVue(),
+            props: {
+                id: "focus-selection",
+                options: ["Alpha", "Beta", "Gamma"],
+                modelValue: ["Alpha", "Beta", "Gamma"],
+                multiple: true,
+                searchable,
+                "onUpdate:modelValue": (modelValue: unknown) => wrapper.setProps({ modelValue }),
+            },
+            attachTo: document.body,
+        });
+        for (const [removed, next] of [
+            ["Beta", "Gamma"],
+            ["Gamma", "Alpha"],
+            ["Alpha", null],
+        ]) {
+            const button = wrapper.get(`button[aria-label="Remove ${removed}"]`);
+            (button.element as HTMLButtonElement).focus();
+            await button.trigger("click", { detail: 0 });
+            await nextTick();
+            expect(wrapper.find(`button[aria-label="Remove ${removed}"]`).exists()).toBe(false);
+            const target = next
+                ? wrapper.get(`button[aria-label="Remove ${next}"]`).element
+                : searchable
+                  ? wrapper.get("input").element
+                  : wrapper.element;
+            expect(document.activeElement).toBe(target);
+        }
+    });
+
+    it("keeps focus on a tag whose removal is disallowed", async () => {
+        wrapper = mount(Multiselect, {
+            global: getLocalVue(),
+            props: { options: ["Alpha"], modelValue: ["Alpha"], multiple: true, allowEmpty: false },
+            attachTo: document.body,
+        });
+        const button = wrapper.get("button.multiselect__tag-icon");
+        (button.element as HTMLButtonElement).focus();
+        await button.trigger("click", { detail: 0 });
+        expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+        expect(document.activeElement).toBe(button.element);
     });
 
     it("uses named native remove buttons in the normal tab order and removes only their selection", async () => {

@@ -1,7 +1,27 @@
 diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
 --- a/dist/vue-multiselect.esm.js
 +++ b/dist/vue-multiselect.esm.js
-@@ -790,10 +790,14 @@
+@@ -595,6 +595,19 @@
+      * @param  {type} option description
+      * @return {type}        description
+      */
++    removeTag (option, event) {
++      const button = event.currentTarget;
++      const restoreFocus = document.activeElement === button;
++      const index = Array.from(this.$refs.tags.querySelectorAll('button.multiselect__tag-icon')).indexOf(button);
++      this.removeElement(option);
++      if (restoreFocus) this.$nextTick(() => {
++        // Keep keyboard focus within the control after its selected tag disappears.
++        if (button.isConnected) return
++        const buttons = this.$refs.tags.querySelectorAll('button.multiselect__tag-icon');
++        const target = buttons[index] || buttons[index - 1] || this.$refs.search || this.$el;
++        target.focus();
++      });
++    },
+     removeElement (option, shouldClose = true) {
+       /* istanbul ignore else */
+       if (this.disabled) return
+@@ -790,10 +803,14 @@
      filteredOptions () {
        this.pointerAdjust();
      },
@@ -17,7 +37,7 @@ diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
        this.$refs.search && this.$refs.search.setAttribute('aria-activedescendant', this.id + '-' + this.pointer.toString());
      }
    },
-@@ -1214,17 +1218,17 @@
+@@ -1214,17 +1231,17 @@
    }
  };
 
@@ -38,7 +58,7 @@ diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
  const _hoisted_9 = ["id", "aria-multiselectable"];
  const _hoisted_10 = { key: 0 };
  const _hoisted_11 = { class: "multiselect__option" };
-@@ -1246,10 +1250,10 @@
+@@ -1246,10 +1263,10 @@
        _cache[18] || (_cache[18] = withKeys(withModifiers($event => (_ctx.addPointerElement($event)), ["stop","self"]), ["enter","tab"]))
      ],
      onKeyup: _cache[19] || (_cache[19] = withKeys($event => (_ctx.deactivate()), ["esc"])),
@@ -53,7 +73,7 @@ diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
    }, [
      renderSlot(_ctx.$slots, "caret", { toggle: _ctx.toggle }, () => [
        createElementVNode("div", {
-@@ -1280,10 +1284,12 @@
+@@ -1280,10 +1297,12 @@
                  createElementVNode("span", {
                    textContent: toDisplayString(_ctx.getOptionLabel(option))
                  }, null, 8 /* PROPS */, _hoisted_4),
@@ -66,11 +86,11 @@ diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
 +                  disabled: $props.disabled,
 +                  "aria-label": 'Remove ' + _ctx.getOptionLabel(option),
 +                  onMousedown: withModifiers(() => {}, ["prevent"]),
-+                  onClick: withModifiers($event => (_ctx.removeElement(option)), ["stop"]),
++                  onClick: withModifiers($event => (_ctx.removeTag(option, $event)), ["stop"]),
                    class: "multiselect__tag-icon"
                  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_5)
                ], 32 /* NEED_HYDRATION */))
-@@ -1318,6 +1324,10 @@
+@@ -1318,6 +1337,10 @@
              name: $props.name,
              id: _ctx.id,
              type: "text",
@@ -81,7 +101,7 @@ diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
              autocomplete: "off",
              spellcheck: $props.spellcheck,
              placeholder: _ctx.placeholder,
-@@ -1326,7 +1336,8 @@
+@@ -1326,7 +1349,8 @@
              value: _ctx.search,
              disabled: $props.disabled,
              tabindex: $props.tabindex,
@@ -91,7 +111,7 @@ diff --git a/dist/vue-multiselect.esm.js b/dist/vue-multiselect.esm.js
              onInput: _cache[2] || (_cache[2] = $event => (_ctx.updateSearch($event.target.value))),
              onFocus: _cache[3] || (_cache[3] = withModifiers($event => (_ctx.activate()), ["prevent"])),
              onBlur: _cache[4] || (_cache[4] = withModifiers($event => (_ctx.deactivate()), ["prevent"])),
-@@ -1338,7 +1349,7 @@
+@@ -1338,7 +1362,7 @@
                _cache[9] || (_cache[9] = withKeys(withModifiers($event => (_ctx.removeLastElement()), ["stop"]), ["delete"]))
              ],
              class: "multiselect__input",

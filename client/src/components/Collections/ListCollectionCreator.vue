@@ -650,6 +650,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                     :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
                                     :element="element"
                                     has-actions
+                                    selectable
                                     :selected="getSelectedDatasetElements.includes(element.id)"
                                     :show-hid="showHid"
                                     @element-is-selected="elementSelected"
