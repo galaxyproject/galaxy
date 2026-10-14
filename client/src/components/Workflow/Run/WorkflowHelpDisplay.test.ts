@@ -1,32 +1,34 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
-import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
+import * as WorkflowHelpDisplayStories from "./WorkflowHelpDisplay.stories";
 
-const localVue = getLocalVue();
+const stories = composeStories(WorkflowHelpDisplayStories);
+
+const sanitizeSpy = vi.mocked(sanitizeHtml);
+const originalSanitizeImplementation = sanitizeSpy.getMockImplementation();
+
+beforeEach(() => {
+    sanitizeSpy.mockClear();
+    sanitizeSpy.mockImplementation((html) => `<span class="sanitized">${html}</span>`);
+});
+
+afterEach(() => {
+    sanitizeSpy.mockReset();
+    if (originalSanitizeImplementation) {
+        sanitizeSpy.mockImplementation(originalSanitizeImplementation);
+    }
+});
+// afterEach runs in reverse order: unmount before restoring the sanitizer.
+const mountStory = useStoryMount();
 
 describe("WorkflowHelpDisplay", () => {
-    beforeEach(() => {
-        vi.mocked(sanitizeHtml).mockClear();
-        vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
-    });
-
     it("renders readme and help markdown through v-sanitize-html with the links profile", () => {
-        const workflow: Pick<StoredWorkflowDetailed, "readme" | "help"> = {
-            readme: "**Readme** with [a link](https://galaxyproject.org) and <em>raw</em>",
-            help: "Help *text*",
-        };
-        const wrapper = mount(WorkflowHelpDisplay, {
-            global: localVue,
-            props: {
-                // The original rendering fixture omits workflow identity, steps and sharing metadata.
-                workflow: workflow as StoredWorkflowDetailed,
-            },
-        });
+        const wrapper = mountStory(stories.ReadmeAndHelp);
 
         const calls = vi.mocked(sanitizeHtml).mock.calls;
         expect(calls).toHaveLength(2);
