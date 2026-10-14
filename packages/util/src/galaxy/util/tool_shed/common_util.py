@@ -14,7 +14,6 @@ from galaxy.util.tool_shed import encoding_util
 
 if TYPE_CHECKING:
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
-
     from .tool_shed_registry import Registry as ToolShedRegistry
 
 log = logging.getLogger(__name__)

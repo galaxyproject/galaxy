@@ -237,7 +237,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.metadata_strategy = "directory"
 
         self.user_activation_on = False
-        self.new_user_dataset_access_role_default_private = False
+        self.new_user_dataset_access_role_default_private = True
 
         self.activation_grace_period = 0
         self.allow_user_dataset_purge = True

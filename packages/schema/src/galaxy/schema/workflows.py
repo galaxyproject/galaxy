@@ -221,13 +221,13 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     inputs_by: Annotated[str | None, InputsByValidator] = Field(
         None,
         title="Inputs By",
-        # lib/galaxy/workflow/run_request.py - see line 60
+        # packages/app/src/galaxy/workflow/run_request.py - see line 60
         description=INPUTS_BY_DESCRIPTION,
     )
     effective_outputs: Any | None = Field(
         None,
         title="Effective Outputs",
-        # lib/galaxy/workflow/run_request.py - see line 455
+        # packages/app/src/galaxy/workflow/run_request.py - see line 455
         description="TODO",
     )
     preferred_object_store_id: str | None = PreferredObjectStoreIdField

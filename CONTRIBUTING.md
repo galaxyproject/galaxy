@@ -169,8 +169,8 @@ live under `packages/*/tests`; public import names are unchanged. Development co
 
 ```
 $ uv lock --check                                          # verify the lock is up to date
-$ uv sync --locked --package galaxy-web-apps --all-extras --group dev  # server and development dependencies
-$ uv run --locked --package galaxy-util pytest packages/util/tests
+$ uv sync --locked --all-packages --all-extras --group dev  # server and development dependencies
+$ uv run --locked --inexact --package galaxy-util pytest packages/util/tests
 ```
 
 `make test` run from a package directory (e.g. `packages/util/`) syncs the

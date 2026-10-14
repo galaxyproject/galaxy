@@ -30,6 +30,7 @@
   <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
+  <tool file="multi_select_numeric.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
   <tool file="multi_output_assign_primary.xml" />
@@ -183,6 +184,7 @@
   <tool file="implicit_conversion.xml" />
   <tool file="implicit_conversion_format_input.xml" />
   <tool file="implicit_conversion_optional_param.xml" />
+  <tool file="implicit_conversion_shared_input_y.yml" />
   <tool file="implicit_collection_conversion.xml" />
   <tool file="implicit_nested_list_conversion.xml" />
   <tool file="explicit_conversion.xml" />
@@ -246,6 +248,8 @@
   <tool file="discover_sort_by.xml" />
   <tool file="discover_long_name.xml" />
   <tool file="discover_default_ext.xml" />
+  <tool file="discover_unknown_ext.xml" />
+  <tool file="discover_format_tokens.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_pick_larger_file.xml" />
   <tool file="expression_parse_int.xml" />

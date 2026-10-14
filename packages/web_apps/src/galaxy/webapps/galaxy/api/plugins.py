@@ -20,14 +20,18 @@ from fastapi.responses import JSONResponse
 from openai import (
     APIError,
     AsyncOpenAI,
+    omit,
 )
 from openai._streaming import AsyncStream
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
     ChatCompletionMessageParam,
+    ChatCompletionStreamOptionsParam,
+    ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
 )
+from openai.types.shared_params import ReasoningEffort
 from pydantic import BaseModel
 
 from galaxy.config import GalaxyAppConfiguration
@@ -78,9 +82,15 @@ TOKENS_MAX = 8192
 TOP_P = 0.9
 
 
+class ChatTextPart(BaseModel):
+    type: Literal["text"]
+    text: str
+    model_config = dict(extra="allow")
+
+
 class ChatMessage(BaseModel):
     role: Literal["assistant", "system", "tool", "user"]
-    content: str | None = None
+    content: str | list[ChatTextPart] | None = None
     tool_calls: list[dict[str, Any]] | None = None
     model_config = dict(extra="allow")
 
@@ -100,7 +110,11 @@ class ChatCompletionRequest(BaseModel):
     messages: list[ChatMessage]
     tools: list[ChatTool] | None = None
     stream: bool | None = False
+    stream_options: ChatCompletionStreamOptionsParam | None = None
     max_tokens: int | None = None
+    parallel_tool_calls: bool | None = None
+    reasoning_effort: ReasoningEffort | None = None
+    tool_choice: ChatCompletionToolChoiceOptionParam | None = None
     model_config = dict(extra="allow")
 
 
@@ -153,13 +167,14 @@ class FastAPIPlugins:
         else:
             return self._create_error("Visualization registry is not available.")
 
-    def _get_plugin_config(self, plugin_name: str, key: str) -> str | None:
+    def _get_plugin_config(self, plugin_name: str, key: str, default: Any = None) -> Any:
         """Get config for a plugin with fallback through inference_services.
 
         Precedence:
         1. Plugin-specific: inference_services.<plugin_name>.<key>
         2. Default inference: inference_services.default.<key>
         3. Global config: ai_model / ai_api_key / ai_api_base_url
+        4. The given default
         """
         inference_config = getattr(self.config, "inference_services", None)
         if isinstance(inference_config, dict):
@@ -176,7 +191,7 @@ class FastAPIPlugins:
             return self.config.ai_api_key
         elif key == "api_base_url":
             return self.config.ai_api_base_url
-        return None
+        return default
 
     async def _open_ai_adapter(
         self,
@@ -196,8 +211,14 @@ class FastAPIPlugins:
         if ai_model is None:
             return self._create_error("AI service not configured: Model is required.")
 
+        # Collect inference settings via the same fallback chain
+        temperature = float(self._get_plugin_config(plugin_name, "temperature", TEMPERATURE))
+        timeout = float(self._get_plugin_config(plugin_name, "timeout", TIMEOUT))
+        tokens_max = int(self._get_plugin_config(plugin_name, "max_tokens", TOKENS_MAX))
+        top_p = float(self._get_plugin_config(plugin_name, "top_p", TOP_P))
+
         # Limit max tokens
-        max_tokens = min(payload.max_tokens or TOKENS_DEFAULT, TOKENS_MAX)
+        max_tokens = min(payload.max_tokens or TOKENS_DEFAULT, tokens_max)
 
         # Validate messages
         messages: list[ChatCompletionMessageParam] = cast(
@@ -207,23 +228,15 @@ class FastAPIPlugins:
                 dict(role="system", content=prompt),
             ],
         )
-        original_messages = payload.messages
-        for msg in original_messages:
-            role = msg.role
-            content = msg.content
-            tool_calls = msg.tool_calls
-            if role == "assistant":
-                msg_dict: dict[str, Any] = dict(role="assistant")
-                if content is not None:
-                    msg_dict["content"] = content
-                if isinstance(tool_calls, list):
-                    msg_dict["tool_calls"] = tool_calls
-                if len(msg_dict) > 1:
-                    messages.append(cast(ChatCompletionMessageParam, msg_dict))
-            elif role in ("user", "tool") and isinstance(content, str):
-                messages.append(cast(ChatCompletionMessageParam, dict(role=role, content=content)))
-            else:
+        for msg in payload.messages:
+            if msg.role == "system":
                 continue
+            msg_dict = msg.model_dump(exclude_none=True)
+            if msg.role == "assistant" and not ({"content", "tool_calls"} & msg_dict.keys()):
+                continue
+            if msg.role in ("user", "tool") and "content" not in msg_dict:
+                continue
+            messages.append(cast(ChatCompletionMessageParam, msg_dict))
             if len(messages) >= MAX_MESSAGES:
                 return self._create_error("You have exceeded the number of maximum messages.")
 
@@ -250,7 +263,7 @@ class FastAPIPlugins:
         try:
             client = AsyncOpenAI(
                 api_key=ai_api_key,
-                timeout=TIMEOUT,
+                timeout=timeout,
                 base_url=ai_api_base_url or None,
             )
         except Exception as e:
@@ -273,10 +286,14 @@ class FastAPIPlugins:
                 max_tokens=max_tokens,
                 messages=messages,
                 model=ai_model,
+                parallel_tool_calls=omit if payload.parallel_tool_calls is None else payload.parallel_tool_calls,
+                reasoning_effort=payload.reasoning_effort or omit,
                 stream=stream,
-                temperature=TEMPERATURE,
-                tools=tools,
-                top_p=TOP_P,
+                stream_options=payload.stream_options if stream and payload.stream_options else omit,
+                temperature=temperature,
+                tool_choice=payload.tool_choice or omit,
+                tools=tools or omit,
+                top_p=top_p,
             )
         except APIError as e:
             log.debug("Failed to complete OpenAI request.", exc_info=e)

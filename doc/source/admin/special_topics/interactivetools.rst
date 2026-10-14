@@ -190,7 +190,7 @@ An example ``job_conf.yml`` file as seen in ``config/job_conf.yml.interactivetoo
           #require_container: true
           #container_monitor: true
           #container_monitor_result: file
-          #container_monitor_command: python /path/to/galaxy/lib/galaxy_ext/container_monitor/monitor.py
+          #container_monitor_command: python /path/to/galaxy/packages/app/src/galaxy_ext/container_monitor/monitor.py
           #container_monitor_get_ip_method: null
           #container_resolvers_config_file: null
           #container_resolvers:

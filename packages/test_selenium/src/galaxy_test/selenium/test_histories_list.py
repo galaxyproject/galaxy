@@ -2,7 +2,6 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
@@ -281,7 +280,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         return self.components.histories.history_cards.all()
 
-    @selenium_only("Tag editor never renders under Playwright - no .stateless-tags button")
     @selenium_test
     def test_tags(self):
         self._login()
@@ -323,9 +321,9 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
             assert intersection == set()
 
     def add_tag(self, tags_cell, tag):
-        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
+        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".toggle-button")
         tag_button.click()
-        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags input")
+        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".headless-multiselect input")
         tag_input.send_keys(tag)
         self.send_enter(tag_input)
         self.send_escape(tag_input)

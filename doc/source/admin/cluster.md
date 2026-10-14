@@ -430,7 +430,7 @@ Runs jobs via a command-line/shell interface. The CLI runner itself takes plugin
 * Shell: For interacting with different shell types. Plugins for rsh, ssh, and gsi-ssh are provided.
 * Job: For interacting with a DRM via the DRM's command-line interface. A plugin for Torque is provided
 
-If you are interested in developing additional plugins, see `lib/galaxy/jobs/runners/util/cli/` for examples.
+If you are interested in developing additional plugins, see `packages/app/src/galaxy/jobs/runners/util/cli/` for examples.
 
 
 #### Parameters and Configuration
@@ -438,10 +438,10 @@ If you are interested in developing additional plugins, see `lib/galaxy/jobs/run
 The cli runner requires, at a minimum, two parameters:
 
 ``shell_plugin``
-: This required parameter should be [a cli_shell class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell) currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
+: This required parameter should be [a cli_shell class](https://github.com/galaxyproject/galaxy/tree/dev/packages/app/src/galaxy/jobs/runners/util/cli/shell) currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
 
 ``job_plugin``
-: This required parameter should be [a cli_job class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job) currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
+: This required parameter should be [a cli_job class](https://github.com/galaxyproject/galaxy/tree/dev/packages/app/src/galaxy/jobs/runners/util/cli/job) currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
 
 All other parameters are specific to the chosen plugins. Parameters to pass to the shell plugin begin with the id `shell_` and parameters to pass to the job plugin begin with the id `job_`.
 
@@ -626,8 +626,8 @@ memory:
 More precisely Galaxy inserts bash code in the job submit script that
 tries to determine these values. This bash code is defined here:
 
-* lib/galaxy/jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh
-* lib/galaxy/jobs/runners/util/job_script/MEMORY_STATEMENT.sh
+* packages/app/src/galaxy/jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh
+* packages/app/src/galaxy/jobs/runners/util/job_script/MEMORY_STATEMENT.sh
 
 If this code is unable to determine the variables, then they will not be set.
 Therefore in the tool XML files the variables should be used with a default,

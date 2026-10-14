@@ -20,7 +20,7 @@
         "resolvePackageJsonExports": false
     },
     "vueCompilerOptions": {
-        "target": 2.7
+        "target": 3
     },
     "include": ["./src/**/*.ts", "./src/**/*.vue"]
 }

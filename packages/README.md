@@ -42,11 +42,11 @@ the runtime exports (`pinned-requirements.txt`, `conditional-requirements.txt`,
 | Profile | Setup | Notes |
 | --- | --- | --- |
 | App startup | `uv sync --locked --package galaxy-web-apps --all-extras` | Installs the editable server closure; startup uses an inexact sync to preserve additional dependencies. |
-| Backend tests | `uv sync --locked --package galaxy-web-apps --all-extras --group dev` | The `dev` group includes the `test` group. |
+| Backend tests | `uv sync --locked --all-packages --all-extras --group dev` | The `dev` group includes the `test` group. |
 | Tool Shed | `uv sync --locked --package galaxy-tool-shed --all-extras --group dev` | Installs the Tool Shed server closure; start with `run_tool_shed.sh`. |
 | Browser tests | covered by the `test` group | `playwright` + `pytest-playwright`, `selenium` + `axe-selenium-python`. |
 | Docs | covered by the `dev` group | Sphinx stack; docs CI installs `sphinxcontrib-simpleversioning` on top. |
-| Typecheck | `uv sync --locked --group typecheck` | Or install `requirements/pinned-typecheck-requirements.txt` into an existing environment. |
+| Typecheck | `uv sync --locked --all-packages --all-extras --group typecheck` | Or install `requirements/pinned-typecheck-requirements.txt` into an existing environment. |
 | Lint | isolated environment, not a group | The pinned flake8/ruff tool set conflicts with the application resolve; build from `requirements/lint-requirements.txt`, frozen as `requirements/pinned-lint-requirements.txt` by `update_lint_requirements.sh`. |
 
 Member extras used by `packages/test.sh` and installable via
@@ -63,8 +63,8 @@ once from the repository root and then runs tests for a specific package:
 
     $ git clone https://github.com/galaxyproject/galaxy.git
     $ cd galaxy
-    $ uv sync --locked --group dev
-    $ uv run --locked --package galaxy-util --group dev pytest packages/util/tests
+    $ uv sync --locked --all-packages --all-extras --group dev
+    $ uv run --locked --inexact --package galaxy-util --group dev pytest packages/util/tests
 
 `uv lock --check` verifies the lock is up to date without modifying it.
 Runtime exports live under `packages/app/src/galaxy/dependencies/`; tooling

@@ -10,12 +10,9 @@ import os
 
 import pytest
 
-# Resolve symlinks: under the packages test harness this file is reached via a
-# symlink (packages/app/tests/app -> test/unit/app), so __file__ alone would
-# resolve GALAXY_ROOT to packages/ instead of the real source tree.
-GALAXY_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, os.pardir)
-)
+from galaxy.util import galaxy_directory
+
+GALAXY_ROOT = galaxy_directory()
 SCRIPT_PATH = os.path.join(GALAXY_ROOT, "scripts", "markdown_directives_doc.py")
 
 _spec = importlib.util.spec_from_file_location("markdown_directives_doc", SCRIPT_PATH)

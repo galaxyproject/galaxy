@@ -6,7 +6,7 @@ import yaml
 
 THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(THIS_DIRECTORY, os.pardir))
-CWL_API_TESTS_DIRECTORY = os.path.join(GALAXY_ROOT_DIR, "lib", "galaxy_test", "api", "cwl")
+CWL_API_TESTS_DIRECTORY = os.path.join(GALAXY_ROOT_DIR, "packages", "test_api", "src", "galaxy_test", "api", "cwl")
 
 TEST_FILE_TEMPLATE = string.Template('''"""Test CWL conformance for version ${version}."""
 

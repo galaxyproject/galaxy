@@ -90,7 +90,7 @@ log = logging.getLogger("test_driver")
 
 
 def tool_shed_test_data() -> str:
-    return os.path.join(galaxy_directory(), "lib", "tool_shed", "test", "test_data")
+    return os.path.join(galaxy_directory(), "packages", "tool_shed", "src", "tool_shed", "test", "test_data")
 
 
 def functional_test_webhooks_dir() -> str:
@@ -331,7 +331,7 @@ backends:
 
     # Static agent backend for deterministic AI agent testing
     static_agents_path = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), "..", "base", "data", "static_agents.yml")
+        os.path.join(galaxy_directory(), "packages/test_base/src/galaxy_test/base/data/static_agents.yml")
     )
     if os.path.exists(static_agents_path):
         config["inference_services"] = {"static_responses": static_agents_path}
@@ -355,7 +355,7 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     if tool_data_table_config_path is None:
         # ... otherwise find whatever Galaxy would use as the default and
         # the sample data for functional tests to that.
-        default_tool_data_config = "lib/galaxy/config/sample/tool_data_table_conf.xml.sample"
+        default_tool_data_config = "packages/config/src/galaxy/config/sample/tool_data_table_conf.xml.sample"
         for tool_data_config in ["config/tool_data_table_conf.xml", "tool_data_table_conf.xml"]:
             if os.path.exists(tool_data_config):
                 default_tool_data_config = tool_data_config
@@ -608,7 +608,7 @@ def build_galaxy_web_app(simple_kwargs, init_fast_app: FastAppFactory = init_gal
     """Build Galaxy's application objects for an embedded test server."""
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     global_conf = get_webapp_global_conf()
-    global_conf["__file__"] = "lib/galaxy/config/sample/galaxy.yml.sample"
+    global_conf["__file__"] = "packages/config/src/galaxy/config/sample/galaxy.yml.sample"
     web_app = build_galaxy_web_app_bundle(
         simple_kwargs,
         global_conf=global_conf,

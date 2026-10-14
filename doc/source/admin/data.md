@@ -15,7 +15,7 @@ they become "datasets". A Galaxy dataset is much more than a simple file - Galax
 
 Galaxy object stores (called "storage locations" in the UI) store datasets and global (accessible to all users) object stores are configured with the `galaxy.yml` property `object_store_config_file` (or `object_store_config` for a configuration embedded right in `galaxy.yml`) that defaults to `object_store_conf.xml` or `object_store_conf.yml` if either is present in Galaxy's configuration directory. Galaxy file sources provide users access to raw files and global files sources are configured with the `galaxy.yml` property `file_sources_config_file` (or `file_sources` for embedded configurations) that defaults to `file_sources_conf.yml` if that file is present in Galaxy's configuration directory.
 
-Some of Galaxy's most updated and complete administrator documentation can be found in configuration sample files - this is definitely the case for object stores and file sources. The relevant sample configuration files include [file_sources_conf.yml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/file_sources_conf.yml.sample) and [object_store_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/object_store_conf.sample.yml).
+Some of Galaxy's most updated and complete administrator documentation can be found in configuration sample files - this is definitely the case for object stores and file sources. The relevant sample configuration files include [file_sources_conf.yml.sample](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/file_sources_conf.yml.sample) and [object_store_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/object_store_conf.sample.yml).
 
 File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
 
@@ -48,7 +48,7 @@ Ongoing discussion on this topic can be found at [this Galaxy Discussions post (
 
 A minimal object store template might look something like:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/simple_example.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/simple_example.yml
 :language: yaml
 ```
 
@@ -61,7 +61,7 @@ for storing data. Paths can be built up from the user supplied variables, user d
 environment variables, etc.. The simple example just uses a user supplied project name and the
 user's username to produce a unique path for each user defined object store.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/simple_example.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/simple_example.yml
 :language: yaml
 ```
 
@@ -87,7 +87,7 @@ different experiences for your users and can result in addressing a wide variety
 Here is an example that is tailored for a specific storage service (e.g. CloudFlare R2)
 and exposes just the pieces of data CloudFlare users would need.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/cloudflare.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/cloudflare.yml
 :language: yaml
 ```
 
@@ -98,21 +98,21 @@ them to connect to any S3 compatible storage. This requires a lot more sophistic
 your users but also allows them to connect to many more services. This template is available
 here:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_generic_s3.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_generic_s3.yml
 :language: yaml
 ```
 
 On the other hand, you might run a small lab with a dedicate MinIO storage service and just trust
 your user's to define individual buckets by name:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/minio_just_buckets.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/minio_just_buckets.yml
 :language: yaml
 ```
 
 If you want to just target AWS S3 and let your users utilize that as quickly
 and easily as possible that templates might look like this:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_aws_bucket.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_aws_bucket.yml
 :language: yaml
 ```
 
@@ -132,14 +132,14 @@ store configuration).
 Here is a "production grade" Azure template that can be essentially used to connect to any
 Azure storage container.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_azure_blob.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_azure_blob.yml
 :language: yaml
 ```
 
 This template might be adapted to hide connection details from say users of a individual lab
 and just expose what container they should use. That might look something like:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/azure_just_container.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/azure_just_container.yml
 :language: yaml
 ```
 
@@ -169,7 +169,7 @@ including native Swift access that the S3 compatible object stores cannot offer.
 Here is a template for AWS S3 buckets. Pointing it at a different cloud is a matter of
 changing `provider` and the matching `auth` fields.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_cloud_aws.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_cloud_aws.yml
 :language: yaml
 ```
 
@@ -206,7 +206,7 @@ as Galaxy object stores. See Amazon documentation for information on [S3](https:
 and [how to create buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html)
 and [how to create access keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_aws_s3_legacy.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_aws_s3_legacy.yml
 :language: yaml
 ```
 
@@ -234,7 +234,7 @@ experiences for your users and can result in addressing a wide variety of use ca
 Here is an example that is tailored for a specific storage service (e.g. CloudFlare R2)
 and exposes just the pieces of data CloudFlare users would need.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/cloudflare_legacy.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/cloudflare_legacy.yml
 :language: yaml
 ```
 
@@ -245,14 +245,14 @@ them to connect to any S3 compatible storage. This requires a lot more sophistic
 your users but also allows them to connect to many more services. This template is available
 here:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_generic_s3_legacy.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_generic_s3_legacy.yml
 :language: yaml
 ```
 
 On the other hand, you might run a small lab with a dedicate MinIO storage service and just trust
 your user's to define individual buckets by name:
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/minio_just_buckets_legacy.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/minio_just_buckets_legacy.yml
 :language: yaml
 ```
 
@@ -283,7 +283,7 @@ and you're comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Azure Blob Storage as Object Stores
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_azure_blob.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_azure_blob.yml
 :language: yaml
 ```
 
@@ -291,13 +291,13 @@ and you're comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Generic S3 Compatible Storage Services as Object Stores
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_generic_s3.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_generic_s3.yml
 :language: yaml
 ```
 
 #### Allow Users to Define AWS S3 Buckets as Object Stores
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_aws_s3.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_aws_s3.yml
 :language: yaml
 ```
 
@@ -309,7 +309,7 @@ This template lets users bring their own AWS S3 bucket through Galaxy's multi-cl
 storage plugin. The same form works for Azure, Google Cloud and OpenStack Swift by
 changing the `provider` and `auth` fields.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_cloud_aws.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_cloud_aws.yml
 :language: yaml
 ```
 
@@ -318,7 +318,7 @@ changing the `provider` and `auth` fields.
 This template includes descriptions of how to generate HMAC keys used by this interoperability
 layer provided by Google and lots of links to relevant Google Cloud Storage documentation.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/production_gcp_s3.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/production_gcp_s3.yml
 :language: yaml
 ```
 
@@ -355,15 +355,15 @@ configuration).
 
 #### `s3fs`
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_s3fs.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_s3fs.yml
 :language: yaml
 ```
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_aws_public_bucket.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_aws_public_bucket.yml
 :language: yaml
 ```
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_aws_private_bucket.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_aws_private_bucket.yml
 :language: yaml
 ```
 
@@ -378,7 +378,7 @@ configuration).
 
 #### `ftp`
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_ftp.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_ftp.yml
 :language: yaml
 ```
 
@@ -541,7 +541,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Generic FTP Servers as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_ftp.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_ftp.yml
 :language: yaml
 ```
 
@@ -549,7 +549,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Azure Blob Storage as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_azure.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_azure.yml
 :language: yaml
 ```
 
@@ -557,13 +557,13 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Generic S3 Compatible Storage as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_s3fs.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_s3fs.yml
 :language: yaml
 ```
 
 #### Allow Users to Define Publicly Accessible AWS S3 Buckets as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_aws_public_bucket.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_aws_public_bucket.yml
 :language: yaml
 ```
 
@@ -571,13 +571,13 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Private AWS S3 Buckets as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_aws_private_bucket.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_aws_private_bucket.yml
 :language: yaml
 ```
 
 #### Allow Users to Define WebDAV Servers as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_webdav.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_webdav.yml
 :language: yaml
 ```
 
@@ -585,7 +585,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define eLabFTW Instances as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_elabftw.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_elabftw.yml
 :language: yaml
 ```
 
@@ -593,7 +593,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define InvenioRDM Servers as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_invenio.yml
 :language: yaml
 ```
 
@@ -601,7 +601,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Zenodo as File Source
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_zenodo.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_zenodo.yml
 :language: yaml
 ```
 
@@ -609,7 +609,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define RSpace Instances as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_rspace.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_rspace.yml
 :language: yaml
 ```
 
@@ -627,7 +627,7 @@ Once you have OAuth 2.0 client credentials from Dropbox (called `oauth2_client_i
 `oauth2_client_secret` here), the following configuration can be used configure your Galaxy
 instance to enable Dropbox.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_dropbox.yml
 :language: yaml
 ```
 
@@ -640,7 +640,7 @@ If you'd like to configure these secrets explicit - you can configure them expli
 in the configuration. If your configuration file is managed by Ansible, these secrets
 could potentially be populated from your Ansible vault.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
 :language: yaml
 ```
 
@@ -689,12 +689,12 @@ Once you have OAuth 2.0 client credentials from Microsoft Entra (called `oauth2_
 and `oauth2_client_secret` here), the following configurations can be used to enable
 OneDrive for your Galaxy instance.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_onedrive.yml
 :language: yaml
 ```
 or
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive_full.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_onedrive_full.yml
 :language: yaml
 ```
 
@@ -704,7 +704,7 @@ processes using the environment variables `GALAXY_ONEDRIVE_CLIENT_ID` and
 not receive them.
 If your Galaxy instance has Vault configured, you can use this Vault-backed variant instead:
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/onedrive_client_secrets_in_vault.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/onedrive_client_secrets_in_vault.yml
 :language: yaml
 ```
 
@@ -771,7 +771,7 @@ Once you have OAuth 2.0 client credentials from GitHub (called `oauth2_client_id
 and `oauth2_client_secret` here), the following configuration can be used to enable
 GitHub repositories for your Galaxy instance.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_github.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_github.yml
 :language: yaml
 ```
 
@@ -847,7 +847,7 @@ The following template chunk shows how to override the templating Galaxy does fo
 particular object store configuration. Similar templating overrides work for file source
 plugin templates.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/templating_override.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/templating_override.yml
 :language: yaml
 ```
 
@@ -890,7 +890,7 @@ section of the configuration template.
 
 A deep dive into these can be found in the [Admin Secrets](#admin-secrets) section of this document.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/admin_secrets_with_defaults.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/admin_secrets_with_defaults.yml
 :language: yaml
 ```
 
@@ -909,7 +909,7 @@ The current properties exposed include:
 The simple example of project scratch storage used to describe these concepts made
 use the Galaxy user's username to generate unique paths.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/simple_example.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/simple_example.yml
 :language: yaml
 ```
 
@@ -930,7 +930,7 @@ An example of an object store template that uses this is the simple scratch exam
 that was used to introduce concepts at the start of the object store template
 documentation above.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/simple_example.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/simple_example.yml
 :language: yaml
 ```
 
@@ -947,7 +947,7 @@ values.
 An example of an object store template that uses this is `secure` environment parameter
 on the simple minio example.
 
-```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/minio_example.yml
+```{literalinclude} ../../../packages/objectstore/src/galaxy/objectstore/templates/examples/minio_example.yml
 :language: yaml
 ```
 
@@ -1086,7 +1086,7 @@ variables:
 Most of the examples in this document use secrets of one kind or another. For instance, in the FTP
 example - the password field is a secret.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_ftp.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_ftp.yml
 :language: yaml
 ```
 
@@ -1138,7 +1138,7 @@ key `secret_directory_file_source/my_secret` into the template as `environment.v
 This template uses these variables to construct a root path for a `posix` file source
 but the same secrets could just as easily store cloud keys and configure an S3 object store.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/admin_secrets.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/admin_secrets.yml
 :language: yaml
 ```
 
@@ -1148,7 +1148,7 @@ The following block demonstrates the same configuration but with default values 
 value. These will be used in the target Vault keys are absent or the target environment
 variable is not defined at runtime.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/admin_secrets_with_defaults.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/admin_secrets_with_defaults.yml
 :language: yaml
 ```
 
@@ -1165,7 +1165,7 @@ OAuth2 to work properly and will take care of authorization redirection, saving 
 etc.. implicitly. Such `type`s include `dropbox`, `googledrive`, `onedrive`, and `github`.
 Here is the production Dropbox template distributed with Galaxy.
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/production_dropbox.yml
 :language: yaml
 ```
 
@@ -1179,11 +1179,11 @@ The above example defines these secrets using environment variables but they can
 Galaxy's Vault explicitly by the admin or written right to the configuration files as shown
 in the next two examples:
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/dropbox_client_secrets_in_vault.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/dropbox_client_secrets_in_vault.yml
 :language: yaml
 ```
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
+```{literalinclude} ../../../packages/files/src/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
 :language: yaml
 ```
 

@@ -1900,11 +1900,7 @@ def safe_str_cmp(a, b):
 GALAXY_INCLUDES_ROOT = os.environ.get("GALAXY_INCLUDES_ROOT")
 
 
-#  Don't use this directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = Path(GALAXY_INCLUDES_ROOT) if GALAXY_INCLUDES_ROOT else Path(__file__).parent.parent.parent.parent
-
-
-GALAXY_ROOT_MARKERS = ("run.sh", "lib/galaxy", "scripts/common_startup.sh")
+GALAXY_ROOT_MARKERS = ("run.sh", "packages/util/pyproject.toml", "scripts/common_startup.sh")
 
 
 class GalaxyRootNotFound(Exception):
@@ -1915,25 +1911,30 @@ def is_galaxy_root(path: StrPath) -> bool:
     return all(os.path.exists(os.path.join(path, marker)) for marker in GALAXY_ROOT_MARKERS)
 
 
+# Editable installs resolve to the owning package's source tree. Locate the
+# checkout by its markers rather than assuming a fixed source directory depth.
+_source_checkout = next((parent for parent in Path(__file__).resolve().parents if is_galaxy_root(parent)), None)
+galaxy_root_path = (
+    Path(GALAXY_INCLUDES_ROOT)
+    if GALAXY_INCLUDES_ROOT
+    else (_source_checkout or Path(__file__).parent.parent.parent.parent)
+)
+
+
 def galaxy_directory() -> str:
     """Root of the Galaxy checkout backing this install, if there is one."""
-    if in_packages() and not GALAXY_INCLUDES_ROOT:
-        # pytest runs from <galaxy_root>/packages/<package_name>/; an installed Galaxy may
-        # also simply be run from a checkout.
-        cwd = Path.cwd()
-        for candidate in (cwd.parent.parent, cwd):
-            if is_galaxy_root(candidate):
-                path = candidate
-                break
-        else:
-            raise GalaxyRootNotFound(
-                f"No Galaxy checkout at {cwd.parent.parent} or {cwd}. Installed packages ship no "
-                "checkout content; set GALAXY_INCLUDES_ROOT to a Galaxy source directory if this "
-                "code path needs one."
-            )
-    else:
-        path = galaxy_root_path
-    return os.path.abspath(path)
+    if GALAXY_INCLUDES_ROOT:
+        return os.path.abspath(GALAXY_INCLUDES_ROOT)
+    if _source_checkout is not None:
+        return str(_source_checkout)
+    cwd = Path.cwd()
+    for candidate in (cwd, *cwd.parents):
+        if is_galaxy_root(candidate):
+            return str(candidate)
+    raise GalaxyRootNotFound(
+        f"No Galaxy checkout backing this install or containing {cwd}. "
+        "Set GALAXY_INCLUDES_ROOT to a Galaxy source directory if this code path needs one."
+    )
 
 
 def in_packages() -> bool:

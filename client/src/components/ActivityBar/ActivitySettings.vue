@@ -6,6 +6,8 @@ import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router";
 
+import { useConfig } from "@/composables/config";
+import { isActivityAvailable } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
@@ -27,10 +29,11 @@ const activityStore = useActivityStore(props.activityBarId);
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
 
+const { config } = useConfig();
+
 const optionalActivities = computed(() => {
-    return activityStore.activities.filter(
-        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value,
-    );
+    const availability = { canUseUnprivilegedTools: canUseUnprivilegedTools.value, config: config.value };
+    return activityStore.activities.filter((a) => a.optional && isActivityAvailable(a.id, availability));
 });
 
 const filteredActivities = computed(() => {

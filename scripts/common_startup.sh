@@ -227,18 +227,23 @@ sync_workspace_packages() {
         # later steps install (conditional provider SDKs, dev tools), and would
         # remove member editables installed by earlier --package syncs.
         if [ -n "$VIRTUAL_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
-            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" --active || echo "WARNING: workspace sync failed, environment may be missing Galaxy packages."
+            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" --active || return 1
         else
-            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" || echo "WARNING: workspace sync failed, environment may be missing Galaxy packages."
+            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" || return 1
         fi
         return 0
     fi
-    # Fallback when uv is unavailable: pip-install the minimal local closure
-    # needed to import galaxy.dependencies (galaxy-app plus galaxy.util + galaxy.config).
+    # Without uv, install all local distributions together so pip resolves
+    # first-party dependencies against this checkout rather than PyPI.
     if [ -d packages/util ] && [ -d packages/config ]; then
-        echo "Installing local Galaxy workspace packages for bootstrap (galaxy-util, galaxy-config, galaxy-app)..."
+        echo "Installing local Galaxy workspace packages for bootstrap..."
+        set --
+        for project in packages/*; do
+            [ -f "$project/pyproject.toml" ] || continue
+            set -- "$@" -e "./$project"
+        done
         # shellcheck disable=SC2086
-        ${PIP_CMD} install -e ./packages/util -e ./packages/config -e ./packages/app || echo "WARNING: local workspace install failed; Galaxy packages must already be installed."
+        ${PIP_CMD} install "$@" || return 1
     fi
 }
 

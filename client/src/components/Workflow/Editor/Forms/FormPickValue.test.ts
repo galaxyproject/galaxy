@@ -7,6 +7,7 @@ import type { Step } from "@/stores/workflowStepStore";
 
 import FormPickValue from "./FormPickValue.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import FormSection from "@/components/Workflow/Editor/Forms/FormSection.vue";
 
 const localVue = getLocalVue();
 
@@ -30,10 +31,11 @@ function makeStep(overrides: Partial<Step> = {}): Step {
     } as Step;
 }
 
-function mountPickValue(step?: Step): VueWrapper {
+function mountPickValue(step?: Step, datatypes?: unknown[]): VueWrapper {
     return shallowMount(FormPickValue as any, {
         propsData: {
             step: step ?? makeStep(),
+            datatypes,
         },
         localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
@@ -79,6 +81,12 @@ describe("FormPickValue", () => {
             expect(state.mode).toBe("all_non_null");
             expect(state.num_inputs).toBe(3);
         });
+    });
+
+    it("hides actions that require a job", () => {
+        const wrapper = mountPickValue(undefined, []);
+
+        expect(wrapper.findComponent(FormSection).props("supportsJobBasedActions")).toBe(false);
     });
 
     describe("mode changes", () => {

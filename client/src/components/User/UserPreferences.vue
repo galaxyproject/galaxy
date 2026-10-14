@@ -48,7 +48,7 @@ const breadcrumbItems = [{ title: "User Preferences" }];
 
 const { confirm } = useConfirmDialog();
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();

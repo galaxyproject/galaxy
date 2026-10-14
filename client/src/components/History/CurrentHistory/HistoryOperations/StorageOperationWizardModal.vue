@@ -43,7 +43,7 @@ const objectStoreStore = useObjectStoreStore();
 const quotaUsageStore = useQuotaUsageStore();
 const storageOperationsStore = useStorageOperationsStore();
 const { loading: objectStoresLoading, loadErrorMessage } = storeToRefs(objectStoreStore);
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const selectedTargetObjectStoreId = ref<string | null>(null);
 const storagePreview = ref<StorageOperationPreviewResponse | null>(null);
@@ -286,7 +286,11 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                                     <span class="font-weight-bold">{{
                                         option.name ?? "Unknown storage location"
                                     }}</span>
-                                    <ObjectStoreBadges :badges="option.badges" size="lg" class="ml-2 flex-shrink-0" />
+                                    <ObjectStoreBadges
+                                        :badges="option.badges"
+                                        size="lg"
+                                        :interactive="false"
+                                        class="ml-2 flex-shrink-0" />
                                 </div>
                                 <div v-if="option.description" class="small text-muted mt-1 text-break">
                                     {{ option.description }}

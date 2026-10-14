@@ -103,15 +103,15 @@ terminal sessions.
     $ GALAXY_SKIP_CLIENT_BUILD=1 GALAXY_RUN_WITH_TEST_TOOLS=1 sh run.sh
     $ make client-watch
 
-Copy ``lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml.sample`` to
-``lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml`` and specify a
+Copy ``packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium.yml.sample`` to
+``packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium.yml`` and specify a
 ``login_email``, ``login_password``, ``admin_api_key`` to point at values
 suitable for your local test environment.
 
 ::
 
-    $ cp lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml.sample lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml
-    $ vi lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml
+    $ cp packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium.yml.sample packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium.yml
+    $ vi packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium.yml
 
 Start Jupyter for interactive development. This requires Jupyter to be
 available in Galaxy's virtual environment.
@@ -140,7 +140,7 @@ changes.
 
 
 Once the test is complete, copy all the cells after the initialization into a
-new test case file (either in ``lib/galaxy_test/selenium`` or
+new test case file (either in ``packages/test_selenium/src/galaxy_test/selenium`` or
 ``test/integration_selenium``). Some examples of pull request commits developed this
 way include Galaxy's initial `workflow invocation detail tests
 <https://github.com/galaxyproject/galaxy/pull/11160/commits/b6d99320d99e93f812adc0df494447525978ebfa>`__
@@ -153,7 +153,7 @@ additionally are examples of both regular Selenium test cases as well as their
 integration-style variant that configures Galaxy before the test runs.
 
 Much more information on structuring Selenium test cases generally, the difference
-between tests that should be place in ``lib/galaxy_test/selenium`` versus ones
+between tests that should be place in ``packages/test_selenium/src/galaxy_test/selenium`` versus ones
 that should be placed in ``test/integration_selenium``, and information on running
 Selenium test cases can all be found in :doc:`../dev/writing_tests`.
 

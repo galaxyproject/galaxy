@@ -381,7 +381,7 @@ Enhancements
 * Provide even more context to the lint context
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13186`_
-* Skip non-Selenium tests if only lib/galaxy_test/selenium is touched
+* Skip non-Selenium tests if only packages/test_selenium/src/galaxy_test/selenium is touched
   `Pull Request 13227`_
 * Add documentation for output action attributes
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
@@ -444,7 +444,7 @@ Enhancements
   `Pull Request 12551`_
 * Fix up small issues around packaging of galaxy-tool-util code.
   `Pull Request 12552`_
-* Move more webapps unit tests in test/unit/webapps.
+* Move more webapps unit tests in packages/web_apps/tests/webapps.
   `Pull Request 12554`_
 * Share a tool_util unittest method via packing to fix up unit test dependencies.
   `Pull Request 12555`_
@@ -755,7 +755,7 @@ Fixes
   `Pull Request 12888`_
 * Consider a history not new once there are any items in it
   `Pull Request 12897`_
-* Bump tensorflow from 2.5.1 to 2.5.2 in /lib/galaxy/dependencies
+* Bump tensorflow from 2.5.1 to 2.5.2 in /packages/app/src/galaxy/dependencies
   `Pull Request 12900`_
 * Sync package deps with `pyproject.toml`
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -804,7 +804,7 @@ Fixes
 * Misc fixes - round 3
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 12993`_
-* Bump python-ldap from 3.2.0 to 3.4.0 in /lib/galaxy/dependencies
+* Bump python-ldap from 3.2.0 to 3.4.0 in /packages/app/src/galaxy/dependencies
   `Pull Request 13003`_
 * Fix known marcos typo
   `Pull Request 13009`_

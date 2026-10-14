@@ -1,5 +1,5 @@
 """
-Test lib/galaxy/visualization/plugins/registry.
+Test packages/app/src/galaxy/visualization/plugins/registry.
 """
 
 import os

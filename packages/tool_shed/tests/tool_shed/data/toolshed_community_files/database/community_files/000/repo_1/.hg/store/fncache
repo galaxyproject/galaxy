@@ -1,0 +1,12 @@
+data/collection_column_join.xml.i
+data/test-data/in_2.tabular.i
+data/test-data/out_1.tabular.i
+data/test-data/in_3_headerless.tabular.i
+data/test-data/out_4.tabular.i
+data/test-data/in_1.tabular.i
+data/test-data/out_2.tabular.i
+data/test-data/in_2_headerless.tabular.i
+data/test-data/out_3.tabular.i
+data/tool_test_output_2.json.i
+data/test-data/in_1_headerless.tabular.i
+data/test-data/in_3.tabular.i

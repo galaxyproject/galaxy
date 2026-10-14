@@ -30,9 +30,9 @@ from typing import (
 from urllib.parse import urlparse
 
 import yaml
+
 from galaxy.config._galaxy_config_schema_attributes import GalaxyAppConfigurationAttributes
 from galaxy.config.schema import AppSchema
-
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
     listify,
@@ -1057,7 +1057,9 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         if "conda_mapping_files" not in kwargs:
             _default_mapping = self._in_root_dir(
                 os.path.join(
-                    "lib",
+                    "packages",
+                    "tool_util",
+                    "src",
                     "galaxy",
                     "tool_util",
                     "deps",
@@ -1521,6 +1523,11 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
                 log.warning(
                     f"Config option '{key}' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file."
                 )
+
+    @property
+    def job_files_tus_upload_dir(self) -> str:
+        """Directory the job files TUS endpoint stores uploads in."""
+        return self.tus_upload_store_job_files or self.tus_upload_store or self.new_file_path
 
     def is_fetch_with_celery_enabled(self):
         """

@@ -99,6 +99,19 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         details.badge_of_type(type="faster").wait_for_present()
         details.badge_of_type(type="more_stable").wait_for_present()
 
+        # The admin's Markdown message shows as formatted text, not literal HTML, with a link you can follow.
+        badge = details.badge_trigger_of_type(type="backed_up").wait_for_visible()
+        self.hover(badge)
+        popover_id = badge.get_attribute("aria-controls")
+        popover_text = details.badge_popover(id=popover_id).wait_for_text()
+        assert "This storage has been marked as backed up by the Galaxy administrator." in popover_text
+        assert "Backed up to MSI's long term tape drive nightly." in popover_text
+        assert "<p>" not in popover_text
+        link = details.badge_popover_link(id=popover_id).wait_for_visible()
+        assert link.get_attribute("href") == "https://www.msi.umn.edu/content/archive-tier-storage"
+        assert link.text == "Archive Tier Storage"
+        self.screenshot("objectstore_badge_admin_message")
+
     @selenium_test
     @managed_history
     def test_1_tools_override_run(self):
@@ -141,6 +154,34 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         assert "High Performance Storage" in text
         details.badge_of_type(type="faster").wait_for_present()
         details.badge_of_type(type="more_stable").wait_for_present()
+
+    @selenium_test
+    @managed_history
+    def test_storage_run_dataset_popover_fits_window(self):
+        history_id = self.current_history_id()
+        hda = self.dataset_populator.new_dataset(history_id, name="a long dataset name " * 20, wait=True)
+        # The dataset is already in the target store, so the run skips it and lists it.
+        preview = self.dataset_populator.bulk_storage_operation_preview(
+            history_id,
+            {
+                "mode": "move",
+                "target_object_store_id": "high_performance",
+                "items": [{"id": hda["id"], "history_content_type": "dataset"}],
+            },
+        )
+        run = self.dataset_populator.bulk_storage_operation_execute(
+            history_id, {"snapshot_id": preview["snapshot_id"], "execution_policy": {"skip_ineligible": True}}
+        )["run"]
+        self.dataset_populator.wait_for_bulk_storage_operation_run(history_id, run["run_id"])
+        self.get(f"histories/{history_id}/storage/runs/{run['run_id']}")
+        self.hover_over(self.wait_for_selector_visible(f"#storage-run-item-dataset-{hda['id']}"))
+        self.wait_for_selector_visible(".popover #dataset-details")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        rect = self.execute_script(
+            "const r = document.querySelector('#dataset-details').closest('.popover').getBoundingClientRect();"
+            "return {left: r.left, right: r.right, width: r.width, viewport: window.innerWidth};"
+        )
+        assert rect["width"] <= 460 and rect["left"] >= 0 and rect["right"] <= rect["viewport"], rect
 
 
 class TestMultipleQuotasSeleniumIntegration(SeleniumIntegrationTestCase, ConfiguresObjectStores):

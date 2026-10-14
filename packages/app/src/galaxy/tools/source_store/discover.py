@@ -367,7 +367,7 @@ def discover_tools(
 
     Args:
         config: Galaxy configuration object.
-        include_bundled: Whether to include bundled tools from lib/galaxy/tools/bundled.
+        include_bundled: Whether to include bundled tools from packages/app/src/galaxy/tools/bundled.
         include_converters: Whether to enumerate datatype converters. This needs
             the datatypes registry; it's off for targeted single-store populates,
             which never write the default store that converters route to.
@@ -403,7 +403,7 @@ def discover_tools(
 
     # Include bundled tools if requested
     if include_bundled and root_dir:
-        bundled_dir = Path(root_dir) / "lib" / "galaxy" / "tools" / "bundled"
+        bundled_dir = Path(root_dir) / "packages" / "app" / "src" / "galaxy" / "tools" / "bundled"
         if bundled_dir.exists():
             for xml_file in bundled_dir.rglob("*.xml"):
                 path_str = str(xml_file)

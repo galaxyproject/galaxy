@@ -1,10 +1,12 @@
 import logging
 import os
 
+from galaxy.datatypes import registry
+
 log = logging.getLogger(__name__)
 
 # Tool files Galaxy's ``load_lib_tools`` loads after the normal config walk.
-# Paths are relative to this file's directory (``lib/galaxy/tools/``).
+# Paths are relative to this file's directory (``packages/app/src/galaxy/tools/``).
 SPECIAL_TOOLS = {
     "history export": "imp_exp/exp_history_to_archive.xml",
     "history export to uri": "imp_exp/exp_history_to_uri.xml",
@@ -18,7 +20,7 @@ SPECIAL_TOOLS = {
 # config-discovered tools — without it, ``CachedToolBox.create_tool`` would
 # raise on the post-boot ``load_hidden_lib_tool`` call.
 _EXTRA_HIDDEN_LIB_TOOLS = {
-    "set metadata": "../datatypes/set_metadata_tool.xml",
+    "set metadata": os.path.join(os.path.dirname(registry.__file__), "set_metadata_tool.xml"),
 }
 
 

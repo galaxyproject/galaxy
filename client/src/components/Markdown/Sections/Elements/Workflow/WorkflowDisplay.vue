@@ -5,16 +5,14 @@ import { computed, ref, watch } from "vue";
 
 import { getStepTitle } from "@/components/WorkflowInvocationState/util";
 import { useUid } from "@/composables/utils/uid";
-import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
+import ToolDetailsButton from "@/components/Tool/ToolDetailsButton.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
 
 interface WorkflowDisplayProps {
@@ -133,22 +131,14 @@ function toolButtonId(orderIndex: number) {
             <div v-else :class="!expanded && 'content-height'">
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
-                        <GLink
+                        <ToolDetailsButton
                             v-if="step.type == 'tool' && step.tool_id"
                             :id="toolButtonId(step.order_index)"
-                            dark
-                            thin
-                            type="button"
-                            :aria-label="localize('Tool details')">
-                            <WorkflowStepIcon step-type="tool" />
-                        </GLink>
-                        <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
-                        <ToolLinkPopover
-                            v-if="step.type == 'tool' && step.tool_id"
-                            interactive
-                            :target="toolButtonId(step.order_index)"
                             :tool-id="step.tool_id"
-                            :tool-version="step.tool_version" />
+                            :tool-version="step.tool_version">
+                            <WorkflowStepIcon step-type="tool" />
+                        </ToolDetailsButton>
+                        <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
                         <span>{{ stepTitle(step) }}</span>
                         <WorkflowTree :input="step" :skip-head="true" />
                     </div>

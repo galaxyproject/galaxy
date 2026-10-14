@@ -434,14 +434,14 @@ someone else"; don't assume `404` always means the object is absent.
 - **DRS URIs only on HDA outputs**, not on collection outputs.
 - **`tags` are not persisted** to the invocation, and run summaries return `tags: {}`.
 - **`service-info` `auth_instructions_url` is a placeholder** (`"TODO"`).
-- The generated Pydantic models under `lib/galaxy/schema/wes/` are produced by
+- The generated Pydantic models under `packages/schema/src/galaxy/schema/wes/` are produced by
   `gen.sh` from the upstream GA4GH OpenAPI spec with no Galaxy post-processing — treat
   them as regenerable and avoid hand edits.
 
 ## Source pointers
 
-- Router: `lib/galaxy/webapps/galaxy/api/wes.py`
-- Service: `lib/galaxy/webapps/galaxy/services/wes.py`
-- Generated models: `lib/galaxy/schema/wes/` (regenerate via `gen.sh`)
-- Shared GA4GH service-info builder: `lib/galaxy/webapps/galaxy/services/ga4gh.py`
-- API tests (worked examples for every endpoint): `lib/galaxy_test/api/test_wes.py`
+- Router: `packages/web_apps/src/galaxy/webapps/galaxy/api/wes.py`
+- Service: `packages/web_apps/src/galaxy/webapps/galaxy/services/wes.py`
+- Generated models: `packages/schema/src/galaxy/schema/wes/` (regenerate via `gen.sh`)
+- Shared GA4GH service-info builder: `packages/web_apps/src/galaxy/webapps/galaxy/services/ga4gh.py`
+- API tests (worked examples for every endpoint): `packages/test_api/src/galaxy_test/api/test_wes.py`

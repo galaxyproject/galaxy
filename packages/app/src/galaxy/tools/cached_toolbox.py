@@ -420,7 +420,7 @@ class CachedTool:
         """Mirror of :meth:`Tool.allow_user_access` derived from index metadata.
 
         ``DataManagerTool`` overrides ``allow_user_access`` to require admin
-        (lib/galaxy/tools/__init__.py:3893). On the stub we can't dispatch
+        (packages/app/src/galaxy/tools/__init__.py:3893). On the stub we can't dispatch
         polymorphically on subclass, so branch on ``tool_type`` instead.
         Dynamic tools are materialized before unprivileged access checks.
         """
@@ -1398,7 +1398,7 @@ class CachedToolBox(ToolBox):
             kwds["data_manager_id"] = entry.data_manager_id
         if stored.tool_id and is_shed_guid(stored.tool_id):
             kwds["guid"] = stored.tool_id
-            # ``ToolConfRepository`` (lib/galaxy/tool_util/toolbox/base.py:87)
+            # ``ToolConfRepository`` (packages/tool_util/src/galaxy/tool_util/toolbox/base.py:87)
             # is the same namedtuple stub the eager pipeline hands the Tool
             # ctor for shed tools whose install-DB row hasn't materialised
             # yet — see ``AbstractToolBox.get_tool_repository_from_xml_item``.

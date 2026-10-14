@@ -63,7 +63,7 @@ def specification_object():
     try:
         yaml_str = resource_string(__name__, "parameter_specification.yml")
     except AttributeError:
-        yaml_str = open("test/unit/tool_util/parameter_specification.yml").read()
+        yaml_str = open("packages/tool_util/tests/tool_util/parameter_specification.yml").read()
     return yaml.safe_load(yaml_str)
 
 

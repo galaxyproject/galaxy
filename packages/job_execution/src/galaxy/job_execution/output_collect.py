@@ -42,6 +42,7 @@ from galaxy.model.store.discover import (
     persist_elements_to_hdca,
     persist_hdas,
     RegexCollectedDatasetMatch,
+    resolve_discovered_extension,
     safe_path_from_directory,
     SessionlessModelPersistenceContext,
     UNSET,
@@ -453,7 +454,7 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
             ext = fields_match.ext
             if ext == "input":
                 ext = input_ext
-            ext = ext.lower()
+            ext = resolve_discovered_extension(ext.lower(), filename)
             dbkey = fields_match.dbkey
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey

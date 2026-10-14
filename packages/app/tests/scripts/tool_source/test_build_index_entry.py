@@ -6,7 +6,9 @@ from typing import (
     cast,
 )
 
-galaxy_root = Path(__file__).parent.parent.parent.parent.parent
+from galaxy.util import galaxy_directory
+
+galaxy_root = Path(galaxy_directory())
 sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tool_util.deps.requirements import (

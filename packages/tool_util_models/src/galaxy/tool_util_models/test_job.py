@@ -30,7 +30,7 @@ from ._base import (
 
 # Mirrored from galaxy.util.hash_util.HashFunctionNames — duplicated rather than
 # imported so this package stays free of a galaxy-util runtime dep. Kept in sync
-# by test/unit/tool_util_models/test_hash_function_names_sync.py, which runs in
+# by packages/tool_util_models/tests/tool_util_models/test_hash_function_names_sync.py, which runs in
 # the monorepo where galaxy.util is available.
 HashFunctionNames = Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
 

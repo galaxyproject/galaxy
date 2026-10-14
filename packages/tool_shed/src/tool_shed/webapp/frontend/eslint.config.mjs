@@ -1,11 +1,10 @@
 import js from "@eslint/js"
+import { galaxyVueBase } from "@galaxyproject/galaxy-ui/eslint"
 import prettierRecommended from "eslint-plugin-prettier/recommended"
 import vue from "eslint-plugin-vue"
-import vuejsAccessibility from "eslint-plugin-vuejs-accessibility"
 import { defineConfig, globalIgnores } from "eslint/config"
 import globals from "globals"
 import tseslint from "typescript-eslint"
-import vueParser from "vue-eslint-parser"
 
 export default defineConfig(
     globalIgnores(["dist/**"]),
@@ -16,12 +15,11 @@ export default defineConfig(
             tseslint.configs.recommended,
             ...vue.configs["flat/strongly-recommended"],
             prettierRecommended,
-            ...vuejsAccessibility.configs["flat/recommended"],
+            ...galaxyVueBase,
         ],
         languageOptions: {
             globals: globals.browser,
             parserOptions: {
-                parser: tseslint.parser,
                 extraFileExtensions: [".vue"],
             },
         },
@@ -35,14 +33,6 @@ export default defineConfig(
             "@typescript-eslint/no-empty-function": "error",
             "@typescript-eslint/no-inferrable-types": "error",
             "@typescript-eslint/no-non-null-assertion": "warn",
-        },
-    },
-    {
-        // Plugin flat configs set the parser from their own dependency, so a stale nested copy
-        // could win depending on order; pin the one we install.
-        files: ["**/*.vue"],
-        languageOptions: {
-            parser: vueParser,
         },
     },
     // typescript-eslint scopes these overrides (no-var, prefer-const, ...) to .ts files; the

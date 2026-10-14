@@ -8,6 +8,7 @@ import { useWorkflowCardBadges } from "@/components/Workflow/List/useWorkflowCar
 import { useWorkflowCardIndicators } from "@/components/Workflow/List/useWorkflowCardIndicators";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import GCard from "@/components/Common/GCard.vue";
 
@@ -107,7 +108,7 @@ const { workflowCardBadges, workflowCardTitleBadges } = useWorkflowCardBadges(
 const workflowCardTitle = computed(() => {
     return {
         label: workflow.value.name,
-        title: "Preview Workflow",
+        title: localize("Click to preview workflow"),
         handler: () => emit("preview", props.workflow.id),
     };
 });

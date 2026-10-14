@@ -1100,7 +1100,7 @@ unless absolutely necessary.
 This tag set provides detailed control of the way the tool is executed. This
 (optional) code can be deployed in a separate file in the same directory as the
 tool's config file. These hooks are being replaced by new tool config features
-and methods in the [/lib/galaxy/tools/\__init__.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/__init__.py) code file.
+and methods in the [/packages/app/src/galaxy/tools/\__init__.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/tools/__init__.py) code file.
 
 ### Examples
 
@@ -1858,9 +1858,31 @@ Unzipping won't be done for compressed data types, e.g.
 
 The value of a select parameter should be specified as the value of one of the
 legal options. If more than one option is selected (`multiple="true"`) they
-should be given as comma separated list. For optional selects
-(`optional="true"`) the case that no option is selected can be specified with
-`value=""`.
+should be given as comma separated list.
+
+For optional selects (`optional="true"`), use `value_json="null"` to explicitly
+leave the parameter unset. This works for both single and multiple selects:
+
+```xml
+<param name="outputs" value_json="null" />
+```
+
+For multiple selects (`multiple="true"`), use `value_json="[]"` to explicitly
+supply an empty list of selected options:
+
+```xml
+<param name="outputs" value_json="[]" />
+```
+
+Use these explicit JSON forms instead of `value=""`. `value=""` supplies the
+empty string as an option value, which is not a legal option unless the select
+defines `<option value="">`. On an optional single select it fails test
+validation from profile `24.2`. Tool profiles before `26.1` interpret
+`value=""` on a multiple select as an empty list, but linting flags this legacy
+convention and profile `26.1` and later reject it.
+
+Omit the test's `param` element to use the input parameter's default instead;
+this may select options if the tool declares them with `selected="true"`.
 
 While in general it is preferred to specify the selected cases by their values it
 is also possible to specify them by their name (i.e. the content of the
@@ -1892,7 +1914,9 @@ values that can be assigned to an input parameter.</xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">This variant of the value parameters can be
 used to load typed parameters. This string will be loaded as JSON and its type will
-attempt to be preserved through API requests to Galaxy.</xs:documentation>
+attempt to be preserved through API requests to Galaxy. For example, use
+``value_json="null"`` for an unset optional select or ``value_json="[]"`` for an
+empty multiple-select list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ftype" type="Format">
@@ -2527,7 +2551,7 @@ many of the default assertion tags that come with Galaxy and examples of each
 can be found below.
 
 The implementation of these tags are simply Python functions defined in the
-[/lib/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tool_util/verify/asserts)
+[/packages/tool_util/src/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/packages/tool_util/src/galaxy/tool_util/verify/asserts)
 module.
 ]]></xs:documentation>
     </xs:annotation>
@@ -4506,7 +4530,7 @@ the tool form widget is different. Currently valid parameter types are:
 ``file``,  ``ftpfile``,  ``data``,  ``data_collection``,
 ``drill_down``. The definition of supported parameter types as defined in the
 ``parameter_types`` dictionary in
-[/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/basic.py).
+[/packages/app/src/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/tools/parameters/basic.py).
 
 ]]></xs:documentation>
           </xs:annotation>
@@ -4914,9 +4938,9 @@ the following feature components.
 
 A set of "metadata information" is defined for each supported data type (see the
 ``MetadataElement`` objects in the various data types classes in
-[/lib/galaxy/datatypes](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/datatypes).
+[/packages/data/src/galaxy/datatypes](https://github.com/galaxyproject/galaxy/tree/dev/packages/data/src/galaxy/datatypes).
 The ``DatasetFilenameWrapper`` class in the
-[/lib/galaxy/tools/wrappers.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/wrappers.py)
+[/packages/app/src/galaxy/tools/wrappers.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/tools/wrappers.py)
 code file wraps a metadata collection to return metadata parameters wrapped
 according to the Metadata spec.
 
@@ -4985,7 +5009,7 @@ be escaped with a backslash (``\``) when appearing in ``command`` or ``configfil
 
 For internal converter tools using ``$__target_datatype__`` it is recommended to add a select
 input parameter with name ``__target_datatype__`` in order to make the tool testable, see
-for instance the [biom converter](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/datatypes/converters/biom.xml).
+for instance the [biom converter](https://github.com/galaxyproject/galaxy/blob/dev/packages/data/src/galaxy/datatypes/converters/biom.xml).
 
 Name | Description
 ---- | -----------
@@ -5739,7 +5763,7 @@ Valid values are: ``expression``, ``regex``, ``in_range``, ``length``,
 Deprecated validator: ``dataset_metadata_in_file``.
 The list of supported
 validators is in the ``validator_types`` dictionary in
-[/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
+[/packages/app/src/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/tools/parameters/validation.py).
 ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -6178,7 +6202,7 @@ This example demonstrates compiling a list of available attributes by parsing a 
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 Currently the filters in the ``filter_types`` dictionary in the module
-[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
+[/packages/app/src/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/tools/parameters/dynamic_options.py) are defined.
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -6838,12 +6862,20 @@ Therefore a filter for such a variable looks like the following example.
     </xs:attribute>
     <xs:attribute name="format" type="Format" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[Format (or datatype) of discovered datasets (an alias with ``ext``).
+Use ``_sniff_`` to detect the datatype from each file's content, or ``_infer_from_file_name_``
+to pick the datatype matching each file name's extension (``data`` if there is none).
+An ``ext`` captured by ``pattern`` takes precedence over this value. Extensions that are not
+datatypes on the Galaxy server are set to ``data`` when the job finishes.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ext" type="Format" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[Format (or datatype) of discovered datasets (an alias with ``format``).
+Use ``_sniff_`` to detect the datatype from each file's content, or ``_infer_from_file_name_``
+to pick the datatype matching each file name's extension (``data`` if there is none).
+An ``ext`` captured by ``pattern`` takes precedence over this value. Extensions that are not
+datatypes on the Galaxy server are set to ``data`` when the job finishes.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="sort_by" type="xs:string" use="optional">

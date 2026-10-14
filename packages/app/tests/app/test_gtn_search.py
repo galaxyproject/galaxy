@@ -1,4 +1,4 @@
-"""Unit tests for the GTN search library (lib/galaxy/agents/gtn).
+"""Unit tests for the GTN search library (packages/app/src/galaxy/agents/gtn).
 
 These exercise the SQLite-backed search interface and the FAQ/tutorial
 result types against tiny in-memory fixture databases built via

@@ -28,13 +28,13 @@ SKIP_REASON = "Slow test: database migration management scripts"
 
 @pytest.fixture(scope="session")
 def migrations_dir():
-    """[galaxy-root]/lib/tool_shed/model/webapp/migrations/"""
+    """[galaxy-root]/packages/tool_shed/src/tool_shed/model/webapp/migrations/"""
     return resource_path("tool_shed.webapp.model", "migrations")
 
 
 @pytest.fixture(scope="session")
 def alembic_env_dir(migrations_dir) -> str:
-    """[galaxy-root]/lib/tool_shed/model/webapp/migrations/alembic/"""
+    """[galaxy-root]/packages/tool_shed/src/tool_shed/model/webapp/migrations/alembic/"""
     return migrations_dir / "alembic"
 
 

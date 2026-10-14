@@ -632,7 +632,16 @@ class TestDatasetCollectionsApi(ApiTestCase):
             return header == b"\x50\x4b\x03\x04"
 
     def test_workbook_parse(self):
-        xlsx_path = Path(galaxy_root_path) / "lib" / "galaxy" / "model" / "unittest_utils" / "filled_in_workbook_1.xlsx"
+        xlsx_path = (
+            Path(galaxy_root_path)
+            / "packages"
+            / "data"
+            / "src"
+            / "galaxy"
+            / "model"
+            / "unittest_utils"
+            / "filled_in_workbook_1.xlsx"
+        )
         example_as_bytes = xlsx_path.read_bytes()
         response = self.dataset_collection_populator.parse_workbook(
             example_as_bytes, "sample_sheet", TEST_COLUMN_DEFINITIONS_1
@@ -654,7 +663,9 @@ class TestDatasetCollectionsApi(ApiTestCase):
 
             xlsx_path = (
                 Path(galaxy_root_path)
-                / "lib"
+                / "packages"
+                / "data"
+                / "src"
                 / "galaxy"
                 / "model"
                 / "unittest_utils"
@@ -774,6 +785,18 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 )
                 create_response = self._post("dataset_collections", payload, json=True)
                 self._assert_status_code_is(create_response, 403)
+
+    def test_fetched_list_elements_get_default_permissions(self, history_id):
+        response = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a\n", "b\n"], direct_upload=True, wait=True
+        )
+        hdca = response.json()["output_collections"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        elements = self.dataset_populator.get_history_collection_details(history_id, hid=hdca["hid"])["elements"]
+        role_id = self.dataset_populator.user_private_role_id()
+        for element in elements:
+            permissions = self._get(f"datasets/{element['object']['id']}").json()["permissions"]
+            assert permissions == {"manage": [role_id], "access": [role_id]}
 
     def test_dataset_collection_element_security(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

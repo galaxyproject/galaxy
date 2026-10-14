@@ -40,7 +40,7 @@ jobs:
             source=release
             revision=$(git rev-parse "v${version}^{commit}")
           else
-            version=$(python3 -c 'import runpy; print(runpy.run_path("lib/galaxy/version/__init__.py")["VERSION"])')
+            version=$(python3 -c 'import runpy; print(runpy.run_path("packages/util/src/galaxy/version/__init__.py")["VERSION"])')
             source=source
             revision=$(git rev-parse HEAD)
           fi

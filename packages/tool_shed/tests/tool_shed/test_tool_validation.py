@@ -7,12 +7,16 @@ from galaxy.tools.repositories import ValidationContext
 from galaxy.util import galaxy_directory
 from tool_shed.tools.tool_validator import ToolValidator
 
-BISMARK_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/repos/bismark/0")
+BISMARK_DIR = os.path.join(galaxy_directory(), "packages/tool_shed/src/tool_shed/test/test_data/repos/bismark/0")
 BOWTIE2_INDICES = os.path.join(
-    galaxy_directory(), "lib/tool_shed/test/test_data/bowtie2_loc_sample/bowtie2_indices.loc.sample"
+    galaxy_directory(), "packages/tool_shed/src/tool_shed/test/test_data/bowtie2_loc_sample/bowtie2_indices.loc.sample"
 )
-MISSING_DATA_REF_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/repos/missing_data_ref")
-WRONG_DATA_REF_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/repos/wrong_data_ref")
+MISSING_DATA_REF_DIR = os.path.join(
+    galaxy_directory(), "packages/tool_shed/src/tool_shed/test/test_data/repos/missing_data_ref"
+)
+WRONG_DATA_REF_DIR = os.path.join(
+    galaxy_directory(), "packages/tool_shed/src/tool_shed/test/test_data/repos/wrong_data_ref"
+)
 
 
 def test_validate_valid_tool():

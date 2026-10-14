@@ -17,12 +17,11 @@ import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownloa
 interface Props {
     item: HDADetailed;
     writable: boolean;
-    showHighlight: boolean;
+    showHighlight?: boolean;
     itemUrls: ItemUrls;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    writable: true,
     showHighlight: false,
 });
 

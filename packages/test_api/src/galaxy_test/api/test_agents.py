@@ -4,10 +4,10 @@ Tests run against any Galaxy with agents configured (static or real LLM).
 Assertions adapt based on llm_registry_type: strong for "static", weak for "default".
 
 ## Running (auto-started server with static backend):
-    ./run_tests.sh -api lib/galaxy_test/api/test_agents.py
+    ./run_tests.sh -api packages/test_api/src/galaxy_test/api/test_agents.py
 
 ## Running against an external Galaxy with a real LLM:
-    ./run_tests.sh -api lib/galaxy_test/api/test_agents.py \
+    ./run_tests.sh -api packages/test_api/src/galaxy_test/api/test_agents.py \
         --external_url http://localhost:8080/ \
         --external_user_key YOUR_API_KEY
 """

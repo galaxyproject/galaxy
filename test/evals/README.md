@@ -1,6 +1,6 @@
 # Galaxy agent evals
 
-Real-LLM evaluation harness for the agents in `lib/galaxy/agents/`. Built on
+Real-LLM evaluation harness for the agents in `packages/app/src/galaxy/agents/`. Built on
 [pydantic-evals](https://ai.pydantic.dev/evals/). Runs on demand, **not in
 CI** -- real LLMs cost money, are slow, and are flaky.
 
@@ -200,9 +200,9 @@ The CLI auto-includes anything registered in `SPECS`.
 
 ## How this relates to other agent test infrastructure
 
-- `test/unit/app/test_agents.py::TestAgentUnitMocked` -- deterministic mocked
+- `packages/app/tests/app/test_agents.py::TestAgentUnitMocked` -- deterministic mocked
   unit tests, run in CI. Cover plumbing, not LLM behaviour.
-- `test/unit/app/test_static_agent_backend.py` -- tests for the
+- `packages/app/tests/app/test_static_agent_backend.py` -- tests for the
   `StaticAgentRegistry`, which swaps real agents for canned-YAML responses.
   Complementary, not a substitute: static fixture is for orchestrator
   plumbing tests; evals are for measuring the LLM itself.

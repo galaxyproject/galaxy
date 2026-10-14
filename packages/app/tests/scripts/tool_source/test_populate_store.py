@@ -18,8 +18,10 @@ from typing import (
     Any,
 )
 
+from galaxy.util import galaxy_directory
+
 # Add Galaxy lib to path for imports
-galaxy_root = Path(__file__).parent.parent.parent.parent.parent
+galaxy_root = Path(galaxy_directory())
 import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))

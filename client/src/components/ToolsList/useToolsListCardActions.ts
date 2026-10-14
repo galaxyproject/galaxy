@@ -117,8 +117,7 @@ export function useToolsListCardActions(
                 const copyableLink = href
                     ? getFullAppUrl(href.substring(1))
                     : getFullAppUrl(`?tool_id=${encodeURIComponent(toolId)}${version ? `&version=${version}` : ""}`);
-                copy(copyableLink);
-                Toast.success(`Link to ${name || "tool"} copied to clipboard`);
+                copy(copyableLink, `Link to ${name || "tool"} copied to clipboard`);
             },
             visible: canBeRun.value && toolId !== "upload1",
         },

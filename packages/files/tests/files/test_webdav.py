@@ -1,5 +1,5 @@
 # docker run -v `pwd`/test/integration/webdav/data:/media  -e WEBDAV_USERNAME=alice -e WEBDAV_PASSWORD=secret1234 -p 7083:7083 jmchilton/webdavdev
-# GALAXY_TEST_WEBDAV=1 pytest test/unit/files/test_webdav.py
+# GALAXY_TEST_WEBDAV=1 pytest packages/files/tests/files/test_webdav.py
 import os
 
 import pytest

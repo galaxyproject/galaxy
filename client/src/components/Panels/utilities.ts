@@ -125,7 +125,7 @@ export const UNSECTIONED_SECTION: ToolSection = {
 } as const;
 
 // Whoosh's `tool_tags` field analyzer lowercases at index time
-// (KeywordAnalyzer(lowercase=True, commas=True) — see lib/galaxy/tools/search/__init__.py).
+// (KeywordAnalyzer(lowercase=True, commas=True) — see packages/app/src/galaxy/tools/search/__init__.py).
 // We lowercase the search clause too so a query for `tag:"Get Data"` matches an
 // indexed `get data` regardless of how the parser handles case folding.
 export function escapeQuotedWhooshToken(value: string) {

@@ -19,9 +19,9 @@ from .test_upload_configuration_options import BaseUploadContentConfigurationInt
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 GALAXY_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(SCRIPT_DIRECTORY)))
-TEST_FILE_DIR = os.path.join(GALAXY_ROOT, "lib/galaxy/datatypes/test")
+TEST_FILE_DIR = os.path.join(GALAXY_ROOT, "packages/data/src/galaxy/datatypes/test")
 DatatypeUploadCase = collections.namedtuple("DatatypeUploadCase", "path datatype uploadable")
-DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, "lib/galaxy/config/sample/datatypes_conf.xml.sample")
+DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, "packages/config/src/galaxy/config/sample/datatypes_conf.xml.sample")
 PARENT_SNIFFER_MAP = {"fastqsolexa": "fastq"}
 
 

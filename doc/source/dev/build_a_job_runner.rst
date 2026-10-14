@@ -14,12 +14,12 @@ To learn more about the basics, please refer to:
 https://galaxyproject.org/admin/get-galaxy/
 
 To explore existing runners, please refer to:
-https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners
+https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/jobs/runners
 
 What is required to make a runner for Galaxy?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`galaxy.jobs.runners.\_\_init\_\_.py <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners/__init__.py>`__
+`galaxy.jobs.runners.\_\_init\_\_.py <https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/jobs/runners/__init__.py>`__
 contains the base runner implementation. To create a new runner, the base
 runner class (in most cases, ``AsynchronousJobRunner``) must be inherited and only certain methods need to be
 overridden with your logic.
@@ -167,7 +167,7 @@ listen for incoming tool submissions.
 ---------------------------------
 
 Input params: ``job_wrapper`` (Object of type
-`galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/__init__.py#L743>`__)
+`galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/jobs/__init__.py#L743>`__)
 
 Output params: None
 
@@ -224,7 +224,7 @@ AsynchronousJobState and put it in the ``monitor_queue``.
 ------------------------------------------
 
 Input params: ``job_state`` (Object of type
-`galaxy.jobs.runners.AsynchronousJobState <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners/__init__.py#L400>`__)
+`galaxy.jobs.runners.AsynchronousJobState <https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/jobs/runners/__init__.py#L400>`__)
 
 Output params: ``AsynchronousJobState`` object
 
@@ -310,7 +310,7 @@ The destination of the files will be:
 --------------------------------
 
 Input params: job (Object of type
-`galaxy.model.Job <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L344>`__)
+`galaxy.model.Job <https://github.com/galaxyproject/galaxy/blob/dev/packages/data/src/galaxy/model/__init__.py#L344>`__)
 
 Output params: None
 
@@ -331,9 +331,9 @@ The ``job_id`` of the job to be deleted is accessed by
 
 Input params:
 
--  ``job`` (Object of type `galaxy.model.Job <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L344>`__).
+-  ``job`` (Object of type `galaxy.model.Job <https://github.com/galaxyproject/galaxy/blob/dev/packages/data/src/galaxy/model/__init__.py#L344>`__).
 
--  ``job_wrapper`` (Object of type `galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/__init__.py#L743>`__).
+-  ``job_wrapper`` (Object of type `galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/jobs/__init__.py#L743>`__).
 
 
 Output params: None

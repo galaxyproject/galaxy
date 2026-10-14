@@ -22,10 +22,12 @@ from webob.exc import HTTPFound
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.authnz.managers import AuthnzManager
+from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import asbool
 from galaxy.web.framework import base as web_framework_base
 from galaxy.web.framework.base import Response
 from galaxy.webapps.base.webapp import WebApplication
+
 # TODO(workspace): shared test support should live in galaxy-test-base or a root
 # support module, not copies. Temporary local copy of test_webapp_base to avoid
 # cross-package `tests.webapps` relative import collision across many `tests/`
@@ -232,8 +234,6 @@ def test_psa_authnz_config(mock_app):
     oidc_contents, oidc_path = create_oidc_config()
     backend_contents, backend_path = create_backend_config(provider_name="oidc", **config_values)
     manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
-    from galaxy.authnz.psa_authnz import PSAAuthnz
-
     psa_authnz = PSAAuthnz(
         provider="oidc",
         oidc_config=manager.oidc_config,

@@ -55,6 +55,7 @@ FileSourceTemplateType = Literal[
     "github",
     "iiif",
     "ipfs",
+    "xrootd",
     "mavedb",
     "omero",
     "ssh",
@@ -63,6 +64,7 @@ FileSourceTemplateType = Literal[
     "commoncrawl",
     "gitlab",
     "arc",
+    "nomad",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -528,6 +530,24 @@ class IPFSFileSourceConfiguration(StrictModel):
     gateway_url: str
 
 
+class XRootDFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["xrootd"]
+    root: str | TemplateExpansion
+    hostid: str | TemplateExpansion
+    timeout: int | TemplateExpansion = 30
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class XRootDFileSourceConfiguration(StrictModel):
+    type: Literal["xrootd"]
+    root: str
+    hostid: str
+    writable: bool = False
+    timeout: int = 30
+
+
 class MaveDBFileSourceTemplateConfiguration(StrictModel):
     type: Literal["mavedb"]
     base_url: str | TemplateExpansion = "https://api.mavedb.org/api/v1"
@@ -642,6 +662,20 @@ class ARCFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class NomadFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["nomad"]
+    base_url: str | TemplateExpansion = "https://nomad-lab.eu/prod/v1"
+    token: str | TemplateExpansion | None = None
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class NomadFileSourceConfiguration(StrictModel):
+    type: Literal["nomad"]
+    base_url: str = "https://nomad-lab.eu/prod/v1"
+    token: str | None = None
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -664,6 +698,7 @@ FileSourceTemplateConfiguration = Annotated[
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
     | IPFSFileSourceTemplateConfiguration
+    | XRootDFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
@@ -671,7 +706,8 @@ FileSourceTemplateConfiguration = Annotated[
     | CKANFileSourceTemplateConfiguration
     | CommonCrawlFileSourceTemplateConfiguration
     | GitLabFileSourceTemplateConfiguration
-    | ARCFileSourceTemplateConfiguration,
+    | ARCFileSourceTemplateConfiguration
+    | NomadFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -697,6 +733,7 @@ FileSourceConfiguration = Annotated[
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
     | IPFSFileSourceConfiguration
+    | XRootDFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
@@ -704,7 +741,8 @@ FileSourceConfiguration = Annotated[
     | CKANFileSourceConfiguration
     | CommonCrawlFileSourceConfiguration
     | GitLabFileSourceConfiguration
-    | ARCFileSourceConfiguration,
+    | ARCFileSourceConfiguration
+    | NomadFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -790,6 +828,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
     "ipfs": IPFSFileSourceConfiguration,
+    "xrootd": XRootDFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
@@ -798,6 +837,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "commoncrawl": CommonCrawlFileSourceConfiguration,
     "gitlab": GitLabFileSourceConfiguration,
     "arc": ARCFileSourceConfiguration,
+    "nomad": NomadFileSourceConfiguration,
 }
 
 

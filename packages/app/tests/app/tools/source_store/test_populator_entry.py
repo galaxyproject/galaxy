@@ -81,3 +81,25 @@ def test_entry_help_text_capped(tmp_path):
     entry = _build(tmp_path, xml)
     assert entry is not None
     assert len(entry.help_text) <= MAX_TOOL_SEARCH_HELP_CHARS
+
+
+_TOOL_XML_OUTPUT_WITHOUT_ASSERTIONS = """<tool id="bad_test_tool" name="Bad Test Tool" version="1.0">
+  <command>echo</command>
+  <inputs/>
+  <outputs>
+    <data name="out" format="txt"/>
+  </outputs>
+  <tests>
+    <test>
+      <output name="out"/>
+    </test>
+  </tests>
+</tool>
+"""
+
+
+def test_entry_survives_unparseable_tests(tmp_path):
+    entry = _build(tmp_path, _TOOL_XML_OUTPUT_WITHOUT_ASSERTIONS)
+    assert entry is not None
+    assert entry.id == "bad_test_tool"
+    assert entry.test_count == 0

@@ -775,7 +775,7 @@ class TestDataSourceLoader(BaseLoaderTestCase):
 
 
 class TestApplyRulesToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/apply_rules.xml")
+    source_file_name = os.path.join(galaxy_directory(), "packages/app/src/galaxy/tools/apply_rules.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -801,7 +801,7 @@ class TestApplyRulesToolLoader(BaseLoaderTestCase):
 
 
 class TestBuildListToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
+    source_file_name = os.path.join(galaxy_directory(), "packages/app/src/galaxy/tools/build_list.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -936,7 +936,9 @@ class TestExpressionOutputDataToolLoader(FunctionalTestToolTestCase):
 
 
 class TestSpecialToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
+    source_file_name = os.path.join(
+        galaxy_directory(), "packages/app/src/galaxy/tools/imp_exp/exp_history_to_archive.xml"
+    )
     source_contents = None
 
     def test_tool_type(self):

@@ -13,6 +13,7 @@ from galaxy.files.templates.models import (
     S3FSFileSourceConfiguration,
     template_to_configuration,
 )
+from galaxy.util import galaxy_directory
 from galaxy.util.config_templates import (
     read_oauth2_info_from_configuration,
     TemplateVariableSelect,
@@ -471,8 +472,10 @@ def test_production_ftp_plain_host_blank_root():
 
 
 def test_examples_parse():
-    # Ensure every YAML example in `lib/galaxy/files/templates/examples/` parses without error
-    examples_dir = Path(__file__).resolve().parents[3] / "lib" / "galaxy" / "files" / "templates" / "examples"
+    # Ensure every YAML example in `packages/files/src/galaxy/files/templates/examples/` parses without error
+    examples_dir = (
+        Path(galaxy_directory()) / "packages" / "files" / "src" / "galaxy" / "files" / "templates" / "examples"
+    )
     for example_file in examples_dir.glob("*.yml"):
         _assert_example_parses(example_file.name)
 

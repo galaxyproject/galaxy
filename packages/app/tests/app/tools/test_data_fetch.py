@@ -20,7 +20,9 @@ from galaxy.util import galaxy_directory
 
 # Package tests relocate this module.
 GALAXY_ROOT = galaxy_directory()
-STOCK_DATATYPES_CONF = os.path.join(GALAXY_ROOT, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
+STOCK_DATATYPES_CONF = os.path.join(
+    GALAXY_ROOT, "packages", "config", "src", "galaxy", "config", "sample", "datatypes_conf.xml.sample"
+)
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"

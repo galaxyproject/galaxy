@@ -756,6 +756,54 @@ def test_legacy_numeric_empty_test_values_are_none():
     assert typed["float_param"] == 2.5
 
 
+def test_empty_select_test_values_by_profile():
+    # value="" on a multiple select is the legacy empty selection before 26.1; value_json
+    # "null" and "[]" are the explicit forms and mean the same at every profile.
+    tool_template = """
+<tool id="select_empty" name="select_empty" version="1.0.0" profile="{profile}">
+    <command>echo</command>
+    <inputs>
+        <param name="multiple" type="select" multiple="true" optional="true">
+            <option value="a">A</option>
+        </param>
+        <param name="single" type="select" optional="true">
+            <option value="a">A</option>
+        </param>
+    </inputs>
+    <outputs />
+    <tests>
+        <test><param name="{name}" {attribute}="{value}" /></test>
+    </tests>
+</tool>
+        """
+
+    def tool_source_for_test(name: str, attribute: str, value: str, profile: str) -> ToolSource:
+        return raw_xml_tool_source(tool_template.format(name=name, attribute=attribute, value=value, profile=profile))
+
+    def state_for(name: str, attribute: str, value: str, profile: str):
+        tool_source = tool_source_for_test(name, attribute, value, profile)
+        parsed_tool = parse_tool(tool_source)
+        test_case = tool_source.parse_tests_to_dict()["tests"][0]
+        return case_state(test_case, parsed_tool.inputs, tool_source.parse_profile()).tool_state.input_state[name]
+
+    def fails_to_load(name: str, attribute: str, value: str, profile: str) -> bool:
+        tool_source = tool_source_for_test(name, attribute, value, profile)
+        return next(iter(parse_tool_test_descriptions(tool_source))).to_dict()["error"]
+
+    for profile in ["21.05", "24.2", "26.1"]:
+        assert state_for("multiple", "value_json", "[]", profile) == []
+        assert state_for("multiple", "value_json", "null", profile) is None
+        assert state_for("single", "value_json", "null", profile) is None
+        assert not fails_to_load("multiple", "value_json", "[]", profile)
+        assert not fails_to_load("single", "value_json", "null", profile)
+
+    assert state_for("multiple", "value", "", "26.0") == []
+    assert not fails_to_load("multiple", "value", "", "26.0")
+    assert fails_to_load("multiple", "value", "", "26.1")
+    assert not fails_to_load("single", "value", "", "24.1")
+    assert fails_to_load("single", "value", "", "24.2")
+
+
 def test_legacy_unqualified_conditional_discriminator_in_section_is_resolved():
     # A conditional inside a section may have its name elided in the test, with the
     # discriminator given directly under the section (e.g. <section name="adv">

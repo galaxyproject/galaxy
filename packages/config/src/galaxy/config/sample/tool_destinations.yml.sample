@@ -21,11 +21,11 @@
 #
 # Note: Configurations can be validated with the following command:
 #
-#    python lib/galaxy/jobs/dynamic_tool_destination.py -c
+#    python packages/app/src/galaxy/jobs/dynamic_tool_destination.py -c
 #
 # or
 #
-#    python lib/galaxy/jobs/dynamic_tool_destination.py -c /path/to/tool_destinations.yml
+#    python packages/app/src/galaxy/jobs/dynamic_tool_destination.py -c /path/to/tool_destinations.yml
 #
 # The general template is as follows (note that this template
 # does not use quote symbols), using spades and smalt as an example

@@ -15,7 +15,10 @@ from typing import (
 import numpy as np
 import yaml
 
-from galaxy.util import parse_xml
+from galaxy.util import (
+    galaxy_directory,
+    parse_xml,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -712,11 +715,7 @@ def parse_yaml(
             config = yaml.safe_load(path)
         else:
             if path == "/config/tool_destinations.yml":
-                # os.path.realpath gets the path of DynamicToolDestination.py
-                # and then os.path.join is used to go back four directories
-                config_directory = os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, os.pardir, os.pardir
-                )
+                config_directory = galaxy_directory()
 
                 opt_file = config_directory + path
 
@@ -1601,15 +1600,12 @@ def get_destination_list_from_job_config(job_config_location) -> set:
     :return: A list of all of the destination IDs declared in the job
              configuration file.
     """
-    # os.path.realpath gets the path of DynamicToolDestination.py
-    # and then os.path.join is used to go back four directories
-
-    config_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, os.pardir)
+    config_location = galaxy_directory()
 
     if job_config_location:
         local_path = re.compile("^/config/.+$")
         if local_path.match(job_config_location):
-            job_config_location = os.path.join(config_location, job_config_location)
+            job_config_location = os.path.join(config_location, job_config_location.lstrip("/"))
     else:  # Pick one of the default ones
         message = "* No job config specified, "
         possible_job_conf_files = [

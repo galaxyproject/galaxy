@@ -30,6 +30,14 @@ from galaxy_test.base.populators import (
     TargetHistory,
 )
 from galaxy_test.base.testcase import host_port_and_url
+from galaxy_test.conftest import real_driver  # noqa: F401, F811
+from galaxy_test.conftest import (  # noqa: F401, F811
+    celery_includes,
+    embedded_driver,
+    pytest_configure,
+    pytest_plugins,
+    test_http_server,
+)
 
 
 @dataclass
@@ -44,7 +52,7 @@ class ApiConfigObject:
 
 
 @pytest.fixture(scope="session")
-def api_test_config_object(real_driver) -> ApiConfigObject:
+def api_test_config_object(real_driver) -> ApiConfigObject:  # noqa: F811
     host, port, url = host_port_and_url(real_driver)
     user_api_key = get_user_api_key()
     admin_api_key = get_admin_api_key()

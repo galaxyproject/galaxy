@@ -2945,6 +2945,44 @@ def test_tests_expect_failure_invalid_inputs(lint_ctx):
     assert "Invalid parameter name found taxidd" in case_errors[0]
 
 
+TESTS_MULTIPLE_SELECT_EMPTY = """
+<tool id="id" name="name" profile="{profile}">
+    <inputs>
+        <param name="parameter" type="select" multiple="true" optional="true">
+            <option value="a">A</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" {attribute} />
+            <output name="output" value="output.txt" />
+        </test>
+    </tests>
+</tool>
+"""
+
+
+@pytest.mark.parametrize("profile,level", [("26.0", "warning"), ("26.1", "error")])
+def test_tests_multiple_select_empty_value(lint_ctx, profile, level):
+    tool_source = get_xml_tool_source(TESTS_MULTIPLE_SELECT_EMPTY.format(profile=profile, attribute='value=""'))
+    run_lint_module(lint_ctx, tests, tool_source)
+    messages = [m for m in lint_ctx.message_list if m.linter == "TestsMultipleSelectEmptyValue"]
+    assert len(messages) == 1
+    assert messages[0].level == level
+    assert 'use value_json="[]"' in messages[0].message
+
+
+def test_tests_multiple_select_empty_value_json(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_MULTIPLE_SELECT_EMPTY.format(profile="26.1", attribute='value_json="[]"'))
+    run_lint_module(lint_ctx, tests, tool_source)
+    linters = {m.linter for m in lint_ctx.warn_messages + lint_ctx.error_messages}
+    assert "TestsMultipleSelectEmptyValue" not in linters
+    assert "TestsCaseValidation" not in linters
+
+
 def test_tests_without_expectations(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_WO_EXPECTATIONS)
     run_lint_module(lint_ctx, tests, tool_source)
@@ -3086,6 +3124,7 @@ VALID_DATATYPES = """
     </inputs>
     <outputs>
         <data name="autoformat" format="auto"/>
+        <data name="sniffed" format="_sniff_"/>
         <data name="name" format="another_invalid">
             <change_format>
                 <when input="input_text" value="foo" format="just_another_invalid"/>
@@ -3094,6 +3133,8 @@ VALID_DATATYPES = """
         <collection name="collection_name" format="collection_format">
             <discover_datasets format="txt"/>
             <discover_datasets ext="invalid"/>
+            <discover_datasets format="_sniff_"/>
+            <discover_datasets format="_infer_from_file_name_"/>
         </collection>
     </outputs>
     <tests>
@@ -3138,8 +3179,9 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
+    assert "Unknown datatype [_sniff_] used in data" in lint_ctx.error_messages
     assert "Invalid format (auto or input) in tool or tool test inputs" in lint_ctx.error_messages  # 2x
-    assert len(lint_ctx.error_messages) == 8
+    assert len(lint_ctx.error_messages) == 9
 
 
 DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">
@@ -3261,7 +3303,7 @@ def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
         assert found, f"Did not find {message}"
 
 
-# TODO COPIED from test/unit/app/tools/test_tool_deserialization.py
+# TODO COPIED from packages/app/tests/app/tools/test_tool_deserialization.py
 CWL_TOOL = """
 cwlVersion: v1.0
 class: CommandLineTool

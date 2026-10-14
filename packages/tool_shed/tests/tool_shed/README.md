@@ -12,7 +12,7 @@ uv run pytest tests/tool_shed/ -v
 uv run pytest tests/tool_shed/test_repository_metadata_manager.py -v
 ```
 
-Note: `tests/tool_shed/` is a symlink to `test/unit/tool_shed/`.
+Note: `tests/tool_shed/` is a symlink to `packages/tool_shed/tests/tool_shed/`.
 
 ## Test Files
 

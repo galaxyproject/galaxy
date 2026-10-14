@@ -756,7 +756,7 @@ galaxy:
   #watch_job_rules: 'false'
 
   # Monitor a subset of options in the core configuration file (See
-  # RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+  # RELOADABLE_CONFIG_OPTIONS in packages/config/src/galaxy/config/__init__.py).  If
   # changes are found, modified options are automatically reloaded.
   # Takes the same values as the 'watch_tools' option.
   #watch_core_config: 'false'
@@ -1801,7 +1801,7 @@ galaxy:
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
   # do this by default though you do need to install node+npm and do an
-  # npm install from `lib/galaxy/web/proxy/js`.  It is generally more
+  # npm install from `packages/web_framework/src/galaxy/web/proxy/js`.  It is generally more
   # robust to configure this externally, managing it in the same way
   # Galaxy itself is managed.  If true, Galaxy will only launch the
   # proxy if it is actually going to be used (e.g. for Jupyter).
@@ -2329,11 +2329,13 @@ galaxy:
   # by an administrator in the cleanup scripts run via cron)
   #allow_user_dataset_purge: true
 
-  # By default, users' data will be public, but setting this to true
-  # will cause it to be private.  Does not affect existing users and
-  # data, only ones created after this option is set.  Users may still
-  # change their default back to public.
-  #new_user_dataset_access_role_default_private: false
+  # By default, users' data will be private. Setting this to false makes
+  # it public. This only affects users created after the option is set;
+  # existing users and data are unchanged. Users can change the default
+  # for their new histories in their user preferences. To make existing
+  # users' data private as well, run the galaxy-make-data-private
+  # script.
+  #new_user_dataset_access_role_default_private: true
 
   # Expose user list.  Setting this to true will expose the user list to
   # authenticated users.  This makes sharing datasets in smaller galaxy
@@ -3248,9 +3250,10 @@ galaxy:
   # back to global ai_model/ai_api_key settings. All agents are enabled
   # by default. Example: inference_services: { default: { model:
   # gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled: false },
-  # jupyterlite: { model: gpt-4o } } Set static_responses to a YAML file
-  # path to replace all LLM calls with deterministic responses for
-  # testing: inference_services: { static_responses:
+  # jupyterlite: { model: gpt-4o } } Plugins also accept top_p and
+  # timeout, and use max_tokens as an upper limit. Set static_responses
+  # to a YAML file path to replace all LLM calls with deterministic
+  # responses for testing: inference_services: { static_responses:
   # test/integration/static_agents.yml } Per-agent or default-block
   # ``structured_output_override: true|false`` beats the model
   # capability table -- see ``agent_model_capabilities_file`` for the

@@ -706,7 +706,7 @@ class NotificationChannelSettings(Model):
             "This setting will be ignored unless the server supports asynchronous tasks."
         ),
     )
-    # TODO: Add more channels here and implement the corresponding plugin in lib/galaxy/managers/notification.py
+    # TODO: Add more channels here and implement the corresponding plugin in packages/app/src/galaxy/managers/notification.py
     # matrix: bool # Possible future Matrix.org integration?
 
 

@@ -150,8 +150,7 @@ export function useWorkflowCardActions(
     }
 
     function copyPublicLink() {
-        copy(fullLink.value);
-        toast.success("Link to workflow copied");
+        copy(fullLink.value, "Link to workflow copied");
     }
 
     async function copyWorkflow() {

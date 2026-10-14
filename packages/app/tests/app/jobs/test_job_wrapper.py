@@ -284,3 +284,61 @@ def test_fix_output_permissions_does_not_initialize_job_io():
 
     wrapper = cast(MinimalJobWrapper, WrapperWithoutJobIO())
     MinimalJobWrapper._fix_output_permissions(wrapper)
+
+
+def _wrapper_with_registry(known_extensions):
+    datatypes_registry = SimpleNamespace(
+        get_datatype_by_extension=lambda extension: object() if extension in known_extensions else None
+    )
+    return cast(MinimalJobWrapper, SimpleNamespace(app=SimpleNamespace(datatypes_registry=datatypes_registry)))
+
+
+def _output_instance(extension):
+    dataset = SimpleNamespace(history_associations=[], library_associations=[])
+    instance = SimpleNamespace(extension=extension, dataset=dataset)
+    dataset.history_associations.append(instance)
+    return instance
+
+
+def test_unknown_output_extensions_set_to_data():
+    hda = _output_instance("notadatatype")
+    copied_hda = SimpleNamespace(extension="notadatatype")
+    retyped_copy = SimpleNamespace(extension="tabular")
+    hda.dataset.history_associations.extend([copied_hda, retyped_copy])
+    ldda = SimpleNamespace(extension="notadatatype")
+    ldda.dataset = SimpleNamespace(history_associations=[], library_associations=[ldda])
+    known = _output_instance("txt")
+    deferred = _output_instance("auto")
+    job = SimpleNamespace(
+        output_datasets=[
+            SimpleNamespace(dataset=hda),
+            SimpleNamespace(dataset=known),
+            SimpleNamespace(dataset=deferred),
+        ],
+        output_library_datasets=[SimpleNamespace(dataset=ldda)],
+        job_messages=None,
+    )
+
+    MinimalJobWrapper._set_unknown_output_extensions_to_data(_wrapper_with_registry({"txt", "tabular"}), cast(Job, job))
+
+    assert [hda.extension, copied_hda.extension, ldda.extension] == ["data", "data", "data"]
+    assert [retyped_copy.extension, known.extension, deferred.extension] == ["tabular", "txt", "auto"]
+    assert job.job_messages == [
+        {
+            "type": "unknown_datatype",
+            "desc": "Extension 'notadatatype' is not a datatype on this Galaxy server, 2 output datasets set to 'data'",
+            "code_desc": None,
+            "error_level": 2,
+            "extension": "notadatatype",
+        }
+    ]
+
+
+def test_known_output_extensions_add_no_job_message():
+    hda = _output_instance("txt")
+    job = SimpleNamespace(output_datasets=[SimpleNamespace(dataset=hda)], output_library_datasets=[], job_messages=None)
+
+    MinimalJobWrapper._set_unknown_output_extensions_to_data(_wrapper_with_registry({"txt"}), cast(Job, job))
+
+    assert hda.extension == "txt"
+    assert job.job_messages is None

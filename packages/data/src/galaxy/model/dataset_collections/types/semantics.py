@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # how to use this function...
-# PYTHONPATH=lib python lib/galaxy/model/dataset_collections/types/semantics.py
+# PYTHONPATH=lib python packages/data/src/galaxy/model/dataset_collections/types/semantics.py
 import argparse
 import ast
 import os
@@ -433,7 +433,7 @@ def _validate_framework_test_ref(label: str, ref: str, workflow_dir: str) -> str
 
 def validate_api_test_refs(examples: list["Example"]) -> list[str]:
     errors: list[str] = []
-    api_test_dir = os.path.join(galaxy_directory(), "lib", "galaxy_test", "api")
+    api_test_dir = os.path.join(galaxy_directory(), "packages", "test_api", "src", "galaxy_test", "api")
     workflow_dir = os.path.join(galaxy_directory(), "lib", "galaxy_test", "workflow")
     for ex in examples:
         if ex.tests and ex.tests.tool_runtime and isinstance(ex.tests.tool_runtime, ToolRuntimeApi):

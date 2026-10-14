@@ -57,7 +57,7 @@ from galaxy.util import (
 from galaxy.util.unittest_utils import skip_unless_environ
 
 try:
-    # Guarded like lib/galaxy/objectstore/cloud.py so this module still imports
+    # Guarded like packages/objectstore/src/galaxy/objectstore/cloud.py so this module still imports
     # where cloudbridge is not installed.
     from cloudbridge.base.resources import (
         BasePageableObjectMixin,

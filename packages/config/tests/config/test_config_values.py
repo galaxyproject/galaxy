@@ -5,7 +5,6 @@ import pytest
 from galaxy import config
 from galaxy.config import DEFAULT_EMAIL_FROM_LOCAL_PART
 from galaxy.exceptions import ConfigurationError
-from galaxy.util.properties import running_from_source
 
 
 @pytest.fixture()
@@ -37,10 +36,7 @@ def test_common_base_config(appconfig):
         appconfig.tool_source_database_connection
         == f"sqlite:///{os.path.join(appconfig.data_dir, 'tool_sources.sqlite')}"
     )
-    if running_from_source:
-        expected_path = os.path.join(appconfig.root, "lib", "galaxy", "config", "sample")
-    else:
-        expected_path = os.path.join(os.path.dirname(config.__file__), "sample")
+    expected_path = os.path.join(os.path.dirname(config.__file__), "sample")
     assert appconfig.sample_config_dir == expected_path
     assert os.path.isfile(os.path.join(appconfig.sample_config_dir, "job_conf.xml.sample_advanced"))
 

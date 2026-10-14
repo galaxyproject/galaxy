@@ -1,41 +1,34 @@
-<template>
-    <FontAwesomeIcon class="cursor-pointer" :title="title" :icon="faCopy" @click="copy(text, message)" />
-</template>
-
-<script>
+<script setup lang="ts">
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import type { ComponentSize } from "@/components/BaseComponents/componentVariants";
 import { copy } from "@/utils/clipboard";
 
-export default {
-    components: {
-        FontAwesomeIcon,
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+const props = withDefaults(
+    defineProps<{
+        text: string;
+        message: string;
+        title?: string;
+        transparent?: boolean;
+        size?: ComponentSize;
+    }>(),
+    {
+        title: "Copy to clipboard",
+        transparent: true,
     },
-    props: {
-        text: {
-            type: String,
-            required: true,
-        },
-        message: {
-            type: String,
-            required: true,
-        },
-        title: {
-            type: String,
-            default: "copy to clipboard",
-            required: false,
-        },
-    },
-    data() {
-        return {
-            faCopy,
-        };
-    },
-    methods: {
-        copy(text, message) {
-            copy(text, message);
-        },
-    },
-};
+);
 </script>
+
+<template>
+    <GButton
+        :transparent="props.transparent"
+        icon-only
+        :size="props.size"
+        :title="props.title"
+        @click="copy(props.text, props.message)">
+        <FontAwesomeIcon :icon="faCopy" aria-hidden="true" fixed-width />
+    </GButton>
+</template>

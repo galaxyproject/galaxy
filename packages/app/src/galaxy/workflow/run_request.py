@@ -34,8 +34,8 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.tools.parameters.basic import (
-    IntegerToolParameter,
     ParameterValueError,
+    TextToolParameter,
 )
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
@@ -401,8 +401,8 @@ def build_workflow_run_configs(
                 input_param = step.module.get_runtime_inputs(step.module)["input"]
                 try:
                     input_param.validate(input_dict, trans=trans)
-                    if isinstance(input_param, IntegerToolParameter) and input_param.multiple:
-                        # Store the validated integers, not the submitted values.
+                    if isinstance(input_param, TextToolParameter) and input_param.multiple:
+                        # Store the validated values, not the submitted ones.
                         normalized_inputs[key] = input_param.to_python(input_dict, trans.app)
                 except ParameterValueError as e:
                     raise exceptions.RequestParameterInvalidException(

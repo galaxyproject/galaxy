@@ -71,6 +71,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_IMAGES_IN_REPORT,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_ACTIONS,
@@ -1698,7 +1699,7 @@ steps:
     def test_url_import(self, test_http_server):
         url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga",
-            file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
+            file_path="packages/test_base/src/galaxy_test/base/data/test_workflow_1.ga",
             content_type="application/json",
         )
         workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
@@ -4942,6 +4943,17 @@ steps:
             assert "## About This Report" in markdown_content
 
     @skip_without_tool("cat")
+    def test_workflow_invocation_report_keeps_inline_output_labels(self):
+        test_data = {"image_input": {"value": "454Score.png", "type": "File", "file_type": "png"}}
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(WORKFLOW_WITH_IMAGES_IN_REPORT, test_data=test_data, history_id=history_id)
+            report_response = self._get(f"invocations/{summary.invocation_id}/report")
+            self._assert_status_code_is(report_response, 200)
+            markdown_content = report_response.json()["markdown"]
+            assert "| First Image | ${galaxy history_dataset_as_image(" in markdown_content
+            assert "output=output_image)} |" in markdown_content
+
+    @skip_without_tool("cat")
     def test_workflow_invocation_report_invalid_hdca_id(self):
         """Test that an invalid HDCA id is reported in errors."""
         workflow_with_unknown_directive = """
@@ -7798,6 +7810,42 @@ columns:
             )
             assert "columns: an integer is required" in response["err_msg"]
 
+    def test_run_with_multiple_text_parameter(self):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  options:
+    type: [string]
+outputs:
+  output:
+    outputSource: multi_select/output
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex: options
+"""
+        # A bare string is stored as a one-value list.
+        test_data = """
+options:
+  value: ex2
+  type: raw
+"""
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                workflow,
+                test_data=test_data,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            assert invocation["input_step_parameters"]["options"]["parameter_value"] == ["ex2"]
+            content = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset_id=invocation["outputs"]["output"]["id"]
+            )
+            assert content.strip() == "ex2", content
+
     @pytest.mark.parametrize(
         "parameter_type,value", [("integer", 100), ("float", 0.1), ("boolean", False), ("text", "ND")]
     )
@@ -7893,6 +7941,38 @@ steps: []
         self._assert_status_code_is(response, 200)
         invocation = self.workflow_populator.get_invocation(response.json()["id"])
         assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == 100
+
+    def test_run_with_multiple_float_parameter(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  values:
+    type: [float]
+    default: [0.5, 1.0]
+steps: {}
+""")
+        run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        (runtime_input,) = run_workflow["steps"][0]["inputs"]
+        assert runtime_input["type"] == "float"
+        assert runtime_input["multiple"] is True
+        assert runtime_input["value"] == [0.5, 1.0]
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={"history_id": history_id, "inputs_by": "name", "inputs": {"values": ["0.5", 1]}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        values = invocation["input_step_parameters"]["values"]["parameter_value"]
+        assert values == [0.5, 1.0]
+        assert all(isinstance(value, float) for value in values)
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={"history_id": history_id, "inputs_by": "name", "inputs": {"values": [0.5, "half"]}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "values: a float is required")
 
     def test_run_form_multiple_integer_list_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
@@ -9851,6 +9931,46 @@ steps:
         options = run_workflow["steps"][0]["inputs"][0]["options"]
         assert len(options) == 5
         assert options[0] == ["Ex1", "--ex1", False]
+
+    def test_value_restriction_selects_multiple_text_list_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: [string]
+     restrictOnConnections: true
+     default: [ex2, --ex3]
+steps:
+  select:
+    tool_id: multi_select
+    in:
+      select_ex: select_text
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        options = run_workflow["steps"][0]["inputs"][0]["options"]
+        assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
+
+    @skip_without_tool("multi_select_numeric")
+    def test_value_restriction_selects_multiple_numeric_text_list_default(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  values:
+     type: [string]
+     restrictOnConnections: true
+     default: [1, 2]
+steps:
+  select:
+    tool_id: multi_select_numeric
+    in:
+      select_numeric: values
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        (runtime_input,) = run_workflow["steps"][0]["inputs"]
+        assert runtime_input["value"] == ["1", "2"]
+        assert [value for _, value, selected in runtime_input["options"] if selected] == ["1", "2"]
 
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""

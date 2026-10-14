@@ -7,12 +7,12 @@ area/admin:
 area/API:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/webapps/galaxy/api/**/*
+      - packages/web_apps/src/galaxy/webapps/galaxy/api/**/*
 area/auth:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/auth/**/*
-      - lib/galaxy/authnz/**/*
+      - packages/auth/src/galaxy/auth/**/*
+      - packages/app/src/galaxy/authnz/**/*
 area/client:
   - changed-files:
     - any-glob-to-any-file:
@@ -20,16 +20,16 @@ area/client:
 area/database:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/model/**/*
+      - packages/data/src/galaxy/model/**/*
 area/datatypes:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/datatypes/**/*
-      - lib/galaxy/config/sample/datatypes_conf.xml.sample
+      - packages/data/src/galaxy/datatypes/**/*
+      - packages/config/src/galaxy/config/sample/datatypes_conf.xml.sample
 area/dependencies:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/dependencies/**/*
+      - packages/app/src/galaxy/dependencies/**/*
 area/documentation:
   - changed-files:
     - any-glob-to-any-file:
@@ -37,16 +37,16 @@ area/documentation:
 area/jobs:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/jobs/**/*
+      - packages/app/src/galaxy/jobs/**/*
 area/libraries:
   - changed-files:
     - any-glob-to-any-file:
       - client/src/components/LibraryFolder/**/*
-      - lib/galaxy/webapps/galaxy/api/libraries.py
+      - packages/web_apps/src/galaxy/webapps/galaxy/api/libraries.py
 area/objectstore:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/objectstore/**/*
+      - packages/objectstore/src/galaxy/objectstore/**/*
 area/packaging:
   - changed-files:
     - any-glob-to-any-file:
@@ -58,7 +58,7 @@ area/scripts:
 area/security:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/security/**/*
+      - packages/data/src/galaxy/security/**/*
 area/testing:
   - changed-files:
     - any-glob-to-any-file:
@@ -69,7 +69,7 @@ area/testing:
 area/testing/api:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy_test/api/**/*
+      - packages/test_api/src/galaxy_test/api/**/*
 area/testing/integration:
   - changed-files:
     - any-glob-to-any-file:
@@ -78,18 +78,18 @@ area/testing/integration:
 area/testing/selenium:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/selenium/**/*
-      - lib/galaxy_test/selenium/**/*
+      - packages/selenium/src/galaxy/selenium/**/*
+      - packages/test_selenium/src/galaxy_test/selenium/**/*
 area/tool-dependencies:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/tool_util/deps/**/*
+      - packages/tool_util/src/galaxy/tool_util/deps/**/*
 area/tool-framework:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/tools/**/*
-      - lib/galaxy/tool_util/**/*
-      - lib/galaxy/webapps/galaxy/api/tools.py
+      - packages/app/src/galaxy/tools/**/*
+      - packages/tool_util/src/galaxy/tool_util/**/*
+      - packages/web_apps/src/galaxy/webapps/galaxy/api/tools.py
 area/tools:
   - changed-files:
     - any-glob-to-any-file:
@@ -99,7 +99,7 @@ area/toolshed:
   - changed-files:
     - any-glob-to-any-file:
       - client/src/toolshed/**/*
-      - lib/galaxy/webapps/galaxy/api/toolshed.py
+      - packages/web_apps/src/galaxy/webapps/galaxy/api/toolshed.py
       - lib/toolshed/**/*
       - templates/webapps/tool_shed/**/*
 area/UI-UX:
@@ -113,7 +113,7 @@ area/UI-UX:
 area/util:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/util/**/*
+      - packages/util/src/galaxy/util/**/*
 area/visualizations:
   - changed-files:
     - any-glob-to-any-file:
@@ -121,4 +121,4 @@ area/visualizations:
 area/workflows:
   - changed-files:
     - any-glob-to-any-file:
-      - lib/galaxy/workflow/**/*
+      - packages/app/src/galaxy/workflow/**/*

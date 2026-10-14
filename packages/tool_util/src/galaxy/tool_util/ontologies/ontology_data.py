@@ -62,7 +62,7 @@ def _load_tool_tag_mapping(content: str) -> dict[str, list[str]]:
         (yaml.safe_load(content) or {}).get("tool_tags", {}),
     )
     # `Tool.all_ids` is built from lowercased tool ids (see `Tool.parse` in
-    # `lib/galaxy/tools/__init__.py`, around the `self_ids = [self.id.lower()]`
+    # `packages/app/src/galaxy/tools/__init__.py`, around the `self_ids = [self.id.lower()]`
     # block), so the curated mapping must use lowercase keys to be looked up
     # successfully. Normalize at load time so admin-supplied YAML files don't
     # have to worry about case.

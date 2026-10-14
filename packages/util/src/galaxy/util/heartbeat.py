@@ -136,7 +136,7 @@ class Heartbeat(threading.Thread):
         # Ugly hack: always skip the heartbeat thread
         # TODO: get the current thread-id in python
         #   skip heartbeat thread by thread-id, not by filename
-        if _filename.find("/lib/galaxy/util/heartbeat.py") != -1:
+        if _filename.find("/packages/util/src/galaxy/util/heartbeat.py") != -1:
             return True
         # By default, assume the thread is not sleeping
         return False
@@ -153,7 +153,7 @@ class Heartbeat(threading.Thread):
           prefreably not an egg.
         """
         for _filename, _line, _funcname, _text in reversed(stack_frames):
-            idx = _filename.find("/lib/galaxy/")
+            idx = _filename.find("/galaxy/")
             if idx != -1:
                 relative_filename = _filename[idx:]
                 return (relative_filename, _line, _funcname, _text)

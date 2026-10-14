@@ -72,6 +72,7 @@ def visit_input_values(
     replace_optional_connections=False,
     allow_case_inference=False,
     unset_value=None,
+    replace_conditional_test_values=True,
 ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
@@ -80,6 +81,8 @@ def visit_input_values(
     and a display label.
 
     If the callback returns a value, it will be replace the old value.
+    Set ``replace_conditional_test_values=False`` to visit conditional selectors
+    without replacing their values, preserving the selected cases for serialization.
 
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
@@ -167,7 +170,9 @@ def visit_input_values(
     No value found for 'b 1 > d 1 > j'.
     """
 
-    def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
+    def callback_helper(
+        input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None, replace_value=True
+    ):
         value = input_values.get(input.name, unset_value)
         args = {
             "input": input,
@@ -182,6 +187,8 @@ def visit_input_values(
         if input.name not in input_values:
             args["error"] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
+        if not replace_value:
+            return
 
         # is this good enough ? feels very ugh
         if isinstance(new_value, list) and len(new_value) == 1 and isinstance(new_value[0], NoReplacement):
@@ -231,6 +238,7 @@ def visit_input_values(
         "replace_optional_connections": replace_optional_connections,
         "allow_case_inference": allow_case_inference,
         "unset_value": unset_value,
+        "replace_conditional_test_values": replace_conditional_test_values,
     }
     for input in inputs.values():
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
@@ -264,6 +272,7 @@ def visit_input_values(
                 parent_prefix=name_prefix,
                 context=context,
                 error=case_error,
+                replace_value=replace_conditional_test_values,
             )
             values["__current_case__"] = get_current_case(input, values)
             if values["__current_case__"] >= 0:

@@ -2,7 +2,9 @@ import sys
 import textwrap
 from pathlib import Path
 
-galaxy_root = Path(__file__).parent.parent.parent.parent.parent
+from galaxy.util import galaxy_directory
+
+galaxy_root = Path(galaxy_directory())
 sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tools.source_store.discover import (
@@ -171,7 +173,7 @@ def test_only_confs_skips_unlisted_conf_walk(tmp_path):
 
 def test_bundled_compatibility_alias_is_not_a_second_panel_placement(tmp_path):
     tools_dir = tmp_path / "tools"
-    bundled_dir = tmp_path / "lib" / "galaxy" / "tools" / "bundled"
+    bundled_dir = tmp_path / "packages" / "app" / "src" / "galaxy" / "tools" / "bundled"
     tools_dir.mkdir()
     bundled_dir.mkdir(parents=True)
     tool_source = "<tool id='alpha' version='1.0'><description/></tool>"

@@ -7,6 +7,7 @@ import yaml
 from galaxy.exceptions import MessageException
 from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.sources.irods import IrodsFilesSource
+from galaxy.util import galaxy_directory
 from ._util import (
     assert_realizes_contains,
     configured_file_sources,
@@ -47,9 +48,7 @@ def _file_sources_config(irods_config: dict) -> dict:
 def _irods_live_settings() -> dict:
     config_path = os.environ.get(
         "GALAXY_TEST_FILE_SOURCES_CONFIG",
-        os.path.abspath(
-            os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, "config", "file_sources_conf.yml")
-        ),
+        os.path.abspath(os.path.join(galaxy_directory(), "config", "file_sources_conf.yml")),
     )
     if not os.path.exists(config_path):
         pytest.skip(f"No file sources config at {config_path}; set file_sources_conf.yml to enable iRODS live tests.")

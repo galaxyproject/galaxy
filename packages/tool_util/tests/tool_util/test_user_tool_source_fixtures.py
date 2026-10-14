@@ -4,7 +4,7 @@ narrow authoring models (``UserToolSource`` / ``YamlToolSource``).
 The existing ``test_validate_framework_test_tools`` in
 ``test_parameter_test_cases.py`` only exercises the XML-era
 ``YamlToolSource`` dict parser path; it does not touch the narrow pydantic
-authoring schema in ``lib/galaxy/tool_util_models/yaml_parameters.py``.
+authoring schema in ``packages/tool_util_models/src/galaxy/tool_util_models/yaml_parameters.py``.
 This file closes that gap so a stray XML-only field (e.g. ``truevalue``) or
 a deferred parameter type added to any fixture fails a cheap unit test
 instead of only an API integration.

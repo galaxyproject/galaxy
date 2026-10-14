@@ -165,13 +165,32 @@ def test_safe_loads():
 
 def test_in_packages(monkeypatch):
     util_path = Path(util.__file__).parent
-    assert util.in_packages() == (not str(util_path).endswith("lib/galaxy/util"))
+    assert util.in_packages() == (util_path.parent.parent.name != "lib")
 
 
 def test_galaxy_directory(monkeypatch):
     galaxy_dir = util.galaxy_directory()
     assert os.path.isabs(galaxy_dir)
     assert os.path.isfile(os.path.join(galaxy_dir, "run.sh"))
+
+
+def test_galaxy_directory_from_package_and_unrelated_cwd(monkeypatch, tmp_path):
+    root = Path(util.galaxy_directory())
+    assert util.is_galaxy_root(root)
+    for cwd in (root, root / "packages/util", tmp_path):
+        monkeypatch.chdir(cwd)
+        assert util.galaxy_directory() == str(root)
+        assert util.galaxy_root_path == root
+
+
+def test_galaxy_directory_without_checkout(monkeypatch, tmp_path):
+    monkeypatch.setattr(util, "_source_checkout", None)
+    monkeypatch.setattr(util, "GALAXY_INCLUDES_ROOT", None)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(util.GalaxyRootNotFound):
+        util.galaxy_directory()
+    monkeypatch.setattr(util, "GALAXY_INCLUDES_ROOT", str(tmp_path))
+    assert util.galaxy_directory() == str(tmp_path)
 
 
 def test_listify() -> None:

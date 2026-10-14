@@ -4,13 +4,13 @@ cd "$(dirname "$0")"
 
 show_help() {
 cat <<EOF
-'${0##*/} -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
+'${0##*/} -api (test_path)'         for running all the test scripts in the ./packages/test_api/src/galaxy_test/api directory, test_path
                                     can be pytest selector
-'${0##*/} -cwl (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api/cwl directory, test_path
+'${0##*/} -cwl (test_path)'         for running all the test scripts in the ./packages/test_api/src/galaxy_test/api/cwl directory, test_path
                                     can be pytest selector
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
-'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
+'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./packages/tool_shed/src/tool_shed/test directory
 '${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
@@ -19,9 +19,9 @@ cat <<EOF
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
 '${0##*/} -unit (test_selector)'    for running unit tests on specified test path (using pytest selector syntax)
-'${0##*/} -selenium'                for running all selenium web tests (in lib/galaxy_test/selenium)
+'${0##*/} -selenium'                for running all selenium web tests (in packages/test_selenium/src/galaxy_test/selenium)
 '${0##*/} -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
-'${0##*/} -playwright'                 for running all end2end web tests (in lib/galaxy_test/selenium) using Playwright
+'${0##*/} -playwright'                 for running all end2end web tests (in packages/test_selenium/src/galaxy_test/selenium) using Playwright
 '${0##*/} -playwright (test_selector)' for running specified end2end web tests (using pytest selector syntax) using Playwright
 
 This wrapper script largely serves as a point documentation and convenience for
@@ -31,7 +31,7 @@ or ``pnpm`` directly as documented in detail in ``client/README.md``.
 
 The main test types are as follows:
 
-- API: These tests are located in lib/galaxy_test/api and test various aspects of the Galaxy
+- API: These tests are located in packages/test_api/src/galaxy_test/api and test various aspects of the Galaxy
    API and test general backend aspects of Galaxy using the API.
 - Integration: These tests are located in test/integration and test special
    configurations of Galaxy. All API tests assume a particular Galaxy configuration
@@ -45,9 +45,9 @@ The main test types are as follows:
    test/unit. These should generally not require a Galaxy instance and should
    quickly test just a component or a few components of Galaxy's backend code.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
-   browsers and are located in lib/galaxy_test/selenium.
+   browsers and are located in packages/test_selenium/src/galaxy_test/selenium.
 - ToolShed: These are tests that test ToolShed related functionality. These are
-   located in lib/tool_shed/test.
+   located in packages/tool_shed/src/tool_shed/test.
 
 Python testing is done via pytest. Specific tests can be selected
 using the syntax described at https://docs.pytest.org/en/latest/how-to/usage.html .
@@ -57,7 +57,7 @@ Run all API tests:
     ./run_tests.sh -api
 
 The same test as above can be run using pytest directly as follows:
-    pytest lib/galaxy_test/api
+    pytest packages/test_api/src/galaxy_test/api
 
 However, when using pytest directly, output options defined in this
 file aren't respected and a new Galaxy instance will be created for each
@@ -65,10 +65,10 @@ Test class (this scripts optimizes it so all tests can share a Galaxy
 instance).
 
 Run a full class of API tests:
-    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::TestToolsApi
+    ./run_tests.sh -api packages/test_api/src/galaxy_test/api/test_tools.py::TestToolsApi
 
 Run a specific API test:
-    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::TestToolsApi::test_map_over_with_output_format_actions
+    ./run_tests.sh -api packages/test_api/src/galaxy_test/api/test_tools.py::TestToolsApi::test_map_over_with_output_format_actions
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
@@ -76,20 +76,20 @@ Run all selenium tests (Under Linux using Docker):
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
-    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::TestRegistration::test_reregister_username_fails
+    ./run_tests.sh -selenium packages/test_selenium/src/galaxy_test/selenium/test_registration.py::TestRegistration::test_reregister_username_fails
 
 Run an end-to-end test using Selenium against a running server while watching client (fastest iterating on client tests):
     GALAXY_SKIP_CLIENT_BUILD=1 GALAXY_RUN_WITH_TEST_TOOLS=1 ./run.sh & # run Galaxy on 8080 with test tools and skip client build
     make client-dev-server & # watch for client changes and serve on 8081
     export GALAXY_TEST_EXTERNAL=http://localhost:8081/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
-    pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
+    pytest packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 
 Some tests create new users but most tests can just use a single user - you can adjust
 these end-to-end tests to use a specific user by copying and updating the sample config:
 
 
-    cp lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
+    cp packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
     vi galaxy_selenium_context.yml  # edit user and password, target galaxy server, etc..
 
 Config keys map to environment variables:
@@ -103,14 +103,14 @@ If you've setup this config file, the file can be used with any end-to-end/selen
 setting GALAXY_TEST_END_TO_END_CONFIG when calling pytest or run_tests.sh. So for example
 the last line in that previous example run could become:
 
-    GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
+    GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml pytest packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 
 Run an end-to-end test using Playwright against a running server while watching client (fastest iterating on client tests):
     GALAXY_SKIP_CLIENT_BUILD=1 GALAXY_RUN_WITH_TEST_TOOLS=1 ./run.sh & # run Galaxy on 8080 with test tools and skip client build
     make client-dev-server & # watch for client changes and serve on 8081
     export GALAXY_TEST_EXTERNAL=http://localhost:8081/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
-    GALAXY_TEST_DRIVER_BACKEND=playwright pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
+    GALAXY_TEST_DRIVER_BACKEND=playwright pytest packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 
 Playwright will probably require a browser installation:
 
@@ -293,7 +293,7 @@ GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this
                                 so should be limited to debugging one-off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
-TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
+TOOL_SHED_TEST_FILE_DIR         Defaults to packages/tool_shed/src/tool_shed/test/test_data.
 TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
@@ -376,21 +376,21 @@ do
       -a|-api|--api)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="not cwl_conformance"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
               api_script=$2
               shift 2
           else
-              api_script="./lib/galaxy_test/api"
+              api_script="./packages/test_api/src/galaxy_test/api"
               shift 1
           fi
           ;;
       -cwl|--cwl)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="cwl_conformance"
           report_file="./run_cwl_tests.html"
           generate_cwl_conformance_tests=1
@@ -398,24 +398,24 @@ do
               api_script=$2
               shift 2
           else
-              api_script="./lib/galaxy_test/api/cwl"
+              api_script="./packages/test_api/src/galaxy_test/api/cwl"
               shift 1
           fi
           ;;
       -selenium|--selenium)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
           if [ $# -gt 1 ]; then
               selenium_script=$2
               shift 2
           else
-              selenium_script="./lib/galaxy_test/selenium"
+              selenium_script="./packages/test_selenium/src/galaxy_test/selenium"
               shift 1
           fi
           ;;
       -playwright|--playwright)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           GALAXY_TEST_DRIVER_BACKEND="playwright"
           export GALAXY_TEST_DRIVER_BACKEND
           report_file="./run_playwright_tests.html"
@@ -425,7 +425,7 @@ do
               selenium_script=$2
               shift 2
           else
-              selenium_script="./lib/galaxy_test/selenium"
+              selenium_script="./packages/test_selenium/src/galaxy_test/selenium"
               shift 1
           fi
           ;;
@@ -435,7 +435,7 @@ do
               toolshed_script=$2
               shift 2
           else
-              toolshed_script="./lib/tool_shed/test/functional"
+              toolshed_script="./packages/tool_shed/src/tool_shed/test/functional"
               shift 1
           fi
           ;;
@@ -481,7 +481,7 @@ do
           shift 1
           ;;
       -main|-main_tools|--main_tools)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample"
+          GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample"
           marker="tool"
           report_file="run_framework_tests.html"
           framework_test=1
@@ -551,28 +551,28 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           unit_extra='--doctest-modules
-            --ignore lib/galaxy/datatypes/converters/
-            --ignore lib/galaxy/jobs/runners/chronos.py
-            --ignore lib/galaxy/model/migrations/alembic
-            --ignore lib/galaxy/tool_util/unittest_utils/functional_tools/
-            --ignore lib/galaxy/tools/bundled
-            --ignore lib/galaxy/web/proxy/js/node_modules/
-            --ignore lib/galaxy_test
-            --ignore lib/tool_shed/test
-            --ignore lib/tool_shed/webapp/controllers
-            --ignore=lib/tool_shed/webapp/model/migrations/alembic/'
+            --ignore packages/data/src/galaxy/datatypes/converters/
+            --ignore packages/app/src/galaxy/jobs/runners/chronos.py
+            --ignore packages/data/src/galaxy/model/migrations/alembic
+            --ignore packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools/
+            --ignore packages/app/src/galaxy/tools/bundled
+            --ignore packages/web_framework/src/galaxy/web/proxy/js/node_modules/
+            --ignore-glob=packages/test_*/src/* --ignore lib/galaxy_test
+            --ignore packages/tool_shed/src/tool_shed/test
+            --ignore packages/tool_shed/src/tool_shed/webapp/controllers
+            --ignore=packages/tool_shed/src/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
           install_playwright_browers=(chromium firefox)
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2
           else
-              unit_extra="$unit_extra lib test/unit"
+              unit_extra="$unit_extra packages/*/src packages/*/tests lib test/unit"
               shift 1
           fi
           ;;
       -i|-integration|--integration)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="packages/config/src/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
               integration_extra=$2

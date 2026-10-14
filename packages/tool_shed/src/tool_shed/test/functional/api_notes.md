@@ -52,25 +52,25 @@ Added in:
 
 ## Legacy /repository/* endpoints required by Galaxy install client
 
-Galaxy's install code (`lib/galaxy/tool_shed/galaxy_install/`) makes server-to-server HTTP
+Galaxy's install code (`packages/app/src/galaxy/tool_shed/galaxy_install/`) makes server-to-server HTTP
 calls to the Tool Shed using `/repository/{action}` endpoints. These are **not** part of
 the `/api/` surface but are critical for repository installation, update checking, and
 dependency resolution.
 
 These endpoints have been migrated from the WSGI `RepositoryController` to FastAPI in
-`lib/tool_shed/webapp/api2/repository.py`, with business logic in
-`lib/tool_shed/managers/repositories.py`. The URLs are unchanged so existing Galaxy
+`packages/tool_shed/src/tool_shed/webapp/api2/repository.py`, with business logic in
+`packages/tool_shed/src/tool_shed/managers/repositories.py`. The URLs are unchanged so existing Galaxy
 clients continue to work. Tests are in
-`lib/tool_shed/test/functional/test_shed_galaxy_install_apis.py`.
+`packages/tool_shed/src/tool_shed/test/functional/test_shed_galaxy_install_apis.py`.
 
 | Endpoint                                        | Galaxy caller                                                  | Purpose                                              |
 | ----------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
-| `/repository/get_ctx_rev`                        | `lib/galaxy/tool_shed/util/shed_util_common.py`                | Get hg ctx.rev() for a changeset during clone        |
-| `/repository/get_changeset_revision_and_ctx_rev` | `lib/galaxy/tool_shed/galaxy_install/update_repository_manager.py` | Check for updates to installed repos             |
-| `/repository/get_repository_dependencies`        | `lib/galaxy/tool_shed/galaxy_install/repository_dependencies/repository_dependency_manager.py` | Resolve repo dependencies during install |
-| `/repository/get_required_repo_info_dict`        | `lib/galaxy/tool_shed/galaxy_install/repository_dependencies/repository_dependency_manager.py` | Get install info for dependency repos    |
-| `/repository/next_installable_changeset_revision`| `lib/galaxy/tool_shed/util/repository_util.py`                 | Find next installable revision                       |
-| `/repository/previous_changeset_revisions`       | `lib/galaxy/tool_shed/util/repository_util.py`                 | List changeset hashes for update range               |
-| `/repository/updated_changeset_revisions`        | `lib/galaxy/tool_shed/util/metadata_util.py`                   | List revisions an installed repo can update to        |
+| `/repository/get_ctx_rev`                        | `packages/app/src/galaxy/tool_shed/util/shed_util_common.py`                | Get hg ctx.rev() for a changeset during clone        |
+| `/repository/get_changeset_revision_and_ctx_rev` | `packages/app/src/galaxy/tool_shed/galaxy_install/update_repository_manager.py` | Check for updates to installed repos             |
+| `/repository/get_repository_dependencies`        | `packages/app/src/galaxy/tool_shed/galaxy_install/repository_dependencies/repository_dependency_manager.py` | Resolve repo dependencies during install |
+| `/repository/get_required_repo_info_dict`        | `packages/app/src/galaxy/tool_shed/galaxy_install/repository_dependencies/repository_dependency_manager.py` | Get install info for dependency repos    |
+| `/repository/next_installable_changeset_revision`| `packages/app/src/galaxy/tool_shed/util/repository_util.py`                 | Find next installable revision                       |
+| `/repository/previous_changeset_revisions`       | `packages/app/src/galaxy/tool_shed/util/repository_util.py`                 | List changeset hashes for update range               |
+| `/repository/updated_changeset_revisions`        | `packages/app/src/galaxy/tool_shed/util/metadata_util.py`                   | List revisions an installed repo can update to        |
 | `/repository/get_repository_type`                | (not currently called but was available)                        | Return repository type string                        |
 | `/repository/get_tool_dependencies`              | (not currently called but was available)                        | Return tool dependencies for a changeset             |

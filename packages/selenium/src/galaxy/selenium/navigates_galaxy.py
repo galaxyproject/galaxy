@@ -5,6 +5,7 @@ Implementer must provide a self.build_url method to target Galaxy.
 
 import collections
 import contextlib
+import json
 import random
 import string
 import time
@@ -590,11 +591,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_history(self, assert_ok=True):
         def history_becomes_terminal(driver=None):
             current_history_id = self.current_history_id()
-            state = self.api_get(f"histories/{current_history_id}")["state"]
-            if state not in ["running", "queued", "new", "ready"]:
-                return state
-            else:
+            history = self.api_get(f"histories/{current_history_id}?keys=state,contents_active")
+            state = history["state"]
+            # On Postgres a new item's hid is committed before its row; in between,
+            # the history reports "ok" with no contents at all.
+            if state in ["running", "queued", "new", "ready"] or not any(history["contents_active"].values()):
                 return None
+            return state
 
         final_state = self._wait_on_custom(
             history_becomes_terminal, "history to become terminal", wait_type=WAIT_TYPES.JOB_COMPLETION
@@ -883,7 +886,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         cards = self.components.histories.history_cards.all()
 
         for card in cards:
-            card_name = card.find_element(By.CSS_SELECTOR, '[id^="g-card-title-link-history-"]').text
+            card_name = card.find_element(By.CSS_SELECTOR, '[id^="g-card-title-text-history-"]').text
             if card_name in item_names:
                 checkbox = card.find_element(By.CSS_SELECTOR, 'input[id^="g-card-select-history-"]')
                 # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
@@ -1218,6 +1221,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.rule_builder_enter_source_text(json)
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_show_and_get_source(self, screenshot_name: str | None = None) -> str:
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        source_element = rule_builder.source.wait_for_visible()
+        source = source_element.get_attribute("value")
+        self.screenshot_if(screenshot_name)
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+        return source
+
+    def rule_builder_show_and_get_source_as_json(self) -> dict:
+        return json.loads(self.rule_builder_show_and_get_source())
 
     def rule_builder_enter_source_text(self, json):
         rule_builder = self.components.rule_builder
@@ -2274,7 +2290,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.command_palette_wait_for_open()
 
     def command_palette_toggle_with_shortcut(self) -> None:
-        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus."""
+        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus.
+
+        The palette component owns the shortcut listener and mounts only once the
+        client has loaded the configuration, which can land after the masthead is
+        up. Its ``<dialog>`` is in the DOM whenever the component is mounted, so
+        waiting for it means the key press has a listener to reach.
+        """
+        self.components.command_palette._.wait_for_present()
         self.press("k", modifiers=[self.platform_modifier_key()])
 
     def command_palette_wait_for_open(self) -> None:
@@ -3062,6 +3085,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         screenshot_before_submit=None,
         screenshot_after_submit=None,
         assert_valid=False,
+        confirm_permissions_change=False,
     ):
         self.share_ensure_by_user_available(sharing_component)
         multiselect = sharing_component.share_with_multiselect.wait_for_and_click()
@@ -3070,6 +3094,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         self.screenshot_if(screenshot_before_submit)
         sharing_component.submit_sharing_with.wait_for_and_click()
+        if confirm_permissions_change:
+            sharing_component.permissions_change_required_how.wait_for_visible()
+            sharing_component.permissions_change_required_ok.wait_for_and_click()
 
         if assert_valid:
             self.assert_no_error_message()
@@ -3162,6 +3189,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             pw_driver._unwrap_element(element).click(modifiers=["Shift"])
         else:
             self.action_chains().move_to_element(element).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+
+    def set_file_input(self, file_input: WebElementProtocol, test_path: str) -> None:
+        """Attach a local file to a file input element, visible or not.
+
+        Playwright types into an element rather than setting its value, so a file
+        input there has to go through set_input_files.
+        """
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            pw_driver._unwrap_element(file_input).set_input_files(test_path)
+        else:
+            file_input.send_keys(test_path)
 
     def send_keys_to_page(self, *value: str) -> None:
         """Send keys to the currently focused element / page.

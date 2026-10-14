@@ -1214,7 +1214,7 @@ bug in earlier revisions of both the Python and TypeScript code.
 ### Cross-language synchronization
 
 The Python implementation lives in
-`lib/galaxy/model/dataset_collections/type_description.py`. The
+`packages/data/src/galaxy/model/dataset_collections/type_description.py`. The
 TypeScript implementation lives in
 `client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts`.
 Both must stay in sync; method names and conventions are identical.

@@ -1,6 +1,6 @@
 """Guard that the mirrored HashFunctionNames in tool_util_models stays in sync
 with galaxy.util.hash_util. The mirror exists so the package has no runtime
-dep on galaxy.util; this test lives here (not in test/unit/tool_util_models/)
+dep on galaxy.util; this test lives here (not in packages/tool_util_models/tests/tool_util_models/)
 so it runs in the monorepo env where galaxy.util is importable.
 """
 

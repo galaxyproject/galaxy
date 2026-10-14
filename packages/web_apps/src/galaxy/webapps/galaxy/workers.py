@@ -62,7 +62,7 @@ def _interesting_frame(frames: traceback.StackSummary) -> str:
     Same heuristic as ``galaxy.util.heartbeat.Heartbeat.get_interesting_stack_frame``.
     """
     for frame in reversed(frames):
-        idx = frame.filename.find("/lib/galaxy/")
+        idx = frame.filename.find("/galaxy/")
         if idx != -1:
             return f"{frame.filename[idx:]}:{frame.lineno} in {frame.name}"
     if frames:

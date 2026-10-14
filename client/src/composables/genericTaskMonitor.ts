@@ -1,4 +1,4 @@
-import { computed, readonly, type Ref, ref } from "vue";
+import { computed, getCurrentScope, onScopeDispose, readonly, type Ref, ref } from "vue";
 
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -40,7 +40,8 @@ export interface TaskMonitor {
 
     /**
      * Stops waiting for the task to complete.
-     * This will stop polling requests.
+     * This will stop polling requests, including any request already in flight.
+     * Called automatically when the owning component or effect scope is disposed.
      */
     stopWaitingForTask: () => void;
 
@@ -134,6 +135,8 @@ export function useGenericMonitor(options: {
     expirationTime?: number;
 }): TaskMonitor {
     let timeout: NodeJS.Timeout | null = null;
+    let pollGeneration = 0;
+    let disposed = false;
     let pollDelay = options.defaultPollDelay ?? DEFAULT_POLL_DELAY;
 
     const isRunning = ref(false);
@@ -162,9 +165,16 @@ export function useGenericMonitor(options: {
     }
 
     async function fetchTaskStatus(taskId: string, fetchOptions: FetchStatusOptions = { keepPolling: true }) {
+        if (disposed) {
+            return;
+        }
+        const generation = pollGeneration;
         try {
             isRunning.value = true;
             const result = await options.fetchStatus(taskId);
+            if (generation !== pollGeneration) {
+                return;
+            }
             taskStatus.value = result;
             if (isCompleted.value || hasFailed.value) {
                 isRunning.value = false;
@@ -176,7 +186,9 @@ export function useGenericMonitor(options: {
                 pollAfterDelay(taskId);
             }
         } catch (err) {
-            handleError(errorMessageAsString(err));
+            if (generation === pollGeneration) {
+                handleError(errorMessageAsString(err));
+            }
         }
     }
 
@@ -201,6 +213,18 @@ export function useGenericMonitor(options: {
         }
     }
 
+    function stopWaitingForTask() {
+        pollGeneration++;
+        resetTimeout();
+    }
+
+    if (getCurrentScope()) {
+        onScopeDispose(() => {
+            disposed = true;
+            stopWaitingForTask();
+        });
+    }
+
     function resetState() {
         resetTimeout();
         taskStatus.value = undefined;
@@ -210,7 +234,7 @@ export function useGenericMonitor(options: {
 
     return {
         waitForTask,
-        stopWaitingForTask: resetTimeout,
+        stopWaitingForTask,
         isFinalState,
         loadStatus,
         fetchTaskStatus,

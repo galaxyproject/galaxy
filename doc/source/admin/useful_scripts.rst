@@ -27,7 +27,7 @@ To safely delete unused histories and their associated records, please use the `
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/prune_history_table.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/prune_history_table.py
     usage: prune_history_table.py [-h] [--batch BATCH] [--created CREATED]
     
     Remove unused histories from database. A history is considered unused if it doesn't have a user and its hid counter has not been incremented.
@@ -46,7 +46,7 @@ To safely delete such records, please use the galaxy-delete-sessions script. By 
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_galaxy_sessions.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/delete_galaxy_sessions.py
     usage: delete_galaxy_sessions.py [-h] [--updated UPDATED]
     
     Remove old galaxy_session records from database.
@@ -66,7 +66,7 @@ To view disk usage by table you can use gxadmin, a command line utility for Gala
 
 .. code-block:: console
 
-    $ python  $GALAXY_ROOT/lib/galaxy/model/scripts/delete_job_metrics.py
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/delete_job_metrics.py
     usage: delete_job_metrics.py [-h] --updated UPDATED
     
     Remove old job metrics records from database.
@@ -74,3 +74,55 @@ To view disk usage by table you can use gxadmin, a command line utility for Gala
     options:
       -h, --help         show this help message and exit
       --updated UPDATED  most recent `updated` date/time in ISO format (for example, March 11, 1952 is represented as '1952-03-11')
+
+Making existing users' data private
+-----------------------------------
+
+The ``new_user_dataset_access_role_default_private`` option only applies to users created after it is set. To make data private for existing users as well, use the galaxy-make-data-private script. It restricts access to each user's private role for:
+
+- the user's default permissions, which apply to their new histories;
+- the default permissions of their histories that are not shared, which apply to new datasets in those histories;
+- datasets that only the owner can reach through histories that are not shared.
+
+A history counts as shared if it is published, accessible via link, shared with other users, or referenced by a page that is. Datasets that already have access restrictions, are in a data library, or are also in another user's or an anonymous history are left unchanged. Datasets that Galaxy converted from another dataset, for example for visualizations, are only made private if every dataset they were converted from is private to the same user.
+
+Things to consider before running it:
+
+- The script cannot tell whether a user chose public defaults in their preferences or kept the old server default, so it makes both private.
+- Links to datasets that users handed out themselves, for example display or download URLs, stop working for anyone else.
+- Saved visualizations are not checked: a shared visualization of a dataset that becomes private no longer displays for other users.
+- Pages are only checked when the script starts. Histories shared while it runs are left unchanged, but a page published while it runs may lose access to the datasets it shows.
+- Pages saved before Galaxy 18.09 refer to histories and datasets by encoded ids. The script decodes these with the ``id_secret`` from the Galaxy configuration file, so run it with the same configuration as Galaxy.
+
+By default the script only reports what it would change. Run it with ``--commit`` to apply the changes. Running it again is safe; it only adds permissions that are missing.
+
+.. code-block:: console
+
+    $ python  $GALAXY_ROOT/packages/data/src/galaxy/model/scripts/make_data_private.py
+    usage: make_data_private.py [-h] [--commit] [--batch BATCH] [-c CONFIG_FILE]
+
+    Make existing users' data private by default.
+
+    Restricts access to each user's private role for:
+
+    - users' default permissions, used for new histories;
+    - default permissions of histories that are not shared, used for new datasets in those histories;
+    - datasets that only that user can reach through histories that are not shared.
+
+    Datasets are left unchanged if they already have access restrictions, are in a data library, are
+    reachable through histories of other users or of anonymous users, or are reachable through a
+    history that is published, accessible via link, shared with other users, or referenced by a page
+    that is. Datasets converted from another dataset (e.g. for visualizations) are only restricted
+    if every dataset they were converted from is private to the same user.
+
+    Without --commit, only reports what would be changed.
+
+    options:
+      -h, --help            show this help message and exit
+      --commit              apply the changes (default: only report them)
+      --batch BATCH         number of ids processed per batch
+      -c, --config-file, --config CONFIG_FILE
+                            Galaxy config file (defaults to $GALAXY_ROOT/config/galaxy.yml if that
+                            file exists or else to ./config/galaxy.ini if that exists). If this isn't
+                            set on the command line it can be set with the environment variable
+                            GALAXY_CONFIG_FILE.

@@ -767,7 +767,7 @@
             <!-- A destination that represents a method in the dynamic runner.
 
                  foo should be a Python function defined in any file in
-                 lib/galaxy/jobs/rules.
+                 packages/app/src/galaxy/jobs/rules.
             -->
             <param id="function">foo</param>
         </destination>

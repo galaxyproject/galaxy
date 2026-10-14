@@ -25,7 +25,7 @@ from galaxy.tool_util_models import UserToolSourceAuthoringView
 from galaxy.tool_util_models._models import _command_input_refs
 from galaxy.util import galaxy_directory
 
-PROMPT_DIR = Path(galaxy_directory()) / "lib" / "galaxy" / "agents" / "prompts"
+PROMPT_DIR = Path(galaxy_directory()) / "packages" / "app" / "src" / "galaxy" / "agents" / "prompts"
 CUSTOM_TOOL_PROMPT = PROMPT_DIR / "custom_tool_structured.md"
 
 YAML_FENCE = re.compile(r"```yaml\n(.*?)```", re.DOTALL)

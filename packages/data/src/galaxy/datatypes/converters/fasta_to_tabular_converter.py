@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Variants of this code exists in 2 places, this file which has no
 # user facing options which is called for implicit data conversion,
-# lib/galaxy/datatypes/converters/fasta_to_tabular_converter.py
+# packages/data/src/galaxy/datatypes/converters/fasta_to_tabular_converter.py
 # and the user-facing Galaxy tool of the same name which has many
 # options. That version is now on GitHub and the Galaxy Tool Shed:
 # https://github.com/galaxyproject/tools-devteam/tree/master/tools/fasta_to_tabular

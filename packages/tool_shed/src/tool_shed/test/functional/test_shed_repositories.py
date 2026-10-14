@@ -571,7 +571,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         By default, fixtures are written to a temp directory and the path is printed.
         To write fixtures to the frontend test directory, set:
 
-            TOOL_SHED_FIXTURE_OUTPUT_DIR=lib/tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__
+            TOOL_SHED_FIXTURE_OUTPUT_DIR=packages/tool_shed/src/tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__
 
         The generated fixtures include:
         - repository_metadata_column_maker.json: Multi-revision repo with tools (RepositoryMetadata)

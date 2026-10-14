@@ -52,7 +52,6 @@ def _resolve_alembic_config() -> str:
             "alembic.ini",
         ),
         "packages/data/src/galaxy/model/migrations/alembic.ini",
-        "lib/galaxy/model/migrations/alembic.ini",
     ):
         if os.path.exists(candidate):
             return candidate

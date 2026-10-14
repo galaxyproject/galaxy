@@ -164,10 +164,13 @@ class Registry:
             # Set default paths defined in local datatypes_conf.xml.
             if use_converters:
                 if not self.converters_path:
-                    self.converters_path_attr = registration.get("converters_path", "lib/galaxy/datatypes/converters")
+                    self.converters_path_attr = registration.get(
+                        "converters_path", "packages/data/src/galaxy/datatypes/converters"
+                    )
                     self.converters_path = os.path.join(root_dir, self.converters_path_attr)
-                    if self.converters_path_attr == "lib/galaxy/datatypes/converters" and not os.path.isdir(
-                        self.converters_path
+                    if (
+                        self.converters_path_attr == "packages/data/src/galaxy/datatypes/converters"
+                        and not os.path.isdir(self.converters_path)
                     ):
                         # Deal with the old default of this path being set in
                         # datatypes_conf.xml.sample (this path is not useful in an
@@ -1123,7 +1126,9 @@ def upload_warning(template: Template | None, auto_compressed_type: str | None =
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
     galaxy_dir = galaxy.util.galaxy_directory()
-    sample_conf = os.path.join(galaxy_dir, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
+    sample_conf = os.path.join(
+        galaxy_dir, "packages", "config", "src", "galaxy", "config", "sample", "datatypes_conf.xml.sample"
+    )
     config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
     datatypes_registry = Registry(config)
     datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)

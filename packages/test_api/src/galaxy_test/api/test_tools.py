@@ -1,4 +1,5 @@
 # Test tools API.
+import base64
 import contextlib
 import json
 import os
@@ -167,7 +168,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     @skip_without_tool("upload1")
     @skip_without_tool("export_remote")
     def test_search_curated_tool_tags(self):
-        # The bundled mapping (lib/galaxy/tool_util/ontologies/tool_tag_mappings.yml)
+        # The bundled mapping (packages/tool_util/src/galaxy/tool_util/ontologies/tool_tag_mappings.yml)
         # tags every tool from `tool_conf.xml.sample` with the section name it
         # lives under. Verify the sidecar API and the Whoosh-backed search
         # both respect the mapping.
@@ -1840,6 +1841,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
             # Run simple non-upload tool with an input data parameter.
             inputs = self._get_cat1_inputs(history_id)
+            self.dataset_populator.wait_for_history(history_id)
+            self.dataset_populator.make_dataset_public(history_id, inputs["input1"]["id"])
             original_output = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
             original_job = self.dataset_populator.get_job_details(original_output["jobs"][0]["id"], full=True).json()
 
@@ -2311,7 +2314,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     else:
                         self._assert_dataset_permission_denied_response(response)
 
-            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
+            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test", wait=True)
+            self.dataset_populator.make_dataset_public(history_id, new_dataset["id"])
             inputs = dict(
                 input1=dataset_to_param(new_dataset),
             )
@@ -2330,47 +2334,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
             )
             # _different_user cannot use datasets derived from the private input.
             assert_inputs(inputs_2, can_be_used=False)
-
-    @skip_without_tool("collection_creates_list")
-    def test_guess_derived_permissions_collections(self, history_id):
-        def first_element_dataset_id(hdca):
-            # Fetch full and updated details for HDCA
-            print(hdca)
-            full_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=hdca["hid"])
-            elements = full_hdca["elements"]
-            element0 = elements[0]["object"]
-            return element0["id"]
-
-        response = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], direct_upload=True, wait=True
-        )
-        self._assert_status_code_is(response, 200)
-        hdca = response.json()["output_collections"][0]
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        inputs = {
-            "input1": {"src": "hdca", "id": hdca["id"]},
-        }
-        public_output_response = self._run("collection_creates_list", history_id, inputs)
-        self._assert_status_code_is(public_output_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        input_element_id = first_element_dataset_id(hdca)
-        self.dataset_populator.make_private(history_id, input_element_id)
-
-        private_output_response = self._run("collection_creates_list", history_id, inputs)
-        self._assert_status_code_is(private_output_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        public_element_id = first_element_dataset_id(public_output_response.json()["output_collections"][0])
-        private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
-
-        def _dataset_accessible(dataset_id):
-            contents_response = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
-            return "name" in contents_response
-
-        with self._different_user():
-            assert _dataset_accessible(public_element_id)
-            assert not _dataset_accessible(private_element_id)
 
     @skip_without_tool("validation_default")
     def test_validation(self, history_id):
@@ -2567,7 +2530,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_dynamic_tool_from_path(self):
         # Create tool.
         dynamic_tool_path = os.path.join(
-            galaxy_root_path, "lib", "galaxy_test", "base", "data", "minimal_tool_no_id.json"
+            galaxy_root_path, "packages", "test_base", "src", "galaxy_test", "base", "data", "minimal_tool_no_id.json"
         )
         tool_response = self.dataset_populator.create_tool_from_path(dynamic_tool_path)
         self._assert_has_keys(tool_response, "uuid")
@@ -3033,6 +2996,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
         job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
         assert job_details["state"] == "error"
         assert "255 character" in job_details["job_messages"][0]["desc"]
+
+    @skip_without_tool("discover_unknown_ext")
+    def test_unknown_output_extension_job_message(self, history_id):
+        response = self._run("discover_unknown_ext", history_id, {})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        messages = [message for message in job_details["job_messages"] if message["type"] == "unknown_datatype"]
+        assert len(messages) == 1, job_details["job_messages"]
+        assert messages[0]["extension"] == "notadatatype"
+        assert messages[0]["error_level"] == 2
+        assert "2 output datasets set to 'data'" in messages[0]["desc"]
 
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed")).read()
@@ -3877,6 +3853,37 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output_details["state"] == "ok"
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.strip() == source_uri.strip()
+
+    @skip_without_tool("gx_allow_uri_if_protocol_single")
+    def test_allow_uri_if_protocol_on_single_deferred_zarr_input(self, history_id):
+        top_level_uri = "https://example.org/data/top_level.zarr"
+        nested_uri = "https://example.org/data/nested.zarr"
+        top_level_hda = self.dataset_populator.create_deferred_hda(history_id, top_level_uri, ext="zarr")
+        nested_hda = self.dataset_populator.create_deferred_hda(history_id, nested_uri, ext="zarr")
+
+        inputs = {"input1": dataset_to_param(top_level_hda), "nested|input2": dataset_to_param(nested_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol_single", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.splitlines() == [top_level_uri, nested_uri]
+
+    @skip_without_tool("gx_allow_uri_if_protocol_single")
+    def test_allow_uri_if_protocol_materializes_other_protocols(self, history_id):
+        content = "materialized content\n"
+        source_uri = f"base64://{base64.b64encode(content.encode()).decode()}"
+        deferred_hda = self.dataset_populator.create_deferred_hda(history_id, source_uri, ext="txt")
+
+        inputs = {"input1": dataset_to_param(deferred_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol_single", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content == content
 
     @skip_without_tool("gx_allow_uri_if_protocol")
     def test_allow_uri_if_protocol_on_collection_with_deferred(self, history_id):

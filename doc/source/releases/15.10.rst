@@ -68,7 +68,7 @@ Enhancements
 * Style fixes for ``test/``. (Thanks to `@nsoranzo
   <https://github.com/nsoranzo>`__.)
   `Pull Request 653`_
-* Style fixes for ``contrib/`` and ``lib/tool_shed/``. (Thanks to `@nsoranzo
+* Style fixes for ``contrib/`` and ``packages/tool_shed/src/tool_shed/``. (Thanks to `@nsoranzo
   <https://github.com/nsoranzo>`__.)
   `Pull Request 708`_
 * Style fixes violated when merging from ``release_15.07``. (Thanks to `@nsoranzo
@@ -390,7 +390,7 @@ Fixes
   `Pull Request 726`_
 * Fix ``Galaxy.user`` in client code to be available when not using a require.
   `Pull Request 728`_
-* Remove no-op ``__init__`` methods from ``lib/galaxy/datatypes/binary.py``.
+* Remove no-op ``__init__`` methods from ``packages/data/src/galaxy/datatypes/binary.py``.
   (Thanks to `@mr-c <https://github.com/mr-c>`__.)
   `Pull Request 729`_
 * Fix more API tests.
@@ -421,7 +421,7 @@ Fixes
   `Pull Request 822`_
 * Fix default value for optional select fields.
   `Pull Request 826`_
-* Use dependency handling in ``lib/galaxy/datatypes/``.
+* Use dependency handling in ``packages/data/src/galaxy/datatypes/``.
   (Thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 838`_
 * Expose all API keys to admins under ``REMOTE_USER``.

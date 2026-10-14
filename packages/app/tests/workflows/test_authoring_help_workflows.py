@@ -5,7 +5,9 @@ import pytest
 import yaml
 from gxformat2 import python_to_workflow
 
-HELP_PATH = Path(__file__).resolve().parents[3] / "client" / "src" / "components" / "Tool" / "authoringHelp.yml"
+from galaxy.util import galaxy_directory
+
+HELP_PATH = Path(galaxy_directory()) / "client" / "src" / "components" / "Tool" / "authoringHelp.yml"
 YAML_BLOCK = re.compile(r"```yaml\n(?P<source>.*?)\n```", re.DOTALL)
 
 

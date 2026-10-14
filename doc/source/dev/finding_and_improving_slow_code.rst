@@ -27,7 +27,7 @@ http://127.0.0.1:8080/api/tools/toolshed.g2.bx.psu.edu/repos/iuc/hisat2/hisat2/2
 that took 3 seconds to complete. Looking into `Galaxy's API
 documentation <https://docs.galaxyproject.org/en/master/api/api.html#galaxy.webapps.galaxy.api.tools.ToolsController.build>`__
 we can match this URL to the actual code in
-`lib/galaxy/webapps/galaxy/api/tools.py <https://github.com/galaxyproject/galaxy/blob/release_17.05/lib/galaxy/webapps/galaxy/api/tools.py#L89>`__.
+`packages/web_apps/src/galaxy/webapps/galaxy/api/tools.py <https://github.com/galaxyproject/galaxy/blob/release_17.05/packages/web_apps/src/galaxy/webapps/galaxy/api/tools.py#L89>`__.
 
 Profiling
 ~~~~~~~~~
@@ -111,20 +111,20 @@ which took 2.4 seconds out the 9.5 seconds total.
 ``get_current_user_roles`` is called in the context of
 ``hda_accessible`` and ``hda_accessible`` (these are also in our table)
 in
-https://github.com/galaxyproject/galaxy/blob/release\_17.05/lib/galaxy/tools/parameters/dataset\_matcher.py#L109
+https://github.com/galaxyproject/galaxy/blob/release\_17.05/packages/app/src/galaxy/tools/parameters/dataset\_matcher.py#L109
 We can see that the ``current_user_roles`` attribute of
 ``DatasetMatcher`` instances are already being cached, however during
 the course of filling in parameters in the tool building process a new
 ``DatasetMatcher`` instance is being created for each
 ``DataToolParameter`` in
-https://github.com/galaxyproject/galaxy/blob/release\_17.05/lib/galaxy/tools/parameters/basic.py#L1456.
+https://github.com/galaxyproject/galaxy/blob/release\_17.05/packages/app/src/galaxy/tools/parameters/basic.py#L1456.
 This means that the cached roles will be lost for the next
 ``DataToolParameter`` that we need to fill in. It would be great if we
 didn't need to redo this expensive operation for each data input.
 
 When building the tool interface we deal with a ``WorkRequestContext``
 instance, which inherits from ``ProvidesUserContext`` in
-https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/managers/context.py#L119.
+https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/managers/context.py#L119.
 ``ProvidesUserContext`` defines a ``get_current_user_roles`` method that
 gets the current users' roles from the database. We can implement a
 cached variant of this in ``WorkRequestContext``, which will be used

@@ -94,20 +94,16 @@ workspace:
   `test/deployment`, `test/manual`, `test/evals` — workspace-level test trees
   (functional tools, webhooks, composed-app tests).
 
-## Symlink disposition (340 → 263 → 262)
+## Symlink disposition
 
-The branch started with **340** tracked symlinks
-(`git ls-files -s | grep -c ^120000`). Replacing lib-owned sources and tests
-with real files brought the count to **263**; dropping one broken link in the
-final phase left **262**, all of which are documented below.
+Top-level package source and test aliases have been replaced with real files.
+Links retained for shared fixtures, executable assets, frontend resources, and
+package metadata are either relocated with their owners or retargeted to the
+new package paths. The Tool Shed Mercurial fixture retains its tracked
+`.hg/wcache/checklink` probe and all repository metadata.
 
-| Disposition | Count | Detail |
-| --- | --- | --- |
-| Replaced with real files | 77 | 57 `packages/*/src` top-level import-root links + 20 `packages/*/tests` links, replaced when sources/tests were moved out of `lib/galaxy` |
-| Recreated at new package paths | 42 | 31 `packages/data/src/galaxy/datatypes/test/*`; 6 `packages/app` (`main/__init__.py`, `tools/bundled`, 3 × `tools/parameters/test`, `tools/util/maf_utilities.py`); 2 `packages/web_apps` (`webapps/base/static`, `webapps/base/templates`); 2 `packages/tool_util` (`linters/datatypes_conf.xml.sample`, `unittest_utils/functional_tools`); 1 `packages/navigation` (`navigation/navigation.yml`) |
-| Retargeted in place | 42 | 30 `config/*.sample` → `packages/config/src/galaxy/config/sample/`; 5 `client/src` yml specs → `packages/*/src`; 6 `test/functional/tools` links → `tools/`; 1 `requirements.txt` → `packages/app/src/galaxy/dependencies/pinned-requirements.txt` |
-| Unchanged | 177 | package metadata links (`LICENSE`, `Makefile`, `mypy.ini`, …), `static/`, `doc/`, `scripts/`, and the remaining `test/functional` links |
-| Deleted | 2 | 1 `test/unit/tool_shed/…/.hg/wcache/checklink` (moved out with the tool shed tests); 1 `test/functional/tools/tools` (self-referential cycle, dropped in the final phase) |
+Use `git ls-files -s` to inspect the current inventory; the enforcement check
+below covers every tracked link under package source and test directories.
 
 Three tracked symlinks are **intentionally dangling** (verified with
 `test -e`): `doc/source/_static/22.01-colour.mp4` and
@@ -119,12 +115,12 @@ tree. They are kept because they resolve in release/deployment contexts.
 ## Allowed source links
 
 The only symlinks permitted under `packages/*/src/**` or
-`packages/*/tests/**` are the 42 listed here (all under `src`; none under
-`tests`):
+`packages/*/tests/**` are listed here:
 
 | Category | Count | Links | Target |
 | --- | --- | --- | --- |
 | Nested fixture links | 34 | `packages/data/src/galaxy/datatypes/test/*` (31), `packages/app/src/galaxy/tools/parameters/test/*` (3) | shared `test-data/` fixtures |
+| Mercurial fixture probe | 1 | `packages/tool_shed/tests/tool_shed/data/toolshed_community_files/database/community_files/000/repo_1/.hg/wcache/checklink` | `checklink-target` in the same fixture directory |
 | `functional_tools` chain | 1 | `packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools` | `test/functional/tools` |
 | `bundled` chain | 1 | `packages/app/src/galaxy/tools/bundled` | `tools` |
 | `static` chain | 1 | `packages/web_apps/src/galaxy/webapps/base/static` | `static` |
@@ -148,7 +144,7 @@ The following files provide repository-level test infrastructure:
 - `lib/galaxy_test/performance/`
 - `lib/galaxy_test/workflow/`
 - `test/unit/test_shard.py`, `test/unit/test_galaxy_transactions.py`,
-  `test/unit/__init__.py`
+  `test/unit/test_package_versions.py`, `test/unit/__init__.py`
 
 Rationale:
 
@@ -163,8 +159,9 @@ Rationale:
    fixtures for tests invoked from the workspace root (the Galaxy test
    driver, celery pytest plugin registration, and the statsd/JSON-report
    hooks). `pytest.ini` puts `lib` on `pythonpath`, so these apply to the
-   retained root trees. Their imports also require the installed Galaxy test
-   and application packages.
+   retained root trees. The package-owned API and Selenium conftests import
+   their shared fixtures and hooks explicitly. Their imports also require the
+   installed Galaxy test and application packages.
 3. **Cross-cutting test trees.** `performance/` and `workflow/` exercise the
    composed workspace (the workflow framework alone spans `galaxy-tool-util`,
    `galaxy-data`, `galaxy-job-execution`, and `galaxy-app`), so no single
@@ -182,6 +179,7 @@ Rationale:
 - `.ci/check_no_source_links.sh` fails on any tracked symlink under
   `packages/*/src/**` or `packages/*/tests/**` that is not in the allowed
   categories above (nested fixture links under `*/test/` or `*/test-data/`,
+  the Mercurial fixture probe,
   and the retained `functional_tools` / `bundled` / `static` / `templates` /
   `maf` / `navigation` / `linters` / `main` chains).
 - Run it with `tox -e check_no_source_links`.

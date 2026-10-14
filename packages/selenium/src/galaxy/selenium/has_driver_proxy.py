@@ -316,6 +316,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Drag source element and drop on target element."""
         self._driver_impl.drag_and_drop(source, target)
 
+    def drag_over(self, source: WebElementProtocol, target: WebElementProtocol):
+        """Hold a drag of source over target, dropping on exit."""
+        return self._driver_impl.drag_over(source, target)
+
     def double_click(self, element: WebElementProtocol) -> None:
         """Double-click element."""
         self._driver_impl.double_click(element)

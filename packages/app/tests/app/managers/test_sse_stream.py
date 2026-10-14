@@ -2,7 +2,7 @@
 
 The DB-connection release for SSE now lives in
 :class:`galaxy.webapps.base.api.GalaxyStreamingResponse` (covered by
-``test/unit/webapps/base/test_streaming_response.py``). These tests just cover
+``packages/web_apps/tests/webapps/base/test_streaming_response.py``). These tests just cover
 the manager's own lifecycle contract: a connection is registered on entry and
 cleaned up in the ``finally`` block when the client disconnects.
 """

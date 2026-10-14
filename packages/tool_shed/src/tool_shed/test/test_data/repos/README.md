@@ -44,7 +44,7 @@ Each revision represents a tool version bump with minor changes.
 
 ### Primary Function: `upload_directories_to_repository`
 
-Located in `test/unit/tool_shed/_util.py`:
+Located in `packages/tool_shed/tests/tool_shed/_util.py`:
 
 ```python
 from test.unit.tool_shed._util import upload_directories_to_repository

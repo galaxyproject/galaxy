@@ -29,12 +29,12 @@ can be found in ``client/README.md`` of the Galaxy codebase.
 |-----------|----------|-------------|-------------|
 | Unit (Python) | ``test/unit/`` | ``./run_tests.sh -unit`` | Isolated component tests |
 | Unit (Client) | ``client/src/`` | ``make client-test`` | ES6/Vue component tests |
-| API | ``lib/galaxy_test/api/`` | ``./run_tests.sh -api`` | Backend tests via API |
+| API | ``packages/test_api/src/galaxy_test/api/`` | ``./run_tests.sh -api`` | Backend tests via API |
 | Integration | ``test/integration/`` | ``./run_tests.sh -integration`` | Custom Galaxy config |
 | Framework | ``test/functional/tools/`` | ``./run_tests.sh -framework`` | Tool XML testing |
 | Workflow Framework | ``lib/galaxy_test/workflow/`` | ``./run_tests.sh -framework-workflows`` | Workflow evaluation |
-| Selenium | ``lib/galaxy_test/selenium/`` | ``./run_tests.sh -selenium`` | UI tests (WebDriver) |
-| Playwright | ``lib/galaxy_test/selenium/`` | ``./run_tests.sh -playwright`` | UI tests (Playwright) |
+| Selenium | ``packages/test_selenium/src/galaxy_test/selenium/`` | ``./run_tests.sh -selenium`` | UI tests (WebDriver) |
+| Playwright | ``packages/test_selenium/src/galaxy_test/selenium/`` | ``./run_tests.sh -playwright`` | UI tests (Playwright) |
 | Selenium Integration | ``test/integration_selenium/`` | ``./run_tests.sh -selenium`` | UI + custom config |
 
 ### Decision Tree
@@ -133,7 +133,7 @@ find the right documentation for a given test one wishes to write.
 
               In this case Galaxy API tests are likely the most
               appropriate way to implement the desired test. These tests
-              are located in ``lib/galaxy_test/api``. Checkout
+              are located in ``packages/test_api/src/galaxy_test/api``. Checkout
               [API Tests](#api) below for more information.
 
           - **Yes**
@@ -160,7 +160,7 @@ find the right documentation for a given test one wishes to write.
 
           - **No**
 
-            These tests should be placed into ``lib/galaxy_test/selenium``
+            These tests should be placed into ``packages/test_selenium/src/galaxy_test/selenium``
             and implemented using the [Selenium Tests](#selenium)
             framework described below. These same tests can also be run
             with [Playwright](#playwright) for faster execution.
@@ -190,10 +190,10 @@ serve as high-quality documentation for the component under test.
 
 ### Slow 'Unit' Tests (External Dependency Management)
 
-Tests in ``test/unit/tool_util/`` that interact with external services
+Tests in ``packages/tool_util/tests/tool_util/`` that interact with external services
 (Conda, container registries, BioContainers) should be marked with
 ``@external_dependency_management``. This pytest marker is defined in
-``test/unit/tool_util/util.py``:
+``packages/tool_util/tests/tool_util/util.py``:
 
 ```python
 from .util import external_dependency_management
@@ -208,8 +208,12 @@ These tests are excluded from normal unit test runs. To run them:
 ```bash
 tox -e mulled
 # or directly:
-pytest -m external_dependency_management test/unit/tool_util/
+pytest -m external_dependency_management packages/tool_util/tests/tool_util/
 ```
+
+Tests that also depend on a specific remote service (quay.io,
+depot.galaxyproject.org, GitHub) should additionally skip when it is down; see
+[Skipping Tests When a Remote Service Is Down](#remote_service_down).
 
 ### Continuous Integration
 
@@ -343,7 +347,7 @@ GitHub actions workflow definition for these tests is located in
 {#api}
 ## API Tests
 
-These tests are located in ``lib/galaxy_test/api`` and test various aspects
+These tests are located in ``packages/test_api/src/galaxy_test/api`` and test various aspects
 of the Galaxy API, as well as general backend aspects of Galaxy using the API.
 
 ### Test Class Structure
@@ -367,7 +371,7 @@ class TestMyFeatureApi(ApiTestCase):
         # ... test code
 ```
 
-The ``ApiTestCase`` class (in ``lib/galaxy_test/api/_framework.py``) inherits from:
+The ``ApiTestCase`` class (in ``packages/test_api/src/galaxy_test/api/_framework.py``) inherits from:
 
 - ``FunctionalTestCase``: Handles server configuration and URL setup
 - ``UsesApiTestCaseMixin``: Provides HTTP methods and API interaction utilities
@@ -751,11 +755,11 @@ assert task_ok, "Import task failed"
 
 | Pattern | Example File | What It Demonstrates |
 |---------|--------------|----------------------|
-| **Basic API structure** | ``lib/galaxy_test/api/test_roles.py`` | Simple GET/POST, admin vs. user |
-| **Dataset operations** | ``lib/galaxy_test/api/test_datasets.py`` | Upload, search, update, delete |
-| **Tool execution** | ``lib/galaxy_test/api/test_tool_execute.py`` | Modern fluent API patterns |
-| **History import/export** | ``lib/galaxy_test/api/test_histories.py`` | Async tasks, short-term storage, reimport patterns |
-| **User management** | ``lib/galaxy_test/api/test_users.py`` | Different user context, permissions |
+| **Basic API structure** | ``packages/test_api/src/galaxy_test/api/test_roles.py`` | Simple GET/POST, admin vs. user |
+| **Dataset operations** | ``packages/test_api/src/galaxy_test/api/test_datasets.py`` | Upload, search, update, delete |
+| **Tool execution** | ``packages/test_api/src/galaxy_test/api/test_tool_execute.py`` | Modern fluent API patterns |
+| **History import/export** | ``packages/test_api/src/galaxy_test/api/test_histories.py`` | Async tasks, short-term storage, reimport patterns |
+| **User management** | ``packages/test_api/src/galaxy_test/api/test_users.py`` | Different user context, permissions |
 
 ### Continuous Integration
 
@@ -814,7 +818,7 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
 
 Integration test cases extend the ``IntegrationTestCase`` class defined in
 the ``galaxy_test.driver.integration_util`` module (located in
-``lib/galaxy_test/driver/integration_util.py``).
+``packages/test_driver/src/galaxy_test/driver/integration_util.py``).
 
 The ``require_admin_user`` option above tell the test framework that the
 default user configured for API interactions must be an admin user.
@@ -1079,6 +1083,29 @@ def test_with_message_queue(self):
 | ``skip_if_github_workflow()`` | Not in GitHub Actions |
 | ``skip_unless_environ(var)`` | Environment variable set |
 
+``skip_unless_docker()`` and ``skip_unless_kubernetes()`` are built on
+``skip_unless_executable(name)``, which skips unless ``name`` is on ``PATH``.
+It and ``skip_unless_environ(var)`` live in ``galaxy.util.unittest_utils``;
+import them from there in any kind of test:
+
+```python
+from galaxy.util.unittest_utils import (
+    skip_unless_environ,
+    skip_unless_executable,
+)
+
+@skip_unless_executable("singularity")
+def test_docker_to_singularity(tmp_path):
+    ...
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+def test_real_azure_blob_store(tmp_path):
+    ...
+```
+
+For tests that depend on a remote service rather than a local tool or
+setting, see [Skipping Tests When a Remote Service Is Down](#remote_service_down).
+
 ### External Services
 
 Some integration tests require external services (databases, message queues,
@@ -1203,7 +1230,7 @@ GitHub actions workflow definition for these tests is located in
 ## Selenium Tests
 
 These are full stack tests meant to test the Galaxy UI with real
-browsers and are located in ``lib/galaxy_test/selenium``.
+browsers and are located in ``packages/test_selenium/src/galaxy_test/selenium``.
 
 For detailed documentation on the browser automation framework architecture
 (including protocol design, adding new browser operations, and building CLI tools),
@@ -1518,12 +1545,12 @@ class TestPublishedPages(SharedStateSeleniumTestCase):
 
 | Pattern | Example File | What It Demonstrates |
 |---------|--------------|----------------------|
-| **Basic structure** | ``lib/galaxy_test/selenium/test_login.py`` | Simple tests, accessibility |
-| **History operations** | ``lib/galaxy_test/selenium/test_uploads.py`` | Uploads, history panel |
-| **Workflow execution** | ``lib/galaxy_test/selenium/test_workflow_run.py`` | RunsWorkflows mixin |
-| **Component patterns** | ``lib/galaxy_test/selenium/test_workflow_editor.py`` | Smart components |
-| **Shared state** | ``lib/galaxy_test/selenium/test_published_pages.py`` | SharedStateSeleniumTestCase |
-| **Admin tests** | ``lib/galaxy_test/selenium/test_admin_app.py`` | run_as_admin, admin UI |
+| **Basic structure** | ``packages/test_selenium/src/galaxy_test/selenium/test_login.py`` | Simple tests, accessibility |
+| **History operations** | ``packages/test_selenium/src/galaxy_test/selenium/test_uploads.py`` | Uploads, history panel |
+| **Workflow execution** | ``packages/test_selenium/src/galaxy_test/selenium/test_workflow_run.py`` | RunsWorkflows mixin |
+| **Component patterns** | ``packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py`` | Smart components |
+| **Shared state** | ``packages/test_selenium/src/galaxy_test/selenium/test_published_pages.py`` | SharedStateSeleniumTestCase |
+| **Admin tests** | ``packages/test_selenium/src/galaxy_test/selenium/test_admin_app.py`` | run_as_admin, admin UI |
 
 ### Configuration File
 
@@ -1535,7 +1562,7 @@ credentials.
 Copy and edit the sample config:
 
 ```bash
-cp lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
+cp packages/test_selenium/src/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
 ```
 
 Example config file:
@@ -1570,16 +1597,22 @@ GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml ./run_tests.sh -sele
 
 ### Continuous Integration
 
-GitHub actions doesn't run the Selenium backend. The same test files run against
+Pull requests don't run the Selenium backend. The same test files run against
 each pull request under Playwright (see [Playwright Tests](#playwright) below).
 Tests marked ``@selenium_only`` are skipped there, so run them locally with
 ``./run_tests.sh -selenium`` when changing the pages they cover.
+
+A weekly workflow (``.github/workflows/selenium.yaml``) runs the Selenium backend
+on ``dev``; it can also be started by hand from the Actions tab. When a run on
+``dev`` fails, the workflow opens an issue labeled ``area/testing/selenium``
+(or comments on the one already open), and closes it after the next passing run
+on ``dev``.
 
 {#playwright}
 ## Playwright Tests
 
 Playwright tests use the same test files as Selenium tests
-(located in ``lib/galaxy_test/selenium``) but execute them using
+(located in ``packages/test_selenium/src/galaxy_test/selenium``) but execute them using
 [Playwright](https://playwright.dev/) instead of Selenium WebDriver.
 Playwright offers faster execution and more reliable browser automation.
 
@@ -1594,7 +1627,7 @@ Run all Playwright tests:
 Run specific Playwright tests:
 
 ```bash
-./run_tests.sh -playwright lib/galaxy_test/selenium/test_workflow_editor.py
+./run_tests.sh -playwright packages/test_selenium/src/galaxy_test/selenium/test_workflow_editor.py
 ```
 
 Run against a running Galaxy server (fastest for development):
@@ -1604,7 +1637,7 @@ Run against a running Galaxy server (fastest for development):
 make client-dev-server &  # watch for client changes
 export GALAXY_TEST_EXTERNAL=http://localhost:8081/
 . .venv/bin/activate
-GALAXY_TEST_DRIVER_BACKEND=playwright pytest lib/galaxy_test/selenium/test_login.py
+GALAXY_TEST_DRIVER_BACKEND=playwright pytest packages/test_selenium/src/galaxy_test/selenium/test_login.py
 ```
 
 Playwright requires browser installation:
@@ -1674,12 +1707,77 @@ These work anywhere a URL is accepted: ``stage_inputs`` jobs, fetch API targets,
 deferred datasets, and workflow inputs. Only use real external URLs when the test
 specifically validates remote-fetch behavior.
 
+{#remote_service_down}
+### Skipping Tests When a Remote Service Is Down
+
+A test that has to talk to a real remote service should skip, not fail, when
+that service is down. ``galaxy.util.unittest_utils`` provides decorators that
+request a site before the test runs and skip it unless the site answers with
+HTTP 200:
+
+| Decorator | Probes |
+|-----------|--------|
+| ``skip_if_github_down`` | ``https://github.com/`` |
+| ``skip_if_quay_down`` | ``https://quay.io/`` |
+| ``skip_if_galaxy_depot_down`` | ``https://depot.galaxyproject.org/`` |
+| ``skip_if_dockstore_down`` | ``https://dockstore.org/`` |
+| ``skip_if_workflowhub_down`` | ``https://workflowhub.eu/`` |
+| ``skip_if_toolshed_down`` | ``https://toolshed.g2.bx.psu.edu`` (the main Tool Shed) |
+| ``skip_if_site_down(url)`` | Any other ``url`` |
+
+The decorators work on unit, API, integration and Selenium tests alike, and
+can be stacked when a test needs several services:
+
+```python
+from galaxy.util.unittest_utils import (
+    skip_if_dockstore_down,
+    skip_if_github_down,
+    skip_if_site_down,
+)
+
+@skip_if_dockstore_down
+@skip_if_github_down
+def test_import_ga_workflow_with_trs_url_subworkflow():
+    ...
+
+@skip_if_site_down("https://bio.tools/")
+def test_api_content():
+    ...
+```
+
+To skip from setup code rather than a single test (e.g. an integration test
+class's ``handle_galaxy_config_kwds``), call ``raise_skip_if_site_down(url)``
+from the same module, as ``UsesShed.configure_shed`` in
+``galaxy_test/driver/uses_shed.py`` does. It raises ``unittest.SkipTest`` with
+the same message as the decorators. ``is_site_up(url)`` returns the probe
+result as a boolean if you need to decide something else.
+
+The probe is a single GET of that URL (for the per-service decorators, the
+site's front page), so it only catches a site that is unreachable or not
+answering 200; a slow or failing API behind a healthy front page still fails
+the test. Two tools cover that gap:
+
+- ``skip_if_site_down(url, unavailable_pattern=...)`` also skips the test if it
+  raises an exception whose message or HTTP response body matches the regular
+  expression. ``skip_if_workflowhub_down`` uses this to recognize the errors
+  Galaxy's TRS proxy reports when WorkflowHub, or Cloudflare in front of it,
+  is down or blocking CI runners.
+- ``skip_on_network_error`` skips the test if it raises a ``requests``
+  ``ConnectionError`` or ``Timeout``, without probing anything up front.
+
+These decorators are for outages of services a test cannot avoid. A test that
+fails intermittently for other reasons should be tracked as a transient failure
+instead (see [Handling Flaky Tests](#transient_failures)).
+
 {#transient_failures}
 ## Handling Flaky Tests
 
 Some tests fail intermittently due to race conditions, timing issues, or external
 dependencies. Galaxy provides infrastructure to track these "flaky" tests via
 GitHub issues and a test decorator.
+
+Failures caused by a remote service being down should be skipped instead; see
+[Skipping Tests When a Remote Service Is Down](#remote_service_down).
 
 ### Marking a Test as Transiently Failing
 

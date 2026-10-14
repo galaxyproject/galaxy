@@ -4,246 +4,242 @@ related to running and queued jobs.
 
 import logging
 import os
-import re
 import shutil
+import tempfile
+import time
+from typing import Annotated
+from urllib.parse import parse_qsl
+
+import anyio
+from fastapi import (
+    Path,
+    Query,
+    Request,
+)
+from python_multipart import create_form_parser
+from python_multipart.exceptions import FormParserError
+from python_multipart.multipart import (
+    Field,
+    File,
+    FormParser,
+)
+from starlette.requests import ClientDisconnect
 
 from galaxy import (
     exceptions,
     util,
 )
-from galaxy.job_execution.setup import JobWorkingDirectory
-from galaxy.managers.context import ProvidesAppContext
-from galaxy.model import (
-    Job,
-    JobToOutputDatasetAssociation,
-    JobToOutputLibraryDatasetAssociation,
+from galaxy.managers.job_files import JobFilesManager
+from galaxy.webapps.base.api import (
+    GalaxyFileResponse,
+    release_request_sessions,
 )
-from galaxy.structured_app import MinimalManagerApp
-from galaxy.web import (
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless,
+from . import (
+    depends,
+    Router,
 )
-from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["jobs"])
 
-class JobFilesAPIController(BaseGalaxyAPIController):
-    """This job files controller allows remote job running mechanisms to
-    read and modify the current state of files for queued and running jobs.
-    It is certainly not meant to represent part of Galaxy's stable, user
-    facing API.
+UPLOAD_STAGING_PREFIX = ".job_files_upload_"
+PARSER_WRITE_SIZE = 256 * 1024
+RECHECK_BODY_SIZE = 1024 * 1024
+RECHECK_SECONDS = 1.0
 
-    Furthermore, even if a user key corresponds to the user running the job,
-    it should not be accepted for authorization - this API allows access to
-    low-level unfiltered files and such authorization would break Galaxy's
-    security model for tool execution.
-    """
+JOB_FILES_DESCRIPTION = (
+    "Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, "
+    "authorized by `job_key` - not part of Galaxy's stable, user facing API."
+)
 
-    @expose_api_raw_anonymous_and_sessionless
-    def index(self, trans: ProvidesAppContext, job_id: str, **kwargs):
-        """
-        GET /api/jobs/{job_id}/files
+JobIdPathParam = Annotated[str, Path(description="Encoded id string of the job.")]
+FilePathQueryParam = Annotated[str | None, Query(description="Path to file.")]
+JobKeyQueryParam = Annotated[
+    str | None,
+    Query(description="A key used to authenticate this request as acting on behalf of a job runner for the job."),
+]
 
-        Get a file required to staging a job (proper datasets, extra inputs,
-        task-split inputs, working directory files).
+UPLOAD_FIELD_PROPERTIES = {
+    "path": {"type": "string", "description": "Path to file to create, if not given as a query parameter."},
+    "job_key": {"type": "string", "description": "Job key, if not given as a query parameter."},
+    "session_id": {"type": "string", "description": "Completed job files TUS upload to use as contents."},
+    "__file_path": {"type": "string", "description": "File stored by nginx_upload_module to use as contents."},
+}
+UPLOAD_FIELDS_SCHEMA = {"type": "object", "properties": UPLOAD_FIELD_PROPERTIES}
+UPLOAD_FORM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        **UPLOAD_FIELD_PROPERTIES,
+        "file": {"type": "string", "format": "binary", "description": "Contents of the file to create."},
+        "__file": {"type": "string", "format": "binary", "description": "Alias of `file`."},
+    },
+}
 
-        :type   job_id: str
-        :param  job_id: encoded id string of the job
-        :type   path: str
-        :param  path: Path to file.
-        :type   job_key: str
-        :param  job_key: A key used to authenticate this request as acting on
-                         behalf or a job runner for the specified job.
 
-        ..note:
-            This API method is intended only for consumption by job runners,
-            not end users.
+@router.cbv
+class FastAPIJobFiles:
+    manager: JobFilesManager = depends(JobFilesManager)
 
-        :rtype:     binary
-        :returns:   contents of file
-        """
-        job = self.__authorize_job_access(trans, job_id, **kwargs)
-        path = kwargs["path"]
+    @router.get(
+        "/api/jobs/{job_id}/files",
+        summary="Get a file required to stage a job.",
+        description=JOB_FILES_DESCRIPTION,
+        response_class=GalaxyFileResponse,
+        public=True,
+    )
+    @router.head("/api/jobs/{job_id}/files", include_in_schema=False)
+    def index(
+        self,
+        job_id: JobIdPathParam,
+        path: FilePathQueryParam = None,
+        job_key: JobKeyQueryParam = None,
+    ) -> GalaxyFileResponse:
+        return GalaxyFileResponse(self.manager.readable_path(job_id, path, job_key))
+
+    @router.post(
+        "/api/jobs/{job_id}/files",
+        summary="Populate an output or working directory file of a job.",
+        description=JOB_FILES_DESCRIPTION,
+        public=True,
+        openapi_extra={
+            "requestBody": {
+                "content": {
+                    "multipart/form-data": {"schema": UPLOAD_FORM_SCHEMA},
+                    "application/x-www-form-urlencoded": {"schema": UPLOAD_FIELDS_SCHEMA},
+                }
+            }
+        },
+    )
+    async def create(
+        self,
+        request: Request,
+        job_id: JobIdPathParam,
+        path: FilePathQueryParam = None,
+        job_key: JobKeyQueryParam = None,
+    ) -> dict[str, str]:
+        params = dict(request.query_params)
+        query_auth = path is not None and job_key is not None
+        staging_dir = await anyio.to_thread.run_sync(self._start_upload, job_id, path, job_key, query_auth)
+        started = time.monotonic()
         try:
-            return open(path, "rb")
-        except FileNotFoundError:
-            # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
-            # Here we discriminate that case from truly unexpected bugs.
-            # Not failing the job here, this is or should be handled by pulsar.
-            match = re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path))
-            if match:
-                # This looks like a galaxy dataset, check if any job input has been deleted.
-                if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
-                    raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
-            else:
-                raise
-
-    @expose_api_anonymous_and_sessionless
-    def create(self, trans: ProvidesAppContext, job_id: str, payload, **kwargs):
-        """
-        create( self, trans, job_id, payload, **kwargs )
-        * POST /api/jobs/{job_id}/files
-            Populate an output file (formal dataset, task split part, working
-            directory file (such as those related to metadata)). This should be
-            a multipart post with a 'file' parameter containing the contents of
-            the actual file to create.
-
-        :type   job_id: str
-        :param  job_id: encoded id string of the job
-        :type   payload:    dict
-        :param  payload:    dictionary structure containing::
-            'job_key'   = Key authenticating
-            'path'      = Path to file to create.
-
-        ..note:
-            This API method is intended only for consumption by job runners,
-            not end users.
-
-        :rtype:     dict
-        :returns:   an okay message
-        """
-        job = self.__authorize_job_access(trans, job_id, **payload)
-        path = payload.get("path")
-        if not path:
-            raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
-        self.__check_job_can_write_to_path(trans, job, path)
-
-        # Is this writing an unneeded file? Should this just copy in Python?
-        if "__file_path" in payload:
-            file_path = os.path.abspath(payload["__file_path"])
-            upload_store = trans.app.config.nginx_upload_job_files_store
-            if not upload_store:
-                raise exceptions.ConfigDoesNotAllowException(
-                    "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
-                )
-            if not util.in_directory(file_path, upload_store):
-                raise exceptions.RequestParameterInvalidException(
-                    "Filename provided by nginx is not in the configured upload directory."
-                )
-            input_file = open(file_path)
-        elif "session_id" in payload:
-            # code stolen from basic.py
-            session_id = payload["session_id"]
-            upload_store = (
-                trans.app.config.tus_upload_store_job_files
-                or trans.app.config.tus_upload_store
-                or trans.app.config.new_file_path
-            )
-            if re.match(r"^[\w-]+$", session_id) is None:
-                raise ValueError("Invalid session id format.")
-            local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-            input_file = open(local_filename)
-        else:
-            input_file = payload.get("file", payload.get("__file", None)).file
-        target_dir = os.path.dirname(path)
-        util.safe_makedirs(target_dir)
-        try:
-            if os.path.exists(path) and (path.endswith("tool_stdout") or path.endswith("tool_stderr")):
-                with open(path, "ab") as destination:
-                    shutil.copyfileobj(open(input_file.name, "rb"), destination)
-            else:
-                shutil.move(input_file.name, path)
-        finally:
             try:
-                input_file.close()
-            except OSError:
-                # Fails to close file if not using nginx upload because the
-                # tempfile has moved and Python wants to delete it.
-                pass
+                fields, uploads = await _parse_body(request, staging_dir)
+            except ClientDisconnect:
+                # Nobody is left to read the response; a 4xx keeps the disconnect out of the error logs.
+                raise exceptions.RequestParameterInvalidException("Client disconnected during job files upload.")
+            for key, value in fields.items():
+                params.setdefault(key, value)
+            # A long upload can outlive the job; a small one arrives right after the first check.
+            recheck = query_auth and _long_upload(request, time.monotonic() - started)
+            await anyio.to_thread.run_sync(self._finish_upload, job_id, params, uploads, query_auth, recheck)
+        finally:
+            await anyio.to_thread.run_sync(_remove_staging_dir, staging_dir)
         return {"message": "ok"}
 
-    @expose_api_anonymous_and_sessionless
-    def tus_patch(self, trans: ProvidesAppContext, **kwds):
-        """
-        Exposed as PATCH /api/job_files/resumable_upload.
+    def _start_upload(self, job_id: str, path: str | None, job_key: str | None, query_auth: bool) -> str:
+        """Return a new directory to stage the upload in, authorizing first when the query allows it."""
+        if query_auth:
+            # Authorize before reading the body so the upload is staged on the target's filesystem and renamed.
+            staging_parent = self.manager.authorize_write(job_id, path, job_key)
+            util.safe_makedirs(staging_parent)
+        else:
+            staging_parent = self.manager.upload_dir
+        release_request_sessions()
+        return tempfile.mkdtemp(prefix=UPLOAD_STAGING_PREFIX, dir=staging_parent)
 
-        I think based on the docs, a separate tusd server is needed for job files if
-        also hosting one for use facing uploads.
+    def _finish_upload(
+        self, job_id: str, params: dict[str, str], uploads: dict[str, str], query_auth: bool, recheck: bool
+    ) -> None:
+        path = params.get("path")
+        if not query_auth:
+            self.manager.authorize_write(job_id, path, params.get("job_key"))
+        elif recheck:
+            # The path was authorized before the body was read; only the job can have finished since.
+            self.manager.assert_job_active(job_id)
+        assert path
+        if "__file_path" in params:
+            source_path = self.manager.nginx_upload_path(params["__file_path"])
+        elif "session_id" in params:
+            source_path = self.manager.tus_upload_path(params["session_id"])
+        elif upload := uploads.get("file", uploads.get("__file")):
+            source_path = upload
+        else:
+            raise exceptions.RequestParameterMissingException("No file uploaded.")
+        self.manager.write(path, source_path)
 
-        Setting up tusd for job files should just look like (I think):
+    @router.post("/api/job_files/tus_hooks", include_in_schema=False)
+    def tus_hooks(self) -> None:
+        """Accept every hook from a job files tusd server whose ``-hooks-http`` points here.
 
-        tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp
-
-        See more discussion of checking upload access, but we shouldn't need the
-        API key and session stuff the user upload tusd server should be configured with.
-
-        Also shouldn't need a hooks endpoint for this reason but if you want to add one
-        the target CLI entry would be -hooks-http=<galaxy_url>/api/job_files/tus_hooks
-        and the action is featured below.
-
-        I would love to check the job state with __authorize_job_access on the first
-        POST but it seems like TusMiddleware doesn't default to coming in here for that
-        initial POST the way it does for the subsequent PATCHes. Ultimately, the upload
-        is still authorized before the write done with POST /api/jobs/<job_id>/files
-        so I think there is no route here to mess with user data - the worst of the security
-        issues that can be caused is filling up the sever with needless files that aren't
-        acted on. Since this endpoint is not meant for public consumption - all the job
-        files stuff and the TUS server should be blocked to public IPs anyway and restricted
-        to your Pulsar servers and similar targeting could be accomplished with a user account
-        and the user facing upload endpoints.
+        Deployments configure this (e.g. with Gravity's ``hooks_http``). Uploads are authorized
+        when ``POST /api/jobs/{job_id}/files`` consumes them by ``session_id``.
         """
         return None
 
-    @expose_api_anonymous_and_sessionless
-    def tus_hooks(self, trans: ProvidesAppContext, **kwds):
-        """No-op but if hook specified the way we do for user upload it would hit this action.
 
-        Exposed as PATCH /api/job_files/tus_hooks and documented in the docstring for
-        tus_patch.
-        """
-        pass
+def _remove_staging_dir(staging_dir: str) -> None:
+    try:
+        shutil.rmtree(staging_dir)
+    except OSError:
+        log.warning("Failed to remove job files upload staging directory %s", staging_dir, exc_info=True)
 
-    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs):
-        for key in ["path", "job_key"]:
-            if key not in kwargs:
-                error_message = f"Job files action requires a valid '{key}'."
-                raise exceptions.ObjectAttributeMissingException(error_message)
 
-        job_id = trans.security.decode_id(encoded_job_id)
-        job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(str(kwargs["job_key"]), job_key):
-            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
+def _long_upload(request: Request, elapsed: float) -> bool:
+    content_length = request.headers.get("content-length")
+    return content_length is None or int(content_length) >= RECHECK_BODY_SIZE or elapsed >= RECHECK_SECONDS
 
-        # Verify job is active. Don't update the contents of complete jobs.
-        job = trans.sa_session.get(Job, job_id)
-        assert job
-        if job.state not in Job.non_ready_states:
-            error_message = "Attempting to read or modify the files of a job that has already completed."
-            raise exceptions.ItemAccessibilityException(error_message)
-        return job
 
-    def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str):
-        """Verify an idealized job runner should actually be able to write to
-        the specified path - it must be a dataset output, a dataset "extra
-        file", or a some place in the working directory of this job.
+def _finalize_parser(parser: FormParser, remaining: bytes, files: list[File]) -> None:
+    if remaining:
+        parser.write(remaining)
+    parser.finalize()
+    for file in files:
+        if file.in_memory:
+            file.flush_to_disk()
 
-        Would like similar checks for reading the unstructured nature of loc
-        files make this very difficult. (See abandoned work here
-        https://gist.github.com/jmchilton/9103619.)
-        """
-        in_work_dir = self.__in_working_directory(job, path, trans.app)
-        if not in_work_dir and not self.__is_output_dataset_path(job, path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
-    def __is_output_dataset_path(self, job: Job, path: str):
-        """Check if is an output path for this job or a file in the an
-        output's extra files path.
-        """
-        all_output_assocs: list[JobToOutputDatasetAssociation | JobToOutputLibraryDatasetAssociation] = [
-            *job.output_datasets,
-            *job.output_library_datasets,
-        ]
-        for assoc in all_output_assocs:
-            dataset = assoc.dataset
-            if not dataset:
-                continue
-            if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
-                return True
-            elif util.in_directory(path, dataset.extra_files_path):
-                return True
-        return False
+async def _parse_body(request: Request, upload_dir: str) -> tuple[dict[str, str], dict[str, str]]:
+    """Return form fields and the named files in ``upload_dir`` that file parts were streamed to, by part name."""
+    content_type = request.headers.get("content-type")
+    if not content_type:
+        return {}, {}
+    if content_type.startswith("application/x-www-form-urlencoded"):
+        body = await request.body()
+        return dict(parse_qsl(body.decode("latin-1"), keep_blank_values=True)), {}
 
-    def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
-        working_directory = JobWorkingDirectory(job, app.object_store).resolve()
-        return util.in_directory(path, working_directory)
+    fields: dict[str, str] = {}
+    files: list[File] = []
+
+    def on_field(field: Field) -> None:
+        if field.field_name is not None:
+            fields[field.field_name.decode()] = (field.value or b"").decode()
+
+    try:
+        parser = create_form_parser(
+            {"Content-Type": content_type.encode("latin-1")},
+            on_field,
+            files.append,
+            config={"UPLOAD_DIR": upload_dir, "UPLOAD_DELETE_TMP": False, "MAX_MEMORY_FILE_SIZE": 0},
+        )
+        # Hand the parser at least PARSER_WRITE_SIZE per threadpool call; a small upload takes a single call.
+        pending: list[bytes] = []
+        pending_size = 0
+        async for chunk in request.stream():
+            pending.append(chunk)
+            pending_size += len(chunk)
+            if pending_size >= PARSER_WRITE_SIZE:
+                await anyio.to_thread.run_sync(parser.write, b"".join(pending))
+                pending, pending_size = [], 0
+        await anyio.to_thread.run_sync(_finalize_parser, parser, b"".join(pending), files)
+        uploads = {
+            file.field_name.decode(): os.fsdecode(file.actual_file_name)
+            for file in files
+            if file.field_name is not None and file.actual_file_name is not None
+        }
+    except (FormParserError, ValueError) as e:
+        raise exceptions.RequestParameterInvalidException(f"Failed to parse job files upload: {e}")
+    finally:
+        for file in files:
+            file.close()
+    return fields, uploads

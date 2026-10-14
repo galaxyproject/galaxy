@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { ShowFullJobResponse } from "@/api/jobs";
@@ -9,7 +10,6 @@ import { useJobStore } from "@/stores/jobStore";
 
 import JobMetrics from "./JobMetrics.vue";
 import JobParameters from "./JobParameters.vue";
-import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 
 // Translates only what a test asks for, so the other assertions see the source strings.
 const translations = vi.hoisted(() => ({}) as Record<string, string>);
@@ -28,6 +28,7 @@ let wrapper: VueWrapper | undefined;
 afterEach(() => {
     wrapper?.unmount();
     wrapper = undefined;
+    document.body.innerHTML = "";
     Object.keys(translations).forEach((text) => delete translations[text]);
 });
 
@@ -35,12 +36,13 @@ describe.each([
     { name: "JobMetrics", component: JobMetrics },
     { name: "JobParameters", component: JobParameters },
 ])("$name", ({ component }) => {
-    function mountElement(toolId?: string) {
+    async function mountElement(toolId?: string) {
         const pinia = createTestingPinia({ createSpy: vi.fn });
         // The testing store stubs fetchJob, so stand in for the job it would have loaded.
         // @ts-expect-error: getters are only writable on a testing store
         useJobStore(pinia).getJob = () => (toolId ? ({ tool_id: toolId } as ShowFullJobResponse) : null);
         wrapper = mount(component as object, {
+            attachTo: document.body,
             props: { jobId: "job_id", title: "Job" },
             global: {
                 ...withPlugins(localVue, pinia),
@@ -51,34 +53,59 @@ describe.each([
                     JobMetrics: true,
                     JobParameters: true,
                     JobSelection: true,
-                    ToolLinkPopover: true,
+                    // Fetches the tool's name, which these tests don't need.
+                    ToolLink: true,
                 },
             },
         });
+        // The popover binds to its button on the tick after mounting.
+        await nextTick();
+        await nextTick();
         return wrapper;
     }
 
-    it("anchors the tool popover to a named button so keyboard users can open it", () => {
-        const element = mountElement("cat1");
+    it("renders the tool details button inline after the title, controlling the tool dialog", async () => {
+        const element = await mountElement("cat1");
 
-        const button = element.find("button[aria-label='Tool details']");
-        const popover = element.findComponent(ToolLinkPopover);
-        const target = (popover.props("target") as () => { $el?: Element })();
+        const title = element.find(".card-title").element;
+        const button = element.find("button[aria-label='Tool details']").element as HTMLButtonElement;
+        const dialog = document.body.querySelector(".popover[role='dialog']");
 
-        expect(button.exists()).toBe(true);
-        expect(target.$el ?? target).toBe(button.element);
-        expect(popover.props("interactive")).toBe(true);
+        expect(button.previousElementSibling?.outerHTML).toBe("<b>Job</b>");
+        expect(button.parentElement).toBe(title);
+        expect(button.getAttribute("type")).toBe("button");
+        expect(button.classList.value).toBe("g-link g-dark g-thin");
+        expect(button.querySelector("svg")?.classList.value).toBe("svg-inline--fa fa-info-circle fa-sm");
+        expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+        expect(button.getAttribute("aria-expanded")).toBe("false");
+        expect(button.getAttribute("aria-controls")).toBe(dialog?.id);
+        expect(dialog?.getAttribute("aria-label")).toBe("Tool");
+        expect(button.nextElementSibling?.className).toBe("g-popover-host");
+        expect(button.nextElementSibling?.nextElementSibling).toBeNull();
     });
 
-    it("localizes the tool details button's accessible name", () => {
+    it("opens the tool dialog when the button gets keyboard focus", async () => {
+        const element = await mountElement("cat1");
+        const button = element.find("button[aria-label='Tool details']").element as HTMLButtonElement;
+
+        button.focus();
+        await nextTick();
+
+        expect(button.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("localizes the tool details button's accessible name", async () => {
         translations["Tool details"] = "Werkzeugdetails";
 
-        expect(mountElement("cat1").find("button[aria-label='Werkzeugdetails']").exists()).toBe(true);
+        const element = await mountElement("cat1");
+
+        expect(element.find("button[aria-label='Werkzeugdetails']").exists()).toBe(true);
     });
 
-    it("shows no tool details button until the job's tool is known", () => {
-        const element = mountElement();
+    it("shows no tool details button or dialog until the job's tool is known", async () => {
+        const element = await mountElement();
 
         expect(element.find("button[aria-label='Tool details']").exists()).toBe(false);
+        expect(document.body.querySelector(".popover")).toBeNull();
     });
 });

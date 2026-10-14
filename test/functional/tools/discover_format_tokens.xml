@@ -1,0 +1,34 @@
+<tool id="discover_format_tokens" name="discover_format_tokens" version="0.1.0">
+    <command><![CDATA[
+mkdir sniffed inferred &&
+printf '>seq1\nACGTACGT\n' > sniffed/1.notadatatype &&
+printf 'hello\n' > sniffed/2.notadatatype &&
+printf 'hello\n' | gzip > sniffed/3.notadatatype &&
+printf '>seq1\nACGTACGT\n' > inferred/1.fasta &&
+printf 'chr1\t10\t20\n' > inferred/2.bed &&
+printf 'unknown\n' > inferred/3.notadatatype
+]]></command>
+    <inputs />
+    <outputs>
+        <collection name="sniffed" type="list">
+            <discover_datasets directory="sniffed" pattern="__name__" format="_sniff_" />
+        </collection>
+        <collection name="inferred" type="list">
+            <discover_datasets directory="inferred" pattern="__name__" format="_infer_from_file_name_" />
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <output_collection name="sniffed" type="list" count="3">
+                <element name="1.notadatatype" ftype="fasta" />
+                <element name="2.notadatatype" ftype="txt" />
+                <element name="3.notadatatype" ftype="binary" />
+            </output_collection>
+            <output_collection name="inferred" type="list" count="3">
+                <element name="1.fasta" ftype="fasta" />
+                <element name="2.bed" ftype="bed" />
+                <element name="3.notadatatype" ftype="data" />
+            </output_collection>
+        </test>
+    </tests>
+</tool>

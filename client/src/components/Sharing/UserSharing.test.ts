@@ -115,6 +115,29 @@ describe("UserSharing.vue", () => {
         expect(wrapper.emitted("share")?.[0]).toEqual([[], "make_accessible_to_shared"]);
     });
 
+    it("emits share with the permission option picked in the select", async () => {
+        const item = makeItem({
+            extra: {
+                can_change: [{ id: "dataset_id", name: "A Dataset" }],
+                cannot_change: [],
+                can_share: false,
+                accessible_count: 0,
+            },
+        });
+
+        const wrapper = await mountComponent(item);
+        const select = wrapper.find('[data-description="sharing permissions change required how"]');
+
+        expect(select.element.tagName).toBe("SELECT");
+        expect((select.element as HTMLSelectElement).value).toBe("make_accessible_to_shared");
+
+        await select.setValue("make_public");
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        expect(wrapper.emitted("share")?.[0]).toEqual([[], "make_public"]);
+    });
+
     it("closes the permissions modal and emits cancel when the modal is cancelled", async () => {
         const item = makeItem({
             extra: {

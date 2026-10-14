@@ -13,6 +13,7 @@ from galaxy.files import (
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.model.store import TarModelExportStore
+from galaxy.util import galaxy_directory
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
@@ -53,7 +54,7 @@ def export_destination(request, tmp_path, monkeypatch):
 def test_export_cli_returns_readable_uri(export_destination, tmp_path, monkeypatch):
     file_sources, destination, expected, context = export_destination
     # This is a standalone executable; do not initialize galaxy.tools to load it.
-    script = Path(__file__).resolve().parents[3] / "lib/galaxy/tools/imp_exp/export_history.py"
+    script = Path(galaxy_directory()) / "packages/app/src/galaxy/tools/imp_exp/export_history.py"
     write_to_destination = runpy.run_path(str(script))["_write_to_destination"]
     monkeypatch.setitem(write_to_destination.__globals__, "get_file_sources", lambda _: file_sources)
     archive = tmp_path / "input.tgz"

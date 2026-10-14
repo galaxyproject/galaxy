@@ -19,6 +19,8 @@ while read -r path; do
     case "$path" in
         # Nested fixture links pointing at shared test data.
         */test/*|*/test-data/*) continue ;;
+        # Mercurial fixture metadata must preserve its tracked probe symlink.
+        */tests/tool_shed/data/toolshed_community_files/*/.hg/wcache/checklink) continue ;;
         # Retained chains documented in doc/source/dev/workspace-ownership.md.
         */tools/util/maf_utilities.py|\
         */tool_util/unittest_utils/functional_tools|\

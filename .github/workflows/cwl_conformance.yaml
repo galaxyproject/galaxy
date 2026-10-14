@@ -50,7 +50,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --coverage --skip_flakey_fails -cwl lib/galaxy_test/api/cwl -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}"
+        run: ./run_tests.sh --coverage --skip_flakey_fails -cwl packages/test_api/src/galaxy_test/api/cwl -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}"
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
         with:

@@ -1,4 +1,4 @@
-# GALAXY_CONFIG_OVERRIDE_STATSD_PREFIX="galaxy" GALAXY_CONFIG_OVERRIDE_STATSD_HOST="localhost" GALAXY_CONFIG_OVERRIDE_STATSD_INFLUXDB="true" GALAXY_CONFIG_OVERRIDE_DATABASE_LOG_QUERY_COUNTS="true" GALAXY_CONFIG_OVERRIDE_ENABLE_PER_REQUEST_SQL_DEBUGGING="true" GALAXY_CONFIG_OVERRIDE_SLOW_QUERY_LOG_THRESHOLD=".05" ./run_tests.sh --structured_data_report_file 'test.json' --api  lib/galaxy_test/api/test_configuration.py
+# GALAXY_CONFIG_OVERRIDE_STATSD_PREFIX="galaxy" GALAXY_CONFIG_OVERRIDE_STATSD_HOST="localhost" GALAXY_CONFIG_OVERRIDE_STATSD_INFLUXDB="true" GALAXY_CONFIG_OVERRIDE_DATABASE_LOG_QUERY_COUNTS="true" GALAXY_CONFIG_OVERRIDE_ENABLE_PER_REQUEST_SQL_DEBUGGING="true" GALAXY_CONFIG_OVERRIDE_SLOW_QUERY_LOG_THRESHOLD=".05" ./run_tests.sh --structured_data_report_file 'test.json' --api  packages/test_api/src/galaxy_test/api/test_configuration.py
 import os
 import uuid
 from urllib.parse import urlencode
@@ -9,7 +9,7 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
-from galaxy.util.unittest_utils.test_http_server import test_http_server  # noqa: F401
+from galaxy.util.unittest_utils.test_http_server import test_http_server as test_http_server  # noqa: F401
 from galaxy.web import statsd_client as statsd
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver

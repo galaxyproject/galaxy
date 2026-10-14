@@ -4,7 +4,7 @@
 Check steps (equivalent manual procedure):
   1. Read the intended version from the canonical version file,
      ``packages/util/src/galaxy/version/__init__.py`` (fallback:
-     ``lib/galaxy/version/__init__.py`` during migration).
+     ``packages/util/src/galaxy/version/__init__.py`` during migration).
   2. For each ``packages/*/pyproject.toml``, compare its ``version`` field
      against the intended version and report drift.
   3. For each built wheel in ``packages/*/dist/*.whl`` (if any), read the
@@ -36,12 +36,12 @@ def version_file(galaxy_root):
     # Canonical location first, legacy lib/ fallback during migration.
     for rel in (
         os.path.join("packages", "util", "src", "galaxy", "version", "__init__.py"),
-        os.path.join("lib", "galaxy", "version", "__init__.py"),
+        os.path.join("packages", "util", "src", "galaxy", "version", "__init__.py"),
     ):
         path = os.path.join(galaxy_root, rel)
         if os.path.exists(path):
             return path
-    raise FileNotFoundError("No galaxy version file found under %s" % galaxy_root)
+    raise FileNotFoundError(f"No galaxy version file found under {galaxy_root}")
 
 
 def read_root_version(path):
@@ -49,7 +49,7 @@ def read_root_version(path):
         contents = f.read()
     major = VERSION_MAJOR_RE.search(contents).group(1)
     minor = VERSION_MINOR_RE.search(contents).group(1)
-    return major + (".%s" % minor if minor else "")
+    return major + (f".{minor}" if minor else "")
 
 
 def read_project_version(pyproject_path):
@@ -82,7 +82,7 @@ def main(argv=None):
     galaxy_root = args.galaxy_root
     vfile = version_file(galaxy_root)
     intended = read_root_version(vfile)
-    print("intended version: %s (from %s)" % (intended, os.path.relpath(vfile, galaxy_root)))
+    print(f"intended version: {intended} (from {os.path.relpath(vfile, galaxy_root)})")
 
     drift = []
     for pyproject in sorted(glob.glob(os.path.join(galaxy_root, "packages", "*", "pyproject.toml"))):
@@ -93,17 +93,17 @@ def main(argv=None):
         status = "ok" if manifest_version == intended else "DRIFT"
         if manifest_version != intended:
             drift.append((package, "manifest", manifest_version, intended))
-        print("package %-20s manifest=%-12s intended=%-12s %s" % (package, manifest_version, intended, status))
+        print(f"package {package:<20} manifest={manifest_version:<12} intended={intended:<12} {status}")
         for wheel, wheel_version in read_wheel_versions(os.path.join(os.path.dirname(pyproject), "dist")).items():
             wstatus = "ok" if wheel_version == manifest_version else "DRIFT"
             if wheel_version != manifest_version:
                 drift.append((package, wheel, wheel_version, manifest_version))
-            print("    wheel %-40s metadata=%-12s %s" % (wheel, wheel_version, wstatus))
+            print(f"    wheel {wheel:<40} metadata={wheel_version:<12} {wstatus}")
 
     if drift:
-        print("\ndrift found in %d location(s):" % len(drift))
+        print(f"\ndrift found in {len(drift)} location(s):")
         for package, where, found, expected in drift:
-            print("  %s [%s]: found %s, expected %s" % (package, where, found, expected))
+            print(f"  {package} [{where}]: found {found}, expected {expected}")
         return 2 if args.strict else 0
     print("\nno drift found")
     return 0

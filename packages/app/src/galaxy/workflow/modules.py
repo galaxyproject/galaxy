@@ -1354,7 +1354,11 @@ class InputParameterModule(WorkflowModule):
         # The default value field is shaped by the definition being edited (e.g. ``multiple``),
         # so recover that definition before validating against it.
         super().populate_state_from_tool_form(incoming, {})
-        return super().populate_state_from_tool_form(incoming, errors)
+        state = super().populate_state_from_tool_form(incoming, errors)
+        parameter_def = self._parse_state_into_dict()
+        if isinstance(parameter_def.get("default"), list) and not parameter_def.get("multiple"):
+            errors.setdefault("parameter_definition|optional|specify_default|default", "a single value is required")
+        return state
 
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
@@ -1553,7 +1557,7 @@ class InputParameterModule(WorkflowModule):
                 restrictions_cond.cases = restrictions_cond_cases
                 when_this_type.inputs["restrictions"] = restrictions_cond
 
-            if param_type == "integer":
+            if param_type in ("integer", "float"):
                 specify_multiple = BooleanToolParameter(
                     None,
                     dict(
@@ -1564,6 +1568,7 @@ class InputParameterModule(WorkflowModule):
                     ),
                 )
                 when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
+            if param_type == "integer":
                 when_this_type.inputs["min"] = IntegerToolParameter(
                     None,
                     {
@@ -1649,11 +1654,14 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
+            if isinstance(default_value, list):
+                default_values = [str(value) for value in default_value]
+            else:
+                default_values = [default_value] if default_value else []
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
-                    {"label": o[0], "value": o[1], "selected": bool(default_value and o[1] == default_value)}
-                    for o in static_options[0]
+                    {"label": o[0], "value": o[1], "selected": o[1] in default_values} for o in static_options[0]
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
@@ -1666,7 +1674,7 @@ class InputParameterModule(WorkflowModule):
                     {
                         "label": ", ".join(labels),
                         "value": value,
-                        "selected": bool(default_value and value == default_value),
+                        "selected": value in default_values,
                     }
                     for value, labels in collapsed_labels.items()
                 ]
@@ -2947,7 +2955,8 @@ class ToolModule(WorkflowModule):
                 elif (is_data and connections is None) or prefixed_name in input_connections_by_name:
                     return ConnectedValue()
 
-            visit_input_values(self.tool.inputs, self.state.inputs, callback)
+            # Connected selectors still need a concrete case when saving tool state.
+            visit_input_values(self.tool.inputs, self.state.inputs, callback, replace_conditional_test_values=False)
         else:
             raise ToolMissingException(f"Tool {self.tool_id} missing. Cannot add dummy datasets.", tool_id=self.tool_id)
 

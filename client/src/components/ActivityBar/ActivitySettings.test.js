@@ -1,14 +1,24 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import mountTarget from "./ActivitySettings.vue";
+
+const mockConfig = ref({});
+
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
+        config: mockConfig,
+        isConfigLoaded: true,
+    })),
+}));
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";
@@ -28,6 +38,10 @@ function testActivity(id, newOptions = {}) {
     return { ...defaultOptions, ...newOptions };
 }
 
+function activityTitle(id) {
+    return defaultActivities.find((activity) => activity.id === id).title;
+}
+
 async function testSearch(wrapper, query, result) {
     await wrapper.setProps({ query });
     const filtered = wrapper.findAll(activityItemSelector);
@@ -39,6 +53,7 @@ describe("ActivitySettings", () => {
     let wrapper;
 
     beforeEach(async () => {
+        mockConfig.value = { interactivetools_enable: true, llm_api_configured: true };
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         // Mock the response of the API call
         server.use(
@@ -143,5 +158,86 @@ describe("ActivitySettings", () => {
         await testSearch(wrapper, "else", 1);
         await testSearch(wrapper, "someTHING", 3);
         await testSearch(wrapper, "odd", 1);
+    });
+
+    describe("built-in activity availability", () => {
+        function renderedTitles(settings) {
+            return settings.findAll(`${activityItemSelector} .font-weight-bold`).map((title) => title.text());
+        }
+
+        async function mountSettings(config, { canUseUnprivilegedTools }) {
+            mockConfig.value = config;
+            const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            useUnprivilegedToolStore().canUseUnprivilegedTools = canUseUnprivilegedTools;
+            const store = useActivityStore("test-activity-bar-gates");
+            const settings = mount(mountTarget, {
+                global: { ...getLocalVue(), stubs: { FontAwesomeIcon: { template: "<div></div>" } } },
+                pinia,
+                props: { query: "", activityBarId: "test-activity-bar-gates" },
+            });
+            await store.sync();
+            await flushPromises();
+            return { settings, store };
+        }
+
+        it("lists only optional activities when user-defined tools are permitted", async () => {
+            const { settings } = await mountSettings(
+                { interactivetools_enable: true, llm_api_configured: true },
+                { canUseUnprivilegedTools: true },
+            );
+            const titles = renderedTitles(settings);
+            expect(titles).toContain(activityTitle("user-defined-tools"));
+            expect(titles).not.toContain(activityTitle("upload"));
+            expect(titles).not.toContain(activityTitle("tools"));
+        });
+
+        it("updates config-gated activities when configuration arrives without changing saved visibility", async () => {
+            const { settings, store } = await mountSettings(null, { canUseUnprivilegedTools: false });
+            const interactiveTools = store.getAll().find((activity) => activity.id === "interactivetools");
+            interactiveTools.visible = false;
+            await nextTick();
+            expect(renderedTitles(settings)).not.toContain(activityTitle("interactivetools"));
+            expect(renderedTitles(settings)).not.toContain(activityTitle("galaxyai"));
+
+            mockConfig.value = { interactivetools_enable: true, llm_api_configured: false };
+            await nextTick();
+            expect(renderedTitles(settings)).toContain(activityTitle("interactivetools"));
+            expect(renderedTitles(settings)).not.toContain(activityTitle("galaxyai"));
+            expect(interactiveTools.visible).toBe(false);
+
+            mockConfig.value = { interactivetools_enable: false, llm_api_configured: true };
+            await nextTick();
+            expect(renderedTitles(settings)).not.toContain(activityTitle("interactivetools"));
+            expect(renderedTitles(settings)).toContain(activityTitle("galaxyai"));
+            expect(interactiveTools.visible).toBe(false);
+        });
+
+        it("updates Custom Tools when permission changes while keeping always-on activities out", async () => {
+            const { settings } = await mountSettings(
+                { interactivetools_enable: true, llm_api_configured: true },
+                { canUseUnprivilegedTools: false },
+            );
+            const permissions = useUnprivilegedToolStore();
+            expect(renderedTitles(settings)).not.toContain(activityTitle("user-defined-tools"));
+
+            permissions.canUseUnprivilegedTools = true;
+            await nextTick();
+            expect(renderedTitles(settings)).toContain(activityTitle("user-defined-tools"));
+            expect(renderedTitles(settings)).not.toContain(activityTitle("upload"));
+            expect(renderedTitles(settings)).not.toContain(activityTitle("tools"));
+
+            permissions.canUseUnprivilegedTools = false;
+            await nextTick();
+            expect(renderedTitles(settings)).not.toContain(activityTitle("user-defined-tools"));
+            expect(renderedTitles(settings)).toContain(activityTitle("histories"));
+        });
+
+        it("hides interactive tools and GalaxyAI where the instance does not offer them", async () => {
+            const { settings } = await mountSettings({}, { canUseUnprivilegedTools: true });
+            const titles = renderedTitles(settings);
+            expect(titles).not.toContain(activityTitle("interactivetools"));
+            expect(titles).not.toContain(activityTitle("galaxyai"));
+            expect(titles).toContain(activityTitle("user-defined-tools"));
+        });
     });
 });

@@ -43,7 +43,6 @@ const props = withDefaults(
     }>(),
     {
         isWatching: false,
-        lastChecked: () => new Date(),
         filterText: "",
         showControls: false,
         hideReload: false,

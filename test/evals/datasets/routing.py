@@ -1,7 +1,7 @@
 """Routing dataset: (query, expected handoff target) for the QueryRouterAgent.
 
 Seeded from ~/.claude/plans/galaxy-agents/test_agents_live.py and the
-TEST_QUERIES in test/unit/app/test_agents.py. Cases marked
+TEST_QUERIES in packages/app/tests/app/test_agents.py. Cases marked
 requires_galaxy=True need a running Galaxy session and are skipped by default.
 """
 

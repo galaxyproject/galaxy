@@ -16,6 +16,7 @@ A multi-hour long video playlist covering these slides can be found at
   api_guidelines
   type_checking
   database_session_management
+  oidc
   build_a_job_runner
   collection_semantics
   finding_and_improving_slow_code

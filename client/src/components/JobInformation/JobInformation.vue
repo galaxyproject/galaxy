@@ -69,7 +69,7 @@ const traceback = computed(() => (job.value && "traceback" in job.value ? (job.v
 
 const metadataDetail = ref<Record<string, string>>({
     exit_code: `Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. https://docs.galaxyproject.org/en/master/dev/schema.html#tool-stdio-exit-code`,
-    error_level: `NO_ERROR = 0</br>LOG = 1</br>QC = 1.1</br>WARNING = 2</br>FATAL = 3</br>FATAL_OOM = 4</br>MAX = 4`,
+    error_level: `NO_ERROR = 0<br>LOG = 1<br>QC = 1.1<br>WARNING = 2<br>FATAL = 3<br>FATAL_OOM = 4<br>MAX = 4`,
 });
 
 function updateJob(newJob: ShowFullJobResponse) {

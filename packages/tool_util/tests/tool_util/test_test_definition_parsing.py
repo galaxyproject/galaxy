@@ -204,7 +204,14 @@ class TestTestParsing(TestCase):
                 "skipping this mode for now - we need a framework test tool that skips names and just specifies arguments"
             )
         tool_path = os.path.join(
-            galaxy_directory(), "lib", "galaxy", "datatypes", "converters", "bigwig_to_wig_converter.xml"
+            galaxy_directory(),
+            "packages",
+            "data",
+            "src",
+            "galaxy",
+            "datatypes",
+            "converters",
+            "bigwig_to_wig_converter.xml",
         )
         self._init_tool_for_path(tool_path)
         test_dicts = self._parse_tests()
@@ -213,7 +220,9 @@ class TestTestParsing(TestCase):
     def test_harmonize_bare_ftype_output_check(self):
         if in_packages():
             skip("tool not available when running from packages")
-        tool_path = os.path.join(galaxy_directory(), "lib", "galaxy", "tools", "harmonize_two_collections_list.xml")
+        tool_path = os.path.join(
+            galaxy_directory(), "packages", "app", "src", "galaxy", "tools", "harmonize_two_collections_list.xml"
+        )
         self._init_tool_for_path(tool_path)
         test_dicts = [td.to_dict() for td in self._parse_tests()]
         for td in test_dicts:

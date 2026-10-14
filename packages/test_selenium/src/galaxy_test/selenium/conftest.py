@@ -2,6 +2,12 @@ import os
 
 import pytest
 
+from galaxy_test.conftest import (  # noqa: F401
+    celery_includes,
+    pytest_configure,
+    pytest_plugins,
+    test_http_server,
+)
 from galaxy_test.selenium.framework import SeleniumTestCase
 
 

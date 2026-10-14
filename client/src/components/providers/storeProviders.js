@@ -4,6 +4,7 @@ import { mapActions, mapState } from "pinia";
 
 import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { prependPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
 
@@ -17,6 +18,7 @@ export const SimpleProviderMixin = {
         return {
             loading: false,
             item: null,
+            error: null,
         };
     },
     watch: {
@@ -50,6 +52,7 @@ export const SimpleProviderMixin = {
             return slotFn({
                 loading: this.loading,
                 item: this.item,
+                error: this.error,
                 save: this.save,
                 result: this.item,
             });
@@ -96,9 +99,14 @@ export const DatatypesProvider = {
         ...mapActions(useDatatypeStore, ["fetchUploadDatatypes"]),
         async load() {
             this.loading = true;
+            this.error = null;
             let datatypes = this.getUploadDatatypes;
             if (datatypes == null || datatypes.length == 0) {
-                await this.fetchUploadDatatypes();
+                try {
+                    await this.fetchUploadDatatypes();
+                } catch (err) {
+                    this.error = errorMessageAsString(err);
+                }
                 datatypes = this.getUploadDatatypes;
             }
             this.item = datatypes;

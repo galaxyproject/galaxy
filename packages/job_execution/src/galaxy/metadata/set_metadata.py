@@ -603,8 +603,6 @@ def set_metadata_portable(
 
 
 def validate_and_load_datatypes_config(datatypes_config):
-    galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
-
     if not os.path.exists(datatypes_config):
         # Hack for Pulsar on usegalaxy.org, drop ASAP.
         datatypes_config = "configs/registry.xml"
@@ -616,7 +614,6 @@ def validate_and_load_datatypes_config(datatypes_config):
         sys.exit(1)
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes(
-        root_dir=galaxy_root,
         config=datatypes_config,
         use_build_sites=False,
         use_converters=False,

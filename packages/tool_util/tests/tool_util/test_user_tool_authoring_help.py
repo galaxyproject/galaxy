@@ -24,7 +24,7 @@ from galaxy.tool_util_models.tool_outputs import USER_TOOL_LABEL_REFERENCE_RE
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
 
 HELP_RELATIVE_PATH = Path("client/src/components/Tool/authoringHelp.yml")
-HELP_TERMS_RELATIVE_PATH = Path("lib/galaxy/schema/terms.yml")
+HELP_TERMS_RELATIVE_PATH = Path("packages/schema/src/galaxy/schema/terms.yml")
 
 
 def _project_root() -> Path:

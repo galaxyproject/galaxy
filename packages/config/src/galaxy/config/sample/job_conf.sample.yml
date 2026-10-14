@@ -591,7 +591,7 @@ execution:
       # Override the command that runs the container monitor. It can be run via
       # the `galaxy-container-monitor` command from the galaxy-job-execution
       # package if you wish to install it somewhere (e.g. on a Pulsar server)
-      #container_monitor_command: python /path/to/galaxy/lib/galaxy_ext/container_monitor/monitor.py
+      #container_monitor_command: python /path/to/galaxy/packages/app/src/galaxy_ext/container_monitor/monitor.py
 
       # The method used by the container monitor script used to determine the
       # node IP. The default if unset is galaxy.util.sockets.get_ip(). Set to
@@ -796,7 +796,7 @@ execution:
       runner: dynamic
       # A destination that represents a method in the dynamic runner.
       # foo should be a Python function defined in any file in
-      # lib/galaxy/jobs/rules.
+      # packages/app/src/galaxy/jobs/rules.
       function: foo
     dtd_destination:
       runner: dynamic

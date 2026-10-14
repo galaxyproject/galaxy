@@ -755,7 +755,7 @@
 
 :Description:
     Monitor a subset of options in the core configuration file (See
-    RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+    RELOADABLE_CONFIG_OPTIONS in packages/config/src/galaxy/config/__init__.py).  If
     changes are found, modified options are automatically reloaded.
     Takes the same values as the 'watch_tools' option.
 :Default: ``false``
@@ -2997,7 +2997,7 @@
     Have Galaxy manage dynamic proxy component for routing requests to
     other services based on Galaxy's session cookie.  It will attempt
     to do this by default though you do need to install node+npm and
-    do an npm install from `lib/galaxy/web/proxy/js`.  It is generally
+    do an npm install from `packages/web_framework/src/galaxy/web/proxy/js`.  It is generally
     more robust to configure this externally, managing it in the same
     way Galaxy itself is managed.  If true, Galaxy will only launch
     the proxy if it is actually going to be used (e.g. for Jupyter).
@@ -4191,11 +4191,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    By default, users' data will be public, but setting this to true
-    will cause it to be private.  Does not affect existing users and
-    data, only ones created after this option is set.  Users may still
-    change their default back to public.
-:Default: ``false``
+    By default, users' data will be private. Setting this to false
+    makes it public. This only affects users created after the option
+    is set; existing users and data are unchanged. Users can change
+    the default for their new histories in their user preferences. To
+    make existing users' data private as well, run the
+    galaxy-make-data-private script.
+:Default: ``true``
 :Type: bool
 
 
@@ -5945,22 +5947,23 @@
     back to global ai_model/ai_api_key settings. All agents are
     enabled by default. Example: inference_services: { default: {
     model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled:
-    false }, jupyterlite: { model: gpt-4o } } Set static_responses to
-    a YAML file path to replace all LLM calls with deterministic
-    responses for testing: inference_services: { static_responses:
-    test/integration/static_agents.yml } Per-agent or default-block
-    ``structured_output_override: true|false`` beats the model
-    capability table -- see ``agent_model_capabilities_file`` for the
-    table's location and contents. Per-agent or default-block
-    ``retries`` sets the pydantic-ai retry budget (tool calls and
-    output validation); it defaults to 3. Raise it if a model
-    intermittently fails to produce conforming output ("Exceeded
-    maximum output retries"). custom_tool's producer keeps a budget of
-    0 because it runs its own reflection loop; a shared ``default``
-    block does not change that -- set ``custom_tool.retries``
-    explicitly to override it. custom_tool also accepts
-    ``quality_critic_enabled`` (default false) to turn on the LLM
-    clarity/idiomaticity critic, and
+    false }, jupyterlite: { model: gpt-4o } } Plugins also accept
+    top_p and timeout, and use max_tokens as an upper limit. Set
+    static_responses to a YAML file path to replace all LLM calls with
+    deterministic responses for testing: inference_services: {
+    static_responses: test/integration/static_agents.yml } Per-agent
+    or default-block ``structured_output_override: true|false`` beats
+    the model capability table -- see
+    ``agent_model_capabilities_file`` for the table's location and
+    contents. Per-agent or default-block ``retries`` sets the
+    pydantic-ai retry budget (tool calls and output validation); it
+    defaults to 3. Raise it if a model intermittently fails to produce
+    conforming output ("Exceeded maximum output retries").
+    custom_tool's producer keeps a budget of 0 because it runs its own
+    reflection loop; a shared ``default`` block does not change that
+    -- set ``custom_tool.retries`` explicitly to override it.
+    custom_tool also accepts ``quality_critic_enabled`` (default
+    false) to turn on the LLM clarity/idiomaticity critic, and
     ``container_recommendation_enabled`` (default false) to resolve
     the produced tool's container to a verified quay.io biocontainer.
     Container recommendation runs a dedicated container critic that

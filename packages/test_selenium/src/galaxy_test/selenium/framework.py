@@ -1312,7 +1312,7 @@ class UsesWorkflowAssertions(NavigatesGalaxyMixin):
         if self._example_workflow_url is None:
             self._example_workflow_url = self.test_http_server.get_url(
                 remote_url=EXAMPLE_WORKFLOW_URL_1,
-                file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
+                file_path="packages/test_base/src/galaxy_test/base/data/test_workflow_1.ga",
                 content_type="application/json",
             )
         return self._example_workflow_url

@@ -3,12 +3,12 @@ import logging
 import re
 
 import yaml
-from galaxy.config import GalaxyAppConfiguration
 from pydantic import (
     BaseModel,
     field_validator,
 )
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigDoesNotAllowException
 
 log = logging.getLogger(__name__)

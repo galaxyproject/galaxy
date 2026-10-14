@@ -1,5 +1,5 @@
 """
-Test lib/galaxy/visualization/plugins/plugin.
+Test packages/app/src/galaxy/visualization/plugins/plugin.
 """
 
 from galaxy.app_unittest_utils import galaxy_mock

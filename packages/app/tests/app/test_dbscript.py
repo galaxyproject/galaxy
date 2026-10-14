@@ -47,13 +47,13 @@ SKIP_REASON = "Slow test: database migration management scripts"
 
 @pytest.fixture(scope="session")
 def migrations_dir() -> Traversable:
-    """[galaxy-root]/lib/galaxy/model/migrations/"""
+    """[galaxy-root]/packages/data/src/galaxy/model/migrations/"""
     return resource_path("galaxy.model", "migrations")
 
 
 @pytest.fixture(scope="session")
 def alembic_env_dir(migrations_dir: Traversable) -> Traversable:
-    """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
+    """[galaxy-root]/packages/data/src/galaxy/model/migrations/alembic/"""
     return migrations_dir / "alembic"
 
 

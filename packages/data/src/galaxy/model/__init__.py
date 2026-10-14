@@ -926,7 +926,7 @@ class User(Base, Dictifiable, RepresentById):
         collection_class=ordering_list("order_index"),
     )
     _preferences: Mapped[dict[str, "UserPreference"]] = relationship(collection_class=attribute_keyed_dict("name"))
-    values: Mapped[list["FormValues"]] = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
+    values: "Mapped[FormValues | None]" = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
     # Add type hint (will this work w/SA?)
     api_keys: Mapped[list["APIKeys"]] = relationship(
         back_populates="user",
@@ -5109,16 +5109,16 @@ class Dataset(Base, StorableObject, Serializable):
         self.purged = True
 
     def get_access_roles(self, security_agent):
-        roles = []
-        for dp in self.actions:
-            if dp.action == security_agent.permitted_actions.DATASET_ACCESS.action:
-                roles.append(dp.role)
-        return roles
+        return self._roles_for_action(security_agent.permitted_actions.DATASET_ACCESS.action)
 
     def get_manage_permissions_roles(self, security_agent):
+        return self._roles_for_action(security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
+
+    def _roles_for_action(self, action):
+        # A dataset can hold several permission rows for the same action and role.
         roles = []
         for dp in self.actions:
-            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == action and dp.role not in roles:
                 roles.append(dp.role)
         return roles
 
@@ -11683,7 +11683,8 @@ class PSAPartial(Base, PartialMixin, RepresentById):
         """
         (Required by social_core.storage.PartialMixin interface)
         """
-        stmt = select(PSAPartial).where(PSAPartial.token == token).limit(1)
+        # Negative steps belong to browser-bound authentication state, not resumable pipelines.
+        stmt = select(PSAPartial).where(PSAPartial.token == token, PSAPartial.next_step >= 0).limit(1)
         return cls.sa_session.scalars(stmt).first()
 
     @classmethod

@@ -7,7 +7,7 @@
 # Each case gives a column_header a user might type and the maps_to target type it
 # must resolve to. Matching ignores case, whitespace, ()-_ and the word "optional".
 #
-# Run by test/unit/data/dataset_collections/test_column_to_target_mapping.py and, via
+# Run by packages/data/tests/data/dataset_collections/test_column_to_target_mapping.py and, via
 # a symlink into client/src/components/Collections/wizard/, by fetchWorkbooks.test.ts.
 
 - doc: "Name (with uppercase) maps directly to the name target type"

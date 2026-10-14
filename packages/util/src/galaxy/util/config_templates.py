@@ -47,13 +47,12 @@ except ImportError:
     StrictUndefined = None  # type: ignore[assignment, misc, unused-ignore]
     UndefinedError = None  # type: ignore[assignment, misc, unused-ignore]
 
-from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
-
 from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
 from galaxy.util import (
     asbool,
     requests,

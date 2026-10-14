@@ -34,8 +34,8 @@ interface Props {
     inModal?: boolean;
     /** Increment to explicitly refresh the pinned-history sort snapshot. */
     pinnedOrderResetKey?: number;
-    filter: string;
-    loading: boolean;
+    filter?: string;
+    loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {

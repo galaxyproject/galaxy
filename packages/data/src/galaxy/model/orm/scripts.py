@@ -14,6 +14,7 @@ from galaxy.model.migrations import (
     TSI,
 )
 from galaxy.model.migrations.scripts import get_configuration
+from galaxy.util import galaxy_root_path
 from galaxy.util.path import get_ext
 from galaxy.util.properties import (
     find_config_file,
@@ -24,7 +25,7 @@ from galaxy.util.script import populate_config_args
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "config", "sample"))
+DEFAULT_CONFIG_DIR = os.path.join(galaxy_root_path, "config")
 DEFAULT_CONFIG_NAMES = ["galaxy", "universe_wsgi"]
 DEFAULT_CONFIG_PREFIX = ""
 DEFAULT_DATABASE = "galaxy"

@@ -217,7 +217,7 @@ Map XML test cases to YAML:
 
 ### 7. Update parameter_specification.yml
 
-Read `test/unit/tool_util/parameter_specification.yml`:
+Read `packages/tool_util/tests/tool_util/parameter_specification.yml`:
 
 - Search for the original tool ID (e.g., `gx_boolean:`)
 - If found, clone that entire section
@@ -247,14 +247,14 @@ After updating parameter_specification.yml, run the tests to verify the new tool
 ```bash
 cd /path/to/galaxy
 source .venv/bin/activate
-pytest test/unit/tool_util/test_parameter_specification.py
+pytest packages/tool_util/tests/tool_util/test_parameter_specification.py
 ```
 
 This will run all parameter specification tests, including the new tool ID (e.g., `gx_boolean_user`). If successful, the YAML tool properly implements the same parameter validation as the XML version.
 
 ### 8. Check and Update test_tool_execute.py
 
-Read `lib/galaxy_test/api/test_tool_execute.py`:
+Read `packages/test_api/src/galaxy_test/api/test_tool_execute.py`:
 
 - Search for references to the original tool ID using `@requires_tool_id("{original_id}")`
 - If found, create corresponding test functions for the new tool ID

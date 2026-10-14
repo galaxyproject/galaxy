@@ -3,7 +3,7 @@
  *
  * To regenerate these fixtures, run from packages/tool_shed:
  *
- *   TOOL_SHED_FIXTURE_OUTPUT_DIR=lib/tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__ \
+ *   TOOL_SHED_FIXTURE_OUTPUT_DIR=packages/tool_shed/src/tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__ \
  *   uv run pytest tool_shed/test/functional/test_shed_repositories.py::TestShedRepositoriesApi::test_generate_frontend_fixtures -v
  */
 

@@ -15,6 +15,11 @@ if TYPE_CHECKING:
         ProvidesAppContext,
         ProvidesUserContext,
     )
+    from galaxy.model import (
+        History,
+        Role,
+        User,
+    )
 
 ActionModel = Literal["grant", "restrict"]
 
@@ -105,11 +110,23 @@ class RBACAgent:
     def get_private_user_role(self, user):
         raise Exception("Unimplemented Method")
 
-    def user_set_default_permissions(self, user, permissions=None, history=False, dataset=False):
+    def user_set_default_permissions(
+        self,
+        user: "User",
+        permissions: dict[str, list["Role"]] | dict[Action, list["Role"]] | None = None,
+        history: bool = False,
+        dataset: bool = False,
+    ) -> None:
         permissions = permissions or {}
         raise Exception("Unimplemented Method")
 
-    def history_set_default_permissions(self, history, permissions=None, dataset=False, bypass_manage_permission=False):
+    def history_set_default_permissions(
+        self,
+        history: "History",
+        permissions: dict[str, list["Role"]] | dict[Action, list["Role"]] | None = None,
+        dataset: bool = False,
+        bypass_manage_permission: bool = False,
+    ) -> None:
         raise Exception("Unimplemented Method")
 
     def set_all_dataset_permissions(self, dataset, permissions, new=False):

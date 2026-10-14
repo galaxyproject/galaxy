@@ -6,14 +6,23 @@ import ObjectStoreBadge from "@/components/ObjectStore/ObjectStoreBadge.vue";
 interface Props {
     badges: ObjectStoreBadgeType[];
     size?: string;
+    interactive?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    size: undefined,
+    interactive: true,
+});
 </script>
 
 <template>
     <div class="object-store-badges">
-        <ObjectStoreBadge v-for="(badge, idx) in badges" :key="idx" :badge="badge" :size="size" />
+        <ObjectStoreBadge
+            v-for="(badge, idx) in badges"
+            :key="idx"
+            :badge="badge"
+            :size="size"
+            :interactive="interactive" />
     </div>
 </template>
 

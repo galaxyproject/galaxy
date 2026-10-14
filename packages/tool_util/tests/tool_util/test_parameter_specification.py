@@ -52,7 +52,7 @@ def specification_object():
     except AttributeError:
         # hack for the main() function below where this file is interpreted as part of the
         # Galaxy tree.
-        yaml_str = open("test/unit/tool_util/parameter_specification.yml").read()
+        yaml_str = open("packages/tool_util/tests/tool_util/parameter_specification.yml").read()
     return yaml.safe_load(yaml_str)
 
 
@@ -65,7 +65,7 @@ def framework_tool_checks():
     except AttributeError:
         # hack for the main() function below where this file is interpreted as part of the
         # Galaxy tree.
-        yaml_str = open("test/unit/tool_util/framework_tool_checks.yml").read()
+        yaml_str = open("packages/tool_util/tests/tool_util/framework_tool_checks.yml").read()
     return yaml.safe_load(yaml_str)
 
 
@@ -83,7 +83,7 @@ def test_framework_tool_checks():
 
 @pytest.mark.parametrize(
     "relpath",
-    ["lib/galaxy/tools/data_fetch.xml", "tools/data_source/upload.xml"],
+    ["packages/app/src/galaxy/tools/data_fetch.xml", "tools/data_source/upload.xml"],
 )
 def test_upload_tools_have_no_parameter_model(relpath: str):
     # These declare upload_dataset, which has no parameter model. The factory has to decline
@@ -335,6 +335,6 @@ if __name__ == "__main__":
     with open("client/src/components/Tool/parameter_models.yml", "w") as f:
         f.write("# auto generated file for JavaScript testing, do not modify manually\n")
         f.write("# -----\n")
-        f.write('# PYTHONPATH="lib" python test/unit/tool_util/test_parameter_specification.py\n')
+        f.write('# PYTHONPATH="lib" python packages/tool_util/tests/tool_util/test_parameter_specification.py\n')
         f.write("# -----\n")
         f.write(yaml_str)

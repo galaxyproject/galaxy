@@ -2,7 +2,7 @@
 
 cd "$(dirname "$0")"/..
 
-xsd_path="lib/galaxy/tools/xsd/galaxy.xsd"
+xsd_path="packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd"
 # Lint the XSD
 xmllint --noout "$xsd_path"
 

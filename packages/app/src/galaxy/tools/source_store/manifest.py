@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import stat
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 from sqlalchemy.engine import make_url
 
+from galaxy.util import RW_R__R__
 from galaxy.version import VERSION
 from .index import (
     INDEX_SCHEMA_HASH,
@@ -233,18 +235,23 @@ def sqlite_database_path(url: str) -> Path | None:
     return Path(database).absolute()
 
 
+def _manifest_path_for_database(database_path: Path) -> Path:
+    return Path(f"{database_path}.manifest.json")
+
+
 def manifest_path_for_url(url: str) -> Path | None:
     database_path = sqlite_database_path(url)
     if database_path is None:
         return None
-    return Path(f"{database_path}.manifest.json")
+    return _manifest_path_for_database(database_path)
 
 
 def write_manifest(url: str, manifest: ToolSourceStoreManifest) -> Path | None:
     """Atomically write a manifest beside a file-backed SQLite database."""
-    manifest_path = manifest_path_for_url(url)
-    if manifest_path is None:
+    database_path = sqlite_database_path(url)
+    if database_path is None:
         return None
+    manifest_path = _manifest_path_for_database(database_path)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path: str | None = None
     try:
@@ -261,6 +268,11 @@ def write_manifest(url: str, manifest: ToolSourceStoreManifest) -> Path | None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
+        # NamedTemporaryFile creates the file 0600; publish it with the same
+        # permissions as the database it describes so consumers that can read
+        # the store (e.g. CVMFS clients) can read the sidecar too.
+        mode = stat.S_IMODE(database_path.stat().st_mode) if database_path.exists() else RW_R__R__
+        os.chmod(temporary_path, mode)
         os.replace(temporary_path, manifest_path)
     except Exception:
         if temporary_path is not None:

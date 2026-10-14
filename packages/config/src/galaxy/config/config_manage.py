@@ -39,7 +39,6 @@ from galaxy.config import (
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
-
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import (
     nice_config_parser,

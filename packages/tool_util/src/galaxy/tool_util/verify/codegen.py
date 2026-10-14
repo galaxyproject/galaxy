@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # how to use this function...
-# PYTHONPATH=lib python lib/galaxy/tool_util/verify/codegen.py
+# uv run --package galaxy-tool-util python -m galaxy.tool_util.verify.codegen
 
 import argparse
 import inspect
@@ -22,9 +22,10 @@ from jinja2 import Environment
 
 from galaxy.tool_util.verify.asserts import assertion_module_and_functions
 from galaxy.tool_util.verify.asserts._types import AssertionParameter as AssertionParameterAnnotation
+from galaxy.tool_util_models import assertions
 from galaxy.util.commands import shell
 
-models_path = os.path.join(os.path.dirname(__file__), "..", "..", "tool_util_models", "assertions.py")
+models_path = assertions.__file__
 galaxy_xsd_path = os.path.join(os.path.dirname(__file__), "..", "xsd", "galaxy.xsd")
 
 Children = Literal["allowed", "required", "forbidden"]
