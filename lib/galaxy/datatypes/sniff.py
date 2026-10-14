@@ -987,19 +987,9 @@ def handle_uploaded_dataset_file_internal(
             )
         if is_crypt4gh_upload:
             if ext in AUTO_DETECT_EXTENSIONS:
-                # User didn't select a type — infer inner type from filename.
-                # Prefer the full original filename so multi-part extensions
-                # like ``somename.bam.c4gh`` are correctly unwrapped.
-                upload_name = (
-                    uploaded_filename or file_prefix.filename or (f"x.{uploaded_file_ext}" if uploaded_file_ext else "")
-                )
-                guessed_ext = infer_crypt4gh_file_ext(
-                    upload_name,
-                    datatypes_registry,
-                    requested_ext=ext,
-                )
+                # Encrypted content can't be sniffed, the inner datatype comes from the uploaded file name.
+                guessed_ext = infer_crypt4gh_file_ext(uploaded_filename or file_prefix.filename, datatypes_registry)
             else:
-                # User selected a type — wrap it with crypt4gh.
                 guessed_ext = wrap_crypt4gh_file_ext(ext)
         elif ext in AUTO_DETECT_EXTENSIONS:
             # TODO: skip this if we haven't actually converted the dataset
