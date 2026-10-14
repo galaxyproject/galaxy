@@ -1,4 +1,6 @@
+import { composeStories } from "@storybook/vue3-vite";
 import { getLocalVue } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it } from "vitest";
@@ -6,21 +8,20 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ensureDefined } from "@/utils/assertions";
 
 import { ec2Instances } from "./awsEc2ReferenceData.js";
+import * as AwsEstimateStories from "./AwsEstimate.stories";
 
 import AwsEstimate from "./AwsEstimate.vue";
 
+const stories = composeStories(AwsEstimateStories);
+const mountStory = useStoryMount();
 const localVue = getLocalVue();
 
-async function renderedAwsEstimate(cores, seconds, memory) {
-    const jobId = Math.random().toString(36).substring(2);
-    const wrapper = mount(AwsEstimate, {
-        global: localVue,
+async function renderedAwsEstimate(cores, seconds, memory, story = stories.ShortSingleCoreJob) {
+    const wrapper = mountStory(story, {
         props: {
-            jobId,
             jobRuntimeInSeconds: Number(seconds),
             coresAllocated: Number(cores),
             memoryAllocatedInMebibyte: Number(memory),
-            ec2Instances,
         },
     });
     await flushPromises();
@@ -65,6 +66,7 @@ describe("JobMetrics/AwsEstimate.vue", () => {
     it.each([
         {
             scenario: "small job",
+            story: stories.ShortSingleCoreJob,
             cores: "1.0000000",
             seconds: "9.0000000",
             memory: "2048.0000000",
@@ -73,14 +75,15 @@ describe("JobMetrics/AwsEstimate.vue", () => {
         },
         {
             scenario: "large job",
+            story: stories.LongMulticoreJob,
             cores: "40.0000000",
             seconds: "18000.0000000",
             memory: "194560.0000000",
             name: "m5d.12xlarge",
             cost: "16.32 USD",
         },
-    ])("renders the instance and cost for a $scenario", async ({ cores, seconds, memory, name, cost }) => {
-        const estimate = await renderedAwsEstimate(cores, seconds, memory);
+    ])("renders the instance and cost for a $scenario", async ({ cores, seconds, memory, name, cost, story }) => {
+        const estimate = await renderedAwsEstimate(cores, seconds, memory, story);
         expect(estimate.name).toBe(name);
         expect(estimate.cost).toBe(cost);
         expectInstanceDetails(estimate);
