@@ -109,8 +109,8 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
     output_discovery_job_message,
-    unknown_datatype_job_message,
     runtime_environment_job_messages,
+    unknown_datatype_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
