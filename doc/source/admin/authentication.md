@@ -2,10 +2,10 @@
 
 Galaxy supports the following authentication mechanisms:
 
-* [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
-* [OIDC and OAuth2.0](#oidc-and-oauth2-0) - Login to Galaxy through an external OpenID Connect identity provider (e.g. Google, Keycloak, LS Login), without having to create a Galaxy password;
-* [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
-* [Proxy Authentication](#remote-user-authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
+- [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
+- [OIDC and OAuth2.0](#oidc-and-oauth2-0) - Login to Galaxy through an external OpenID Connect identity provider (e.g. Google, Keycloak, LS Login), without having to create a Galaxy password;
+- [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
+- [Proxy Authentication](#remote-user-authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
 ## Galaxy Database
 
@@ -16,6 +16,7 @@ If deploying Galaxy using the default authentication option, user activation can
 [below](#user-activation).
 
 ## OIDC and OAuth2.0
+
 Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without explicitly creating a Galaxy user. This feature is disabled by default. In short, to enable this feature, a Galaxy server admin has to take the following two steps:
 
 1. Register the Galaxy instance as a client with an OIDC identity provider (IdP). The IdP issues a _client ID_ and a _client secret_, and needs to be told the callback URL `<galaxy_url>/authnz/<provider>/callback`.
@@ -49,6 +50,34 @@ To check that PKCE is active, open the browser's developer tools before logging 
 
 Galaxy refuses the login itself when the callback arrives without the matching login state, so it never depends on the IdP enforcing PKCE. Users then see "Authentication has expired or is invalid. Please start logging in again." If the IdP rejects the verifier, users see "Authentication with `<provider>` was canceled or the authorization code has expired".
 
+### Authorization request parameters
+
+All backends except `azure` and `tapis` can add these standard [OIDC authorization request parameters](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest) to the redirect to the IdP: `acr_values`, `login_hint`, `max_age`, `ui_locales` and `display`. `prompt` has its own `<prompt>` element in `oidc_backends_config_file`. The others are set with `Setter` elements in `oidc_config_file`. A property prefixed with a backend name applies to that provider only. Without a prefix it applies to every provider.
+
+```xml
+<OIDC>
+    ...
+    <!-- Ask the IdP to use multi-factor authentication for logins through the keycloak provider -->
+    <Setter Property="KEYCLOAK_ACR_VALUES" Value="https://refeds.org/profile/mfa" Type="str"/>
+    <!-- Make users of the generic oidc provider re-authenticate at the IdP if their last login there is older than an hour -->
+    <Setter Property="OIDC_MAX_AGE" Value="3600" Type="int"/>
+</OIDC>
+```
+
+The prefix is the provider name in upper case, except for these providers:
+
+| Provider      | Prefix                  |
+| ------------- | ----------------------- |
+| `google`      | `GOOGLE_OPENIDCONNECT_` |
+| `okta`        | `OKTA_OPENIDCONNECT_`   |
+| `lifescience` | `LIFE_SCIENCE_`         |
+| `einfracz`    | `E_INFRA_CZ_`           |
+| `nfdi`        | `INFRAPROXY_`           |
+
+Galaxy ignores a Setter with a wrong prefix without a warning, so check the redirect to the IdP in the browser's developer tools. `MAX_AGE` needs `Type="int"`. These parameters need social-auth-core 4.7.0 or later.
+
+`acr_values` only asks the IdP for an authentication level. Galaxy does not check the `acr` claim the IdP returns, so to require multi-factor authentication, also enforce it for Galaxy's client at the IdP.
+
 ## Authentication Framework
 
 Galaxy is distributed with a plugin-driven authentication framework for which the default database authentication is
@@ -64,7 +93,7 @@ On the other hand, `ldap3` is a pure-Python implementation of the OpenLDAP clien
 These same mechanisms can also be configured by proxies serving Galaxy (e.g. nginx or Apache), but configuring them
 within Galaxy allows users to use the Galaxy UI for logging in instead of relying on a proxy.
 
-To configure one or more authentication plugins, simply copy [auth_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/auth_conf.xml.sample) to ``config/auth_conf.xml``.
+To configure one or more authentication plugins, simply copy [auth_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/auth_conf.xml.sample) to `config/auth_conf.xml`.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
 
@@ -152,9 +181,9 @@ Enabling remote user authentication requires you to edit Galaxy's configuration 
 This file is likely located in `config/galaxy.yml` and can be created by copying Galaxy's sample `config/galaxy.yml.sample`.
 
 Additional Galaxy configuration options related to remote user authentication are documented in Galaxy's sample
-configuration file. The options ``remote_user_maildomain``, ``remote_user_header``, and ``normalize_remote_user_email`` can
-adapt Galaxy to different responses from the proxy, while ``remote_user_secret`` can be used to provide added
-security, and ``remote_user_logout_href`` can be used to fix Galaxy's logout for the deployed setup.
+configuration file. The options `remote_user_maildomain`, `remote_user_header`, and `normalize_remote_user_email` can
+adapt Galaxy to different responses from the proxy, while `remote_user_secret` can be used to provide added
+security, and `remote_user_logout_href` can be used to fix Galaxy's logout for the deployed setup.
 
 ## User Activation
 
@@ -164,7 +193,7 @@ filter to disable registration for users using known disposable email provider.
 
 How to set up this config is presented here.
 
-*Note: SQLite database is not supported with this feature. Please use PostgreSQL.*
+_Note: SQLite database is not supported with this feature. Please use PostgreSQL._
 
 ### Account activation feature
 
@@ -173,7 +202,6 @@ In the Galaxy config file **config/galaxy.yml** there is the user activation set
 ```yaml
 user_activation_on: true
 ```
-
 
 After you turn this on every user that will try to register after this configuration file takes effect will have the activation email sent to the email address provided. Unless the `activation_grace_period` (see below) is set, the user won't be able to login before the activation happens.
 
@@ -186,13 +214,14 @@ smtp_password: example_passsword
 email_from: galaxy-instance@example.com
 ```
 
-Smtp server takes care of the email sending and the `email_from` is used as the *From* address in the verification email.
+Smtp server takes care of the email sending and the `email_from` is used as the _From_ address in the verification email.
 
 ### Email template
 
 You can modify the activation email body by modifying the provided templates. You can use them in [html](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/templates/mail/activation-email.html) or [txt](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/templates/mail/activation-email.txt) depending on your emailing configuration.
 
 The mapping of mentioned templates' variables to config options is as follows:
+
 ```
 "terms_url": config.terms_url,
 "contact_email": config.error_email_to,
@@ -207,6 +236,7 @@ If an activated user changes email address in user settings, their account will 
 ### Grace period
 
 In case you want the account activation feature but don't want to disable login completely you can set the `activation_grace_period` parameter. It specifies, in hours, the period in between registration time and the login time that the user will be allowed to log in even with an inactive account.
+
 ```yaml
 # Activation grace period (in hours). Activation is not forced (login is not
 # disabled) until grace period has passed. Users under grace period can't run
@@ -217,6 +247,7 @@ activation_grace_period: 3
 Accounts created through an OIDC login are activated immediately, because the e-mail address verified by the identity provider is trusted. A provider can opt out of this with `require_user_activation` in [oidc_backends_config.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample), in which case its users go through the same activation flow as password accounts.
 
 However with inactive account the user won't be able to run jobs and warning message will be shown to them at the top of the page. It is customizable via the `inactivity_box_content` parameter.
+
 ```yaml
 # Used for warning box for inactive accounts (unable to run jobs).
 # In use only if activation_grace_period is set.
@@ -224,18 +255,20 @@ inactivity_box_content: Your account has not been activated yet. Please activate
 ```
 
 ### Disposable email address filtering
+
 To prevent users from using unwanted email addresses for the email activation admins can select from two methods of filtering: domain blocking and allowing.
 
 #### Blocklist
 
 The domain blocklist can be turned on through the `email_domain_blocklist_file` path parameter. Users that use disposable email domains defined at the file in this provided path will be refused registration.
+
 ```yaml
 # E-mail domains blocklist is used for filtering out users that are using disposable email address
 # during the registration. If their address domain matches any domain in the BL they are refused the registration.
 email_domain_blocklist_file: config/disposable_email_blocklist.conf
 ```
 
-In the file each domain is on its own line and without the *@* sign. Example of the blocklist file format:
+In the file each domain is on its own line and without the _@_ sign. Example of the blocklist file format:
 
 ```
 drdrb.com
