@@ -1,13 +1,24 @@
+import { useEventListener } from "@vueuse/core";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, readonly } from "vue";
 
+import { useHashedUserId } from "./hashedUserIdFromUserStore";
 import type { MonitoringData, MonitoringRequest } from "./persistentProgressMonitor";
 import { getPersistentKey, getStoredProgressDataByKey, storeProgressData } from "./persistentProgressMonitor";
 import { useUserLocalStorage } from "./userLocalStorage";
 
+const DOWNLOAD_TRACKER_KEY = "download-tracker";
+
 // One list for the whole page: separate copies would each write their own list over the others' in local storage.
+// Other tabs write the same list, so follow their changes; otherwise the next write here would drop their exports.
 const useDownloadTrackerKeys = defineStore("downloadTrackerKeys", () => {
-    const keys = useUserLocalStorage<string[]>("download-tracker", []);
+    const keys = useUserLocalStorage<string[]>(DOWNLOAD_TRACKER_KEY, []);
+    const { hashedUserId } = useHashedUserId();
+    useEventListener(window, "storage", (event: StorageEvent) => {
+        if (hashedUserId.value && event.key === `${DOWNLOAD_TRACKER_KEY}-${hashedUserId.value}`) {
+            keys.value = event.newValue ? JSON.parse(event.newValue) : [];
+        }
+    });
     return { keys };
 });
 
