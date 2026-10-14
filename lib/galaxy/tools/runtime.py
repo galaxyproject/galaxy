@@ -57,12 +57,13 @@ def dataset_path(
     is_output = io_type == "output"
     datatype = dataset.datatype
     if isinstance(datatype, Directory):
-        if compute_environment is None:
-            extra_files_path = dataset.extra_files_path
-        elif is_output:
-            extra_files_path = compute_environment.output_extra_files_rewrite(dataset)
-        else:
-            extra_files_path = compute_environment.input_extra_files_rewrite(dataset)
+        if is_output:
+            # New outputs have their content at the root, whatever store_root metadata_source copied.
+            output_path: str = (
+                compute_environment.output_extra_files_rewrite(dataset) if compute_environment else None
+            ) or dataset.extra_files_path
+            return output_path
+        extra_files_path = compute_environment.input_extra_files_rewrite(dataset) if compute_environment else None
         # An older dataset may keep its content in a wrapper folder it recorded.
         return datatype.content_path(dataset, extra_files_path)
     rewrite = None
@@ -160,13 +161,13 @@ def setup_for_runtimeify(
             "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
             "listing": [],
         }
-        if (path := dataset_path(hda_entry, compute_environment)) is not None:
-            properties["path"] = path
-        elif source_uri := hda_entry.deferred_source_uri:
+        if hda_entry.has_deferred_data:
             # Not materialized: the tool consumes the source URI and there is no local path.
+            if not (source_uri := hda_entry.deferred_source_uri):
+                raise ValueError(f"Deferred dataset {hda_entry.id} has no source to read it from")
             properties["location"] = source_uri
         else:
-            raise ValueError(f"Deferred dataset {hda_entry.id} has no source to read it from")
+            properties["path"] = dataset_path(hda_entry, compute_environment)
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         return DataInternalJson(**properties)
 

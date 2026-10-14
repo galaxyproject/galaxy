@@ -357,6 +357,19 @@ def test_to_cwl_zarr_store_in_a_recorded_wrapper_folder():
     assert properties["path"] == "/job/inputs/dataset_1_files/wrapped.zarr"
 
 
+def test_to_cwl_deferred_dataset_has_location_and_no_path():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    assert hda.dataset is not None
+    hda.dataset.state = Dataset.states.DEFERRED
+    hda.dataset.sources = [DatasetSource(source_uri="https://example.org/data/store.zarr")]
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["location"] == "https://example.org/data/store.zarr"
+    assert "path" not in properties
+
+
 def test_to_cwl_file():
     set_datatypes_registry(example_datatype_registry_for_sample())
     hda = _hda(1, "txt")

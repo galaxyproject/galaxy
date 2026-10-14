@@ -13,7 +13,8 @@ if [ -d '$input.path' ]; then ls -A '$input.path'; else cat '$input.path'; fi > 
     <outputs>
         <data name="listing" format="txt"/>
         <data name="output_directory" format="directory">
-            <filter>input.ext != "txt"</filter>
+            <!-- Only directory datatypes have content_path; the command writes this output for those. -->
+            <filter>hasattr(input.datatype, "content_path")</filter>
         </data>
     </outputs>
     <tests>

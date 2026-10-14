@@ -156,6 +156,7 @@ from galaxy.tools.parameters.workflow_utils import (
     workflow_building_modes,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tools.runtime import dataset_path
 from galaxy.util import (
     listify,
     unicodify,
@@ -354,17 +355,16 @@ def to_cwl(
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
             }
-            datatype = value.datatype
-            if isinstance(datatype, Directory):
-                # As in runtimeify, a directory dataset is the folder holding its content.
-                extra_files_path = compute_environment.input_extra_files_rewrite(value) if compute_environment else None
-                properties["class"] = "Directory"
-                properties["path"] = datatype.content_path(value, extra_files_path)
-                properties["listing"] = []
+            if value.has_deferred_data:
+                # As in runtimeify, the tool consumes the source URI and there is no local path.
+                if source_uri := value.deferred_source_uri:
+                    properties["location"] = source_uri
             else:
-                properties["path"] = (
-                    compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name()
-                )
+                # The same path as runtimeify and $input.path give.
+                properties["path"] = dataset_path(value, compute_environment)
+            if isinstance(value.datatype, Directory):
+                properties["class"] = "Directory"
+                properties["listing"] = []
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
