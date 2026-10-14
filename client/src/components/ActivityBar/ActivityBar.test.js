@@ -55,14 +55,10 @@ describe("ActivityBar", () => {
     });
 
     describe("interactivetools visibility", () => {
+        // Other activities can render before configuration loads, so keep this synced absence check in unit.
         it("hides interactivetools activity when interactivetools_enable is false", async () => {
             const testWrapper = await mountBar(stories.InteractiveToolsDisabled);
             expect(testWrapper.findAll("[id='activity-interactivetools']").length).toBe(0);
-        });
-
-        it("shows interactivetools activity when interactivetools_enable is true", async () => {
-            const testWrapper = await mountBar(stories.InteractiveToolsEnabled);
-            expect(testWrapper.findAll("[id='activity-interactivetools']").length).toBe(1);
         });
 
         it("keeps a hidden interactivetools activity when the visible ones are reordered", async () => {
