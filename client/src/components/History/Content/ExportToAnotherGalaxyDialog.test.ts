@@ -74,7 +74,7 @@ function mountDialog() {
 const linkInput = (wrapper: VueWrapper) => wrapper.find('[data-description="galaxy export link"]');
 
 describe("ExportToAnotherGalaxyDialog", () => {
-    it("shows the link once the export task has finished", async () => {
+    it("shows the link once the export task has finished, and records it", async () => {
         exportEndsIn("SUCCESS");
         const { wrapper, store } = mountDialog();
         store.open(dataset("d1"));
@@ -83,14 +83,23 @@ describe("ExportToAnotherGalaxyDialog", () => {
             /^https?:\/\/.*\/api\/short_term_storage\/req1$/,
         );
         expect(exportUrls[0]).toContain("/contents/datasets/d1/prepare_store_download");
+        await vi.waitFor(() => expect(recentExportRecord("d1")).toMatchObject({ isFinal: true, taskStatus: "READY" }));
     });
 
-    it("shows why the export failed instead of a link", async () => {
+    it("shows why the export failed instead of a link, and records it as failed", async () => {
         exportEndsIn("FAILURE", "Unknown error: the file is missing");
         const { wrapper, store } = mountDialog();
         store.open(dataset("d1"));
         await vi.waitFor(() => expect(wrapper.text()).toContain("Unknown error: the file is missing"));
         expect(linkInput(wrapper).exists()).toBe(false);
+        // Recent Exports would otherwise call it ready, as the storage of a failed export is marked ready too.
+        await vi.waitFor(() =>
+            expect(recentExportRecord("d1")).toMatchObject({
+                isFinal: true,
+                taskStatus: "FAILURE",
+                failureReason: "Unknown error: the file is missing",
+            }),
+        );
     });
 
     it("reuses the export when the same item is opened again", async () => {
@@ -145,28 +154,6 @@ describe("ExportToAnotherGalaxyDialog", () => {
         await vi.waitFor(() => expect(exportUrls).toHaveLength(2));
         expect(wrapper.text()).not.toContain("Unknown error");
         answerRetry();
-    });
-
-    it("records the finished export for Recent Exports", async () => {
-        exportEndsIn("SUCCESS");
-        const { wrapper, store } = mountDialog();
-        store.open(dataset("d1"));
-        await vi.waitFor(() => expect(linkInput(wrapper).exists()).toBe(true));
-        await vi.waitFor(() => expect(recentExportRecord("d1")).toMatchObject({ isFinal: true, taskStatus: "READY" }));
-    });
-
-    it("records a failed export as failed rather than ready", async () => {
-        exportEndsIn("FAILURE", "Unknown error: the file is missing");
-        const { wrapper, store } = mountDialog();
-        store.open(dataset("d1"));
-        await vi.waitFor(() => expect(wrapper.text()).toContain("Unknown error: the file is missing"));
-        await vi.waitFor(() =>
-            expect(recentExportRecord("d1")).toMatchObject({
-                isFinal: true,
-                failureReason: "Unknown error: the file is missing",
-            }),
-        );
-        expect(recentExportRecord("d1")?.taskStatus).not.toBe("READY");
     });
 
     it("records a failure that comes after the dialog was closed", async () => {

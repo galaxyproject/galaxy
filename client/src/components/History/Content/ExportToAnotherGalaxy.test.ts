@@ -40,8 +40,8 @@ describe("ExportToAnotherGalaxy", () => {
         });
     });
 
-    it("renders nothing until the configuration has loaded", () => {
-        config.value = null;
+    it("is not offered where Celery is off, as the export needs it", () => {
+        config.value = { enable_celery_tasks: false };
         const { wrapper } = mountButton();
         expect(wrapper.find('[data-description="export to another galaxy"]').exists()).toBe(false);
     });

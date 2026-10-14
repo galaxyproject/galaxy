@@ -49,9 +49,16 @@ function offersExport(item: Record<string, unknown>, writable = true) {
 }
 
 describe("DatasetActions", () => {
-    it("offers the export on the user's own history", () => {
+    it("offers the export only for a visible, finished dataset in the user's own active history", () => {
         expect(offersExport({})()).toBe(true);
         expect(offersExport({}, false)()).toBe(false);
+        // Someone else's history, even where the item is marked writable.
+        expect(offersExport({ history_id: "theirs" })()).toBe(false);
+        expect(offersExport({ history_id: "archived" })()).toBe(false);
+        // The other Galaxy would import these out of sight, or with no data.
+        expect(offersExport({ deleted: true })()).toBe(false);
+        expect(offersExport({ visible: false })()).toBe(false);
+        expect(offersExport({ state: "running" })()).toBe(false);
     });
 
     it("offers the export on an own history that was not loaded yet", async () => {
@@ -64,17 +71,5 @@ describe("DatasetActions", () => {
         expect(offered()).toBe(false);
         await flushPromises();
         expect(offered()).toBe(true);
-    });
-
-    it("offers no export on someone else's history, even where the item is marked writable", () => {
-        expect(offersExport({ history_id: "theirs" })()).toBe(false);
-    });
-
-    it("offers no export on an archived history, as the history panel does not", () => {
-        expect(offersExport({ history_id: "archived" })()).toBe(false);
-    });
-
-    it("offers no export for a deleted dataset, which the other Galaxy would import out of sight", () => {
-        expect(offersExport({ deleted: true })()).toBe(false);
     });
 });
