@@ -18,36 +18,16 @@ on:
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
       - '.github/workflows/_report_scheduled_result.yaml'
-  workflow_call:
-    inputs:
-      target-branch:
-        description: Branch being tested by the nightly dispatcher.
-        type: string
-        default: ''
-      target-sha:
-        description: Resolved commit to test and include in failure reports.
-        type: string
-        default: ''
-      python-version:
-        description: The single Python version configured for this branch.
-        type: string
-        default: ''
-      postgres-version:
-        type: string
-        default: '18'
-      postgres-driver:
-        type: string
-        default: 'psycopg'
-      toolshed-api-versions:
-        description: JSON array of Tool Shed API versions supported by the target branch.
-        type: string
-        default: '["v2"]'
+  schedule:
+    # Run every supported Python version at 01:00 UTC daily
+    - cron: '0 1 * * *'
+  workflow_dispatch:
 env:
-  GALAXY_TEST_DBURI: "postgresql+${{ inputs.postgres-driver || 'psycopg' }}://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8"
-  TOOL_SHED_TEST_DBURI: "postgresql+${{ inputs.postgres-driver || 'psycopg' }}://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8"
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  TOOL_SHED_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
 concurrency:
   # Keep pushes to dev from cancelling the scheduled run.
-  group: toolshed-${{ github.workflow }}-${{ github.event_name }}-${{ inputs.target-branch || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 permissions: {}
 jobs:
@@ -57,24 +37,23 @@ jobs:
       || github.repository_owner != 'galaxyproject'
       || github.ref_name == 'dev'
       || startsWith(github.ref_name, 'release_')
-    name: ${{ inputs.target-branch && format('Tool Shed tests [{0}] ({1}, {2}, {3})', inputs.target-branch, matrix.python-version, matrix.test-install-client, matrix.shed-api) || format('Test ({0}, {1})', matrix.python-version, matrix.test-install-client) }}
+    name: Test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Pull requests and pushes to dev run only the newest Python; ruff and mypy catch most code too new for the oldest.
-        # Release PRs keep both endpoints until their CI policy is backported.
+        # Release branches get no nightly run, so they keep the oldest and newest.
         python-version: >-
           ${{ fromJSON(
-          inputs.python-version && format('["{0}"]', inputs.python-version)
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["3.10", "3.11", "3.12", "3.13", "3.14"]'
           || startsWith(github.base_ref || github.ref_name, 'release_') && '["3.10", "3.14"]'
           || '["3.14"]'
           ) }}
         test-install-client: ['galaxy_api', 'standalone']
-        shed-api: ${{ fromJSON(inputs.toolshed-api-versions || '["v2"]') }}
     services:
       postgres:
-        image: postgres:${{ inputs.postgres-version || '18' }}
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -84,15 +63,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          repository: ${{ inputs.target-branch && 'galaxyproject/galaxy' || github.repository }}
-          ref: ${{ inputs.target-sha }}
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
-          version: ${{ hashFiles('galaxy root/.tool-versions') == '' && '0.12.23' || '' }}
-          version-file: ${{ hashFiles('galaxy root/.tool-versions') != '' && 'galaxy root/.tool-versions' || '' }}
+          version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Install Python
         run: uv python install
@@ -101,12 +77,7 @@ jobs:
         working-directory: 'galaxy root'
       - name: Read Node.js version
         id: node-version
-        run: |
-          version_file='galaxy root/lib/tool_shed/webapp/frontend/.node_version'
-          # Older releases predate this file; use the Node 22 baseline there.
-          node_version=22.20.0
-          if [ -f "$version_file" ]; then node_version=$(cat "$version_file"); fi
-          echo "version=$node_version" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(cat 'galaxy root/lib/tool_shed/webapp/frontend/.node_version')" >> $GITHUB_OUTPUT
       - name: Setup node
         uses: actions/setup-node@v7.1.0
         with:
@@ -131,25 +102,24 @@ jobs:
         run: ./run_tests.sh -toolshed ./lib/tool_shed/test/functional -- -n 3 --dist loadscope
         env:
           TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
-          TOOL_SHED_API_VERSION: ${{ matrix.shed-api }}
-          TOOL_SHED_TEST_BROWSER: ${{ matrix.shed-api == 'v1' && 'twill' || 'playwright' }}
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: Toolshed test results (${{ inputs.target-branch || github.ref_name }}, ${{ matrix.python-version }}, ${{ matrix.test-install-client }}, ${{ matrix.shed-api }})
+          name: Toolshed test results (${{ matrix.python-version }}, ${{ matrix.test-install-client }})
           path: 'galaxy root/run_toolshed_tests.html'
   report:
     needs: [test]
-    if: ${{ !cancelled() && inputs.target-branch != '' }}
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     permissions:
       actions: read
       issues: write
     uses: $/.github/workflows/_report_scheduled_result.yaml
     with:
-      title: Scheduled Tool Shed tests are failing (${{ inputs.target-branch }})
+      title: Scheduled Tool Shed tests are failing
       labels: area/toolshed, area/testing, kind/bug
-      description: Nightly Tool Shed tests on `${{ inputs.target-branch }}` using Python ${{ inputs.python-version }} failed.
+      description: |-
+        The nightly run of the Tool Shed tests across every supported Python version failed.
+
+        Pull requests to dev run the Tool Shed tests on the newest Python only; nightly runs cover every supported version. Release branches retain the oldest and newest versions.
       needs: ${{ toJSON(needs) }}
-      tested-sha: ${{ inputs.target-sha }}
-      job-name-prefix: Tool Shed tests [${{ inputs.target-branch }}]

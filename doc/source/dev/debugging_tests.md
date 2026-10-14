@@ -38,16 +38,11 @@ The following instructions assume that you have cloned your Galaxy fork into ~/g
 Sometimes it is necessary to debug tests that work locally. There are a few different strategies one could employ.
 For the broadly filtered test workflows, a change confined to their workflow
 file selects that workflow without starting the other broadly filtered suites.
-Workflows that only run through `workflow_call` have a leading
+Reusable workflows, which only run through `workflow_call`, have a leading
 underscore; changes to one also run its callers. `_build_client.yaml` is called
 by Playwright, integration Selenium, startup tests, and the tool form harness;
 `_report_scheduled_result.yaml` by the unit, Tool Shed and tool framework
-tests and Selenium. The event-driven unit, Tool Shed, and tool framework
-workflows also expose `workflow_call` so `nightly_tests.yaml` can run them
-against release commits. The dispatcher reads `.github/nightly-test-targets.json`;
-its branch-selection and reporter tests run for PRs that change its inputs,
-while the release suites run only on schedules or manual dispatch. A change
-that also touches source files still runs the suites selected
+tests. A change that also touches source files still runs the suites selected
 by those source files. Scheduled and manually dispatched runs are independent
 of these path filters.
 
