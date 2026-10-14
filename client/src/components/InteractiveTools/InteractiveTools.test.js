@@ -1,8 +1,8 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStory } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { disposePinia, setActivePinia } from "pinia";
+import { disposePinia, getActivePinia } from "pinia";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { nextTick } from "vue";
 
@@ -10,49 +10,39 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import * as Stories from "./InteractiveTools.stories";
+import { interactiveToolsHandlers } from "./test_fixtures";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse.json";
 
-import InteractiveTools from "./InteractiveTools.vue";
-
 // Mock the rethrowSimple function to prevent test failures
-vi.mock("@/utils/simple-error", () => ({
+vi.mock("@/utils/simple-error", async (importOriginal) => ({
+    ...(await importOriginal()),
     rethrowSimple: vi.fn(),
     errorMessageAsString: vi.fn((error) => error.message),
 }));
 
 const { server, http } = useServerMock();
+const mountStory = useStoryMount();
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
-    const localVue = getLocalVue();
-
     async function mountTools() {
         // Set up the GET response for entry points - use a copy to avoid modifications between tests
         const testData = structuredClone(testInteractiveToolsResponse);
-        server.use(
-            http.untyped.get("/api/entry_points", () => {
-                return HttpResponse.json(testData);
-            }),
+        const story = composeStory(
+            { ...Stories.RunningTools, parameters: { msw: { handlers: interactiveToolsHandlers(testData) } } },
+            Stories.default,
         );
-
-        const pinia = createTestingPinia({
-            createSpy: vi.fn,
-            initialState: {
-                entryPointStore: {
-                    entryPoints: testData,
+        const wrapper = mountStory(story, {
+            pinia: {
+                initialState: {
+                    entryPointStore: { entryPoints: testData },
+                    interactiveToolsStore: { messages: [], activeTools: testData },
                 },
-                interactiveToolsStore: {
-                    messages: [],
-                    activeTools: testData,
-                },
+                stubActions: false,
             },
-            stubActions: false,
         });
+        const pinia = getActivePinia();
         onTestFinished(() => disposePinia(pinia));
-        setActivePinia(pinia);
-
-        const wrapper = mount(InteractiveTools, {
-            global: withPlugins(localVue, pinia),
-        });
 
         // Wait for any async operations to complete
         await flushPromises();
@@ -62,7 +52,6 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     afterEach(() => {
         vi.clearAllMocks();
     });
-    enableAutoUnmount(afterEach);
 
     it("renders table with interactive tools", async () => {
         const { wrapper } = await mountTools();
