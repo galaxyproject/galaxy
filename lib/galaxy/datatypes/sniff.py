@@ -620,10 +620,11 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
 
 
 def guess_ext_from_file_name(fname, registry, requested_ext="auto"):
-    if registry.crypt4gh_enabled and is_crypt4gh_file_ext(fname):
-        return infer_crypt4gh_file_ext(fname, registry, requested_ext=requested_ext)
+    encrypted = registry.crypt4gh_enabled and is_crypt4gh_file_ext(fname)
     if requested_ext != "auto":
-        return requested_ext
+        return wrap_crypt4gh_file_ext(requested_ext) if encrypted else requested_ext
+    if encrypted:
+        return infer_crypt4gh_file_ext(fname, registry)
     return registry.get_datatype_from_filename(fname).file_ext
 
 

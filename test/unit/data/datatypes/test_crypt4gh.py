@@ -118,6 +118,11 @@ def test_enabled_registry_registers_wrappers(enabled_registry):
     assert guess_ext_from_file_name("reads.fq.c4gh", enabled_registry) == "fastqsanger.c4gh"
 
 
+@pytest.mark.parametrize("requested_ext", ["vcf", "vcf.c4gh"])
+def test_explicit_types_win_over_encrypted_file_names(enabled_registry, requested_ext):
+    assert guess_ext_from_file_name("reads.fq.c4gh", enabled_registry, requested_ext=requested_ext) == "vcf.c4gh"
+
+
 def test_only_generic_wrapper_sniffs(enabled_registry):
     crypt4gh_sniffers = [datatype for datatype in enabled_registry.sniff_order if isinstance(datatype, Crypt4GH)]
     assert [datatype.file_ext for datatype in crypt4gh_sniffers] == ["c4gh"]
