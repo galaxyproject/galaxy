@@ -1,36 +1,38 @@
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, onTestFinished } from "vitest";
 
-import CustomToolEditorWorkspace from "./CustomToolEditorWorkspace.vue";
+import * as CustomToolEditorWorkspaceStories from "./CustomToolEditorWorkspace.stories";
+
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
+const stories = composeStories(CustomToolEditorWorkspaceStories);
+
 describe("CustomToolEditorWorkspace", () => {
+    const mountStory = useStoryMount();
     enableAutoUnmount(afterEach);
     afterEach(async () => {
         // Finish the drag separator's current frame while its owned wrapper is still mounted.
         await new Promise((resolve) => window.requestAnimationFrame(resolve));
     });
 
-    function mountWorkspace() {
+    function ownedTarget() {
         const target = document.createElement("div");
         document.body.appendChild(target);
         onTestFinished(() => target.remove());
-        return mount(CustomToolEditorWorkspace, {
-            props: {
-                documentationVisible: false,
-            },
-            slots: {
-                editor: '<textarea data-description="tool yaml editor" />',
-                documentation: '<article data-description="tool documentation" />',
-            },
-            // happy-dom only resolves getComputedStyle() (what isVisible() reads) for
-            // elements attached to the document, so use an owned attachment target.
-            attachTo: target,
+        return target;
+    }
+
+    function mountWorkspace() {
+        return mount(CustomToolEditorWorkspaceStories.WorkspaceWithSlots, {
+            props: CustomToolEditorWorkspaceStories.default.args,
+            attachTo: ownedTarget(),
         });
     }
 
     it("starts with documentation hidden", () => {
-        const wrapper = mountWorkspace();
+        const wrapper = mountStory(stories.EditorOnly, { attachTo: ownedTarget() });
 
         expect(wrapper.get('[data-description="tool yaml editor"]').isVisible()).toBe(true);
         expect(wrapper.find('[data-description="tool documentation"]').exists()).toBe(false);
