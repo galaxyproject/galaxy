@@ -1,16 +1,22 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { composeStory } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { disposePinia } from "pinia";
+import { disposePinia, getActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
+import * as Stories from "./BroadcastsOverlay.stories";
+import { broadcastsState } from "./test_fixtures";
+
 import BroadcastsOverlay from "./BroadcastsOverlay.vue";
 
-const localVue = getLocalVue(true);
+// Exercise the decorator's real per-user persistent state rather than global unit mocks.
+vi.unmock("@/composables/hashedUserId");
+vi.unmock("@/composables/userLocalStorage");
+
+const mountStory = useStoryMount();
 
 const now = new Date();
 const inTwoMonths = new Date(new Date(now).setMonth(now.getMonth() + 2));
@@ -49,21 +55,24 @@ const FAKE_BROADCASTS: BroadcastNotification[] = [
 ];
 
 async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = []) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const story = composeStory(
+        { ...Stories.NoticesQueue, parameters: broadcastsState(() => broadcasts) },
+        Stories.default,
+    );
+    const root = mountStory(story, { instrumentLocalization: true, pinia: { stubActions: true } });
+    const pinia = getActivePinia()!;
     onTestFinished(() => disposePinia(pinia));
-
+    await vi.waitFor(() => {
+        if (!root.findComponent(BroadcastsOverlay).exists()) {
+            throw new Error("Broadcast fixture is still initializing.");
+        }
+    });
     const broadcastsStore = useBroadcastsStore(pinia);
-    broadcastsStore.broadcasts = broadcasts;
-
     const spyOnDismissBroadcast = vi.spyOn(broadcastsStore, "dismissBroadcast");
     spyOnDismissBroadcast.mockImplementation(async (broadcast) => {
         broadcastsStore.broadcasts = broadcastsStore.broadcasts.filter((b) => b.id !== broadcast.id);
     });
-
-    const wrapper = mount(BroadcastsOverlay, {
-        global: withPlugins(localVue, pinia),
-    });
-
+    const wrapper = root.findComponent(BroadcastsOverlay);
     await flushPromises();
     return wrapper;
 }
@@ -78,7 +87,6 @@ describe("BroadcastsOverlay.vue", () => {
         vi.restoreAllMocks();
         vi.mocked(sanitizeHtml).mockClear();
     });
-    enableAutoUnmount(afterEach);
 
     it("should not render anything when there is no broadcast", async () => {
         const wrapper = await mountBroadcastsOverlayWith();
