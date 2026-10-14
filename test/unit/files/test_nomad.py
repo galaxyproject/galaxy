@@ -38,6 +38,8 @@ class FakeNomadFileSystem:
     instances: list[dict] = []
 
     def __init__(self, **kwargs):
+        if "\n" in (kwargs["token"] or ""):
+            raise ValueError("The NOMAD token has a line break; check that it was copied whole")
         self.instances.append(kwargs)
 
     def ls(self, path, detail=True):
@@ -132,3 +134,9 @@ def test_only_files_inside_an_upload_are_imported(tmp_path):
             source.realize_to(folder, os.path.join(tmp_path, "x"), user_context=user_context_fixture())
     with pytest.raises(MessageException, match="did not answer in time"):
         source.realize_to("/datasets/ds1/up1/slow.txt", str(target), user_context=user_context_fixture())
+    with pytest.raises(MessageException, match="line break"):
+        _source(token="a\nb").realize_to("/datasets/ds1/up1/a.txt", str(target), user_context=user_context_fixture())
+    with pytest.raises(ConfigDoesNotAllowException):
+        _source(base_url="http://127.0.0.1").realize_to(
+            "/datasets/ds1/up1/a.txt", str(target), user_context=user_context_fixture()
+        )

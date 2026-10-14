@@ -147,9 +147,11 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         parts = _parts(source_path)
         if len(parts) <= _upload_depth(parts):
             raise folder
-        fs = self._open_fs(context, self._get_cache_options(context.config))
         try:
+            fs = self._open_fs(context, self._get_cache_options(context.config))
             fs.get_file(source_path, native_path)
+        except MessageException:
+            raise
         except IsADirectoryError as e:
             raise folder from e
         except FileNotFoundError as e:
