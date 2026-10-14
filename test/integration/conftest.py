@@ -27,17 +27,20 @@ from galaxy_test.shard import (  # noqa: F401
 )
 
 # Tests that share something outside their Galaxy instance -- a fixed host port, the AMQP
-# broker, the minikube cluster -- keyed by test file or class. With --dist loadscope, each
-# scope runs on a single pytest-xdist worker.
+# broker, the minikube cluster, the host's Docker image cache -- keyed by test file or class.
+# With --dist loadscope, each scope runs on a single pytest-xdist worker.
 SHARED_RESOURCE_SCOPES = {
     "test/integration/oidc/test_auth_oidc.py": "keycloak",
     "test/integration/test_cli_runners.py": "cli-runner-containers",
-    "test/integration/test_coexecution.py": "cluster",
-    "test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration": "cluster",
-    "test/integration/test_interactivetools_api.py::TestKubernetesNativeInteractiveToolsIntegration": "cluster",
-    "test/integration/test_kubernetes_runner.py": "cluster",
-    "test/integration/test_pulsar_embedded_mq.py": "cluster",
-    "test/integration/test_pulsar_embedded_relay.py": "cluster",
+    "test/integration/test_container_resolvers.py": "host-services",
+    "test/integration/test_containerized_jobs.py": "host-services",
+    "test/integration/test_coexecution.py": "host-services",
+    "test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration": "host-services",
+    "test/integration/test_interactivetools_api.py::TestKubernetesNativeInteractiveToolsIntegration": "host-services",
+    "test/integration/test_kubernetes_runner.py": "host-services",
+    "test/integration/test_pulsar_embedded_mq.py": "host-services",
+    "test/integration/test_pulsar_embedded_relay.py": "host-services",
+    "test/integration/test_resolvers.py": "host-services",
 }
 
 
