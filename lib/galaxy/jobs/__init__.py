@@ -1527,7 +1527,6 @@ class MinimalJobWrapper(HasResourceParameters):
             compute_environment,
         )
         if plan:
-            job.protection_scheme = plan.scheme
             # Where the command line finds the plan on the compute host.
             self.protection_plan_path = os.path.join(compute_environment.config_directory(), PLAN_FILENAME)
             self.job_io.protection_plan_path = self.protection_plan_path

@@ -444,7 +444,7 @@ def set_metadata_portable(
         if job:
             if output_protector:
                 # Exported jobs don't record it, Job.set_streams keeps decrypted data out of protected jobs.
-                job.protection_scheme = output_protector.runtime.plan.scheme
+                job.protection_scheme = output_protector.scheme
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state
             if os.path.exists(tool_script_file):
