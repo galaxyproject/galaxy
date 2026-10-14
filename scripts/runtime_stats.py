@@ -32,7 +32,6 @@ Examples
 
 import argparse
 import datetime
-import os
 import re
 import sys
 
@@ -41,9 +40,6 @@ from sqlalchemy import (
     create_engine,
     text,
 )
-
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-sys.path.insert(1, os.path.join(galaxy_root, "lib"))
 
 import galaxy.config
 from galaxy.util.script import (

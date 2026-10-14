@@ -1,9 +1,6 @@
 import os
-import sys
 
 import erdantic as erd
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, "lib")))
 
 from galaxy.files.templates.models import (
     AzureFileSourceConfiguration,

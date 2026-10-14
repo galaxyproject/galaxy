@@ -335,6 +335,6 @@ if __name__ == "__main__":
     with open("client/src/components/Tool/parameter_models.yml", "w") as f:
         f.write("# auto generated file for JavaScript testing, do not modify manually\n")
         f.write("# -----\n")
-        f.write('# PYTHONPATH="lib" python packages/tool_util/tests/tool_util/test_parameter_specification.py\n')
+        f.write("# python packages/tool_util/tests/tool_util/test_parameter_specification.py\n")
         f.write("# -----\n")
         f.write(yaml_str)

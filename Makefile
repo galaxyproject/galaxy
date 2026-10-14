@@ -4,7 +4,7 @@ VENV?=.venv
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
 RELEASE_CURR:=26.2
 RELEASE_UPSTREAM:=upstream
-CONFIG_MANAGE=$(IN_VENV) python packages/config/src/galaxy/config/config_manage.py
+CONFIG_MANAGE=$(IN_VENV) python -m galaxy.config.config_manage
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
@@ -187,7 +187,7 @@ update-navigation-schema: client-node-deps
 	$(IN_VENV) cd client && node navigation_to_schema.mjs
 
 install-client: ## Install prebuilt client wheel from PyPI matching the current Galaxy version
-	$(IN_VENV) pip install "galaxy-web-client==$$(PYTHONPATH=lib python -c 'from galaxy.version import VERSION; print(VERSION)')"
+	$(IN_VENV) uv pip install "galaxy-web-client==$$(python -c 'from galaxy.version import VERSION; print(VERSION)')"
 
 client: client-node-deps ## Rebuild client-side artifacts for local development.
 	$(IN_VENV) cd client && $(NODE_ENV) pnpm run build
@@ -228,13 +228,13 @@ client-test-watch: client ## Watch and run all client unit tests on changes
 	$(IN_VENV) cd client && pnpm run test:watch
 
 serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
-	cd packages/test_selenium/src && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
+	uv run --locked --inexact --package galaxy-test-selenium --with notebook python -m notebook --notebook-dir=packages/test_selenium/src/galaxy_test/selenium/jupyter
 
 files-sources-lint: ## Validate file sources configuration
-	$(IN_VENV) cd packages/files/src && PYTHONPATH=`pwd` python galaxy/files/validate/script.py
+	$(IN_VENV) python -m galaxy.files.validate.script
 
 files-sources-lint-verbose: ## Validate file sources configuration (verbose)
-	$(IN_VENV) cd packages/files/src && PYTHONPATH=`pwd` python galaxy/files/validate/script.py --verbose
+	$(IN_VENV) python -m galaxy.files.validate.script --verbose
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version

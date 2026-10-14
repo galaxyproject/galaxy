@@ -222,59 +222,7 @@ exclude = [
     "packages/tool_shed/src/tool_shed/test/test_data/repos"
 ]
 line-length = 120
-src = [
-    "lib",
-    "packages/app/src",
-    "packages/auth/src",
-    "packages/config/src",
-    "packages/data/src",
-    "packages/files/src",
-    "packages/job_execution/src",
-    "packages/job_metrics/src",
-    "packages/navigation/src",
-    "packages/objectstore/src",
-    "packages/schema/src",
-    "packages/selenium/src",
-    "packages/test_api/src",
-    "packages/test_base/src",
-    "packages/test_driver/src",
-    "packages/test_selenium/src",
-    "packages/tool_shed/src",
-    "packages/tool_shed_schema/src",
-    "packages/tool_util/src",
-    "packages/tool_util_models/src",
-    "packages/tours/src",
-    "packages/util/src",
-    "packages/web_apps/src",
-    "packages/web_client/src",
-    "packages/web_framework/src",
-    "packages/web_stack/src",
-]
-namespace-packages = [
-    "packages/app/src/galaxy",
-    "packages/auth/src/galaxy",
-    "packages/config/src/galaxy",
-    "packages/data/src/galaxy",
-    "packages/files/src/galaxy",
-    "packages/job_execution/src/galaxy",
-    "packages/job_metrics/src/galaxy",
-    "packages/navigation/src/galaxy",
-    "packages/objectstore/src/galaxy",
-    "packages/schema/src/galaxy",
-    "packages/selenium/src/galaxy",
-    "packages/test_api/src/galaxy_test",
-    "packages/test_base/src/galaxy_test",
-    "packages/test_driver/src/galaxy_test",
-    "packages/test_selenium/src/galaxy_test",
-    "packages/tool_util/src/galaxy",
-    "packages/tool_util_models/src/galaxy",
-    "packages/tours/src/galaxy",
-    "packages/util/src/galaxy",
-    "packages/web_apps/src/galaxy",
-    "packages/web_client/src/galaxy",
-    "packages/web_framework/src/galaxy",
-    "packages/web_stack/src/galaxy",
-]
+src = ["lib", "packages/*/src"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
@@ -293,6 +241,7 @@ ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.isort]
+known-first-party = ["galaxy", "galaxy_ext", "galaxy_test", "tool_shed", "tool_shed_client"]
 # We are not selecting "I" rules in ruff yet because the isort option
 # force_grid_wrap=2 is not currently supported:
 # https://github.com/astral-sh/ruff/issues/2601
@@ -317,9 +266,6 @@ keep-runtime-typing = true
 "packages/tool_shed_schema/src/tool_shed_client/schema/trs_service_info.py" = ["UP"]
 
 [tool.uv]
-# Workaround for https://github.com/python/mypy/issues/13392 taken from https://github.com/astral-sh/uv/issues/3898
-# Build settings shared by workspace members.
-config-settings = { editable_mode = "compat" }
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949

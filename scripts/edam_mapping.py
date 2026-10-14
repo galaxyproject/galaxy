@@ -13,15 +13,11 @@ run from the Galaxy root.
 """
 
 import os
-import sys
 from xml import etree
-
-from galaxy.util import requests
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.util import requests
 
 SCRIPTS_DIR = os.path.dirname(__file__)
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, os.pardir))

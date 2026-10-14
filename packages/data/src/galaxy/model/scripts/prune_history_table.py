@@ -5,10 +5,6 @@ import sys
 
 from sqlalchemy import create_engine
 
-sys.path.insert(
-    1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, "lib"))
-)
-
 from galaxy.model.orm.scripts import get_config
 from galaxy.model.scripts.history_table_pruner import HistoryTablePruner
 

@@ -21,8 +21,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
-
 import galaxy.config
 from galaxy import model
 from galaxy.datatypes.registry import Registry

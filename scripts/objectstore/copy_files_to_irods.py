@@ -3,7 +3,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import uuid
 from datetime import datetime
 
@@ -19,8 +18,6 @@ from sqlalchemy import (
     create_engine,
     text,
 )
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
 import galaxy.config
 from galaxy.util import directory_hash_id

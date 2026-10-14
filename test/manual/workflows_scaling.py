@@ -8,18 +8,13 @@ $ .venv/bin/python scripts/summarize_timings.py --file /tmp/<work_dir>/handler1.
 
 import functools
 import json
-import os
 import random
-import sys
 from argparse import ArgumentParser
 from threading import Thread
 from uuid import uuid4
 
 from bioblend import galaxy
 from gxformat2 import python_to_workflow
-
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 from galaxy_test.base.populators import (
     GiDatasetCollectionPopulator,

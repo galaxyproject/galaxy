@@ -593,7 +593,6 @@ class TestMetadata(TestCase, tools_support.UsesTools):
             open(self.stderr_path, "wb") as stderr_file,
         ):
             _environ = os.environ.copy()
-            _environ["PYTHONPATH"] = os.path.abspath("lib")
             proc = subprocess.Popen(
                 args=command,
                 shell=True,

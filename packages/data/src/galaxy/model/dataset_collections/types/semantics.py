@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # how to use this function...
-# PYTHONPATH=lib python packages/data/src/galaxy/model/dataset_collections/types/semantics.py
+# uv run --package galaxy-data python -m galaxy.model.dataset_collections.types.semantics
 import argparse
 import ast
 import os

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# . .venv/bin/activate; PYTHONPATH=lib python packages/tool_util/src/galaxy/tool_util/client/landing.py -g http://localhost:8081 simple_workflow
+# uv run --package galaxy-tool-util python -m galaxy.tool_util.client.landing -g http://localhost:8081 simple_workflow
 
 import argparse
 import random

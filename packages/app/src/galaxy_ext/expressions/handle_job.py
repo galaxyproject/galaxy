@@ -7,11 +7,8 @@ Galaxy should be importable on sys.path .
 import json
 import logging
 import os
-import sys
 import warnings
 
-# insert *this* galaxy before all others on sys.path
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
 try:

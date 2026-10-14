@@ -21,8 +21,6 @@ from sqlalchemy import (
     not_,
 )
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
-
 import galaxy.config
 import galaxy.model.mapping
 from galaxy.objectstore import build_object_store_from_config

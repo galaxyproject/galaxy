@@ -1,11 +1,5 @@
-import sys
 import textwrap
 from pathlib import Path
-
-from galaxy.util import galaxy_directory
-
-galaxy_root = Path(galaxy_directory())
-sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tools.source_store.discover import (
     discover_tools,

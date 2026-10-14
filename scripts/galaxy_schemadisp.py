@@ -1,5 +1,4 @@
 import os
-import sys
 
 from db_shell import *  # noqa
 from sqlalchemy import MetaData
@@ -16,7 +15,6 @@ except ImportError:
 
 
 gxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-sys.path.insert(1, os.path.abspath(os.path.join(gxy_root, "lib")))
 
 from galaxy import model
 

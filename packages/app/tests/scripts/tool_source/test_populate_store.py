@@ -18,14 +18,6 @@ from typing import (
     Any,
 )
 
-from galaxy.util import galaxy_directory
-
-# Add Galaxy lib to path for imports
-galaxy_root = Path(galaxy_directory())
-import sys
-
-sys.path.insert(0, str(galaxy_root / "lib"))
-
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token

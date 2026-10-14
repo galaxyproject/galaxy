@@ -1,15 +1,8 @@
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 from typing import (
     Any,
     cast,
 )
-
-from galaxy.util import galaxy_directory
-
-galaxy_root = Path(galaxy_directory())
-sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,

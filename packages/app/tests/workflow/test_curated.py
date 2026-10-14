@@ -855,10 +855,8 @@ def test_import_does_not_load_galaxy_agents() -> None:
     Runs in a fresh interpreter because other tests may already have imported
     galaxy.agents into this one.
     """
-    lib_dir = str(Path(curated.__file__).resolve().parents[2])
     code = "import sys, galaxy.workflow.curated; print('galaxy.agents' in sys.modules)"
-    env = {**os.environ, "PYTHONPATH": lib_dir}
-    result = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True)
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
     assert result.stdout.strip() == "False"
 
 

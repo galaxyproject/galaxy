@@ -30,10 +30,6 @@ try:
 except ImportError:
     Core = None
 
-if __name__ == "__main__":
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
-
-
 from galaxy.config import (
     GALAXY_CONFIG_SCHEMA_PATH,
     TOOL_SHED_CONFIG_SCHEMA_PATH,

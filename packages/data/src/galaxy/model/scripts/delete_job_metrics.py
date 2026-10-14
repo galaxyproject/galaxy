@@ -8,10 +8,6 @@ from sqlalchemy import (
     text,
 )
 
-sys.path.insert(
-    1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, "lib"))
-)
-
 from galaxy.model.orm.scripts import get_config
 
 DESCRIPTION = """

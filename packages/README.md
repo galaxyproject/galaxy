@@ -18,8 +18,10 @@ Development uses a single
 rooted at the repository root. The root `pyproject.toml`
 (`name = "galaxy-workspace"`, `[tool.uv.workspace]` members `packages/*`) is
 the only workspace: the former nested `packages/pyproject.toml` workspace
-has been removed, so every `uv` command run from a package directory
-resolves to the root workspace and its environment.
+has been removed, so project commands run from a package directory
+resolve to the root workspace and its environment. Members use default
+editable installs; package imports need no `PYTHONPATH` setup or editable
+compatibility mode.
 
 The exact uv version to use is pinned in `.tool-versions` at the repository
 root (`uv 0.12.23`). Both mise and asdf can read this file. Use the pinned
@@ -97,28 +99,21 @@ The ``Makefile`` can also be used for typechecking.
 
     $ cd galaxy/packages/auth
     $ make mypy
-    $ make _mypy  # a shortcut to just run mypy on an existing updated environment
 
-This is equivalent to syncing the package environment and then adding
-Galaxy's type checking dependencies to it, which live in the
-repository-level ``requirements/`` directory:
+This runs mypy from the workspace root with the package's extras and the
+declared typecheck group. Config discovery uses the root `mypy.ini`; member
+directories no longer contain config symlinks. From the repository root:
 
-    $ uv sync --locked --package galaxy-auth --all-extras
-    $ uv pip install -r ../../requirements/pinned-typecheck-requirements.txt
-    $ uv run --locked --package galaxy-auth mypy .
+    $ uv run --locked --inexact --package galaxy-auth --all-extras --group typecheck mypy packages/auth/src packages/auth/tests
 
-The ``Makefile`` can also be used for linting.
+The ``Makefile`` can also be used for linting:
 
-    $ cd galaxy/packages/auth
     $ make lint
-    $ make _lint  # a shortcut to just run ruff on an existing updated environment
 
-This is equivalent to syncing the package environment and then adding
-Galaxy's linting dependencies to it.
+Lint runs in an isolated tool environment, preserving the workspace's
+application dependencies:
 
-    $ uv sync --locked --package galaxy-auth --all-extras
-    $ uv pip install -r ../../requirements/pinned-lint-requirements.txt
-    $ uv run --locked --package galaxy-auth ruff check .
+    $ uvx --with-requirements ../../requirements/pinned-lint-requirements.txt ruff check .
 
 ## Isolated package checks
 

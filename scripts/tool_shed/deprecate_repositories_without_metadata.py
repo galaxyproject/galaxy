@@ -22,8 +22,6 @@ from sqlalchemy import (
     not_,
 )
 
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib"))
-
 import tool_shed.webapp.config as tool_shed_config
 import tool_shed.webapp.model.mapping
 from galaxy.util import (
