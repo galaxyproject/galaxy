@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "update:directory", value: string): void;
-    (e: "update:fileName", value: string): void;
+    (e: "update:file-name", value: string): void;
 }>();
 
 const { hasWritable: hasWritableFileSources } = useFileSources(props.filterOptions);
@@ -65,7 +65,7 @@ const fileNameDescription = localize("Give the exported file a name.");
                         placeholder="Name"
                         required
                         data-test-id="export-file-name-input"
-                        @input="emit('update:fileName', $event)" />
+                        @input="emit('update:file-name', $event)" />
                     <span v-if="props.fileExtension" class="ml-2 text-muted">.{{ props.fileExtension }}</span>
                 </div>
             </BFormGroup>
