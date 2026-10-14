@@ -3056,7 +3056,7 @@ wheels = [
 
 [[package]]
 name = "galaxy"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/meta" }
 
 [package.optional-dependencies]
@@ -3070,7 +3070,7 @@ provides-extras = ["postgresql"]
 
 [[package]]
 name = "galaxy-app"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/app" }
 dependencies = [
     { name = "beaker" },
@@ -3207,7 +3207,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-auth"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/auth" }
 dependencies = [
     { name = "galaxy-data" },
@@ -3229,7 +3229,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-config"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/config" }
 dependencies = [
     { name = "boltons" },
@@ -3259,7 +3259,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-data"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/data" }
 dependencies = [
     { name = "alembic" },
@@ -3358,7 +3358,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-files"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/files" }
 dependencies = [
     { name = "fs" },
@@ -3396,7 +3396,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-job-execution"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/job_execution" }
 dependencies = [
     { name = "galaxy-config" },
@@ -3430,7 +3430,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-job-metrics"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/job_metrics" }
 dependencies = [
     { name = "galaxy-util" },
@@ -3450,7 +3450,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-navigation"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/navigation" }
 dependencies = [
     { name = "galaxy-util" },
@@ -3474,7 +3474,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-objectstore"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/objectstore" }
 dependencies = [
     { name = "galaxy-util", extra = ["config-template"] },
@@ -3546,7 +3546,7 @@ wheels = [
 
 [[package]]
 name = "galaxy-schema"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/schema" }
 dependencies = [
     { name = "galaxy-tool-util-models" },
@@ -3572,7 +3572,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-selenium"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/selenium" }
 dependencies = [
     { name = "axe-selenium-python", version = "2.1.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -3614,7 +3614,7 @@ wheels = [
 
 [[package]]
 name = "galaxy-test-api"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_api" }
 dependencies = [
     { name = "galaxy-test-base" },
@@ -3646,7 +3646,7 @@ provides-extras = ["driver", "test"]
 
 [[package]]
 name = "galaxy-test-base"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_base" }
 dependencies = [
     { name = "bioblend" },
@@ -3684,7 +3684,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-test-driver"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_driver" }
 dependencies = [
     { name = "galaxy-app" },
@@ -3718,7 +3718,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-test-selenium"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/test_selenium" }
 dependencies = [
     { name = "galaxy-data" },
@@ -3760,7 +3760,7 @@ provides-extras = ["driver", "test"]
 
 [[package]]
 name = "galaxy-tool-shed"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_shed" }
 dependencies = [
     { name = "a2wsgi" },
@@ -3834,7 +3834,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-tool-shed-schema"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_shed_schema" }
 dependencies = [
     { name = "galaxy-tool-util-models" },
@@ -3858,7 +3858,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-tool-util"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_util" }
 dependencies = [
     { name = "conda-package-streaming" },
@@ -3941,7 +3941,7 @@ provides-extras = ["cwl", "mulled", "edam", "extended-assertions", "test"]
 
 [[package]]
 name = "galaxy-tool-util-models"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tool_util_models" }
 dependencies = [
     { name = "pydantic" },
@@ -3967,7 +3967,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-tours"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/tours" }
 dependencies = [
     { name = "galaxy-navigation" },
@@ -3995,7 +3995,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-util"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/util" }
 dependencies = [
     { name = "bleach" },
@@ -4066,7 +4066,7 @@ provides-extras = ["image-util", "jstree", "template", "config-template", "test"
 
 [[package]]
 name = "galaxy-web-apps"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_apps" }
 dependencies = [
     { name = "a2wsgi" },
@@ -4158,7 +4158,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-web-client"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_client" }
 
 [package.optional-dependencies]
@@ -4172,7 +4172,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-web-framework"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_framework" }
 dependencies = [
     { name = "babel" },
@@ -4212,7 +4212,7 @@ provides-extras = ["test"]
 
 [[package]]
 name = "galaxy-web-stack"
-version = "26.1.dev0"
+version = "26.2.0rc1"
 source = { editable = "packages/web_stack" }
 dependencies = [
     { name = "galaxy-data" },
