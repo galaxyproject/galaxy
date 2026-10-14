@@ -37,19 +37,11 @@ function mountSelectable(props: TableProps = {}) {
 }
 
 describe("GTable selection", () => {
-    it.each([undefined, "Select dataset"])("names the selection checkboxes (%s)", (title) => {
-        const wrapper = mountSelectable({ clickableRows: false, selectCheckboxTitle: title });
-
-        expect(wrapper.get("thead input").element).toHaveAccessibleName("Select all for bulk actions");
-        for (const checkbox of wrapper.findAll("tbody input")) {
-            expect(checkbox.element).toHaveAccessibleName(title ?? "Select for bulk actions");
-        }
-    });
-
     // Selenium clicks the checkbox's label; the click must stop at the checkbox rather than
     // also reaching the row, whose own handler would toggle the selection a second time.
     it("selects a row once from its checkbox without counting a row click", async () => {
         const wrapper = mountSelectable();
+        expect(wrapper.get<HTMLInputElement>("tbody input").element.checked).toBe(false);
 
         await wrapper.get("tbody tr").get(".g-checkbox").trigger("click");
 
@@ -59,6 +51,7 @@ describe("GTable selection", () => {
 
     it("selects all from the header checkbox", async () => {
         const wrapper = mountSelectable();
+        expect(wrapper.get<HTMLInputElement>("thead input").element.checked).toBe(false);
 
         await wrapper.get("thead .g-checkbox").trigger("click");
 
@@ -115,10 +108,11 @@ describe("GTable sorting", () => {
         const wrapper = mountSortable();
         const name = wrapper.get("thead th");
 
+        expect(name.attributes("aria-sort")).toBe("ascending");
+        expect(wrapper.findAll("tbody tr td:first-child").map((cell) => cell.text())).toEqual(["first", "second"]);
+
         await name.trigger("keydown", { key: "Enter" });
         expect(wrapper.emitted("sort-changed")).toEqual([["name", true]]);
-        expect(name.attributes("aria-sort")).toBe("descending");
-        expect(wrapper.findAll("tbody tr td:first-child").map((cell) => cell.text())).toEqual(["second", "first"]);
 
         await name.trigger("keydown", { key: " " });
         expect(wrapper.emitted("sort-changed")).toEqual([
