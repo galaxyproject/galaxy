@@ -1,8 +1,15 @@
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import * as ToolSourceDisplayStories from "./ToolSourceDisplay.stories";
 
 import ToolSourceDisplay from "./ToolSourceDisplay.vue";
+
+const stories = composeStories(ToolSourceDisplayStories);
+const mountStory = useStoryMount();
 
 const { mockEditor, mockModel, mockMonaco } = vi.hoisted(() => {
     const mockModel = {};
@@ -21,8 +28,15 @@ const { mockEditor, mockModel, mockMonaco } = vi.hoisted(() => {
 });
 
 vi.mock("@monaco-editor/loader", () => ({
-    default: { init: vi.fn(() => Promise.resolve(mockMonaco)) },
+    default: { init: vi.fn(() => Promise.resolve(mockMonaco)), config: vi.fn() },
 }));
+vi.mock("monaco-editor/esm/vs/editor/editor.main.js", () => mockMonaco);
+vi.mock("monaco-editor/esm/vs/editor/editor.worker?worker", () => ({ default: vi.fn() }));
+
+afterEach(() => {
+    vi.clearAllMocks();
+});
+enableAutoUnmount(afterEach);
 
 async function mountToolSourceDisplay() {
     const wrapper = mount(ToolSourceDisplay, {
@@ -32,17 +46,23 @@ async function mountToolSourceDisplay() {
     return wrapper;
 }
 
+async function mountToolSourceStory() {
+    const wrapper = mountStory(stories.XmlToolSource);
+    await vi.waitFor(() => expect(mockMonaco.editor.create).toHaveBeenCalled());
+    return wrapper;
+}
+
 describe("ToolSourceDisplay", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it("creates a read-only editor in its container", async () => {
-        const wrapper = await mountToolSourceDisplay();
+        const wrapper = await mountToolSourceStory();
         expect(mockMonaco.editor.create).toHaveBeenCalledTimes(1);
         expect(mockMonaco.editor.create).toHaveBeenCalledWith(
-            wrapper.find(".editor-container").element,
-            expect.objectContaining({ value: "<tool id='cat1'/>", language: "xml", readOnly: true }),
+            wrapper.get(".editor-container").element,
+            expect.objectContaining({ value: stories.XmlToolSource.args.code, language: "xml", readOnly: true }),
         );
     });
 
@@ -59,7 +79,7 @@ describe("ToolSourceDisplay", () => {
     });
 
     it("disposes the editor on unmount", async () => {
-        const wrapper = await mountToolSourceDisplay();
+        const wrapper = await mountToolSourceStory();
         expect(mockEditor.dispose).not.toHaveBeenCalled();
         wrapper.unmount();
         expect(mockEditor.dispose).toHaveBeenCalledTimes(1);
