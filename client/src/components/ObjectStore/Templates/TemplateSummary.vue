@@ -20,7 +20,7 @@ const objectStoreType = computed(() => props.template.type);
 
 <template>
     <div>
-        <ObjectStoreBadges :badges="badges" size="lg" />
+        <ObjectStoreBadges :badges="badges" size="lg" :interactive="false" />
         <div>This template produces a Galaxy storage of type <ObjectStoreTypeSpan :type="objectStoreType" />.</div>
         <ConfigurationMarkdown :markdown="template.description || ''" :admin="true" />
     </div>

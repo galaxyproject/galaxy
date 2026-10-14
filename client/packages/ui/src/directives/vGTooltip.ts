@@ -355,6 +355,18 @@ function setupListeners(el: HTMLElement, modifiers: DirectiveBinding["modifiers"
     };
 }
 
+/** Extract a label from sanitized HTML without joining adjacent paragraphs or lines. */
+function getHtmlLabel(contentEl: HTMLElement): string {
+    const copy = contentEl.cloneNode(true) as HTMLElement;
+    for (const boundary of copy.querySelectorAll(
+        "p, br, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre, tr, td, th, hr",
+    )) {
+        boundary.before(" ");
+        boundary.after(" ");
+    }
+    return (copy.textContent || "").replace(/\s+/g, " ").trim();
+}
+
 function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState, vnode?: VNode) {
     const content = getContent(el, bindingValue, vnode);
     if (state.isHtml) {
@@ -362,14 +374,15 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     } else {
         state.contentEl.textContent = content;
     }
+    const label = state.isHtml ? getHtmlLabel(state.contentEl) : content;
     // Set aria-label so icon-only buttons have an accessible name
     const target = getLabelTarget(el);
     const labelledHere = !!target.dataset.gTooltipAriaLabel;
     // A menu toggle with visible text or a label of its own is already named
     const namedToggle =
         target !== el && !labelledHere && (target.hasAttribute("aria-label") || !!target.textContent?.trim());
-    if (content && !namedToggle) {
-        target.setAttribute("aria-label", content);
+    if (label && !namedToggle) {
+        target.setAttribute("aria-label", label);
         target.dataset.gTooltipAriaLabel = "1";
     } else if (labelledHere) {
         target.removeAttribute("aria-label");

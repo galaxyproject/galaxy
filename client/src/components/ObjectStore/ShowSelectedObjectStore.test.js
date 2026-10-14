@@ -71,6 +71,8 @@ describe("ShowSelectedObjectStore", () => {
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();
         expect(wrapper.findComponent(DescribeObjectStore).exists()).toBeTruthy();
+        // Shown inside hover popovers, which can't hold another interactive popover.
+        expect(wrapper.findComponent(DescribeObjectStore).props("interactive")).toBe(false);
     });
 
     it("should fetch from the user based object store APIs for dynamic ids that are uris", async () => {
