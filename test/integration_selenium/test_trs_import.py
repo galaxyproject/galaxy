@@ -48,6 +48,11 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     def trs_config_dir(cls):
         return cls.temp_config_dir("trs")
 
+    def _wait_for_import_redirect(self):
+        # The client redirects to the workflow list only once the import request returns,
+        # which includes the server fetching the workflow from the remote TRS server.
+        self.components.workflows.workflows_list.wait_for_visible(wait_type=self.wait_types.SHED_SEARCH)
+
     def assert_workflow_imported(self, name):
         # surround name with quotes to consider case where name contains colons
         self.workflow_index_search_for(f'"{name}"')
@@ -74,7 +79,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
             workflow_name="galaxy-workflow-dockstore-example-1"
         ).wait_for_and_click()
         self.components.trs_search.import_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported("Test Workflow")
 
@@ -83,7 +88,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.search.wait_for_and_send_keys("organization: iwc-workflows")
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
         self.components.trs_search.import_version(version="v0.4").wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
         self.components.workflows.trs_icon.wait_for_visible()
@@ -96,7 +101,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.search.wait_for_and_send_keys(WORKFLOW_NAME)
         self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME).wait_for_and_click()
         self.components.trs_search.import_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -126,7 +131,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
         self.components.trs_import.import_version(version="v0.4").wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
@@ -134,6 +139,6 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.go_to_trs_by_id()
         self.components.trs_import.url_input.wait_for_and_send_keys(trs_url)
         self.components.trs_import.url_import_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_for_import_redirect()
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
