@@ -7942,6 +7942,38 @@ steps: []
         invocation = self.workflow_populator.get_invocation(response.json()["id"])
         assert invocation["input_step_parameters"]["parameter"]["parameter_value"] == 100
 
+    def test_run_with_multiple_float_parameter(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  values:
+    type: [float]
+    default: [0.5, 1.0]
+steps: {}
+""")
+        run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        (runtime_input,) = run_workflow["steps"][0]["inputs"]
+        assert runtime_input["type"] == "float"
+        assert runtime_input["multiple"] is True
+        assert runtime_input["value"] == [0.5, 1.0]
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={"history_id": history_id, "inputs_by": "name", "inputs": {"values": ["0.5", 1]}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        values = invocation["input_step_parameters"]["values"]["parameter_value"]
+        assert values == [0.5, 1.0]
+        assert all(isinstance(value, float) for value in values)
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={"history_id": history_id, "inputs_by": "name", "inputs": {"values": [0.5, "half"]}},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "values: a float is required")
+
     def test_run_form_multiple_integer_list_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
