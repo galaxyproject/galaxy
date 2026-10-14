@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import type { ParsedFetchWorkbookForCollectionCollectionType } from "./types";
 
 import WhichWorkbookCollectionType from "./WhichWorkbookCollectionType.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 interface Props {
     collectionType: ParsedFetchWorkbookForCollectionCollectionType;
@@ -32,9 +32,9 @@ watch(currentIncludeCollectionName, (newValue) => {
     <div class="configure-workbook">
         <div class="which-question">What type of collection do you want to create?</div>
         <WhichWorkbookCollectionType :value="collectionType" @onChange="setCollectionType" />
-        <BFormCheckbox v-model="currentIncludeCollectionName" class="multiple-collections" size="lg"
-            >Include a collection name column so multiple collections can be created using the workbook?</BFormCheckbox
-        >
+        <GCheckbox v-model="currentIncludeCollectionName" class="multiple-collections" size="large">
+            Include a collection name column so multiple collections can be created using the workbook?
+        </GCheckbox>
     </div>
 </template>
 

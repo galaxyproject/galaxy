@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
 
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
 interface Props {
@@ -36,21 +37,25 @@ watch(localHideSourceItems, (newValue) => {
 
 <template>
     <BFormGroup class="inputs-form-group">
-        <BFormCheckbox
+        <GCheckbox
             v-if="renderExtensionsToggle"
             name="remove-extensions"
             switch
-            :checked="extensionsToggle"
-            @input="emit('remove-extensions-toggle')">
+            :model-value="extensionsToggle"
+            @update:model-value="emit('remove-extensions-toggle')">
             {{ localize("Remove file extensions?") }}
-        </BFormCheckbox>
+        </GCheckbox>
 
-        <div data-description="hide original elements">
-            <BFormCheckbox v-model="localHideSourceItems" name="hide-originals" switch>
+        <div>
+            <GCheckbox
+                v-model="localHideSourceItems"
+                data-description="hide original elements"
+                name="hide-originals"
+                switch>
                 <HelpText
                     uri="galaxy.collections.collectionBuilder.hideOriginalElements"
                     :text="localize('Hide original elements')" />
-            </BFormCheckbox>
+            </GCheckbox>
         </div>
     </BFormGroup>
 </template>
