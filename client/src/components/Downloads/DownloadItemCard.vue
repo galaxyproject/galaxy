@@ -260,6 +260,17 @@ watch(
     { immediate: true },
 );
 
+// The outcome can also be recorded elsewhere on the page (Export to another Galaxy does), after which Recent Exports
+// stops asking this card to check, so show the stored outcome.
+watch(
+    () => props.monitoringData.isFinal,
+    (isFinal) => {
+        if (isFinal) {
+            checkStatus({ enableFetch: false });
+        }
+    },
+);
+
 onUnmounted(() => {
     stopCheckingStatus();
 });

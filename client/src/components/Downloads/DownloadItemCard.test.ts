@@ -269,6 +269,20 @@ describe("DownloadItemCard.vue", () => {
         expect(writeText).toHaveBeenCalledTimes(1);
         expect(writeText).toHaveBeenCalledWith(expect.stringContaining(fakeTaskId));
     });
+
+    it("reloads its status when the export is recorded as finished elsewhere", async () => {
+        const checkStatus = vi.fn();
+        updateProgressMonitor({ checkStatus });
+        const wrapper = mountDownloadItemCard();
+        expect(checkStatus).toHaveBeenCalledTimes(1);
+
+        await wrapper.setProps({
+            monitoringData: { ...baseMonitoringData, taskStatus: "READY", isFinal: true },
+        } as never);
+
+        expect(checkStatus).toHaveBeenCalledTimes(2);
+        expect(checkStatus).toHaveBeenLastCalledWith({ enableFetch: false });
+    });
 });
 
 function updateProgressMonitor(stateChanges: Partial<PersistentProgressTaskMonitorResult>) {
