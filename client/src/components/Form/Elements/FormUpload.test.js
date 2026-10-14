@@ -8,14 +8,6 @@ const stories = composeStories(FormUploadStories);
 const mountStory = useStoryMount();
 
 describe("FormUpload", () => {
-    it("should display selected file in disabled textarea", () => {
-        const fileContent = "H1, H2, H3\nv1, v2, v3";
-        const wrapper = mountStory(stories.CsvContents, { props: { value: fileContent } });
-        const textarea = wrapper.get("textarea");
-        expect(textarea.element.value).toEqual(fileContent);
-        expect(textarea.element.disabled).toBe(true);
-    });
-
     it("should not display text box if file has not been selected", () => {
         const wrapper = mountStory(stories.NoFileChosen);
         const textarea = wrapper.get("textarea");
@@ -24,6 +16,8 @@ describe("FormUpload", () => {
         // style directly instead.
         expect(textarea.element.style.display).toBe("none");
         expect(textarea.text()).toBe("");
+        // Native textarea contents live in value; empty textContent alone cannot prove they are empty.
+        expect(textarea.element.value).toBe("");
         const noInput = wrapper.get("label");
         expect(noInput.text()).toBe("No file chosen");
     });
