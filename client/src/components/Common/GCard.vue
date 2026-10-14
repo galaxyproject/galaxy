@@ -1014,7 +1014,6 @@ function onKeyDown(event: KeyboardEvent) {
     }
 
     :deep(.g-card-select-checkbox) {
-        // Keeps the 1.5rem slot BootstrapVue's custom checkbox reserved, so titles stay where they were.
         min-width: 1.5rem;
     }
 
