@@ -157,6 +157,15 @@ describe("GCheckbox", () => {
         expect(wrapper.find("input").attributes("role")).toBeUndefined();
     });
 
+    // The label spacing on the input is keyed on :not(:last-child), so an unlabelled box must end with its input
+    it("ends with the input only when there is no label", () => {
+        const unlabelled = mount(GCheckbox, { props: { modelValue: false } });
+        const labelled = mount(GCheckbox, { props: { modelValue: false }, slots: { default: "Include" } });
+
+        expect(unlabelled.element.lastElementChild).toBe(unlabelled.find("input").element);
+        expect(labelled.element.lastElementChild).toBe(labelled.find(".g-checkbox-label").element);
+    });
+
     it("renders name, value and required on the input", () => {
         const wrapper = mount(GCheckbox, {
             props: { modelValue: false, name: "include", required: true, value: "hidden" },
