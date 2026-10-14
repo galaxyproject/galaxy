@@ -2,13 +2,14 @@ import type { Decorator } from "@storybook/vue3-vite";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getActivePinia } from "pinia";
 import { h, nextTick, onBeforeUnmount, onUnmounted, ref, watch } from "vue";
-import { isRegisteredUser } from "@/api";
+
+import { type components, isRegisteredUser } from "@/api";
+import { http } from "@/api/client/__mocks__/http";
 import { useHashedUserId } from "@/composables/hashedUserId";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 import { useUserStore } from "@/stores/userStore";
 
 export const HOUR = 60 * 60 * 1000;
-
 export const DAY = 24 * HOUR;
 
 export interface BroadcastScenario extends Pick<BroadcastNotification, "id" | "variant"> {
@@ -193,3 +194,59 @@ export const withBroadcastsState: Decorator = (story, { parameters }) => ({
         return () => (ready.value ? h(story()) : null);
     },
 });
+
+export const SCHEDULED_BROADCAST_ID = "97ac384eddac6e10";
+export const PUBLISHED_BROADCAST_ID = "a08cab2912ce4311";
+
+/** Real admin form responses; relative timestamps are generated when requested. */
+export function broadcastFormHandlers() {
+    return {
+        broadcast: http.get("/api/notifications/broadcast/{notification_id}", ({ params, response }) => {
+            const scheduled = params.notification_id === SCHEDULED_BROADCAST_ID;
+            if (!scheduled && params.notification_id !== PUBLISHED_BROADCAST_ID) {
+                return response("4XX").json({ err_code: 404001, err_msg: "Broadcast not found" }, { status: 404 });
+            }
+            const notification: BroadcastNotification = broadcast(
+                Date.now(),
+                {
+                    id: params.notification_id,
+                    variant: scheduled ? "info" : "warning",
+                    subject: scheduled ? "Scheduled maintenance" : "Service capacity notice",
+                    message: scheduled
+                        ? "Galaxy will undergo maintenance this weekend."
+                        : "Storage capacity is limited while maintenance is in progress.",
+                    publishedIn: scheduled ? DAY : -DAY,
+                    expiresIn: 7 * DAY,
+                },
+                true,
+            );
+            notification.content.action_links = [
+                { action_name: "Galaxy documentation", link: "https://docs.galaxyproject.org/" },
+            ];
+            return response(200).json(notification);
+        }),
+        createBroadcast: http.post("/api/notifications/broadcast", async ({ request, response }) => {
+            const payload = await request.json();
+            const now = new Date().toISOString().replace("Z", "");
+            const notification: components["schemas"]["NotificationResponse"] = {
+                ...payload,
+                id: "6a83cc4912b5e707",
+                create_time: now,
+                update_time: now,
+                publication_time: payload.publication_time ?? now,
+                expiration_time:
+                    payload.expiration_time ?? new Date(Date.now() + 180 * DAY).toISOString().replace("Z", ""),
+            };
+            return response(200).json({ notification, total_notifications_sent: 1 });
+        }),
+        updateBroadcast: http.put("/api/notifications/broadcast/{notification_id}", ({ params, response }) => {
+            if (
+                params.notification_id !== SCHEDULED_BROADCAST_ID &&
+                params.notification_id !== PUBLISHED_BROADCAST_ID
+            ) {
+                return response("4XX").json({ err_code: 404001, err_msg: "Broadcast not found" }, { status: 404 });
+            }
+            return response(204).empty();
+        }),
+    };
+}

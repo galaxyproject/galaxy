@@ -1,14 +1,15 @@
 import "@/composables/__mocks__/filter";
 
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import { composeStory } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { disposePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { disposePinia, getActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
+import * as Stories from "./BroadcastForm.stories";
 import { generateNewBroadcast, generateRandomString } from "./test.utils";
 
 import BroadcastForm from "./BroadcastForm.vue";
@@ -19,7 +20,9 @@ const ACTION_LINK_SELECTOR = "#create-action-link";
 const SUBMIT_BUTTON_SELECTOR = "#broadcast-submit";
 const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 
-const localVue = getLocalVue(true);
+// The shared preview fixture owns real per-user persistence and its cleanup.
+vi.unmock("@/composables/hashedUserId");
+vi.unmock("@/composables/userLocalStorage");
 
 // BroadcastForm gets its router via the Composition API's useRouter(), which resolves
 // through injection rather than the (Options API) `$router` global mocks used to cover.
@@ -33,16 +36,14 @@ vi.mock("vue-router", () => ({
 beforeEach(() => {
     mockPush.mockClear();
 });
-enableAutoUnmount(afterEach);
 
 async function mountBroadcastForm(props: Partial<InstanceType<typeof BroadcastForm>["$props"]> = {}) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    onTestFinished(() => disposePinia(pinia));
-
-    const wrapper = mount(BroadcastForm, {
+    // Unit cases keep their original per-case API answers, including random edit vectors.
+    const story = composeStory({ ...Stories.NewBroadcast, parameters: { msw: { handlers: [] } } }, Stories.default);
+    const root = mountStory(story, {
         props,
+        instrumentLocalization: true,
         global: {
-            ...withPlugins(localVue, pinia),
             stubs: {
                 FontAwesomeIcon: true,
                 // Keep FormElement real so setValue reaches its input/textarea controls.
@@ -52,6 +53,14 @@ async function mountBroadcastForm(props: Partial<InstanceType<typeof BroadcastFo
             },
         },
     });
+    const pinia = getActivePinia()!;
+    onTestFinished(() => disposePinia(pinia));
+    await vi.waitFor(() => {
+        if (!root.findComponent(BroadcastForm).exists()) {
+            throw new Error("Broadcast preview fixture is still initializing.");
+        }
+    });
+    const wrapper = root.findComponent(BroadcastForm);
 
     await flushPromises();
 
@@ -59,6 +68,7 @@ async function mountBroadcastForm(props: Partial<InstanceType<typeof BroadcastFo
 }
 
 const { server, http } = useServerMock();
+const mountStory = useStoryMount();
 
 describe("BroadcastForm.vue", () => {
     function expectSubmitButton(wrapper: VueWrapper, enabled: boolean) {
