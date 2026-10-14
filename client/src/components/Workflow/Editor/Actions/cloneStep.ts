@@ -1,4 +1,5 @@
 import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import { cloneRaw } from "@/utils/toRawDeep";
 
 /**
  * Copies a step and increments a trailing number in it's label,
@@ -9,7 +10,7 @@ import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
  * @returns cloned step
  */
 export function cloneStepWithUniqueLabel(step: Readonly<Step>, labelSet: Set<string>): Step {
-    const newStep = structuredClone(step) as Step;
+    const newStep = cloneRaw(step) as Step;
 
     if (newStep.label) {
         while (labelSet.has(newStep.label)) {

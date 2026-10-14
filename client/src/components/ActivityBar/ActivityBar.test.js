@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
+import { dispatchEvent, emittedArg, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { h, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useActivityStore } from "@/stores/activityStore";
@@ -20,7 +19,7 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({ path: "/", params: {}, query: {} })),
     useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
@@ -28,7 +27,18 @@ vi.mock("vue-router/composables", () => ({
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
+
+// shallowMount stubs draggable without rendering its scoped item slot, so render it ourselves.
+const draggableStub = {
+    compatConfig: { MODE: 3 },
+    props: ["modelValue"],
+    render() {
+        return h(
+            "div",
+            (this.modelValue || []).flatMap((element, index) => this.$slots.item({ element, index })),
+        );
+    },
+};
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
@@ -63,7 +73,7 @@ describe("ActivityBar", () => {
             }),
         );
         wrapper = shallowMount(mountTarget, {
-            localVue,
+            global: { ...localVue, stubs: { draggable: draggableStub } },
             pinia,
         });
     });
@@ -85,7 +95,7 @@ describe("ActivityBar", () => {
         });
         const bar = wrapper.find("[data-description='activity bar']");
         dispatchEvent(bar, "dragenter");
-        const emittedEvent = wrapper.emitted()["dragstart"][0][0];
+        const emittedEvent = emittedArg(wrapper, "dragstart");
         expect(emittedEvent.to).toBe("/workflows/run?id=workflow-id");
     });
 
@@ -102,6 +112,7 @@ describe("ActivityBar", () => {
             mockUnprivilegedToolsRequest(server, http);
             const testWrapper = shallowMount(mountTarget, {
                 localVue,
+                stubs: { draggable: draggableStub },
                 pinia,
                 propsData: { activityBarId },
             });
@@ -117,6 +128,17 @@ describe("ActivityBar", () => {
         it("shows interactivetools activity when interactivetools_enable is true", async () => {
             const testWrapper = await mountWithInteractiveToolsConfig(true, "it-test-show");
             expect(testWrapper.findAll("[id='interactivetools']").length).toBe(1);
+        });
+
+        it("keeps a hidden interactivetools activity when the visible ones are reordered", async () => {
+            const testWrapper = await mountWithInteractiveToolsConfig(false, "it-test-reorder");
+            const bar = testWrapper.findComponent(draggableStub);
+            const visible = bar.props("modelValue");
+            expect(visible.map((activity) => activity.id)).toEqual(["test-1", "test-3"]);
+            bar.vm.$emit("update:modelValue", [...visible].reverse());
+            await testWrapper.vm.$nextTick();
+            const stored = useActivityStore("it-test-reorder").activities.map((activity) => activity.id);
+            expect(stored).toEqual(["test-3", "test-1", "interactivetools"]);
         });
     });
 });

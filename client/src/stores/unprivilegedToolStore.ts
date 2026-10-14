@@ -1,25 +1,47 @@
-import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { defineStore, storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
 
-import { GalaxyApi, type UnprivilegedToolResponse } from "@/api";
+import { GalaxyApi, isRegisteredUser, type UnprivilegedToolResponse } from "@/api";
+import { useToast } from "@/composables/toast";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 export const useUnprivilegedToolStore = defineStore("unprivilegedToolStore", () => {
     const unprivilegedTools = ref<UnprivilegedToolResponse[]>();
     const canUseUnprivilegedTools = ref(false);
     const isLoading = ref(false);
     const isLoaded = computed(() => unprivilegedTools.value !== undefined);
+    const toast = useToast();
+    const { currentUser } = storeToRefs(useUserStore());
+
+    function reportLoadFailure(error: unknown) {
+        toast.error(errorMessageAsString(error), "Failed to check access to custom tools");
+    }
 
     async function load(reload = false) {
+        // Anonymous users have no custom tools. The user watch below loads once a registered user is known.
+        if (!isRegisteredUser(currentUser.value)) {
+            return unprivilegedTools;
+        }
         if (reload || (!isLoaded.value && !isLoading.value)) {
             isLoading.value = true;
-            const { data, error } = await GalaxyApi().GET("/api/unprivileged_tools");
+            try {
+                const { data, error, response } = await GalaxyApi().GET("/api/unprivileged_tools");
 
-            if (error) {
+                if (error) {
+                    canUseUnprivilegedTools.value = false;
+                    // A 403 means the user lacks the role to run custom tools.
+                    if (response.status !== 403) {
+                        reportLoadFailure(error);
+                    }
+                } else {
+                    unprivilegedTools.value = data;
+                    canUseUnprivilegedTools.value = true;
+                }
+            } catch (e) {
                 canUseUnprivilegedTools.value = false;
-            } else {
-                unprivilegedTools.value = data;
-                canUseUnprivilegedTools.value = true;
-
+                reportLoadFailure(e);
+            } finally {
                 isLoading.value = false;
             }
         }
@@ -40,7 +62,18 @@ export const useUnprivilegedToolStore = defineStore("unprivilegedToolStore", () 
         }
     }
 
-    load();
+    watch(
+        () => (isRegisteredUser(currentUser.value) ? currentUser.value.id : null),
+        (userId) => {
+            if (userId) {
+                load(true);
+            } else {
+                unprivilegedTools.value = undefined;
+                canUseUnprivilegedTools.value = false;
+            }
+        },
+        { immediate: true },
+    );
 
     return {
         canUseUnprivilegedTools,

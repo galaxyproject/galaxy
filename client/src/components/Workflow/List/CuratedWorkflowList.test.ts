@@ -1,11 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue, nth, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
@@ -18,8 +18,7 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
+const router = createRouter({ history: createMemoryHistory(), routes: [] });
 
 const FAKE_USER = getFakeRegisteredUser();
 
@@ -230,7 +229,7 @@ describe("CuratedWorkflowList", () => {
 
         const cards = wrapper.findAll(".curated-workflow-card");
         expect(cards).toHaveLength(1);
-        expect(cards.at(0).text()).toContain("Workflow second");
+        expect(nth(cards, 0).text()).toContain("Workflow second");
     });
 
     it("steps back to the last page that exists when the catalog shrinks underneath the user", async () => {
@@ -342,11 +341,11 @@ describe("CuratedWorkflowList", () => {
 
         const chips = wrapper.findAll(".curated-workflow-collection");
         expect(chips).toHaveLength(2);
-        expect(chips.at(0).text()).toContain("Genome assembly");
-        expect(chips.at(0).text()).toContain("3");
-        expect(chips.at(0).classes()).not.toContain("g-pressed");
+        expect(nth(chips, 0).text()).toContain("Genome assembly");
+        expect(nth(chips, 0).text()).toContain("3");
+        expect(nth(chips, 0).classes()).not.toContain("g-pressed");
 
-        await chips.at(0).trigger("click");
+        await nth(chips, 0).trigger("click");
         await flushPromises();
 
         expect(catalogQueries[1]!.get("search")).toBe("collection:'Genome assembly'");
@@ -447,7 +446,7 @@ describe("CuratedWorkflowList", () => {
 
     it("offers the collection filter in the advanced menu only for the iwc catalog", async () => {
         const menuHasCollection = (wrapper: Awaited<ReturnType<typeof mountList>>) =>
-            wrapper.findComponent(FilterMenu).props("filterClass").validFilters.collection.menuItem;
+            wrapper.findComponent(FilterMenu).props("filterClass").validFilters.collection?.menuItem;
 
         const iwcWrapper = await mountCuratedList(iwcPage(["a"]));
         expect(menuHasCollection(iwcWrapper)).toBe(true);

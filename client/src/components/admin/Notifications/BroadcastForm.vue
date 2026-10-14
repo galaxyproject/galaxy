@@ -2,8 +2,8 @@
 import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
-import Vue, { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { type components, GalaxyApi } from "@/api";
 import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
@@ -83,7 +83,7 @@ function convertUTCtoLocal(utcTimeString: string) {
 
 function addActionLink() {
     if (!broadcastData.value.content.action_links) {
-        Vue.set(broadcastData.value.content, "action_links", []);
+        broadcastData.value.content.action_links = [];
     }
 
     broadcastData.value.content.action_links?.push({
@@ -248,7 +248,10 @@ if (props.id) {
                         label="Publication Time (local time)"
                         label-for="broadcast-publication-time"
                         description="The broadcast will be displayed from this time onwards. Default is the time of creation.">
-                        <GDateTime id="broadcast-publication-time" v-model="publicationDate" />
+                        <GDateTime
+                            id="broadcast-publication-time"
+                            :value="publicationDate"
+                            @input="(v: Date) => (publicationDate = v)" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
@@ -257,7 +260,10 @@ if (props.id) {
                         label="Expiration Time (local time)"
                         label-for="broadcast-expiration-time"
                         description="The broadcast will not be displayed and will be deleted from the database after this time. Default is 6 months from the creation time.">
-                        <GDateTime id="broadcast-expiration-time" v-model="expirationDate" />
+                        <GDateTime
+                            id="broadcast-expiration-time"
+                            :value="expirationDate"
+                            @input="(v: Date) => (expirationDate = v)" />
                     </BFormGroup>
                 </BCol>
             </BRow>

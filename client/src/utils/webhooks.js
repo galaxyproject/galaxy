@@ -1,7 +1,6 @@
 import axios from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import { rethrowSimple } from "@/utils/simple-error";
 
 let webhookData = undefined;
 
@@ -11,7 +10,10 @@ async function getWebhookData() {
             const { data } = await axios.get(`${getAppRoot()}api/webhooks`);
             webhookData = data;
         } catch (e) {
-            rethrowSimple(e);
+            // Webhooks are optional add-ons (masthead items, tool menu entries, onload scripts), so the page
+            // works without them. The empty result is not cached, and the next call retries.
+            console.warn("Failed to load webhooks", e);
+            return [];
         }
     }
     return webhookData;

@@ -369,6 +369,15 @@ def index_exists(index_name: str, table_name: str, default: bool) -> bool:
     return any(index["name"] == index_name for index in indexes)
 
 
+def index_names_on_columns(table_name: str, column_names: list[str], default: list[str]) -> list[str]:
+    """Names of indexes on exactly `column_names`, however they were named. If running in offline mode, return default."""
+    if context.is_offline_mode():
+        _log_offline_mode_message(index_names_on_columns.__name__, default)
+        return default
+    indexes = _inspector().get_indexes(table_name)
+    return [index["name"] for index in indexes if index["column_names"] == column_names]
+
+
 def foreign_key_exists(constraint_name: str, table_name: str, default: bool) -> bool:
     """Check if unique constraint exists. If running in offline mode, return default."""
     if context.is_offline_mode():

@@ -3,7 +3,6 @@ on:
   pull_request:
     paths:
       - 'packages/**'
-      - 'lib/galaxy/**'
       - '.github/workflows/metadata_image.yaml'
   push:
     branches: [dev, 'release_*']

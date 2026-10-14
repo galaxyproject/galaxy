@@ -364,6 +364,21 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
+    def drag_over(self, source: WebElementProtocol, target: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager holding a drag of source over target.
+
+        Whatever the zone reveals on dragenter is on screen for the body of the
+        block. The drop completes on exit, as drag_and_drop would have done,
+        whether or not the block raised.
+
+        Usage:
+            with driver.drag_over(dataset, editor):
+                assert "dragover" in editor.get_attribute("class")
+        """
+        ...
+
+    @abstractmethod
     def double_click(self, element: WebElementProtocol) -> None:
         """Double-click element."""
         ...
@@ -572,6 +587,21 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
         Returns:
             PNG image data as bytes
+        """
+        ...
+
+    @abstractmethod
+    def highlight_element(self, element: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager that draws a red border around an element.
+
+        The element's previous border is restored on exit, whether or not the
+        block raised. Intended for annotating screenshots.
+
+        Usage:
+            with driver.highlight_element(element):
+                driver.save_screenshot("highlighted.png")
+            # Border removed here
         """
         ...
 

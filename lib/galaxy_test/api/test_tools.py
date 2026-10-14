@@ -1,4 +1,5 @@
 # Test tools API.
+import base64
 import contextlib
 import json
 import os
@@ -28,7 +29,10 @@ from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
 )
-from galaxy_test.base.decorators import requires_new_history
+from galaxy_test.base.decorators import (
+    requires_new_history,
+    requires_new_user,
+)
 from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
     DatasetCollectionPopulator,
@@ -203,6 +207,21 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # returned.
         tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
+
+    @skip_without_tool("bibtex")
+    def test_no_panel_index_returns_raw_tool_help(self):
+        index = self._get("tools", data=dict(in_panel=False, tool_help=True))
+        self._assert_status_code_is_ok(index)
+        tool = next(t for t in index.json() if t["id"] == "bibtex")
+        assert tool["help_format"] == "restructuredtext"
+        assert "**WARNING:**" in tool["help"]
+
+    @skip_without_tool("help_features_markdown")
+    def test_no_panel_index_tool_help_markdown(self):
+        tools_index = self._get("tools", data=dict(in_panel=False, tool_help=True)).json()
+        tool = next(t for t in tools_index if t["id"] == "help_features_markdown")
+        assert tool["help_format"] == "markdown"
+        assert "**This is bold text**" in tool["help"]
 
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
@@ -649,31 +668,18 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert paginated_ids == full_ids, (paginated_ids, full_ids)
 
     @skip_without_tool("collection_paired_test")
-    def test_build_collection_options_hidden_direct_match_included(self):
-        """A hidden ``paired`` collection still appears under direct match
-        — preserves legacy ``active_dataset_collections`` semantics (which
-        included hidden) for the direct-match path."""
+    def test_build_collection_options_hidden_excluded(self):
         with self.dataset_populator.test_history() as history_id:
-            hidden_pair = self._create_hdca(history_id, "pair", hidden=True)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-            f1 = self._build_tool_param("collection_paired_test", history_id)
-            assert hidden_pair["id"] in {e["id"] for e in f1["options"]["hdca"]}
-
-    @skip_without_tool("collection_paired_test")
-    def test_build_collection_options_hidden_multirun_excluded(self):
-        """A hidden ``list:paired`` collection must NOT appear as a multirun
-        match — preserves legacy ``active_visible_dataset_collections``
-        semantics (visible-only) for the subcollection-mapping path."""
-        with self.dataset_populator.test_history() as history_id:
-            hidden_lop = self._create_hdca(history_id, "list_of_pairs", hidden=True)
+            self._create_hdca(history_id, "pair", hidden=True)
+            self._create_hdca(history_id, "list_of_pairs", hidden=True)
             visible_pair = self._create_hdca(history_id, "pair")
+            visible_lop = self._create_hdca(history_id, "list_of_pairs")
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
             f1 = self._build_tool_param("collection_paired_test", history_id)
-            returned_ids = {e["id"] for e in f1["options"]["hdca"]}
-            assert hidden_lop["id"] not in returned_ids, returned_ids
-            assert visible_pair["id"] in returned_ids, returned_ids
+            returned_ids = [e["id"] for e in f1["options"]["hdca"]]
+            assert returned_ids == [visible_lop["id"], visible_pair["id"]], returned_ids
+            assert f1["options_meta"]["hdca"]["total_estimate"] == 2
 
     @skip_without_tool("collection_list_or_nested_list_input")
     def test_build_collection_options_multi_typed_emits_direct_and_multirun(self):
@@ -1835,6 +1841,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
             # Run simple non-upload tool with an input data parameter.
             inputs = self._get_cat1_inputs(history_id)
+            self.dataset_populator.wait_for_history(history_id)
+            self.dataset_populator.make_dataset_public(history_id, inputs["input1"]["id"])
             original_output = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
             original_job = self.dataset_populator.get_job_details(original_output["jobs"][0]["id"], full=True).json()
 
@@ -2033,6 +2041,85 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
             assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
 
+    def _run_and_get_job(self, tool_id, history_id, inputs, use_cached_job=False):
+        outputs = self._run(
+            tool_id, history_id, inputs=inputs, use_cached_job=use_cached_job, assert_ok=True, wait_for_job=True
+        )
+        return self.dataset_populator.get_job_details(outputs["jobs"][0]["id"], full=True).json()
+
+    @skip_without_tool("multi_data_optional")
+    @requires_new_history
+    @requires_new_user
+    def test_run_multi_data_optional_map_over_empty_subcollection_use_cached_job(self):
+        # Empty collections have no datasets that are unique to this test, so a fresh user keeps
+        # jobs from earlier runs against the same database out of the cache lookup.
+        with self._different_user_and_history(f"{uuid4()}@test.com") as history_id:
+
+            def run(hdca_id, use_cached_job=False):
+                inputs = {
+                    "input1": {"batch": True, "values": [{"src": "hdca", "map_over_type": "list", "id": hdca_id}]}
+                }
+                return self._run_and_get_job("multi_data_optional", history_id, inputs, use_cached_job)
+
+            populated_hdca = self.dataset_collection_populator.upload_collection(
+                history_id,
+                "list:list",
+                elements=[{"name": "sample", "elements": [{"src": "pasted", "paste_content": "1\n", "name": "read"}]}],
+                wait=True,
+            ).json()["output_collections"][0]
+            empty_hdca = self.dataset_collection_populator.upload_collection(
+                history_id, "list:list", elements=[{"name": "sample", "elements": []}], wait=True
+            ).json()["output_collections"][0]
+            empty_hdca_copy = self.dataset_collection_populator.copy_collection(history_id, empty_hdca["id"]).json()
+
+            run(populated_hdca["id"])
+            empty_job = run(empty_hdca["id"], use_cached_job=True)
+            assert empty_job["copied_from_job_id"] is None
+            cached_job = run(empty_hdca_copy["id"], use_cached_job=True)
+            assert cached_job["copied_from_job_id"] == empty_job["id"]
+
+    @skip_without_tool("multi_data_optional")
+    @requires_new_history
+    @requires_new_user
+    def test_run_multi_data_optional_empty_collection_use_cached_job(self):
+        with self._different_user_and_history(f"{uuid4()}@test.com") as history_id:
+
+            def run(hdca_id, use_cached_job=False):
+                inputs = {"input1": {"batch": False, "values": [{"src": "hdca", "id": hdca_id}]}}
+                return self._run_and_get_job("multi_data_optional", history_id, inputs, use_cached_job)
+
+            populated_hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["1\n"], wait=True
+            ).json()["output_collections"][0]
+            empty_hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[], wait=True
+            ).json()["output_collections"][0]
+            empty_hdca_copy = self.dataset_collection_populator.copy_collection(history_id, empty_hdca["id"]).json()
+
+            run(populated_hdca["id"])
+            empty_job = run(empty_hdca["id"], use_cached_job=True)
+            assert empty_job["copied_from_job_id"] is None
+            cached_job = run(empty_hdca_copy["id"], use_cached_job=True)
+            assert cached_job["copied_from_job_id"] == empty_job["id"]
+
+    @skip_without_tool("identifier_all_collection_types")
+    @requires_new_history
+    def test_run_identifier_all_collection_types_empty_inner_lists_use_cached_job(self):
+        with self.dataset_populator.test_history_for(
+            self.test_run_identifier_all_collection_types_empty_inner_lists_use_cached_job
+        ) as history_id:
+
+            def run(outer_identifier, use_cached_job=False):
+                hdca = self.dataset_collection_populator.upload_collection(
+                    history_id, "list:list", elements=[{"name": outer_identifier, "elements": []}], wait=True
+                ).json()["output_collections"][0]
+                inputs = {"input1": {"src": "hdca", "id": hdca["id"]}}
+                return self._run_and_get_job("identifier_all_collection_types", history_id, inputs, use_cached_job)
+
+            run("a")
+            job = run("b", use_cached_job=True)
+            assert job["copied_from_job_id"] is None
+
     @skip_without_tool("identifier_single")
     @requires_new_history
     def test_run_identifier_single_use_cached_job_renamed_input(self):
@@ -2227,7 +2314,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     else:
                         self._assert_dataset_permission_denied_response(response)
 
-            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
+            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test", wait=True)
+            self.dataset_populator.make_dataset_public(history_id, new_dataset["id"])
             inputs = dict(
                 input1=dataset_to_param(new_dataset),
             )
@@ -2246,47 +2334,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
             )
             # _different_user cannot use datasets derived from the private input.
             assert_inputs(inputs_2, can_be_used=False)
-
-    @skip_without_tool("collection_creates_list")
-    def test_guess_derived_permissions_collections(self, history_id):
-        def first_element_dataset_id(hdca):
-            # Fetch full and updated details for HDCA
-            print(hdca)
-            full_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=hdca["hid"])
-            elements = full_hdca["elements"]
-            element0 = elements[0]["object"]
-            return element0["id"]
-
-        response = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], direct_upload=True, wait=True
-        )
-        self._assert_status_code_is(response, 200)
-        hdca = response.json()["output_collections"][0]
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        inputs = {
-            "input1": {"src": "hdca", "id": hdca["id"]},
-        }
-        public_output_response = self._run("collection_creates_list", history_id, inputs)
-        self._assert_status_code_is(public_output_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        input_element_id = first_element_dataset_id(hdca)
-        self.dataset_populator.make_private(history_id, input_element_id)
-
-        private_output_response = self._run("collection_creates_list", history_id, inputs)
-        self._assert_status_code_is(private_output_response, 200)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-
-        public_element_id = first_element_dataset_id(public_output_response.json()["output_collections"][0])
-        private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
-
-        def _dataset_accessible(dataset_id):
-            contents_response = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
-            return "name" in contents_response
-
-        with self._different_user():
-            assert _dataset_accessible(public_element_id)
-            assert not _dataset_accessible(private_element_id)
 
     @skip_without_tool("validation_default")
     def test_validation(self, history_id):
@@ -2949,6 +2996,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
         job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
         assert job_details["state"] == "error"
         assert "255 character" in job_details["job_messages"][0]["desc"]
+
+    @skip_without_tool("discover_unknown_ext")
+    def test_unknown_output_extension_job_message(self, history_id):
+        response = self._run("discover_unknown_ext", history_id, {})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        messages = [message for message in job_details["job_messages"] if message["type"] == "unknown_datatype"]
+        assert len(messages) == 1, job_details["job_messages"]
+        assert messages[0]["extension"] == "notadatatype"
+        assert messages[0]["error_level"] == 2
+        assert "2 output datasets set to 'data'" in messages[0]["desc"]
 
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed")).read()
@@ -3793,6 +3853,37 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert output_details["state"] == "ok"
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.strip() == source_uri.strip()
+
+    @skip_without_tool("gx_allow_uri_if_protocol_single")
+    def test_allow_uri_if_protocol_on_single_deferred_zarr_input(self, history_id):
+        top_level_uri = "https://example.org/data/top_level.zarr"
+        nested_uri = "https://example.org/data/nested.zarr"
+        top_level_hda = self.dataset_populator.create_deferred_hda(history_id, top_level_uri, ext="zarr")
+        nested_hda = self.dataset_populator.create_deferred_hda(history_id, nested_uri, ext="zarr")
+
+        inputs = {"input1": dataset_to_param(top_level_hda), "nested|input2": dataset_to_param(nested_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol_single", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.splitlines() == [top_level_uri, nested_uri]
+
+    @skip_without_tool("gx_allow_uri_if_protocol_single")
+    def test_allow_uri_if_protocol_materializes_other_protocols(self, history_id):
+        content = "materialized content\n"
+        source_uri = f"base64://{base64.b64encode(content.encode()).decode()}"
+        deferred_hda = self.dataset_populator.create_deferred_hda(history_id, source_uri, ext="txt")
+
+        inputs = {"input1": dataset_to_param(deferred_hda)}
+        run_response = self.dataset_populator.run_tool(
+            tool_id="gx_allow_uri_if_protocol_single", inputs=inputs, history_id=history_id
+        )
+        output = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content == content
 
     @skip_without_tool("gx_allow_uri_if_protocol")
     def test_allow_uri_if_protocol_on_collection_with_deferred(self, history_id):

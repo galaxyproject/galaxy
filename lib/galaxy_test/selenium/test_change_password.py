@@ -1,14 +1,10 @@
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestChangePassword(SeleniumTestCase):
-    @selenium_only(
-        "Not yet migrated to support Playwright backend - playwright._impl._errors.Error: Page.goto: net::ERR_ABORTED at http://localhost:8081/"
-    )
     @selenium_test
     def test_change_password(self):
         self.home()
@@ -18,6 +14,9 @@ class TestChangePassword(SeleniumTestCase):
         self.components.preferences.change_password.wait_for_and_click()
         new_password = self._get_random_password()
         self.fill_input_fields(self.default_password, new_password, new_password)
+        # The form posts and then redirects; logging out before that lands races
+        # the request that is changing the password this test logs back in with.
+        self.assert_success_message(contains="Password has been changed")
         self.logout_if_needed()
         self.submit_login(email, new_password)
 

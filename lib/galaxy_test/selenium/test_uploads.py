@@ -96,6 +96,28 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.assert_item_name(1, "Test List")
 
     @selenium_test
+    def test_upload_list_multiple_files_keeps_element_content(self):
+        file_names = ["1.tabular", "2.tabular"]
+        uploader = self.upload_context("local-file")
+        for file_name in file_names:
+            uploader.stage_local_file(self.get_filename(file_name))
+        uploader.to_list("Test List").start()
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_id = self.current_history_id()
+        collection = self.dataset_populator.get_history_collection_details(history_id, hid=1)
+        elements = collection["elements"]
+        # List elements are reversed to match the history panel display order (newest HID first)
+        assert [element["element_identifier"] for element in elements] == list(reversed(file_names))
+        for element in elements:
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=element["object"]["id"])
+            with open(self.get_filename(element["element_identifier"])) as f:
+                expected_content = f.read()
+            assert (
+                content.rstrip() == expected_content.rstrip()
+            ), f"Element {element['element_identifier']} has wrong content"
+
+    @selenium_test
     def test_upload_pair(self):
         uploader = self.upload_context("local-file")
         uploader.stage_local_file(self.get_filename("1.tabular"))
@@ -249,14 +271,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_collection_name("UP000052092")
         self.screenshot("rules_example_4_7_mapping_extension_and_name")
 
-        rule_builder.view_source.wait_for_and_click()
-        text_area_elem = rule_builder.source.wait_for_visible()
-
-        self.screenshot("rules_example_4_8_source")
-        self.write_screenshot_directory_file("rules_example_4_8_text", text_area_elem.get_attribute("value"))
-
-        rule_builder.main_button_ok.wait_for_and_click()
-        rule_builder.view_source.wait_for_visible()
+        source = self.rule_builder_show_and_get_source(screenshot_name="rules_example_4_8_source")
+        self.write_screenshot_directory_file("rules_example_4_8_text", source)
 
     @selenium_test
     @pytest.mark.gtn_screenshot

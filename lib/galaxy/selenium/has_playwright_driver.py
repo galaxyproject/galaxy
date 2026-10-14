@@ -109,7 +109,10 @@ See Also
 import abc
 import logging
 from collections.abc import Sequence
-from contextlib import contextmanager
+from contextlib import (
+    AbstractContextManager,
+    contextmanager,
+)
 from typing import (
     Any,
     Generic,
@@ -122,6 +125,7 @@ from playwright.sync_api import (
     Error as PlaywrightError,
     Frame,
     FrameLocator,
+    JSHandle,
     Page,
     Playwright,
     TimeoutError as PlaywrightTimeoutException,
@@ -324,7 +328,17 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             url: The URL to navigate to
         """
-        self.page.goto(url)
+        try:
+            self.page.goto(url)
+        except PlaywrightError as e:
+            if "ERR_ABORTED" not in str(e):
+                raise
+            # The page navigated itself - an async form submit assigning
+            # window.location, say - and the browser cancels whichever
+            # navigation lost the race. Selenium's get() accepts wherever that
+            # leaves it; go where the caller asked instead. The competing load
+            # has committed by now, so this one has the page to itself.
+            self.page.goto(url)
 
     def refresh(self) -> None:
         """Reload the current page."""
@@ -879,22 +893,40 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             source: The element to drag
             target: The element to drop onto
         """
-        self._drag_and_drop(self._unwrap_element(source), self._unwrap_element(target))
+        self._drag_release(self._drag_hold(self._unwrap_element(source), self._unwrap_element(target)))
 
-    def _drag_and_drop(self, source: ElementHandle, target: ElementHandle) -> None:
+    def drag_over(self, source: WebElementProtocol, target: WebElementProtocol):
         """
-        Internal implementation of drag and drop.
+        Hold a drag of source over target, dropping on exit.
+
+        See HasDriverProtocol.drag_over.
+        """
+        held = self._drag_hold(self._unwrap_element(source), self._unwrap_element(target))
+
+        @contextmanager
+        def _drag_over_context():
+            try:
+                yield
+            finally:
+                self._drag_release(held)
+
+        return _drag_over_context()
+
+    def _drag_hold(self, source: ElementHandle, target: ElementHandle) -> JSHandle:
+        """
+        Start a drag and leave it hanging over the target, returning its state.
 
         Fires dragenter and dragover, which a real drag does and which drop zones
-        use to reveal themselves. A zone that swaps its contents in response
-        detaches the element the caller grabbed, so drop goes to the nearest
-        ancestor still in the document - the zone itself, which is where the
-        handler lives - rather than to a node nothing can hear any more.
+        use to reveal themselves. The chain from target to document is collected
+        now, before any handler runs: a zone that swaps its contents in response
+        detaches the element the caller grabbed, and the drop then has to go to
+        the nearest ancestor still in the document - the zone itself, which is
+        where the handler lives - rather than to a node nothing can hear any more.
 
         Uses a real DataTransfer so setData/getData work across the sequence,
         unlike synthetic DragEvents where Chrome restricts getData to return empty.
         """
-        self._frame_or_page.evaluate(
+        return self._frame_or_page.evaluate_handle(
             """([source, target]) => {
                 const dataTransfer = new DataTransfer();
                 const drag = (element, type) =>
@@ -910,12 +942,29 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
                 drag(source, "dragstart");
                 drag(target, "dragenter");
                 drag(target, "dragover");
-                drag(ancestors.find((node) => node.isConnected) || target, "drop");
-                drag(source, "dragend");
-                source.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+                return { source, ancestors, dataTransfer };
             }""",
             [source, target],
         )
+
+    def _drag_release(self, held: JSHandle) -> None:
+        """Drop what _drag_hold is holding, on the deepest target still in the document."""
+        try:
+            self._frame_or_page.evaluate(
+                """({ source, ancestors, dataTransfer }) => {
+                const drag = (element, type) =>
+                    element.dispatchEvent(
+                        new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer })
+                    );
+
+                drag(ancestors.find((node) => node.isConnected) || ancestors[0], "drop");
+                drag(source, "dragend");
+                source.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+            }""",
+                held,
+            )
+        finally:
+            held.dispose()
 
     def action_chains(self):
         """
@@ -927,7 +976,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         raise NotImplementedError(
             "action_chains() is Selenium-only - express the gesture instead: hover(), "
-            "hover_away(), move_to_and_click(), double_click() and drag_and_drop() here, "
+            "hover_away(), move_to_and_click(), double_click(), drag_and_drop() and drag_over() here, "
             "or shift_click(), send_keys_to_page() and mouse_drag() on NavigatesGalaxy."
         )
 
@@ -1282,6 +1331,32 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             PNG image data as bytes
         """
         return self.page.screenshot()
+
+    def highlight_element(self, element: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager that draws a red border around an element.
+
+        Args:
+            element: The element to highlight
+
+        Returns:
+            Context manager restoring the previous border on exit
+        """
+        return self._highlight_element(self._unwrap_element(element))
+
+    def _highlight_element(self, element: ElementHandle) -> AbstractContextManager[None]:
+        """Internal implementation of highlight_element."""
+
+        @contextmanager
+        def _highlight_context():
+            original_border = self.execute_script("return arguments[0].style.border;", element)
+            try:
+                self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                yield
+            finally:
+                self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+
+        return _highlight_context()
 
     def close(self) -> None:
         """Cleanup the current browser tab/page."""

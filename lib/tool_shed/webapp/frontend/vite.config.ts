@@ -15,6 +15,10 @@ export default defineConfig({
         }),
     ],
     build: {},
+    optimizeDeps: {
+        // raw-source package: .vue files must go through plugin-vue, not esbuild pre-bundling
+        exclude: ["@galaxyproject/galaxy-ui"],
+    },
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src", import.meta.url)),

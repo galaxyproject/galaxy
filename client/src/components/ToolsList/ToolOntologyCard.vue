@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faEye, faLink, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getFullAppUrl } from "@/app/utils";
-import { Toast } from "@/composables/toast";
 import type { ToolSection } from "@/stores/toolStore";
 import { copy } from "@/utils/clipboard";
 
@@ -44,8 +43,7 @@ const badges = computed<CardBadge[]>(() => {
             visible: true,
             icon: faSitemap,
             handler: () => {
-                copy(props.ontology.id);
-                Toast.success(`EDAM ID "${props.ontology.id}" copied to clipboard`);
+                copy(props.ontology.id, `EDAM ID "${props.ontology.id}" copied to clipboard`);
             },
         },
     ];
@@ -77,8 +75,7 @@ const secondaryActions = computed<CardAction[]>(() => {
         variant: "outline-primary",
         handler: () => {
             const link = getFullAppUrl(`tools/list?ontology="${ontologyId}"`);
-            copy(link);
-            Toast.success(`Link to ontology "${ontologyName} (${ontologyId})" copied to clipboard`);
+            copy(link, `Link to ontology "${ontologyName} (${ontologyId})" copied to clipboard`);
         },
     });
     if (props.ontology.links && "edam_browser" in props.ontology.links) {

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BCard, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { RowClickEvent, TableField } from "@/components/Common/GTable.types";
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
@@ -222,7 +222,7 @@ defineExpose({ triggerImport });
                 </template>
 
                 <template v-slot:cell(description)="row">
-                    <span class="trs-description" v-html="renderMarkdown(row.item.data.description)" />
+                    <span v-sanitize-html:links="renderMarkdown(row.item.data.description)" class="trs-description" />
                 </template>
             </GTable>
         </div>

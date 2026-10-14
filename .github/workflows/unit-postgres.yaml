@@ -1,17 +1,21 @@
 name: Unit w/postgres tests
 on:
   push:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/unit-postgres.yaml'
   pull_request:
-    paths-ignore:
-      - 'client/**'
-      - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
+    paths:
+      - '**'
+      - '!client/**'
+      - '!doc/**'
+      - '!packages/test_selenium/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/unit-postgres.yaml'
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/postgres?client_encoding=utf8'  # using postgres as the db
 concurrency:
@@ -48,6 +52,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
+          version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Install Python
         run: uv python install
@@ -59,4 +64,9 @@ jobs:
         working-directory: 'galaxy root'
       - name: Run job handler ready window tests
         run: ./run_tests.sh -unit test/unit/app/jobs/test_handler.py
+        working-directory: 'galaxy root'
+      - name: Run OIDC flow-state tests with PostgreSQL
+        env:
+          GALAXY_TEST_OIDC_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
+        run: ./run_tests.sh -unit test/unit/authnz/test_flow_state.py
         working-directory: 'galaxy root'

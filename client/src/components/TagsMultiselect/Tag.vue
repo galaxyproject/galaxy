@@ -53,6 +53,7 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
             inline
             icon-only
             class="px-1 py-0 tag-delete-button"
+            :aria-label="`Remove tag ${props.option}`"
             tabindex="-1"
             @click.prevent.stop="onDelete">
             <FontAwesomeIcon :icon="faTimes"></FontAwesomeIcon>

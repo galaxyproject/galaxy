@@ -1,6 +1,6 @@
-import { suppressDebugConsole } from "@tests/vitest/helpers";
-import { createLocalVue, mount } from "@vue/test-utils";
-import { createPinia, mapState } from "pinia";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import { createPinia, mapState, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -9,7 +9,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import { watchHistoryOnce } from "./watchHistory";
 
-const pinia = createPinia();
 const { server, http } = useServerMock();
 
 const testApp = {
@@ -22,6 +21,7 @@ const testApp = {
 
 describe("watchHistory", () => {
     let wrapper;
+    let pinia;
     const historyData = {
         id: "history-id",
         update_time: "0",
@@ -48,12 +48,15 @@ describe("watchHistory", () => {
     ];
 
     beforeEach(() => {
-        const localVue = createLocalVue();
+        pinia = createPinia();
+        setActivePinia(pinia);
         useHistoryItemsStore(pinia);
 
         wrapper = mount(testApp, {
-            localVue,
-            pinia,
+            global: {
+                ...getLocalVue(),
+                plugins: [pinia],
+            },
         });
 
         const historyStore = useHistoryStore();
@@ -79,10 +82,13 @@ describe("watchHistory", () => {
     it("survives a failing request", async () => {
         suppressDebugConsole(); // we log that 500, totally expected, do not include it in test output
 
-        // Stage 1: Initial successful load
+        // Stage 1: Initial successful load. `watchHistory.js` tracks the last-seen
+        // update_time in a module-level variable (by design -- there's only one watcher
+        // in production), so this needs a value newer than the previous test's "0" or the
+        // fetch gets skipped as a no-op here too.
         server.use(
             http.untyped.get("/history/current_history_json", () => {
-                return HttpResponse.json(historyData);
+                return HttpResponse.json({ ...historyData, update_time: "0.1" });
             }),
             http.untyped.get(/api\/histories\/history-id\/contents?.*/, () => {
                 return HttpResponse.json(historyItems);

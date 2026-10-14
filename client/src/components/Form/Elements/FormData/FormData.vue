@@ -1134,6 +1134,7 @@ const noOptionsWarningMessage = computed(() => {
         @drop.prevent="onDrop">
         <div class="d-flex flex-gapx-1">
             <FormDataContextButtons
+                v-model:workflow-tab="workflowTab"
                 :variant="variant"
                 :current-field="currentField"
                 :can-browse="canBrowse"
@@ -1146,11 +1147,10 @@ const noOptionsWarningMessage = computed(() => {
                 :multiple="Boolean(currentVariant?.multiple)"
                 show-field-options
                 :show-view-create-options="props.workflowRun && !usingSimpleSelect"
-                :workflow-tab.sync="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions"
                 @on-browse="onBrowse"
-                @set-current-field="(value) => (currentField = value)" />
+                @set-current-field="(value: number) => (currentField = value)" />
 
             <div class="w-100 d-flex flex-gapx-1">
                 <FormSelect
@@ -1210,6 +1210,7 @@ const noOptionsWarningMessage = computed(() => {
 
             <FormDataContextButtons
                 v-if="props.workflowRun && usingSimpleSelect"
+                v-model:workflow-tab="workflowTab"
                 compact
                 :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
@@ -1217,7 +1218,6 @@ const noOptionsWarningMessage = computed(() => {
                 :extensions="props.extensions"
                 :multiple="Boolean(currentVariant?.multiple)"
                 show-view-create-options
-                :workflow-tab.sync="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions" />
         </div>
@@ -1225,9 +1225,9 @@ const noOptionsWarningMessage = computed(() => {
         <div v-if="restrictsExtensions || showSelectionPreference" class="d-flex align-items-center flex-gapx-1 mt-1">
             <FormDataExtensions
                 v-if="restrictsExtensions"
+                v-model:formats-visible="formatsVisible"
                 :extensions="props.extensions"
-                :formats-button-id="formatsButtonId"
-                :formats-visible.sync="formatsVisible" />
+                :formats-button-id="formatsButtonId" />
 
             <FormSelectionPreference
                 v-if="showSelectionPreference"
@@ -1269,6 +1269,7 @@ const noOptionsWarningMessage = computed(() => {
 
         <FormDataWorkflowRunTabs
             v-if="props.workflowRun"
+            v-model:workflow-tab="workflowTab"
             class="mt-3"
             :current-value="currentValue"
             :current-variant="currentVariant"
@@ -1277,7 +1278,6 @@ const noOptionsWarningMessage = computed(() => {
             :collection-type="currentCollectionTypeTab"
             :extended-collection-type="extendedCollectionType"
             :step-title="props.userDefinedTitle"
-            :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
             @uploaded-data="handleUploadedDataOptions" />
     </div>

@@ -34,11 +34,14 @@ describe("PageCard", () => {
 
         const title = wrapper.find(getSelector("title", FAKE_PAGE_SUMMARY.id));
         expect(title.text()).toBe("My Analysis");
-        expect(title.attributes("title")).toBe("Edit Notebook");
+        // The tooltip links to the title once the title's element is mounted
+        await wrapper.vm.$nextTick();
+        const tooltipId = title.attributes("aria-describedby");
+        expect(wrapper.find(`#${tooltipId}`).text()).toBe("Edit Notebook");
 
         // Click to emit edit event
         await title.trigger("click");
-        expect(wrapper.emitted().edit).toBeTruthy();
+        expect(wrapper.emitted("edit")).toBeTruthy();
     });
 
     it("shows 'Untitled Notebook' when title is empty", () => {
@@ -77,10 +80,10 @@ describe("PageCard", () => {
 
         const viewButton = wrapper.find(getSelector("view", FAKE_PAGE_SUMMARY.id));
         await viewButton.trigger("click");
-        expect(wrapper.emitted().view).toBeTruthy();
+        expect(wrapper.emitted("view")).toBeTruthy();
 
         const editButton = wrapper.find(getSelector("edit", FAKE_PAGE_SUMMARY.id));
         await editButton.trigger("click");
-        expect(wrapper.emitted().edit).toBeTruthy();
+        expect(wrapper.emitted("edit")).toBeTruthy();
     });
 });

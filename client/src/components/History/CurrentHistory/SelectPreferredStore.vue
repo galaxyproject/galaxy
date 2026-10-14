@@ -95,7 +95,9 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
                 try {
                     await makePrivate(props.history.id, permissionResponse);
                 } catch (e) {
-                    throw new Error(errorMessageAsString(e || "Failed to update default permissions for history."));
+                    throw new Error(errorMessageAsString(e || "Failed to update default permissions for history."), {
+                        cause: e,
+                    });
                 }
             }
         }
@@ -145,7 +147,7 @@ function reset() {
 <template>
     <GModal
         id="modal-select-history-storage-location"
-        :show.sync="localShowToggle"
+        v-model:show="localShowToggle"
         size="small"
         :title="storageLocationTitle"
         ok-text="Change Storage Location"

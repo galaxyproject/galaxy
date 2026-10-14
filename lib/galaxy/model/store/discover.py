@@ -24,8 +24,10 @@ from typing import (
 
 import galaxy.model
 from galaxy import util
+from galaxy.datatypes import sniff
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
+    _get_datatypes_registry,
     Dataset,
     JobOutputNameTooLongError,
     LibraryFolder,
@@ -101,6 +103,18 @@ def safe_path_from_directory(path: StrPath, directory: StrPath) -> str:
     joined = os.path.join(directory, path)
     ensure_path_in_directory(joined, directory)
     return joined
+
+
+def resolve_discovered_extension(ext: str, path: str | None) -> str:
+    """Resolve the ``_sniff_`` and ``_infer_from_file_name_`` extensions of a discovered file."""
+    if path is None:
+        return ext
+    if ext == "_sniff_":
+        # Discovered files are stored as is, so compressed files must get a compressed datatype.
+        return sniff.guess_ext(path, _get_datatypes_registry().sniff_order, auto_decompress=False)
+    if ext == "_infer_from_file_name_":
+        return _get_datatypes_registry().get_datatype_from_filename(os.path.basename(path)).file_ext
+    return ext
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -434,7 +448,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             designation = fields_match.designation
             visible = fields_match.visible
             ext = ext_override or fields_match.ext
-            ext = ext.lower()
+            ext = resolve_discovered_extension(ext.lower(), filename)
             dbkey = fields_match.dbkey
             extra_files = fields_match.extra_files
             # galaxy.tools.parser.output_collection_def.INPUT_DBKEY_TOKEN
@@ -465,6 +479,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 created_from_basename=created_from_basename,
                 final_job_state=final_job_state,
             )
+            # Storage for elements is finalized in bulk below, so default permissions are applied here.
+            self.permission_provider.set_default_hda_permissions(dataset)
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
                 self.job_id(),

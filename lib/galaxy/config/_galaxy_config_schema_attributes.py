@@ -470,12 +470,16 @@ class GalaxyAppConfigurationAttributes:
     enable_sse_updates: bool
     history_audit_monitor_poll_interval: int
     enable_notification_system: bool
+    enable_command_palette: bool
+    command_palette_disabled_providers: list[Any]
     enable_mcp_server: bool
     mcp_server_path: str
     expired_notifications_cleanup_interval: int
     dispatch_notifications_interval: int
+    send_notification_rate_limit: str
     help_forum_api_url: str
     enable_help_forum_tool_panel_integration: bool
+    enable_tool_installation_request_form: bool
     file_source_temp_dir: str | None
     file_source_webdav_use_temp_files: bool
     file_source_listings_expiry_time: int

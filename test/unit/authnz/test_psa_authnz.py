@@ -694,7 +694,9 @@ def test_sync_user_profile_may_assign_an_admin_address():
     sync_user_profile(strategy=strategy, details={"email": "Admin@example.com", "username": "newname"}, user=user)
 
     assert user.email == "Admin@example.com"
-    assert trans.app.security_agent.get_private_user_role(user).name == "Admin@example.com"
+    private_role = trans.app.security_agent.get_private_user_role(user)
+    assert private_role is not None
+    assert private_role.name == "Admin@example.com"
 
 
 def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):
@@ -739,6 +741,8 @@ def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):
         patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
         patch.object(psa_authnz, "_load_backend", side_effect=fake_load_backend),
         patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+        patch("galaxy.authnz.psa_authnz.FlowState"),
+        patch("galaxy.authnz.psa_authnz.authentication_id"),
     ):
         psa_authnz.authenticate(make_mock_trans())
         psa_authnz.authenticate(make_mock_trans())
@@ -810,6 +814,8 @@ def test_authenticate_with_real_backend_does_not_accumulate_extra_scopes(psa_aut
             patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
             patch.object(psa_authnz, "_load_backend", side_effect=fake_load_backend),
             patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+            patch("galaxy.authnz.psa_authnz.FlowState"),
+            patch("galaxy.authnz.psa_authnz.authentication_id"),
         ):
             psa_authnz.authenticate(make_mock_trans())
             psa_authnz.authenticate(make_mock_trans())

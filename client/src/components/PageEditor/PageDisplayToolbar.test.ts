@@ -1,11 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistoryPageDetails, PageRevisionSummary } from "@/api/pages.js";
+import type GButton from "@/components/BaseComponents/GButton.vue";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import { PAGE_LABELS } from "../Page/constants.js";
@@ -73,7 +74,7 @@ describe("PageDisplayToolbar", () => {
         return newStore;
     }
 
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     let store: ReturnType<typeof usePageEditorStore>;
 
     beforeEach(async () => {
@@ -97,8 +98,8 @@ describe("PageDisplayToolbar", () => {
         it("shows edit toolbar with Edit button pressed", async () => {
             expect(wrapper.find(SELECTORS.EDITOR_TOOLBAR).exists()).toBe(true);
 
-            expect(wrapper.find(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
-            expect(wrapper.find(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(true);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(false);
         });
 
         it("shows rename button and page title in toolbar", () => {
@@ -197,7 +198,7 @@ describe("PageDisplayToolbar", () => {
             await flushPromises();
 
             expect(flashSavedIndicator).toHaveBeenCalledOnce();
-            saveWrapper.destroy();
+            saveWrapper.unmount();
         });
 
         it("does not show saved feedback after a failed save", async () => {
@@ -217,7 +218,7 @@ describe("PageDisplayToolbar", () => {
             await flushPromises();
 
             expect(flashSavedIndicator).not.toHaveBeenCalled();
-            saveWrapper.destroy();
+            saveWrapper.unmount();
         });
 
         it("back button text says whatever the label back button value is", () => {
@@ -256,8 +257,8 @@ describe("PageDisplayToolbar", () => {
         it("shows display toolbar with Preview button pressed", async () => {
             expect(wrapper.find(SELECTORS.DISPLAY_TOOLBAR).exists()).toBe(true);
 
-            expect(wrapper.find(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
-            expect(wrapper.find(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.EDIT_BUTTON).props("pressed")).toBe(false);
+            expect(wrapper.findComponent<typeof GButton>(SELECTORS.PREVIEW_BUTTON).props("pressed")).toBe(true);
         });
 
         it("Edit button emits an edit event", async () => {

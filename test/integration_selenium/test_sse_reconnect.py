@@ -147,5 +147,5 @@ class TestSSEReconnectSeleniumIntegration(SeleniumIntegrationTestCase):
         # Timestamp only advances when the SSE listener fires — distinguishes
         # SSE delivery from the polling fallback even in this reconnect path.
         self._wait_for_sse_event_after(baseline_ts)
-        self.wait_for_xpath_visible(f'//*[contains(text(), "{subject}")]', timeout=SSE_EVENT_TIMEOUT_SECONDS)
+        self.wait_for_xpath_visible(f'//*[text()[contains(., "{subject}")]]', timeout=SSE_EVENT_TIMEOUT_SECONDS)
         self.screenshot("sse_reconnect_event_delivered")

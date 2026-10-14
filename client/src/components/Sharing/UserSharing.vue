@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BCardGroup, BFormSelect, BFormSelectOption, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BCard, BCardGroup, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
@@ -15,6 +15,7 @@ import { assertArray } from "@/utils/assertions";
 import GAlert from "../BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import GSelect from "../BaseComponents/GSelect.vue";
 
 const props = defineProps<{
     item: AnyShareableItemWithStatus;
@@ -28,7 +29,7 @@ const emit = defineEmits<{
 }>();
 
 const { currentUser } = storeToRefs(useUserStore());
-const { config, isConfigLoaded } = useConfig(false);
+const { config, isConfigLoaded } = useConfig();
 
 const permissionsChangeRequired = computed(() => {
     if (isShareableHistoryWithStatus(props.item)) {
@@ -168,7 +169,9 @@ defineExpose({
 
             <div class="share_with_view">
                 <Multiselect
+                    id="user-share-selector"
                     v-model="sharingCandidates"
+                    name="user-share-selector"
                     :options="userOptions"
                     :clear-on-select="true"
                     :multiple="true"
@@ -180,7 +183,7 @@ defineExpose({
                     @remove="onRemove"
                     @search-change="onSearchChanged"
                     @close="onBlur">
-                    <template v-if="!sharingCandidates" slot="caret">
+                    <template v-if="!sharingCandidates" v-slot:caret>
                         <div></div>
                     </template>
 
@@ -196,7 +199,7 @@ defineExpose({
                         </span>
                     </template>
 
-                    <template v-if="sharingCandidates" slot="noResult">
+                    <template v-if="sharingCandidates" v-slot:noResult>
                         <div v-if="currentSearch.length < 3">
                             {{ charactersThresholdWarning }}
                         </div>
@@ -205,7 +208,7 @@ defineExpose({
                         </div>
                     </template>
 
-                    <template slot="noOptions">
+                    <template v-slot:noOptions>
                         <div v-if="currentSearch.length < 3">
                             {{ charactersThresholdWarning }}
                         </div>
@@ -225,9 +228,9 @@ defineExpose({
         </div>
 
         <GModal
+            v-model:show="showPermissionsModal"
             class="user-sharing-modal"
             confirm
-            :show.sync="showPermissionsModal"
             size="medium"
             title="Permissions Change Required"
             fixed-height
@@ -252,13 +255,16 @@ defineExpose({
                 header-bg-variant="primary"
                 header-text-variant="white"
                 class="mb-4">
-                <BFormSelect v-model="selectedSharingOption" data-description="sharing permissions change required how">
-                    <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
-                    <BFormSelectOption value="make_accessible_to_shared">
+                <GSelect
+                    v-model="selectedSharingOption"
+                    aria-label="How would you like to proceed?"
+                    data-description="sharing permissions change required how">
+                    <option value="make_public">Make datasets public</option>
+                    <option value="make_accessible_to_shared">
                         Make datasets private to me and users this {{ modelClass }} is shared with
-                    </BFormSelectOption>
-                    <BFormSelectOption value="no_changes"> Share {{ modelClass }} anyways </BFormSelectOption>
-                </BFormSelect>
+                    </option>
+                    <option value="no_changes">Share {{ modelClass }} anyways</option>
+                </GSelect>
             </BCard>
 
             <BCardGroup deck>

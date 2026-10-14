@@ -36,7 +36,7 @@ export class Model {
     finalize() {
         let results = [];
         Object.values(this.values).forEach((v) => {
-            let value = null;
+            let value;
             if (this.format) {
                 value = v[this.format];
             } else {

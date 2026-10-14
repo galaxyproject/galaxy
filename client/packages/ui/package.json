@@ -8,7 +8,8 @@
     "types": "./src/index.ts",
     "exports": {
         ".": "./src/index.ts",
-        "./tokens.css": "./src/styles/tokens.css"
+        "./tokens.css": "./src/styles/tokens.css",
+        "./eslint": "./eslint.mjs"
     },
     "scripts": {
         "type-check": "vue-tsc --noEmit -p tsconfig.json"
@@ -17,15 +18,30 @@
     "dependencies": {
         "@floating-ui/dom": "^1.6.0",
         "@types/markdown-it": "^14.1.2",
+        "dompurify": "^3.0.6",
         "font-awesome-6": "npm:@fortawesome/free-solid-svg-icons@6",
         "markdown-it": "^14.1.0"
     },
     "peerDependencies": {
         "@fortawesome/fontawesome-svg-core": "^6.2.0",
         "@fortawesome/free-solid-svg-icons": "^5.15.0 || ^6.0.0",
-        "@fortawesome/vue-fontawesome": "^2.0.9 || ^3.0.0",
+        "@fortawesome/vue-fontawesome": "^3.0.0",
         "@vueuse/core": ">=10.0.0 <13.0.0",
-        "vue": "^2.7.16 || ^3.4.0",
-        "vue-router": "^3.6.0 || ^4.0.0"
+        "eslint-plugin-vuejs-accessibility": "^2.6.0",
+        "typescript-eslint": "^8.0.0",
+        "vue": "^3.4.0",
+        "vue-eslint-parser": "^10.0.0",
+        "vue-router": "^4.0.0 || ^5.0.0"
+    },
+    "peerDependenciesMeta": {
+        "eslint-plugin-vuejs-accessibility": {
+            "optional": true
+        },
+        "typescript-eslint": {
+            "optional": true
+        },
+        "vue-eslint-parser": {
+            "optional": true
+        }
     }
 }

@@ -3,7 +3,7 @@ import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
 import { usePersistentToggle } from "@/composables/persistentToggle";

@@ -5,7 +5,36 @@
     "tool_stdout": "stdout",
     "tool_stderr": "stderr",
     "command_line": "commandline",
-    "job_messages": ["test-msg1", "test-msg2", "test-msg3", "test-msg4"],
+    "job_messages": [
+        {
+            "type": "regex",
+            "desc": "test-msg1",
+            "error_level": 1,
+            "match": null,
+            "stream": null
+        },
+        {
+            "type": "regex",
+            "desc": "test-msg2",
+            "error_level": 1,
+            "match": null,
+            "stream": null
+        },
+        {
+            "type": "regex",
+            "desc": "test-msg3",
+            "error_level": 1,
+            "match": null,
+            "stream": null
+        },
+        {
+            "type": "regex",
+            "desc": "test-msg4",
+            "error_level": 1,
+            "match": null,
+            "stream": null
+        }
+    ],
     "id": "test_id",
     "copied_from_job_id": "test_copied_from_job_id",
     "state": "running"

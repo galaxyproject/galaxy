@@ -454,6 +454,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_iiif_fsspec(self):
         return "iiif" in self.file_sources
 
+    def check_fsspec_xrootd(self):
+        return "xrootd" in self.file_sources
+
     def check_ipfsspec(self):
         return "ipfs" in self.file_sources
 
@@ -465,6 +468,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
 
     def check_arcfs_fsspec(self):
         return "gitlab" in self.file_sources or "arc" in self.file_sources
+
+    def check_nomad_fsspec(self):
+        return "nomad" in self.file_sources
 
 
 def strip_comment(line):

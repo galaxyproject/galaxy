@@ -21,6 +21,7 @@
                 <BCol id="installed-builds" class="mb-4">
                     <Multiselect
                         v-model="selectedInstalledBuilds"
+                        name="installed-builds"
                         multiple
                         taggable
                         label="label"
@@ -62,19 +63,16 @@
                         </BFormGroup>
 
                         <BFormGroup label="Definition" description="Provide the data source." label-for="type">
-                            <BFormSelect
-                                id="type"
-                                v-model="selectedDataSource"
-                                tour_id="type"
-                                :options="dataSources"></BFormSelect>
+                            <GSelect id="type" v-model="selectedDataSource" tour_id="type" :options="dataSources" />
                         </BFormGroup>
 
                         <div>
-                            <BFormGroup v-if="selectedDataSource === 'fasta'" label="FASTA-file">
-                                <BFormSelect
+                            <BFormGroup v-if="selectedDataSource === 'fasta'" label="FASTA-file" label-for="fasta-file">
+                                <GSelect
+                                    id="fasta-file"
                                     v-model="selectedFastaFile"
-                                    :options="fastaFiles"
-                                    :disabled="fastaFilesSelectDisabled"></BFormSelect>
+                                    :disabled="fastaFilesSelectDisabled"
+                                    :options="fastaFiles" />
                             </BFormGroup>
 
                             <BFormGroup v-if="selectedDataSource === 'file'" label="Len-file">
@@ -140,23 +138,12 @@ chr5    152537259
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import {
-    BCard,
-    BCol,
-    BForm,
-    BFormFile,
-    BFormGroup,
-    BFormInput,
-    BFormSelect,
-    BFormTextarea,
-    BProgress,
-    BRow,
-} from "bootstrap-vue";
+import { BCard, BCol, BForm, BFormFile, BFormGroup, BFormInput, BFormTextarea, BProgress, BRow } from "bootstrap-vue";
 import Multiselect from "vue-multiselect";
 
 import { getGalaxyInstance } from "@/app";
@@ -166,6 +153,7 @@ import { withPrefix } from "@/utils/redirect";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import GTable from "@/components/Common/GTable.vue";
 
@@ -178,7 +166,6 @@ export default {
         BFormFile,
         BFormGroup,
         BFormInput,
-        BFormSelect,
         BFormTextarea,
         BProgress,
         BreadcrumbHeading,
@@ -186,6 +173,7 @@ export default {
         FontAwesomeIcon,
         GButton,
         GLink,
+        GSelect,
         GTable,
         Multiselect,
     },

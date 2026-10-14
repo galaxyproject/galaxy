@@ -168,8 +168,9 @@ def make_hdca_entry(
 ) -> dict[str, Any]:
     """Build an ``options.hdca`` / ``pinned.hdca`` entry.
 
-    ``keep`` is emitted only when explicitly passed; ``DataToolParameter``
-    entries carry it, ``DataCollectionToolParameter`` entries do not.
+    ``keep`` is emitted only when explicitly passed: on every
+    ``DataToolParameter`` entry, and on carried-forward selections of
+    ``DataCollectionToolParameter``.
     ``subcollection_type`` flags multirun (map-over) matches.
     ``include_column_definitions`` adds ``column_definitions`` for the
     ``DataCollectionToolParameter`` form, where the client gates

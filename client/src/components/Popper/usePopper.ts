@@ -67,12 +67,18 @@ export function usePopper(
         }
     };
 
-    const addEventListener = (target: EventTarget, event: string, handler: EventListener) => {
+    const addEventListener = (target: EventTarget | undefined, event: string, handler: EventListener) => {
+        if (!target) {
+            return;
+        }
         target.addEventListener(event, handler);
         listeners.push({ target, event, handler });
     };
 
     onMounted(() => {
+        if (!reference.value || !popper.value) {
+            return;
+        }
         instance.value = createPopper(reference.value, popper.value, {
             placement: options.placement ?? "bottom",
             strategy: "absolute",

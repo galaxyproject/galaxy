@@ -79,8 +79,10 @@ def get_repository_metadata_by_tool_version(
     versions = {}
     for _, changeset in repository.installable_revisions(app):
         metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changeset)
-        assert metadata is not None
-        tools: list[dict[str, Any]] | None = metadata.metadata.get("tools")
+        if metadata is None:
+            continue
+        raw_metadata = metadata.metadata or {}
+        tools: list[dict[str, Any]] | None = raw_metadata.get("tools")
         if not tools:
             continue
         for tool_metadata in tools:
@@ -113,6 +115,7 @@ def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
     repo_metadata = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
     repository, metadata_by_version = repo_metadata
 
+    assert repository.user is not None
     repo_owner = repository.user.username
     aliases: list[str] = [guid]
     hostname = remove_protocol_and_user_from_clone_url(trans.repositories_hostname)

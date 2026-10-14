@@ -16,7 +16,7 @@ async function fetchRuntimeSchema(toolSource: any) {
 }
 
 export async function fetchAndConvertSchemaToInterface(yamlString: string) {
-    let toolSource = {};
+    let toolSource;
     try {
         toolSource = parse(yamlString);
     } catch (error) {

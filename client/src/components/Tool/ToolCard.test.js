@@ -32,7 +32,7 @@ describe("ToolCard", () => {
     let userStore;
 
     beforeEach(async () => {
-        if (router.currentRoute.fullPath !== "/") {
+        if (router.currentRoute.value.fullPath !== "/") {
             await router.push("/");
         }
 
@@ -119,8 +119,9 @@ describe("ToolCard", () => {
         expect(badge.text()).toBe("Newer version available");
 
         await badge.trigger("click");
+        await flushPromises();
 
-        expect(router.currentRoute.fullPath).toBe("/?tool_id=identifier&version=latest");
+        expect(router.currentRoute.value.fullPath).toBe("/?tool_id=identifier&version=latest");
     });
 
     it("does not show newer version badge for the latest lineage version", async () => {

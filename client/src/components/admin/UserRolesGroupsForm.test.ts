@@ -1,8 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -13,7 +12,7 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const mockPush = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: (...args: unknown[]) => mockPush(...args),
     }),
@@ -86,20 +85,26 @@ async function mountTarget() {
         localVue,
         propsData: { userId: "u1" },
         stubs: { FontAwesomeIcon: true },
+        attachTo: document.body,
     });
     await flushPromises();
     return wrapper;
 }
 
-function multiselect(wrapper: Wrapper<Vue>, id: string) {
+function multiselect(wrapper: VueWrapper, id: string) {
     return wrapper.find(`#${id}`).findComponent(Multiselect);
 }
 
-function selectedTags(wrapper: Wrapper<Vue>, id: string) {
-    return wrapper.findAll(`#${id} .multiselect__tag`).wrappers.map((tag) => tag.text());
+// vue-multiselect only renders its option list once the dropdown is open.
+async function openDropdown(wrapper: VueWrapper, id: string) {
+    await wrapper.find(`#${id}-select`).trigger("focus");
 }
 
-async function submit(wrapper: Wrapper<Vue>) {
+function selectedTags(wrapper: VueWrapper, id: string) {
+    return wrapper.findAll(`#${id} .multiselect__tag`).map((tag) => tag.text());
+}
+
+async function submit(wrapper: VueWrapper) {
     await wrapper.find("#admin-user-roles-groups-submit").trigger("click");
     await flushPromises();
 }
@@ -125,6 +130,7 @@ describe("UserRolesGroupsForm.vue", () => {
         expect(searches).toHaveLength(1);
         expect(searches[0]!.get("search")).toBeNull();
         expect(searches[0]!.get("exclude_private")).toBe("true");
+        await openDropdown(wrapper, "admin-user-roles");
         expect(wrapper.find("#admin-user-roles").text()).toContain("QA");
     });
 
@@ -154,8 +160,8 @@ describe("UserRolesGroupsForm.vue", () => {
         useRoleSearch();
         const bodies = captureSaves();
         const wrapper = await mountTarget();
-        multiselect(wrapper, "admin-user-roles").vm.$emit("input", []);
-        multiselect(wrapper, "admin-user-groups").vm.$emit("input", [
+        multiselect(wrapper, "admin-user-roles").vm.$emit("update:modelValue", []);
+        multiselect(wrapper, "admin-user-groups").vm.$emit("update:modelValue", [
             { id: "g1", name: "Group 1" },
             { id: "g2", name: "Group 2" },
         ]);

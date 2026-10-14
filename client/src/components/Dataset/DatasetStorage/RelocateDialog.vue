@@ -37,7 +37,7 @@ function relocate(objectStoreId?: string | null) {
         <div class="select-card-group">
             <SourceOptionCard
                 v-for="objectStore in targetObjectStores"
-                :key="objectStore.object_store_id"
+                :key="objectStore.object_store_id ?? undefined"
                 :source-option="objectStore"
                 submit-button-tooltip="Relocate the dataset to this storage location"
                 @select="relocate(objectStore.object_store_id)">

@@ -145,6 +145,19 @@ describe("historyStore — cached history listings", () => {
         expect(store.sharedHistories).toHaveLength(3);
     });
 
+    it("keeps an unrecorded fetch out of the listing while caching its summaries", async () => {
+        const store = useHistoryStore();
+        getPublishedHistories.mockResolvedValue(resultOf([mockHistory("p1", "Public", "2026-01-01T00:00:00")], 42));
+
+        const fetched = await store.fetchHistoryList("published", { search: "rna", record: false });
+
+        expect(fetched.map((history) => history.id)).toEqual(["p1"]);
+        expect(store.listedHistories["p1"]?.name).toBe("Public");
+        expect(store.listedHistoryIds.published).toEqual([]);
+        expect(store.getHistoryListTotal("published")).toBe(0);
+        expect(store.hasLoadedHistoryList("published")).toBe(false);
+    });
+
     it("keeps already cached fields when a later fetch returns a leaner summary", async () => {
         const store = useHistoryStore();
         getSharedHistories.mockResolvedValueOnce(

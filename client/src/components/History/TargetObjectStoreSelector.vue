@@ -111,7 +111,7 @@ function handleStoreSelected(selectedOption: SelectorOption | null) {
                 data-test-id="upload-target-object-store-selector"
                 :title="disabledMessage ?? changeLinkTooltip">
                 <Multiselect
-                    :value="currentStoreOption"
+                    :model-value="currentStoreOption"
                     :options="storeOptions"
                     :allow-empty="false"
                     :searchable="false"
@@ -120,11 +120,15 @@ function handleStoreSelected(selectedOption: SelectorOption | null) {
                     class="w-100 target-object-store-multiselect multiselect--soft-option-highlight"
                     label="name"
                     track-by="id"
-                    @input="handleStoreSelected">
+                    @update:model-value="handleStoreSelected">
                     <template v-slot:singleLabel="{ option }">
                         <span class="d-flex align-items-center justify-content-between">
                             <span class="text-truncate mr-2">{{ option.name ?? "Unknown storage location" }}</span>
-                            <ObjectStoreBadges :badges="option.badges" size="lg" class="flex-shrink-0" />
+                            <ObjectStoreBadges
+                                :badges="option.badges"
+                                size="lg"
+                                :interactive="false"
+                                class="flex-shrink-0" />
                         </span>
                     </template>
                     <template v-slot:option="{ option }">
@@ -134,7 +138,11 @@ function handleStoreSelected(selectedOption: SelectorOption | null) {
                             class="w-100 text-wrap py-1">
                             <div class="d-flex align-items-start justify-content-between">
                                 <span class="font-weight-bold">{{ option.name ?? "Unknown storage location" }}</span>
-                                <ObjectStoreBadges :badges="option.badges" size="lg" class="ml-2 flex-shrink-0" />
+                                <ObjectStoreBadges
+                                    :badges="option.badges"
+                                    size="lg"
+                                    :interactive="false"
+                                    class="ml-2 flex-shrink-0" />
                             </div>
                             <div v-if="option.description" class="small text-muted mt-1 text-break">
                                 {{ option.description }}

@@ -6,6 +6,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import VisualizationCreate from "./VisualizationCreate.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -19,7 +20,7 @@ const PLUGIN = {
     tags: ["tag1", "tag2"],
 };
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: vi.fn(),
     }),
@@ -67,8 +68,8 @@ beforeEach(() => {
 
 it("renders plugin info after load", async () => {
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             visualization: "scatterplot",
         },
     });
@@ -92,8 +93,8 @@ it("adds hid to dataset names when fetching history items", async () => {
         ],
     });
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             visualization: "scatterplot",
         },
     });
@@ -108,12 +109,23 @@ it("adds hid to dataset names when fetching history items", async () => {
 it("displays create new visualization option if dataset is not required", async () => {
     vi.mocked(fetchPlugin).mockResolvedValueOnce(PLUGIN);
     const wrapper = mount(VisualizationCreate, {
-        localVue,
-        propsData: {
+        props: {
             visualization: "scatterplot",
         },
     });
     await flushPromises();
     const results = await wrapper.vm.doQuery();
     expect(results).toEqual([{ id: "", name: "Open visualization..." }]);
+});
+
+it("renders plugin help markdown through v-sanitize-html with the links profile", async () => {
+    vi.mocked(fetchPlugin).mockResolvedValue({ ...PLUGIN, help: "See [docs](https://example.org) <b>now</b>" });
+    vi.mocked(sanitizeHtml).mockClear();
+    mount(VisualizationCreate, { localVue, propsData: { visualization: "scatterplot" } });
+    await flushPromises();
+
+    const call = vi.mocked(sanitizeHtml).mock.calls.find(([html]) => html?.includes(">docs</a>"));
+    expect(call?.[1]).toBe("links");
+    expect(call?.[0]).toContain('target="_blank"');
+    expect(call?.[0]).toContain("&lt;b&gt;now&lt;/b&gt;");
 });

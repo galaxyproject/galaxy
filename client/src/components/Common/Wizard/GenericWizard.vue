@@ -75,6 +75,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
+// `<component :is>` only resolves a name like "BCard" for globally registered components,
+// so hand it the imported component itself.
+const containerComponent = computed(() => (props.containerComponent === "BCard" ? BCard : "div"));
+
 function dynamicIsLast() {
     if (props.use.isLast.value) {
         return Boolean(props.use.isLast.value);
@@ -170,7 +174,7 @@ const bodyStyle = computed(() => {
 </script>
 
 <template>
-    <component :is="props.containerComponent" class="wizard-container">
+    <component :is="containerComponent" class="wizard-container">
         <slot name="header">
             <BCardTitle v-if="title">
                 <h2>{{ title }}</h2>
@@ -178,7 +182,7 @@ const bodyStyle = computed(() => {
         </slot>
 
         <slot name="description">
-            <div v-if="props.description" v-html="renderMarkdown(props.description)" />
+            <div v-if="props.description" v-sanitize-html:links="renderMarkdown(props.description)" />
         </slot>
 
         <BCardBody v-if="props.use?.steps?.value" class="wizard">

@@ -2,7 +2,7 @@ import "@tests/vitest/mockHelpPopovers";
 
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,9 +10,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { AnyHistory } from "@/api/index.js";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import ToolCard from "./ToolCard.vue";
 import ToolForm from "./ToolForm.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 
@@ -30,7 +32,7 @@ vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
 });
 
 describe("ToolForm", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     let userStore: ReturnType<typeof useUserStore>;
     let historyStore: ReturnType<typeof useHistoryStore>;
 
@@ -183,5 +185,29 @@ describe("ToolForm", () => {
         await flushPromises();
 
         expect(wrapper.text()).toContain(errorMessage);
+    });
+
+    it("reports a rejected form update and re-enables the form", async () => {
+        const { toasts, clearToasts } = useToast();
+        clearToasts();
+        server.use(
+            http.untyped.post("/api/tools/tool_id/build", () => {
+                return HttpResponse.json({ err_msg: "Rate limit exceeded" }, { status: 429 });
+            }),
+        );
+        await flushPromises();
+
+        wrapper.findComponent(FormDisplay).vm.$emit("onChange", {}, true);
+        await flushPromises();
+
+        expect(toasts.value).toEqual([
+            expect.objectContaining({
+                message: "Rate limit exceeded",
+                title: "Updating parameters failed",
+                variant: "danger",
+            }),
+        ]);
+        expect(wrapper.findComponent(ToolCard).props("disabled")).toBe(false);
+        clearToasts();
     });
 });

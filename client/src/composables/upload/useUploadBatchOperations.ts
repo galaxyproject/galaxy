@@ -128,7 +128,7 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                 }
             });
 
-            throw new Error(errorMsg);
+            throw new Error(errorMsg, { cause: err });
         }
     }
 

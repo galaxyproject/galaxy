@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormCheckbox } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";

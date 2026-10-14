@@ -22,7 +22,7 @@
             @pointerup.exact="onPointerUp"
             @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
-            @keyup.enter="makeActive">
+            @keyup.enter="onHeaderEnter">
             <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <GButton
@@ -71,10 +71,11 @@
             </GButtonGroup>
             <GPopover
                 v-if="isEnabled && !readonly"
+                v-model:show="popoverShow"
+                interactive
                 :target="popoverId"
                 triggers="hover"
-                placement="bottom"
-                :show.sync="popoverShow">
+                placement="bottom">
                 <div>
                     <Recommendations
                         v-if="popoverShow"
@@ -167,9 +168,8 @@
 import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
-import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
-import Vue, { computed, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -201,8 +201,6 @@ import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeInvocationText from "@/components/Workflow/Editor/NodeInvocationText.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-
-Vue.use(BootstrapVue);
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -443,6 +441,13 @@ function onClone() {
 
 function makeActive() {
     emit("onActivate", props.id);
+}
+
+// Enter on the recommendations button toggles its popover and must not also activate the node.
+function onHeaderEnter(event: KeyboardEvent) {
+    if (!(event.target instanceof Element && event.target.closest(".node-recommendations"))) {
+        makeActive();
+    }
 }
 
 function toggleSelected() {

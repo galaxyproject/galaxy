@@ -5,11 +5,10 @@ import flushPromises from "flush-promises";
 import { http, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CreateElement } from "vue";
-import { nextTick, ref } from "vue";
+import { h, nextTick, ref } from "vue";
 
 import type { HistorySummary } from "@/api";
-import { useServerMock } from "@/api/client/__mocks__";
+import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -35,7 +34,7 @@ vi.mock("./uploadMethodRegistry", async (importOriginal: () => Promise<Record<st
             name: "Paste Links",
             requiresTargetHistory: true,
             component: {
-                render: (h: CreateElement) => h("div"),
+                render: () => h("div"),
                 mounted(this: { $emit: (event: string, ready: boolean) => void }) {
                     this.$emit("ready", true);
                 },
@@ -175,7 +174,7 @@ describe("UploadMethodView start", () => {
             http.post("/api/tools/fetch", () =>
                 HttpResponse.json(
                     { err_msg: "Action requires account activation.", err_code: 403007 },
-                    { status: 403 },
+                    { status: 403, headers: GALAXY_RESPONSE_HEADERS },
                 ),
             ),
         );

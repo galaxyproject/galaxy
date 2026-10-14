@@ -79,4 +79,5 @@ def test_migrations(dburl, monkeypatch):
 
 def _get_database_version(engine):
     alembic_manager = AlembicManager(engine)
-    return alembic_manager.db_heads
+    # alembic_version holds one row per branch head, in no particular order.
+    return set(alembic_manager.db_heads or ())

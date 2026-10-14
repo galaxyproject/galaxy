@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, nth } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
@@ -18,25 +18,35 @@ describe("ObjectStoreBadges", () => {
 
     it("should render all badges in array", async () => {
         wrapper = shallowMount(ObjectStoreBadges as object, {
-            propsData: { badges: BADGES },
-            localVue,
+            props: { badges: BADGES },
+            global: localVue,
         });
         const badgeListEl = wrapper.find(".object-store-badges");
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges.at(0).attributes("size")).toBe("lg");
+        expect(nth(badges, 0).attributes("size")).toBe("lg");
     });
 
     it("should pass along size attributes", async () => {
         wrapper = shallowMount(ObjectStoreBadges as object, {
-            propsData: { badges: BADGES, size: "2x" },
-            localVue,
+            props: { badges: BADGES, size: "2x" },
+            global: localVue,
         });
         const badgeListEl = wrapper.find(".object-store-badges");
         expect(badgeListEl.exists()).toBeTruthy();
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
         expect(badges.length).toBe(2);
-        expect(badges.at(0).attributes("size")).toBe("2x");
+        expect(nth(badges, 0).attributes("size")).toBe("2x");
+    });
+
+    it("should pass along whether badges are interactive", async () => {
+        wrapper = shallowMount(ObjectStoreBadges as object, {
+            props: { badges: BADGES, interactive: false },
+            global: localVue,
+        });
+        const badges = wrapper.findAllComponents(ObjectStoreBadge);
+        expect(nth(badges, 0).props("interactive")).toBe(false);
+        expect(nth(badges, 1).props("interactive")).toBe(false);
     });
 });

@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - '.github/workflows/*'
+      - '.github/actions/**'
       - zizmor.yml
   pull_request:
     paths:
       - '.github/workflows/*'
+      - '.github/actions/**'
       - zizmor.yml
 
 permissions: {}

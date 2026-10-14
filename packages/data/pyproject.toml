@@ -31,6 +31,7 @@ dependencies = [
     "ijson",
     "isa-rwval>=0.10.11",
     "isal>=1.7.0",
+    "isal>=1.8.0; python_version >= '3.14'",  # Wheels for Python 3.14 and newer
     "MarkupSafe",
     "msal",
     "mrcfile",
@@ -45,7 +46,7 @@ dependencies = [
     "python-magic",
     "pysam>=0.21",
     "rocrate<0.15.0",
-    "social-auth-core>=4.5.0",
+    "social-auth-core>=4.5.0,<6",
     "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
     "tifffile",
     "typing-extensions",
@@ -83,6 +84,7 @@ galaxy-manage-db = "galaxy.model.orm.scripts:manage_db"
 galaxy-prune-histories = "galaxy.model.scripts:prune_history_table"
 galaxy-delete-sessions = "galaxy.model.scripts:delete_galaxy_sessions"
 galaxy-delete-job-metrics = "galaxy.model.scripts:delete_job_metrics"
+galaxy-make-data-private = "galaxy.model.scripts.make_data_private:main"
 
 [project.urls]
 Homepage = "https://github.com/galaxyproject/galaxy"

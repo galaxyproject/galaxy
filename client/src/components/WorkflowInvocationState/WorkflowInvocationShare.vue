@@ -121,7 +121,7 @@ function shareInvocationButtonClicked() {
         </GButton>
 
         <GModal
-            :show.sync="modalToggle"
+            v-model:show="modalToggle"
             :title="localize('Share Workflow Invocation')"
             confirm
             ok-text="Share"

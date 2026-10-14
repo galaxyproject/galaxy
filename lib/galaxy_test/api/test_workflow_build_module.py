@@ -30,3 +30,84 @@ class TestBuildWorkflowModule(ApiTestCase):
         assert module["errors"]["cond|select"]
         assert module["tool_state"]["cond"]["select"] == "removed_option"
         assert module["tool_state"]["cond"]["input1"] == {"__class__": "RuntimeValue"}
+
+    @skip_without_tool("column_param_list")
+    def test_build_module_multiple_data_column_input(self):
+        module = self.workflow_populator.build_module(
+            step_type="tool",
+            content_id="column_param_list",
+            inputs={"col": {"__class__": "ConnectedValue"}},
+        )
+        inputs = {step_input["name"]: step_input for step_input in module["inputs"]}
+        assert inputs["col"]["type"] == "data_column"
+        assert inputs["col"]["multiple"] is True
+
+    @skip_without_tool("column_param")
+    def test_build_module_single_data_column_input(self):
+        module = self.workflow_populator.build_module(
+            step_type="tool",
+            content_id="column_param",
+            inputs={"col": {"__class__": "ConnectedValue"}},
+        )
+        inputs = {step_input["name"]: step_input for step_input in module["inputs"]}
+        assert inputs["col"]["type"] == "data_column"
+        assert inputs["col"]["multiple"] is False
+
+    @skip_without_tool("multi_select")
+    def test_build_module_multiple_select_input(self):
+        module = self.workflow_populator.build_module(
+            step_type="tool",
+            content_id="multi_select",
+            inputs={"select_ex": {"__class__": "ConnectedValue"}},
+        )
+        inputs = {step_input["name"]: step_input for step_input in module["inputs"]}
+        assert inputs["select_ex"]["type"] == "select"
+        assert inputs["select_ex"]["multiple"] is True
+
+    def test_build_module_multiple_integer_parameter(self):
+        module = self.workflow_populator.build_module(
+            step_type="parameter_input",
+            inputs={
+                "parameter_definition|parameter_type": "integer",
+                "parameter_definition|multiple": True,
+            },
+        )
+        assert not module["errors"], module["errors"]
+        assert module["outputs"][0]["type"] == "integer"
+        assert module["outputs"][0]["multiple"] is True
+
+    def test_build_module_multiple_integer_parameter_list_default(self):
+        module = self._build_multiple_integer_parameter_module([1, 2])
+        assert not module["errors"], module["errors"]
+        specify_default = module["tool_state"]["parameter_definition"]["optional"]["specify_default"]
+        assert specify_default["default"] == [1, 2]
+        (parameter_definition,) = module["config_form"]["inputs"]
+        (integer_case,) = [case for case in parameter_definition["cases"] if case["value"] == "integer"]
+        default_field = _find_input(integer_case["inputs"], "default")
+        assert default_field["multiple"] is True
+
+    def test_build_module_multiple_integer_parameter_rejects_comma_separated_default(self):
+        module = self._build_multiple_integer_parameter_module("1,2")
+        assert "an integer is required" in str(module["errors"]), module["errors"]
+
+    def _build_multiple_integer_parameter_module(self, default):
+        return self.workflow_populator.build_module(
+            step_type="parameter_input",
+            inputs={
+                "parameter_definition|parameter_type": "integer",
+                "parameter_definition|multiple": True,
+                "parameter_definition|optional|optional": "false",
+                "parameter_definition|optional|specify_default|specify_default": True,
+                "parameter_definition|optional|specify_default|default": default,
+            },
+        )
+
+
+def _find_input(inputs, name):
+    for input in inputs:
+        if input.get("name") == name:
+            return input
+        for case in input.get("cases", []):
+            if (found := _find_input(case["inputs"], name)) is not None:
+                return found
+    return None

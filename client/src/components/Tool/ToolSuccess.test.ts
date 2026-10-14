@@ -40,6 +40,6 @@ describe("ToolSuccess recommendations", () => {
         const wrapper = shallowMount(ToolSuccess, { localVue, router, pinia });
         expect(wrapper.findComponent(ToolRecommendation).exists()).toBe(expected);
         expect(wrapper.findComponent(ToolSuccessMessage).exists()).toBe(true);
-        wrapper.destroy();
+        wrapper.unmount();
     });
 });

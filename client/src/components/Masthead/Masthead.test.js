@@ -5,9 +5,9 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadMastheadWebhooks } from "./_webhooks";
@@ -16,7 +16,7 @@ import Masthead from "./Masthead.vue";
 
 vi.mock("app");
 vi.mock("./_webhooks");
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({ name: "Home" })),
     useRouter: vi.fn(),
 }));
@@ -46,8 +46,7 @@ describe("Masthead.vue", () => {
         setupMockConfig({});
         originalUrl = window.location.href;
         localVue = getLocalVue();
-        localVue.use(PiniaVuePlugin);
-        testPinia = createTestingPinia({ createSpy: vi.fn });
+        testPinia = createTestingPinia({ createSpy: vi.fn, initialState: { configurationStore: { config: {} } } });
 
         windowTab = {
             id: "enable-window-manager",
@@ -64,23 +63,24 @@ describe("Masthead.vue", () => {
         userStore.currentUser = currentUser;
 
         wrapper = mount(Masthead, {
-            propsData: {
+            props: {
                 windowTab,
             },
-            localVue,
+            global: localVue,
             pinia: testPinia,
         });
         await flushPromises();
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
         window.location.href = originalUrl;
     });
 
     async function remount(config, user = currentUser) {
-        wrapper.destroy();
+        wrapper.unmount();
         setupMockConfig(config);
+        useConfigStore().config = config;
         const userStore = useUserStore();
         userStore.currentUser = user;
         wrapper = mount(Masthead, {
@@ -105,6 +105,18 @@ describe("Masthead.vue", () => {
         await wrapper.find("[data-description='masthead search button']").trigger("click");
         expect(useCommandPalette().isPaletteOpen.value).toBe(true);
         useCommandPalette().closePalette();
+    });
+
+    it("labels the search button with the localized search phrase", () => {
+        const button = wrapper.find("[data-description='masthead search button']");
+        expect(button.find(".search-placeholder").text()).toBe("Search Galaxy");
+        expect(button.attributes("title")).toBe("Search Galaxy (Ctrl+K)");
+    });
+
+    it("hides the search button when the palette is disabled", async () => {
+        await remount({ enable_command_palette: false });
+
+        expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
     });
 
     it("should display window manager button", async () => {
@@ -143,8 +155,8 @@ describe("Masthead.vue", () => {
         const links = switcher.findAll("a.dropdown-item");
         expect(switcher.exists()).toBe(true);
         expect(switcher.attributes("title")).toBe("Switch sites");
-        expect(links.wrappers.map((link) => link.text())).toEqual(["Single Cell <Omics>", "Climate"]);
-        expect(links.wrappers.map((link) => link.attributes("href"))).toEqual([
+        expect(links.map((link) => link.text())).toEqual(["Single Cell <Omics>", "Climate"]);
+        expect(links.map((link) => link.attributes("href"))).toEqual([
             "https://singlecell.example.org/root/?exact=true#destination",
             "https://climate.example.org",
         ]);
@@ -178,7 +190,7 @@ describe("Masthead.vue", () => {
             });
 
             const links = wrapper.findAll("#subdomain_switcher a.dropdown-item");
-            expect(links.wrappers.map((link) => link.attributes("href"))).toEqual(["https://safe.example.org"]);
+            expect(links.map((link) => link.attributes("href"))).toEqual(["https://safe.example.org"]);
         },
     );
 
@@ -192,6 +204,6 @@ describe("Masthead.vue", () => {
         });
 
         const links = wrapper.findAll("#subdomain_switcher a.dropdown-item");
-        expect(links.wrappers.map((link) => link.text())).toEqual(["Safe"]);
+        expect(links.map((link) => link.text())).toEqual(["Safe"]);
     });
 });

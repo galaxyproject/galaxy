@@ -194,7 +194,7 @@ const draggedOver = ref(false);
 const draggedOverDebounced = useDebounce(draggedOver, 50);
 
 function nodeDragOver() {
-    draggedOver.value = true && Boolean(draggingTerminal.value);
+    draggedOver.value = Boolean(draggingTerminal.value);
 }
 
 function nodeDragOut() {

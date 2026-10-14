@@ -1,20 +1,23 @@
 <template>
-    <b-input-group size="sm">
-        <b-form-input
+    <BInputGroup size="sm">
+        <BFormInput
             id="filterInput"
             v-model="search"
             class="mr-1"
             type="search"
             :placeholder="titleSearch"
             @keyup.enter="startSearch()" />
-    </b-input-group>
+    </BInputGroup>
 </template>
 
 <script>
+import { BFormInput, BInputGroup } from "bootstrap-vue";
+
 import _l from "@/utils/localization";
 
 export default {
     name: "SearchField",
+    components: { BFormInput, BInputGroup },
     props: {
         typingDelay: {
             type: Number,

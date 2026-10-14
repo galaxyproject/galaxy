@@ -2,7 +2,7 @@
 import { faCopy, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, onUnmounted, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";

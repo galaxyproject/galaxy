@@ -41,7 +41,7 @@ interface Props {
     name: string;
     edamOperations: string[];
     edamTopics: string[];
-    toolTags: string[];
+    toolTags?: string[];
     formStyle?: string;
     description?: string;
     summary?: string;
@@ -49,16 +49,14 @@ interface Props {
     helpFormat?: string;
     version?: string;
     link?: string;
-    workflowCompatible: boolean;
-    local: boolean;
+    workflowCompatible?: boolean;
+    local?: boolean;
     owner?: string;
-    fetching: boolean;
+    fetching?: boolean;
     gridView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    id: "",
-    name: "",
     formStyle: undefined,
     description: undefined,
     summary: undefined,
@@ -367,8 +365,7 @@ const {
                 <BSkeleton />
             </div>
 
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-else-if="props.summary && !showHelp" v-html="props.summary"></div>
+            <div v-else-if="props.summary && !showHelp" v-sanitize-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
                 <GLink

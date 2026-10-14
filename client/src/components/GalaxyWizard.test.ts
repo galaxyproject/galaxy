@@ -1,9 +1,10 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import GalaxyWizard from "./GalaxyWizard.vue";
 
@@ -40,6 +41,18 @@ function mockErrorAnalysis(metadata: Record<string, unknown>) {
 }
 
 describe("GalaxyWizard", () => {
+    it("renders the analysis through v-sanitize-html with the links profile", async () => {
+        mockErrorAnalysis({});
+        vi.mocked(sanitizeHtml).mockClear();
+        const wrapper = mountWizard();
+
+        await wrapper.find(ANALYZE_BUTTON).trigger("click");
+        await flushPromises();
+
+        expect(sanitizeHtml).toHaveBeenLastCalledWith("<p>The tool ran out of memory.</p>\n", "links");
+        expect(wrapper.find('[data-description="galaxy wizard response"]').text()).toContain("ran out of memory");
+    });
+
     it("warns that only part of an oversized error log was analyzed", async () => {
         mockErrorAnalysis({ query_truncated: true, original_query_length: 32768 });
         const wrapper = mountWizard();

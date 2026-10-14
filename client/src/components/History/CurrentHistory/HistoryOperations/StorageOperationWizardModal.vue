@@ -43,7 +43,7 @@ const objectStoreStore = useObjectStoreStore();
 const quotaUsageStore = useQuotaUsageStore();
 const storageOperationsStore = useStorageOperationsStore();
 const { loading: objectStoresLoading, loadErrorMessage } = storeToRefs(objectStoreStore);
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const selectedTargetObjectStoreId = ref<string | null>(null);
 const storagePreview = ref<StorageOperationPreviewResponse | null>(null);
@@ -234,7 +234,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
 </script>
 
 <template>
-    <GModal :show.sync="showProxy" title="Move Datasets to New Storage Location" size="medium" overflow-visible>
+    <GModal v-model:show="showProxy" title="Move Datasets to New Storage Location" size="medium" overflow-visible>
         <GAlert v-if="previewError" show variant="danger" dismissible class="mb-2" @dismissed="previewError = null">
             {{ previewError }}
         </GAlert>
@@ -265,7 +265,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                     <Multiselect
                         v-else
                         id="storage-target-select"
-                        :value="selectedTargetObjectStore"
+                        :model-value="selectedTargetObjectStore"
                         :options="storageTargetOptions"
                         :allow-empty="false"
                         :searchable="false"
@@ -274,7 +274,7 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                         label="name"
                         placeholder="Select target storage location"
                         class="w-100 multiselect--soft-option-highlight"
-                        @input="onTargetStoreSelected"
+                        @update:model-value="onTargetStoreSelected"
                         @open="dropdownOpen = true"
                         @close="dropdownOpen = false">
                         <template v-slot:singleLabel="{ option }">
@@ -286,7 +286,11 @@ function getExplicitlySelectedItems(): HistoryContentItemBase[] {
                                     <span class="font-weight-bold">{{
                                         option.name ?? "Unknown storage location"
                                     }}</span>
-                                    <ObjectStoreBadges :badges="option.badges" size="lg" class="ml-2 flex-shrink-0" />
+                                    <ObjectStoreBadges
+                                        :badges="option.badges"
+                                        size="lg"
+                                        :interactive="false"
+                                        class="ml-2 flex-shrink-0" />
                                 </div>
                                 <div v-if="option.description" class="small text-muted mt-1 text-break">
                                     {{ option.description }}

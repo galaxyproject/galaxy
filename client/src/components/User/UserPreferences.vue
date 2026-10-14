@@ -48,7 +48,7 @@ const breadcrumbItems = [{ title: "User Preferences" }];
 
 const { confirm } = useConfirmDialog();
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
@@ -321,7 +321,7 @@ onMounted(async () => {
                     @click="signOut" />
             </div>
 
-            <GModal :show.sync="showDataPrivateModal" title="Datasets are now private" size="small">
+            <GModal v-model:show="showDataPrivateModal" title="Datasets are now private" size="small">
                 <GAlert variant="info" show>
                     All of your histories and datasets have been made private. If you'd like to make all
                     <strong>future</strong>

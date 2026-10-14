@@ -17,11 +17,11 @@ describe("LoginIndex", () => {
 
     beforeEach(() => {
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 allowUserCreation: false,
                 sessionCsrfToken: "sessionCsrfToken",
             },
-            localVue,
+            global: localVue,
             router,
         });
     });

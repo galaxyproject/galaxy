@@ -1,6 +1,8 @@
 import { vi } from "vitest";
 import { ref } from "vue";
 
+const isConfigLoadedRef = ref(true);
+
 // Default mock config values
 const defaultConfig = {
     allow_local_account_creation: true,
@@ -20,7 +22,7 @@ const mockConfig = ref({ ...defaultConfig });
 
 export const useConfig = vi.fn(() => ({
     config: mockConfig,
-    isConfigLoaded: true,
+    isConfigLoaded: isConfigLoadedRef,
 }));
 
 // Helper function for tests to override config values

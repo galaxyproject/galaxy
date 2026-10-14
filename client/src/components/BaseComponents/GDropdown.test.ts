@@ -1,10 +1,9 @@
 import type * as FloatingUI from "@floating-ui/dom";
 import { autoUpdate, computePosition } from "@floating-ui/dom";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
+import { type DOMWrapper, mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
 
 import GDropdown from "./GDropdown.vue";
 import GDropdownForm from "./GDropdownForm.vue";
@@ -18,9 +17,8 @@ vi.mock("@floating-ui/dom", async (importOriginal) => {
 });
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
-let wrapper: Wrapper<Vue> | undefined;
+let wrapper: VueWrapper | undefined;
 
 function mountTemplate(template: string, methods: Record<string, () => void> = {}) {
     wrapper = mount(
@@ -29,7 +27,7 @@ function mountTemplate(template: string, methods: Record<string, () => void> = {
             template: `<div>${template}<button id="outside">Outside</button></div>`,
             methods,
         } as object,
-        { localVue, router: new VueRouter({ mode: "history" }), attachTo: document.body },
+        { localVue, router: createTestRouter(), attachTo: document.body },
     );
     return wrapper;
 }
@@ -49,23 +47,23 @@ function focusedText() {
     return document.activeElement?.textContent?.trim();
 }
 
-async function press(element: Wrapper<Vue> | Element, key: string, shiftKey = false) {
+async function press(element: { element: Element } | Element, key: string, shiftKey = false) {
     const target = "element" in element ? element.element : element;
     target.dispatchEvent(new KeyboardEvent("keydown", { key, shiftKey, bubbles: true, cancelable: true }));
     await flushPromises();
 }
 
-function isMenuOpen(wrapper: Wrapper<Vue>) {
+function isMenuOpen(wrapper: VueWrapper) {
     return wrapper.get(".dropdown-menu").classes().includes("show");
 }
 
-async function openMenu(wrapper: Wrapper<Vue>) {
+async function openMenu(wrapper: VueWrapper) {
     await wrapper.get(".dropdown-toggle").trigger("click");
     expect(isMenuOpen(wrapper)).toBe(true);
 }
 
 afterEach(() => {
-    wrapper?.destroy();
+    wrapper?.unmount();
     wrapper = undefined;
 });
 
@@ -99,7 +97,7 @@ describe("GDropdown.vue", () => {
                 `<GDropdown split text="Create"><GDropdownItem>List</GDropdownItem></GDropdown>`,
             );
 
-            const [main, toggle] = wrapper.findAll(".dropdown > button").wrappers;
+            const [main, toggle] = wrapper.findAll(".dropdown > button");
             expect(main?.attributes("id")).toBeTruthy();
             expect(wrapper.get(".dropdown-menu").attributes("aria-labelledby")).toBe(main?.attributes("id"));
             expect(toggle?.text()).toBe("More options for Create");
@@ -119,7 +117,7 @@ describe("GDropdown.vue", () => {
                 <GDropdownGroup header="Admins Only"><GDropdownItem>Import</GDropdownItem></GDropdownGroup>
                 <GDropdownGroup><GDropdownItem>Other</GDropdownItem></GDropdownGroup>`);
 
-            const [labelled, unlabelled] = wrapper.findAll("[role='group']").wrappers;
+            const [labelled, unlabelled] = wrapper.findAll("[role='group']");
             const header = wrapper.get(".dropdown-header");
             expect(header.attributes("id")).toBeTruthy();
             expect(labelled?.attributes("aria-labelledby")).toBe(header.attributes("id"));
@@ -211,8 +209,8 @@ describe("GDropdown.vue", () => {
         });
 
         it.each([
-            ["ArrowDown", (toggle: Wrapper<Vue>) => press(toggle, "ArrowDown")],
-            ["Enter or Space", (toggle: Wrapper<Vue>) => toggle.trigger("click")],
+            ["ArrowDown", (toggle: Omit<DOMWrapper<Element>, "exists">) => press(toggle, "ArrowDown")],
+            ["Enter or Space", (toggle: Omit<DOMWrapper<Element>, "exists">) => toggle.trigger("click")],
         ])("focuses an item opened with %s only once the menu is placed", async (_key, open) => {
             let placeMenu = () => {};
             vi.mocked(computePosition).mockReturnValueOnce(
@@ -265,7 +263,7 @@ describe("GDropdown.vue", () => {
             await openMenu(mounted);
             await flushPromises();
 
-            mounted.destroy();
+            mounted.unmount();
 
             expect(stopTracking).toHaveBeenCalledOnce();
         });
@@ -291,7 +289,7 @@ describe("GDropdown.vue", () => {
             });
 
             (mounted.get(".dropdown-toggle").element as HTMLElement).click();
-            mounted.destroy();
+            mounted.unmount();
             await flushPromises();
 
             expect(addListener).not.toHaveBeenCalledWith("click", expect.any(Function), true);
@@ -305,7 +303,7 @@ describe("GDropdown.vue", () => {
                 <GDropdownItem to="/histories/list">Histories</GDropdownItem>
                 <GDropdownItem href="https://example.org/">External</GDropdownItem>`);
 
-            const [routerItem, hrefItem] = wrapper.findAll("a.dropdown-item").wrappers;
+            const [routerItem, hrefItem] = wrapper.findAll("a.dropdown-item");
             expect(routerItem?.attributes("href")).toBe("/histories/list");
             expect(hrefItem?.attributes("href")).toBe("https://example.org/");
         });
@@ -321,13 +319,13 @@ describe("GDropdown.vue", () => {
 
         it("do not navigate when disabled", async () => {
             const wrapper = mountDropdown(`<GDropdownItem disabled to="/histories/list">Histories</GDropdownItem>`);
-            const startPath = wrapper.vm.$router.currentRoute.fullPath;
+            const startPath = wrapper.vm.$router.currentRoute.value.fullPath;
             await openMenu(wrapper);
 
             const item = wrapper.get("a.dropdown-item");
             await item.trigger("click");
 
-            expect(wrapper.vm.$router.currentRoute.fullPath).toBe(startPath);
+            expect(wrapper.vm.$router.currentRoute.value.fullPath).toBe(startPath);
             expect(item.attributes("href")).toBe("#");
             expect(item.attributes("aria-disabled")).toBe("true");
         });
@@ -422,19 +420,19 @@ describe("GDropdown.vue", () => {
                 <GDropdownItemButton active>Three</GDropdownItemButton>
                 <GDropdownItem>Four</GDropdownItem>`);
 
-            const current = wrapper
-                .findAll("[role='menuitem']")
-                .wrappers.map((item) => item.attributes("aria-current"));
+            const current = wrapper.findAll("[role='menuitem']").map((item) => item.attributes("aria-current"));
             expect(current).toEqual(["true", "true", "true", undefined]);
         });
 
         it("keeps items out of the tab order and marks disabled ones", () => {
             const wrapper = mountDropdown(MENU);
 
-            const items = wrapper.findAll("[role='menuitem']").wrappers;
+            const items = wrapper.findAll("[role='menuitem']");
             expect(items.map((item) => item.attributes("tabindex"))).toEqual(["-1", "-1", "-1", "-1", "-1"]);
             expect(items[1]?.attributes("aria-disabled")).toBe("true");
-            expect(items[3]?.attributes("disabled")).toBe("disabled");
+            // Vue 3 renders a true boolean attribute as an empty string (`disabled=""`),
+            // not the attribute name as its value like Vue 2 did.
+            expect(items[3]?.attributes("disabled")).toBe("");
         });
 
         it("closes on Escape and returns focus to the toggle", async () => {
@@ -575,7 +573,7 @@ describe("GDropdown.vue", () => {
                     </GDropdownForm>
                     <GDropdownItem>Outer two</GDropdownItem>
                 </GDropdown>`);
-            const [outerToggle, innerToggle] = wrapper.findAll(".dropdown-toggle").wrappers;
+            const [outerToggle, innerToggle] = wrapper.findAll(".dropdown-toggle");
             await press(outerToggle!, "ArrowDown");
             (innerToggle!.element as HTMLElement).focus();
             await press(innerToggle!, "ArrowDown");

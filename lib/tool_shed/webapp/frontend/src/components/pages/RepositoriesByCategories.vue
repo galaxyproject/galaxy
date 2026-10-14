@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { GTable, type TableField } from "@galaxyproject/galaxy-ui"
 import PageContainer from "@/components/PageContainer.vue"
+import PageHeader from "@/components/PageHeader.vue"
+import LoadingDiv from "@/components/LoadingDiv.vue"
 import { computed } from "vue"
 import { storeToRefs } from "pinia"
 import { useCategoriesStore } from "@/stores"
@@ -13,65 +16,60 @@ const viewableCategories = computed(() => {
     return categories.value.filter((c) => hidePackages.indexOf(c.name) == -1)
 })
 
-const columns = [
-    { name: "name", label: "Name", field: "name", align: "left" as const, sortable: true },
-    { name: "description", label: "Description", field: "description", align: "left" as const },
-    { name: "repositories", label: "Repositories", field: "repositories", align: "right" as const, sortable: true },
+const fields: TableField[] = [
+    { key: "name", label: "Name", sortable: true },
+    { key: "description", label: "Description" },
+    { key: "repositories", label: "Repositories", align: "right", sortable: true },
 ]
 
 void categoriesStore.getAll()
 </script>
 <template>
     <page-container>
-        <h4 class="q-mt-none q-mb-md">Categories</h4>
-        <div v-if="loading">
-            <q-spinner />
-        </div>
-        <q-table
+        <template #header>
+            <page-header title="Categories" subtitle="Browse repositories grouped by the kind of analysis they do." />
+        </template>
+        <LoadingDiv v-if="loading" message="Loading categories" />
+        <GTable
             v-else
-            :rows="viewableCategories"
-            :columns="columns"
-            row-key="id"
-            :pagination="{ rowsPerPage: 0 }"
-            hide-pagination
-            flat
-            bordered
-            aria-label="Categories"
-            class="categories-table"
+            id="categories"
+            class="categories-table shed-table-card"
+            :items="viewableCategories"
+            :fields="fields"
+            primary-key="id"
+            sort-by="name"
         >
-            <template #header="props">
-                <q-tr :props="props">
-                    <q-th v-for="col in props.cols" :key="col.name" :props="props" class="table-header">
-                        {{ col.label }}
-                    </q-th>
-                </q-tr>
+            <template #table-caption>
+                <span class="shed-visually-hidden">Categories</span>
             </template>
-            <template #body-cell-name="props">
-                <q-td :props="props" class="category-name-cell">
-                    <router-link
-                        class="text-primary text-weight-bold"
-                        :to="`/repositories_by_category/${props.row.id}`"
-                    >
-                        {{ props.row.name }}
-                    </router-link>
-                </q-td>
+            <template #cell(name)="{ item }">
+                <router-link class="category-name" :to="`/repositories_by_category/${item.id}`">
+                    {{ item.name }}
+                </router-link>
             </template>
-        </q-table>
+            <template #cell(repositories)="{ item }">
+                <span class="category-count">{{ item.repositories }}</span>
+            </template>
+        </GTable>
     </page-container>
 </template>
 
 <style scoped>
-.categories-table {
-    font-size: 1.1rem;
+.category-name {
+    font-size: 1.05rem;
+    font-weight: 700;
 }
 
-.table-header {
-    background-color: #f5f5f5;
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.category-name-cell {
-    font-size: 1.2rem;
+.category-count {
+    display: inline-block;
+    min-width: 2.25rem;
+    padding: 0.05rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--color-bay-of-many-900, #25537b);
+    background: var(--color-bay-of-many-100, #edf4fa);
+    border: 1px solid var(--color-bay-of-many-200, #cde0f0);
+    border-radius: 999px;
 }
 </style>

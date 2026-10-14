@@ -79,6 +79,7 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.util import (
     find_instance_nested,
+    in_directory,
     listify,
     RW_R__R__,
     safe_makedirs,
@@ -402,6 +403,8 @@ class ToolEvaluator:
         Walk input datasets and collections and find inputs that need to be materialized.
         """
         deferred_objects: dict[str, DeferrableObjectsT] = {}
+        # Deferred inputs the tool consumes as URIs (``allow_uri_if_protocol``).
+        uri_inputs: set[str] = set()
 
         def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
             if (
@@ -413,7 +416,10 @@ class ToolEvaluator:
         def find_deferred_datasets(input, value, context, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
                 if isinstance(value, model.DatasetInstance) and value.state == model.Dataset.states.DEFERRED:
-                    deferred_objects[prefixed_name] = value
+                    if self._should_materialize_deferred_input(input, value):
+                        deferred_objects[prefixed_name] = value
+                    else:
+                        uri_inputs.add(prefixed_name)
                 elif isinstance(value, list):
                     # handle single list reduction as a collection input
                     if (
@@ -427,7 +433,7 @@ class ToolEvaluator:
                         return
 
                     for v in value:
-                        if self._should_materialize_deferred_input(prefixed_name, v):
+                        if self._should_materialize_deferred_input(input, v):
                             deferred_objects[prefixed_name] = value
                             break
 
@@ -438,18 +444,22 @@ class ToolEvaluator:
         # object array also. This is so messy. I think in this case - we only need these for
         # Pulsar staging up which uses the hackier input_datasets flat dict.
         for key, value in input_datasets.items():
-            if key not in deferred_objects and value is not None and value.state == model.Dataset.states.DEFERRED:
-                if self._should_materialize_deferred_input(key, value):
+            if (
+                key not in deferred_objects
+                and key not in uri_inputs
+                and value is not None
+                and value.state == model.Dataset.states.DEFERRED
+            ):
+                if self._should_materialize_deferred_input(self.tool.inputs.get(key), value):
                     deferred_objects[key] = value
 
         return deferred_objects
 
-    def _should_materialize_deferred_input(self, input_name: str, input_value: DeferrableObjectsT) -> bool:
+    def _should_materialize_deferred_input(self, deferred_input: Any, input_value: DeferrableObjectsT) -> bool:
         """
         We can skip materializing some deferred datasets if the input can work with URIs that are prefixed
         with a known prefix set in `allow_uri_if_protocol`.
         """
-        deferred_input = self.tool.inputs.get(input_name)
         if isinstance(deferred_input, DataToolParameter) and isinstance(input_value, model.DatasetInstance):
             source_uri = input_value.deferred_source_uri or ""
             for prefix in deferred_input.allow_uri_if_protocol:
@@ -804,14 +814,24 @@ class ToolEvaluator:
             with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
                 config_filename = temp.name
             if config_file.filename is not None:
-                # Explicit filename was requested, this is implemented as symbolic link
-                # to the actual config file that is placed in tool working directory
-                directory = os.path.join(self.local_working_directory, "working")
-                os.link(config_filename, os.path.join(directory, config_file.filename))
+                self._link_config_file(config_filename, config_file.filename)
             self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
             self._register_extra_file(config_file.name, config_filename)
             config_filenames.append(config_filename)
         return config_filenames
+
+    def _link_config_file(self, config_filename: str, filename: str) -> None:
+        """Hard-link a config file under its explicit ``filename`` below the tool working directory."""
+        directory = os.path.join(self.local_working_directory, "working")
+        link_path = os.path.normpath(os.path.join(directory, filename))
+        # in_directory resolves symlinks in the existing parents of link_path, so a
+        # subdirectory that points elsewhere is refused as well as absolute and '..' names.
+        if link_path == os.path.normpath(directory) or not in_directory(link_path, directory):
+            raise RequestParameterInvalidException(
+                f"Config file filename {filename!r} must be a relative path inside the job working directory"
+            )
+        safe_makedirs(os.path.dirname(link_path))
+        os.link(config_filename, link_path)
 
     def _build_environment_variables(self):
         param_dict = self.param_dict
@@ -1048,10 +1068,7 @@ class UserToolEvaluator(ToolEvaluator):
                 with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
                     config_filename = temp.name
                 if config_file.filename is not None:
-                    # Explicit filename was requested, this is implemented as symbolic link
-                    # to the actual config file that is placed in tool working directory
-                    directory = os.path.join(self.local_working_directory, "working")
-                    os.link(config_filename, os.path.join(directory, config_file.filename))
+                    self._link_config_file(config_filename, config_file.filename)
                 self._write_workdir_file(config_filename, config_text, param_dict, template_type=template_type)
                 self._register_extra_file(config_file.name, config_filename)
                 config_filenames.append(config_filename)

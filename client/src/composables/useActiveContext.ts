@@ -1,6 +1,6 @@
 import { faFile, faMagic, faSitemap, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useToolStore } from "@/stores/toolStore";

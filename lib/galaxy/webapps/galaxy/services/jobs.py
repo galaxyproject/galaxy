@@ -59,6 +59,7 @@ from galaxy.tool_util.parameters import (
     strictify,
     ToolParameterBundleModel,
 )
+from galaxy.tools.parameters.meta import validate_matched_batch_lengths
 from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
 )
@@ -266,6 +267,7 @@ class JobsService(ServiceBase):
         # request_internal records absent inputs as absent; static defaults (incl. url_default
         # data inputs) are filled later, at dereference/job_internal time (see fill_static_defaults).
         request_internal_state.validate(parameter_bundle, f"{tool.id} (request internal model)")
+        validate_matched_batch_lengths(tool, request_internal_state)
         sa_session = trans.sa_session
         tool_source_model = get_or_create_tool_source(sa_session, tool)
         tool_request = ToolRequest()

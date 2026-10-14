@@ -204,8 +204,7 @@ export const types_to_icons = {
 
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings: Record<string, string | boolean>) {
-    let query = "";
-    query = Object.entries(filterSettings)
+    const query = Object.entries(filterSettings)
         .filter(([, value]) => value)
         .map(([filter, value]) => {
             if (value === true) {
@@ -286,7 +285,7 @@ export function determineWidth(
     direction: string,
     positionX: number,
 ) {
-    let newWidth = null;
+    let newWidth: number;
     if (direction === "right") {
         const offset = rectRoot.left - rectDraggable.left;
         newWidth = rectRoot.right - positionX - offset;

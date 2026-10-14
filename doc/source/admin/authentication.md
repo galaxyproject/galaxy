@@ -26,6 +26,29 @@ Each `<provider>` entry in `oidc_backends_config_file` is one of the backends Ga
 
 The configuration is explained with provider-specific details at [User Authentication Configuration](https://galaxyproject.org/authnz/config/oidc/). How to authenticate from the user perspective we describe [here](https://galaxyproject.org/authnz/use/oidc/).
 
+### PKCE
+
+[PKCE](https://datatracker.ietf.org/doc/html/rfc7636) (Proof Key for Code Exchange) binds the authorization code the IdP returns to the browser that started the login, so an intercepted code is useless on its own. It is available for the `oidc`, `keycloak`, `cilogon` and `auth0` backends and is enabled per provider in `oidc_backends_config_file`:
+
+```xml
+<provider name="keycloak">
+    ...
+    <pkce_support>true</pkce_support>
+</provider>
+```
+
+With PKCE enabled, each login works as follows:
+
+1. `/authnz/<provider>/login` generates a random code verifier and sends its base64url-encoded SHA-256 hash (`code_challenge`, `code_challenge_method=S256`) to the IdP with the authorization request.
+2. The verifier is stored on the server with the rest of the login state, bound to the browser's Galaxy session and the provider. The record expires after ten minutes, so the sign-in at the IdP has to finish within that time.
+3. `/authnz/<provider>/callback` consumes that record, so each login attempt can complete only once, and sends the verifier with the token request. The IdP issues tokens only when the verifier hashes to the challenge from step 1.
+
+For this to work, the browser must send its Galaxy session cookie back on the callback request. The `redirect_uri` therefore has to use the same host name users browse Galaxy under (for example, `localhost` and `127.0.0.1` are different hosts to the browser). Set `cookie_domain` in `galaxy.yml` if login and callback are served from different subdomains.
+
+To check that PKCE is active, open the browser's developer tools before logging in. The redirect to the IdP carries `code_challenge` and `code_challenge_method=S256` in its query string. To make the IdP reject logins without PKCE, require it on the client there. In Keycloak this is _Clients > your client > Advanced > Proof Key for Code Exchange Code Challenge Method_ set to `S256`.
+
+Galaxy refuses the login itself when the callback arrives without the matching login state, so it never depends on the IdP enforcing PKCE. Users then see "Authentication has expired or is invalid. Please start logging in again." If the IdP rejects the verifier, users see "Authentication with `<provider>` was canceled or the authorization code has expired".
+
 ## Authentication Framework
 
 Galaxy is distributed with a plugin-driven authentication framework for which the default database authentication is

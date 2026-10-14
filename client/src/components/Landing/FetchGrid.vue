@@ -118,7 +118,7 @@ function initializeTabularVersionOfTarget() {
     let table;
     try {
         table = fetchTargetToTable(props.target);
-    } catch (error) {
+    } catch {
         richSupportForTarget.value = false;
         return;
     }

@@ -252,19 +252,23 @@ class CommunityRBACAgent(RBACAgent):
                 repository_admin_role = repository.admin_role
                 for rra in repository.roles:
                     role = rra.role
+                    if role is None:
+                        continue
                     if role.id == repository_admin_role.id:
                         # We have the repository's admin role, so see if the user is associated with it.
                         for ura in role.users:
                             role_member = ura.user
-                            if role_member.id == user.id:
+                            if role_member is not None and role_member.id == user.id:
                                 return True
                         # The user is not directly associated with the role, so see if they are a member
                         # of a group that is associated with the role.
                         for gra in role.groups:
                             group = gra.group
+                            if group is None:
+                                continue
                             for uga in group.users:
                                 member = uga.user
-                                if member.id == user.id:
+                                if member is not None and member.id == user.id:
                                     return True
         return False
 

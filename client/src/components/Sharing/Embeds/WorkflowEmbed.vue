@@ -99,7 +99,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                         <input
                             :value="settings.initialX"
                             type="number"
-                            @change="(event) => onChangePosition(event, 'x')" />
+                            @change="(event: Event) => onChangePosition(event, 'x')" />
                     </label>
 
                     <label>
@@ -107,7 +107,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                         <input
                             :value="settings.initialY"
                             type="number"
-                            @change="(event) => onChangePosition(event, 'y')" />
+                            @change="(event: Event) => onChangePosition(event, 'y')" />
                     </label>
                 </div>
             </label>
@@ -118,7 +118,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                     id="embed-zoom-control"
                     :zoom-level="settings.zoom"
                     class="zoom-control"
-                    @onZoom="(level) => (settings.zoom = level)" />
+                    @onZoom="(level: number) => (settings.zoom = level)" />
             </label>
 
             <BFormCheckbox

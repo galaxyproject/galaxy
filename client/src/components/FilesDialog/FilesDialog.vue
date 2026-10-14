@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Vue, { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import {
     browseRemoteFiles,
@@ -221,7 +221,7 @@ function formatRows() {
         else if (!item.isLeaf) {
             selectionState = getIcon(isDirectorySelected(item.id), item.url);
         }
-        Vue.set(item, "selectionState", selectionState);
+        item.selectionState = selectionState;
     }
     // Called for its side effect: auto-selects the current folder when all
     // of its children are selected.

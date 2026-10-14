@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type Vue from "vue";
 
 import SaveChangesModal from "./SaveChangesModal.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -13,16 +12,16 @@ const CANCEL = 0;
 const DONT_SAVE = 1;
 const SAVE = 2;
 
-function footerButtons(wrapper: Wrapper<Vue>) {
-    return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton).wrappers;
+function footerButtons(wrapper: VueWrapper): VueWrapper<InstanceType<typeof GButton>>[] {
+    return wrapper.find(".save-changes-modal-button-container").findAllComponents(GButton);
 }
 
-function buttonsDisabled(wrapper: Wrapper<Vue>) {
+function buttonsDisabled(wrapper: VueWrapper) {
     return footerButtons(wrapper).map((button) => button.props("disabled"));
 }
 
 describe("Workflow editor SaveChangesModal", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         wrapper = mount(SaveChangesModal as object, {
@@ -32,26 +31,26 @@ describe("Workflow editor SaveChangesModal", () => {
                 navUrl: "/workflows/list",
                 appendVersion: false,
             },
-        }) as Wrapper<Vue>;
+        }) as VueWrapper;
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it("hands the parent the proceed choice", async () => {
         await footerButtons(wrapper).at(SAVE)!.vm.$emit("click");
-        expect(wrapper.emitted()["on-proceed"]![0]).toEqual(["/workflows/list", true, false, false]);
+        expect(wrapper.emitted("on-proceed")![0]).toEqual(["/workflows/list", true, false, false]);
 
         await footerButtons(wrapper).at(DONT_SAVE)!.vm.$emit("click");
-        expect(wrapper.emitted()["on-proceed"]![1]).toEqual(["/workflows/list", false, true, false]);
+        expect(wrapper.emitted("on-proceed")![1]).toEqual(["/workflows/list", false, true, false]);
     });
 
     it("Cancel closes without proceeding", async () => {
         await footerButtons(wrapper).at(CANCEL)!.vm.$emit("click");
 
-        expect(wrapper.emitted()["update:show-modal"]![0]).toEqual([false]);
-        expect(wrapper.emitted()["on-proceed"]).toBeUndefined();
+        expect(wrapper.emitted("update:show-modal")![0]).toEqual([false]);
+        expect(wrapper.emitted("on-proceed")).toBeUndefined();
     });
 
     it("disables its buttons while the parent acts on the choice", async () => {

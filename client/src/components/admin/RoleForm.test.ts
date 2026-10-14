@@ -1,9 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -15,7 +14,7 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const mockPush = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: (...args: unknown[]) => mockPush(...args),
     }),
@@ -54,20 +53,26 @@ async function mountTarget(propsData: { roleId?: string } = {}) {
         localVue,
         propsData,
         stubs: { FontAwesomeIcon: true },
+        attachTo: document.body,
     });
     await flushPromises();
     return wrapper;
 }
 
-function multiselect(wrapper: Wrapper<Vue>, id: string) {
+function multiselect(wrapper: VueWrapper, id: string) {
     return wrapper.find(`#${id}`).findComponent(Multiselect);
 }
 
-function selectedTags(wrapper: Wrapper<Vue>, id: string) {
-    return wrapper.findAll(`#${id} .multiselect__tag`).wrappers.map((tag) => tag.text());
+// vue-multiselect only renders its option list once the dropdown is open.
+async function openDropdown(wrapper: VueWrapper, id: string) {
+    await wrapper.find(`#${id}-select`).trigger("focus");
 }
 
-async function submit(wrapper: Wrapper<Vue>) {
+function selectedTags(wrapper: VueWrapper, id: string) {
+    return wrapper.findAll(`#${id} .multiselect__tag`).map((tag) => tag.text());
+}
+
+async function submit(wrapper: VueWrapper) {
     await wrapper.find("#role-submit").trigger("click");
     await flushPromises();
 }
@@ -114,12 +119,10 @@ describe("RoleForm.vue create mode", () => {
         const wrapper = await mountTarget();
         await wrapper.find("#role-name").setValue("Test Role");
         await wrapper.find("#role-description").setValue("Test Description");
-        const roleType = wrapper
-            .findAllComponents(FormSelection)
-            .wrappers.find((w) => w.attributes("id") === "role-type");
+        const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.attributes("id") === "role-type");
         roleType!.vm.$emit("input", "user_tool_execute");
-        multiselect(wrapper, "role-groups").vm.$emit("input", [{ id: "g1", name: "Group 1" }]);
-        multiselect(wrapper, "role-users").vm.$emit("input", [{ id: "u1", email: "user1@example.org" }]);
+        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [{ id: "g1", name: "Group 1" }]);
+        multiselect(wrapper, "role-users").vm.$emit("update:modelValue", [{ id: "u1", email: "user1@example.org" }]);
         await submit(wrapper);
         expect(requests.post).toEqual([
             {
@@ -146,6 +149,7 @@ describe("RoleForm.vue create mode", () => {
         multiselect(wrapper, "role-users").vm.$emit("search-change", "user1");
         await flushPromises();
         expect(searchedEmail).toBe("user1");
+        await openDropdown(wrapper, "role-users");
         expect(wrapper.find("#role-users").text()).toContain("user1@example.org");
     });
 
@@ -213,8 +217,8 @@ describe("RoleForm.vue edit mode", () => {
         const requests = captureRequests();
         const wrapper = await mountTarget({ roleId: "r1" });
         await wrapper.find("#role-name").setValue("Renamed Role");
-        multiselect(wrapper, "role-users").vm.$emit("input", []);
-        multiselect(wrapper, "role-groups").vm.$emit("input", [
+        multiselect(wrapper, "role-users").vm.$emit("update:modelValue", []);
+        multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [
             { id: "g1", name: "Group 1" },
             { id: "g2", name: "Group 2" },
         ]);

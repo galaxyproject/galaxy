@@ -3754,6 +3754,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a file required to stage a job.
+         * @description Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, authorized by `job_key` - not part of Galaxy's stable, user facing API.
+         */
+        get: operations["index_api_jobs__job_id__files_get"];
+        put?: never;
+        /**
+         * Populate an output or working directory file of a job.
+         * @description Only for consumption by remote job runners (e.g. Pulsar) acting on behalf of a queued or running job, authorized by `job_key` - not part of Galaxy's stable, user facing API.
+         */
+        post: operations["create_api_jobs__job_id__files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs/{job_id}/inputs": {
         parameters: {
             query?: never;
@@ -4134,6 +4158,12 @@ export interface paths {
         /**
          * Sends a notification to a list of recipients (users, groups or roles).
          * @description Sends a notification to a list of recipients (users, groups or roles).
+         *
+         *     Administrators can address arbitrary recipients. Other authenticated users can only
+         *     submit the request categories Galaxy accepts from users (currently
+         *     ``tool_installation_request``); for those, the recipients are resolved server-side and
+         *     the ``recipients`` field is ignored. Submissions are rate-limited per user
+         *     (``send_notification_rate_limit``).
          */
         post: operations["send_notification_api_notifications_post"];
         /** Deletes a list of notifications received by the user in a single request. */
@@ -4710,6 +4740,27 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_pages__id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pages/{id}/workflow_extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
+         * @description Summarize the jobs in the page's history, preselecting the subgraph that
+         *     produced the datasets/collections the page references.
+         */
+        get: operations["workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -8836,19 +8887,106 @@ export interface components {
              */
             type: "change_dbkey";
         };
+        /**
+         * ChatCompletionAllowedToolChoiceParam
+         * @description Constrains the tools available to the model to a pre-defined set.
+         */
+        ChatCompletionAllowedToolChoiceParam: {
+            allowed_tools: components["schemas"]["ChatCompletionAllowedToolsParam"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "allowed_tools";
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionAllowedToolsParam
+         * @description Constrains the tools available to the model to a pre-defined set.
+         */
+        ChatCompletionAllowedToolsParam: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "auto" | "required";
+            /** Tools */
+            tools: {
+                [key: string]: unknown;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionNamedToolChoiceCustomParam
+         * @description Specifies a tool the model should use.
+         *
+         *     Use to force the model to call a specific custom tool.
+         */
+        ChatCompletionNamedToolChoiceCustomParam: {
+            custom: components["schemas"]["Custom"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "custom";
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionNamedToolChoiceParam
+         * @description Specifies a tool the model should use.
+         *
+         *     Use to force the model to call a specific function.
+         */
+        ChatCompletionNamedToolChoiceParam: {
+            function: components["schemas"]["Function"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "function";
+        } & {
+            [key: string]: unknown;
+        };
         /** ChatCompletionRequest */
         ChatCompletionRequest: {
             /** Max Tokens */
             max_tokens?: number | null;
             /** Messages */
             messages: components["schemas"]["ChatMessage"][];
+            /** Parallel Tool Calls */
+            parallel_tool_calls?: boolean | null;
+            /** Reasoning Effort */
+            reasoning_effort?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max") | null;
             /**
              * Stream
              * @default false
              */
             stream: boolean | null;
+            stream_options?: components["schemas"]["ChatCompletionStreamOptionsParam"] | null;
+            /** Tool Choice */
+            tool_choice?:
+                | ("none" | "auto" | "required")
+                | components["schemas"]["ChatCompletionAllowedToolChoiceParam"]
+                | components["schemas"]["ChatCompletionNamedToolChoiceParam"]
+                | components["schemas"]["ChatCompletionNamedToolChoiceCustomParam"]
+                | null;
             /** Tools */
             tools?: components["schemas"]["ChatTool"][] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ChatCompletionStreamOptionsParam
+         * @description Options for streaming response. Only set this when you set `stream: true`.
+         */
+        ChatCompletionStreamOptionsParam: {
+            /** Include Obfuscation */
+            include_obfuscation?: boolean;
+            /** Include Usage */
+            include_usage?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -8914,7 +9052,7 @@ export interface components {
         /** ChatMessage */
         ChatMessage: {
             /** Content */
-            content?: string | null;
+            content?: string | components["schemas"]["ChatTextPart"][] | null;
             /**
              * Role
              * @enum {string}
@@ -8995,6 +9133,18 @@ export interface components {
              * @description The response to the chat query.
              */
             response: string;
+        };
+        /** ChatTextPart */
+        ChatTextPart: {
+            /** Text */
+            text: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "text";
+        } & {
+            [key: string]: unknown;
         };
         /** ChatTool */
         ChatTool: {
@@ -10576,6 +10726,13 @@ export interface components {
              * @description The requested page of curated workflows.
              */
             workflows?: components["schemas"]["CuratedWorkflow"][];
+        };
+        /** Custom */
+        Custom: {
+            /** Name */
+            name: string;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * CustomArchivedHistoryView
@@ -13663,6 +13820,7 @@ export interface components {
                 | "github"
                 | "iiif"
                 | "ipfs"
+                | "xrootd"
                 | "mavedb"
                 | "omero"
                 | "ssh"
@@ -13670,7 +13828,8 @@ export interface components {
                 | "ckan"
                 | "commoncrawl"
                 | "gitlab"
-                | "arc";
+                | "arc"
+                | "nomad";
             /** Variables */
             variables?:
                 | (
@@ -14059,6 +14218,13 @@ export interface components {
             src: "ftp_import";
             /** Tags */
             tags?: string[] | null;
+        };
+        /** Function */
+        Function: {
+            /** Name */
+            name: string;
+        } & {
+            [key: string]: unknown;
         };
         /** GenerateTourResponse */
         GenerateTourResponse: {
@@ -16994,7 +17160,7 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Name shown for the produced dataset or collection in the history.
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
              */
             label?: string | null;
             /**
@@ -17057,7 +17223,7 @@ export interface components {
             hidden?: boolean | null;
             /**
              * Label
-             * @description Name shown for the produced dataset or collection in the history.
+             * @description Name shown for the produced dataset or collection in the history. `$(inputs.<name>)` and `$(runtime.on_string)` references are filled in when the job is created.
              */
             label?: string | null;
             /**
@@ -18197,7 +18363,7 @@ export interface components {
             history_id?: string | null;
             /**
              * Inputs
-             * @description Specify values for formal inputs to the workflow
+             * @description Specify values for formal inputs to the workflow. Dataset and collection inputs use objects with 'src' and 'id' fields. Parameter inputs use the values directly, without a 'parameter_value' wrapper, for example {"integer_input": 100, "float_input": 0.1, "boolean_input": false, "text_input": "example"}. Input keys are interpreted according to 'inputs_by'.
              */
             inputs?: {
                 [key: string]: unknown;
@@ -18246,7 +18412,7 @@ export interface components {
                 | null;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}.
              * @default {}
              */
             parameters: {
@@ -19724,6 +19890,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             parent_library_id: string;
+            /** Readme */
+            readme?: string | null;
             /** Total Rows */
             total_rows: number;
         };
@@ -20092,6 +20260,16 @@ export interface components {
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
+        /** MarkdownHelpContent */
+        MarkdownHelpContent: {
+            /** Content */
+            content: string;
+            /**
+             * Format
+             * @constant
+             */
+            format: "markdown";
+        };
         /** MaterializeDatasetInstanceAPIRequest */
         MaterializeDatasetInstanceAPIRequest: {
             /**
@@ -20454,6 +20632,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -20543,6 +20722,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -21775,7 +21955,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -22130,6 +22310,11 @@ export interface components {
         RefactorResponse: {
             /** Action Executions */
             action_executions: components["schemas"]["RefactorActionExecution"][];
+            /**
+             * Changed
+             * @description Whether the actions changed the refactored version. A refactor of the latest version that changes nothing saves no new version; refactoring an older version always saves one.
+             */
+            changed: boolean;
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
@@ -22440,6 +22625,48 @@ export interface components {
             | "track_config"
             | "genome_data"
             | "in_use_state";
+        /**
+         * RequestedTool
+         * @description A single requested tool in a tool installation request.
+         *
+         *     This is the per-item model: each entry describes one tool. An installation
+         *     request submits an array of these, wrapped by
+         *     :class:`ToolInstallationRequestNotificationContent` which carries the
+         *     request-level metadata. All fields are sanitized on validation: control
+         *     characters are collapsed and whitespace-only values become ``None``.
+         */
+        RequestedTool: {
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description?: string | null;
+            /**
+             * Tool name
+             * @description The human-readable name of the tool, if known.
+             */
+            name?: string | null;
+            /**
+             * Requested version
+             * @description The version of the tool being requested, if any.
+             */
+            requested_version?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool shed ID
+             * @description The fully qualified tool shed repository ID (e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.
+             */
+            tool_shed_id?: string | null;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool. Must be an http(s) URL.
+             */
+            tool_url?: string | null;
+        };
         /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
@@ -23783,6 +24010,7 @@ export interface components {
                       | components["schemas"]["OutputCollectionSecurityJobMessage"]
                       | components["schemas"]["OutputDiscoveryJobMessage"]
                       | components["schemas"]["StdioReadErrorJobMessage"]
+                      | components["schemas"]["UnknownDatatypeJobMessage"]
                   )[]
                 | null;
             /**
@@ -23977,6 +24205,26 @@ export interface components {
             stderr_match: boolean;
             /** Stdout Match */
             stdout_match: boolean;
+        };
+        /** StepLabelHint */
+        StepLabelHint: {
+            /**
+             * ID
+             * @description Decoded ID of the selected tool job or ImplicitCollectionJobs to label.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
+             * @enum {string}
+             */
+            kind: "job" | "implicit_collection_jobs";
+            /**
+             * Label
+             * @description Workflow step label to assign to the extracted tool step.
+             */
+            label: string;
         };
         /** StepReferenceByLabel */
         StepReferenceByLabel: {
@@ -25528,6 +25776,69 @@ export interface components {
              */
             values: string;
         };
+        /**
+         * ToolInstallationRequestCreateContent
+         * @description A tool installation request as a user submits it.
+         *
+         *     The requested ``tools`` plus request-level context: the workflow that needs
+         *     them and any remarks for the admins.
+         */
+        ToolInstallationRequestCreateContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
+        /**
+         * ToolInstallationRequestNotificationContent
+         * @description A tool installation request as delivered to its recipients.
+         *
+         *     Adds ``requester_email``, taken from the authenticated submitter, so the
+         *     admin's notification card can name and contact the requester.
+         */
+        ToolInstallationRequestNotificationContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requester email
+             * @description Email address of the user who made the request.
+             */
+            requester_email?: string | null;
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
         /** ToolLandingRequest */
         ToolLandingRequest: {
             /** Origin */
@@ -26090,6 +26401,22 @@ export interface components {
              */
             ids: string[];
         };
+        /** UnknownDatatypeJobMessage */
+        UnknownDatatypeJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Error Level */
+            error_level: number;
+            /** Extension */
+            extension: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "unknown_datatype";
+        };
         /** UnprivilegedToolResponse */
         UnprivilegedToolResponse: {
             /** Active */
@@ -26559,6 +26886,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -26920,6 +27254,7 @@ export interface components {
                 | "github"
                 | "iiif"
                 | "ipfs"
+                | "xrootd"
                 | "mavedb"
                 | "omero"
                 | "ssh"
@@ -26927,7 +27262,8 @@ export interface components {
                 | "ckan"
                 | "commoncrawl"
                 | "gitlab"
-                | "arc";
+                | "arc"
+                | "nomad";
             /** Uri Root */
             uri_root: string;
             /**
@@ -27018,6 +27354,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -27048,7 +27391,8 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["StorageOperationNotificationContent"];
+                | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -27354,9 +27698,9 @@ export interface components {
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -27496,9 +27840,9 @@ export interface components {
             edam_topics?: string[] | null;
             /**
              * help
-             * @description Help shown below the tool form. Set `format` to `markdown`, `restructuredtext`, or `plain_text`, and put the documentation in `content`.
+             * @description Help shown below the tool form. Set `format` to `markdown` and put the documentation in `content`.
              */
-            help?: components["schemas"]["HelpContent"] | null;
+            help?: components["schemas"]["MarkdownHelpContent"] | null;
             /**
              * id
              * @description Unique identifier for the tool. Lowercase, must start with a letter, may contain letters, digits, '_' and '-'.
@@ -28014,6 +28358,11 @@ export interface components {
              */
             dataset_names?: string[];
             /**
+             * From Page ID
+             * @description Decoded ID of a notebook page to carry into the extracted workflow as its report: the page's markdown is rewritten so each dataset/collection/job directive references the workflow's inputs/outputs/steps by label.
+             */
+            from_page_id?: string | null;
+            /**
              * HDA IDs
              * @description Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.
              */
@@ -28038,6 +28387,16 @@ export interface components {
              * @description Concrete tool outputs to expose as workflow outputs, with labels.
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
+            /**
+             * Report Title
+             * @description Title for the workflow report built from from_page_id; defaults to the workflow name.
+             */
+            report_title?: string | null;
+            /**
+             * Step Labels
+             * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
+             */
+            step_labels?: components["schemas"]["StepLabelHint"][];
             /**
              * Workflow Name
              * @description The name for the extracted workflow.
@@ -28076,6 +28435,17 @@ export interface components {
              * @description The history items produced by this job.
              */
             outputs?: components["schemas"]["WorkflowExtractionOutput"][];
+            /**
+             * Seed Warning
+             * @description Warning when this row was seeded directly by a notebook job directive but its tool is not a workflow step (e.g. an upload referenced via job_metrics), so it was seeded as an input instead.
+             */
+            seed_warning?: string | null;
+            /**
+             * Seeded
+             * @description Whether this job is part of the producing subgraph of the outputs a page/notebook references. Always False for the plain history summary; set when the summary is computed for a page.
+             * @default false
+             */
+            seeded: boolean;
             /**
              * Step Type
              * @description The role this job plays in the extracted workflow.
@@ -28199,6 +28569,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Report Warnings
+             * @description Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive that had to be dropped because it has no workflow-relative form).
+             */
+            report_warnings?: string[];
         };
         /** WorkflowExtractionSummary */
         WorkflowExtractionSummary: {
@@ -28463,7 +28838,7 @@ export interface components {
             instance: true;
             /**
              * Legacy Step Parameters
-             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
+             * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead. For a workflow parameter input step, the legacy format is {'<step_index>': {'input': <value>}}. If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.
              */
             parameters?: {
                 [key: string]: unknown;
@@ -45075,6 +45450,131 @@ export interface operations {
             };
         };
     };
+    index_api_jobs__job_id__files_get: {
+        parameters: {
+            query?: {
+                /** @description Path to file. */
+                path?: string | null;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the job. */
+                job_key?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_jobs__job_id__files_post: {
+        parameters: {
+            query?: {
+                /** @description Path to file. */
+                path?: string | null;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the job. */
+                job_key?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Encoded id string of the job. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": {
+                    /** @description File stored by nginx_upload_module to use as contents. */
+                    __file_path?: string;
+                    /** @description Job key, if not given as a query parameter. */
+                    job_key?: string;
+                    /** @description Path to file to create, if not given as a query parameter. */
+                    path?: string;
+                    /** @description Completed job files TUS upload to use as contents. */
+                    session_id?: string;
+                };
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Alias of `file`.
+                     */
+                    __file?: string;
+                    /** @description File stored by nginx_upload_module to use as contents. */
+                    __file_path?: string;
+                    /**
+                     * Format: binary
+                     * @description Contents of the file to create.
+                     */
+                    file?: string;
+                    /** @description Job key, if not given as a query parameter. */
+                    job_key?: string;
+                    /** @description Path to file to create, if not given as a query parameter. */
+                    path?: string;
+                    /** @description Completed job files TUS upload to use as contents. */
+                    session_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_inputs_api_jobs__job_id__inputs_get: {
         parameters: {
             query?: never;
@@ -48157,6 +48657,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history's extraction summary with seeded rows and exposed outputs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
                 };
             };
             /** @description Request Error */

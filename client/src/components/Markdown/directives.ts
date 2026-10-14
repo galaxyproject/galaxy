@@ -37,6 +37,8 @@ type SidePanelEntry = {
 
 const DIRECTIVE_METADATA = RAW_DIRECTIVE_DATA as DirectivesMetadata;
 
+export const MARKDOWN_CELL_TYPES: string[] = (RAW_DIRECTIVE_DATA as { _cell_types: string[] })._cell_types;
+
 export function directiveEntry(
     directiveId: string,
     mode: DirectiveMode,

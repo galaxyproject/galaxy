@@ -137,6 +137,7 @@ export default {
             if (this.numToolsheds > 1) {
                 fields.push({
                     key: "tool_shed",
+                    label: "Tool Shed",
                     sortable: true,
                 });
             }

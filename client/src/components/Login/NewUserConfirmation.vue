@@ -2,20 +2,21 @@
 import axios from "axios";
 import { BCard, BCardBody, BCardFooter, BEmbed, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
-import { withPrefix } from "@/utils/redirect";
+import { redirectToUrl, withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
+    sessionCsrfToken: string;
     termsUrl?: string;
     registrationWarningMessage?: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "setRedirect", value: string): void;
@@ -29,36 +30,66 @@ const messageText = ref("");
 const termsRead = ref(false);
 const messageVariant = ref("");
 const provider = ref(urlParams.get("provider"));
-const token = ref(urlParams.get("provider_token"));
+const confirmationId = ref(urlParams.get("confirmation_id"));
+const pending = ref(false);
 
-function login() {
-    // set url to redirect user to 3rd party management after login
-    emit("setRedirect", "/user/external_ids");
-    router.push("/login");
+// Old confirmation links must never send provider credentials back to the server.
+if (urlParams.has("provider_token")) {
+    urlParams.delete("provider_token");
+    window.history.replaceState(null, "", `${window.location.pathname}?${urlParams}${window.location.hash}`);
+}
+
+function confirmationBody() {
+    return new URLSearchParams({
+        confirmation_id: confirmationId.value || "",
+        session_csrf_token: props.sessionCsrfToken,
+    });
+}
+
+async function login() {
+    if (pending.value) {
+        return;
+    }
+    pending.value = true;
+    try {
+        if (provider.value && confirmationId.value) {
+            await axios.post(
+                withPrefix(`/authnz/${encodeURIComponent(provider.value)}/cancel_user_creation`),
+                confirmationBody(),
+            );
+        }
+    } catch {
+        // Expiration still invalidates abandoned flows if cancellation fails.
+    } finally {
+        pending.value = false;
+        emit("setRedirect", "/user/external_ids");
+        router.push("/login");
+    }
 }
 
 async function submit() {
     // Enter-key form submission bypasses the button's click guard.
-    if (!termsRead.value) {
+    if (!termsRead.value || pending.value) {
         return;
     }
-
-    if (!provider.value || !token.value) {
+    if (!provider.value || !confirmationId.value) {
         messageVariant.value = "danger";
-        messageText.value = "Missing provider and/or token.";
-    } else {
-        try {
-            const response = await axios.post(withPrefix(`/authnz/${provider.value}/create_user?token=${token.value}`));
-
-            if (response.data.redirect_uri) {
-                router.push(response.data.redirect_uri);
-            } else {
-                router.push("/");
-            }
-        } catch (error: any) {
-            messageVariant.value = "danger";
-            messageText.value = errorMessageAsString(error, "Login failed for an unknown reason.");
-        }
+        messageText.value = "Authentication has expired or is invalid. Please start logging in again.";
+        return;
+    }
+    pending.value = true;
+    try {
+        const response = await axios.post(
+            withPrefix(`/authnz/${encodeURIComponent(provider.value)}/create_user`),
+            confirmationBody(),
+        );
+        // Login replaces the session; reload user state and the CSRF token.
+        redirectToUrl(response.data.redirect_uri || withPrefix("/"));
+    } catch (error: unknown) {
+        messageVariant.value = "danger";
+        messageText.value = errorMessageAsString(error, "Login failed. Please start logging in again.");
+    } finally {
+        pending.value = false;
     }
 }
 </script>
@@ -108,11 +139,17 @@ async function submit() {
                                 </BFormCheckbox>
                             </BFormGroup>
 
-                            <GButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
+                            <GButton
+                                name="confirm"
+                                type="submit"
+                                :disabled="!termsRead || pending"
+                                @click.prevent="submit">
                                 Yes, create new account
                             </GButton>
 
-                            <GButton name="cancel" type="submit" @click.prevent="login"> No, go back to login </GButton>
+                            <GButton name="cancel" type="submit" :disabled="pending" @click.prevent="login">
+                                No, go back to login
+                            </GButton>
                         </BCardBody>
 
                         <BCardFooter>

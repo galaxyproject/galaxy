@@ -3,7 +3,7 @@ import { faAngleDoubleDown, faColumns, faExpand } from "@fortawesome/free-solid-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { useActiveContext } from "@/composables/useActiveContext";
 import { useChatStore } from "@/stores/chatStore.js";
@@ -34,7 +34,12 @@ function openCenterChat() {
 
 function openDockedChat(location: "right" | "bottom") {
     /** Stores an id if there is a `/galaxyai/:exchangeId` route param */
-    const routedChatId = route.path.includes("galaxyai") ? route.params["exchangeId"] || null : null;
+    // The galaxyai/:exchangeId route param is never repeated, but vue-router's generic params
+    // type always allows string[] -- narrow to the single value it actually is.
+    const exchangeIdParam = route.params["exchangeId"];
+    const routedChatId = route.path.includes("galaxyai")
+        ? (Array.isArray(exchangeIdParam) ? exchangeIdParam[0] : exchangeIdParam) || null
+        : null;
     const wasCenterMode = chatStore.isCenterMode;
 
     if (isOnGalaxyAIRoute.value) {

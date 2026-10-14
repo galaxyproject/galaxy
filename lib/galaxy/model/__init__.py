@@ -926,7 +926,7 @@ class User(Base, Dictifiable, RepresentById):
         collection_class=ordering_list("order_index"),
     )
     _preferences: Mapped[dict[str, "UserPreference"]] = relationship(collection_class=attribute_keyed_dict("name"))
-    values: Mapped[list["FormValues"]] = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
+    values: "Mapped[FormValues | None]" = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
     # Add type hint (will this work w/SA?)
     api_keys: Mapped[list["APIKeys"]] = relationship(
         back_populates="user",
@@ -4158,23 +4158,6 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             self._active_visible_datasets_and_roles = required_object_session(self).scalars(stmt).unique().all()
         return self._active_visible_datasets_and_roles
 
-    @property
-    def active_visible_dataset_collections(self):
-        if not hasattr(self, "_active_visible_dataset_collections"):
-            stmt = (
-                select(HistoryDatasetCollectionAssociation)
-                .where(HistoryDatasetCollectionAssociation.history_id == self.id)
-                .where(not_(HistoryDatasetCollectionAssociation.deleted))
-                .where(HistoryDatasetCollectionAssociation.visible)
-                .order_by(HistoryDatasetCollectionAssociation.hid.asc())
-                .options(
-                    joinedload(HistoryDatasetCollectionAssociation.collection),
-                    joinedload(HistoryDatasetCollectionAssociation.tags),
-                )
-            )
-            self._active_visible_dataset_collections = required_object_session(self).scalars(stmt).unique().all()
-        return self._active_visible_dataset_collections
-
     def paginated_active_visible_datasets(
         self,
         *,
@@ -4289,16 +4272,13 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     def paginated_active_dataset_collections(
         self,
         *,
-        visible_only: bool = True,
         tag: str | None = None,
         search: str | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
-        """Active HDCAs filtered by tag and an optional ``search`` term,
-        paginated. Pass ``visible_only=False`` to include hidden collections
-        (matches the legacy ``active_dataset_collections`` semantics used by
-        some tool-form paths). ``search`` matches case-insensitively against
+        """Active, visible HDCAs filtered by tag and an optional ``search``
+        term, paginated. ``search`` matches case-insensitively against
         the collection name and (when numeric) against the hid. Extension
         filtering for collections is exposed via the history-contents filter
         parser (see :py:meth:`_hdca_extensions_only_in_clause`).
@@ -4306,9 +4286,8 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         filters = [
             HistoryDatasetCollectionAssociation.history_id == self.id,
             not_(HistoryDatasetCollectionAssociation.deleted),
+            HistoryDatasetCollectionAssociation.visible.is_(True),
         ]
-        if visible_only:
-            filters.append(HistoryDatasetCollectionAssociation.visible.is_(True))
         if tag:
             filters.append(
                 build_tag_filter(HistoryDatasetCollectionAssociation, HistoryDatasetCollectionTagAssociation, "eq", tag)
@@ -5130,16 +5109,16 @@ class Dataset(Base, StorableObject, Serializable):
         self.purged = True
 
     def get_access_roles(self, security_agent):
-        roles = []
-        for dp in self.actions:
-            if dp.action == security_agent.permitted_actions.DATASET_ACCESS.action:
-                roles.append(dp.role)
-        return roles
+        return self._roles_for_action(security_agent.permitted_actions.DATASET_ACCESS.action)
 
     def get_manage_permissions_roles(self, security_agent):
+        return self._roles_for_action(security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
+
+    def _roles_for_action(self, action):
+        # A dataset can hold several permission rows for the same action and role.
         roles = []
         for dp in self.actions:
-            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == action and dp.role not in roles:
                 roles.append(dp.role)
         return roles
 
@@ -7014,6 +6993,7 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+    extension: Mapped[str]
     message: Mapped[str | None]
     tags: Mapped[list["LibraryDatasetDatasetAssociationTagAssociation"]]
 
@@ -9111,7 +9091,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     name: Mapped[str | None] = mapped_column(TEXT)
     has_cycles: Mapped[bool | None]
     has_errors: Mapped[bool | None]
-    reports_config: Mapped[bytes | None] = mapped_column(JSONType)
+    reports_config: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
     creator_metadata: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONType)
     license: Mapped[str | None] = mapped_column(TEXT)
     source_metadata: Mapped[dict[str, str | None] | None] = mapped_column(JSONType)
@@ -11703,7 +11683,8 @@ class PSAPartial(Base, PartialMixin, RepresentById):
         """
         (Required by social_core.storage.PartialMixin interface)
         """
-        stmt = select(PSAPartial).where(PSAPartial.token == token).limit(1)
+        # Negative steps belong to browser-bound authentication state, not resumable pipelines.
+        stmt = select(PSAPartial).where(PSAPartial.token == token, PSAPartial.next_step >= 0).limit(1)
         return cls.sa_session.scalars(stmt).first()
 
     @classmethod

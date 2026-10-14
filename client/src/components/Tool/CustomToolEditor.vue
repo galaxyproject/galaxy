@@ -10,7 +10,7 @@ import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import yamlWorker from "monaco-yaml/yaml.worker?worker";
 import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 import { parse, stringify } from "yaml";
 
 import {

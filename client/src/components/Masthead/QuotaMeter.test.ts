@@ -21,7 +21,7 @@ async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     const userStore = useUserStore();
     userStore.currentUser = user;
     const wrapper = mount(QuotaMeter as object, {
-        localVue,
+        global: localVue,
         pinia,
     });
     await flushPromises();

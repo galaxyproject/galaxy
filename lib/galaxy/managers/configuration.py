@@ -7,9 +7,7 @@ Used by both the API and bootstrapped data.
 
 import logging
 import sys
-from typing import (
-    Any,
-)
+from typing import Any
 
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
@@ -239,6 +237,9 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
+            # The command palette options are intentionally visible to anonymous users
+            "enable_command_palette": _use_config,
+            "command_palette_disabled_providers": _use_config,
             "enable_sse_updates": _use_config,
             "instance_resource_url": _use_config,
             "instance_access_url": _use_config,
@@ -247,6 +248,7 @@ class ConfigSerializer(base.ModelSerializer):
             "fixed_delegated_auth": _defaults_to(False),
             "help_forum_api_url": _use_config,
             "enable_help_forum_tool_panel_integration": _use_config,
+            "enable_tool_installation_request_form": _use_config,
             "llm_api_configured": lambda item, key, **context: bool(
                 item.ai_api_key or item.ai_api_base_url or getattr(item, "inference_services", None)
             ),

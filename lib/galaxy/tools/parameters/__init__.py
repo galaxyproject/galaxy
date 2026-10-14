@@ -2,6 +2,8 @@
 Classes encapsulating Galaxy tool parameters.
 """
 
+import re
+from collections.abc import Iterator
 from json import dumps
 from typing import (
     Any,
@@ -70,6 +72,7 @@ def visit_input_values(
     replace_optional_connections=False,
     allow_case_inference=False,
     unset_value=None,
+    replace_conditional_test_values=True,
 ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
@@ -78,6 +81,8 @@ def visit_input_values(
     and a display label.
 
     If the callback returns a value, it will be replace the old value.
+    Set ``replace_conditional_test_values=False`` to visit conditional selectors
+    without replacing their values, preserving the selected cases for serialization.
 
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
@@ -165,7 +170,9 @@ def visit_input_values(
     No value found for 'b 1 > d 1 > j'.
     """
 
-    def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
+    def callback_helper(
+        input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None, replace_value=True
+    ):
         value = input_values.get(input.name, unset_value)
         args = {
             "input": input,
@@ -180,6 +187,8 @@ def visit_input_values(
         if input.name not in input_values:
             args["error"] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
+        if not replace_value:
+            return
 
         # is this good enough ? feels very ugh
         if isinstance(new_value, list) and len(new_value) == 1 and isinstance(new_value[0], NoReplacement):
@@ -229,6 +238,7 @@ def visit_input_values(
         "replace_optional_connections": replace_optional_connections,
         "allow_case_inference": allow_case_inference,
         "unset_value": unset_value,
+        "replace_conditional_test_values": replace_conditional_test_values,
     }
     for input in inputs.values():
         if isinstance(input, Repeat) or isinstance(input, UploadDataset):
@@ -262,6 +272,7 @@ def visit_input_values(
                 parent_prefix=name_prefix,
                 context=context,
                 error=case_error,
+                replace_value=replace_conditional_test_values,
             )
             values["__current_case__"] = get_current_case(input, values)
             if values["__current_case__"] >= 0:
@@ -299,6 +310,54 @@ def collect_directory_uris(
 
     visit_input_values(inputs, input_values, _collect)
     return uris
+
+
+# A path segment is (name, is_repeat); repeat segments take an index (``name_0``).
+_InputPathT = tuple[tuple[str, bool], ...]
+
+
+def _data_input_paths(
+    inputs, qualified: _InputPathT = (), legacy: _InputPathT = ()
+) -> Iterator[tuple[_InputPathT, _InputPathT]]:
+    """Yield the qualified and legacy paths of every data and collection input.
+
+    Legacy paths drop conditional and section names, as the ``prefix`` passed by
+    ``visit_input_values`` does.
+    """
+    for input in inputs.values():
+        if isinstance(input, Repeat):
+            segment = ((input.name, True),)
+            yield from _data_input_paths(input.inputs, qualified + segment, legacy + segment)
+        elif isinstance(input, Conditional):
+            for case in input.cases:
+                yield from _data_input_paths(case.inputs, qualified + ((input.name, False),), legacy)
+        elif isinstance(input, Section):
+            yield from _data_input_paths(input.inputs, qualified + ((input.name, False),), legacy)
+        elif isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
+            segment = ((input.name, False),)
+            yield qualified + segment, legacy + segment
+
+
+def _input_path_pattern(path: _InputPathT) -> str:
+    return r"\|".join(re.escape(name) + (r"_(\d+)" if is_repeat else "") for name, is_repeat in path)
+
+
+def qualify_legacy_data_input_reference(inputs, reference: str) -> str | None:
+    """Return the qualified name for a bare legacy reference to a nested data or collection input.
+
+    Return ``None`` if ``reference`` is already qualified or names no nested input.
+    """
+    paths = list(_data_input_paths(inputs))
+    if any(re.fullmatch(_input_path_pattern(qualified), reference) for qualified, _ in paths):
+        return None
+    for qualified, legacy in paths:
+        if qualified == legacy:
+            continue
+        match = re.fullmatch(_input_path_pattern(legacy), reference)
+        if match:
+            indices = iter(match.groups())
+            return "|".join(f"{name}_{next(indices)}" if is_repeat else name for name, is_repeat in qualified)
+    return None
 
 
 def check_param(

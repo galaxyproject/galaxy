@@ -12,7 +12,7 @@ import {
     BFormText,
 } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
 import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
@@ -156,8 +156,7 @@ function goToResetPassword() {
             <template v-if="!confirmURL">
                 <div>
                     <GAlert :show="!!messageText" :variant="messageVariant">
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="messageText" />
+                        <span v-sanitize-html="messageText" />
                     </GAlert>
 
                     <GAlert :show="!!connectExternalProvider" variant="info">
@@ -268,6 +267,7 @@ function goToResetPassword() {
             </template>
             <template v-else>
                 <NewUserConfirmation
+                    :session-csrf-token="sessionCsrfToken"
                     :registration-warning-message="registrationWarningMessage"
                     :terms-url="termsUrl"
                     @setRedirect="setRedirect" />

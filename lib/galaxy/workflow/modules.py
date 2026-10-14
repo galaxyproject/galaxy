@@ -104,6 +104,10 @@ from galaxy.tools import (
     get_safe_version,
     Tool,
 )
+from galaxy.tools._types import (
+    ParameterValidationErrorsT,
+    ToolStateJobInstanceT,
+)
 from galaxy.tools.execute import (
     execute,
     MappingParameters,
@@ -117,6 +121,7 @@ from galaxy.tools.expressions import (
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
+    populate_state,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -157,7 +162,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.map_over import (
@@ -567,6 +571,15 @@ class WorkflowModule:
             self.validate_state(inputs)
             self.state.inputs = inputs
 
+    def populate_state_from_tool_form(
+        self, incoming: ToolStateJobInstanceT, errors: ParameterValidationErrorsT
+    ) -> dict[str, Any]:
+        """Validate tool form ``incoming`` against get_inputs() and recover the resulting state."""
+        state: dict[str, Any] = {}
+        populate_state(self.trans, self.get_inputs(), incoming, state, errors=errors, check=True)
+        self.recover_state(state, from_tool_form=True)
+        return state
+
     def validate_state(self, inputs: dict[str, Any]) -> None:
         """If get_inputs() return None, validate the inputs dictionary directly bypassing ToolForm stuff."""
         return None
@@ -788,7 +801,8 @@ class SubWorkflowModule(WorkflowModule):
     def save_to_step(self, step, detached=False):
         step.type = self.type
         step.subworkflow = self.subworkflow
-        ensure_object_added_to_session(step, object_in_session=self.subworkflow)
+        if not detached:
+            ensure_object_added_to_session(step, object_in_session=self.subworkflow)
 
     def get_name(self):
         if hasattr(self.subworkflow, "name"):
@@ -818,6 +832,7 @@ class SubWorkflowModule(WorkflowModule):
                     input["collection_type"] = step.tool_inputs.get("collection_type") if step.tool_inputs else None
                 if step_type == "parameter_input":
                     input["type"] = step.tool_inputs["parameter_type"]
+                    input["multiple"] = bool(step.tool_inputs.get("multiple", False))
                 input["optional"] = step.tool_inputs.get("optional", False)
                 inputs.append(input)
         return inputs
@@ -1333,6 +1348,18 @@ class InputParameterModule(WorkflowModule):
     optional = default_optional
     default_value = default_default_value
 
+    def populate_state_from_tool_form(
+        self, incoming: ToolStateJobInstanceT, errors: ParameterValidationErrorsT
+    ) -> dict[str, Any]:
+        # The default value field is shaped by the definition being edited (e.g. ``multiple``),
+        # so recover that definition before validating against it.
+        super().populate_state_from_tool_form(incoming, {})
+        state = super().populate_state_from_tool_form(incoming, errors)
+        parameter_def = self._parse_state_into_dict()
+        if isinstance(parameter_def.get("default"), list) and not parameter_def.get("multiple"):
+            errors.setdefault("parameter_definition|optional|specify_default|default", "a single value is required")
+        return state
+
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
@@ -1359,7 +1386,9 @@ class InputParameterModule(WorkflowModule):
         cases = []
 
         for param_type in POSSIBLE_PARAMETER_TYPES:
-            default_parameter = get_default_parameter(param_type)
+            default_parameter = get_default_parameter(
+                param_type, multiple=param_type == parameter_type and bool(parameter_def.get("multiple"))
+            )
 
             optional_value = optional_param()
             optional_cond = Conditional("optional")
@@ -1528,6 +1557,17 @@ class InputParameterModule(WorkflowModule):
                 restrictions_cond.cases = restrictions_cond_cases
                 when_this_type.inputs["restrictions"] = restrictions_cond
 
+            if param_type in ("integer", "float"):
+                specify_multiple = BooleanToolParameter(
+                    None,
+                    dict(
+                        name="multiple",
+                        label="Allow multiple values",
+                        help="Only applies when connected to parameter(s) accepting multiple values, such as multiple column selections",
+                        type="boolean",
+                    ),
+                )
+                when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
             if param_type == "integer":
                 when_this_type.inputs["min"] = IntegerToolParameter(
                     None,
@@ -1614,11 +1654,14 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
+            if isinstance(default_value, list):
+                default_values = [str(value) for value in default_value]
+            else:
+                default_values = [default_value] if default_value else []
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
-                    {"label": o[0], "value": o[1], "selected": bool(default_value and o[1] == default_value)}
-                    for o in static_options[0]
+                    {"label": o[0], "value": o[1], "selected": o[1] in default_values} for o in static_options[0]
                 ]
             elif static_options:
                 # Intersection based on values of multiple option connections.
@@ -1631,7 +1674,7 @@ class InputParameterModule(WorkflowModule):
                     {
                         "label": ", ".join(labels),
                         "value": value,
-                        "selected": bool(default_value and value == default_value),
+                        "selected": value in default_values,
                     }
                     for value, labels in collapsed_labels.items()
                 ]
@@ -2071,9 +2114,9 @@ class PickValueModule(WorkflowModule):
     def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._get_state_dict()
-        if not detached:
-            for k, v in self.post_job_actions.items():
-                pja = self._to_pja(k, v, step)
+        for k, v in self.post_job_actions.items():
+            pja = self._to_pja(k, v, step)
+            if not detached:
                 self.trans.sa_session.add(pja)
 
     @property
@@ -2728,9 +2771,9 @@ class ToolModule(WorkflowModule):
                     if tool.is_unprivileged_tool:
                         # Identified by ``dynamic_tool``, see ``WorkflowStep.effective_tool_id``.
                         step.tool_id = None
-        if not detached:
-            for k, v in self.post_job_actions.items():
-                pja = self.__to_pja(k, v, step)
+        for k, v in self.post_job_actions.items():
+            pja = self.__to_pja(k, v, step)
+            if not detached:
                 self.trans.sa_session.add(pja)
 
     # ---- General attributes ------------------------------------------------
@@ -2817,7 +2860,7 @@ class ToolModule(WorkflowModule):
                             InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
-                                multiple=False,
+                                multiple=isinstance(input, SelectToolParameter) and input.multiple,
                                 input_type="parameter",
                                 optional=getattr(input, "optional", False),
                                 type=input_type,
@@ -2863,13 +2906,11 @@ class ToolModule(WorkflowModule):
                         formats.append(format)
                 if tool_output.label:
                     try:
-                        params = make_dict_copy(self.state.inputs)
-                        params["on_string"] = "input dataset(s)"
-                        params["tool"] = self.tool
-                        extra_kwds["label"] = fill_template(
+                        extra_kwds["label"] = self.tool.render_output_label(
                             tool_output.label,
-                            context=params,
-                            python_template_version=self.tool.python_template_version,
+                            make_dict_copy(self.state.inputs),
+                            "input dataset(s)",
+                            tool_state=self.state.inputs,
                         )
                     except Exception:
                         pass
@@ -2914,7 +2955,8 @@ class ToolModule(WorkflowModule):
                 elif (is_data and connections is None) or prefixed_name in input_connections_by_name:
                     return ConnectedValue()
 
-            visit_input_values(self.tool.inputs, self.state.inputs, callback)
+            # Connected selectors still need a concrete case when saving tool state.
+            visit_input_values(self.tool.inputs, self.state.inputs, callback, replace_conditional_test_values=False)
         else:
             raise ToolMissingException(f"Tool {self.tool_id} missing. Cannot add dummy datasets.", tool_id=self.tool_id)
 

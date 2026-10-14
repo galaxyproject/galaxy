@@ -23,7 +23,7 @@ import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@for
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import {
     type AnyHistoryEntry,
@@ -370,7 +370,7 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
             Toast.success(`${purge ? "Purged" : "Deleted"} ${totalSelected} histories.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to ${purge ? "purge" : "delete"} some histories.`);
         } finally {
             bulkPurgeLoading.value = false;
@@ -413,7 +413,7 @@ async function onBulkRestore() {
             Toast.success(`Restored ${totalSelected} histories.`);
 
             resetSelection();
-        } catch (e) {
+        } catch {
             Toast.error(`Failed to restore some histories.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
@@ -521,8 +521,8 @@ watch([filterText, sortBy, sortDesc], async () => {
 });
 
 onMounted(async () => {
-    if (router.currentRoute.query.owner) {
-        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
+    if (router.currentRoute.value.query.owner) {
+        updateFilterValue("user", `'${router.currentRoute.value.query.owner}'`);
     }
 
     await load();
@@ -590,13 +590,13 @@ onMounted(async () => {
 
             <FilterMenu
                 id="history-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="history-list-filter"
                 :filter-class="historyListFilters"
-                :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 view="compact"
-                :placeholder="searchPlaceHolder"
-                :show-advanced.sync="showAdvanced" />
+                :placeholder="searchPlaceHolder" />
 
             <ListHeader
                 ref="listHeader"
@@ -684,7 +684,7 @@ onMounted(async () => {
                 @on-key-down="onKeyDown"
                 @on-history-card-click="onClick"
                 @updateFilter="updateFilterValue"
-                @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)" />
+                @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)" />
         </GOverlay>
 
         <div class="d-flex mt-1 align-items-center">
@@ -779,8 +779,8 @@ onMounted(async () => {
 
         <TagsSelectionDialog
             :show="showBulkAddTagsModal"
-            :title="`Add tags to ${selectedHistories.length} selected history${
-                selectedHistories.length > 1 ? 's' : ''
+            :title="`Add tags to ${selectedHistories.length} selected ${
+                selectedHistories.length > 1 ? 'histories' : 'history'
             }`"
             @cancel="onToggleBulkTags"
             @ok="onBulkTagsAdd" />

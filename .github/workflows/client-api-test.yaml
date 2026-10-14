@@ -4,6 +4,9 @@ on:
     paths:
       - 'client/packages/api-client/**'
       - 'client/pnpm-workspace.yaml'
+      - 'client/.node_version'
+      - 'client/.npmrc'
+      - 'client/package.json'
       - 'client/pnpm-lock.yaml'
       - 'client/src/api/**'
       - '.github/workflows/client-api-test.yaml'
@@ -11,6 +14,9 @@ on:
     paths:
       - 'client/packages/api-client/**'
       - 'client/pnpm-workspace.yaml'
+      - 'client/.node_version'
+      - 'client/.npmrc'
+      - 'client/package.json'
       - 'client/pnpm-lock.yaml'
       - 'client/src/api/**'
       - '.github/workflows/client-api-test.yaml'

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-container fluid>
+        <BContainer fluid>
             <div v-if="dataset">
                 <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
                 <GButton
@@ -67,18 +67,16 @@
                 <FontAwesomeIcon :icon="faSave" />
                 &nbsp;Save
             </GButton>
-        </b-container>
+        </BContainer>
     </div>
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-import VueObserveVisibility from "vue-observe-visibility";
+import { BContainer } from "bootstrap-vue";
 
 import { getGalaxyInstance } from "@/app";
 import { extractRoles } from "@/components/Libraries/library-utils";
@@ -91,11 +89,9 @@ import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBread
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
 
-Vue.use(VueObserveVisibility);
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        BContainer,
         PermissionsInputField,
         FontAwesomeIcon,
         GButton,

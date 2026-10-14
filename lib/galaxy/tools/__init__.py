@@ -9,7 +9,11 @@ import os
 import re
 import tarfile
 import tempfile
-from collections.abc import MutableMapping
+from collections.abc import (
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
 from datetime import datetime
 from typing import (
     Any,
@@ -133,6 +137,10 @@ from galaxy.tool_util.version import (
     parse_version,
 )
 from galaxy.tool_util.version_updates import WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+from galaxy.tool_util_models import (
+    lift_user_tool_source,
+    UserToolSource,
+)
 from galaxy.tool_util_models.parameters import (
     MaybeToolParameterBundle,
     ToolParameterBundleModel,
@@ -152,6 +160,7 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.execution_helpers import ToolExecutionCache
+from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
@@ -163,6 +172,7 @@ from galaxy.tools.parameters import (
     params_to_strings,
     populate_state,
     populate_state_async,
+    qualify_legacy_data_input_reference,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -217,6 +227,7 @@ from galaxy.util.json import (
 )
 from galaxy.util.path import StrPath
 from galaxy.util.rules_dsl import RuleSet
+from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import (
     get_tool_shed_repository_url,
     get_tool_shed_url_from_tool_shed_registry,
@@ -545,6 +556,28 @@ class PersistentToolTagManager(AbstractToolTagManager):
                         self.sa_session.commit()
 
 
+def _lift_stored_user_tool(dynamic_tool: "DynamicTool", representation: dict) -> tuple[dict, list[str]]:
+    """Validate a stored user-defined tool against the current schema before it is parsed.
+
+    Stored rows are not revalidated on upgrade and the YAML parser accepts more
+    than the schema does, so the tool is built from the validated model. Fields
+    the schema no longer accepts are dropped and returned; a row that cannot be
+    recovered that way is refused.
+    """
+    status, lifted, errors = lift_user_tool_source(representation)
+    if status == "invalid":
+        raise exceptions.ToolMissingException(
+            f"User-defined tool '{dynamic_tool.tool_id}' can no longer be loaded because its stored definition is "
+            f"not valid for this Galaxy version: {'; '.join(errors)}. Open it in the tool editor, correct these "
+            "fields and save it as a new tool.",
+            tool_id=dynamic_tool.tool_id,
+        )
+    assert isinstance(lifted, UserToolSource)
+    if status == "lifted":
+        log.warning("Dropped unsupported fields from user-defined tool %s: %s", dynamic_tool.uuid, ", ".join(errors))
+    return lifted.model_dump(by_alias=True), errors
+
+
 class ToolBox(AbstractToolBox):
     """
     A derivative of AbstractToolBox with Galaxy tooling-specific functionality
@@ -635,6 +668,11 @@ class ToolBox(AbstractToolBox):
         self._init_dependency_manager()
 
     def load_builtin_converters(self):
+        registry = self.app.datatypes_registry
+        if registry.datatype_converters:
+            # Refresh converters from the previous toolbox before rendering
+            # panels so edits without a version bump don't retain stale tools.
+            registry.load_datatype_converters(self, use_cached=True)
         id = "builtin_converters"
         section = ToolSection({"name": "Built-in Converters", "id": id})
         self._tool_panel[id] = section
@@ -644,11 +682,12 @@ class ToolBox(AbstractToolBox):
         integrated_section = ToolSection({"name": "Built-in Converters", "id": id})
         self._integrated_tool_panel[id] = integrated_section
 
-        converters = {
-            tool for target in self.app.datatypes_registry.datatype_converters.values() for tool in target.values()
-        }
+        converters = {tool for target in registry.datatype_converters.values() for tool in target.values()}
         for tool in converters:
             tool.hidden = False
+            # Ensure every displayed converter is registered before views resolve its id.
+            # The registry only holds materialized converters.
+            self.register_tool(cast("Tool", tool))
             section.elems.append_tool(tool)
             integrated_section.elems.append_tool(tool)
 
@@ -791,11 +830,16 @@ class ToolBox(AbstractToolBox):
         if "name" not in tool_representation:
             tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
         tool_format = dynamic_tool.tool_format
+        dropped_fields: list[str] = []
+        if tool_format == "GalaxyUserTool":
+            tool_representation, dropped_fields = _lift_stored_user_tool(dynamic_tool, tool_representation)
         if tool_format in ("GalaxyTool", "GalaxyUserTool"):
             tool_source = YamlToolSource(tool_representation)
         else:
             raise Exception(f"Unknown tool representation format [{tool_format}].")
         tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
+        if isinstance(tool, UserDefinedTool):
+            tool.dropped_representation_fields = dropped_fields
         tool.dynamic_tool = dynamic_tool
         # Snapshot while the ORM row is session-attached; later reads would raise
         # DetachedInstanceError.
@@ -814,14 +858,20 @@ class ToolBox(AbstractToolBox):
         tool_version: str | None = None,
     ) -> Optional["Tool"]:
         if (dynamic_tool := job.dynamic_tool) is not None:
-            if check_access and not dynamic_tool.public:
-                if user is None or dynamic_tool.uuid is None:
-                    raise exceptions.ItemAccessibilityException("Tool not accessible.")
-                tool = self.get_unprivileged_tool(user, tool_uuid=dynamic_tool.uuid)
-                if tool is None:
-                    raise exceptions.ItemAccessibilityException("Tool not accessible.")
-                return tool
-            return self.dynamic_tool_to_tool(dynamic_tool)
+            try:
+                if check_access and not dynamic_tool.public:
+                    if user is None or dynamic_tool.uuid is None:
+                        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+                    tool = self.get_unprivileged_tool(user, tool_uuid=dynamic_tool.uuid)
+                    if tool is None:
+                        raise exceptions.ItemAccessibilityException("Tool not accessible.")
+                    return tool
+                return self.dynamic_tool_to_tool(dynamic_tool)
+            except exceptions.ToolMissingException as e:
+                # Callers treat None as a tool that is no longer installed; the job
+                # handler fails the job instead of preparing it.
+                log.info("Tool for job %s cannot be loaded: %s", job.id, e)
+                return None
         tool_like = self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
         return self.materialize_tool(tool_like, reason="execution") if tool_like else None
 
@@ -1527,7 +1577,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.raw_help = None
 
         if self.app.is_webapp:
-            self.raw_help = self.__get_help_with_images(tool_source.parse_help())
+            self.raw_help = self._parse_help(tool_source)
         self._parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1756,6 +1806,12 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
+        for name, output_collection in self.output_collections.items():
+            type_source = output_collection.structure.collection_type_source
+            if type_source and (qualified := qualify_legacy_data_input_reference(self.inputs, type_source)):
+                raise ToolLoadError(
+                    f"Output collection '{name}' has type_source '{type_source}', which must be qualified as '{qualified}'."
+                )
 
     def _parse_citations(self, tool_source):
         citation_models = tool_source.parse_citations()
@@ -1950,6 +2006,41 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             self.sharable_url = get_tool_shed_repository_url(
                 self.app, self.tool_shed, self.repository_owner, self.repository_name
             )
+
+    @property
+    def output_labels_read_tool_state(self) -> bool:
+        """Whether render_output_label reads tool_state, so callers know to build it.
+
+        YAML tools, admin and user-defined alike, fill in only parameter references, the
+        same ``$(inputs.<name>)`` syntax their commands use. Other tools fill labels as Cheetah.
+        """
+        return self.tool_source.parse_class() in ("GalaxyTool", "GalaxyUserTool")
+
+    def render_output_label(
+        self,
+        label: str,
+        cheetah_context: dict[str, Any],
+        on_text: str | None,
+        tool_state: Mapping[str, Any] | None = None,
+    ) -> str:
+        """Render an output ``label``.
+
+        A YAML tool fills in the parameter references of ``label`` from ``tool_state``. Any other
+        tool fills ``label`` as a Cheetah template, and ``cheetah_context`` gains ``tool`` and
+        ``on_string``.
+        """
+        if self.output_labels_read_tool_state:
+            # The Cheetah context holds wrappers labels can't read.
+            return render_yaml_tool_label(label, self.inputs, tool_state or {}, on_text)
+        if self.is_unprivileged_tool:
+            # Unprivileged tools are YAML tools, which never fill labels as Cheetah.
+            raise exceptions.ConfigurationError("Output labels of unprivileged tools are never Cheetah templates")
+        cheetah_context["tool"] = self
+        cheetah_context["on_string"] = on_text
+        return fill_template(label, context=cheetah_context, python_template_version=self.python_template_version)
+
+    def _parse_help(self, tool_source: ToolSource) -> HelpContent | None:
+        return self.__get_help_with_images(tool_source.parse_help())
 
     def __get_help_with_images(self, help_content: HelpContent | None) -> HelpContent | None:
         if help_content and help_content.format == "restructuredtext":
@@ -2860,19 +2951,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             tool_dict["inputs"] = [input.to_dict(trans) for input in self.inputs.values()]
             tool_dict["outputs"] = [output.to_dict(app=self.app) for output in self.outputs.values()]
         if tool_help:
-            # create tool help
-            help_txt = ""
-            help_format = "restructuredtext"
+            # The toolbox index returns this for every tool at once, so help is
+            # returned as written rather than rendered.
             help_content = self.raw_help
-            if help_content:
-                help_format = help_content.format
-                if help_format == "restructuredtext":
-                    help_txt = self.render_help(
-                        static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
-                    )
-
-            tool_dict["help"] = help_txt
-            tool_dict["help_format"] = help_format
+            tool_dict["help"] = help_content.content if help_content else ""
+            tool_dict["help_format"] = help_content.format if help_content else "restructuredtext"
 
         return tool_dict
 
@@ -3202,6 +3285,34 @@ class OutputParameterJSONTool(Tool):
 class UserDefinedTool(Tool):
     tool_type = "user_defined"
     requires_js_runtime = True
+    # Stored fields that the current schema no longer accepts and that were
+    # dropped when the tool was loaded; reported with the same keys the
+    # unprivileged tools API uses.
+    dropped_representation_fields: Sequence[str] = ()
+
+    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
+        tool_dict = super().to_dict(trans, link_details=link_details, io_details=io_details, tool_help=tool_help)
+        if self.dropped_representation_fields:
+            tool_dict["representation_status"] = "lifted"
+            tool_dict["representation_errors"] = list(self.dropped_representation_fields)
+        return tool_dict
+
+    def to_json(self, *args, **kwargs):
+        tool_model = super().to_json(*args, **kwargs)
+        if self.dropped_representation_fields and not tool_model["message"]:
+            tool_model["message"] = (
+                "Parts of this tool's stored definition are not supported by this Galaxy version and were ignored: "
+                f"{'; '.join(self.dropped_representation_fields)}. Edit the tool and save it again to remove them."
+            )
+        return tool_model
+
+    def _parse_help(self, tool_source: ToolSource) -> HelpContent | None:
+        # Help is author text and is only ever rendered as Markdown, including
+        # stored tools whose help declares another format.
+        help_content = tool_source.parse_help()
+        if help_content and help_content.format != "markdown":
+            help_content = HelpContent(format="markdown", content=help_content.content)
+        return help_content
 
 
 class ExpressionTool(Tool):
@@ -3686,6 +3797,12 @@ class DataManagerTool(OutputParameterJSONTool):
         return False
 
 
+def _element_count(collection: model.DatasetCollection) -> int:
+    if collection.element_count is not None:
+        return collection.element_count
+    return len(collection.elements)
+
+
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
     require_terminal_states = True
@@ -3740,6 +3857,14 @@ class DatabaseOperationTool(Tool):
             states = summary.states
             for state in states.keys():
                 check_dataset_state(input_key, state)
+
+    def _check_output_count(self, count: int) -> None:
+        max_outputs = self.app.config.max_discovered_files
+        if max_outputs is not None and count > max_outputs:
+            raise exceptions.RequestParameterInvalidException(
+                f"{self.name} would create {count} datasets, "
+                f"more than the maximum number ({max_outputs}) of output datasets"
+            )
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         for element_object in elements:
@@ -3819,6 +3944,7 @@ class CrossProductFlatCollectionTool(DatabaseOperationTool):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
         join_identifier = incoming["join_identifier"]
+        self._check_output_count(2 * _element_count(input_a.collection) * _element_count(input_b.collection))
 
         output_a = {}
         output_b = {}
@@ -3854,6 +3980,7 @@ class CrossProductNestedCollectionTool(DatabaseOperationTool):
     def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         input_a = incoming["input_a"]
         input_b = incoming["input_b"]
+        self._check_output_count(2 * _element_count(input_a.collection) * _element_count(input_b.collection))
 
         output_a = {}
         output_b = {}
@@ -4656,7 +4783,9 @@ class ApplyRulesTool(DatabaseOperationTool):
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
-        new_elements = self.app.dataset_collection_manager.apply_rules(hdca, rule_set, copy_dataset)
+        new_elements = self.app.dataset_collection_manager.apply_rules(
+            hdca, rule_set, copy_dataset, check_row_count=self._check_output_count
+        )
         self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())),
@@ -4811,6 +4940,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
     def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
         number = int(incoming["number"])
+        self._check_output_count(number)
         element_identifier = incoming["element_identifier"]
         elements = {
             f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(1, number + 1)

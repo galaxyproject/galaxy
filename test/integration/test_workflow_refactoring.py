@@ -6,7 +6,10 @@ from typing import (
     cast,
 )
 
-from sqlalchemy import select
+from sqlalchemy import (
+    func,
+    select,
+)
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
@@ -18,6 +21,7 @@ from galaxy.model import (
     Workflow,
     WorkflowOutput,
     WorkflowStep,
+    WorkflowStepAnnotationAssociation,
     WorkflowStepConnection,
 )
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
@@ -669,6 +673,142 @@ steps:
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
+    def test_tool_version_upgrade_preserves_source_version(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    state:
+      inttest: 0
+""")
+        actions: ActionsJson = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        self._dry_run(actions)
+        self._app.model.session.expire_all()
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+
+        self._refactor(actions)
+        self._app.model.session.expire_all()
+        stored_workflow = self._most_recent_stored_workflow
+        assert len(stored_workflow.workflows) == 2
+        # the source version keeps its steps
+        assert stored_workflow.get_internal_version(0).step_by_label("the_step").tool_version == "0.1"
+        assert stored_workflow.get_internal_version(1).step_by_label("the_step").tool_version == "0.2"
+
+    def test_refactor_noop_of_imported_workflow_does_not_create_version(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.2'
+    state:
+      inttest: 0
+""")
+        sa_session = self._app.model.session
+        # as set by a URL or TRS import
+        self._latest_workflow.source_metadata = {"url": "https://example.org/the_workflow.ga"}
+        sa_session.commit()
+        name = self._most_recent_stored_workflow.name
+
+        response = self._refactor([{"action_type": "update_name", "name": name}])
+        assert not response.changed
+        sa_session.expire_all()
+        assert len(self._most_recent_stored_workflow.workflows) == 1
+
+    def test_refactor_saves_only_the_new_version(self):
+        # the comparison dry run build must not be committed alongside the real save
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        rename_output = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(rename_output, stored_workflow=nested_stored_workflow)
+        sa_session = self._app.model.session
+        sa_session.commit()
+
+        def last_ids():
+            classes = (
+                StoredWorkflow,
+                Workflow,
+                WorkflowStep,
+                WorkflowOutput,
+                WorkflowStepConnection,
+                PostJobAction,
+                WorkflowStepAnnotationAssociation,
+            )
+            return [sa_session.scalar(select(func.max(clazz.id))) or 0 for clazz in classes]
+
+        (
+            stored_workflow_last_id,
+            workflow_last_id,
+            step_last_id,
+            output_last_id,
+            connection_last_id,
+            pja_last_id,
+            annotation_last_id,
+        ) = last_ids()
+        # drops the outer workflow output, since the new subworkflow no longer has it
+        response = self._refactor([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
+        assert response.changed
+        sa_session.commit()
+        new_workflow = self._latest_workflow
+        steps = new_workflow.steps
+        assert last_ids() == [
+            stored_workflow_last_id,
+            workflow_last_id + 1,
+            step_last_id + len(steps),
+            output_last_id + sum(len(step.workflow_outputs) for step in steps),
+            connection_last_id + sum(len(step.input_connections) for step in steps),
+            pja_last_id + sum(len(step.post_job_actions) for step in steps),
+            annotation_last_id + sum(len(step.annotations) for step in steps),
+        ]
+
+    def test_refactor_of_annotated_subworkflow_step_saves_no_orphan_annotations(self):
+        self.workflow_populator.upload_yaml_workflow(
+            WORKFLOW_NESTED_SIMPLE.replace("  nested_workflow:\n", "  nested_workflow:\n    doc: the step annotation\n")
+        )
+        sa_session = self._app.model.session
+        name = self._most_recent_stored_workflow.name
+
+        def orphan_annotations():
+            stmt = select(func.count(WorkflowStepAnnotationAssociation.id)).where(
+                WorkflowStepAnnotationAssociation.workflow_step_id.is_(None)
+            )
+            return sa_session.scalar(stmt)
+
+        assert orphan_annotations() == 0
+        self._dry_run([{"action_type": "update_name", "name": f"{name} renamed"}])
+        assert orphan_annotations() == 0
+        response = self._refactor([{"action_type": "update_name", "name": f"{name} renamed"}])
+        assert response.changed
+        sa_session.commit()
+        assert orphan_annotations() == 0
+        sa_session.expire_all()
+        new_step = self._latest_workflow.step_by_label("nested_workflow")
+        assert [a.annotation for a in new_step.annotations] == ["the step annotation"]
+
+    def test_subworkflow_upgrade_dry_run_writes_nothing(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        rename_output = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(rename_output, stored_workflow=nested_stored_workflow)
+        response = self._dry_run([{"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}}])
+        assert response.changed
+
     def test_tool_version_upgrade_keeps_when_expression(self):
         self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -756,6 +896,26 @@ steps:
 
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
+
+    def test_subworkflow_upgrade_preserves_source_version(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        original_nested_workflow_id = nested_stored_workflow.latest_workflow.id
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="2")
+        self._app.model.session.expunge(nested_stored_workflow)
+
+        actions: ActionsJson = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        self._refactor(actions)
+        self._app.model.session.expire_all()
+        stored_workflow = self._most_recent_stored_workflow
+        assert len(stored_workflow.workflows) == 2
+        source_step = stored_workflow.get_internal_version(0).step_by_label("nested_workflow")
+        # the source version keeps its steps
+        assert source_step.subworkflow.id == original_nested_workflow_id
+        upgraded_step = stored_workflow.get_internal_version(1).step_by_label("nested_workflow")
+        assert upgraded_step.subworkflow.id != original_nested_workflow_id
 
     def test_subworkflow_upgrade_specified(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
@@ -1082,6 +1242,9 @@ class MockTrans(ProvidesAppContext):
         self.workflow_building_mode = workflow_building_modes.ENABLED
         self.tag_handler = app.tag_handler
         self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
+
+    def get_user(self):
+        return self.user
 
     @property
     def galaxy_session(self):

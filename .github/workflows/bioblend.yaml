@@ -3,9 +3,9 @@ on:
   pull_request:
     paths:
       - .github/workflows/bioblend.yaml
-      - lib/galaxy/schema/**
-      - lib/galaxy/webapps/galaxy/api/**
-      - lib/galaxy/webapps/galaxy/services/**
+      - packages/schema/src/galaxy/schema/**
+      - packages/web_apps/src/galaxy/webapps/galaxy/api/**
+      - packages/web_apps/src/galaxy/webapps/galaxy/services/**
   workflow_dispatch:
 
 concurrency:
@@ -52,6 +52,8 @@ jobs:
         run: echo "bioblend_python_version=$(echo "${{ matrix.tox_env }}" | sed -e 's/^py\([3-9]\)\([0-9]\+\)/\1.\2/')" >> $GITHUB_OUTPUT
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version-file: galaxy/.tool-versions
       - name: Install tox
         run: uv tool install --python ${BIOBLEND_PYTHON_VERSION} tox --with tox-uv
         env:

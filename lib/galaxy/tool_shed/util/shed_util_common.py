@@ -1,11 +1,16 @@
 import logging
 import re
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 from galaxy import util
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
+
+if TYPE_CHECKING:
+    from galaxy.model.tool_shed_install import ToolShedRepository
+    from galaxy.tool_shed.tools.data_table_manager import RequiredAppT
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +142,14 @@ def have_shed_tool_conf_for_install(app):
     return bool(app.toolbox.dynamic_confs(include_migrated_tool_conf=False))
 
 
-def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=None, tool_id=None, tool_version=None):
+def set_image_paths(
+    app: "RequiredAppT",
+    text: str,
+    encoded_repository_id: str | None = None,
+    tool_shed_repository: "ToolShedRepository | None" = None,
+    tool_id: str | None = None,
+    tool_version: str | None = None,
+) -> str:
     """
     Handle tool help image display for tools that are contained in repositories in
     the tool shed or installed into Galaxy as well as image display in repository

@@ -65,8 +65,7 @@ async function submitEmail() {
 
         <div v-else>
             <GAlert v-for="(resultMessage, index) in resultMessages" :key="index" :variant="resultMessage[1]" show>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="renderMarkdown(resultMessage[0] ?? '')" />
+                <span v-sanitize-html:links="renderMarkdown(resultMessage[0] ?? '')" />
             </GAlert>
 
             <div v-if="showForm" id="email-report-form">

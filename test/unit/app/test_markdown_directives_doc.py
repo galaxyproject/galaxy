@@ -33,7 +33,7 @@ def test_directives_yml_consistent():
 
 def _artifacts():
     shared_arguments, parameter_sets, directives = gen.load_directives()
-    return gen.build_artifacts(shared_arguments, parameter_sets, directives)
+    return gen.build_artifacts(shared_arguments, parameter_sets, directives, gen.load_cell_types())
 
 
 @pytest.mark.parametrize("path,rendered", _artifacts(), ids=lambda p: os.path.basename(p) if isinstance(p, str) else "")

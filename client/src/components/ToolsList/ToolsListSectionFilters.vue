@@ -116,7 +116,7 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                             <template v-slot:header>
                                 <FontAwesomeIcon
                                     v-if="getPanelIcon('ontology:edam_operations')"
-                                    :icon="getPanelIcon('ontology:edam_operations')"
+                                    :icon="getPanelIcon('ontology:edam_operations')!"
                                     fixed-width
                                     size="sm" />
                                 <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
@@ -141,7 +141,7 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                             <template v-slot:header>
                                 <FontAwesomeIcon
                                     v-if="getPanelIcon('ontology:edam_topics')"
-                                    :icon="getPanelIcon('ontology:edam_topics')"
+                                    :icon="getPanelIcon('ontology:edam_topics')!"
                                     fixed-width
                                     size="sm" />
                                 <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>

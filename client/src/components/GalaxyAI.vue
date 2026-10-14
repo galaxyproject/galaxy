@@ -3,7 +3,7 @@ import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
@@ -253,6 +253,25 @@ function showWelcome() {
     });
 }
 
+/** The message to show for a failed chat request. */
+function chatFailureMessage(error: unknown, status?: number): string {
+    // A gateway answers about itself, so its body says nothing about this chat.
+    switch (status) {
+        case 504:
+            return `GalaxyAI took too long to respond (${status}). Please try again.`;
+        case 502:
+        case 503:
+            return `GalaxyAI is temporarily unavailable (${status}). Please try again in a few minutes.`;
+    }
+
+    const fallback =
+        status === undefined
+            ? "Failed to get response from GalaxyAI."
+            : `GalaxyAI could not answer that request (${status}). Please try again.`;
+    // A string means nothing parsed the body, so there is no message to find in it.
+    return error !== null && typeof error === "object" ? errorMessageAsString(error, fallback) : fallback;
+}
+
 async function submitQuery() {
     if (!query.value.trim()) {
         return;
@@ -284,7 +303,7 @@ async function submitQuery() {
         const resolved = resolveMentions(parsed);
         const entityContext = buildEntityContext(resolved);
 
-        const { data, error } = await GalaxyApi().POST("/api/chat", {
+        const { data, error, response } = await GalaxyApi().POST("/api/chat", {
             params: {
                 query: {
                     agent_type: selectedAgentType.value,
@@ -303,7 +322,7 @@ async function submitQuery() {
         }
 
         if (error) {
-            const errorText = errorMessageAsString(error, "Failed to get response from GalaxyAI.");
+            const errorText = chatFailureMessage(error, response?.status);
             const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
@@ -414,11 +433,17 @@ async function fetchConversation(exchangeId: string) {
 
     const generation = ++conversationGeneration;
 
-    const { data: fullConversation, error } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
-        params: {
-            path: { exchange_id: exchangeId },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+            params: {
+                path: { exchange_id: exchangeId },
+            },
+        });
+    } catch (e) {
+        result = { error: e };
+    }
+    const { data: fullConversation, error } = result;
 
     if (generation !== conversationGeneration) {
         // A newer conversation was loaded (or a new chat started) while this one
@@ -469,11 +494,17 @@ async function fetchConversation(exchangeId: string) {
 }
 
 async function loadLatestChat() {
-    const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-        params: {
-            query: { limit: 1 },
-        },
-    });
+    let result;
+    try {
+        result = await GalaxyApi().GET("/api/chat/history", {
+            params: {
+                query: { limit: 1 },
+            },
+        });
+    } catch (e) {
+        result = { error: e };
+    }
+    const { data, error } = result;
 
     if (error) {
         Toast.error(errorMessageAsString(error), "Failed to load latest chat");
@@ -647,7 +678,7 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div class="galaxyai-footer">
-            <ChatInput v-model="query" :busy="busy" @submit="submitQuery" />
+            <ChatInput :value="query" :busy="busy" @input="(v: string) => (query = v)" @submit="submitQuery" />
         </div>
     </div>
 </template>

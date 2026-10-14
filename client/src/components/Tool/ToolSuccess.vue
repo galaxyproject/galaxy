@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useConfig } from "@/composables/config";
 import { useJobStore } from "@/stores/jobStore";
@@ -13,7 +13,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
-const { config } = useConfig(true);
+const { config } = useConfig();
 const jobStore = useJobStore();
 const { latestResponse } = storeToRefs(jobStore);
 const router = useRouter();

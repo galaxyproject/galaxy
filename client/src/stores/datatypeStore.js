@@ -26,12 +26,8 @@ export const useDatatypeStore = defineStore("datatypeStore", {
     },
     actions: {
         async fetchUploadDatatypes() {
-            try {
-                const data = await UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION);
-                this.uploadDatatypes = data;
-            } catch (err) {
-                console.log("Error: unable to load datatypes", err);
-            }
+            const data = await UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION);
+            this.uploadDatatypes = data;
         },
         async fetchDatatypeDetails(extension) {
             // Return cached details if available

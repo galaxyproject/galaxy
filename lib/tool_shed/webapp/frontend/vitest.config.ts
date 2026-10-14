@@ -16,6 +16,12 @@ export default defineConfig({
         globals: true,
         environment: "jsdom",
         setupFiles: ["./vitest.setup.ts"],
+        server: {
+            deps: {
+                // raw-source package: force vitest to transform the SFCs
+                inline: ["@galaxyproject/galaxy-ui"],
+            },
+        },
     },
     resolve: {
         alias: {
@@ -23,4 +29,3 @@ export default defineConfig({
         },
     },
 })
-

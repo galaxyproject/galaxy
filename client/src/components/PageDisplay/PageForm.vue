@@ -40,7 +40,7 @@
 import { faSave, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { fetchInvocationReport } from "@/api/invocations";

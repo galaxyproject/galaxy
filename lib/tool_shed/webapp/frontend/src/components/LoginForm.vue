@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { GButton, GForm, GFormInput, GFormLabel } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
-import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { useAuthStore } from "@/stores"
 import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -28,20 +28,34 @@ async function onLogin() {
 }
 </script>
 <template>
-    <q-form class="q-gutter-md" action="#" @submit.prevent="onLogin">
+    <GForm class="login-form" action="#" @submit.prevent="onLogin">
         <error-banner v-if="errorMessage" :error="errorMessage" @dismiss="errorMessage = null" />
-        <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="login" type="text" label="Username / Email" name="login" />
-        <q-input v-bind="AUTH_FORM_INPUT_PROPS" v-model="password" type="password" label="Password" name="password" />
-        <q-card-actions class="q-px-md">
-            <q-btn
-                unelevated
-                color="primary"
-                size="lg"
-                class="full-width"
-                label="Login"
-                type="submit"
-                name="login_button"
-            />
-        </q-card-actions>
-    </q-form>
+        <GFormLabel title="Username / Email">
+            <GFormInput v-model="login" type="text" name="login" autocomplete="username" />
+        </GFormLabel>
+        <GFormLabel title="Password">
+            <GFormInput v-model="password" type="password" name="password" autocomplete="current-password" />
+        </GFormLabel>
+        <div class="login-form-actions">
+            <GButton color="blue" size="large" class="submit-button" type="submit" name="login_button">Login</GButton>
+        </div>
+    </GForm>
 </template>
+
+<style scoped>
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.login-form-actions {
+    display: flex;
+    align-items: center;
+    padding-top: var(--spacing-2);
+}
+
+.submit-button {
+    width: 100%;
+}
+</style>

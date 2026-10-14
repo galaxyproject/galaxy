@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,7 +18,7 @@ const SELECTORS = {
     EMPTY_STATE: ".empty-state",
     PAGE_ITEMS: ".page-items",
     PAGE_ITEM: "[data-description='page item']",
-    UNOWNED_ALERT: "galert-stub",
+    UNOWNED_ALERT: "g-alert-stub",
 };
 
 setupMockHistoryBreadcrumbs();
@@ -36,6 +36,9 @@ vi.mock("@/stores/historyStore", () => ({
 vi.mock("@/stores/userStore", () => ({
     useUserStore: vi.fn(() => ({
         matchesCurrentUserId: mockMatchesCurrentUserId,
+        // PageCard (rendered per page item) also checks this to decide whether
+        // to show the "sharing" action, so the mock store needs it too.
+        matchesCurrentUsername: vi.fn(() => false),
     })),
 }));
 
@@ -57,7 +60,7 @@ describe("HistoryPageList", () => {
     });
 
     describe("Header", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             wrapper = await mountComponent({ pages: [] });
@@ -71,7 +74,7 @@ describe("HistoryPageList", () => {
     });
 
     describe("Empty state", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             wrapper = await mountComponent({ pages: [] });
@@ -94,7 +97,7 @@ describe("HistoryPageList", () => {
     });
 
     describe("Page list", () => {
-        let wrapper: Wrapper<Vue>;
+        let wrapper: VueWrapper;
 
         beforeEach(async () => {
             wrapper = await mountComponent({

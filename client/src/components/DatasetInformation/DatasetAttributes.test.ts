@@ -15,7 +15,7 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 async function mountDatasetAttributes(conversion_disable = false) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     server.use(
@@ -38,10 +38,10 @@ async function mountDatasetAttributes(conversion_disable = false) {
     );
 
     const wrapper = mount(DatasetAttributes as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
 
@@ -57,12 +57,12 @@ async function buildWrapperWithError(error: string) {
         }),
     );
     const wrapper = mount(DatasetAttributes as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             messageText: error,
             messageVariant: "danger",
         },
-        localVue,
+        global: localVue,
         stubs: {
             FontAwesomeIcon: false,
             FormElement: false,
@@ -92,6 +92,20 @@ describe("DatasetAttributes", () => {
         await flushPromises();
 
         expect(wrapper.find(".dataset-attributes-alert").text()).toBe("success");
+    });
+
+    it("shows why saving failed", async () => {
+        const wrapper = await mountDatasetAttributes();
+        server.use(
+            http.untyped.put("/dataset/set_edit", () => {
+                return HttpResponse.json({ err_msg: "This dataset is encrypted." }, { status: 400 });
+            }),
+        );
+
+        await wrapper.find("#dataset-attributes-default-save").trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(".dataset-attributes-alert").text()).toBe("This dataset is encrypted.");
     });
 
     it("check rendering without conversion option", async () => {

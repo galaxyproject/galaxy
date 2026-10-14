@@ -16,8 +16,8 @@ const localVue = getLocalVue();
 
 function mountComponent(props = {}) {
     return mount(ConfigureHeader, {
-        localVue,
-        propsData: { hasChanged: undefined, ...props },
+        global: localVue,
+        props: { hasChanged: undefined, ...props },
         stubs: {
             FontAwesomeIcon: true,
             Heading: {

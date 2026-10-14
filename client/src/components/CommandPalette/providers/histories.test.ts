@@ -2,12 +2,13 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx, renderedSections } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { historiesProvider } from "./histories";
 import { resetListRefreshTracking } from "./refresh";
@@ -58,6 +59,8 @@ vi.mock("@/stores/services/history.services", () => ({
     setCurrentHistoryOnServer,
     updateHistoryFields: vi.fn(),
 }));
+
+const { server, http } = useServerMock();
 
 let recent: RecentPaletteItem[] = [];
 
@@ -153,17 +156,13 @@ function mockHistoriesApi() {
     }));
 }
 
-function makeCtx(isAnonymous = false): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous };
-}
-
 function signIn(username = "me") {
     const userStore = useUserStore();
     userStore.currentUser = { id: "user-1", email: "me@example.org", username, isAnonymous: false } as never;
 }
 
 async function scopedSections(scope: ScopeDefinition, query = "") {
-    return (await historiesProvider.searchScoped?.(scope, query, makeCtx())) ?? [];
+    return renderedSections(await historiesProvider.searchScoped?.(scope, query, makeCtx()));
 }
 
 describe("historiesProvider", () => {
@@ -212,6 +211,58 @@ describe("historiesProvider", () => {
         expect(sections[0]?.items.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
         // latest first, so the newer "Variant calling" leads
         expect(sections[1]?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+    });
+
+    it("hydrates the own histories even when the current history is cached", async () => {
+        // a boot that loaded no listing leaves the current history cached alone
+        useHistoryStore().setHistory(RNA as never);
+        let release = () => {};
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        getHistoryList.mockImplementationOnce(async () => {
+            await pending;
+            return [RNA, VARIANTS];
+        });
+
+        const searching = scopedSections(OWN_SCOPE);
+        await flushPromises();
+        release();
+        const sections = await searching;
+
+        expect(getHistoryList).toHaveBeenCalledTimes(1);
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Variant calling", "RNA-seq analysis"]);
+    });
+
+    it("does not take a partial boot page for the own listing, so `h:` finds an older history", async () => {
+        server.use(http.get("/api/histories/count", ({ response }) => response(200).json(13)));
+        const newest = ["12", "01", "09", "08", "07", "06", "05", "04", "11", "10"].map((n) =>
+            history(`h${n}`, `Alpha history ${n}`, `2026-08-${n}T10:00:00`),
+        );
+        const older = [history("h02", "Alpha history 02", "2026-07-02T10:00:00")];
+        let release = () => {};
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        getHistoryList.mockImplementation(async (_offset: number, limit: number | null, queryString = "") => {
+            if (queryString) {
+                return matching([...newest, ...older], decodeURIComponent(queryString.split("qv=")[1] ?? ""));
+            }
+            if (limit === 10) {
+                return newest;
+            }
+            await pending;
+            return [...newest, ...older];
+        });
+        // boot pages the own histories through the scroll list
+        await useHistoryStore().loadHistories(true);
+
+        const searching = scopedSections(OWN_SCOPE, "history 02");
+        await flushPromises();
+        release();
+        const titles = (await searching).flatMap((section) => section.items.map((item) => item.title));
+
+        expect(titles).toContain("Alpha history 02");
     });
 
     it("opens the history view on enter and offers set-as-current for own histories", async () => {
@@ -448,30 +499,136 @@ describe("historiesProvider", () => {
         expect(ids).toContain("histories:my:h2");
     });
 
-    it("stays out of the unscoped fan-out for short queries and anonymous users", async () => {
+    it("stays out of the unscoped fan-out for short queries", async () => {
         expect(await historiesProvider.search("v", makeCtx())).toEqual([]);
-        expect(await historiesProvider.search("variant", makeCtx(true))).toEqual([]);
+        expect(await historiesProvider.search("v", makeCtx({ isAnonymous: true }))).toEqual([]);
         expect(getHistoryList).not.toHaveBeenCalled();
+        expect(getSharedHistories).not.toHaveBeenCalled();
+        expect(getPublishedHistories).not.toHaveBeenCalled();
     });
 
-    it("filters the cache in the unscoped fan-out and never fetches there", async () => {
-        // nothing cached yet: the fan-out contributes nothing rather than fetching
-        expect(await historiesProvider.search("variant", makeCtx())).toEqual([]);
-        expect(getHistoryList).not.toHaveBeenCalled();
-
-        await useHistoryStore().loadHistories(false);
+    it("hydrates the own histories once for the fan-out, then filters the cache", async () => {
+        // a first-ever root search still finds own rows
+        const first = await historiesProvider.search("variant", makeCtx());
+        expect(first.map((i) => i.title)).toEqual(["Variant calling"]);
         const callsAfterHydration = getHistoryList.mock.calls.length;
 
         const items = await historiesProvider.search("variant", makeCtx());
 
         expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
+        // only the unfiltered listing is fetched; searching the own list is the `h:` scope's job
         expect(getHistoryList.mock.calls.length).toBe(callsAfterHydration);
+        expect(getHistoryList.mock.calls.every(([, , queryString]) => !queryString)).toBe(true);
+    });
+
+    it("merges the shared and public matches into the unscoped fan-out", async () => {
+        await useHistoryStore().loadHistories(false);
+        const sharedRna = history("h8", "RNA-seq alignment", "2026-08-20T10:00:00", {
+            username: "colleague",
+            owner: "colleague",
+        });
+        const publicRna = history("h9", "RNA-seq metagenomics", "2026-08-19T10:00:00", {
+            username: "stranger",
+            owner: "stranger",
+        });
+        getSharedHistories.mockResolvedValue({ data: [sharedRna], total: 1 });
+        getPublishedHistories.mockResolvedValue({ data: [publicRna], total: 1 });
+
+        const items = await historiesProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title).sort()).toEqual([
+            "RNA-seq alignment",
+            "RNA-seq analysis",
+            "RNA-seq metagenomics",
+        ]);
+        // one page per listing, which the client then ranks and caps itself
+        expect(getSharedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 25 }));
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 25 }));
+    });
+
+    it("keeps the fan-out's listing hits out of the cached listing", async () => {
+        await useHistoryStore().loadHistories(false);
+
+        await historiesProvider.search("metagenomics", makeCtx());
+
+        const historyStore = useHistoryStore();
+        // the hits answered one query, so the listing itself is still unfetched
+        expect(historyStore.hasLoadedHistoryList("published")).toBe(false);
+        expect(historyStore.publishedHistories).toEqual([]);
+
+        const sections = await scopedSections(PUBLISHED_SCOPE);
+
+        // …and `hp:` hydrates it with a full, unfiltered page of its own
+        expect(getPublishedHistories).toHaveBeenLastCalledWith(expect.objectContaining({ search: "", limit: 25 }));
+        expect(sections.at(-1)?.items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+    });
+
+    it("pages a listing in the fan-out, so a match below the newest rows survives", async () => {
+        await useHistoryStore().loadHistories(false);
+        // the backend orders by update time and matches loosely, so the rows it
+        // answers with first need not match the query at all
+        const loose = Array.from({ length: 20 }, (_, index) =>
+            history(`loose-${index}`, `Assembly ${index}`, "2026-08-21T10:00:00", {
+                username: "stranger",
+                owner: "stranger",
+            }),
+        );
+        const publicRna = history("h9", "RNA-seq metagenomics", "2026-08-19T10:00:00", {
+            username: "stranger",
+            owner: "stranger",
+        });
+        getSharedHistories.mockResolvedValue({ data: [], total: 0 });
+        // the backend honors the requested limit, so asking for a handful of
+        // rows only ever sees the newest few
+        getPublishedHistories.mockImplementation(async ({ limit }: { limit?: number } = {}) => {
+            const data = [...loose, publicRna];
+            return { data: data.slice(0, limit), total: data.length };
+        });
+
+        const items = await historiesProvider.search("rna", makeCtx());
+
+        expect(items.map((i) => i.title)).toContain("RNA-seq metagenomics");
+        // the whole page is asked for, so the ranking has the match to find
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "rna", limit: 25 }));
+        // the section itself stays capped at the handful of rows it renders
+        expect(items.filter((i) => i.id.startsWith("histories:published:")).length).toBeLessThanOrEqual(3);
+    });
+
+    it("keeps one row per history in the fan-out, preferring the user's own", async () => {
+        await useHistoryStore().loadHistories(false);
+        // the published listing answers with a history the user owns
+        getSharedHistories.mockResolvedValue({ data: [], total: 0 });
+        getPublishedHistories.mockResolvedValue({ data: [{ ...VARIANTS, username: "me", owner: "me" }], total: 1 });
+
+        const items = await historiesProvider.search("variant", makeCtx());
+
+        expect(items.map((i) => i.id)).toEqual(["histories:my:h2"]);
+        expect(items[0]?.secondaryAction?.label).toBe("Set as current");
+    });
+
+    it("searches the public listing alone for an anonymous root query", async () => {
+        const items = await historiesProvider.search("metagenomics", makeCtx({ isAnonymous: true }));
+
+        expect(items.map((i) => i.title)).toEqual(["Public metagenomics"]);
+        expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "metagenomics" }));
+        expect(getSharedHistories).not.toHaveBeenCalled();
+        expect(getHistoryList).not.toHaveBeenCalled();
+    });
+
+    it("keeps the cached own rows in the fan-out when a listing search fails", async () => {
+        await useHistoryStore().loadHistories(false);
+        getSharedHistories.mockRejectedValue(new Error("boom"));
+        getPublishedHistories.mockRejectedValue(new Error("boom"));
+
+        const items = await historiesProvider.search("variant", makeCtx());
+
+        expect(items.map((i) => i.title)).toEqual(["Variant calling"]);
     });
 
     it("lists remembered histories for an empty root query", async () => {
         recent = [{ type: "history", id: "h1", name: "RNA-seq analysis" }];
 
         expect(historiesProvider.emptyQueryItems?.(makeCtx())?.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
-        expect(historiesProvider.emptyQueryItems?.(makeCtx(true))).toEqual([]);
+        expect(historiesProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
     });
 });

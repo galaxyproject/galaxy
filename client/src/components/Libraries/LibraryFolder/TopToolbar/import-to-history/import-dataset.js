@@ -81,7 +81,6 @@ class ImportDatasetModal {
                 this.processImportToHistory(new_history.id, new_history.name);
             } catch {
                 Toast.error("An error occurred.");
-            } finally {
                 modal.enableButton("Import");
             }
         } else {
@@ -90,7 +89,6 @@ class ImportDatasetModal {
             var history_id = selectedOption.value;
             var history_name = selectedOption.textContent;
             this.processImportToHistory(history_id, history_name);
-            modal.enableButton("Import");
         }
     }
 

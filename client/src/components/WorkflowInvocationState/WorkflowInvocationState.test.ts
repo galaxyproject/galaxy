@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
@@ -10,15 +10,18 @@ import invocationData from "../Workflow/test/json/invocation.json";
 import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
-vi.mock("vue-router/composables", () => ({
-    useRoute: vi.fn(() => ({})),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRoute: vi.fn(() => ({})),
+    };
+});
 
 const selectors = {
     invocationSummary: ".invocation-overview",
-    gAlertStub: "galert-stub",
+    gAlertStub: "g-alert-stub",
     spanElement: "span",
     invocationDebugTab: ".invocation-debug-tab",
     invocationReportTab: ".invocation-report-tab",
@@ -157,12 +160,12 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
     setActivePinia(pinia);
 
     const wrapper = shallowMount(WorkflowInvocationState as object, {
-        propsData: {
+        props: {
             invocationId,
             isFullPage,
         },
         pinia,
-        localVue,
+        global: localVue,
     });
     await flushPromises();
     return wrapper;
@@ -276,7 +279,7 @@ describe("WorkflowInvocationState check 'Debug' tab", () => {
  * exposing the internals of the component. This is just to restore the previous behavior of the test
  * and it only uses the wrapper to check the props of the invocation summary component.
  */
-function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
+function isInvocationAndJobTerminal(wrapper: VueWrapper): boolean {
     const invocationSummary = wrapper.find(selectors.invocationSummary);
     return invocationSummary.exists() && invocationSummary.html().includes('invocationandjobterminal="true"');
 }

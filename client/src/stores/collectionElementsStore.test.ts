@@ -19,8 +19,8 @@ describe("useCollectionElementsStore", () => {
         server.use(
             http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response, params, query }) => {
                 const elements: DCESummary[] = [];
-                const startIndex = Number(query.get("offset")) ?? 0;
-                const endIndex = startIndex + (Number(query.get("limit")) ?? 10);
+                const startIndex = Number(query.get("offset"));
+                const endIndex = startIndex + Number(query.get("limit"));
                 for (let i = startIndex; i < endIndex; i++) {
                     elements.push(mockElement(params.hdca_id, i));
                 }

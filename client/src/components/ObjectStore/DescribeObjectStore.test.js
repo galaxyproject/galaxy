@@ -1,13 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import DescribeObjectStore from "./DescribeObjectStore.vue";
+import ObjectStoreBadges from "./ObjectStoreBadges.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const DESCRIPTION = "My cool **markdown**";
 
@@ -41,11 +41,10 @@ describe("DescribeObjectStore.vue", () => {
         setActivePinia(pinia);
     });
 
-    async function mountWithResponse(response) {
+    async function mountWithResponse(response, extraProps = {}) {
         wrapper = shallowMount(DescribeObjectStore, {
-            propsData: { storageInfo: response, what: "where i am throwing my test dataset" },
-            localVue,
-            pinia,
+            props: { storageInfo: response, what: "where i am throwing my test dataset", ...extraProps },
+            global: localVue,
         });
     }
 
@@ -82,5 +81,12 @@ describe("DescribeObjectStore.vue", () => {
         expect(wrapper.vm.isPrivate).toBeTruthy();
         const configurationMarkupEl = wrapper.find("[markdown]");
         expect(configurationMarkupEl.attributes("markdown")).toBe(DESCRIPTION);
+    });
+
+    it("lets badges open interactive popovers unless told otherwise", async () => {
+        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_ID);
+        expect(wrapper.findComponent(ObjectStoreBadges).props("interactive")).toBe(true);
+        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_ID, { interactive: false });
+        expect(wrapper.findComponent(ObjectStoreBadges).props("interactive")).toBe(false);
     });
 });

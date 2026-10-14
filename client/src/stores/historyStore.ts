@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, del, ref, set, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import {
     type AnyHistory,
@@ -35,7 +35,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
-import { isRetryableApiError, MAX_RETRIES, rethrowSimple } from "@/utils/simple-error";
+import { ApiError, isRetryableApiError, MAX_RETRIES, rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
@@ -81,7 +81,13 @@ export interface FetchHistoryListOptions {
     sortDesc?: boolean;
     /** Discard the cached ids of this variant instead of merging into them. */
     replace?: boolean;
-    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    /**
+     * Whether the fetched entries make up the cached listing of this variant.
+     * Defaults to `true`. A one-off search that is not the listing (the command
+     * palette's root fan-out, say) sets it to `false`: the entries are still
+     * cached as summaries, but the variant's id list, total and loaded flag are
+     * left alone, so a later listing is neither shortened nor skipped.
+     */
     record?: boolean;
 }
 
@@ -113,6 +119,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
     const historiesOffset = ref(0);
     const totalHistoryCount = ref(0);
+    /** Whether an unfiltered own-history fetch landed; a full scroll page or the current history alone is no listing */
+    const ownHistoriesLoaded = ref(false);
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
@@ -181,10 +189,15 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return (historyId: string, shouldFetchIfMissing = true) => {
             if (!storedHistories.value[historyId] && shouldFetchIfMissing) {
                 const existingError = historyLoadErrors.value[historyId];
+                // Errors that are not an ``ApiError`` come from requests that got no response at all,
+                // which are retried like a 5xx response.
                 const canRetry =
-                    existingError && isRetryableApiError(existingError) && (retryCounts[historyId] ?? 0) <= MAX_RETRIES;
+                    existingError &&
+                    (isRetryableApiError(existingError) || !(existingError instanceof ApiError)) &&
+                    (retryCounts[historyId] ?? 0) <= MAX_RETRIES;
                 if (!existingError || canRetry) {
-                    loadHistoryById(historyId);
+                    // The failure is recorded in ``historyLoadErrors`` and shown by views reading ``getHistoryLoadError``.
+                    loadHistoryById(historyId).catch((e) => console.warn(`Failed to load history ${historyId}`, e));
                 }
             }
             return storedHistories.value[historyId] ?? null;
@@ -224,6 +237,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const isHistoryListLoading = computed(() => {
         return (variant: HistoryListVariant) => listedHistoriesLoading.value[variant];
     });
+
+    const hasLoadedOwnHistories = computed(() => ownHistoriesLoaded.value);
 
     /** Whether the given listing has been fetched at least once. */
     const hasLoadedHistoryList = computed(() => {
@@ -269,17 +284,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     function setFilterText(historyId: string, filterText: string) {
-        set(storedFilterTexts.value, historyId, filterText);
+        storedFilterTexts.value[historyId] = filterText;
     }
 
     function setHistory(history: AnyHistory | HistoryContentsStats) {
         if (storedHistories.value[history.id] !== undefined) {
             // Merge the incoming history with existing one to keep additional information
             Object.entries(history).forEach(([key, value]) => {
-                set(storedHistories.value[history.id]!, key, value);
+                (storedHistories.value[history.id] as any)[key] = value;
             });
         } else {
-            set(storedHistories.value, history.id, history);
+            storedHistories.value[history.id] = history as AnyHistory;
         }
     }
 
@@ -405,7 +420,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
         const deletedHistory = data as AnyHistory;
         await setNextAvailableHistoryId([deletedHistory.id]);
-        del(storedHistories.value, deletedHistory.id);
+        delete storedHistories.value[deletedHistory.id];
         await handleTotalCountChange(1, true);
     }
 
@@ -422,7 +437,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         const historyIds = deletedHistories.map((history) => history.id);
         await setNextAvailableHistoryId(historyIds);
         deletedHistories.forEach((history) => {
-            del(storedHistories.value, history.id);
+            delete storedHistories.value[history.id];
         });
         await handleTotalCountChange(deletedHistories.length, true);
     }
@@ -520,6 +535,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
             const offset = queryString ? 0 : historiesOffset.value;
             const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
             setHistories(histories);
+            // a full scroll page is a partial list, so the palette must not search it as the own listing
+            if (!queryString && (limit === null || histories.length < limit)) {
+                ownHistoriesLoaded.value = true;
+            }
             if (paginate && !queryString && historiesOffset.value == offset) {
                 await handleTotalCountChange(histories.length);
             }
@@ -588,6 +607,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
             const histories = (await getHistoryList(0, limit, search)) as HistorySummary[];
             // merges by id, so a page fetched here never drops what is cached
             setHistories(histories);
+            if (!search) {
+                ownHistoriesLoaded.value = true;
+            }
         } catch (error) {
             rethrowSimple(error);
         }
@@ -600,7 +622,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             // Incoming summaries may carry fewer fields than what is already
             // cached (e.g. a search result after a detailed listing), so merge
             // instead of overwriting.
-            set(listedHistories.value, history.id, storedHistory ? { ...storedHistory, ...history } : history);
+            listedHistories.value[history.id] = storedHistory ? { ...storedHistory, ...history } : history;
         });
     }
 
@@ -618,7 +640,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * histories are updated in place.
      *
      * @param variant Which listing to fetch
-     * @param options Pagination, sorting and search options
+     * @param options Pagination, sorting, search and caching options
      * @returns The fetched entries, in the order the backend returned them
      */
     function fetchHistoryList(
@@ -682,6 +704,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 listedHistoriesTotal.value[variant] = result.total;
                 listedHistoriesLoaded.value[variant] = true;
             } else {
+                // the entries answer this request alone, so they are cached as
+                // summaries without joining (or completing) the listing
                 mergeListedHistories(result.data);
             }
             return result.data.map((history) => listedHistories.value[history.id] ?? history);
@@ -849,14 +873,20 @@ export const useHistoryStore = defineStore("historyStore", () => {
             return;
         }
         const promise = (async () => {
-            const result = await getHistoryByIdFromServer(historyId);
-            if (result.error) {
+            try {
+                const result = await getHistoryByIdFromServer(historyId);
+                if (result.error) {
+                    retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
+                    historyLoadErrors.value[historyId] = result.error;
+                } else {
+                    setHistory(result.data);
+                    delete historyLoadErrors.value[historyId];
+                    delete retryCounts[historyId];
+                }
+            } catch (error) {
                 retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
-                set(historyLoadErrors.value, historyId, result.error);
-            } else {
-                setHistory(result.data);
-                del(historyLoadErrors.value, historyId);
-                delete retryCounts[historyId];
+                historyLoadErrors.value[historyId] = error as Error;
+                throw error;
             }
         })();
         historyPromises.set(historyId, promise);
@@ -1009,6 +1039,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         archivedHistories,
         isHistoryListLoading,
         hasLoadedHistoryList,
+        hasLoadedOwnHistories,
         getHistoryListTotal,
         setListedHistories,
         fetchHistoryList,

@@ -1,10 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type Vue from "vue";
-import VueRouter from "vue-router";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
@@ -21,7 +20,6 @@ vi.mock("@/api/datasetCollections");
 setupSelectableMock();
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
 
 class VisibleIntersectionObserver {
     constructor(private callback: IntersectionObserverCallback) {}
@@ -33,7 +31,7 @@ class VisibleIntersectionObserver {
 }
 
 describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
     const fetchItem = vi.mocked(itemSrc === "hda" ? fetchDatasetDetails : fetchCollectionSummary);
     const item = {
         id: "item-id",
@@ -55,7 +53,7 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     });
 
     afterEach(() => {
-        wrapper?.destroy();
+        wrapper?.unmount();
         vi.useRealTimers();
         vi.unstubAllGlobals();
     });
@@ -63,7 +61,7 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
     function mountItem() {
         wrapper = mount(GenericItem as object, {
             localVue,
-            router: new VueRouter(),
+            router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
             propsData: { itemId: item.id, itemSrc },
             stubs: { ContentOptions: true, DatasetDetails: true, StatelessTags: true },

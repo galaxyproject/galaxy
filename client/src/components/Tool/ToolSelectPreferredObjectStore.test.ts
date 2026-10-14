@@ -18,8 +18,8 @@ const localVue = getLocalVue(true);
 
 function mountComponent() {
     const wrapper = mount(ToolSelectPreferredObjectStore as object, {
-        propsData: { toolPreferredObjectStoreId: null },
-        localVue,
+        props: { toolPreferredObjectStoreId: null },
+        global: localVue,
     });
     return wrapper;
 }
@@ -53,7 +53,6 @@ describe("ToolSelectPreferredObjectStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const emitted = wrapper.emitted();
-        expect(emitted["updated"]?.[0]?.[1]).toBeFalsy();
+        expect(wrapper.emitted("updated")?.[0]?.[1]).toBeFalsy();
     });
 });

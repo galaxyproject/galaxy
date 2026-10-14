@@ -1,10 +1,11 @@
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
+import FormSelect from "./FormSelect.vue";
 import MountTarget from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
@@ -13,7 +14,7 @@ function createTarget(propsData) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
 
     return mount(MountTarget, {
-        localVue,
+        global: localVue,
         propsData,
         pinia,
     });
@@ -26,7 +27,17 @@ const defaultOptions = [
     ["label_4", 99],
 ];
 
-function testDefaultOptions(wrapper) {
+// vue-multiselect only renders its option list (and thus the SELECTED_VALUE /
+// option-list queries below) while its dropdown is open, so tests need to
+// open it before reading those.
+async function openMultiselect(wrapper) {
+    if (!wrapper.find(".multiselect__content-wrapper").exists()) {
+        await wrapper.find(".multiselect__select").trigger("mousedown");
+    }
+}
+
+async function testDefaultOptions(wrapper) {
+    await openMultiselect(wrapper);
     const target = wrapper.findComponent(MountTarget);
     const options = target.findAll("li > span > div");
     expect(options.length).toBe(4);
@@ -40,10 +51,10 @@ describe("FormSelect", () => {
         const wrapper = createTarget({
             options: defaultOptions,
         });
-        testDefaultOptions(wrapper);
+        await testDefaultOptions(wrapper);
         const noValue = wrapper.find(".multiselect__option--selected");
         expect(noValue.exists()).toBe(false);
-        expect(wrapper.emitted().input[0][0]).toBe("value_1");
+        expect(emittedArg(wrapper, "input")).toBe("value_1");
         await wrapper.setProps({ value: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
@@ -54,6 +65,7 @@ describe("FormSelect", () => {
             options: defaultOptions,
             optional: true,
         });
+        await openMultiselect(wrapper);
         const target = wrapper.findComponent(MountTarget);
         const options = target.findAll("li > span > div");
         expect(options.length).toBe(5);
@@ -64,9 +76,11 @@ describe("FormSelect", () => {
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
         options.at(0).trigger("click");
-        const nullValue = wrapper.emitted().input[0][0];
+        const nullValue = emittedArg(wrapper, "input");
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: null });
+        // Picking an option closes the dropdown, which removes the option list.
+        await openMultiselect(wrapper);
         const unselectDefault = wrapper.find(".multiselect__option--selected");
         expect(unselectDefault.text()).toBe("Nothing selected");
     });
@@ -78,10 +92,11 @@ describe("FormSelect", () => {
             options: defaultOptions,
             value: ["value_1"],
         });
+        await openMultiselect(wrapper);
         const selected = wrapper.findAll(".multiselect__option--selected");
         expect(selected.length).toBe(1);
         selected.at(0).trigger("click");
-        const emitted = wrapper.emitted().input[0][0];
+        const emitted = emittedArg(wrapper, "input");
         expect(emitted).toBe(null);
     });
 
@@ -92,26 +107,45 @@ describe("FormSelect", () => {
             options: defaultOptions,
             value: ["value_1", "", 99],
         });
-        testDefaultOptions(wrapper);
+        await testDefaultOptions(wrapper);
         const selectedValue = wrapper.findAll(".multiselect__option--selected");
         expect(selectedValue.length).toBe(3);
         expect(selectedValue.at(0).text()).toBe("label_1");
         expect(selectedValue.at(1).text()).toBe("label_3");
         expect(selectedValue.at(2).text()).toBe("label_4");
         selectedValue.at(0).trigger("click");
-        const newValue = wrapper.emitted().input[0][0];
+        const newValue = emittedArg(wrapper, "input");
         expect(newValue).toEqual(["", 99]);
         await wrapper.setProps({ value: newValue });
         selectedValue.at(1).trigger("click");
-        const numericValue = wrapper.emitted().input[1][0];
+        const numericValue = emittedArg(wrapper, "input", 1);
         expect(numericValue).toEqual([99]);
         await wrapper.setProps({ value: numericValue });
         selectedValue.at(2).trigger("click");
-        const nullValue = wrapper.emitted().input[2][0];
+        const nullValue = emittedArg(wrapper, "input", 2);
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: nullValue });
         selectedValue.at(0).trigger("click");
-        const finalValue = wrapper.emitted().input[3][0];
+        const finalValue = emittedArg(wrapper, "input", 3);
         expect(finalValue).toEqual(["value_1"]);
+    });
+});
+
+describe("FormSelect accessible names", () => {
+    it("does not name the search input after its id", () => {
+        const wrapper = createTarget({ options: defaultOptions });
+        const input = wrapper.find("input.multiselect__input");
+        expect(input.exists()).toBe(true);
+        expect(input.attributes("aria-label")).toBeUndefined();
+    });
+
+    it("gives each instance its own default id", () => {
+        const options = [{ label: "label_1", value: "value_1" }];
+        const ids = [0, 1].map(() => {
+            const wrapper = mount(FormSelect, { global: localVue, props: { options } });
+            return wrapper.find("input.multiselect__input").attributes("id");
+        });
+        expect(ids[0]).toMatch(/^form-select-/);
+        expect(ids[0]).not.toBe(ids[1]);
     });
 });

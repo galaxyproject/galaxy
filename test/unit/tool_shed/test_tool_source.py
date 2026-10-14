@@ -10,6 +10,7 @@ from ._util import upload_directories_to_repository
 
 def test_get_tool(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     upload_directories_to_repository(provides_repositories, new_repository, "column_maker")
+    assert new_repository.user is not None
     owner = new_repository.user.username
     name = new_repository.name
     encoded_id = f"{owner}~{name}~Add_a_column1"

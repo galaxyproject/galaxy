@@ -109,13 +109,13 @@ describe("ChatInput", () => {
 
         it("emits submit on Enter key (without Shift)", async () => {
             const wrapper = mountInput({ value: "hello" });
-            await wrapper.find("textarea").trigger("keydown.enter");
+            await wrapper.find("textarea").trigger("keydown", { key: "Enter" });
             expect(wrapper.emitted("submit")).toBeTruthy();
         });
 
         it("does not emit submit on Shift+Enter", async () => {
             const wrapper = mountInput({ value: "hello" });
-            await wrapper.find("textarea").trigger("keydown.enter", { shiftKey: true });
+            await wrapper.find("textarea").trigger("keydown", { key: "Enter", shiftKey: true });
             expect(wrapper.emitted("submit")).toBeFalsy();
         });
 
@@ -128,7 +128,7 @@ describe("ChatInput", () => {
             el.selectionEnd = value.length;
 
             await textarea.trigger("input");
-            await textarea.trigger("keydown.enter");
+            await textarea.trigger("keydown", { key: "Enter" });
 
             expect(wrapper.emitted("submit")).toBeTruthy();
         });

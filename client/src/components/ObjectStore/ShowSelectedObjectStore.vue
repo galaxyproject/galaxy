@@ -46,7 +46,11 @@ const loadingMessage = localize("Loading Galaxy storage details");
 <template>
     <div>
         <LoadingSpan v-if="loading" :message="loadingMessage" />
-        <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
+        <DescribeObjectStore
+            v-else-if="objectStore != null"
+            :what="forWhat"
+            :storage-info="objectStore"
+            :interactive="false">
         </DescribeObjectStore>
         <GAlert v-else-if="error" show variant="danger">{{ error }}</GAlert>
     </div>

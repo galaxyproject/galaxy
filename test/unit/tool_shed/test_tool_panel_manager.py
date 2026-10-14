@@ -9,6 +9,9 @@ from galaxy.app_unittest_utils.toolbox_support import (
     BaseToolBoxTestCase,
     SimplifiedToolBox,
 )
+from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
+    InstalledRepositoryMetadataManager,
+)
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_util.toolbox.base import resolve_tool_path
 from galaxy.util import (
@@ -323,6 +326,82 @@ class TestToolPanelManager(BaseToolBoxTestCase):
     @property
     def tvm(self):
         return tool_version_manager.ToolVersionManager(self.ts_app)
+
+
+class TestInstalledRepositoryMetadataManager(BaseToolBoxTestCase):
+    installed_revision = "0123456789ab"
+    current_revision = "abcdef012345"
+
+    def _reset_metadata(self, tool_entries):
+        self._init_dynamic_tool_conf()
+        # Initialize the toolbox before editing its registered configuration on disk.
+        _ = self.toolbox
+        config_path = self._tool_conf_path()
+        repository = self._repo_install(self.installed_revision, config_filename=config_path)
+        repository.changeset_revision = self.current_revision
+        self.app.tool_shed_registry.tool_sheds["example"] = "https://github.com"
+        _, relative_install_dir = repository.get_tool_relative_path(self.app)
+        tool_config = os.path.join(relative_install_dir, repository.name, "tool.xml")
+        os.makedirs(os.path.dirname(self._tool_path(tool_config)))
+        self._init_tool(filename=tool_config)
+        guid = "github.com/repos/galaxyproject/example/test_tool/1.0"
+        with open(config_path, "w") as config:
+            config.write(
+                f'<toolbox tool_path="{self.test_directory}" monitor="true">'
+                + tool_entries.format(tool_config=tool_config, guid=guid)
+                + "</toolbox>"
+            )
+
+        manager = InstalledRepositoryMetadataManager(self.app, repository=repository)
+        manager.reset_all_metadata_on_installed_repository()
+
+        assert not manager.invalid_file_tups
+        self.app.install_model.context.expire(repository, ["metadata_"])
+        assert repository.metadata_["tools"][0]["guid"] == guid
+        assert repository.metadata_["tools"][0]["tool_config"] == tool_config
+        assert repository.changeset_revision == self.current_revision
+        return parse_xml(config_path).getroot(), tool_config
+
+    def _assert_installed_revision(self, tool_entries):
+        root, tool_config = self._reset_metadata(tool_entries)
+        tool_elem = root.find(".//tool")
+        assert tool_elem is not None
+        assert tool_elem.findtext("installed_changeset_revision") == self.installed_revision
+        assert tool_elem.get("file") == tool_config
+        assert tool_elem.findtext("version") == "1.0"
+
+    def test_reset_preserves_installed_revision_outside_section(self):
+        self._assert_installed_revision('<tool file="{tool_config}" guid="{guid}"><version>old</version></tool>')
+
+    def test_reset_preserves_installed_revision_in_section(self):
+        self._assert_installed_revision(
+            '<section id="example" name="Example">'
+            '<tool file="{tool_config}" guid="{guid}"><version>old</version></tool>'
+            "</section>"
+        )
+
+    def test_reset_preserves_each_tool_placement_attributes(self):
+        root, _ = self._reset_metadata(
+            '<tool file="{tool_config}" guid="{guid}" hidden="True" labels="custom"/>'
+            '<section id="example" name="Example" version="1">'
+            '<label id="label" text="Tools"/>'
+            '<tool file="{tool_config}" guid="{guid}" hidden="False"/>'
+            '<tool file="{tool_config}" guid="{guid}"/>'
+            '<tool file="unrelated.xml" guid="unrelated" hidden="True"><version>2</version></tool>'
+            '</section><label id="end" text="End"/>'
+        )
+
+        tools = root.findall(".//tool")
+        assert [tool.get("hidden") for tool in tools] == ["True", "False", None, "True"]
+        assert tools[0].get("labels") == "custom"
+        assert [tool.findtext("version") for tool in tools] == ["1.0", "1.0", "1.0", "2"]
+        assert dict(tools[-1].attrib.items()) == {"file": "unrelated.xml", "guid": "unrelated", "hidden": "True"}
+        assert root.get("monitor") == "true"
+        assert [elem.tag for elem in root] == ["tool", "section", "label"]
+        section = root.find("section")
+        assert section is not None
+        assert dict(section.attrib.items()) == {"id": "example", "name": "Example", "version": "1"}
+        assert [elem.tag for elem in section] == ["label", "tool", "tool", "tool"]
 
 
 GUID_V2 = DEFAULT_GUID + "v/2"

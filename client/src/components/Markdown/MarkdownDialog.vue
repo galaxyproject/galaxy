@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, ref } from "vue";
 
 import { getHistories, getInvocations, getJobs, getWorkflows } from "@/components/SelectionField/services";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -12,8 +11,6 @@ import MarkdownSelector from "./MarkdownSelector.vue";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
 import BasicSelectionDialog from "@/components/SelectionDialog/BasicSelectionDialog.vue";
 import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
-
-Vue.use(BootstrapVue);
 
 interface MarkdownDialogProps {
     argumentName?: string;

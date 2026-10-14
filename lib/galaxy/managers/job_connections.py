@@ -57,6 +57,7 @@ class JobConnectionsManager:
             # Add found related items' hids to result list
             for val in graph["outputs"] + graph["inputs"]:
                 item_class = get_class(val["src"])
+                assert item_class in (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)
                 item_hid = self.sa_session.execute(select(item_class.hid).where(item_class.id == val["id"])).scalar()
                 result.append(item_hid)  # type: ignore[arg-type]
         return result

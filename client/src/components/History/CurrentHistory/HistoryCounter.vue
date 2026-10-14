@@ -14,7 +14,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { variantToColor } from "@/components/BaseComponents/variantToColor";
@@ -43,7 +43,6 @@ const props = withDefaults(
     }>(),
     {
         isWatching: false,
-        lastChecked: () => new Date(),
         filterText: "",
         showControls: false,
         hideReload: false,
@@ -89,8 +88,7 @@ function onDashboard() {
 }
 
 function setFilter(filter: string) {
-    let newFilterText = "";
-    let settings = {};
+    let settings: Record<string, unknown>;
     if (filter == "") {
         settings = {
             deleted: false,
@@ -103,7 +101,7 @@ function setFilter(filter: string) {
             visible: filter === "visible" ? newVal : getCurrentFilterVal("visible"),
         };
     }
-    newFilterText = HistoryFilters.applyFiltersToText(settings, props.filterText);
+    const newFilterText = HistoryFilters.applyFiltersToText(settings, props.filterText);
     emit("update:filter-text", newFilterText);
 }
 

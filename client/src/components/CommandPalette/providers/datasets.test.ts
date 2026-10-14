@@ -7,7 +7,7 @@ import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx, renderedSections } from "../test-utils";
 import { datasetsProvider } from "./datasets";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -44,10 +44,6 @@ function makeDataset(id: string, name: string, updateTime: string): HDASummary {
 
 const ALPHA = makeDataset("d1", "alpha reads", "2026-01-03T00:00:00");
 const BETA = makeDataset("d2", "beta reads", "2026-01-05T00:00:00");
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
 
 /** Serves the unfiltered "latest" list, and name-filters for search fetches */
 function mockLoadDatasets(all = [ALPHA, BETA]) {
@@ -119,7 +115,7 @@ describe("datasetsProvider", () => {
 
         // queries without a single local match: the complete cache answers them
         await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zzz", makeCtx());
+        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zzz", makeCtx()));
 
         expect(sections).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
@@ -136,7 +132,7 @@ describe("datasetsProvider", () => {
         await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
         vi.mocked(loadDatasets).mockClear();
 
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
+        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx()));
 
         expect(sections).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
@@ -149,7 +145,7 @@ describe("datasetsProvider", () => {
 
         // a later palette session, past the refresh interval
         resetListRefreshTracking();
-        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        const sections = renderedSections(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx()));
 
         expect(sections[0]?.items.map((i) => i.id)).toEqual(["datasets:d2", "datasets:d1"]);
         expect(loadDatasets).toHaveBeenCalledTimes(1);
@@ -179,15 +175,6 @@ describe("datasetsProvider", () => {
         const items = await datasetsProvider.search("beta", makeCtx());
 
         expect(items.map((i) => i.id)).toEqual(["datasets:d2"]);
-        expect(loadDatasets).not.toHaveBeenCalled();
-    });
-
-    it("returns nothing for anonymous users", async () => {
-        mockLoadDatasets();
-        const ctx = makeCtx({ isAnonymous: true });
-        expect(await datasetsProvider.search("alpha", ctx)).toEqual([]);
-        expect(await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", ctx)).toEqual([]);
-        expect(datasetsProvider.emptyQueryItems?.(ctx)).toEqual([]);
         expect(loadDatasets).not.toHaveBeenCalled();
     });
 });

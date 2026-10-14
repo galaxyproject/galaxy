@@ -47,9 +47,11 @@ const USER_OBJECT_STORE_DATA = {
 
 function mountWithPreferredStoreId(preferredObjectStoreId) {
     const wrapper = mount(ShowSelectedObjectStore, {
-        propsData: { preferredObjectStoreId, forWhat: "Data goes into..." },
-        localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        props: { preferredObjectStoreId, forWhat: "Data goes into..." },
+        global: {
+            ...localVue,
+            plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
+        },
     });
     return wrapper;
 }
@@ -69,6 +71,8 @@ describe("ShowSelectedObjectStore", () => {
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();
         expect(wrapper.findComponent(DescribeObjectStore).exists()).toBeTruthy();
+        // Shown inside hover popovers, which can't hold another interactive popover.
+        expect(wrapper.findComponent(DescribeObjectStore).props("interactive")).toBe(false);
     });
 
     it("should fetch from the user based object store APIs for dynamic ids that are uris", async () => {

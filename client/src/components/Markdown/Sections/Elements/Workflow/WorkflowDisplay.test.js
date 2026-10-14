@@ -1,25 +1,40 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./WorkflowDisplay.vue";
+import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
+
+// Translates only what a test asks for, so the other assertions see the source strings.
+const translations = vi.hoisted(() => ({}));
+vi.mock("@/utils/localization", async (importOriginal) => {
+    const actual = await importOriginal();
+    const localize = (text) => translations[text] ?? actual.localize(text);
+    return { ...actual, default: localize, localize };
+});
 
 const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
 
 let getRequests = [];
+let stepWrappers = [];
 
 beforeEach(() => {
     getRequests = [];
 });
 
-function mountDefault() {
-    const data = {
-        name: "workflow_name",
-    };
+afterEach(() => {
+    stepWrappers.forEach((wrapper) => wrapper.unmount());
+    stepWrappers = [];
+    document.body.innerHTML = "";
+    Object.keys(translations).forEach((text) => delete translations[text]);
+});
+
+function mountDefault(data = { name: "workflow_name" }) {
     server.use(
         http.untyped.get("/api/workflows/workflow_id/download", ({ request }) => {
             getRequests.push({ url: request.url });
@@ -27,12 +42,13 @@ function mountDefault() {
         }),
     );
     return mount(MountTarget, {
-        propsData: {
+        props: {
             workflowId: "workflow_id",
             embedded: false,
             expanded: false,
         },
-        localVue,
+        // ToolLinkPopover fetches tool details we don't mock here
+        global: { ...localVue, stubs: { ...localVue.stubs, ToolLinkPopover: true } },
     });
 }
 
@@ -46,16 +62,101 @@ function mountError(errContent) {
         }),
     );
     return mount(MountTarget, {
-        propsData: {
+        props: {
             workflowId: "workflow_id",
             embedded: false,
             expanded: false,
         },
-        localVue,
+        global: localVue,
     });
 }
 
+function mountWithSteps(steps) {
+    server.use(
+        http.untyped.get("/api/workflows/workflow_id/download", () => {
+            return HttpResponse.json({ name: "workflow_name", steps });
+        }),
+    );
+    const wrapper = mount(MountTarget, {
+        attachTo: document.body,
+        props: {
+            workflowId: "workflow_id",
+            embedded: false,
+            expanded: false,
+        },
+        // The real button and popover, so the assertions see the markup users get.
+        global: { ...localVue, stubs: { ...localVue.stubs, ToolLink: true, WorkflowTree: true } },
+    });
+    stepWrappers.push(wrapper);
+    return wrapper;
+}
+
 describe("WorkflowDisplay", () => {
+    it("renders a tool step's details button before its title, controlling the tool dialog", async () => {
+        const wrapper = mountWithSteps([
+            { order_index: 0, type: "data_input" },
+            { order_index: 1, type: "tool", tool_id: "cat1", tool_version: "1.0.0" },
+        ]);
+        await flushPromises();
+
+        const buttons = wrapper.findAll("button[aria-label='Tool details']");
+        expect(buttons).toHaveLength(1);
+        const button = buttons.at(0).element;
+        const dialog = document.body.querySelector(".popover[role='dialog']");
+        expect(button.previousElementSibling).toBeNull();
+        expect(button.getAttribute("type")).toBe("button");
+        expect(button.classList.value).toBe("g-link g-dark g-thin");
+        // The same tool icon as the other step types, so the button is never empty.
+        expect(buttons.at(0).findComponent(WorkflowStepIcon).props("stepType")).toBe("tool");
+        expect(button.querySelector("svg").classList.value).toBe("svg-inline--fa fa-wrench mr-1");
+        expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+        expect(button.getAttribute("aria-expanded")).toBe("false");
+        expect(button.getAttribute("aria-controls")).toBe(dialog.id);
+        expect(dialog.getAttribute("aria-label")).toBe("Tool");
+        expect(dialog.querySelector("tool-link-stub").getAttribute("toolid")).toBe("cat1");
+        expect(button.nextElementSibling.className).toBe("g-popover-host");
+        expect(button.nextElementSibling.nextElementSibling.textContent).toBe("Step 2: Unknown tool");
+    });
+
+    it("opens a tool step's dialog when its button gets keyboard focus", async () => {
+        const wrapper = mountWithSteps([{ order_index: 1, type: "tool", tool_id: "cat1", tool_version: "1.0.0" }]);
+        await flushPromises();
+        const button = wrapper.find("button[aria-label='Tool details']").element;
+
+        button.focus();
+        await nextTick();
+
+        expect(button.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("shows no tool details button for a tool step without a tool", async () => {
+        const wrapper = mountWithSteps([{ order_index: 0, type: "tool" }]);
+        await flushPromises();
+
+        expect(wrapper.find("[aria-label='Tool details']").exists()).toBe(false);
+        expect(wrapper.findComponent(WorkflowStepIcon).props("stepType")).toBe("tool");
+        expect(document.body.querySelector(".popover")).toBeNull();
+    });
+
+    it("localizes the tool step button's accessible name", async () => {
+        translations["Tool details"] = "Werkzeugdetails";
+        const wrapper = mountWithSteps([{ order_index: 1, type: "tool", tool_id: "cat1", tool_version: "1.0.0" }]);
+        await flushPromises();
+
+        expect(wrapper.find("button[aria-label='Werkzeugdetails']").exists()).toBe(true);
+    });
+
+    it("gives each instance its own step button ids", async () => {
+        const steps = [{ order_index: 1, type: "tool", tool_id: "cat1", tool_version: "1.0.0" }];
+        const first = mountWithSteps(steps);
+        const second = mountWithSteps(steps);
+        await flushPromises();
+
+        const id = (wrapper) => wrapper.find("[aria-label='Tool details']").attributes("id");
+        expect(id(first)).toMatch(/-step-1$/);
+        expect(id(first)).not.toBe(id(second));
+    });
+
     it("basics", async () => {
         const wrapper = mountDefault();
         await flushPromises();
@@ -68,6 +169,31 @@ describe("WorkflowDisplay", () => {
         expect(getRequests.length).toBe(1);
         expect(getRequests[0].url).toContain("/api/workflows/workflow_id/download");
         expect(getRequests[0].url).toContain("style=preview");
+    });
+
+    it("renders numbered step titles from preview steps", async () => {
+        const wrapper = mountDefault({
+            name: "workflow_name",
+            // deliberately out of array order to prove numbering comes from order_index
+            steps: [
+                {
+                    order_index: 1,
+                    type: "tool",
+                    label: "My cool tool",
+                    tool_id: "cat1",
+                    tool_version: "1.0",
+                    inputs: [],
+                },
+                { order_index: 2, type: "subworkflow", label: "My subworkflow", inputs: [] },
+                { order_index: 0, type: "data_input", label: "Input dataset", inputs: [] },
+            ],
+        });
+        await flushPromises();
+        const text = wrapper.text();
+        expect(text).toContain("Step 1: Input dataset");
+        expect(text).toContain("Step 2: My cool tool");
+        expect(text).toContain("Step 3: My subworkflow");
+        expect(text).not.toContain("NaN");
     });
 
     it("error message as object", async () => {

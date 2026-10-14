@@ -32,7 +32,7 @@ const emit = defineEmits<{
     (e: "input", value: OnCompleteAction[]): void;
 }>();
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
 
 const notificationSystemEnabled = computed(
@@ -182,7 +182,7 @@ const exportSummary = computed(() => {
             </BFormGroup>
 
             <GModal
-                :show.sync="showExportWizard"
+                v-model:show="showExportWizard"
                 title="Configure Export on Completion"
                 size="medium"
                 data-test-id="export-wizard-modal">

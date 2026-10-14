@@ -21,6 +21,8 @@ const targetId = computed(() => `storage-run-item-dataset-${props.datasetId}`);
 const details = computed(() => datasetStore.storedDatasets[props.datasetId]);
 const loading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
 const loadError = computed(() => datasetStore.getDatasetError(props.datasetId)?.message);
+// The trigger reads as the encoded id, so name the dialog by the dataset.
+const popoverName = computed(() => details.value?.name || localize("Dataset details"));
 
 async function ensureDatasetDetails() {
     if (details.value || loading.value) {
@@ -43,12 +45,18 @@ async function ensureDatasetDetails() {
             :id="targetId"
             class="text-monospace"
             :to="`/datasets/${datasetId}/details`"
-            @mouseenter.native="ensureDatasetDetails"
-            @focus.native="ensureDatasetDetails">
+            @mouseenter="ensureDatasetDetails"
+            @focus="ensureDatasetDetails">
             {{ datasetId }}
         </router-link>
 
-        <GPopover :target="targetId" triggers="hover focus" boundary="window" placement="right">
+        <GPopover
+            interactive
+            :aria-label="popoverName"
+            :target="targetId"
+            triggers="hover focus"
+            boundary="window"
+            placement="right">
             <div class="dataset-details-popover">
                 <div v-if="loading">
                     <LoadingSpan :message="localize('Loading dataset details')" />
@@ -65,7 +73,7 @@ async function ensureDatasetDetails() {
 </template>
 
 <style scoped>
-:deep(.dataset-details-popover) {
+.dataset-details-popover {
     max-width: 420px;
 }
 </style>

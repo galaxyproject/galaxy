@@ -1,10 +1,8 @@
 <script lang="ts">
-/* cannot use a setup block and get params injection in Vue 2.7 I think */
-
 import { faLink, faUndo, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ICellRendererParams } from "ag-grid-community";
-import { defineComponent } from "vue";
+import { defineComponent, type PropType } from "vue";
 
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 
@@ -16,9 +14,12 @@ export default defineComponent({
     components: {
         FontAwesomeIcon,
     },
+    props: {
+        // ag-grid-vue3 mounts cell renderers with their params as this prop
+        params: { type: Object as PropType<ICellRendererParams>, required: true },
+    },
     data() {
         return {
-            params: {} as ICellRendererParams,
             showHid: showHid,
             faLink,
             faUndo,

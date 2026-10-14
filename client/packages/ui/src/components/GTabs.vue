@@ -25,9 +25,14 @@ export interface TabsContext {
     tabsCard: boolean;
 }
 
+defineOptions({
+    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
+    compatConfig: { COMPONENT_V_MODEL: false },
+});
+
 const props = withDefaults(
     defineProps<{
-        value?: number;
+        modelValue?: number;
         justified?: boolean;
         fill?: boolean;
         pills?: boolean;
@@ -38,7 +43,7 @@ const props = withDefaults(
         scrollableContent?: boolean;
     }>(),
     {
-        value: undefined,
+        modelValue: undefined,
         justified: false,
         fill: false,
         pills: false,
@@ -50,16 +55,16 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "input", index: number): void;
+    (e: "update:modelValue", index: number): void;
 }>();
 
 const internalActive = ref(0);
 
 const activeIndex = computed({
-    get: () => (props.value !== undefined ? props.value : internalActive.value),
+    get: () => (props.modelValue !== undefined ? props.modelValue : internalActive.value),
     set: (val: number) => {
         internalActive.value = val;
-        emit("input", val);
+        emit("update:modelValue", val);
     },
 });
 
@@ -94,7 +99,7 @@ function setActive(index: number) {
 }
 
 watch(
-    () => props.value,
+    () => props.modelValue,
     (val) => {
         if (val !== undefined) {
             internalActive.value = val;
@@ -256,6 +261,68 @@ const TabTitleContent = defineComponent({
             overflow-y: auto;
             overflow-x: hidden;
         }
+    }
+}
+</style>
+
+<style lang="scss">
+// Baseline for consumers without Bootstrap (the Tool Shed). Every rule sits in :where(), so
+// it has zero specificity and Bootstrap plus the client's theme still win wherever they load.
+// Keep to properties Bootstrap's nav rules also set, or the client picks up the extra.
+:where(.tabs .nav) {
+    display: flex;
+    flex-wrap: wrap;
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
+}
+
+:where(.tabs .nav-link) {
+    display: block;
+    padding: var(--spacing-2) var(--spacing-4);
+    color: var(--color-blue-700);
+    text-decoration: none;
+
+    &:hover,
+    &:focus {
+        text-decoration: none;
+    }
+
+    &.disabled {
+        color: var(--color-grey-500);
+        pointer-events: none;
+        cursor: default;
+    }
+}
+
+:where(.tabs .nav-tabs) {
+    border-bottom: 1px solid var(--color-grey-300);
+}
+
+:where(.tabs .nav-tabs .nav-link) {
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+
+    &:hover,
+    &:focus {
+        border-color: var(--color-grey-200) var(--color-grey-200) var(--color-grey-300);
+    }
+
+    &.active {
+        color: var(--color-grey-800);
+        background-color: white;
+        border-color: var(--color-grey-300) var(--color-grey-300) white;
+    }
+}
+
+:where(.tabs .nav-pills .nav-link) {
+    border-radius: 0.25rem;
+
+    &.active {
+        color: white;
+        background-color: var(--color-blue-600);
     }
 }
 </style>

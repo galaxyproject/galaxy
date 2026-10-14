@@ -21,6 +21,7 @@ FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "http_file_sources_conf.yml")
 FILE_SOURCES_CONF_WITHOUT_STOCK = os.path.join(SCRIPT_DIRECTORY, "http_without_stock_file_sources_conf.yml")
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_http_specific():
     test_url = "https://www.usegalaxy.org/myfile.txt"
@@ -52,6 +53,7 @@ def test_plugins_to_dict_serializes_only_best_matching_http_source():
     assert [plugin["id"] for plugin in plugins] == ["test1"]
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_another_http_specific():
     test_url = "http://www.galaxyproject.org/anotherfile.txt"
@@ -71,6 +73,7 @@ def test_file_source_another_http_specific():
     assert_realizes_as(file_sources, test_url, "hello another world", user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_http_generic():
     test_url = "https://www.elsewhere.org/myfile.txt"
@@ -91,6 +94,7 @@ def test_file_source_http_generic():
     assert_realizes_as(file_sources, test_url, "hello generic world", user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_http_decodes_content_encoding():
     test_url = "https://www.elsewhere.org/compressed.txt"
@@ -107,6 +111,7 @@ def test_file_source_http_decodes_content_encoding():
     assert_realizes_as(file_sources, test_url, content.decode(), user_context=user_context)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_http_leaves_reused_fd_open(tmp_path):
     test_url = "https://www.elsewhere.org/myfile.txt"
@@ -171,6 +176,7 @@ def test_file_source_http_without_stock_generic():
         file_sources.get_file_source_path(test_url)
 
 
+@pytest.mark.usefixtures("fake_public_dns")
 @responses.activate
 def test_file_source_http_without_stock_specific():
     test_url = "https://www.usegalaxy.org/myfile2.txt"
@@ -224,3 +230,41 @@ def test_file_source_http_with_control_character_error(character):
     with pytest.raises(ValueError, match="URL contains unencoded characters"):
         file_source_pair = file_sources.get_file_source_path(test_url)
         file_source_pair.file_source.realize_to(file_source_pair.path, "/tmp/test", user_context=user_context)
+
+
+def _realize_capturing_request_url(test_url: str, tmp_path) -> str:
+    requested = []
+
+    def capture_url(request):
+        requested.append(request.url)
+        return 200, {}, "ok"
+
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
+    url_without_query = urllib.parse.urlsplit(test_url)._replace(query="").geturl()
+    with responses.RequestsMock() as mocked:
+        mocked.add_callback(responses.GET, url_without_query, callback=capture_url)
+        file_source_pair.file_source.realize_to(
+            file_source_pair.path, str(tmp_path / "realized"), user_context=user_context_fixture()
+        )
+    assert len(requested) == 1
+    return requested[0]
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_percent_encodes_unsafe_query_characters(tmp_path):
+    test_url = (
+        "https://erddap.example.org/erddap/tabledap/data.geoJson?pres,time"
+        '&pres>=0&pres<=10&time>=2025-01-01T00%3A00%3A00Z&pres_qc="1"'
+    )
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert requested_url == (
+        "https://erddap.example.org/erddap/tabledap/data.geoJson?pres,time"
+        "&pres%3E=0&pres%3C=10&time%3E=2025-01-01T00%3A00%3A00Z&pres_qc=%221%22"
+    )
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_keeps_encoded_url_unchanged(tmp_path):
+    test_url = "https://www.elsewhere.org/a%20b%2Fc.txt?q=%22x%22&t=00%3A00"
+    assert _realize_capturing_request_url(test_url, tmp_path) == test_url

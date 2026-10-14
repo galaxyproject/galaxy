@@ -61,6 +61,7 @@ const emit = defineEmits<{
     (e: "mouseup", event: MouseEvent): void;
     (e: "mousedown", event: MouseEvent): void;
     (e: "start"): void;
+    (e: "stop"): void;
 }>();
 
 let isPanning = false;
@@ -165,6 +166,7 @@ function onStart() {
 
 <template>
     <Draggable
+        v-bind="$attrs"
         :root-offset="rootOffset"
         :position="props.position"
         :prevent-default="preventDefault"
@@ -176,8 +178,8 @@ function onStart() {
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
-        @mousedown="(e) => emit('mousedown', e)"
-        v-on="$listeners">
+        @stop="emit('stop')"
+        @mousedown="(e: MouseEvent) => emit('mousedown', e)">
         <slot></slot>
     </Draggable>
 </template>

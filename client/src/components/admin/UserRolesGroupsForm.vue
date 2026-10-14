@@ -5,7 +5,7 @@ import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -136,10 +136,10 @@ loadData();
                                 track-by="id"
                                 placeholder="Select or search roles..."
                                 @search-change="onRoleSearch">
-                                <template slot="noResult">
+                                <template v-slot:noResult>
                                     <div>No roles found</div>
                                 </template>
-                                <template slot="noOptions">
+                                <template v-slot:noOptions>
                                     <div>No roles found</div>
                                 </template>
                             </Multiselect>

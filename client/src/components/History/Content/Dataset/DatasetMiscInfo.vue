@@ -2,7 +2,7 @@
 import { faUserLock, faUsersCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";

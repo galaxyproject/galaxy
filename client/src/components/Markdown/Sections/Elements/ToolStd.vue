@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BCard } from "bootstrap-vue";
 import { computed, toRef, watch } from "vue";
 
 import { useJobStore } from "@/stores/jobStore";
@@ -55,7 +56,7 @@ const jobContent = computed(() => {
 </script>
 
 <template>
-    <b-card nobody class="content-height">
+    <BCard nobody class="content-height">
         <JobSelection
             v-model="selectedJob"
             :job-id="jobId"
@@ -65,7 +66,7 @@ const jobContent = computed(() => {
                 <pre><code class="word-wrap-normal">{{ jobContent }}</code></pre>
             </div>
         </JobSelection>
-    </b-card>
+    </BCard>
 </template>
 
 <style scoped>

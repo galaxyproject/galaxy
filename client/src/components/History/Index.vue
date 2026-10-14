@@ -41,14 +41,14 @@ function onViewCollection(collection: CollectionEntry, currentOffset?: number) {
             :filterable="true"
             @view-collection="onViewCollection">
             <template v-slot:navigation>
-                <HistoryNavigation :history="currentHistory" @show="(val) => emit('show', val)" />
+                <HistoryNavigation :history="currentHistory" @show="(val: boolean) => emit('show', val)" />
             </template>
         </HistoryPanel>
 
         <CurrentCollection
             v-else-if="breadcrumbs.length"
+            v-model:selected-collections="breadcrumbs"
             :history="currentHistory"
-            :selected-collections.sync="breadcrumbs"
             @view-collection="onViewCollection" />
 
         <div v-else>

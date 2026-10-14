@@ -17,8 +17,8 @@
                     class="rounded-0 m-0 p-2"
                     :variant="config.message_box_class || 'info'">
                     <span class="fa fa-fw mr-1 fa-exclamation" />
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span v-html="config.message_box_content"></span>
+                    <!-- eslint-disable-next-line vue/no-restricted-syntax -- message_box_content only comes from the operator's galaxy.yml, and sites put embeds and styled banners in it -->
+                    <span v-no-sanitize-html="config.message_box_content"></span>
                 </Alert>
                 <Alert
                     v-if="showInactivityWarning && config.inactivity_box_content"
@@ -33,12 +33,18 @@
                 </Alert>
             </template>
 
+            <Alert v-if="(configLoadError || userLoadError) && !embedded" id="startup-load-error" variant="danger">
+                <div v-if="configLoadError">Unable to load the Galaxy configuration: {{ configLoadError }}</div>
+                <div v-if="userLoadError">Unable to load your user data: {{ userLoadError }}</div>
+                <button type="button" class="btn btn-link p-0" @click="retryStartupLoad">Retry</button>
+            </Alert>
+
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <template v-if="!embedded">
             <div id="dd-helper" />
             <GToast />
-            <CommandPalette />
+            <CommandPalette v-if="paletteEnabled" />
             <ConfirmDialog ref="confirmDialogRef" />
             <BroadcastsOverlay />
             <DragGhost />
@@ -49,17 +55,18 @@
         </template>
     </div>
 </template>
-<script>
+<script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { computed, onMounted, ref, watch } from "vue";
+import { type Router, useRoute, useRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
-import short from "@/components/plugins/short";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { useRouteQueryBool } from "@/composables/route";
-import { useToast } from "@/composables/toast";
+import { useHasStagedUploads } from "@/composables/upload/useUploadStaging";
+import { useCommandPalette } from "@/composables/useCommandPalette";
 import { getAppRoot } from "@/onload";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -78,175 +85,167 @@ import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsO
 import TourRunner from "@/components/Tour/TourRunner.vue";
 import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
 
-export default {
-    components: {
-        Alert,
-        CommandPalette,
-        DragGhost,
-        Masthead,
-        WindowManagerWindow,
-        GToast,
-        ConfirmDialog,
-        BroadcastsOverlay,
-        TourRunner,
-    },
-    directives: {
-        short,
-    },
-    setup() {
-        const tourStore = useTourStore();
-        const { currentTour } = storeToRefs(tourStore);
+// router.js reads this before each navigation to decide whether to prompt about unsaved changes.
+type ConfirmableRouter = Router & { confirmation?: boolean | null };
 
-        const { error: toastError } = useToast();
-        const userStore = useUserStore();
-        const { currentTheme } = storeToRefs(userStore);
+const galaxy = getGalaxyInstance();
+const config = galaxy.config;
+const resendUrl = `${getAppRoot()}user/resend_verification`;
 
-        const confirmDialogRef = ref(null);
-        setConfirmDialogComponentRef(confirmDialogRef);
+const route = useRoute();
+const router = useRouter() as ConfirmableRouter;
 
-        const windowManagerStore = useWindowManagerStore();
+const tourStore = useTourStore();
+const { currentTour } = storeToRefs(tourStore);
 
-        // Treat any iframe context as embedded: scratchbook pops dataset
-        // displays into ``WinBox`` iframes that hit the same routes without
-        // an ``embed`` query param, and each one would otherwise open its own
-        // SSE + polling traffic, quickly saturating the HTTP/1.1 per-origin
-        // connection pool (e.g. ``test_scratchbook_window_persistence`` hangs
-        // indefinitely after two windows are open).
-        const inIframe = (() => {
-            if (typeof window === "undefined") {
-                return false;
-            }
-            try {
-                return window.top !== window.self;
-            } catch {
-                // Cross-origin access throws — that's definitely an iframe.
-                return true;
-            }
-        })();
-        const embeddedQuery = useRouteQueryBool("embed");
-        const embedded = computed(() => embeddedQuery.value || inIframe);
-        const historyStore = useHistoryStore();
-        if (!embedded.value) {
-            historyStore.startWatchingHistory();
-        }
+const userStore = useUserStore();
+const { currentTheme } = storeToRefs(userStore);
 
-        watch(
-            () => embedded.value,
-            () => {
-                if (embedded.value) {
-                    userStore.$reset();
-                } else {
-                    userStore.loadUser().catch((error) => {
-                        toastError(errorMessageAsString(error), "Failed to load user or histories");
-                    });
-                }
-            },
-            { immediate: true },
-        );
+const confirmDialogRef = ref<InstanceType<typeof ConfirmDialog> | null>(null);
+// Vue 3 doesn't unwrap a ref stored in a ref, so pass the instance, not the ref.
+watch(confirmDialogRef, (instance) => setConfirmDialogComponentRef(instance));
 
-        const confirmation = ref(null);
-        const route = useRoute();
-        watch(
-            () => route.fullPath,
-            (newVal, oldVal) => {
-                // sometimes, the confirmation is not cleared when the route changes
-                // and the confirmation alert is shown needlessly
-                if (confirmation.value) {
-                    confirmation.value = null;
-                }
+const windowManagerStore = useWindowManagerStore();
+const hasStagedUploads = useHasStagedUploads();
 
-                // if we are on a tour route, start a tour if it wasn't already started or change tours
-                if ("tourId" in route.params && route.params.tourId && route.params.tourId !== currentTour.value?.id) {
-                    tourStore.setTour(route.params.tourId);
-                }
-            },
-            { immediate: true },
-        );
+// Unmounting the palette takes its ctrl/cmd+k listener with it, so an
+// instance that turned it off runs none of its code. The open state
+// outlives the component, so a logout that revokes access closes it.
+const { paletteEnabled, closePalette } = useCommandPalette();
+watch(paletteEnabled, (enabled) => {
+    if (!enabled) {
+        closePalette();
+    }
+});
 
-        return {
-            confirmation,
-            confirmDialogRef,
-            currentTheme,
-            embedded,
-            currentTour,
-            windowManagerStore,
-        };
-    },
-    data() {
-        return {
-            config: getGalaxyInstance().config,
-            resendUrl: `${getAppRoot()}user/resend_verification`,
-        };
-    },
-    computed: {
-        showInactivityWarning() {
-            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
-        },
-        showMasthead() {
-            const masthead = this.$route.query.hide_masthead;
-            if (masthead !== undefined) {
-                return masthead.toLowerCase() != "true";
-            }
-            return true;
-        },
-        theme() {
-            if (this.embedded) {
-                return null;
-            }
+// Treat any iframe context as embedded: scratchbook pops dataset
+// displays into ``WinBox`` iframes that hit the same routes without
+// an ``embed`` query param, and each one would otherwise open its own
+// SSE + polling traffic, quickly saturating the HTTP/1.1 per-origin
+// connection pool (e.g. ``test_scratchbook_window_persistence`` hangs
+// indefinitely after two windows are open).
+function isInIframe(): boolean {
+    if (typeof window === "undefined") {
+        return false;
+    }
+    try {
+        return window.top !== window.self;
+    } catch {
+        // Cross-origin access throws -- that's definitely an iframe.
+        return true;
+    }
+}
+const inIframe = isInIframe();
+const embeddedQuery = useRouteQueryBool("embed");
+const embedded = computed(() => embeddedQuery.value || inIframe);
+const historyStore = useHistoryStore();
+if (!embedded.value) {
+    historyStore.startWatchingHistory();
+}
 
-            const themeKeys = Object.keys(this.config.themes);
-            if (themeKeys.length > 0) {
-                const foundTheme = themeKeys.includes(this.currentTheme);
-                const selectedTheme = foundTheme ? this.currentTheme : themeKeys[0];
-                return this.config.themes[selectedTheme];
-            }
-            return null;
-        },
-        windowTab() {
-            return this.windowManagerStore.getTab();
-        },
-    },
-    watch: {
-        confirmation() {
-            console.debug("App - Confirmation before route change: ", this.confirmation);
-            this.$router.confirmation = this.confirmation;
-        },
-    },
-    mounted() {
-        if (!this.embedded) {
-            this.Galaxy = getGalaxyInstance();
-            if (this.showMasthead) {
-                this.Galaxy.frame = this.windowManagerStore;
-                this.windowManagerStore.restore();
-            }
-            if (this.Galaxy.config.interactivetools_enable) {
-                this.startWatchingEntryPoints();
-            }
-            if (this.Galaxy.config.enable_notification_system) {
-                this.startWatchingNotifications();
-            }
+const configStore = useConfigStore();
+const { loadError: configLoadError } = storeToRefs(configStore);
+
+const userLoadError = ref("");
+async function loadUser() {
+    userLoadError.value = "";
+    try {
+        await userStore.loadUser();
+    } catch (error) {
+        userLoadError.value = errorMessageAsString(error);
+    }
+}
+
+function retryStartupLoad() {
+    if (configLoadError.value) {
+        configStore.loadConfig();
+    }
+    if (userLoadError.value) {
+        loadUser();
+    }
+}
+
+watch(
+    () => embedded.value,
+    () => {
+        if (embedded.value) {
+            userStore.$reset();
+        } else {
+            loadUser();
         }
     },
-    created() {
-        if (!this.embedded) {
-            window.onbeforeunload = () => {
-                if (this.confirmation || this.windowManagerStore.beforeUnload()) {
-                    return "Are you sure you want to leave the page?";
-                }
-            };
+    { immediate: true },
+);
+
+const confirmation = ref<boolean | null>(null);
+watch(
+    () => route.fullPath,
+    () => {
+        // sometimes, the confirmation is not cleared when the route changes
+        // and the confirmation alert is shown needlessly
+        if (confirmation.value) {
+            confirmation.value = null;
+        }
+
+        // if we are on a tour route, start a tour if it wasn't already started or change tours
+        const tourId = route.params.tourId;
+        if (typeof tourId === "string" && tourId && tourId !== currentTour.value?.id) {
+            tourStore.setTour(tourId);
         }
     },
-    methods: {
-        startWatchingEntryPoints() {
-            const entryPointStore = useEntryPointStore();
-            entryPointStore.startWatchingEntryPoints();
-        },
-        startWatchingNotifications() {
-            const notificationsStore = useNotificationsStore();
-            notificationsStore.startWatchingNotifications();
-        },
-    },
-};
+    { immediate: true },
+);
+watch(confirmation, () => {
+    console.debug("App - Confirmation before route change: ", confirmation.value);
+    router.confirmation = confirmation.value;
+});
+
+const showInactivityWarning = computed(
+    () => config.user_activation_on && galaxy.user?.id && !galaxy.user.get("active"),
+);
+
+const showMasthead = computed(() => {
+    const hideMasthead = route.query.hide_masthead;
+    return typeof hideMasthead !== "string" || hideMasthead.toLowerCase() != "true";
+});
+
+const theme = computed<Record<string, string> | null>(() => {
+    if (embedded.value) {
+        return null;
+    }
+    const themeKeys = Object.keys(config.themes);
+    if (themeKeys.length > 0) {
+        const userTheme = currentTheme.value;
+        const selectedTheme = userTheme && themeKeys.includes(userTheme) ? userTheme : themeKeys[0];
+        return config.themes[selectedTheme];
+    }
+    return null;
+});
+
+const windowTab = computed(() => windowManagerStore.getTab());
+
+if (!embedded.value) {
+    window.onbeforeunload = () => {
+        if (confirmation.value || windowManagerStore.beforeUnload() || hasStagedUploads.value) {
+            return "Are you sure you want to leave the page?";
+        }
+    };
+}
+
+onMounted(() => {
+    if (!embedded.value) {
+        if (showMasthead.value) {
+            galaxy.frame = windowManagerStore;
+            windowManagerStore.restore();
+        }
+        if (config.interactivetools_enable) {
+            useEntryPointStore().startWatchingEntryPoints();
+        }
+        if (config.enable_notification_system) {
+            useNotificationsStore().startWatchingNotifications();
+        }
+    }
+});
 </script>
 
 <style lang="scss">

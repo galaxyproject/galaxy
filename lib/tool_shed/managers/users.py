@@ -62,13 +62,15 @@ def create_user(app: ToolShedApp, email: str, username: str, password: str) -> U
     return user
 
 
+def ensure_valid_new_user(trans: ProvidesUserContext, email: str, username: str, password: str) -> None:
+    """Raise RequestParameterInvalidException unless a new account may use these values."""
+    if message := _validate(trans, email=email, password=password, confirm=password, username=username):
+        raise RequestParameterInvalidException(message)
+
+
 def api_create_user(trans: ProvidesUserContext, request: CreateUserRequest) -> ApiUser:
     app = trans.app
-    message = _validate(
-        trans, email=request.email, password=request.password, confirm=request.password, username=request.username
-    )
-    if message:
-        raise RequestParameterInvalidException(message)
+    ensure_valid_new_user(trans, email=request.email, username=request.username, password=request.password)
     user = create_user(app, request.email, request.username, request.password)
     return get_api_user(app, user)
 

@@ -24,7 +24,7 @@ _:  # global stuff
 
     confirm_button:
       type: xpath
-      selector: '//button[contains(text(), "${name}")]'
+      selector: '//button[text()[contains(., "${name}")]]'
 
   messages:
     selectors:
@@ -34,7 +34,6 @@ _:  # global stuff
       done: '.alert-success'
       info: '.alert-info'
       donelarge: '.donemessagelarge'
-      infolarge: '.infomessagelarge'
       require_login: 'a.require-login-link'
 
 masthead:
@@ -58,7 +57,7 @@ masthead:
     user: '#user.loggedin-only > a.nav-link'
     username:
       type: xpath
-      selector: '//a[contains(text(), "Signed in as")]'
+      selector: '//a[text()[contains(., "Signed in as")]]'
     window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
 
@@ -148,7 +147,7 @@ change_user_address:
   selectors:
     address_button:
       type: xpath
-      selector: '//span[contains(text(), "Insert Address")]'
+      selector: '//span[text()[contains(., "Insert Address")]]'
 
 dataset_details:
   selectors:
@@ -163,6 +162,9 @@ object_store_details:
     _: '[aria-labelledby="dataset-details-heading"]'
     stored_by_name: '[aria-labelledby="dataset-details-heading"] .display-os-by-name'
     badge_of_type: '[aria-labelledby="dataset-details-heading"] .object-store-badge-wrapper [data-badge-type="${type}"]'
+    badge_trigger_of_type: '[aria-labelledby="dataset-details-heading"] .object-store-badge-wrapper:has([data-badge-type="${type}"])'
+    badge_popover: '#${id}'
+    badge_popover_link: '#${id} .popover-body a'
     usage_details: '[aria-labelledby="dataset-details-heading"] .quota-usage-bar'
     usage_bytes: '[aria-labelledby="dataset-details-heading"] .quota-usage'
     usage_percent: '[aria-labelledby="dataset-details-heading"] .quota-percent-text'
@@ -418,7 +420,7 @@ edit_collection_attributes:
     datatypes_tab: '.collection-edit-change-datatype-nav'
     data_value:
       type: xpath
-      selector: '//span[contains(text(), "${data_change}")]'
+      selector: '//span[text()[contains(., "${data_change}")]]'
     genome_select_search: '.database-dropdown input.multiselect__input'
     datatype_select_search: '.datatype-dropdown input.multiselect__input'
     save_dbkey_btn: '.save-dbkey-edit'
@@ -470,7 +472,7 @@ multi_history_panel:
       _: '.modal-dialog'
       copy_btn:
         type: xpath
-        selector: '//button[contains(text(), "Copy")]'
+        selector: '//button[text()[contains(., "Copy")]]'
 
 published_histories:
   selectors:
@@ -600,7 +602,8 @@ history_export_tasks:
     next_button: '.go-next-btn'
     back_button: '.go-back-btn'
     export_button: '.go-next-btn.btn-primary'
-    select_format: '[data-export-format="${format}"]'
+    # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
+    select_format: '[data-export-format="${format}"] .card-title'
     select_destination: '[data-history-export-destination="${destination}"]'
     exported_file_name: '#exported-file-name'
 
@@ -608,6 +611,9 @@ last_export_record:
   selectors:
     details: '.export-record-details'
     export_format: '.record-archive-format'
+    export_format_named:
+      type: xpath
+      selector: '//*[contains(@class, "record-archive-format")][normalize-space(text())="${format}"]'
     up_to_date_icon: '.record-up-to-date-icon'
     outdated_icon: '.record-outdated-icon'
     preparing_export_badge: '#g-card-badge-in-progress-latest-export-record'
@@ -730,6 +736,32 @@ pages:
       permissions_button:
         type: data-description
         selector: 'page permissions button'
+      save_view_button:
+        type: data-description
+        selector: 'page save-view button'
+      chat_button:
+        type: data-description
+        selector: 'page chat button'
+      extract_workflow_button:
+        type: data-description
+        selector: 'page extract workflow button'
+      chat_panel:
+        type: data-description
+        selector: 'page chat panel'
+      chat_input: '.page-chat-panel #chat-input'
+      chat_send_button: '.page-chat-panel .send-button'
+      chat_loading: '.page-chat-panel [data-description="chat loading indicator"]'
+      chat_query_cell: '.page-chat-panel .entry-query .query-text'
+      chat_response_content: '.page-chat-panel .entry-response .response-content'
+      chat_new_conversation:
+        type: data-description
+        selector: 'new conversation button'
+      chat_history_button:
+        type: data-description
+        selector: 'chat history button'
+      chat_history_sidebar:
+        type: data-description
+        selector: 'page chat history list'
       revision_compare_current_button:
         type: data-description
         selector: 'revision compare current button'
@@ -801,6 +833,12 @@ tool_form:
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
     parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] i.multiselect__tag-icon'
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
+    parameter_value_list_input:
+      type: xpath
+      selector: (//div[@id="form-element-${parameter}"]//div[@data-description="value list row"])[${index}]//input[not(@type="range")]
+    parameter_value_list_add:
+      type: xpath
+      selector: //div[@id="form-element-${parameter}"]//button[@data-description="add value"]
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'
@@ -918,10 +956,10 @@ trs_search:
     version_select: ".workflow-version-select"
     version_option:
       type: xpath
-      selector: "//option[contains(text(), '${version}')]"
+      selector: "//option[text()[contains(., '${version}')]]"
     select_server:
       type: xpath
-      selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
+      selector: "//a[contains(@class, 'dropdown-item') and text()[normalize-space(.) = '${server}']]"
 
 trs_import:
   selectors:
@@ -929,12 +967,12 @@ trs_import:
     version_select: ".workflow-version-select"
     version_option:
       type: xpath
-      selector: "//option[contains(text(), '${version}')]"
+      selector: "//option[text()[contains(., '${version}')]]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     select_server:
       type: xpath
-      selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
+      selector: "//a[contains(@class, 'dropdown-item') and text()[normalize-space(.) = '${server}']]"
     url_input: "#trs-import-url-input"
     url_import_button: "#trs-url-import-button"
 
@@ -971,7 +1009,7 @@ workflow_run:
           selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]'
         select_item:
           type: xpath
-          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[contains(text(), "${item}")]'
+          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[text()[contains(., "${item}")]]'
         select_collection: '[data-description="selection collection card"]'
         collection_selection: .selection-dialog-modal tr[data-pk="${id}"]
 
@@ -1003,6 +1041,12 @@ workflow_run:
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
+    simplified_value_list_input:
+      type: xpath
+      selector: (//div[@data-label="${label}"]//div[@data-description="value list row"])[${index}]//input[not(@type="range")]
+    simplified_value_list_add:
+      type: xpath
+      selector: //div[@data-label="${label}"]//button[@data-description="add value"]
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
@@ -1019,7 +1063,7 @@ workflow_editor:
       clone: '${_} .node-clone'
       output_data_row:
         type: xpath
-        selector: '//div[@data-output-name="${output_name}"]//span[contains(text(), "(${extension})")]'
+        selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].mapped-over"
@@ -1136,7 +1180,7 @@ workflow_editor:
     duplicate_label_error:
       type: xpath
       selector: >
-        //div[@id='form-element-__label__${output}']//span[contains(text(), 'Duplicate output label')]
+        //div[@id='form-element-__label__${output}']//span[text()[contains(., 'Duplicate output label')]]
     rename_output:
       type: xpath
       selector: >
@@ -1162,6 +1206,14 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Remove Tags']//input
+    email_notification:
+      type: xpath
+      selector: >
+        //div[@data-label='Email notification']
+    output_cleanup:
+      type: xpath
+      selector: >
+        //div[@data-label='Output cleanup']
     tool_version_button: ".tool-versions"
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
@@ -1191,6 +1243,7 @@ workflow_extract:
     workflow_name_input: '[data-description="workflow-name-input"]'
     create_button: '[data-description="create-workflow-button"]'
     no_workflow_message: '[data-description="no-workflow-message"]'
+    no_seed_message: '[data-description="no-seed-message"]'
     tool_card: '[data-step-type="tool"]'
     tool_card_with_job_id: '[data-step-type="tool"][data-job-id]'
     mapped_tool_card: '[data-step-kind="mapped-tool"]'
@@ -1198,6 +1251,7 @@ workflow_extract:
     tool_card_checkbox_checked: '[data-step-type="tool"] input[id^="g-card-select-"]:checked'
     card_checkbox_by_job_id: '[data-job-id="${job_id}"] input[id^="g-card-select-"]'
     card_by_icj_id: '[data-icj-id="${icj_id}"]'
+    card_checkbox_by_icj_id: '[data-icj-id="${icj_id}"] input[id^="g-card-select-"]'
     mapped_badge: '[id^="g-card-badge-mapped-tool-"]'
     all_card_checkboxes_checked: '[data-description="workflow-extraction-form"] input[id^="g-card-select-"]:checked'
     output_star_for_job: '[data-job-id="${job_id}"] [data-output-star]'
@@ -1207,6 +1261,10 @@ workflow_extract:
     output_rename_input: '#output-name-input'
     output_rename_confirm: '#rename-modal-output .g-modal-confirm-buttons button:last-of-type'
     output_rename_cancel: '#rename-modal-output .g-modal-confirm-buttons button:first-of-type'
+    step_label_add_for_job: '[data-job-id="${job_id}"] .g-card-rename'
+    step_label_clear_for_job: '[data-job-id="${job_id}"] .g-card-clear-title'
+    step_rename_input: '#step-name-input'
+    step_rename_confirm: '#rename-modal-step .g-modal-confirm-buttons button:last-of-type'
 
 invocations:
   selectors:
@@ -1248,7 +1306,8 @@ invocations:
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
-    export_output_format: '[data-export-format="${type}"]'
+    # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
+    export_output_format: '[data-export-format="${type}"] .card-title'
     export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
@@ -1514,13 +1573,13 @@ libraries:
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       add_to_history_as_collection:
         type: xpath
-        selector: '//button[contains(text(), "Continue")]'
+        selector: '//button[text()[contains(., "Continue")]]'
       import_datasets_ok_button:
         type: xpath
-        selector: '//button[contains(text(), "Import")]'
+        selector: '//button[text()[contains(., "Import")]]'
       import_datasets_cancel_button:
         type: xpath
-        selector: '//button[contains(text(), "Cancel")]'
+        selector: '//button[text()[contains(., "Cancel")]]'
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
@@ -1528,13 +1587,13 @@ libraries:
       clear_filters: "button.clear-filters-link"
       import_progress_bar: '.progress-bar-import'
       import_from_path_textarea: '#import_paths'
-      select_all: 'thead .g-table-select-column .custom-control'
-      select_one: '#g-table-row-0-folder_list_body .g-table-select-column .custom-control'
-      select_dataset: '#g-table-row-${row_index}-folder_list_body .g-table-select-column .custom-control'
+      select_all: 'thead .g-table-select-column .g-checkbox'
+      select_one: '#g-table-row-0-folder_list_body .g-table-select-column .g-checkbox'
+      select_dataset: '#g-table-row-${row_index}-folder_list_body .g-table-select-column .g-checkbox'
       empty_folder_message: '.empty-folder-message'
       btn_open_parent_folder:
         type: xpath
-        selector: '//a[contains(text(), "${folder_name}")]'
+        selector: '//a[text()[contains(., "${folder_name}")]]'
       edit_folder_btn: '.edit_folder_btn'
       description_field: '.description-field > div'
       description_field_shrinked: '.shrinked-description'
@@ -1549,13 +1608,14 @@ libraries:
         selector: '//div[@data-description="toast message" and contains(normalize-space(.), "${text}")]'
       alert_not_exists_user_import_dir:
         type: xpath
-        selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]
+        selector: //div[contains(@class, "alert-danger") and text()[contains(normalize-space(.), "Your user import directory does not exist")]]
       select_import_dir_item: '[for="drilldown-option-${name}"]'
       import_dir_btn:
         type: xpath
-        selector: '//button[contains(text(), "Import")]'
+        selector: '//button[text()[contains(., "Import")]]'
       manage_dataset_permissions_btn: 'a[title="Permissions of ${name}"]'
       make_private_btn: '#make-private'
+      remove_restrictions_btn: '.remove-restrictions a'
       access_dataset_roles: '.access_dataset_roles .multiselect__tag span'
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
@@ -1703,7 +1763,7 @@ job_details:
   selectors:
     galaxy_tool_with_id:
       type: xpath
-      selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
+      selector: '//td[@id="galaxy-tool-id"][text()[normalize-space(.) = "${tool_id}"]]'
     tool_exit_code: '#exit-code'
 
 galaxyai:
@@ -1796,6 +1856,10 @@ file_set_wizard:
     source_dataset_as_table: '[data-import-source-from="dataset_as_table"]'
     source_remote_files: '[data-import-source-from="remote_files"]'
     source_workbook: '[data-import-source-from="workbook"]'
+    workbook_download_link: '[data-description="workbook download link"]'
+    workbook_shortcut_file_input: '[data-description="workbook shortcut file input"]'
+    workbook_card_file_input: '[data-description="workbook card file input"]'
+    which_builder: '[data-which-builder="${builder}"]'
     paste_textarea: '.paste-data textarea'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_submit_button: '.wizard-actions .go-next-btn.btn-primary'

@@ -430,7 +430,34 @@ class TextToolParameter(SimpleTextToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('multiple', False), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
+    >>> p = TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "validators": [{"type": "regex", "expression": "^[a-z]+$"}]})
+    >>> p.to_python("a, b", None)
+    ['a, b']
+    >>> p.validate(["ab", "cd"])
+    >>> with assert_throws_param_value_error("Parameter '_name': Value 'C' does not match regular expression '^[a-z]+$'"):
+    ...     p.validate(["ab", "C"])
+    >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
+    ...     p.validate([])
+    >>> with assert_throws_param_value_error("Parameter '_name': values cannot contain newlines; pass a list"):
+    ...     p.validate("ab\\ncd")
+    >>> with assert_throws_param_value_error("Parameter '_name': values cannot contain newlines"):
+    ...     p.validate(["ab\\ncd"])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries cannot be empty"):
+    ...     p.validate(["ab", ""])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
+    ...     p.validate([["ab"]])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
+    ...     p.validate([True])
+    >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
+    ...     p.validate(None)
+    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "optional": True}).validate(None)
+    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": [1, 2]}).get_initial_value(None, {})
+    ['1', '2']
+    >>> p.from_json("ab", trans)
+    ['ab']
+    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": "ab"}).get_initial_value(None, {})
+    ['ab']
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -448,8 +475,65 @@ class TextToolParameter(SimpleTextToolParameter):
             self.optionality_inferred = False
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
+        # Only workflow parameters (which have no tool) accept multiple values.
+        self.multiple = tool is None and string_as_bool(input_source.get_bool("multiple", False))
+
+    def _is_multiple_value(self, value) -> bool:
+        return self.multiple and value is not None and not contains_workflow_parameter(value)
+
+    def _multiple_values(self, value) -> list:
+        if value == "":
+            return []
+        return value if isinstance(value, list) else [value]
+
+    def _multiple_to_python(self, value) -> list:
+        values = self._multiple_values(value)
+        if any(v is None or v == "" for v in values):
+            raise ParameterValueError("entries cannot be empty", self.name, value)
+        if any(isinstance(v, bool) or not isinstance(v, (str, int, float)) for v in values):
+            raise ParameterValueError("entries must be text", self.name, value)
+        values = [str(v) for v in values]
+        if any("\n" in v for v in values):
+            message = "values cannot contain newlines"
+            if not isinstance(value, list):
+                message += "; pass a list"
+            raise ParameterValueError(message, self.name, value)
+        return values
+
+    def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
+        return super().from_json(value, trans, other_values)
+
+    def to_python(self, value, app):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
+        return super().to_python(value, app)
+
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
+        if self.multiple and self.value is not None:
+            return [str(v) for v in self._multiple_values(self.value)]
+        return super().get_initial_value(trans, other_values)
+
+    def to_json(self, value, app, use_security):
+        if self.multiple and isinstance(value, list):
+            return value
+        return super().to_json(value, app, use_security)
 
     def validate(self, value, trans: "ProvidesHistoryContext | None" = None):
+        if self.multiple and value is None:
+            if not self.optional:
+                raise ParameterValueError("at least one value is required", self.name, value)
+            return
+        if not self._is_multiple_value(value):
+            return self._validate_single(value, trans)
+        values = self._multiple_to_python(value)
+        if not values and not self.optional:
+            raise ParameterValueError("at least one value is required", self.name, value)
+        for v in values:
+            self._validate_single(v, trans)
+
+    def _validate_single(self, value, trans: "ProvidesHistoryContext | None"):
         search = self.type == "text"
         if not (
             trans
@@ -473,6 +557,7 @@ class TextToolParameter(SimpleTextToolParameter):
         other_values = other_values or {}
         d["area"] = self.area
         d["datalist"] = self.datalist
+        d["multiple"] = self.multiple
         d["optional"] = self.optional
         return d
 
@@ -487,10 +572,20 @@ class IntegerToolParameter(TextToolParameter):
     >>> p = IntegerToolParameter(None, XML('<param name="_name" type="integer" value="10" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
     >>> assert type(p.from_json("10", trans)) == int
     >>> with assert_throws_param_value_error("Parameter '_name': an integer or workflow parameter is required"):
     ...     p.from_json("_string", trans)
+    >>> p = IntegerToolParameter(None, {"name": "_name", "type": "integer", "multiple": True, "min": 1})
+    >>> p.to_python(["1", 2], None)
+    [1, 2]
+    >>> with assert_throws_param_value_error("Parameter '_name': an integer is required"):
+    ...     p.to_python("1,2", None)
+    >>> p.from_json(p.to_json([1, 2], None, False), trans)
+    [1, 2]
+    >>> p.validate([1, 2])
+    >>> with assert_throws_param_value_error("Parameter '_name': an integer is required"):
+    ...     p.validate([1, "two"])
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
@@ -499,8 +594,8 @@ class IntegerToolParameter(TextToolParameter):
         super().__init__(tool, input_source)
         if self.value:
             try:
-                int(self.value)
-            except ValueError:
+                self._to_int_values(self.value) if self.multiple else int(self.value)
+            except (TypeError, ValueError):
                 raise ParameterValueError("the attribute 'value' must be an integer", self.name)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
@@ -517,8 +612,19 @@ class IntegerToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
+    def _to_int_values(self, value) -> list[int]:
+        return [int(v) for v in self._multiple_values(value)]
+
+    def _multiple_to_python(self, value) -> list[int]:
+        try:
+            return self._to_int_values(value)
+        except (TypeError, ValueError):
+            raise ParameterValueError("an integer is required", self.name, value) from None
+
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -534,6 +640,8 @@ class IntegerToolParameter(TextToolParameter):
                 )
 
     def to_python(self, value, app):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -545,6 +653,8 @@ class IntegerToolParameter(TextToolParameter):
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.value is not None and self.value != "":
+            if self.multiple:
+                return self._to_int_values(self.value)
             return int(self.value)
         else:
             return None
@@ -560,10 +670,17 @@ class FloatToolParameter(TextToolParameter):
     >>> p = FloatToolParameter(None, XML('<param name="_name" type="float" value="3.141592" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
     >>> assert type(p.from_json("36.1", trans)) == float
     >>> with assert_throws_param_value_error("Parameter '_name': an integer or workflow parameter is required"):
     ...     p.from_json("_string", trans)
+    >>> p = FloatToolParameter(None, {"name": "_name", "type": "float", "multiple": True, "max": 1})
+    >>> p.to_python(["0.5", 1], None)
+    [0.5, 1.0]
+    >>> with assert_throws_param_value_error("Parameter '_name': a float is required"):
+    ...     p.validate([0.5, "half"])
+    >>> FloatToolParameter(None, {"name": "_name", "type": "float", "multiple": True, "value": [0.5, 1]}).get_initial_value(None, {})
+    [0.5, 1.0]
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ["min", "max"]
@@ -574,8 +691,8 @@ class FloatToolParameter(TextToolParameter):
         self.max = input_source.get("max")
         if self.value:
             try:
-                float(self.value)
-            except ValueError:
+                self._multiple_to_python(self.value) if self.multiple else float(self.value)
+            except (TypeError, ValueError):
                 raise ParameterValueError("the attribute 'value' must be a real number", self.name, self.value)
         if self.min:
             try:
@@ -590,8 +707,16 @@ class FloatToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator.simple_range_validator(self.min, self.max))
 
+    def _multiple_to_python(self, value) -> list[float]:
+        try:
+            return [float(v) for v in self._multiple_values(value)]
+        except (TypeError, ValueError):
+            raise ParameterValueError("a float is required", self.name, value) from None
+
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         other_values = other_values or {}
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return float(value)
         except (TypeError, ValueError):
@@ -607,6 +732,8 @@ class FloatToolParameter(TextToolParameter):
                 )
 
     def to_python(self, value, app):
+        if self._is_multiple_value(value):
+            return self._multiple_to_python(value)
         try:
             return float(value)
         except (TypeError, ValueError):
@@ -620,7 +747,7 @@ class FloatToolParameter(TextToolParameter):
         if self.value is None:
             return None
         try:
-            return float(self.value)
+            return self._multiple_to_python(self.value) if self.multiple else float(self.value)
         except Exception:
             return None
 
@@ -2004,7 +2131,6 @@ def _paginated_dataset_collections(
     trans: "ProvidesHistoryContext",
     history: "History",
     *,
-    visible_only: bool,
     tag: str | None = None,
     search: str | None = None,
     offset: int = 0,
@@ -2012,12 +2138,10 @@ def _paginated_dataset_collections(
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
     """``history.paginated_active_dataset_collections`` memoized on the request
     context's short-term cache (see :func:`_paginated_visible_datasets`)."""
-    key = ("data_param_hdca_page", history.id, bool(visible_only), tag or None, search or None, offset, limit)
+    key = ("data_param_hdca_page", history.id, tag or None, search or None, offset, limit)
     return trans.get_or_set_cache_value(
         key,
-        lambda: history.paginated_active_dataset_collections(
-            visible_only=visible_only, tag=tag, search=search, offset=offset, limit=limit
-        ),
+        lambda: history.paginated_active_dataset_collections(tag=tag, search=search, offset=offset, limit=limit),
     )
 
 
@@ -2171,7 +2295,6 @@ class BaseDataToolParameter(ToolParameter):
                     collection_rows, total = _paginated_dataset_collections(
                         trans,
                         history,
-                        visible_only=True,
                         tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
@@ -2843,7 +2966,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=True, tag=self.tag, search=hdca_search, offset=offset, limit=limit
+                trans, history, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -2908,31 +3031,6 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def _history_query(self, trans: "ProvidesHistoryContext"):
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         return query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
-
-    def match_collections(self, trans: "ProvidesHistoryContext", history, dataset_collection_matcher):
-        dataset_collections = trans.app.dataset_collection_manager.history_dataset_collections(
-            history, self._history_query(trans)
-        )
-
-        for dataset_collection_instance in dataset_collections:
-            match = dataset_collection_matcher.hdca_match(dataset_collection_instance)
-            if not match:
-                continue
-            # Filter sample sheet collections by column_definitions compatibility
-            if self._column_definitions:
-                collection_cols = dataset_collection_instance.collection.column_definitions
-                if not column_definitions_compatible(collection_cols, self._column_definitions):
-                    continue
-            yield dataset_collection_instance, match.implicit_conversion
-
-    def match_multirun_collections(self, trans: "ProvidesHistoryContext", history, dataset_collection_matcher):
-        for history_dataset_collection in history.active_visible_dataset_collections:
-            if not self._history_query(trans).can_map_over(history_dataset_collection):
-                continue
-
-            match = dataset_collection_matcher.hdca_match(history_dataset_collection)
-            if match:
-                yield history_dataset_collection, match.implicit_conversion
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         session = trans.sa_session
@@ -3055,8 +3153,27 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
         self._page_hdca_matches(builder, trans, history, dataset_collection_matcher)
+        self._carry_selected_hdca(builder, history, other_values.get(self.name))
         builder.sort_by_hid("hdca")
         return d
+
+    def _carry_selected_hdca(self, builder: DataOptionsBuilder, history, value) -> None:
+        """Carry a selected HDCA that the visible-only listing cannot return
+        (hidden, deleted or from another history) as a ``keep=True`` entry
+        with a state-prefixed name, so a rerun form still pre-selects it."""
+        if isinstance(value, HistoryDatasetCollectionAssociation) and (
+            value.deleted or not value.visible or value.history != history
+        ):
+            state = _carried_state_label(value)
+            builder.options["hdca"].append(
+                make_hdca_entry(
+                    builder.security,
+                    value,
+                    f"({state}) {value.name}",
+                    keep=True,
+                    include_column_definitions=True,
+                )
+            )
 
     def _page_hdca_matches(
         self,
@@ -3067,16 +3184,14 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     ) -> None:
         """Emit one page of matching HDCAs into ``builder.options['hdca']``.
 
-        Walks all active HDCAs (incl. hidden) in HID-desc order; the
-        classifier in :meth:`_classify_hdca` demotes hidden HDCAs to
-        direct-only so they cannot appear as multirun (map-over) entries.
+        Walks active, visible HDCAs in HID-desc order.
         """
         _offset, _limit, hdca_search = builder.page("hdca")
         history_query = self._history_query(trans)
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=False, tag=self.tag, search=hdca_search, offset=offset, limit=limit
+                trans, history, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -3103,8 +3218,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         ``list,list:list`` with a ``list:list`` HDCA matches ``list:list``
         directly AND can be mapped over to feed ``list``); both entries are
         emitted in that case. Direct entries come first so the stable
-        HID-desc sort places them above the multirun entry. Hidden HDCAs
-        emit only the direct-match entry — they are excluded from multirun.
+        HID-desc sort places them above the multirun entry.
         """
         match = dataset_collection_matcher.hdca_match(hdca)
         if not match:
@@ -3117,17 +3231,15 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 column_definitions_ok = column_definitions_compatible(collection_cols, self._column_definitions)
             if column_definitions_ok:
                 entries.append(("direct", hdca, match.implicit_conversion, None))
-        if hdca.visible:
-            can_map = history_query.can_map_over(hdca)
-            if can_map:
-                subcollection_type = can_map.collection_type
-                collection_type = hdca.collection.collection_type
-                if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
-                    if collection_type.endswith("paired"):
-                        subcollection_type = "paired"
-                    else:
-                        subcollection_type = "single_datasets"
-                entries.append(("multirun", hdca, match.implicit_conversion, subcollection_type))
+        if can_map := history_query.can_map_over(hdca):
+            subcollection_type = can_map.collection_type
+            collection_type = hdca.collection.collection_type
+            if subcollection_type == "paired_or_unpaired" and not collection_type.endswith("paired_or_unpaired"):
+                if collection_type.endswith("paired"):
+                    subcollection_type = "paired"
+                else:
+                    subcollection_type = "single_datasets"
+            entries.append(("multirun", hdca, match.implicit_conversion, subcollection_type))
         return entries or None
 
 

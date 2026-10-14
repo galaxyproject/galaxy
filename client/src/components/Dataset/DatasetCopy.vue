@@ -191,15 +191,16 @@ defineExpose({
                     <FontAwesomeIcon :icon="faCopy" />
                     <span>From History</span>
                 </Heading>
-                <span class="text-sm mt-1">Select a Source History:</span>
+                <label for="dataset-copy-source-history" class="text-sm mt-1 mb-0">Select a Source History:</label>
                 <Multiselect
+                    id="dataset-copy-source-history"
                     v-model="sourceHistory"
                     :options="histories"
                     label="name"
                     track-by="id"
                     deselect-label=""
                     select-label=""
-                    @input="loadContents" />
+                    @update:model-value="loadContents" />
                 <span class="text-sm mt-1">Select Datasets and Collections:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
                     <LoadingSpan v-if="loading" />
@@ -228,8 +229,9 @@ defineExpose({
                     <FontAwesomeIcon :icon="faArrowRight" />
                     <span>To History</span>
                 </Heading>
-                <span class="text-sm mt-1">Select a Target History:</span>
+                <label for="dataset-copy-target-history" class="text-sm mt-1 mb-0">Select a Target History:</label>
                 <Multiselect
+                    id="dataset-copy-target-history"
                     v-model="targetSingleHistory"
                     :allow-empty="true"
                     :options="histories"
@@ -237,7 +239,7 @@ defineExpose({
                     track-by="id"
                     deselect-label=""
                     select-label=""
-                    @input="
+                    @update:model-value="
                         newHistoryName = '';
                         targetMultiSelections = {};
                     " />

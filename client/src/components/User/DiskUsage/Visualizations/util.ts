@@ -4,6 +4,7 @@ import { onMounted, ref } from "vue";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { DataValuePoint } from "./Charts";
 import { BYTES_AXIS_LABEL_EXPR, bytesLabelFormatter } from "./Charts/formatters";
@@ -84,16 +85,26 @@ export function useDatasetsToDisplay() {
 
 export function useDataLoading() {
     const isLoading = ref(true);
+    const { error: errorToast } = useToast();
+
+    async function loadData(dataLoader: DataLoader) {
+        try {
+            await dataLoader();
+        } catch (error) {
+            errorToast(errorMessageAsString(error), localize("An error occurred while loading storage data."));
+        }
+    }
 
     const loadDataOnMount = (dataLoader: DataLoader) => {
         onMounted(async () => {
             isLoading.value = true;
-            await dataLoader();
+            await loadData(dataLoader);
             isLoading.value = false;
         });
     };
     return {
         isLoading,
+        loadData,
         loadDataOnMount,
     };
 }

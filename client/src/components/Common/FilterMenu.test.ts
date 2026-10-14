@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -77,7 +77,7 @@ const validTestFilters = {
 const TestFilters = new Filtering(validTestFilters, undefined);
 
 describe("FilterMenu", () => {
-    let wrapper: Wrapper<Vue>;
+    let wrapper: VueWrapper;
 
     beforeEach(() => {
         server.use(
@@ -97,18 +97,18 @@ describe("FilterMenu", () => {
 
     function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
         wrapper = mount(FilterMenu as object, {
-            propsData: {
+            props: {
                 name: name,
                 placeholder: placeholder,
                 filterClass: filterClass,
                 filterText: "",
                 showAdvanced: false,
             },
-            localVue,
+            global: localVue,
             stubs: {
                 icon: { template: "<div></div>" },
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
     }
 
@@ -120,12 +120,11 @@ describe("FilterMenu", () => {
 
     async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
         if (showAdvanced !== undefined) {
-            const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-            expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
-            await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+            const receivedShowAdvanced = emittedArg(wrapper, "update:show-advanced", -1);
+            expect(receivedShowAdvanced).toEqual(showAdvanced);
+            await wrapper.setProps({ showAdvanced: receivedShowAdvanced });
         }
-        const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
+        const receivedText = emittedArg(wrapper, "update:filter-text", -1) as string;
         const receivedDict = filterClass.getQueryDict(receivedText);
         const parsedDict = filterClass.getQueryDict(filterText);
         expect(receivedDict).toEqual(parsedDict);
@@ -133,7 +132,7 @@ describe("FilterMenu", () => {
 
     it("test generic test items filter panel search", async () => {
         setUpWrapper("Test Items", "search test items", TestFilters);
-        const validFilters = wrapper.vm.$props.filterClass.validFilters;
+        const validFilters = TestFilters.validFilters;
 
         await wrapper.setProps({ showAdvanced: true });
 
@@ -174,7 +173,7 @@ describe("FilterMenu", () => {
 
         // First 4 filters are normal, non ranged input fields
         expectedFilters.forEach((expectedFilter, i) => {
-            const label = labels.at(i);
+            const label = nth(labels, i);
             expect(label.text()).toBe(expectedFilter.label);
             if (i < 4) {
                 const filterInput = wrapper.find(`[placeholder='${expectedFilter.placeholder}']`);
@@ -196,22 +195,22 @@ describe("FilterMenu", () => {
         indexGtInput.setValue("1234");
         indexLtInput.setValue("5678");
         // default bool filter
-        const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAll(".btn-secondary");
+        const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAllComponents(".btn-secondary");
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
-            expect(radioBtnGrp.at(i).text()).toBe(options[i]?.text);
-            expect(radioBtnGrp.at(i).props().value).toBe(options[i]?.value);
-            expect(radioBtnGrp.at(i).props().checked).toBe(null);
+            expect(radioBtnGrp[i]?.text()).toBe(options[i]?.text);
+            expect(radioBtnGrp[i]?.props().value).toBe(options[i]?.value);
+            expect(radioBtnGrp[i]?.props().checked).toBe(null);
         }
-        await radioBtnGrp.at(1).find("input").setChecked(); // click "Yes"
+        await radioBtnGrp[1]?.find("input").setValue(true); // click "Yes"
         // boolean filter
-        const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAll(".btn-secondary");
+        const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAllComponents(".btn-secondary");
         expect(boolBtnGrp.length).toBe(2);
-        expect(boolBtnGrp.at(0).text()).toBe("Yes");
-        expect(boolBtnGrp.at(0).props().value).toBe(true);
-        expect(boolBtnGrp.at(1).text()).toBe("No");
-        expect(boolBtnGrp.at(1).props().value).toBe("any");
-        await boolBtnGrp.at(1).find("input").setChecked(); // click "No"
+        expect(boolBtnGrp[0]?.text()).toBe("Yes");
+        expect(boolBtnGrp[0]?.props().value).toBe(true);
+        expect(boolBtnGrp[1]?.text()).toBe("No");
+        expect(boolBtnGrp[1]?.props().value).toBe("any");
+        await boolBtnGrp[1]?.find("input").setValue(true); // click "No"
 
         // perform search
         await performSearch();
@@ -241,7 +240,7 @@ describe("FilterMenu", () => {
         let deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
         expect(deletedFilterActiveBtn.text()).toBe("No");
 
-        await deletedFilterAnyBtn.find("input").setChecked();
+        await deletedFilterAnyBtn.find("input").setValue(true);
 
         // now active button for deleted filter should be "Any"
         deletedFilterActiveBtn = deletedFilterBtnGrp.find(".btn-secondary.active");
@@ -264,7 +263,7 @@ describe("FilterMenu", () => {
         let visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
         expect(visibleFilterActiveBtn.text()).toBe("Yes");
 
-        await visibleFilterAnyBtn.find("input").setChecked();
+        await visibleFilterAnyBtn.find("input").setValue(true);
 
         // now active button for visible filter should be "Any"
         visibleFilterActiveBtn = visibleFilterBtnGrp.find(".btn-secondary.active");
@@ -299,7 +298,7 @@ describe("FilterMenu", () => {
 
         // -------- Testing deleted filter first:  ---------
         const deletedFilterCheckbox = wrapper.find("[data-description='filter deleted'] input");
-        await deletedFilterCheckbox.setChecked();
+        await deletedFilterCheckbox.setValue(true);
         await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);
     });
 });

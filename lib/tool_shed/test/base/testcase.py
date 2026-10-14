@@ -632,6 +632,7 @@ class ShedTestCase(ShedApiTestCase):
         self.security = idencoding.IdEncodingHelper(id_secret="changethisinproductiontoo")
         self.history_id = None
         self.hgweb_config_dir = os.environ.get("TEST_HG_WEB_CONFIG_DIR")
+        assert self.hgweb_config_dir, "TEST_HG_WEB_CONFIG_DIR environment variable must be set"
         self.hgweb_config_manager = hgweb_config.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.tool_shed_test_tmp_dir: str = os.environ.get("TOOL_SHED_TEST_TMP_DIR", "")
@@ -1193,7 +1194,11 @@ class ShedTestCase(ShedApiTestCase):
         categories_by_name = {c.name: c for c in all_categories}
         db_repository = self._db_repository(repository)
         # Use encoded API IDs for current categories (raw DB IDs can't be decoded by the API)
-        current_category_ids = {categories_by_name[rca.category.name].id for rca in db_repository.categories}
+        current_category_ids = set()
+        for rca in db_repository.categories:
+            assert rca.category is not None
+            assert rca.category.name is not None
+            current_category_ids.add(categories_by_name[rca.category.name].id)
         add_ids = {categories_by_name[name].id for name in categories_to_add}
         remove_ids = {categories_by_name[name].id for name in categories_to_remove}
         new_category_ids = list((current_category_ids - remove_ids) | add_ids)

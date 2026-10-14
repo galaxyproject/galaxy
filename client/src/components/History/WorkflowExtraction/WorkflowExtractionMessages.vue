@@ -36,7 +36,7 @@ const warningsContext = ref<"alert" | "popover">("alert");
             </GButton>
             <GPopover
                 v-if="props.warnings.length && warningsContext === 'popover'"
-                :show.sync="showWarningsPopover"
+                v-model:show="showWarningsPopover"
                 boundary="window"
                 placement="bottom"
                 target="workflow-extraction-warnings-popover"

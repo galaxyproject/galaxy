@@ -13,6 +13,22 @@ export interface HasName {
     name: string | null;
 }
 
+const MATCH_NOTHING = /(?!)/;
+
+export function isValidFilter(filter: string): boolean {
+    try {
+        new RegExp(filter);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/** Filters are typed by users, so a half-typed pattern such as `_1 (` must match nothing instead of throwing. */
+function filterRegExp(filter: string): RegExp {
+    return isValidFilter(filter) ? new RegExp(filter) : MATCH_NOTHING;
+}
+
 export function guessInitialFilterType(elements: HasName[]): CommonFiltersType | null {
     let illumina = 0;
     let dot12s = 0;
@@ -58,8 +74,8 @@ export function _guessNameForPair(
     reverseFilter: RegExp,
     willRemoveExtensions: boolean,
 ) {
-    let fwdName = fwd.name;
-    let revName = rev.name;
+    const fwdName = fwd.name;
+    const revName = rev.name;
     const fwdNameFilter = fwdName?.replace(forwardFilter, "");
     const revNameFilter = revName?.replace(reverseFilter, "");
     if (!fwdNameFilter || !revNameFilter || !fwdName || !revName) {
@@ -84,8 +100,6 @@ export function _guessNameForPair(
                 }
             }
             lcs = lcs.replace(extension, "");
-            fwdName = fwdName.replace(extension, "");
-            revName = revName.replace(extension, "");
         }
     }
     if (lcs.endsWith(".") || lcs.endsWith("_")) {
@@ -104,8 +118,8 @@ export function guessNameForPair(
     return _guessNameForPair(
         fwd,
         rev,
-        new RegExp(forwardFilter || ""),
-        new RegExp(reverseFilter || ""),
+        filterRegExp(forwardFilter || ""),
+        filterRegExp(reverseFilter || ""),
         willRemoveExtensions,
     );
 }
@@ -115,7 +129,7 @@ export function naiveStartingAndEndingLCS(s1: string, s2: string) {
     let fwdLCS = "";
     let revLCS = "";
     let i = 0;
-    let j = 0;
+    let j: number;
     while (i < s1.length && i < s2.length) {
         if (s1[i] !== s2[i]) {
             break;
@@ -218,8 +232,8 @@ export function statelessAutoPairFnBuilder<T extends HasName>(
     }
 
     // compile these here outside of the loop
-    const forwardRegExp = new RegExp(forwardFilter);
-    const reverseRegExp = new RegExp(reverseFilter);
+    const forwardRegExp = filterRegExp(forwardFilter);
+    const reverseRegExp = filterRegExp(reverseFilter);
 
     function _preprocessMatch(params: {
         matchTo: T;
@@ -293,7 +307,7 @@ export function statelessAutoPairFnBuilder<T extends HasName>(
 }
 
 export function splitElementsByFilter<T extends HasName>(elements: T[], forwardFilter: string, reverseFilter: string) {
-    const filters = [new RegExp(forwardFilter), new RegExp(reverseFilter)];
+    const filters = [filterRegExp(forwardFilter), filterRegExp(reverseFilter)];
     const split: [T[], T[]] = [[], []];
     elements.forEach((e) => {
         filters.forEach((filter, i) => {

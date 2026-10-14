@@ -8,6 +8,8 @@ from ._util import (
     assert_realizes_contains,
     assert_simple_file_realize,
     configured_file_sources,
+    find,
+    list_root,
     user_context_fixture,
 )
 
@@ -36,6 +38,20 @@ def test_config_kwargs_none_for_aws_endpoint():
     assert S3FsFilesSource._config_kwargs(_s3fs_config()) is None
 
 
+def test_bucket_normalizes_s3_url():
+    assert _s3fs_config(bucket="s3://genomeark/").bucket == "genomeark"
+
+
+def test_bucket_keeps_key_prefix_from_sample_conf():
+    assert _s3fs_config(bucket="meeo-s3/NRT/").bucket == "meeo-s3/NRT"
+
+
+def test_score_url_match_with_s3_scheme_bucket():
+    file_sources = configured_file_sources([{"type": "s3fs", "id": "test1", "bucket": "s3://genomeark/", "anon": True}])
+    file_source = file_sources.get_file_source_path("gxfiles://test1").file_source
+    assert file_source.score_url_match("s3://genomeark/data_use_policies.txt") == len("s3://genomeark")
+
+
 def test_file_source():
     assert_simple_file_realize(
         FILE_SOURCES_CONF,
@@ -44,6 +60,17 @@ def test_file_source():
         contents="DATA USE POLICIES",
         contains=True,
     )
+
+
+@pytest.mark.parametrize("bucket", ["s3://genomeark/", "s3a://genomeark", "genomeark/"])
+def test_file_source_bucket_variant_realizes_listed_entry(bucket):
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources([{"type": "s3fs", "id": "test1", "bucket": bucket, "anon": True}])
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    listed_file = find(res, class_="File", name="data_use_policies.txt")
+    assert listed_file
+    assert listed_file.uri == "gxfiles://test1/data_use_policies.txt"
+    assert_realizes_contains(file_sources, listed_file.uri, "DATA USE POLICIES", user_context=user_context)
 
 
 def test_file_source_generic():

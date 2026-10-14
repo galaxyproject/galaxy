@@ -1,4 +1,4 @@
-"""Integration tests for the CLI shell plugins and runners."""
+"""Integration tests for OIDC login and account confirmation using Keycloak."""
 
 import html
 import os
@@ -10,14 +10,9 @@ from string import Template
 from typing import (
     ClassVar,
 )
-from unittest.mock import (
-    _patch,
-    patch,
-)
 from urllib import parse
 
 from galaxy import model
-from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import requests
 from galaxy.util.user_input import validate_publicname_str
 from galaxy_test.base.api import ApiTestInteractor
@@ -31,9 +26,9 @@ KEYCLOAK_HOST_PORT = 9443
 KEYCLOAK_URL = f"https://localhost:{KEYCLOAK_HOST_PORT}/realms/gxyrealm"
 
 
-# NOTE: redirect_uri has to include the current Galaxy
-#   port, so we set it to a dummy value initially
-#   and patch it when the tests are running
+# NOTE: redirect_uri has to include the Galaxy port, which the
+#   test driver picks when the server starts. setUpClass sets
+#   the real value on the running app.
 OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 <OIDC>
     <provider name="$provider_name">
@@ -44,6 +39,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
         <redirect_uri>dummy_url</redirect_uri>
         <enable_idp_logout>true</enable_idp_logout>
         <accepted_audiences>gxyclient</accepted_audiences>
+        $extra_provider_config
     </provider>
 </OIDC>
 """
@@ -54,8 +50,6 @@ DEBUG_AUTH_PIPELINE_EXTRA = ("galaxy.authnz.util.debug_access_token_data",)
 
 
 def wait_till_app_ready(url, timeout=60):
-    import time
-
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -111,15 +105,12 @@ class AbstractTestCases:
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
+        extra_provider_config: ClassVar[str] = ""
         saved_env_vars: ClassVar[dict[str, str | None]]
-        config_patcher: ClassVar[_patch]
 
         @classmethod
         def setUpClass(cls):
             cls.backend_config_file = cls.generate_oidc_config_file(provider_name=cls.provider_name)
-            # Patch the OIDC implementation so it can get the
-            # current Galaxy port to set the redirect_uri
-            cls.patch_oidc_config()
 
             # By default, the oidc callback must be done over a secure transport, so
             # we forcibly disable it for now
@@ -130,21 +121,20 @@ class AbstractTestCases:
             super().setUpClass()
             # Restart the test driver to parse the OIDC config file
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
-
-        @classmethod
-        def patch_oidc_config(cls):
-            """
-            Define this in subclasses to patch the relevant OIDC implementation:
-            need to supply the current host and port for the redirect_uri
-            setting
-            """
-            pass
+            server_wrapper = cls._test_driver.server_wrappers[0]
+            app = cls._test_driver.app
+            assert app and app.authnz_manager
+            backend_config = app.authnz_manager.oidc_backends_config[cls.provider_name]
+            backend_config["redirect_uri"] = (
+                f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
+            )
 
         @classmethod
         def generate_oidc_config_file(cls, provider_name="keycloak"):
             with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
                 data = Template(OIDC_BACKEND_CONFIG_TEMPLATE).safe_substitute(
                     provider_name=provider_name,
+                    extra_provider_config=cls.extra_provider_config,
                 )
                 tmp_file.write(data)
                 return tmp_file.name
@@ -154,8 +144,6 @@ class AbstractTestCases:
             stop_keycloak_docker(cls.container_name)
             cls.restoreOauthlibHttps()
             os.remove(cls.backend_config_file)
-
-            cls.config_patcher.stop()
 
             super().tearDownClass()
 
@@ -203,7 +191,9 @@ class AbstractTestCases:
                 if cookie.name == "galaxysession":
                     session.cookies.clear(domain=cookie.domain, path=cookie.path, name=cookie.name)
 
-        def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
+        def _login_via_keycloak(
+            self, username, password, expected_codes=None, save_cookies=False, session=None, follow_callback=True
+        ):
 
             if expected_codes is None:
                 expected_codes = [200, 404]
@@ -211,7 +201,12 @@ class AbstractTestCases:
             matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
             assert matches
             auth_url = html.unescape(str(matches.group(1)))
-            response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
+            response = session.post(
+                auth_url,
+                data={"username": username, "password": password},
+                verify=False,
+                allow_redirects=follow_callback,
+            )
             assert response.status_code in expected_codes, response
             if save_cookies:
                 self.galaxy_interactor.cookies = session.cookies
@@ -226,29 +221,6 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     """
 
     provider_name = "keycloak"
-
-    @classmethod
-    def patch_oidc_config(cls):
-        """
-        Patch PSAAuthnz to set the redirect_uri dynamically based on the test server port.
-
-        This is necessary because the redirect_uri must match the actual Galaxy URL,
-        which is only known at test runtime.
-        """
-        # Save a reference to the original init function
-        psa_authnz_init = PSAAuthnz.__init__
-
-        def patched_psa_authnz_init(self, *args, **kwargs):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            psa_authnz_init(self, *args, **kwargs)
-            # Only patch if this is the keycloak provider
-            if self.config.get("provider") == cls.provider_name:
-                self.config["redirect_uri"] = (
-                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-                )
-
-        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
-        cls.config_patcher.start()
 
     def _get_keycloak_access_token(
         self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
@@ -506,6 +478,143 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         assert "Invalid access token" in response.json()["err_msg"]
 
 
+class TestGalaxyOIDCPKCELoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
+    provider_name = "keycloak"
+    extra_provider_config = "<pkce_support>true</pkce_support>"
+
+    def test_oidc_login_sends_pkce_challenge(self):
+        response = requests.get(f"{self.url}authnz/{self.provider_name}/login")
+        provider_query = parse.parse_qs(parse.urlparse(response.json()["redirect_uri"]).query)
+        assert provider_query["code_challenge_method"] == ["S256"]
+        assert provider_query["code_challenge"]
+        assert not any(
+            cookie.startswith("galaxy-oidc-pkce-verifier=") for cookie in response.raw.headers.getlist("Set-Cookie")
+        )
+
+    def test_oidc_login_with_pkce(self):
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        assert "authorization code has expired" not in response.text
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+
+
+class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
+    """Exercise deferred account creation with real provider exchanges and browser sessions."""
+
+    provider_name = "keycloak"
+    extra_provider_config = (
+        "<require_create_confirmation>true</require_create_confirmation><pkce_support>true</pkce_support>"
+    )
+
+    def _csrf_token(self, session):
+        response = session.get(f"{self.url}login/start")
+        self._assert_status_code_is(response, 200)
+        match = self.REGEX_GALAXY_CSRF_TOKEN.search(response.text)
+        assert match
+        return match.group(1)
+
+    def _assert_no_account(self, username):
+        sa_session = self._app.model.session
+        assert sa_session.query(model.User).filter_by(email=f"{username}@galaxy.org").count() == 0
+
+    def _begin_confirmation(self, username):
+        session, response = self._login_via_keycloak(
+            username, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
+        )
+        callback_url = response.headers["Location"]
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 302)
+        query = parse.parse_qs(parse.urlsplit(response.headers["Location"]).query)
+        assert set(query) == {"confirm", "provider", "confirmation_id"}
+        assert query["confirm"] == ["true"]
+        assert query["provider"] == ["keycloak"]
+        self._assert_no_account(username)
+        response = session.get(f"{self.url}api/users/current")
+        self._assert_status_code_is(response, 200)
+        assert "email" not in response.json()
+        return session, query["confirmation_id"][0]
+
+    def _submit_confirmation(self, session, identifier, *, cancel=False):
+        action = "cancel_user_creation" if cancel else "create_user"
+        return session.post(
+            f"{self.url}authnz/keycloak/{action}",
+            data={"confirmation_id": identifier, "session_csrf_token": self._csrf_token(session)},
+            allow_redirects=False,
+        )
+
+    def test_confirmation_requires_post_and_csrf_then_creates_account(self):
+        session, identifier = self._begin_confirmation("gxyuser")
+        csrf_token = self._csrf_token(session)
+        endpoint = f"{self.url}authnz/keycloak/create_user"
+        response = session.get(endpoint, params={"confirmation_id": identifier})
+        self._assert_status_code_is(response, 405)
+        assert response.headers["Allow"] == "POST"
+        response = session.post(endpoint, data={"confirmation_id": identifier})
+        self._assert_status_code_is(response, 403)
+        # The generic controller route must enforce the same request contract.
+        response = session.get(f"{self.url}authnz/create_user", params={"provider": "keycloak"})
+        self._assert_status_code_is(response, 405)
+        self._assert_no_account("gxyuser")
+
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.json()["redirect_uri"] == "/"
+        response = session.get(f"{self.url}api/users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+        assert self._csrf_token(session) != csrf_token
+        sa_session = self._app.model.session
+        user = sa_session.query(model.User).filter_by(email="gxyuser@galaxy.org").one()
+        association = sa_session.query(model.UserAuthnzToken).filter_by(user_id=user.id, provider="keycloak").one()
+        assert association.uid
+        extra_data = association.extra_data
+        assert extra_data is not None
+        assert extra_data["access_token"]
+        assert extra_data["refresh_token"]
+
+    def test_cancellation_prevents_confirmation_and_replay(self):
+        session, identifier = self._begin_confirmation("gxyuser_brand_new")
+        response = self._submit_confirmation(session, identifier, cancel=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json() == {}
+        assert response.headers["Cache-Control"] == "no-store"
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 400)
+        response = self._submit_confirmation(session, identifier, cancel=True)
+        self._assert_status_code_is(response, 400)
+        self._assert_no_account("gxyuser_brand_new")
+
+    def test_confirmation_is_bound_to_browser(self):
+        session, identifier = self._begin_confirmation("gxyuser_existing")
+        other_browser = requests.Session()
+        response = other_browser.get(f"{self.url}authnz/keycloak/login")
+        self._assert_status_code_is(response, 200)
+        response = self._submit_confirmation(other_browser, identifier)
+        self._assert_status_code_is(response, 400)
+        self._assert_no_account("gxyuser_existing")
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        response = other_browser.get(f"{self.url}api/users/current")
+        assert "email" not in response.json()
+
+    def test_callback_is_bound_to_browser_and_cannot_replay(self):
+        session, response = self._login_via_keycloak(
+            "gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
+        )
+        callback_url = response.headers["Location"]
+        other_browser = requests.Session()
+        response = other_browser.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 401)
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 302)
+        assert "confirmation_id=" in response.headers["Location"]
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 401)
+        self._assert_no_account("gxyuser_fixed_auth")
+
+
 class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
     """
     Integration tests for fixed_delegated_auth functionality.
@@ -514,27 +623,11 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
     - User logged in vs not logged in (trans.user)
     - Existing Galaxy user with matching email vs no user
     - fixed_delegated_auth enabled vs disabled
-    - require_create_confirmation enabled vs disabled
 
     This ensures the PSA implementation matches the original custos behavior.
     """
 
     provider_name = "keycloak"
-
-    @classmethod
-    def patch_oidc_config(cls):
-        psa_authnz_init = PSAAuthnz.__init__
-
-        def patched_psa_authnz_init(self, *args, **kwargs):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            psa_authnz_init(self, *args, **kwargs)
-            if self.config.get("provider") == cls.provider_name:
-                self.config["redirect_uri"] = (
-                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-                )
-
-        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
-        cls.config_patcher.start()
 
     @classmethod
     def handle_galaxy_oidc_config_kwds(cls, config):
@@ -747,21 +840,6 @@ class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTes
     """
 
     provider_name = "keycloak"
-
-    @classmethod
-    def patch_oidc_config(cls):
-        psa_authnz_init = PSAAuthnz.__init__
-
-        def patched_psa_authnz_init(self, *args, **kwargs):
-            server_wrapper = cls._test_driver.server_wrappers[0]
-            psa_authnz_init(self, *args, **kwargs)
-            if self.config.get("provider") == cls.provider_name:
-                self.config["redirect_uri"] = (
-                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-                )
-
-        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
-        cls.config_patcher.start()
 
     @classmethod
     def handle_galaxy_oidc_config_kwds(cls, config):

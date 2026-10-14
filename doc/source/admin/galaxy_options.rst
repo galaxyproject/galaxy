@@ -4191,11 +4191,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    By default, users' data will be public, but setting this to true
-    will cause it to be private.  Does not affect existing users and
-    data, only ones created after this option is set.  Users may still
-    change their default back to public.
-:Default: ``false``
+    By default, users' data will be private. Setting this to false
+    makes it public. This only affects users created after the option
+    is set; existing users and data are unchanged. Users can change
+    the default for their new histories in their user preferences. To
+    make existing users' data private as well, run the
+    galaxy-make-data-private script.
+:Default: ``true``
 :Type: bool
 
 
@@ -4416,7 +4418,10 @@
     accidentally creating large numbers of datasets when running tools
     that create a potentially unlimited number of output datasets,
     such as tools that split a file into a collection of datasets for
-    each line in an input dataset.
+    each line in an input dataset. Collection operation tools that
+    multiply their inputs (cross product, duplicate file to
+    collection, apply rules) are subject to the same limit and refuse
+    to run if they would create more datasets than this.
 :Default: ``10000``
 :Type: int
 
@@ -5942,22 +5947,23 @@
     back to global ai_model/ai_api_key settings. All agents are
     enabled by default. Example: inference_services: { default: {
     model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled:
-    false }, jupyterlite: { model: gpt-4o } } Set static_responses to
-    a YAML file path to replace all LLM calls with deterministic
-    responses for testing: inference_services: { static_responses:
-    test/integration/static_agents.yml } Per-agent or default-block
-    ``structured_output_override: true|false`` beats the model
-    capability table -- see ``agent_model_capabilities_file`` for the
-    table's location and contents. Per-agent or default-block
-    ``retries`` sets the pydantic-ai retry budget (tool calls and
-    output validation); it defaults to 3. Raise it if a model
-    intermittently fails to produce conforming output ("Exceeded
-    maximum output retries"). custom_tool's producer keeps a budget of
-    0 because it runs its own reflection loop; a shared ``default``
-    block does not change that -- set ``custom_tool.retries``
-    explicitly to override it. custom_tool also accepts
-    ``quality_critic_enabled`` (default false) to turn on the LLM
-    clarity/idiomaticity critic, and
+    false }, jupyterlite: { model: gpt-4o } } Plugins also accept
+    top_p and timeout, and use max_tokens as an upper limit. Set
+    static_responses to a YAML file path to replace all LLM calls with
+    deterministic responses for testing: inference_services: {
+    static_responses: test/integration/static_agents.yml } Per-agent
+    or default-block ``structured_output_override: true|false`` beats
+    the model capability table -- see
+    ``agent_model_capabilities_file`` for the table's location and
+    contents. Per-agent or default-block ``retries`` sets the
+    pydantic-ai retry budget (tool calls and output validation); it
+    defaults to 3. Raise it if a model intermittently fails to produce
+    conforming output ("Exceeded maximum output retries").
+    custom_tool's producer keeps a budget of 0 because it runs its own
+    reflection loop; a shared ``default`` block does not change that
+    -- set ``custom_tool.retries`` explicitly to override it.
+    custom_tool also accepts ``quality_critic_enabled`` (default
+    false) to turn on the LLM clarity/idiomaticity critic, and
     ``container_recommendation_enabled`` (default false) to resolve
     the produced tool's container to a verified quay.io biocontainer.
     Container recommendation runs a dedicated container critic that
@@ -6344,6 +6350,38 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_command_palette``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Master toggle for the command palette, the searchable overlay that
+    lets users jump to tools, workflows, histories, datasets and other
+    Galaxy resources from anywhere in the interface.
+    When disabled, the search button in the masthead is hidden and the
+    Ctrl/Cmd-K keyboard shortcut that opens the palette is not
+    registered.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``command_palette_disabled_providers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    List of command palette providers to disable.
+    Valid provider ids are: ``actions``, ``navigation``, ``tools``,
+    ``workflows``, ``histories``, ``datasets``, ``visualizations``,
+    ``invocations``, ``reports`` and ``interactiveTools``.
+    Disabling a provider removes its search scopes, its category tab
+    and its results from the palette. This only hides palette UI: the
+    API endpoints the provider searches stay available. An unknown id
+    is ignored, with a warning in the browser console.
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``enable_mcp_server``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -6398,6 +6436,29 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``send_notification_rate_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum rate at which a single user may send notifications through
+    the ``POST /api/notifications`` endpoint. Requests are counted per
+    API key or session, so the limit is per user rather than per
+    client address, and it applies to every sender, including
+    administrators. It bounds how many notifications (and, for tool
+    installation requests submitted by users, admin-facing emails) one
+    account can generate.
+    The value follows the notation of the ``limits`` library:
+    ``<count>/<unit>`` or ``<count> per <n> <unit>``, where the unit
+    is one of ``second``, ``minute``, ``hour``, ``day``, ``month`` or
+    ``year``, e.g. ``10/minute`` or ``100 per hour``. The counter is
+    kept in memory by each web worker process, so with several workers
+    the effective limit is a multiple of this value. Leave empty to
+    disable the limit.
+:Default: ``10/minute``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``help_forum_api_url``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -6417,6 +6478,24 @@
 :Description:
     Enable the integration of the Galaxy Help Forum in the tool panel.
     This requires the help_forum_api_url to be set.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_installation_request_form``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the Tool Installation Request Form in the toolbox, allowing
+    users to request new tools to be installed on this Galaxy
+    instance.
+    When enabled, a "Request Tool Installation" button will appear in
+    the tool panel. Submitted requests are sent as notifications to
+    all admin users via Galaxy's notification system, which must also
+    be enabled.
+    This requires ``enable_notification_system`` to be set to
+    ``true``.
 :Default: ``false``
 :Type: bool
 

@@ -1,20 +1,4 @@
-<template>
-    <GButton
-        v-if="isConfigLoaded && canDownload(config)"
-        tooltip
-        tooltip-placement="bottom"
-        :title="title"
-        :color="color"
-        :outline="outline"
-        :size="size"
-        @click="onDownload(config)">
-        Generate
-        <FontAwesomeIcon v-if="waiting" :icon="faSpinner" spin />
-        <FontAwesomeIcon v-else :icon="faDownload" />
-    </GButton>
-</template>
-
-<script>
+<script setup lang="ts">
 /*
     A Galaxy Button with logic for interfacing with Galaxy's short term storage
     component (STS).
@@ -22,122 +6,121 @@
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { computed, ref, watch } from "vue";
 
+import type { ComponentColor, ComponentSize } from "@/components/BaseComponents/componentVariants";
 import { useConfig } from "@/composables/config";
+import { useShortTermStorage } from "@/composables/shortTermStorage";
+import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
 import { Toast } from "@/composables/toast";
-import { getAppRoot } from "@/onload/loadConfig";
 import { withPrefix } from "@/utils/redirect";
 
-import GButton from "./BaseComponents/GButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
-export default {
-    components: {
-        FontAwesomeIcon,
-        GButton,
-    },
-    props: {
-        title: {
-            type: String,
-            required: true,
-        },
-        downloadEndpoint: {
-            type: String,
-            required: true,
-        },
-        postParameters: {
-            type: Object,
-            default: () => {
-                return {};
-            },
-        },
-        fallbackUrl: {
-            type: String,
-            default: null,
-        },
-        color: {
-            type: String,
-            default: null,
-        },
-        outline: {
-            type: Boolean,
-            default: false,
-        },
-        size: {
-            type: String,
-            default: "medium",
-        },
-    },
-    setup() {
-        const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
-    },
-    data() {
-        return {
-            faDownload,
-            faSpinner,
-            waiting: false,
-            delay: 200,
-        };
-    },
-    destroyed() {
-        this.clearTimeout();
-    },
-    methods: {
-        canDownload(config) {
-            if (!config.enable_celery_tasks) {
-                return this.fallbackUrl != null;
-            }
-            return true;
-        },
-        onDownload(config) {
-            if (!config.enable_celery_tasks) {
-                window.open(withPrefix(this.fallbackUrl));
-            } else {
-                this.waiting = true;
-                axios
-                    .post(this.downloadEndpoint, this.postParameters)
-                    .then(this.handleInitialize)
-                    .catch(this.handleError);
-            }
-        },
-        handleInitialize(response) {
-            const storageRequestId = response.data.storage_request_id;
-            this.pollStorageRequestId(storageRequestId);
-        },
-        pollStorageRequestId(storageRequestId) {
-            const url = `${getAppRoot()}api/short_term_storage/${storageRequestId}/ready`;
-            axios
-                .get(url)
-                .then((r) => {
-                    this.handlePollResponse(r, storageRequestId);
-                })
-                .catch(this.handleError);
-        },
-        handlePollResponse(response, storageRequestId) {
-            const ready = response.data;
-            if (ready) {
-                const url = `${getAppRoot()}api/short_term_storage/${storageRequestId}`;
-                window.location.assign(url);
-                this.waiting = false;
-            } else {
-                this.pollAfterDelay(storageRequestId);
-            }
-        },
-        handleError(err) {
-            Toast.error(`Failed to generate download: ${err}`);
-            this.waiting = false;
-        },
-        clearTimeout() {
-            if (this.timeout) {
-                clearTimeout(this.timeout);
-            }
-        },
-        pollAfterDelay(storageRequestId) {
-            this.clearTimeout();
-            this.timeout = setTimeout(() => {
-                this.pollStorageRequestId(storageRequestId);
-            }, this.delay);
-        },
-    },
-};
+const POLL_DELAY = 200;
+
+interface Props {
+    /** Endpoint that starts preparing the download */
+    downloadEndpoint: string;
+    /** Tooltip text */
+    title: string;
+    /**
+     * Button color
+     * @default undefined
+     */
+    color?: ComponentColor;
+    /**
+     * Direct download URL, used when Celery tasks are disabled
+     * @default null
+     */
+    fallbackUrl?: string | null;
+    /**
+     * Outline variant of the button
+     * @default false
+     */
+    outline?: boolean;
+    /**
+     * Payload posted to the download endpoint
+     * @default {}
+     */
+    postParameters?: Record<string, unknown>;
+    /**
+     * Button size
+     * @default "medium"
+     */
+    size?: ComponentSize;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    color: undefined,
+    fallbackUrl: null,
+    outline: false,
+    postParameters: () => ({}),
+    size: "medium",
+});
+
+const { config, isConfigLoaded } = useConfig();
+
+const waiting = ref(false);
+const storageRequestId = ref<string>();
+
+const { waitForTask, isCompleted, hasFailed, taskStatus } = useShortTermStorageMonitor();
+const { downloadObjectByRequestId } = useShortTermStorage();
+
+const canDownload = computed(() => {
+    if (!config.value.enable_celery_tasks) {
+        return props.fallbackUrl != null;
+    }
+    return true;
+});
+
+async function onDownload() {
+    if (!config.value.enable_celery_tasks) {
+        window.open(withPrefix(props.fallbackUrl ?? ""));
+        return;
+    }
+    waiting.value = true;
+    try {
+        const response = await axios.post(props.downloadEndpoint, props.postParameters);
+        const requestId: string = response.data.storage_request_id;
+        storageRequestId.value = requestId;
+        waitForTask(requestId, POLL_DELAY);
+    } catch (err) {
+        handleError(err);
+    }
+}
+
+function handleError(err: unknown) {
+    Toast.error(`Failed to generate download: ${err}`);
+    waiting.value = false;
+}
+
+watch(isCompleted, (completed) => {
+    if (completed && storageRequestId.value) {
+        downloadObjectByRequestId(storageRequestId.value);
+        waiting.value = false;
+    }
+});
+
+watch(hasFailed, (failed) => {
+    if (failed) {
+        handleError(taskStatus.value);
+    }
+});
 </script>
+
+<template>
+    <GButton
+        v-if="isConfigLoaded && canDownload"
+        tooltip
+        tooltip-placement="bottom"
+        :title="title"
+        :color="color"
+        :outline="outline"
+        :size="size"
+        @click="onDownload()">
+        Generate
+        <FontAwesomeIcon v-if="waiting" :icon="faSpinner" spin />
+        <FontAwesomeIcon v-else :icon="faDownload" />
+    </GButton>
+</template>

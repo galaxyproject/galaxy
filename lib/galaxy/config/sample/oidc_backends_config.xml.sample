@@ -138,7 +138,8 @@ Please mind `http` and `https`.
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
         <!-- <enable_idp_logout>false</enable_idp_logout> -->
         <!-- <icon>https://path/to/icon</icon>  -->
-        <!-- (Optional) Enable PKCE for this IDP -->
+        <!-- (Optional) Enable PKCE for this IDP (oidc, keycloak, cilogon and auth0 backends).
+             See doc/source/admin/authentication.md for the cookie and host requirements. -->
         <!-- <pkce_support>false</pkce_support> -->
         <!-- (Optional) the audiences accepted on the access-token for this IDP. -->
         <!-- <accepted_audiences>galaxy</accepted_audiences> -->

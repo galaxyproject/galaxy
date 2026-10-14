@@ -98,7 +98,7 @@ const defaultObjectStore: UserConcreteObjectStoreModel = {
 
                 <SourceOptionCard
                     v-for="objectStore in selectableAndVisibleObjectStores"
-                    :key="objectStore.object_store_id"
+                    :key="objectStore.object_store_id ?? undefined"
                     :source-option="objectStore"
                     show-badges
                     selection-mode

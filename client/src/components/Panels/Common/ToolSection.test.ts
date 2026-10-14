@@ -1,5 +1,5 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { describe, expect, test, vi } from "vitest";
 import { ref } from "vue";
@@ -18,53 +18,53 @@ vi.mock("@/composables/config", () => ({
 const localVue = getLocalVue();
 const pinia = createPinia();
 
-function sectionIsOpened(wrapper: Wrapper<Vue>) {
+function sectionIsOpened(wrapper: VueWrapper) {
     return wrapper.find("[data-description='opened tool panel section']").exists();
 }
 
 describe("ToolSection", () => {
     test("test tool section", () => {
-        const wrapper = mount(ToolSection as object, {
-            propsData: {
+        const wrapper = mount(ToolSection, {
+            props: {
                 category: {
                     name: "name",
-                },
+                } as Tool,
             },
-            localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
-        nameElement.trigger("click");
-        expect(wrapper.emitted().onClick).toBeDefined();
+        expect(nameElement[0]?.text()).toBe("name");
+        nameElement[0]?.trigger("click");
+        expect(wrapper.emitted("onClick")).toBeDefined();
     });
 
     test("test tool section title", async () => {
-        const wrapper = mount(ToolSection as object, {
-            propsData: {
+        const wrapper = mount(ToolSection, {
+            props: {
                 category: {
+                    model_class: "ToolSection",
+                    id: "tool_section",
+                    name: "tool_section",
                     title: "tool_section",
+                    // The store types elems without labels, but ToolSection.vue renders them.
                     elems: [
-                        {
-                            name: "name",
-                        },
+                        { name: "name" } as Tool,
                         {
                             model_class: "ToolSectionLabel",
                             id: "label",
                             text: "text",
-                        },
-                    ],
+                        } as ToolSectionLabel,
+                    ] as ToolSectionType["elems"],
                 },
             },
-            localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
         expect(sectionIsOpened(wrapper)).toBe(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).toBe("tool_section");
         await $sectionName.trigger("click");
         const $names = wrapper.findAll(".name");
-        expect($names.at(1).text()).toBe("name");
+        expect(nth($names, 1).text()).toBe("name");
         const $label = wrapper.find(".title-link");
         expect($label.text()).toBe("tool_section");
         await $sectionName.trigger("click");
@@ -72,25 +72,25 @@ describe("ToolSection", () => {
     });
 
     test("test tool slider state", async () => {
-        const wrapper = mount(ToolSection as object, {
-            propsData: {
+        const wrapper = mount(ToolSection, {
+            props: {
                 category: {
+                    model_class: "ToolSection",
+                    id: "tool_section",
+                    name: "tool_section",
                     title: "tool_section",
                     elems: [
-                        {
-                            name: "name",
-                        },
+                        { name: "name" } as Tool,
                         {
                             model_class: "ToolSectionLabel",
                             id: "label",
                             text: "text",
-                        },
-                    ],
+                        } as ToolSectionLabel,
+                    ] as ToolSectionType["elems"],
                 },
                 queryFilter: "test",
             },
-            localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
         expect(sectionIsOpened(wrapper)).toBe(true);
         const $sectionName = wrapper.find(".name");
@@ -116,16 +116,19 @@ describe("ToolSection element ordering", () => {
         elems: (ToolSectionType | ToolSectionLabel | Tool)[],
         propsOverrides: { sortItems?: boolean } = {},
     ) {
-        return mount(ToolSection as object, {
-            propsData: {
+        return mount(ToolSection, {
+            props: {
                 category: {
+                    model_class: "ToolSection",
+                    id: "test_section",
+                    name: "test_section",
                     title: "test_section",
-                    elems,
+                    // Labels aren't in the store's elems type; see above.
+                    elems: elems as ToolSectionType["elems"],
                 },
                 ...propsOverrides,
             },
-            localVue,
-            pinia,
+            global: withPlugins(localVue, pinia),
         });
     }
 
@@ -135,8 +138,8 @@ describe("ToolSection element ordering", () => {
         { id: "m_tool", name: "Mango" },
     ] as Tool[];
 
-    function getRenderedToolIds(wrapper: Wrapper<Vue>) {
-        return wrapper.findAll("[data-tool-id]").wrappers.map((w) => w.attributes("data-tool-id"));
+    function getRenderedToolIds(wrapper: VueWrapper) {
+        return wrapper.findAll("[data-tool-id]").map((w) => w.attributes("data-tool-id"));
     }
 
     test("renders tools alphabetically by default", async () => {

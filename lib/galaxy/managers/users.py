@@ -18,6 +18,7 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     exc,
+    false,
     select,
     true,
     update,
@@ -230,6 +231,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # taken address, so that it does not reveal which addresses belong to administrators.
             raise exceptions.RequestParameterInvalidException(f"User with email '{new_email}' already exists.")
         private_role = trans.app.security_agent.get_private_user_role(user)
+        assert private_role is not None
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
         user.email = new_email
@@ -488,9 +490,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def admins(self, filters=None, **kwargs):
         """
         Return a list of admin Users.
+
+        Deleted (and therefore purged) accounts are excluded even when their
+        email is still listed in ``admin_users``: they can no longer act as
+        admins and must not receive admin-targeted notifications.
         """
         admin_emails = self.app.config.admin_users_list
         filters = combine_lists(self.model_class.email.in_(admin_emails), filters)
+        filters = combine_lists(self.model_class.deleted == false(), filters)
         return super().list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
@@ -677,8 +684,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             "custom_message": self.app.config.custom_activation_email_message,
             "expiry_days": self.app.config.activation_grace_period,
         }
-        body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
-        html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        # The HTML body is autoescaped to prevent XSS via attacker-influenced
+        # values such as the Host-derived ``hostname``; pre-escaped ``Markup``
+        # values (``name``/``user_email``) pass through unchanged under
+        # autoescape, and the admin's ``custom_message`` is marked ``| safe`` in
+        # the template. The plain-text body is never autoescaped (see
+        # templates.render's ``.txt`` guard).
+        body = templates.render(
+            TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir, autoescape=False
+        )
+        html = templates.render(
+            HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir, autoescape=True
+        )
         to = email
         subject = "Galaxy Account Activation"
         try:
@@ -821,9 +838,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # Ensure a private role and default permissions are set for remote users (remote user creation bug existed prior to 2009)
             self.app.security_agent.get_private_user_role(user, auto_create=True)
             if self.app_type == "galaxy":
-                if not user.default_permissions:
-                    self.app.security_agent.user_set_default_permissions(user)
-                    self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
+                self.app.security_agent.create_user_role(user, self.app)
         elif user is None:
             session = self.session()
             random.seed()
@@ -836,7 +851,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if self.app_type == "galaxy":
-                self.app.security_agent.user_set_default_permissions(user)
+                self.app.security_agent.create_user_role(user, self.app)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 

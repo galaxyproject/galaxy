@@ -1,4 +1,4 @@
-import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -44,12 +44,12 @@ const getHiddenSelection = () => new Map([["FAKE_ID", { visible: false }]]);
 const getDeletedSelection = () => new Map([["FAKE_ID", { deleted: true }]]);
 const getActiveSelection = () => new Map([["FAKE_ID", { deleted: false }]]);
 
-async function mountSelectionOperationsWrapper(config) {
+async function mountSelectionOperationsWrapper(config, { stubs = {}, attachTo } = {}) {
     setupMockConfig(config);
 
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
-        propsData: {
+        props: {
             history: FAKE_HISTORY,
             filterText: "",
             contentSelection: new Map(),
@@ -58,8 +58,9 @@ async function mountSelectionOperationsWrapper(config) {
             totalItemsInQuery: 5,
             isMultiViewItem: false,
         },
-        localVue,
+        global: { ...localVue, stubs: { ...localVue.stubs, ...stubs } },
         pinia,
+        attachTo,
     });
     await flushPromises();
     return wrapper;
@@ -77,7 +78,9 @@ describe("History Selection Operations", () => {
         describe("Dropdown Menu", () => {
             it("should not render if there is nothing selected", async () => {
                 await wrapper.setProps({ selectionSize: 0 });
-                expect(wrapper.html()).toBe("");
+                // root is `<section v-if="...">`; when false, VTU2 renders it as
+                // a comment node rather than empty markup.
+                expect(wrapper.find("section").exists()).toBe(false);
             });
 
             it("should display the total number of items to apply the operation", async () => {
@@ -251,7 +254,7 @@ describe("History Selection Operations", () => {
                 wrapper.vm.hideSelected();
                 await flushPromises();
                 expect(wrapper.emitted()).toHaveProperty("update:show-selection");
-                expect(wrapper.emitted()["update:show-selection"][0][0]).toBe(false);
+                expect(emittedArg(wrapper, "update:show-selection")).toBe(false);
             });
 
             it("should update operation-running state when running any operation that succeeds", async () => {
@@ -363,5 +366,30 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(false);
             });
         });
+    });
+
+    describe("Tag dialogs", () => {
+        it.each(["add tags", "remove tags"])(
+            "%s: shows the tag suggestions in the dialog body, above Cancel and Ok",
+            async (menuItem) => {
+                wrapper = await mountSelectionOperationsWrapper(NO_TASKS_CONFIG, {
+                    stubs: { GModal: false, HeadlessMultiselect: false, StatelessTags: false, teleport: false },
+                    attachTo: document.body,
+                });
+                wrapper.findComponent(`[data-description="${menuItem}"]`).vm.$emit("click");
+                await flushPromises();
+
+                const dialog = wrapper.find("dialog[open]");
+                await dialog.find(".stateless-tags .toggle-button").trigger("click");
+                await flushPromises();
+
+                const listbox = dialog.element.querySelector("[role='listbox']");
+                expect(listbox).not.toBeNull();
+                expect(dialog.find(".g-modal-content").element.contains(listbox)).toBe(true);
+                const confirmButtons = dialog.find("footer .g-modal-confirm-buttons").element;
+                expect(listbox.compareDocumentPosition(confirmButtons) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+                wrapper.unmount();
+            },
+        );
     });
 });

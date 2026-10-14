@@ -16,17 +16,19 @@ const ITEMS: TestItem[] = [
 
 function mountList(props: Record<string, unknown> = {}) {
     return mount(SidebarList as any, {
-        propsData: {
+        props: {
             items: ITEMS,
             isLoading: false,
             itemKey: (item: TestItem) => item.id,
             ...props,
         },
-        scopedSlots: {
-            item: '<div slot-scope="{ item, index }">{{ item.label }}-{{ index }}</div>',
+        slots: {
+            item: ({ item, index }: { item: TestItem; index: number }) => `<div>${item.label}-${index}</div>`,
         },
-        stubs: {
-            FontAwesomeIcon: true,
+        global: {
+            stubs: {
+                FontAwesomeIcon: true,
+            },
         },
     });
 }
@@ -143,7 +145,7 @@ describe("SidebarList", () => {
         it("each item has role=button", () => {
             const wrapper = mountList();
             const items = wrapper.findAll("[data-description='sidebar item']");
-            items.wrappers.forEach((item) => {
+            items.forEach((item) => {
                 expect(item.attributes("role")).toBe("button");
             });
         });
@@ -151,7 +153,7 @@ describe("SidebarList", () => {
         it("each item has tabindex=0", () => {
             const wrapper = mountList();
             const items = wrapper.findAll("[data-description='sidebar item']");
-            items.wrappers.forEach((item) => {
+            items.forEach((item) => {
                 expect(item.attributes("tabindex")).toBe("0");
             });
         });

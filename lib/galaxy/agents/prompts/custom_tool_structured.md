@@ -124,8 +124,9 @@ Each output must have a `type` field. Common types:
   collection with only `from_work_dir` is rejected, since nothing would claim its
   elements from the working directory.
 
-Note `format` on an output is a single string, unlike a data input's `format`, which
-is a list.
+Note `format` on a **data** output is a single string, unlike a data input's `format`,
+which is a list. A **collection** output has no `format` of its own -- set it per
+element on the `discover_datasets` entry instead.
 
 Example output:
 
@@ -154,7 +155,7 @@ You have exactly two ways to run a script. Pick one and complete it fully:
 declare:
 
 ```yaml
-container: quay.io/biocontainers/pandas:2.1.1
+container: quay.io/biocontainers/pandas:2.2.1
 shell_command: >-
     python -c "import pandas as pd; d = pd.read_csv('$(inputs.table.path)', sep='\t');
     d['group'] = d['sample_id'].str.startswith('Tx').map({True: 'Treatment', False: 'Vehicle'});
@@ -190,7 +191,9 @@ image when the command is a bioinformatics tool, otherwise any sensible base
 image). Pick an image you are confident exists rather than inventing a tag. Some
 deployments re-resolve the container against verified biocontainers after
 generation, but that is off by default -- assume the image you name is the image
-that runs. If you don't know a suitable image, say so instead of guessing.
+that runs. `container` is required, so if you are unsure of the exact tag prefer a
+widely used image you do know (a plain `python:3.12` or `r-base` base image) over a
+guessed biocontainers tag.
 
 ## Resource requirements
 
@@ -215,9 +218,8 @@ it, so don't assume the two are equal.
 - Use biocontainers images when available for bioinformatics tools
 - Escape shell variables that aren't Galaxy expressions: `\$(date)`
 - Keep shell_command focused and simple
-- Give optional text, integer, float and boolean parameters a sensible `value` (and a
-  select a `selected` option) -- the field is `value`, never `default`, and an unknown
-  key is rejected outright
+- Give optional parameters a sensible default: `value` (never `default`) for text,
+  integer, float and boolean, `selected: true` on an option for select
 - Use descriptive labels for inputs and outputs
 
 ## CRITICAL: Accuracy Requirements
@@ -225,7 +227,8 @@ it, so don't assume the two are equal.
 - Outputs are captured via `from_work_dir` or `discover_datasets` in output definitions.
   `$(outputs.param_name.path)` is not valid syntax.
 - Only use container images you are certain exist (e.g., verified biocontainers)
-- If you don't know the correct container image for a tool, say so rather than guessing
+- If you don't know the exact biocontainers tag for a tool, fall back to a base image you
+  do know rather than inventing one
 - Never fabricate command-line arguments or tool capabilities
 - If the user's request is unclear or you're uncertain how to implement it, ask for clarification
 - It's better to generate a simpler, correct tool than a complex, incorrect one

@@ -5,9 +5,9 @@
  * `summariesById` cache and only keep id lists per variant, so no page is duplicated.
  */
 import { defineStore } from "pinia";
-import { computed, del, ref, set } from "vue";
+import { computed, ref } from "vue";
 
-import { loadPages, type LoadPagesOptions, type PageSummary } from "@/api/pages";
+import { createPageFromTitle, loadPages, type LoadPagesOptions, type PageDetails, type PageSummary } from "@/api/pages";
 
 /** `my` = pages owned by the current user, `published` = published (and shared) pages. */
 export type PageListVariant = "my" | "published";
@@ -18,7 +18,13 @@ const VARIANT_QUERY: Record<PageListVariant, Pick<LoadPagesOptions, "showOwn" | 
 };
 
 export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" | "showPublished"> & {
-    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    /**
+     * Whether the fetched pages make up the cached listing of this variant.
+     * Defaults to `true`. A one-off search that is not the listing (the command
+     * palette's root fan-out, say) sets it to `false`: the pages are still
+     * cached as summaries, but the variant's id list and loaded flag are left
+     * alone, so a later listing is neither shortened nor skipped.
+     */
     record?: boolean;
 };
 
@@ -80,7 +86,7 @@ export const usePageStore = defineStore("pageStore", () => {
     /** Merges pages into the shared summary cache without changing a variant listing. */
     function mergePageSummaries(pages: PageSummary[]) {
         for (const page of pages) {
-            set(summariesById.value, page.id, page);
+            summariesById.value[page.id] = page;
         }
     }
 
@@ -88,18 +94,14 @@ export const usePageStore = defineStore("pageStore", () => {
     function savePages(variant: PageListVariant, pages: PageSummary[], atFront = false) {
         mergePageSummaries(pages);
         const incomingIds = pages.map((page) => page.id);
-        set(idsByVariant.value, variant, mergeIds(idsByVariant.value[variant], incomingIds, atFront));
+        idsByVariant.value[variant] = mergeIds(idsByVariant.value[variant], incomingIds, atFront);
     }
 
     /** Removes a page from the cache and from every variant list. */
     function removePage(pageId: string) {
-        del(summariesById.value, pageId);
+        delete summariesById.value[pageId];
         for (const variant of Object.keys(idsByVariant.value) as PageListVariant[]) {
-            set(
-                idsByVariant.value,
-                variant,
-                idsByVariant.value[variant].filter((id) => id !== pageId),
-            );
+            idsByVariant.value[variant] = idsByVariant.value[variant].filter((id) => id !== pageId);
         }
     }
 
@@ -120,7 +122,7 @@ export const usePageStore = defineStore("pageStore", () => {
 
         const promise = (async () => {
             if (record) {
-                set(loadingVariants.value, variant, true);
+                loadingVariants.value[variant] = true;
             }
             try {
                 const { data, totalMatches } = await loadPages({
@@ -134,17 +136,19 @@ export const usePageStore = defineStore("pageStore", () => {
                 if (record) {
                     savePages(variant, data, isFullListing);
                     if (isFullListing) {
-                        set(totalMatchesByVariant.value, variant, totalMatches);
-                        set(fullyListedVariants.value, variant, true);
+                        totalMatchesByVariant.value[variant] = totalMatches;
+                        fullyListedVariants.value[variant] = true;
                     }
-                    set(loadedVariants.value, variant, true);
+                    loadedVariants.value[variant] = true;
                 } else {
+                    // the pages answer this request alone, so they are cached as
+                    // summaries without joining (or completing) the listing
                     mergePageSummaries(data);
                 }
                 return data;
             } finally {
                 if (record) {
-                    set(loadingVariants.value, variant, false);
+                    loadingVariants.value[variant] = false;
                 }
                 fetchPromises.delete(key);
             }
@@ -171,6 +175,16 @@ export const usePageStore = defineStore("pageStore", () => {
         return getPages.value(variant);
     }
 
+    /**
+     * Creates a markdown page slugged from `title` (see `createPageFromTitle`) and heads the cached listing
+     * with it, which would otherwise miss it until the next unfiltered fetch.
+     */
+    async function createMarkdownPage(title: string): Promise<PageDetails> {
+        const page = await createPageFromTitle({ title, content_format: "markdown" });
+        savePages("my", [page], true);
+        return page;
+    }
+
     return {
         // state
         summariesById,
@@ -189,5 +203,6 @@ export const usePageStore = defineStore("pageStore", () => {
         removePage,
         fetchPages,
         fetchPagesOnce,
+        createMarkdownPage,
     };
 });

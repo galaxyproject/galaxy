@@ -1,5 +1,7 @@
 import { onScopeDispose, ref, watchEffect } from "vue";
 
+import { toRawDeep } from "@/utils/toRawDeep";
+
 // glue code together with the .worker.js file, to run `main` in a thread
 
 let worker;
@@ -31,7 +33,7 @@ export function useSelectMany({
     const running = ref(false);
 
     const post = (message) => {
-        worker.postMessage({ id, ...message });
+        worker.postMessage(toRawDeep({ id, ...message }));
         running.value = true;
     };
 

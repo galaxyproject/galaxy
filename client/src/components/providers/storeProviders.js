@@ -4,10 +4,13 @@ import { mapActions, mapState } from "pinia";
 
 import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { prependPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
 
 export const SimpleProviderMixin = {
+    // Renders the slot as a fragment, so there is no root element to put attributes on.
+    inheritAttrs: false,
     props: {
         id: { type: String, required: true },
     },
@@ -15,6 +18,7 @@ export const SimpleProviderMixin = {
         return {
             loading: false,
             item: null,
+            error: null,
         };
     },
     watch: {
@@ -42,12 +46,18 @@ export const SimpleProviderMixin = {
         },
     },
     render() {
-        return this.$scopedSlots.default({
-            loading: this.loading,
-            item: this.item,
-            save: this.save,
-            result: this.item,
-        });
+        // Use $scopedSlots for Vue 3 compat mode
+        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        if (slotFn) {
+            return slotFn({
+                loading: this.loading,
+                item: this.item,
+                error: this.error,
+                save: this.save,
+                result: this.item,
+            });
+        }
+        return null;
     },
 };
 
@@ -89,9 +99,14 @@ export const DatatypesProvider = {
         ...mapActions(useDatatypeStore, ["fetchUploadDatatypes"]),
         async load() {
             this.loading = true;
+            this.error = null;
             let datatypes = this.getUploadDatatypes;
             if (datatypes == null || datatypes.length == 0) {
-                await this.fetchUploadDatatypes();
+                try {
+                    await this.fetchUploadDatatypes();
+                } catch (err) {
+                    this.error = errorMessageAsString(err);
+                }
                 datatypes = this.getUploadDatatypes;
             }
             this.item = datatypes;

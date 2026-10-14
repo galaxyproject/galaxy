@@ -82,7 +82,7 @@ function onUpdateIntermediate(preferredObjectStoreId: string | null) {
             :title-suffix="suffixPrimary"
             :invocation-preferred-object-store-id="selectedObjectStoreId || undefined">
         </WorkflowTargetPreferredObjectStorePopover>
-        <GModal :show.sync="showPreferredObjectStoreModal" :title="primaryModalTitle" size="small" fixed-height>
+        <GModal v-model:show="showPreferredObjectStoreModal" :title="primaryModalTitle" size="small" fixed-height>
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
                 @updated="onUpdate" />
@@ -104,7 +104,7 @@ function onUpdateIntermediate(preferredObjectStoreId: string | null) {
             :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId || undefined">
         </WorkflowTargetPreferredObjectStorePopover>
         <GModal
-            :show.sync="showIntermediatePreferredObjectStoreModal"
+            v-model:show="showIntermediatePreferredObjectStoreModal"
             :title="intermediateModalTitle"
             size="small"
             fixed-height>

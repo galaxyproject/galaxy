@@ -5,6 +5,7 @@ import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -35,6 +36,11 @@ function mountCard(options?: {
     setActivePinia(pinia);
     const toolStore = useToolStore();
     const userStore = useUserStore();
+    // userStore is a setup-syntax store, so @pinia/testing's automatic action
+    // spying (which relies on the options-API `actions` map) doesn't apply --
+    // spy on the actions this file asserts against explicitly.
+    vi.spyOn(userStore, "removeFavoriteTag");
+    vi.spyOn(userStore, "addFavoriteTag");
     toolStore.toolSections = {
         "ontology:edam_operations": {
             operation_2409: {
@@ -124,7 +130,7 @@ describe("ToolsListCard", () => {
         await button.trigger("click");
         expect(isShown()).toBe(true);
 
-        wrapper.destroy();
+        wrapper.unmount();
         document.body.innerHTML = "";
     });
 
@@ -240,5 +246,13 @@ describe("ToolsListCard", () => {
         const tags = wrapper.findAll(".curated-tag");
         expect(tags).toHaveLength(1);
         expect(tags.at(0)?.text()).toContain("Text Manipulation");
+    });
+
+    it("renders the help summary through v-sanitize-html", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        const summary = "Filters <em>failed</em> datasets";
+        const { wrapper } = mountCard({ propsData: { summary } });
+        expect(sanitizeHtml).toHaveBeenCalledWith(summary, "default");
+        expect(wrapper.find("em").text()).toBe("failed");
     });
 });

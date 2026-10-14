@@ -7,7 +7,10 @@ attribute.
 import abc
 import threading
 from collections.abc import Sequence
-from contextlib import contextmanager
+from contextlib import (
+    AbstractContextManager,
+    contextmanager,
+)
 from typing import (
     Any,
     cast,
@@ -378,6 +381,28 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         seletools_drag_and_drop(self.driver, source, target)
 
+    def drag_over(self, source: WebElementProtocol, target: WebElementProtocol):
+        """
+        Hold a drag of source over target, dropping on exit.
+
+        A real pointer drag rather than the scripted one drag_and_drop uses:
+        the point is to hand control back to the test mid-drag, which a single
+        scripted sequence cannot do.
+
+        See HasDriverProtocol.drag_over.
+        """
+        chain = self.action_chains()
+        chain.click_and_hold(source).move_to_element(target).perform()
+
+        @contextmanager
+        def _drag_over_context():
+            try:
+                yield
+            finally:
+                chain.release().perform()
+
+        return _drag_over_context()
+
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
         Move to an element and click it using ActionChains.
@@ -702,6 +727,28 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             PNG image data as bytes
         """
         return self.driver.get_screenshot_as_png()
+
+    def highlight_element(self, element: WebElementProtocol) -> AbstractContextManager[None]:
+        """
+        Return a context manager that draws a red border around an element.
+
+        Args:
+            element: The element to highlight
+
+        Returns:
+            Context manager restoring the previous border on exit
+        """
+
+        @contextmanager
+        def _highlight_context():
+            original_border = self.execute_script("return arguments[0].style.border;", element)
+            try:
+                self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                yield
+            finally:
+                self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+
+        return _highlight_context()
 
     def close(self) -> None:
         """Cleanup the current browser tab/page."""

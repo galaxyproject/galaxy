@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
@@ -52,8 +52,8 @@ async function getPlugin() {
 
 function onSelect(dataset: OptionType) {
     const query = dataset.id ? `&dataset_id=${dataset.id}` : "";
+    // @ts-ignore - monkeypatched router accepts a second options argument; drop with migration.
     router.push(`/visualizations/display?visualization=${plugin.value?.name}${query}`, {
-        // @ts-ignore
         title: dataset.name,
     });
 }
@@ -85,13 +85,13 @@ defineExpose({ doQuery });
                 @change="onSelect" />
             <FormDataExtensions
                 v-if="extensions && extensions.length > 0"
+                v-model:formats-visible="formatsVisible"
                 :extensions="extensions"
-                formats-button-id="vis-create-ext"
-                :formats-visible.sync="formatsVisible" />
+                formats-button-id="vis-create-ext" />
         </div>
         <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>
-            <div v-html="renderMarkdown(plugin.help)" />
+            <div v-sanitize-html:links="renderMarkdown(plugin.help)" />
         </div>
         <div class="my-2 pb-2">
             <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">

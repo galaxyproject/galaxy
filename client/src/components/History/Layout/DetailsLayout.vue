@@ -5,6 +5,7 @@ import { BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { vShort } from "@/components/plugins/short";
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
 
@@ -43,13 +44,21 @@ const { isAnonymous } = storeToRefs(userStore);
 
 const nameRef = ref<HTMLInputElement | null>(null);
 
+interface EditableDetails {
+    name: string;
+    annotation: string | null;
+    tags: string[];
+}
+
 const editing = ref(false);
 const textSelected = ref(false);
-const localProps = ref<{ name: string; annotation: string | null; tags: string[] }>({
+const localProps = ref<EditableDetails>({
     name: "",
     annotation: null,
     tags: [],
 });
+// Props lag behind a save that is still in flight, so this snapshot can be stale.
+const openedWith = ref<EditableDetails>({ ...localProps.value });
 
 const clickToEditName = computed({
     get: () => props.name ?? "",
@@ -89,7 +98,20 @@ const editButtonTitle = computed(() => {
 
 function onSave() {
     editing.value = false;
-    emit("save", localProps.value);
+    // Emit only the edited fields, so a stale snapshot never overwrites values saved in the meantime.
+    const changes: Partial<EditableDetails> = {};
+    if (localProps.value.name !== openedWith.value.name) {
+        changes.name = localProps.value.name;
+    }
+    if (localProps.value.annotation !== openedWith.value.annotation) {
+        changes.annotation = localProps.value.annotation;
+    }
+    if (JSON.stringify(localProps.value.tags) !== JSON.stringify(openedWith.value.tags)) {
+        changes.tags = localProps.value.tags;
+    }
+    if (Object.keys(changes).length > 0) {
+        emit("save", changes);
+    }
 }
 
 function onToggle() {
@@ -100,6 +122,7 @@ function onToggle() {
         annotation: props.annotation ?? null,
         tags: props.tags ?? [],
     };
+    openedWith.value = { ...localProps.value };
 
     if (nameRef.value) {
         nameRef.value.focus();
@@ -123,11 +146,12 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
-                    v-model="clickToEditName"
+                    :value="clickToEditName"
                     component="h3"
                     data-description="name display"
                     no-save-on-blur
-                    class="name-display my-2 w-100" />
+                    class="name-display my-2 w-100"
+                    @input="(v: string) => (clickToEditName = v)" />
                 <Heading v-else h3 :clamp="2" class="my-2 w-100">
                     {{ props.name || "..." }}
                 </Heading>

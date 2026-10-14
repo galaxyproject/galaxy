@@ -3,7 +3,6 @@ import { computed, type Ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
 import type { CardIndicator } from "@/components/Common/GCard.types";
-import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 
@@ -14,8 +13,6 @@ export function useWorkflowCardIndicators(
     updateFilter: (key: string, value: boolean) => void,
 ) {
     const userStore = useUserStore();
-
-    const { success } = useToast();
 
     const publishedTitle = computed(() => {
         if (workflow.value.published && !publishedView) {
@@ -54,11 +51,9 @@ export function useWorkflowCardIndicators(
 
     function onCopyLink() {
         if (sourceType.value == "url") {
-            copy(workflow.value.source_metadata?.url);
-            success("URL copied");
+            copy(workflow.value.source_metadata?.url, "URL copied");
         } else if (sourceType.value.includes("trs")) {
-            copy(workflow.value.source_metadata?.trs_tool_id);
-            success("TRS ID copied");
+            copy(workflow.value.source_metadata?.trs_tool_id, "TRS ID copied");
         }
     }
 

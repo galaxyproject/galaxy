@@ -18,7 +18,7 @@ const dataUrl = computed(() => {
 
 const dataRef = ref<unknown>(null);
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 
 urlData({ url: dataUrl.value }).then((data) => {
     dataRef.value = data;

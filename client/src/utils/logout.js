@@ -1,7 +1,9 @@
 import axios from "axios";
 
 import { getGalaxyInstance } from "@/app";
+import { Toast } from "@/composables/toast";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { addSearchParams } from "@/utils/url";
 
 function userLogoutUrl(sessionCsrfToken, logoutAll) {
@@ -43,16 +45,20 @@ export function userLogout(logoutAll = false) {
 
     localStorage.removeItem("galaxy-provider");
 
-    return logoutRequest.then((response) => {
-        if (Galaxy.user) {
-            Galaxy.user.clearSessionStorage();
-        }
-        if (response.data?.redirect_uri) {
-            window.top.location.href = response.data.redirect_uri;
-        } else {
-            window.top.location.href = withPrefix(post_user_logout_href);
-        }
-    });
+    return logoutRequest
+        .then((response) => {
+            if (Galaxy.user) {
+                Galaxy.user.clearSessionStorage();
+            }
+            if (response.data?.redirect_uri) {
+                window.top.location.href = response.data.redirect_uri;
+            } else {
+                window.top.location.href = withPrefix(post_user_logout_href);
+            }
+        })
+        .catch((error) => {
+            Toast.error(errorMessageAsString(error), "Logout failed");
+        });
 }
 
 /** User logout with 'log out all sessions' flag set.  This will invalidate all

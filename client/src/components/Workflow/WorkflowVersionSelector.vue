@@ -53,6 +53,7 @@ const selectedVersionLabel = computed(() => {
 <template>
     <Multiselect
         v-model="activeVersion"
+        aria-label="Version"
         data-description="workflow version select"
         track-by="version"
         :options="versionOptions"

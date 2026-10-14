@@ -2,7 +2,7 @@
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, ValueSetterParams } from "ag-grid-community";
-import { BCol, BInputGroup, BLink, BRow } from "bootstrap-vue";
+import { BCol, BFormInput, BInputGroup, BLink, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -51,7 +51,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    columnDefinitions: null,
     extensions: undefined,
 });
 
@@ -367,7 +366,7 @@ function downloadSeededWorkbook() {
 
 const name = ref<string>("Sample Sheet for Workflow Input");
 if ("name" in props.initialElements) {
-    name.value = `${props.initialElements.name} (as sample sheet)` || name.value;
+    name.value = props.initialElements.name ? `${props.initialElements.name} (as sample sheet)` : name.value;
 }
 
 initialize();

@@ -161,7 +161,7 @@ defineExpose({
             v-model="currentValue"
             :options="currentOptions"
             :total-estimate="totalEstimate"
-            @search-change="(q) => $emit('search-change', q)">
+            @search-change="(q: string) => $emit('search-change', q)">
             <template v-slot:after-list>
                 <slot name="after-list" />
             </template>
@@ -172,7 +172,7 @@ defineExpose({
             :multiple="multiple"
             :optional="optional"
             :options="currentOptions"
-            @search-change="(q) => $emit('search-change', q)">
+            @search-change="(q: string) => $emit('search-change', q)">
             <template v-slot:no-options>
                 <slot name="no-options" />
             </template>

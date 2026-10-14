@@ -38,7 +38,6 @@ import { useHistoryCardBadges } from "@/components/History/useHistoryCardBadges"
 import { useHistoryCardIndicators } from "@/components/History/useHistoryCardIndicators";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import localize from "@/utils/localization";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -135,12 +134,6 @@ const emit = defineEmits<{
     (e: "select", history: AnyHistoryEntry): void;
 
     /**
-     * Emitted when the history title is clicked
-     * @event titleClick
-     */
-    (e: "titleClick", history: AnyHistoryEntry["id"]): void;
-
-    /**
      * Emitted when the rename action is triggered
      * @event rename
      */
@@ -176,32 +169,6 @@ const emit = defineEmits<{
      */
     (e: "on-history-card-click", history: AnyHistoryEntry, event: Event): void;
 }>();
-
-/**
- * Handles clicking on the history title to navigate to the history view
- * @function onTitleClick
- */
-async function onTitleClick() {
-    if (isMyHistory(props.history)) {
-        await historyStore.setCurrentHistory(props.history.id);
-    }
-}
-
-/**
- * Computed property that creates the title configuration for the history card
- * @returns {Object | string} A string title for an unowned history or a title
- * configuration with label, tooltip, and click handler
- */
-const historyCardTitle = computed(() => {
-    if (isMyHistory(props.history)) {
-        return {
-            label: props.history.name,
-            title: localize("Click to set as current"),
-            handler: onTitleClick,
-        };
-    }
-    return props.history.name;
-});
 
 /**
  * Get action configurations for the history card
@@ -259,7 +226,7 @@ function onKeyDown(event: KeyboardEvent) {
         :id="`history-${history.id}`"
         :key="history.id"
         class="history-card"
-        :title="historyCardTitle"
+        :title="history.name"
         :title-badges="historyCardTitleBadges"
         :title-n-lines="2"
         :can-rename-title="!history.deleted && !history.purged && isMyHistory(history)"
@@ -278,11 +245,10 @@ function onKeyDown(event: KeyboardEvent) {
         :update-time="history.update_time"
         :clickable="props.clickable"
         :highlighted="props.highlighted"
-        @titleClick="onTitleClick"
         @rename="emit('rename', history.id, history.name)"
         @select="isMyHistory(history) && emit('select', history)"
-        @tagsUpdate="(tags) => onTagsUpdate(history.id, tags)"
-        @tagClick="(tag) => emit('tagClick', tag)"
+        @tagsUpdate="(tags: string[]) => onTagsUpdate(history.id, tags)"
+        @tagClick="(tag: string) => emit('tagClick', tag)"
         @click="onClick"
         @keydown="onKeyDown">
         <template v-if="props.archivedView && isArchivedHistory(history)" v-slot:titleActions>

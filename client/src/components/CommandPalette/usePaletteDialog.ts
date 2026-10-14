@@ -121,7 +121,7 @@ export function usePaletteDialog(options: PaletteDialogOptions) {
         if (!dialog.open) {
             try {
                 dialog.showModal();
-            } catch (e) {
+            } catch {
                 // dialog may already be open, or the test environment lacks support
             }
         }

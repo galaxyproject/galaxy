@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, type Wrapper } from "@vue/test-utils";
+import { nth } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
@@ -97,16 +98,18 @@ async function mountWorkflowInvocationInputOutputTabs(
     );
 
     const wrapper = mount(WorkflowInvocationInputOutputTabs as object, {
-        propsData: {
+        props: {
             invocation,
             terminal,
             tab,
         },
         stubs: {
+            // ParameterStep renders the actual parameters table (via GTable) from its
+            // `parameters` prop rather than a slot, so stubbing it would hide the very
+            // rows the "shows invocation inputs" test inspects.
             ContentItem: true,
-            ParameterStep: true,
         },
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
     });
     await flushPromises();
     return wrapper;
@@ -130,10 +133,10 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         // Test that the parameters are displayed correctly
         for (let i = 0; i < testParameters.length; i++) {
             const testParameter = testParameters[i];
-            const tableRow = tableParamValues.at(i);
+            const tableRow = nth(tableParamValues, i);
             expect(tableRow.find("td").text()).toEqual(testParameter?.label);
             if (testParameter && "parameter_value" in testParameter) {
-                expect(tableRow.findAll("td").at(1).text()).toEqual(testParameter.parameter_value.toString());
+                expect(nth(tableRow.findAll("td"), 1).text()).toEqual(testParameter.parameter_value.toString());
             }
         }
 
@@ -167,7 +170,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
         testOutputsDisplayed(wrapper, false);
     });
 
-    function testOutputsDisplayed(wrapper: Wrapper<Vue>, terminal = true) {
+    function testOutputsDisplayed(wrapper: VueWrapper, terminal = true) {
         /** The actual outputs of the workflow invocation */
         const testDatasetOutputLabels = Object.keys(invocationData.outputs);
         const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);
@@ -181,7 +184,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
 
         // Test that the output labels are shown
         for (let i = 0; i < invocationOutputs.length; i++) {
-            const testOutput = invocationOutputs.at(i);
+            const testOutput = nth(invocationOutputs, i);
             const testLabel = expectedLabels[i];
             expect(testOutput.text()).toContain(testLabel);
             expect(testOutput.find(selectors.terminalInvocationOutputItem).exists()).toBe(terminal);

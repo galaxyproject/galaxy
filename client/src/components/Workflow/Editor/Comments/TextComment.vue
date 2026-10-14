@@ -2,7 +2,7 @@
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
+import { type Position, type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
@@ -198,10 +198,11 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="saveText"
-                @pan-by="(p) => emit('pan-by', p)" />
+                @pan-by="(p: Position) => emit('pan-by', p)" />
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
             <span
                 ref="editableElement"
+                v-sanitize-html="escapeAndSanitize(props.comment.data.text)"
                 :contenteditable="!props.readonly"
                 class="prevent-zoom"
                 spellcheck="false"
@@ -211,8 +212,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 }"
                 @blur="saveText"
                 @mouseup.stop
-                @dblclick.prevent="onDoubleClick"
-                v-html="escapeAndSanitize(props.comment.data.text)" />
+                @dblclick.prevent="onDoubleClick" />
         </div>
 
         <GButtonGroup v-if="!props.readonly" class="style-buttons">

@@ -1,9 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { Toast } from "@/composables/toast";
 
 import { pushIgnoringNavCancel } from "./windowAwareNavigation";
+
+/**
+ * A real `NavigationFailure` carries a non-exported internal symbol that
+ * `isNavigationFailure()` checks for, so a hand-built error can't satisfy it.
+ * Drive an actual router into a guard-cancelled navigation to get a genuine one.
+ */
+async function createCancelledNavigationError() {
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+            { path: "/", component: { template: "<div />" } },
+            { path: "/pages/list", component: { template: "<div />" } },
+        ],
+    });
+    await router.push("/");
+    router.beforeEach(() => false);
+    return router.push("/pages/list");
+}
 
 vi.mock("@/app");
 vi.mock("@/composables/toast");
@@ -31,7 +50,9 @@ describe("pushIgnoringNavCancel", () => {
     });
 
     it("swallows a cancelled navigation", async () => {
-        const aborted = Object.assign(new Error("Navigation aborted"), { _isRouter: true, type: 4 });
+        // vue-router 4 normally resolves push() with the NavigationFailure, but a guard
+        // can still reject with one, and pushIgnoringNavCancel's `.catch()` must not report it.
+        const aborted = await createCancelledNavigationError();
         const router = fakeRouter(() => Promise.reject(aborted));
 
         pushIgnoringNavCancel(router, "/pages/list");

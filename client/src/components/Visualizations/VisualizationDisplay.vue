@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { NavigationGuard } from "vue-router";
-import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router/composables";
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
@@ -52,11 +52,9 @@ function onUnload(e: BeforeUnloadEvent) {
     }
 }
 
-const confirmDiscard: NavigationGuard = (to, from, next) => {
+const confirmDiscard: NavigationGuard = () => {
     if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
-        next(false);
-    } else {
-        next();
+        return false;
     }
 };
 

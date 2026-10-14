@@ -25,5 +25,7 @@ class TestHistoryOptions(SeleniumTestCase, UsesUploadActivity):
         self.history_panel_click_item_title(hid=hid, wait=True)
         item_component = self.history_panel_item_body_component(hid=hid)
         item_component.wait_for_visible()
+        # Wait for metadata to replace the loading placeholder before testing collapse.
+        self.history_panel_item_component(hid=hid).summary.wait_for_visible()
         self.history_panel_click_item_title(hid=hid, wait=True)
         item_component.assert_absent_or_hidden_after_transitions()

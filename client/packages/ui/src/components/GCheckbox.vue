@@ -2,56 +2,125 @@
 /**
  * A checkbox/switch component with optional label.
  * Supports v-model for two-way binding.
+ *
+ * `class`, `style`, `title` and native listeners (`@click.stop`, ...) land on the root label, so
+ * non-bubbling `@focus`/`@blur` never fire there (use `@focusin`/`@focusout`). Every other
+ * attribute (`data-test-id`, `aria-*`) lands on the input, so give an unlabeled
+ * checkbox an `aria-label`.
+ *
+ * Inside a GCheckboxGroup the group owns the state: the checkbox is checked when its `value` is in
+ * the group's v-model and emits `change` but not `update:modelValue`. It takes the group's name and
+ * size unless it sets its own; the group's disabled always applies and its `switches` alone sets
+ * switch mode, as in BootstrapVue.
  */
 
-import { computed } from "vue";
+import { computed, inject, useAttrs } from "vue";
+
+import { checkboxGroupKey } from "./checkboxGroupContext";
+import { type ComponentSize, prefix } from "./componentVariants";
+
+defineOptions({
+    inheritAttrs: false,
+    // Under @vue/compat: keep v-model on modelValue, and keep class/style/listeners in $attrs so they can be split below
+    compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
+});
 
 const props = defineProps<{
     /** The v-model value (checked state) */
-    value?: boolean;
+    modelValue?: boolean;
     /** ID attribute for the checkbox input */
     id?: string;
+    /** Accessible name when no visible label is provided */
+    ariaLabel?: string;
     /** Disabled state */
     disabled?: boolean;
-    /** Render as a toggle switch instead of a checkbox */
-    toggle?: boolean;
+    /** Partly-checked state, e.g. a select-all box when only some rows are selected */
+    indeterminate?: boolean;
+    /** Name attribute for the checkbox input */
+    name?: string;
+    /** Required attribute for the checkbox input */
+    required?: boolean;
+    /** Displayed size; unset keeps the surrounding font size */
+    size?: ComponentSize;
+    /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
+    switch?: boolean;
+    /** Value attribute for the checkbox input, rendered as a string whenever it is set */
+    value?: unknown;
 }>();
 
 const emit = defineEmits<{
-    (e: "input", value: boolean): void;
+    (e: "update:modelValue", value: boolean): void;
     (e: "change", event: Event): void;
 }>();
 
-const currentValue = computed({
-    get() {
-        return props.value ?? false;
-    },
-    set(newValue: boolean) {
-        emit("input", newValue);
-    },
+const attrs = useAttrs();
+
+const group = inject(checkboxGroupKey, null);
+
+// Plain functions, not computeds: $attrs is not reactive, so the render function must read it each time
+function rootAttrs() {
+    return {
+        "data-test-id": props.id ? `${props.id}-label` : undefined,
+        ...Object.fromEntries(Object.entries(attrs).filter(([key]) => isRootAttr(key))),
+    };
+}
+
+// Caller attributes win over the defaults derived from props
+function inputAttrs() {
+    return {
+        "data-test-id": props.id ? `${props.id}-input` : undefined,
+        ...Object.fromEntries(Object.entries(attrs).filter(([key]) => !isRootAttr(key))),
+    };
+}
+
+const isChecked = computed(() => (group ? group.isChecked(props.value) : (props.modelValue ?? false)));
+
+const isDisabled = computed(() => props.disabled || Boolean(group?.disabled.value));
+
+const isSwitch = computed(() => (group ? group.switches.value : props.switch));
+
+const inputName = computed(() => props.name ?? group?.name.value);
+
+const sizeClass = computed(() => {
+    const size = props.size ?? group?.size.value;
+    return size ? prefix(size) : undefined;
 });
+
+// title stays on the label so v-g-tooltip, which binds to the root, can read and suppress it
+function isRootAttr(key: string) {
+    return key === "class" || key === "style" || key === "title" || /^on[A-Z]/.test(key);
+}
 
 function onChange(event: Event) {
     const target = event.target as HTMLInputElement;
-    currentValue.value = target.checked;
+    if (group) {
+        group.toggle(props.value, target.checked);
+    } else {
+        emit("update:modelValue", target.checked);
+    }
     emit("change", event);
 }
 </script>
 
 <template>
     <label
+        v-bind="rootAttrs()"
         class="g-checkbox"
-        :class="{ 'g-disabled': disabled, 'g-switch': toggle }"
-        :data-test-id="id ? `${id}-label` : undefined">
+        :class="[sizeClass, { 'g-disabled': isDisabled, 'g-switch': isSwitch }]">
         <input
+            v-bind="inputAttrs()"
             :id="id"
+            :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
-            :data-test-id="id ? `${id}-input` : undefined"
-            :checked="currentValue"
-            :disabled="disabled"
+            :checked="isChecked"
+            :indeterminate="indeterminate"
+            :disabled="isDisabled"
+            :name="inputName"
+            :required="required"
+            :role="isSwitch ? 'switch' : undefined"
+            :value="value"
             @change="onChange" />
-        <span v-if="toggle" class="g-switch-slider" />
         <span v-if="$slots.default" class="g-checkbox-label">
             <slot></slot>
         </span>
@@ -80,13 +149,9 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
-    .g-switch & {
-        // Visually hide the checkbox in switch mode, keeping it accessible
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-        pointer-events: none;
+    &:focus-visible {
+        outline: 2px solid var(--color-blue-500, #197cd2);
+        outline-offset: 2px;
     }
 }
 
@@ -94,46 +159,74 @@ function onChange(event: Event) {
     margin-left: var(--spacing-2, 0.5rem);
 }
 
-// Switch/toggle styles
-.g-switch {
-    position: relative;
+.g-small {
+    font-size: var(--font-size-small, 0.75rem);
 
-    .g-switch-slider {
-        position: relative;
-        display: inline-block;
-        width: 2rem;
-        height: 1.125rem;
-        background-color: var(--color-grey-400, #adb5bd);
-        border-radius: 1rem;
-        transition: background-color 0.15s ease-in-out;
+    &:not(.g-switch) .g-checkbox-input {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+}
 
-        &::before {
-            content: "";
-            position: absolute;
-            top: 0.125rem;
-            left: 0.125rem;
-            width: 0.875rem;
-            height: 0.875rem;
-            background-color: white;
-            border-radius: 50%;
-            transition: transform 0.15s ease-in-out;
-        }
+.g-large {
+    font-size: var(--font-size-large, 1rem);
+
+    &:not(.g-switch) .g-checkbox-input {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+}
+
+// Switch: the input itself is the track, so it stays visible, clickable and focusable
+.g-switch .g-checkbox-input {
+    --g-switch-width: 2rem;
+    --g-switch-height: 1.125rem;
+    --g-switch-knob-color: var(--color-grey-500, #63656d);
+
+    appearance: none;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    width: var(--g-switch-width);
+    height: var(--g-switch-height);
+    // Off-state border keeps >= 3:1 against the page (WCAG 1.4.11) and survives forced-colors mode
+    border: 1px solid var(--color-grey-500, #63656d);
+    border-radius: calc(var(--g-switch-height) / 2);
+    background-color: var(--background-color, #ffffff);
+    background-image: radial-gradient(circle closest-side, var(--g-switch-knob-color) 75%, transparent 80%);
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-size: calc(var(--g-switch-height) - 2px) calc(var(--g-switch-height) - 2px);
+    transition:
+        background-position 0.15s ease-in-out,
+        background-color 0.15s ease-in-out;
+
+    &:checked {
+        --g-switch-knob-color: #ffffff;
+
+        border-color: var(--color-blue-500, #197cd2);
+        background-color: var(--color-blue-500, #197cd2);
+        background-position: right center;
     }
 
-    .g-checkbox-input:checked + .g-switch-slider {
-        background-color: var(--color-blue-500, #007bff);
-
-        &::before {
-            transform: translateX(0.875rem);
-        }
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
     }
 
-    .g-checkbox-input:focus + .g-switch-slider {
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    // Forced colors drop the knob gradient, which would hide the on/off state; fall back to the native box
+    @media (forced-colors: active) {
+        appearance: auto;
+        width: auto;
+        height: auto;
     }
+}
 
-    &.g-disabled .g-switch-slider {
-        opacity: 0.5;
-    }
+.g-switch.g-small .g-checkbox-input {
+    --g-switch-width: 1.5rem;
+    --g-switch-height: 0.875rem;
+}
+
+.g-switch.g-large .g-checkbox-input {
+    --g-switch-width: 2.5rem;
+    --g-switch-height: 1.375rem;
 }
 </style>

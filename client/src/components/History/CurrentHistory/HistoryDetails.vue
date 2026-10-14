@@ -16,7 +16,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    writeable: true,
     summarized: undefined,
 });
 

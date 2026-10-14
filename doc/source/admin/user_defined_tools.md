@@ -22,6 +22,8 @@ This level of access is acceptable when only administrators install tools. Howev
 
 To address this, Galaxy supports a restricted tool language for user-defined tools. This format is modeled after the XML tool definition but replaces Cheetah templating with sandboxed JavaScript expressions that have no access to the database or filesystem, and it requires every tool to declare the container it runs in.
 
+User-defined tool help must be written in Markdown, which Galaxy renders without raw HTML.
+
 The sandbox constrains what a tool definition can *template*. It does not constrain what the resulting command can *do* inside its container, so the isolation of the job's execution environment is still the deployment's responsibility.
 
 ## Enabling User-Defined Tools
@@ -37,6 +39,13 @@ To enable this feature:
 User-defined tools are private to their creators. However, if a tool is embedded in a workflow, any user who imports that workflow will automatically have the tool created in their account.
 
 These tools can also be exported to disk and loaded like regular tools, enabling instance-wide availability if needed.
+
+## Stored tools and schema changes
+
+A tool is stored as it was saved, and the schema for user-defined tools can become stricter between Galaxy versions. Galaxy validates each stored tool against the current schema when it loads it:
+
+- If the definition contains fields the schema no longer accepts, or input validators of a type the parameter no longer accepts, those parts are dropped and the tool loads without them. The tool form shows a message listing what was ignored. The unprivileged tools API reports the tool with `representation_status: lifted` and lists the dropped parts in `representation_errors` and in the `X-Galaxy-Deprecated-Fields` response header. Saving the tool from the tool editor stores it as a new tool without them.
+- If the definition cannot be made valid by dropping parts, for example because a required field such as `shell_command` is missing, the tool is refused. Opening or running it returns an error that lists the problems and asks the user to correct them in the tool editor and save the tool as a new tool. The unprivileged tools API still returns the stored definition, with `representation_status: invalid`, so that it can be repaired.
 
 ## Security considerations
 

@@ -123,6 +123,10 @@
     <a id="open-new-window" href="basic.html?opened=1" target="_blank"
       >Open new window</a
     >
+    <!-- The page redirects itself a moment after the click, the way an async
+         form submit does once its POST lands. Whatever navigation is in flight
+         when that happens loses the race. -->
+    <button id="navigate-away-later">Navigate away</button>
 
     <!-- Frame for iframe testing -->
     <iframe
@@ -180,8 +184,16 @@
       dropTarget.addEventListener("dragover", function (e) {
         e.preventDefault();
       });
+      // Feedback a zone shows only while a drag is over it.
+      dropTarget.addEventListener("dragenter", function () {
+        dropTarget.classList.add("dragging-over");
+      });
+      dropTarget.addEventListener("dragleave", function () {
+        dropTarget.classList.remove("dragging-over");
+      });
       dropTarget.addEventListener("drop", function (e) {
         e.preventDefault();
+        dropTarget.classList.remove("dragging-over");
         dropTarget.textContent =
           "Dropped: " + e.dataTransfer.getData("text/plain");
       });
@@ -192,6 +204,14 @@
           setTimeout(function () {
             history.pushState({}, "", "basic.html?pushed=1");
           }, 100);
+        });
+
+      document
+        .getElementById("navigate-away-later")
+        .addEventListener("click", function () {
+          setTimeout(function () {
+            window.location = "basic.html?navigated-away=1";
+          }, 50);
         });
 
       // The zone listens, but dragenter replaces the inner box the caller is

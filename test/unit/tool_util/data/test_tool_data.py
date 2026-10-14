@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pytest
@@ -86,6 +87,43 @@ def test_reload_by_name(tdt_manager, tmp_path):
 
 def test_merging_tables(merged_tdt_manager):
     assert len(merged_tdt_manager["testbeta"].data) == 2
+
+
+def test_merging_tables_ignores_entries_with_known_value(tmp_path, caplog):
+    (tmp_path / "local.loc").write_text("hg38\tHuman (hg38)\t/local/hg38.fa\nmm10\tMouse (mm10)\t/local/mm10.fa\n")
+    (tmp_path / "idc.loc").write_text(
+        "hg38\tHuman (hg38)\t/idc/hg38.fa\nmm10\tMouse (mm10)\t/local/mm10.fa\ndm6\tFly (dm6)\t/idc/dm6.fa\n"
+    )
+    confs = []
+    for name in ("local", "idc"):
+        conf = tmp_path / f"{name}_tool_data_table_conf.xml"
+        conf.write_text(f"""<tables>
+  <table name="all_fasta" comment_char="#">
+    <columns>value, name, path</columns>
+    <file path="{tmp_path}/{name}.loc" />
+  </table>
+</tables>
+""")
+        confs.append(str(conf))
+    with caplog.at_level(logging.WARNING, logger="galaxy.tool_util.data"):
+        tdt_manager = ToolDataTableManager(tmp_path, ",".join(confs))
+    table = tdt_manager["all_fasta"]
+    expected_data = [
+        ["hg38", "Human (hg38)", "/local/hg38.fa"],
+        ["mm10", "Mouse (mm10)", "/local/mm10.fa"],
+        ["dm6", "Fly (dm6)", "/idc/dm6.fa"],
+    ]
+    assert table.data == expected_data
+    # the conflicting hg38 entry is an error, the identical mm10 entry only a warning
+    errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
+    assert len(errors) == 1
+    assert "/idc/hg38.fa" in errors[0]
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "Ignoring duplicate entry ['mm10'" in warnings[0]
+    # reloading re-applies the same merge rules
+    table.reload_from_files()
+    assert table.data == expected_data
 
 
 def test_to_json(merged_tdt_manager, tmp_path):

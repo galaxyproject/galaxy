@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BSpinner } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -48,7 +49,7 @@ onMounted(async () => {
 <template>
     <div class="interactive-tool-frame">
         <div v-if="loading" class="d-flex justify-content-center align-items-center h-100">
-            <b-spinner label="Loading interactive tool..."></b-spinner>
+            <BSpinner label="Loading interactive tool..."></BSpinner>
         </div>
         <div v-else-if="error" class="alert alert-danger m-3">
             {{ error }}

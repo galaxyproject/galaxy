@@ -3,7 +3,7 @@ import { faFolder, faGlobe, faPlus, faTrash, faUser } from "@fortawesome/free-so
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { browseRemoteFiles, fetchFileSources, type RemoteEntry } from "@/api/remoteFiles";
 import type { BreadcrumbItem } from "@/components/Common";

@@ -33,7 +33,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { config, isConfigLoaded } = useConfig(true);
+const { config, isConfigLoaded } = useConfig();
 const collectionAttributesStore = useCollectionAttributesStore();
 
 const historyStore = useHistoryStore();
@@ -294,10 +294,13 @@ async function saveAttrs() {
                     {{ localize("Datatypes") }}
                 </template>
 
-                <DatatypesProvider v-slot="{ item, loading }">
+                <DatatypesProvider v-slot="{ item, loading, error }">
                     <div v-if="loading">
                         <LoadingSpan message="Loading Datatypes" />
                     </div>
+                    <GAlert v-else-if="error" show variant="danger">
+                        {{ localize("Unable to load datatypes:") }} {{ error }}
+                    </GAlert>
                     <div v-else>
                         <ChangeDatatypeTab
                             v-if="item && datatypeFromElements"

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { mount } from "@vue/test-utils"
+import { nextTick } from "vue"
 import ChangesetSummaryTable from "./ChangesetSummaryTable.vue"
 import { getChangesetDetails, resetMetadataPreview, makeChangeset } from "./__fixtures__"
 
@@ -17,7 +18,7 @@ describe("ChangesetSummaryTable", () => {
                 props: { changesets: fixtureChangesets },
             })
 
-            expect(wrapper.find("table").exists() || wrapper.find(".q-table").exists()).toBe(true)
+            expect(wrapper.find("table").exists()).toBe(true)
         })
 
         it("displays all changesets from fixture", () => {
@@ -71,28 +72,28 @@ describe("ChangesetSummaryTable", () => {
     })
 
     describe("record_operation display", () => {
-        it("displays created in a chip with positive color", () => {
+        it("displays created in a badge with a distinct created class", () => {
             const changesets = [
                 makeChangeset({ comparison_result: "not equal and not subset", record_operation: "created" }),
             ]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const chip = wrapper.find(".q-chip")
-            expect(chip.exists()).toBe(true)
-            expect(chip.text()).toContain("created")
-            expect(chip.classes().some((c) => c.includes("positive") || c.includes("bg-positive"))).toBe(true)
+            const badge = wrapper.find(".record-operation-badge")
+            expect(badge.exists()).toBe(true)
+            expect(badge.text()).toContain("created")
+            expect(badge.classes()).toContain("record-operation-badge--created")
         })
 
-        it("displays updated in a chip with info color", () => {
+        it("displays updated in a badge with a distinct updated class", () => {
             const changesets = [
                 makeChangeset({ comparison_result: "not equal and not subset", record_operation: "updated" }),
             ]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const chip = wrapper.find(".q-chip")
-            expect(chip.exists()).toBe(true)
-            expect(chip.text()).toContain("updated")
-            expect(chip.classes().some((c) => c.includes("info") || c.includes("bg-info"))).toBe(true)
+            const badge = wrapper.find(".record-operation-badge")
+            expect(badge.exists()).toBe(true)
+            expect(badge.text()).toContain("updated")
+            expect(badge.classes()).toContain("record-operation-badge--updated")
         })
 
         it("shows dash when record_operation is null", () => {
@@ -106,27 +107,65 @@ describe("ChangesetSummaryTable", () => {
         })
     })
 
+    describe("tooltips", () => {
+        it("wires each header help icon to a tooltip via aria-describedby", async () => {
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
+            // GTooltip sets aria-describedby on its reference reactively, once the template
+            // ref to the trigger span is flushed -- that happens a tick after mount.
+            await nextTick()
+
+            const triggers = wrapper.findAll("th .header-help")
+            expect(triggers).toHaveLength(2)
+
+            for (const trigger of triggers) {
+                const describedBy = trigger.attributes("aria-describedby")
+                expect(describedBy).toBeTruthy()
+                expect(wrapper.find(`#${describedBy}`).exists()).toBe(true)
+            }
+        })
+
+        it("explains both columns in the header tooltips", () => {
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
+
+            const tooltips = wrapper.findAll('[role="tooltip"]')
+            expect(tooltips).toHaveLength(2)
+            expect(tooltips.some((t) => t.text().includes("Snapshots are created"))).toBe(true)
+            expect(tooltips.some((t) => t.text().includes("refreshed"))).toBe(true)
+        })
+
+        it("puts the per-row comparison_result explanation in a title, since each row needs its own", () => {
+            const changesets = [makeChangeset({ comparison_result: "subset" })]
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
+
+            const cell = wrapper.find("td .comparison-result")
+            expect(cell.attributes("title")).toContain("changes accumulate")
+            // A title never shows on keyboard focus, so the cell isn't a tab stop
+            expect(cell.attributes("tabindex")).toBeUndefined()
+        })
+
+        it("names the focusable header help icons", () => {
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: fixtureChangesets } })
+
+            const labels = wrapper.findAll("th .header-help").map((trigger) => trigger.attributes("aria-label"))
+            expect(labels).toEqual(["About comparison results", "About record operations"])
+        })
+    })
+
     describe("tools indicator", () => {
         it("shows check icon when has_tools is true", () => {
             const changesets = [makeChangeset({ has_tools: true })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const icons = wrapper.findAll(".q-icon")
-            const checkIcon = icons.find(
-                (icon) => icon.text().includes("check") || icon.attributes("name")?.includes("check"),
-            )
-            expect(checkIcon).toBeTruthy()
+            expect(wrapper.find('[data-icon="check"]').exists()).toBe(true)
+            expect(wrapper.find('[data-icon="xmark"]').exists()).toBe(false)
         })
 
         it("shows close icon when has_tools is false", () => {
             const changesets = [makeChangeset({ has_tools: false })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const icons = wrapper.findAll(".q-icon")
-            const closeIcon = icons.find(
-                (icon) => icon.text().includes("close") || icon.attributes("name")?.includes("close"),
-            )
-            expect(closeIcon).toBeTruthy()
+            expect(wrapper.find('[data-icon="xmark"]').exists()).toBe(true)
+            expect(wrapper.find('[data-icon="check"]').exists()).toBe(false)
         })
     })
 
@@ -150,7 +189,7 @@ describe("ChangesetSummaryTable", () => {
         it("renders empty table when changesets array is empty", () => {
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets: [] } })
 
-            expect(wrapper.find("table").exists() || wrapper.find(".q-table").exists()).toBe(true)
+            expect(wrapper.find("table").exists()).toBe(true)
         })
 
         it("truncates changeset hash to 7 characters", () => {

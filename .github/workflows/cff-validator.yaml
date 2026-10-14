@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - "CITATION.cff"
+      - '.github/workflows/cff-validator.yaml'
   pull_request:
     paths:
       - "CITATION.cff"
+      - '.github/workflows/cff-validator.yaml'
 
 permissions: {}
 

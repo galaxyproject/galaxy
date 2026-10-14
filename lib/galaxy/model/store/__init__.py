@@ -116,7 +116,17 @@ from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisiteTracker,
 )
-from .ro_crate_utils import WorkflowRunCrateProfileBuilder
+from .datasets_mapping import (
+    collection_memberships_by_hda_id,
+    collection_memberships_of,
+    file_size_of,
+    MappingEntry,
+    write_datasets_mapping,
+)
+from .ro_crate_utils import (
+    add_mapping_file_to_crate,
+    WorkflowRunCrateProfileBuilder,
+)
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
@@ -2001,6 +2011,7 @@ class DirectoryModelExportStore(ModelExportStore):
         serialize_jobs: bool = True,
         user_context=None,
         ignore_errors: bool | None = False,
+        include_datasets_mapping: bool = False,
     ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -2010,6 +2021,7 @@ class DirectoryModelExportStore(ModelExportStore):
         :param export_files: How files should be exported, can be 'symlink', 'copy' or None, in which case files
                              will not be serialized.
         :param serialize_jobs: Include job data in model export. Not needed for set_metadata script.
+        :param include_datasets_mapping: Write a human-readable ``datasets_mapping.tsv`` for user-facing exports.
         """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
@@ -2040,6 +2052,7 @@ class DirectoryModelExportStore(ModelExportStore):
             ignore_errors=ignore_errors,
         )
         self.export_files = export_files
+        self.include_datasets_mapping = include_datasets_mapping
         self.included_datasets: dict[model.DatasetInstance, tuple[model.DatasetInstance, bool]] = {}
         self.dataset_implicit_conversions: dict[model.DatasetInstance, model.ImplicitlyConvertedDatasetAssociation] = {}
         self.included_collections: dict[
@@ -2482,23 +2495,24 @@ class DirectoryModelExportStore(ModelExportStore):
     def _finalize(self) -> None:
         export_directory = self.export_directory
 
-        datasets_attrs = []
-        provenance_attrs = []
+        serialized_datasets: list[tuple[model.DatasetInstance, JsonDictT]] = []
+        serialized_provenance: list[tuple[model.DatasetInstance, JsonDictT]] = []
         for dataset, include_files in self.included_datasets.values():
+            serialized = cast(model.Serializable, dataset).serialize(self.security, self.serialization_options)
             if include_files:
-                datasets_attrs.append(dataset)
+                serialized_datasets.append((dataset, serialized))
             else:
-                provenance_attrs.append(dataset)
+                serialized_provenance.append((dataset, serialized))
 
         def to_json(attributes):
             return json_encoder.encode([a.serialize(self.security, self.serialization_options) for a in attributes])
 
         datasets_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_DATASETS)
         with open(datasets_attrs_filename, "w") as datasets_attrs_out:
-            datasets_attrs_out.write(to_json(datasets_attrs))
+            datasets_attrs_out.write(json_encoder.encode([serialized for _, serialized in serialized_datasets]))
 
         with open(f"{datasets_attrs_filename}.provenance", "w") as provenance_attrs_out:
-            provenance_attrs_out.write(to_json(provenance_attrs))
+            provenance_attrs_out.write(json_encoder.encode([serialized for _, serialized in serialized_provenance]))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
         with open(libraries_attrs_filename, "w") as libraries_attrs_out:
@@ -2623,6 +2637,25 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(export_attrs_filename, "w") as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
+        if self.include_datasets_mapping:
+            self._write_datasets_mapping(serialized_datasets + serialized_provenance)
+
+    def _write_datasets_mapping(self, serialized_datasets: list[tuple[model.DatasetInstance, JsonDictT]]) -> None:
+        """Write ``datasets_mapping.tsv``; it is a convenience, so never fail the export because of it."""
+        try:
+            collection_memberships = collection_memberships_by_hda_id(self.included_collections)
+            mapping_entries = [
+                MappingEntry(
+                    serialized=serialized,
+                    file_size=file_size_of(dataset),
+                    collections=collection_memberships_of(dataset, collection_memberships),
+                )
+                for dataset, serialized in serialized_datasets
+            ]
+            write_datasets_mapping(self.export_directory, mapping_entries)
+        except Exception:
+            log.warning("Failed to write datasets mapping file, continuing export without it.", exc_info=True)
+
     def __exit__(
         self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
     ) -> bool:
@@ -2692,6 +2725,7 @@ class WriteCrates:
             dest_path="README.md",
             properties=properties,
         )
+        add_mapping_file_to_crate(ro_crate, self.export_directory)
 
         for dataset, _ in self.included_datasets.values():
             assert dataset.dataset is not None
@@ -3085,6 +3119,7 @@ def get_export_store_factory(
         "serialize_dataset_objects": False,
         "user_context": user_context,
         "ignore_errors": ignore_errors,
+        "include_datasets_mapping": True,
     }
     if download_format in ["tar.gz", "tgz"]:
         export_store_class = TarModelExportStore
@@ -3097,6 +3132,8 @@ def get_export_store_factory(
     elif download_format == "bco.json":
         export_store_class = BcoModelExportStore
         export_store_class_kwds["export_options"] = bco_export_options
+        # The BCO is a single JSON document; the export directory is discarded.
+        export_store_class_kwds["include_datasets_mapping"] = False
     elif download_format.startswith("bag."):
         bag_archiver = download_format[len("bag.") :]
         if bag_archiver not in ["zip", "tar", "tgz"]:

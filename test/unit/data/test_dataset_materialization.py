@@ -251,6 +251,7 @@ def test_deferred_hdas_basic_detached(tmpdir, bed_uri):
         file_sources=stock_file_sources_allowing_loopback(),
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
+    assert materialized_hda.name == deferred_hda.name
     materialized_dataset = materialized_hda.dataset
     assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"

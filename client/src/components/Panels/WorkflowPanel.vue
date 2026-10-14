@@ -179,8 +179,8 @@ function createNew(event: Event) {
                 :filterable="false"
                 :current-workflow-id="props.currentWorkflowId"
                 editor-view
-                @insertWorkflow="(...args) => emit('insertWorkflow', ...args)"
-                @insertWorkflowSteps="(...args) => emit('insertWorkflowSteps', ...args)"
+                @insertWorkflow="(id: string, name: string) => emit('insertWorkflow', id, name)"
+                @insertWorkflowSteps="(id: string, stepCount: number) => emit('insertWorkflowSteps', id, stepCount)"
                 @refreshList="refresh" />
 
             <div v-if="allLoaded || filterText !== ''" class="list-end">

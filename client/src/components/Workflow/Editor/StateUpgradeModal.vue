@@ -53,7 +53,12 @@ const computedStateMessages = computed<RenderedStateMessage[]>(() => {
 </script>
 
 <template>
-    <GModal :show.sync="show" :title="title" size="medium" fixed-height data-description="workflow state upgrade modal">
+    <GModal
+        v-model:show="show"
+        :title="title"
+        size="medium"
+        fixed-height
+        data-description="workflow state upgrade modal">
         <div v-if="show" data-description="workflow state upgrade modal content">
             {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">
@@ -64,8 +69,7 @@ const computedStateMessages = computed<RenderedStateMessage[]>(() => {
                     </b>
                     <ul class="workflow-state-upgrade-step-details">
                         <li v-for="(detail, detailIndex) in stateMessage.details" :key="detailIndex">
-                            <!-- eslint-disable-next-line vue/no-v-html -->
-                            <span v-html="detail" />
+                            <span v-sanitize-html:links="detail" />
                         </li>
                     </ul>
                 </li>

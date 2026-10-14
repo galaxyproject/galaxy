@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { BInputGroup, BNavbar, BNavbarNav, BNavForm, BNavText } from "bootstrap-vue";
+
 import type { SelectOption } from "./handlesMappingJobs";
+
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 
 interface JobSelectionProps {
     jobId?: string;
     implicitCollectionJobsId?: string;
     selectJobOptions: SelectOption[];
-    value?: String | undefined;
+    value?: string;
 }
 
 const emit = defineEmits<{
@@ -22,22 +26,24 @@ defineProps<JobSelectionProps>();
     <div>
         <slot v-if="jobId"> </slot>
         <div v-else>
-            <b-navbar>
+            <BNavbar>
                 <div class="navbar-collapse">
-                    <b-navbar-nav>
-                        <b-nav-text>Select Job</b-nav-text>
-                    </b-navbar-nav>
-                    <b-nav-form>
-                        <b-input-group size="sm">
-                            <b-form-select
-                                :value="value"
+                    <BNavbarNav>
+                        <BNavText>Select Job</BNavText>
+                    </BNavbarNav>
+                    <BNavForm>
+                        <BInputGroup size="sm">
+                            <GSelect
+                                aria-label="Select Job"
                                 class="text-right"
+                                size="small"
+                                :model-value="value"
                                 :options="selectJobOptions"
-                                @input="handleInput"></b-form-select>
-                        </b-input-group>
-                    </b-nav-form>
+                                @update:model-value="handleInput" />
+                        </BInputGroup>
+                    </BNavForm>
                 </div>
-            </b-navbar>
+            </BNavbar>
             <slot />
         </div>
     </div>

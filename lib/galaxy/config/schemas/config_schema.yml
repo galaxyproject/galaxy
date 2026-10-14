@@ -3107,13 +3107,14 @@ mapping:
 
       new_user_dataset_access_role_default_private:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
-          By default, users' data will be public, but setting this to true will cause
-          it to be private.  Does not affect existing users and data, only ones created
-          after this option is set.  Users may still change their default back to
-          public.
+          By default, users' data will be private. Setting this to false makes it public.
+          This only affects users created after the option is set; existing users and
+          data are unchanged. Users can change the default for their new histories in
+          their user preferences. To make existing users' data private as well, run
+          the galaxy-make-data-private script.
 
       expose_user_name:
         type: bool
@@ -3280,6 +3281,9 @@ mapping:
           a single job. This prevents accidentally creating large numbers of datasets when running tools
           that create a potentially unlimited number of output datasets, such as tools that split a file
           into a collection of datasets for each line in an input dataset.
+          Collection operation tools that multiply their inputs (cross product, duplicate
+          file to collection, apply rules) are subject to the same limit and refuse to run
+          if they would create more datasets than this.
 
       history_local_serial_workflow_scheduling:
         type: bool
@@ -4434,6 +4438,7 @@ mapping:
           Agents and plugins inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
           All agents are enabled by default.
           Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled: false }, jupyterlite: { model: gpt-4o } }
+          Plugins also accept top_p and timeout, and use max_tokens as an upper limit.
           Set static_responses to a YAML file path to replace all LLM calls with
           deterministic responses for testing:
           inference_services: { static_responses: test/integration/static_agents.yml }
@@ -4733,6 +4738,34 @@ mapping:
 
           Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
 
+      enable_command_palette:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Master toggle for the command palette, the searchable overlay that lets users jump to
+          tools, workflows, histories, datasets and other Galaxy resources from anywhere in the
+          interface.
+
+          When disabled, the search button in the masthead is hidden and the Ctrl/Cmd-K keyboard
+          shortcut that opens the palette is not registered.
+
+      command_palette_disabled_providers:
+        type: seq
+        sequence:
+          - type: str
+        required: false
+        desc: |
+          List of command palette providers to disable.
+
+          Valid provider ids are: ``actions``, ``navigation``, ``tools``, ``workflows``,
+          ``histories``, ``datasets``, ``visualizations``, ``invocations``, ``reports`` and
+          ``interactiveTools``.
+
+          Disabling a provider removes its search scopes, its category tab and its results from
+          the palette. This only hides palette UI: the API endpoints the provider searches stay
+          available. An unknown id is ignored, with a warning in the browser console.
+
       enable_mcp_server:
         type: bool
         default: false
@@ -4771,6 +4804,23 @@ mapping:
         desc: |
           The interval in seconds between attempts to dispatch notifications to users (every 10 minutes by default). Runs in a Celery task.
 
+      send_notification_rate_limit:
+        type: str
+        required: false
+        default: 10/minute
+        desc: |
+          Maximum rate at which a single user may send notifications through the
+          ``POST /api/notifications`` endpoint. Requests are counted per API key or session, so the
+          limit is per user rather than per client address, and it applies to every sender, including
+          administrators. It bounds how many notifications (and, for tool installation requests
+          submitted by users, admin-facing emails) one account can generate.
+
+          The value follows the notation of the ``limits`` library: ``<count>/<unit>`` or
+          ``<count> per <n> <unit>``, where the unit is one of ``second``, ``minute``, ``hour``,
+          ``day``, ``month`` or ``year``, e.g. ``10/minute`` or ``100 per hour``. The counter is
+          kept in memory by each web worker process, so with several workers the effective limit
+          is a multiple of this value. Leave empty to disable the limit.
+
       help_forum_api_url:
         type: str
         required: false
@@ -4786,6 +4836,19 @@ mapping:
         per_host: true
         desc: |
           Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
+
+      enable_tool_installation_request_form:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the Tool Installation Request Form in the toolbox, allowing users to request new tools to be installed on this Galaxy instance.
+
+          When enabled, a "Request Tool Installation" button will appear in the tool panel. Submitted requests are sent as
+          notifications to all admin users via Galaxy's notification system, which must also be enabled.
+
+          This requires ``enable_notification_system`` to be set to ``true``.
 
       file_source_temp_dir:
         type: str

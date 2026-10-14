@@ -2,6 +2,7 @@ import abc
 import functools
 import logging
 import os
+import posixpath
 from typing import (
     Annotated,
     Any,
@@ -16,6 +17,7 @@ from pydantic import Field
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
+    ObjectNotFound,
 )
 from galaxy.files.models import (
     AnyRemoteEntry,
@@ -39,6 +41,15 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python fsspec plugin p
 # This is a safeguard to prevent excessive memory usage and performance issues
 # since is a huge number of items is not practical for browsing in most use cases.
 MAX_ITEMS_LIMIT = 500
+
+
+def normalize_rooted_relative_path(path: str, root_label: str) -> str:
+    """Normalize ``path`` relative to a configured root, rejecting any escape above it."""
+    # Normalize a relative path: an absolute normpath would hide leading '..'.
+    relative = posixpath.normpath(path.lstrip("/"))
+    if relative == ".." or relative.startswith("../"):
+        raise MessageException(f"Invalid path: outside configured {root_label} root.")
+    return "" if relative == "." else relative
 
 
 class FsspecCommonCacheOptions(StrictModel):
@@ -162,6 +173,11 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
 
             return paginated_entries, total_count
 
+        except MessageException:
+            # already a Galaxy error with its own status, such as a refused address
+            raise
+        except FileNotFoundError as e:
+            raise ObjectNotFound(f"{path} was not found in {self.label}.") from e
         except PermissionError as e:
             raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
