@@ -49,16 +49,16 @@ function offersExport(item: Record<string, unknown>, writable = true) {
 }
 
 describe("DatasetActions", () => {
-    it("offers the export only for a visible, finished dataset in the user's own active history", () => {
-        expect(offersExport({})()).toBe(true);
-        expect(offersExport({}, false)()).toBe(false);
-        // Someone else's history, even where the item is marked writable.
-        expect(offersExport({ history_id: "theirs" })()).toBe(false);
-        expect(offersExport({ history_id: "archived" })()).toBe(false);
-        // The other Galaxy would import these out of sight, or with no data.
-        expect(offersExport({ deleted: true })()).toBe(false);
-        expect(offersExport({ visible: false })()).toBe(false);
-        expect(offersExport({ state: "running" })()).toBe(false);
+    it.each([
+        ["a finished dataset in the user's own history", true, {}, true],
+        ["an item that is not writable here", false, {}, false],
+        ["someone else's history, even where the item is marked writable", false, { history_id: "theirs" }, true],
+        ["an archived history", false, { history_id: "archived" }, true],
+        ["a deleted dataset", false, { deleted: true }, true],
+        ["a hidden dataset", false, { visible: false }, true],
+        ["a dataset that is still running", false, { state: "running" }, true],
+    ])("for %s, offers the export: %s", (_, offered, item, writable) => {
+        expect(offersExport(item, writable)()).toBe(offered);
     });
 
     it("offers the export on an own history that was not loaded yet", async () => {

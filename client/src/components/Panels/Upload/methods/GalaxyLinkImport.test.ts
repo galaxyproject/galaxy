@@ -84,14 +84,14 @@ describe("GalaxyLinkImport", () => {
         expect(wrapper.text()).not.toContain("may have expired");
     });
 
-    it("does not import into a deleted or archived history", async () => {
-        for (const targetHistory of [{ deleted: true }, { archived: true }, {}]) {
-            const wrapper = await enterLink("https://usegalaxy.org/api/short_term_storage/abc", targetHistory);
-            const blocked = Boolean(targetHistory.deleted || targetHistory.archived);
-            const button = wrapper.find('[data-description="galaxy link import"]');
-            expect(button.attributes("aria-disabled") === "true").toBe(blocked);
-            wrapper.unmount();
-        }
+    it.each([
+        ["a deleted", { deleted: true }, true],
+        ["an archived", { archived: true }, true],
+        ["an active", {}, false],
+    ])("for %s target history, blocks the import: %s", async (_, targetHistory, blocked) => {
+        const wrapper = await enterLink("https://usegalaxy.org/api/short_term_storage/abc", targetHistory);
+        const button = wrapper.find('[data-description="galaxy link import"]');
+        expect(button.attributes("aria-disabled") === "true").toBe(blocked);
     });
 
     it("links the history the items went to, even after the target changes", async () => {
