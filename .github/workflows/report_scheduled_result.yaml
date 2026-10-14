@@ -7,7 +7,7 @@ on:
         required: true
         type: string
       labels:
-        description: Comma-separated labels for a new tracking issue. The first is used to find the open one.
+        description: Comma-separated labels for a new tracking issue.
         required: true
         type: string
       description:
@@ -49,7 +49,6 @@ jobs:
             const openIssues = await github.paginate(github.rest.issues.listForRepo, {
               ...repo,
               state: "open",
-              labels: labels[0],
               creator: "github-actions[bot]",
               per_page: 100,
             });

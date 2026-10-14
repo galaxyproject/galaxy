@@ -41,7 +41,12 @@ jobs:
       matrix:
         # Pull requests and pushes to dev run only the newest Python; ruff and mypy catch most code too new for the oldest.
         # Release branches get no nightly run, so they keep every version.
-        python-version: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.base_ref || github.ref_name, 'release_')) && '["3.10", "3.11", "3.12", "3.13", "3.14"]' || '["3.14"]') }}
+        python-version: >-
+          ${{ fromJSON(
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.base_ref || github.ref_name, 'release_'))
+          && '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          || '["3.14"]'
+          ) }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:

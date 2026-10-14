@@ -218,21 +218,22 @@ depot.galaxyproject.org, GitHub) should additionally skip when it is down; see
 ### Continuous Integration
 
 The Python unit tests are run against each pull request to Galaxy using
-GitHub actions, on the newest supported Python only (pull requests to release
+GitHub Actions, on the newest supported Python only (pull requests to release
 branches run every supported version). If any of these tests fail, the pull
 request will be marked red. This test suite is moderately prone
 to having tests fail that are unrelated to the pull request being tested; if
 this test suite fails on a pull request with changes that seem to be unrelated
 to the pull request - ping the Galaxy committers on the pull request and
-request a re-run. The GitHub actions workflow definition for these tests is
+request a re-run. The GitHub Actions workflow definition for these tests is
 located in ``.github/workflows/unit.yaml`` below Galaxy's root.
 
 The same workflow runs nightly on ``dev`` against every supported Python
-version; it can also be started by hand from the Actions tab. When a run on
-``dev`` fails, the workflow opens an issue titled "Scheduled unit tests are
-failing" (or comments on the one already open), and closes it after the next
-passing run on ``dev``. Code too new for the oldest supported Python is mostly
-caught on pull requests by ``ruff`` and by ``mypy`` running on that version.
+version; it can also be started by hand from the Actions tab. When a nightly
+or manual run on ``dev`` fails, the workflow opens an issue titled "Scheduled
+unit tests are failing" (or comments on the one already open), and closes it
+after the next such run passes. Code too new for the oldest supported Python
+is mostly caught on pull requests by ``ruff`` and by ``mypy`` running on that
+version.
 
 {#es6_unit}
 ## Frontend/ES6 Unit Tests
