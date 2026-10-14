@@ -17,7 +17,6 @@ const props = withDefaults(
     }>(),
     {
         value: null,
-        multiple: true,
         showIcons: false,
     },
 );

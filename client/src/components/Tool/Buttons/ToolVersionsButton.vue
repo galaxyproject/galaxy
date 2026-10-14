@@ -12,9 +12,7 @@ interface Props {
     versions: string[];
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    versions: () => [],
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits(["onChangeVersion"]);
 

@@ -14,11 +14,10 @@ interface Props {
     /** The URL to navigate to before saving/ignoring changes */
     navUrl: string;
     /** Whether to append the version to the URL */
-    appendVersion: boolean;
+    appendVersion?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    showModal: false,
     appendVersion: false,
 });
 

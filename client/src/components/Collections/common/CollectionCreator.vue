@@ -33,10 +33,10 @@ interface Props {
     extensionsToggle?: boolean;
     noItems?: boolean;
     collectionType?: string;
-    showUpload: boolean;
+    showUpload?: boolean;
     showButtons?: boolean;
     collectionName: string;
-    mode: "wizard" | "modal";
+    mode?: "wizard" | "modal";
 }
 
 const props = withDefaults(defineProps<Props>(), {

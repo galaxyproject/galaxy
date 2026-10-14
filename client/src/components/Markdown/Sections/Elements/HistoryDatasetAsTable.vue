@@ -11,10 +11,10 @@ import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface HistoryDatasetAsTableProps {
-    compact: boolean;
+    compact?: boolean;
     datasetId: string;
     footer?: string;
-    showColumnHeaders: boolean;
+    showColumnHeaders?: boolean;
     title?: string;
     path?: string;
 }

@@ -5,7 +5,7 @@ import { borderVariant } from "@/components/Common/Wizard/utils";
 
 interface Props {
     selected: boolean;
-    forWhat: "rule_builder" | "sample_sheet";
+    forWhat?: "rule_builder" | "sample_sheet";
 }
 
 withDefaults(defineProps<Props>(), {

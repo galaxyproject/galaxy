@@ -7,9 +7,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 interface Props {
     offset: number;
 }
-const props = withDefaults(defineProps<Props>(), {
-    offset: 0,
-});
+const props = defineProps<Props>();
 </script>
 
 <template>
