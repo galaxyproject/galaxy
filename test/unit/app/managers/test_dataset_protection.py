@@ -25,8 +25,8 @@ from galaxy.job_execution.protection.stage import CLEANUP_FAILURE_FILE
 from galaxy.managers.dataset_protection import (
     _can_decrypt_inputs,
     _extra_files_expire,
-    Crypt4GHProtectionScheme,
     DatasetProtectionManager,
+    validate_crypt4gh_grant,
 )
 from galaxy.model import (
     DatasetInstance,
@@ -62,9 +62,7 @@ def _payload(**overrides) -> Crypt4GHGrantPayload:
 
 def test_valid_grant_is_stored_as_naive_utc():
     expiration = datetime.now(timezone(timedelta(hours=2))) + timedelta(days=6)
-    record = Crypt4GHProtectionScheme().validate_user_grant(
-        _payload(crypt4gh_compute_keypair_expiration_date=expiration)
-    )
+    record = validate_crypt4gh_grant(_payload(crypt4gh_compute_keypair_expiration_date=expiration))
     assert record.key_ref == "cnk:0123456789abcdef"
     assert record.expires_at.tzinfo is None
     assert record.expires_at == expiration.astimezone(timezone.utc).replace(tzinfo=None)
@@ -84,7 +82,7 @@ def test_valid_grant_is_stored_as_naive_utc():
 )
 def test_invalid_grants_are_rejected(overrides):
     with pytest.raises(RequestParameterInvalidException):
-        Crypt4GHProtectionScheme().validate_user_grant(_payload(**overrides))
+        validate_crypt4gh_grant(_payload(**overrides))
 
 
 def test_expiration_dates_without_timezone_are_rejected():
@@ -518,7 +516,7 @@ def _grants_on(*datasets):
         grant_data={"compute_header": "compute"},
     )
     ids = {dataset.dataset.id for dataset in datasets}
-    return lambda user, dataset, scheme: grant if dataset.id in ids else None
+    return lambda user, dataset: grant if dataset.id in ids else None
 
 
 def test_conversions_the_user_cant_decrypt_are_converted_again(tmp_path):
