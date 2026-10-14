@@ -85,7 +85,10 @@ from ._types import (
     ToolTestDescriptionDict,
     ValueStateRepresentationT,
 )
-from .wait import wait_on
+from .wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 
 log = getLogger(__name__)
 
@@ -466,7 +469,20 @@ class GalaxyInteractorApi:
             compare_expected_metadata_to_api_response(metadata, dataset)
 
     def wait_for_job(self, job_id: str, history_id: Optional[str] = None, maxseconds=DEFAULT_TOOL_TEST_WAIT) -> None:
-        self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
+        try:
+            self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
+        except TimeoutAssertionError:
+            # Nobody will wait for this job anymore, stop it so it doesn't keep
+            # occupying a job runner slot needed by subsequent tests.
+            self._cancel_job(job_id)
+            raise
+
+    def _cancel_job(self, job_id: str) -> None:
+        try:
+            response = self._delete(f"jobs/{job_id}")
+            response.raise_for_status()
+        except Exception as e:
+            log.warning("Failed to cancel job %s after timeout: %s", job_id, e)
 
     def wait_on_tool_request(self, tool_request_id: str):
         def state():
