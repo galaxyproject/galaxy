@@ -545,8 +545,30 @@ def attempt_ports(port=None, set_galaxy_web_port=True) -> str:
         raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
 
 
-def uvicorn_serve(app, port, host=None):
-    """Serve the webapp on a recommend port or a free one.
+def reserve_port(host: str, port: str | None = None) -> socket.socket:
+    """Bind the server socket up front and keep it until the server serves on it.
+
+    Releasing a probed port while the app builds would let another server (say, another
+    pytest-xdist worker's) take it, and the readiness check would then reach that server.
+    """
+    candidates = [int(port)] if port is not None else [random.randint(8000, 10000) for _ in range(9)]
+    for candidate in candidates:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((host, candidate))
+        except OSError:
+            sock.close()
+            continue
+        os.environ["GALAXY_WEB_PORT"] = str(candidate)
+        return sock
+    if port is not None:
+        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
+    raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
+
+
+def uvicorn_serve(app, sock: socket.socket, host=None):
+    """Serve the webapp on the reserved socket.
 
     Return the port the webapp is running on.
     """
@@ -555,6 +577,7 @@ def uvicorn_serve(app, port, host=None):
     from uvicorn.config import Config
     from uvicorn.server import Server
 
+    port = str(sock.getsockname()[1])
     access_log = False if "GALAXY_TEST_DISABLE_ACCESS_LOG" in os.environ else True
     config = Config(app, host=host, port=int(port), access_log=access_log)
     server = Server(config=config)
@@ -562,7 +585,7 @@ def uvicorn_serve(app, port, host=None):
     def run_in_loop(loop):
         try:
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(server.serve())
+            loop.run_until_complete(server.serve(sockets=[sock]))
         finally:
             loop.close()
             asyncio.set_event_loop(None)
@@ -988,9 +1011,16 @@ def launch_server(
 ):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
-    port = attempt_ports(port)
-
     enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
+    use_gravity = enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY")
+    sock = None
+    if use_gravity:
+        # Gravity binds the port in its own processes.
+        port = attempt_ports(port)
+    else:
+        sock = reserve_port(host, port)
+        port = str(sock.getsockname()[1])
+
     if enable_realtime_mapping:
         interactive_tool_defaults = {
             "interactivetools_map": tempfile.NamedTemporaryFile(
@@ -1003,18 +1033,23 @@ def launch_server(
         interactive_tool_defaults.update(galaxy_config or {})
         galaxy_config = interactive_tool_defaults
 
-    if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
+    if use_gravity:
         galaxy_config["root"] = galaxy_root
         state_dir, galaxyctl, gxit_port = launch_gravity(port=port, galaxy_config=galaxy_config)
         gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, galaxyctl, gxit_port=gxit_port)
         gravity_wrapper.wait_for_server()
         return gravity_wrapper
 
-    web_app = webapp_bundle_factory()
+    assert sock is not None
+    try:
+        web_app = webapp_bundle_factory()
+    except BaseException:
+        sock.close()
+        raise
     app = web_app.app
     url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
 
-    server, port, thread = uvicorn_serve(web_app.asgi_app, host=host, port=port)
+    server, port, thread = uvicorn_serve(web_app.asgi_app, sock, host=host)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
     log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
