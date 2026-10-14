@@ -3,12 +3,15 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     and_,
     literal,
+    or_,
     union,
+    union_all,
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import (
     ColumnElement,
     select,
+    Select,
 )
 from sqlalchemy.sql.expression import CTE
 
@@ -17,9 +20,15 @@ from galaxy import model
 if TYPE_CHECKING:
     from sqlalchemy.orm import scoped_session
 
-COPIED_FROM_ATTRIBUTES = {
-    model.HistoryDatasetAssociation: "copied_from_history_dataset_association_id",
-    model.HistoryDatasetCollectionAssociation: "copied_from_history_dataset_collection_association_id",
+COPY_ASSOCIATIONS = {
+    model.HistoryDatasetAssociation: (
+        "copied_from_history_dataset_association_id",
+        model.JobToOutputDatasetAssociation.dataset_id,
+    ),
+    model.HistoryDatasetCollectionAssociation: (
+        "copied_from_history_dataset_collection_association_id",
+        model.JobToOutputDatasetCollectionAssociation.dataset_collection_id,
+    ),
 }
 
 
@@ -45,54 +54,94 @@ class JobConnectionsManager:
         result["inputs"] = self._get_union_results(*input_selects)
         return result
 
-    def get_related_hids(self, history_id, hid: int):
-        """Get hids of inputs and outputs for the item with the given hid in the given history.
+    def get_related_hids(self, history_id: int, hid: int) -> list[int]:
+        """Return this history's hids for the item's immediate job inputs and outputs.
 
-        Items copied into the history (e.g. by importing a history) are connected to jobs only
-        through the items they were copied from, so connections are found for every item in the
-        copy chain and then mapped back to the history's own copies.
+        Ordinary copies inherit their source's connections. Job outputs, including cached
+        and pass-through outputs, keep their own connections even when they have a copy link.
         """
-        related_ids: dict[str, set[int]] = {
-            "HistoryDatasetAssociation": set(),
-            "HistoryDatasetCollectionAssociation": set(),
-        }
-        for src, item_class in (
-            ("HistoryDatasetAssociation", model.HistoryDatasetAssociation),
-            ("HistoryDatasetCollectionAssociation", model.HistoryDatasetCollectionAssociation),
-        ):
-            chain = self._copied_from_chain(
-                item_class, and_(item_class.history_id == history_id, item_class.hid == hid)
-            )
-            for item_id in self.sa_session.scalars(select(chain.c.ancestor_id)):
-                graph = self.get_connections_graph(id=item_id, src=src)
-                for val in graph["outputs"] + graph["inputs"]:
-                    related_ids[val["src"]].add(val["id"])
-        result = {hid}
-        hda_ids = related_ids["HistoryDatasetAssociation"]
-        if hda_ids:
-            # copies of a dataset share its underlying dataset
-            hda = model.HistoryDatasetAssociation
-            related_dataset_ids = select(hda.dataset_id).where(hda.id.in_(hda_ids))
-            result.update(
-                self.sa_session.scalars(
-                    select(hda.hid).where(hda.history_id == history_id, hda.dataset_id.in_(related_dataset_ids))
+        hda = model.HistoryDatasetAssociation
+        hdca = model.HistoryDatasetCollectionAssociation
+        item_classes = (hda, hdca)
+        metadata_selects: list[ColumnElement[int] | ColumnElement[bool]] = []
+        for item_class in item_classes:
+            copied_from, _ = COPY_ASSOCIATIONS[item_class]
+            metadata_selects.extend(
+                (
+                    select(item_class.id)
+                    .where(item_class.history_id == history_id, item_class.hid == hid)
+                    .limit(1)
+                    .scalar_subquery(),
+                    select(item_class.id)
+                    .where(item_class.history_id == history_id, getattr(item_class, copied_from).is_not(None))
+                    .exists(),
                 )
             )
-        hdca_ids = related_ids["HistoryDatasetCollectionAssociation"]
-        if hdca_ids:
-            hdca = model.HistoryDatasetCollectionAssociation
-            chain = self._copied_from_chain(hdca, hdca.history_id == history_id)
-            result.update(self.sa_session.scalars(select(chain.c.hid).where(chain.c.ancestor_id.in_(hdca_ids))))
-        return list(result)
+        hda_id, hda_copies, hdca_id, hdca_copies = self.sa_session.execute(select(*metadata_selects)).one()
+        if hda_id is None and hdca_id is None:
+            return [hid]
+        copies_by_class = {hda: hda_copies, hdca: hdca_copies}
+        # Avoid planning copy work in ordinary histories, and anchor the clicked item by primary key.
+        collection_outputs = self._collection_output_hda_ids(history_id) if hda_copies else None
+        related_selects = []
+        for item_class, item_id in ((hda, hda_id), (hdca, hdca_id)):
+            if item_id is None:
+                continue
+            if copies_by_class[item_class]:
+                chain = self._copied_from_chain(
+                    item_class,
+                    item_class.id == item_id,
+                    name=f"clicked_{item_class.__table__.name}",
+                    collection_outputs=collection_outputs,
+                )
+                related_id = chain.c.ancestor_id
+            else:
+                related_id = item_id
+            if item_class is hda:
+                related_selects.extend(self.outputs_derived_from_input_hda(related_id))
+                related_selects.extend(self.inputs_for_hda(related_id))
+            else:
+                related_selects.extend(self.outputs_derived_from_input_hdca(related_id))
+                related_selects.extend(self.inputs_for_hdca(related_id))
+        related = union_all(*related_selects).cte("related_items")
+        hid_selects = [select(literal(hid).label("hid"))]
+        for item_class in item_classes:
+            related_ids = select(related.c.id).where(related.c.src == item_class.__name__)
+            # Direct matches need no ancestry walk, including in histories that were never copied.
+            hid_selects.append(
+                select(item_class.hid).where(item_class.history_id == history_id, item_class.id.in_(related_ids))
+            )
+            if not copies_by_class[item_class]:
+                continue
+            copied_from, _ = COPY_ASSOCIATIONS[item_class]
+            has_creating_job = self._has_creating_job(item_class, item_class.id, collection_outputs)
+            copies = self._copied_from_chain(
+                item_class,
+                and_(
+                    item_class.history_id == history_id,
+                    getattr(item_class, copied_from).is_not(None),
+                    ~has_creating_job,
+                    related_ids.exists(),
+                ),
+                name=f"copies_{item_class.__table__.name}",
+                stop_at=related_ids,
+                collection_outputs=collection_outputs,
+            )
+            hid_selects.append(select(copies.c.hid).where(copies.c.ancestor_id.in_(related_ids)))
+        return list(self.sa_session.scalars(union(*hid_selects)))
 
     def _copied_from_chain(
         self,
         item_class: type[model.HistoryDatasetAssociation] | type[model.HistoryDatasetCollectionAssociation],
         where: ColumnElement[bool],
+        name: str,
+        stop_at: Select[tuple[int]] | None = None,
+        collection_outputs: CTE | None = None,
     ) -> CTE:
-        """Recursive CTE pairing the hid of each item matching ``where`` with the item's id and
-        the ids of all items it was (transitively) copied from."""
-        copied_from = COPIED_FROM_ATTRIBUTES[item_class]
+        """Pair each selected item's hid with its ordinary-copy ancestors, including the
+        first job-created ancestor, without following that ancestor's own copy link."""
+        copied_from, _ = COPY_ASSOCIATIONS[item_class]
+
         chain = (
             select(
                 item_class.hid.label("hid"),
@@ -100,14 +149,92 @@ class JobConnectionsManager:
                 getattr(item_class, copied_from).label("copied_from_id"),
             )
             .where(where)
-            .cte(name="copied_from_chain", recursive=True)
+            .cte(name=name, recursive=True)
         )
         parent = aliased(item_class)
-        return chain.union(
-            select(chain.c.hid, parent.id, getattr(parent, copied_from)).join(
-                parent, parent.id == chain.c.copied_from_id
-            )
+        ancestors = (
+            select(chain.c.hid, parent.id, getattr(parent, copied_from))
+            .join(parent, parent.id == chain.c.copied_from_id)
+            .where(~self._has_creating_job(item_class, chain.c.ancestor_id, collection_outputs))
         )
+        if stop_at is not None:
+            ancestors = ancestors.where(chain.c.ancestor_id.not_in(stop_at))
+        # UNION also terminates malformed cyclic copy links; ordinary job joins use UNION ALL.
+        return chain.union(ancestors)
+
+    def _has_creating_job(
+        self,
+        item_class: type[model.HistoryDatasetAssociation] | type[model.HistoryDatasetCollectionAssociation],
+        item_id: ColumnElement[int],
+        collection_outputs: CTE | None = None,
+    ) -> ColumnElement[bool]:
+        _, output_id = COPY_ASSOCIATIONS[item_class]
+        has_job = select(output_id).where(output_id == item_id).exists()
+        if item_class is model.HistoryDatasetAssociation and collection_outputs is not None:
+            return or_(has_job, item_id.in_(select(collection_outputs.c.hda_id)))
+        return has_job
+
+    def _collection_output_hda_ids(self, history_id: int) -> CTE:
+        """Find collection-owned outputs among this history's possible copy ancestors.
+
+        Collection tools can register a collection without individual element outputs.
+        Batch membership checks so every copy hop does not walk collections separately.
+        """
+        hda = model.HistoryDatasetAssociation
+        candidates = self._copied_from_chain(
+            hda,
+            and_(hda.history_id == history_id, hda.copied_from_history_dataset_association_id.is_not(None)),
+            name="possible_dataset_copy_ancestors",
+        )
+        candidate_ids = select(candidates.c.ancestor_id.label("hda_id")).distinct().cte("possible_dataset_copy_ids")
+        element = model.DatasetCollectionElement
+        memberships = (
+            select(element.hda_id, element.dataset_collection_id.label("collection_id"))
+            .where(element.hda_id.in_(select(candidate_ids.c.hda_id)))
+            .cte("copy_element_collections", recursive=True)
+        )
+        parent = aliased(element)
+        memberships = memberships.union(
+            select(memberships.c.hda_id, parent.dataset_collection_id)
+            .join(parent, parent.child_collection_id == memberships.c.collection_id)
+            .where(parent.child_collection_id.is_not(None))
+        )
+        # An explicit distinct work set keeps downstream membership-join estimates bounded.
+        memberships = (
+            select(memberships.c.hda_id, memberships.c.collection_id)
+            .distinct()
+            .cte("distinct_copy_element_collections")
+        )
+        output = model.JobToOutputDatasetCollectionAssociation
+        hdca = model.HistoryDatasetCollectionAssociation
+        # Reusing an existing input in an output collection does not create a new dataset output.
+        input_dataset = model.JobToInputDatasetAssociation
+        is_input = (
+            select(input_dataset.id)
+            .where(input_dataset.job_id == output.job_id, input_dataset.dataset_id == memberships.c.hda_id)
+            .correlate(output, memberships)
+            .exists()
+        )
+        input_collection = model.JobToInputDatasetCollectionAssociation
+        input_hdca = aliased(hdca)
+        input_memberships = memberships.alias("input_element_collections")
+        is_collection_input = (
+            select(input_collection.id)
+            .join(input_hdca, input_hdca.id == input_collection.dataset_collection_id)
+            .join(input_memberships, input_memberships.c.collection_id == input_hdca.collection_id)
+            .where(input_collection.job_id == output.job_id, input_memberships.c.hda_id == memberships.c.hda_id)
+            .correlate(output, memberships)
+            .exists()
+        )
+        is_output = (
+            select(output.id)
+            .select_from(memberships)
+            .join(hdca, hdca.collection_id == memberships.c.collection_id)
+            .join(output, output.dataset_collection_id == hdca.id)
+            .where(memberships.c.hda_id == candidate_ids.c.hda_id, ~is_input, ~is_collection_input)
+            .exists()
+        )
+        return select(candidate_ids.c.hda_id).where(is_output).cte("collection_output_hdas")
 
     def _get_union_results(self, *selects):
         result = []
@@ -115,7 +242,7 @@ class JobConnectionsManager:
             result.append({"src": row.src, "id": row.id})
         return result
 
-    def outputs_derived_from_input_hda(self, input_hda_id: int):
+    def outputs_derived_from_input_hda(self, input_hda_id: int | ColumnElement[int]):
         hda_select = (
             select(
                 literal("HistoryDatasetAssociation").label("src"),
@@ -142,7 +269,7 @@ class JobConnectionsManager:
         )
         return hda_select, hdca_select
 
-    def outputs_derived_from_input_hdca(self, input_hdca_id: int):
+    def outputs_derived_from_input_hdca(self, input_hdca_id: int | ColumnElement[int]):
         hda_select = (
             select(
                 literal("HistoryDatasetAssociation").label("src"),
@@ -170,7 +297,7 @@ class JobConnectionsManager:
         )
         return hda_select, hdca_select
 
-    def inputs_for_hda(self, input_hda_id: int):
+    def inputs_for_hda(self, input_hda_id: int | ColumnElement[int]):
         input_hdas = (
             select(
                 literal("HistoryDatasetAssociation").label("src"),
@@ -197,7 +324,7 @@ class JobConnectionsManager:
         )
         return input_hdas, input_hdcas
 
-    def inputs_for_hdca(self, input_hdca_id: int):
+    def inputs_for_hdca(self, input_hdca_id: int | ColumnElement[int]):
         input_hdas = (
             select(
                 literal("HistoryDatasetAssociation").label("src"),
