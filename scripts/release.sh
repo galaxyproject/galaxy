@@ -504,7 +504,7 @@ function update_package_versions() {
 function perform_version_update() {
     local tag_version=
     update_package_versions
-    git add -- packages/
+    git add -u -- packages/
     log 'Cleaning package dirs...'
     packages_make_all clean
     log 'Building packages (logs in packages/*/make-dist.log)...'
@@ -537,7 +537,7 @@ function perform_version_update_dev() {
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
     git add -- lib/galaxy/version/__init__.py
     update_package_versions
-    git add -- packages/
+    git add -u -- packages/
     log_exec git commit -m "Update version to ${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}"
 }
 
@@ -572,7 +572,7 @@ function create_release_rc_initial() {
     local package_version
     package_version=$(packaging_version "${RELEASE_NEXT}.0dev0" "true")
     update_package_versions "$package_version"
-    git add -- packages/
+    git add -u -- packages/
     log_exec git commit -m "Update version to ${RELEASE_NEXT}.dev0"
 
     # Resolve merge conflicts
