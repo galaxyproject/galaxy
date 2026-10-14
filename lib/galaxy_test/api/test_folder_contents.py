@@ -373,14 +373,14 @@ class TestFolderContentsApi(ApiTestCase):
         ldda_message: Optional[str] = None,
         **kwds,
     ) -> tuple[str, str]:
-        """Returns a tuple with the LDDA ID and the underlying HDA ID"""
+        """Returns a tuple with the library dataset ID and the underlying HDA ID"""
         hda_id = self._create_hda(history_id, name, content, **kwds)
         data = {
             "from_hda_id": hda_id,
             "ldda_message": ldda_message or "Test msg",
         }
         ldda = self._create_content_in_folder_with_payload(folder_id, data)
-        return ldda["id"], hda_id
+        return ldda["library_dataset_id"], hda_id
 
     def _create_content_in_folder_with_payload(self, folder_id: str, payload) -> Any:
         create_response = self._post(f"folders/{folder_id}/contents", data=payload, json=True)
@@ -399,8 +399,8 @@ class TestFolderContentsApi(ApiTestCase):
         hdca_id = hdca["id"]
         return hdca_id
 
-    def _delete_library_dataset(self, ldda_id: str) -> None:
-        delete_response = self._delete(f"libraries/datasets/{ldda_id}")
+    def _delete_library_dataset(self, library_dataset_id: str) -> None:
+        delete_response = self._delete(f"libraries/datasets/{library_dataset_id}")
         self._assert_status_code_is(delete_response, 200)
 
     def _delete_subfolder(self, folder_id: str) -> None:
