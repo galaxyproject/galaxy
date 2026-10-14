@@ -86,7 +86,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.10']
-        chunk: ['0', '1', '2', '3']
+        chunk: ['0', '1']
     steps:
       - if: github.event_name == 'schedule'
         run: |
@@ -152,7 +152,7 @@ jobs:
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh --coverage -integration test/integration -- --num-shards=2 --shard-id=${{ matrix.chunk }} -n 3 --dist loadscope --no-loadscope-reorder
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v6
         with:
