@@ -1,3 +1,3 @@
-from galaxy_test.api._framework import ApiTestCase as PerformanceTestCase
+from galaxy_test.base.api_testcase import ApiTestCase as PerformanceTestCase
 
 __all__ = ("PerformanceTestCase",)

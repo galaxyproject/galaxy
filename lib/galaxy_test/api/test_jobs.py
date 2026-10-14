@@ -10,8 +10,8 @@ from dateutil.parser import isoparse
 
 from galaxy.util import now
 from galaxy.util.unittest_utils import transient_failure
-from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
+from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,

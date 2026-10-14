@@ -8,8 +8,8 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_hda_model_store_dict,
 )
 from galaxy.util import unlink
-from galaxy_test.api.test_histories import ImportExportTests
 from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.api_mixins import ImportExportTests
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -19,6 +19,7 @@ from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 class TestImportExportHistoryOutputsToWorkingDirIntegration(ImportExportTests, IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     task_based = False
     framework_tool_and_types = True
 
@@ -33,6 +34,7 @@ class TestImportExportHistoryOutputsToWorkingDirIntegration(ImportExportTests, I
 
 
 class TestImportExportHistoryViaTasksIntegration(PosixFileSourceSetup, ImportExportTests, IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     task_based = True
     framework_tool_and_types = True
 

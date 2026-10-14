@@ -21,7 +21,7 @@ from galaxy.tool_util_models import (
     TestDicts,
 )
 from galaxy.util import asbool
-from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.api_testcase import ApiTestCase
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
