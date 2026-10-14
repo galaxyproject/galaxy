@@ -176,8 +176,9 @@ function getStepText(steps: number) {
             transparent
             icon-only
             color="blue"
-            :title="sourceTitle">
-            <FontAwesomeIcon :icon="faShieldAlt" fixed-width @click="onCopyLink" />
+            :title="sourceTitle"
+            @click="onCopyLink">
+            <FontAwesomeIcon :icon="faShieldAlt" fixed-width />
         </GButton>
 
         <GButton
@@ -188,8 +189,9 @@ function getStepText(steps: number) {
             transparent
             icon-only
             color="blue"
-            :title="sourceTitle">
-            <FontAwesomeIcon :icon="faFileImport" fixed-width @click="onCopyLink" />
+            :title="sourceTitle"
+            @click="onCopyLink">
+            <FontAwesomeIcon :icon="faFileImport" fixed-width />
         </GButton>
 
         <span v-if="!noEditTime" class="mr-1">
