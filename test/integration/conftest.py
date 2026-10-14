@@ -8,6 +8,7 @@ import threading
 import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
+from xdist.scheduler import LoadScopeScheduling
 
 from galaxy.celery import (
     celery_app,
@@ -25,10 +26,38 @@ from galaxy_test.shard import (  # noqa: F401
     pytest_report_collectionfinish,
 )
 
+# Tests that share something outside their Galaxy instance -- a fixed host port, the AMQP
+# broker, the minikube cluster -- keyed by test file or class. With --dist loadscope, each
+# scope runs on a single pytest-xdist worker.
+SHARED_RESOURCE_SCOPES = {
+    "test/integration/oidc/test_auth_oidc.py": "keycloak",
+    "test/integration/test_cli_runners.py": "cli-runner-containers",
+    "test/integration/test_coexecution.py": "cluster",
+    "test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration": "cluster",
+    "test/integration/test_interactivetools_api.py::TestKubernetesNativeInteractiveToolsIntegration": "cluster",
+    "test/integration/test_kubernetes_runner.py": "cluster",
+    "test/integration/test_pulsar_embedded_mq.py": "cluster",
+    "test/integration/test_pulsar_embedded_relay.py": "cluster",
+}
+
+
+class SharedResourceScopeScheduling(LoadScopeScheduling):  # type: ignore[misc]  # pytest-xdist is untyped
+    def _split_scope(self, nodeid: str) -> str:
+        for prefix, scope in SHARED_RESOURCE_SCOPES.items():
+            if nodeid.startswith(f"{prefix}::"):
+                return scope
+        return super()._split_scope(nodeid)
+
 
 def pytest_configure(config):
     _base_pytest_configure(config)
     shard.pytest_configure(config)
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_xdist_make_scheduler(config, log):
+    if config.getvalue("dist") == "loadscope":
+        return SharedResourceScopeScheduling(config, log)
 
 
 def pytest_sessionfinish(session, exitstatus):
