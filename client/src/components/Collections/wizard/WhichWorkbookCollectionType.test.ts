@@ -2,6 +2,8 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
+import navigation from "@/utils/navigation/navigation.yml";
+
 import WhichWorkbookCollectionType from "./WhichWorkbookCollectionType.vue";
 
 const localVue = getLocalVue();
@@ -41,6 +43,16 @@ describe("WhichWorkbookCollectionType", () => {
         async (collectionType) => {
             const wrapper = mountWithValue();
             await cardFor(wrapper, collectionType).trigger("click");
+            expect(wrapper.emitted("onChange")).toEqual([[collectionType]]);
+        },
+    );
+
+    it.each(["list", "list:paired", "list:paired_or_unpaired", "list:list", "list:list:paired"])(
+        "lets browser tests select the %s workbook template",
+        async (collectionType) => {
+            const wrapper = mountWithValue();
+            const selector = navigation.file_set_wizard.selectors.which_builder.replace("${builder}", collectionType);
+            await wrapper.find(selector).trigger("click");
             expect(wrapper.emitted("onChange")).toEqual([[collectionType]]);
         },
     );
