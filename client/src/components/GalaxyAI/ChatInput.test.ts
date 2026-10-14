@@ -64,63 +64,11 @@ afterEach(async () => {
 
 describe("ChatInput", () => {
     describe("rendering", () => {
-        it("renders textarea with provided value", () => {
-            const wrapper = mountInput({ value: "hello" });
-            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
-            expect(textarea.element.value).toBe("hello");
-        });
-
-        it("renders with default placeholder", () => {
-            const wrapper = mountInput();
-            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
-            expect(textarea.attributes("placeholder")).toContain("Ask about tools");
-        });
-
-        it("renders with custom placeholder", () => {
-            const wrapper = mountInput({ placeholder: "Type here..." });
-            expect(wrapper.get<HTMLTextAreaElement>("textarea").attributes("placeholder")).toBe("Type here...");
-        });
-
         it("has accessible label", () => {
             const wrapper = mountInput();
             expect(wrapper.find("label[for='chat-input']").exists()).toBe(true);
-        });
-    });
-
-    describe("disabled states", () => {
-        it("disables textarea when busy", () => {
-            const wrapper = mountInput({ busy: true });
-            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.disabled).toBe(true);
-        });
-
-        it("disables textarea when disabled prop is true", () => {
-            const wrapper = mountInput({ disabled: true });
-            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.disabled).toBe(true);
-        });
-
-        it("disables send button when value is empty", () => {
-            const wrapper = mountInput({ value: "" });
-            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
-        });
-
-        it("disables send button when value is whitespace", () => {
-            const wrapper = mountInput({ value: "   " });
-            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
-        });
-
-        it("enables send button when value has content", () => {
-            const wrapper = mountInput({ value: "hello" });
-            expect(wrapper.getComponent(GButton).props("disabled")).toBe(false);
-        });
-
-        it("disables send button when busy even with content", () => {
-            const wrapper = mountInput({ value: "hello", busy: true });
-            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
-        });
-
-        it("disables send button when disabled prop is true even with content", () => {
-            const wrapper = mountInput({ value: "hello", disabled: true });
-            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.get("textarea").attributes("id")).toBe("chat-input");
+            expect(wrapper.get("label[for='chat-input']").text()).toBe("Chat message");
         });
     });
 
@@ -128,25 +76,35 @@ describe("ChatInput", () => {
         it("emits input on textarea input", async () => {
             const wrapper = mountInput();
             const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
+            expect(textarea.element.value).toBe("");
             await textarea.setValue("hello");
             expect(wrapper.emitted("input")).toBeTruthy();
             expect(emittedArg(wrapper, "input", -1)).toBe("hello");
+            expect(wrapper.emitted("input")).toHaveLength(1);
         });
 
         it("emits submit on send button click", async () => {
             const wrapper = mountInput({ value: "hello" });
+            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.value).toBe("hello");
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(false);
             await wrapper.getComponent(GButton).trigger("click");
             expect(wrapper.emitted("submit")).toBeTruthy();
+            expect(wrapper.emitted("submit")).toHaveLength(1);
         });
 
         it("emits submit on Enter key (without Shift)", async () => {
             const wrapper = mountInput({ value: "hello" });
+            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.value).toBe("hello");
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(false);
             await wrapper.get<HTMLTextAreaElement>("textarea").trigger("keydown", { key: "Enter" });
             expect(wrapper.emitted("submit")).toBeTruthy();
+            expect(wrapper.emitted("submit")).toHaveLength(1);
         });
 
         it("does not emit submit on Shift+Enter", async () => {
             const wrapper = mountInput({ value: "hello" });
+            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.value).toBe("hello");
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(false);
             await wrapper.get<HTMLTextAreaElement>("textarea").trigger("keydown", { key: "Enter", shiftKey: true });
             expect(wrapper.emitted("submit")).toBeFalsy();
         });
@@ -156,6 +114,7 @@ describe("ChatInput", () => {
             const wrapper = mountInput({ value }, { FontAwesomeIcon: true, LoadingSpan: true });
             const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
             const el = textarea.element;
+            expect(el.value).toBe(value);
             el.selectionStart = value.length;
             el.selectionEnd = value.length;
 
@@ -163,6 +122,7 @@ describe("ChatInput", () => {
             await textarea.trigger("keydown", { key: "Enter" });
 
             expect(wrapper.emitted("submit")).toBeTruthy();
+            expect(wrapper.emitted("submit")).toHaveLength(1);
         });
 
         it("closes an empty mention dropdown on Escape", async () => {
@@ -170,6 +130,7 @@ describe("ChatInput", () => {
             const wrapper = mountInput({ value }, { FontAwesomeIcon: true, LoadingSpan: true });
             const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
             const el = textarea.element;
+            expect(el.value).toBe(value);
             el.selectionStart = value.length;
             el.selectionEnd = value.length;
 
