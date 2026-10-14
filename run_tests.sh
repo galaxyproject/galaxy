@@ -646,6 +646,11 @@ fi
 
 setup_python
 
+# Collection imports tests from packages outside the server dependency closure.
+if [ -z "$skip_common_startup" ] && exists uv && [ -f uv.lock ]; then
+    uv sync --locked --inexact --all-packages --all-extras --group dev --active || exit 1
+fi
+
 if [ "$GALAXY_TEST_DRIVER_BACKEND" = "playwright" ] && [ ${#install_playwright_browers[@]} -eq 0 ]; then
     # backend selected by environment rather than by the -playwright flag
     install_playwright_browers=(chromium)
