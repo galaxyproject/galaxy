@@ -209,3 +209,14 @@ def test_directory_content_path_is_the_extra_files_path(tmp_path):
 
     assert Directory().content_path(dataset) == str(tmp_path)
     assert Directory().content_path(dataset, "/compute/dataset_1_files") == "/compute/dataset_1_files"
+
+
+def test_directory_without_content_root_does_not_list_the_folder(tmp_path, monkeypatch):
+    (tmp_path / "wrapped").mkdir()
+
+    def fail_listdir(path):
+        raise AssertionError(f"listed {path}")
+
+    monkeypatch.setattr(os, "listdir", fail_listdir)
+
+    assert Directory().content_wrapper_name(str(tmp_path)) is None

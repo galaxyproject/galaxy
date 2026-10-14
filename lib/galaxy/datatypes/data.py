@@ -1432,6 +1432,9 @@ class Directory(Data):
 
     def content_wrapper_name(self, path: str) -> str | None:
         """Return the name of the single folder wrapping this datatype's content, if it is not at the root."""
+        if type(self).is_content_root is Directory.is_content_root:
+            # No recognizable content root, so nothing is ever wrapped; don't list a possibly large folder.
+            return None
         if not os.path.isdir(path) or self.is_content_root(path):
             return None
         items_in_path = os.listdir(path)
