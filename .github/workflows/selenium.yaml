@@ -17,7 +17,7 @@ env:
 permissions: {}
 jobs:
   build-client:
-    uses: $/.github/workflows/build_client.yaml
+    uses: $/.github/workflows/_build_client.yaml
   test:
     name: Test
     needs: [build-client]
@@ -76,7 +76,7 @@ jobs:
     permissions:
       actions: read
       issues: write
-    uses: $/.github/workflows/report_scheduled_result.yaml
+    uses: $/.github/workflows/_report_scheduled_result.yaml
     with:
       title: Scheduled Selenium tests are failing
       labels: area/testing/selenium, kind/bug

@@ -89,7 +89,7 @@ jobs:
     permissions:
       actions: read
       issues: write
-    uses: $/.github/workflows/report_scheduled_result.yaml
+    uses: $/.github/workflows/_report_scheduled_result.yaml
     with:
       title: Scheduled unit tests are failing
       labels: area/testing, kind/bug

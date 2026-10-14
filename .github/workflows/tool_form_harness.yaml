@@ -11,7 +11,7 @@ on:
       - 'lib/galaxy_test/selenium/test_tool_form_harness.py'
       - 'test/functional/tools/**'
       - '.github/workflows/tool_form_harness.yaml'
-      - '.github/workflows/build_client.yaml'
+      - '.github/workflows/_build_client.yaml'
       - 'client/.node_version'
       - 'client/.npmrc'
       - 'client/package.json'
@@ -28,7 +28,7 @@ on:
       - 'lib/galaxy_test/selenium/test_tool_form_harness.py'
       - 'test/functional/tools/**'
       - '.github/workflows/tool_form_harness.yaml'
-      - '.github/workflows/build_client.yaml'
+      - '.github/workflows/_build_client.yaml'
       - 'client/.node_version'
       - 'client/.npmrc'
       - 'client/package.json'
@@ -60,7 +60,7 @@ jobs:
       || github.repository_owner != 'galaxyproject'
       || github.ref_name == 'dev'
       || startsWith(github.ref_name, 'release_')
-    uses: ./.github/workflows/build_client.yaml
+    uses: ./.github/workflows/_build_client.yaml
   test:
     if: >-
       github.event_name != 'push'

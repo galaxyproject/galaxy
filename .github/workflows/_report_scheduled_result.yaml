@@ -1,3 +1,4 @@
+# Reusable workflow, only run through workflow_call; the leading underscore marks such files.
 name: Report scheduled result
 on:
   workflow_call:
