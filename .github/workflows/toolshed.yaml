@@ -121,5 +121,5 @@ jobs:
       description: |-
         The nightly run of the Tool Shed tests across every supported Python version failed.
 
-        Pull requests run the Tool Shed tests on the newest Python only, so this run is the only Tool Shed test coverage of the older versions.
+        Pull requests to dev run the Tool Shed tests on the newest Python only; nightly runs cover every supported version. Release branches retain the oldest and newest versions.
       needs: ${{ toJSON(needs) }}

@@ -113,5 +113,5 @@ jobs:
       description: |-
         The nightly run of the tool framework tests against both the tool request API and the legacy tool API failed.
 
-        Pull requests run the tool framework tests against the tool request API only, so this run is the only coverage of the legacy tool API.
+        Pull requests to dev run the tool framework tests against the tool request API only; nightly runs cover both APIs. Release branches and the Tuesday extended-metadata run also retain both APIs.
       needs: ${{ toJSON(needs) }}
