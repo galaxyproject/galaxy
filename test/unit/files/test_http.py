@@ -230,3 +230,41 @@ def test_file_source_http_with_control_character_error(character):
     with pytest.raises(ValueError, match="URL contains unencoded characters"):
         file_source_pair = file_sources.get_file_source_path(test_url)
         file_source_pair.file_source.realize_to(file_source_pair.path, "/tmp/test", user_context=user_context)
+
+
+def _realize_capturing_request_url(test_url: str, tmp_path) -> str:
+    requested = []
+
+    def capture_url(request):
+        requested.append(request.url)
+        return 200, {}, "ok"
+
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(test_url)
+    url_without_query = urllib.parse.urlsplit(test_url)._replace(query="").geturl()
+    with responses.RequestsMock() as mocked:
+        mocked.add_callback(responses.GET, url_without_query, callback=capture_url)
+        file_source_pair.file_source.realize_to(
+            file_source_pair.path, str(tmp_path / "realized"), user_context=user_context_fixture()
+        )
+    assert len(requested) == 1
+    return requested[0]
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_percent_encodes_unsafe_query_characters(tmp_path):
+    test_url = (
+        "https://erddap.example.org/erddap/tabledap/data.geoJson?pres,time"
+        '&pres>=0&pres<=10&time>=2025-01-01T00%3A00%3A00Z&pres_qc="1"'
+    )
+    requested_url = _realize_capturing_request_url(test_url, tmp_path)
+    assert requested_url == (
+        "https://erddap.example.org/erddap/tabledap/data.geoJson?pres,time"
+        "&pres%3E=0&pres%3C=10&time%3E=2025-01-01T00%3A00%3A00Z&pres_qc=%221%22"
+    )
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_file_source_http_keeps_encoded_url_unchanged(tmp_path):
+    test_url = "https://www.elsewhere.org/a%20b%2Fc.txt?q=%22x%22&t=00%3A00"
+    assert _realize_capturing_request_url(test_url, tmp_path) == test_url
