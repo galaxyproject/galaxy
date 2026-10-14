@@ -54,6 +54,8 @@ jobs:
         run: uv tool install tox --with tox-uv
       - name: Run tests
         run: tox -e unit-coverage
+        env:
+          PYTEST_ADDOPTS: -n 4
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
         with:
