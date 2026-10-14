@@ -1,5 +1,8 @@
-from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import (
+    Iterator,
+    Tuple,
+)
 from unittest import mock
 
 import pytest
@@ -9,15 +12,13 @@ from galaxy.tool_util.verify.wait import TimeoutAssertionError
 
 
 @contextmanager
-def _interactor(job_state: str) -> Iterator[tuple[GalaxyInteractorApi, mock.MagicMock]]:
+def _interactor(job_state: str) -> Iterator[Tuple[GalaxyInteractorApi, mock.MagicMock]]:
     interactor = GalaxyInteractorApi(galaxy_url="http://localhost:8080", master_api_key=None, api_key="key")
     job_response = mock.Mock()
     job_response.json.return_value = {"state": job_state}
-    with (
-        mock.patch.object(interactor, "_get", return_value=job_response),
-        mock.patch.object(interactor, "_delete") as delete,
-    ):
-        yield interactor, delete
+    with mock.patch.object(interactor, "_get", return_value=job_response):
+        with mock.patch.object(interactor, "_delete") as delete:
+            yield interactor, delete
 
 
 def test_wait_for_job_cancels_job_on_timeout():
