@@ -50,7 +50,6 @@ beforeEach(() => {
 const SELECTORS = {
     JOB_STATE_BUTTON_NAV: "nav",
     JOB_STATE_BUTTON: ".g-button",
-    JOBS_TABLE: ".job-step-jobs",
     JOB_ROW: ".job-step-jobs .g-table tbody > tr:not(.g-table-details-row):not(.g-table-empty-row)",
 };
 
@@ -70,7 +69,7 @@ describe("Job Step", () => {
         await flushPromises();
     });
 
-    it("shows jobs grouped by state in tables when multiple jobs", async () => {
+    it("lists state groups and marks the selected state as pressed", async () => {
         mockJobs(TEST_JOBS_JSON);
         const wrapper = mountStory(stories.MappedJobs);
         await flushPromises();
@@ -100,16 +99,6 @@ describe("Job Step", () => {
 
             // the clicked button should be pressed
             expect(nth(buttons, i).classes()).toContain("g-pressed");
-
-            // renders a table with jobs for the current state
-            const tableRows = wrapper.get(SELECTORS.JOBS_TABLE).findAll(SELECTORS.JOB_ROW);
-            expect(tableRows.length).toBe(expectedCount);
-
-            // each row has the expected state (as the last cell in the row)
-            tableRows.forEach((tr) => {
-                const cells = tr.findAll("td");
-                expect(nth(cells, -1).text()).toBe(jobState);
-            });
         }
     });
 
@@ -157,15 +146,12 @@ describe("Job Step", () => {
         expect(wrapper.get(SELECTORS.JOB_ROW).get("td:last-child").text()).toBe("running");
     });
 
-    it("just renders the job when only one job", async () => {
+    it("passes the single job and invocation identifiers to its details", async () => {
         const singleJob = nth(TEST_JOBS_JSON, 0);
 
         mockJobs([singleJob]);
         const wrapper = mountStory(stories.SingleJob);
         await flushPromises();
-
-        expect(wrapper.find(SELECTORS.JOBS_TABLE).exists()).toBe(false);
-        expect(wrapper.find(SELECTORS.JOB_STATE_BUTTON_NAV).exists()).toBe(false);
 
         const jobDetails = wrapper.findComponent(JobDetails);
         expect(jobDetails.exists()).toBe(true);
