@@ -5,8 +5,6 @@ on:
       - '.github/workflows/test_galaxy_release.yaml'
       - lib/galaxy/dependencies/**
       - lib/galaxy/version/__init__.py
-      - packages/app/src/galaxy/dependencies/**
-      - packages/util/src/galaxy/version/__init__.py
       - scripts/release.sh
       - test/release.sh
   pull_request:
@@ -14,8 +12,6 @@ on:
       - '.github/workflows/test_galaxy_release.yaml'
       - lib/galaxy/dependencies/**
       - lib/galaxy/version/__init__.py
-      - packages/app/src/galaxy/dependencies/**
-      - packages/util/src/galaxy/version/__init__.py
       - scripts/release.sh
       - test/release.sh
 concurrency:

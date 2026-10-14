@@ -9,7 +9,6 @@ on:
       - .flake8
       - .isort.cfg
       - lib/galaxy/dependencies/**
-      - packages/app/src/galaxy/dependencies/**
       - mypy.ini
       - pyproject.toml
       - tox.ini
@@ -22,7 +21,6 @@ on:
       - .flake8
       - .isort.cfg
       - lib/galaxy/dependencies/**
-      - packages/app/src/galaxy/dependencies/**
       - mypy.ini
       - pyproject.toml
       - tox.ini
