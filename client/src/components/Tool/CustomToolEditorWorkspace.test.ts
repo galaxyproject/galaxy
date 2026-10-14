@@ -1,5 +1,3 @@
-import { composeStories } from "@storybook/vue3-vite";
-import { useStoryMount } from "@tests/vitest/stories";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, onTestFinished } from "vitest";
 
@@ -7,10 +5,7 @@ import * as CustomToolEditorWorkspaceStories from "./CustomToolEditorWorkspace.s
 
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
-const stories = composeStories(CustomToolEditorWorkspaceStories);
-
 describe("CustomToolEditorWorkspace", () => {
-    const mountStory = useStoryMount();
     enableAutoUnmount(afterEach);
     afterEach(async () => {
         // Finish the drag separator's current frame while its owned wrapper is still mounted.
@@ -31,33 +26,18 @@ describe("CustomToolEditorWorkspace", () => {
         });
     }
 
-    it("starts with documentation hidden", () => {
-        const wrapper = mountStory(stories.EditorOnly, { attachTo: ownedTarget() });
-
-        expect(wrapper.get('[data-description="tool yaml editor"]').isVisible()).toBe(true);
-        expect(wrapper.find('[data-description="tool documentation"]').exists()).toBe(false);
-    });
-
-    it("shows the editor and documentation side by side", async () => {
-        const wrapper = mountWorkspace();
-
-        await wrapper.setProps({ documentationVisible: true });
-
-        expect(wrapper.get('[data-description="tool yaml editor"]').isVisible()).toBe(true);
-        expect(wrapper.get('[data-description="tool documentation"]').isVisible()).toBe(true);
-    });
-
+    // The navigation-selected panel's documentation-only class remains a variant contract.
     it("expands documentation across the full workspace", async () => {
         const wrapper = mountWorkspace();
         await wrapper.setProps({ documentationVisible: true });
 
         await wrapper.get('[data-description="toggle expanded documentation"]').trigger("click");
 
-        expect(wrapper.get('[data-description="tool yaml editor"]').isVisible()).toBe(false);
         expect(wrapper.get('[data-description="tool documentation"]').isVisible()).toBe(true);
         expect(wrapper.get("#custom-tool-documentation-panel").classes()).toContain("documentation-only");
     });
 
+    // Keep DOM identities and their visible partners together; the browser also exercises reopening.
     it("keeps both views mounted and restores split view after reopening documentation", async () => {
         const wrapper = mountWorkspace();
         const editor = wrapper.get('[data-description="tool yaml editor"]');
@@ -74,6 +54,7 @@ describe("CustomToolEditorWorkspace", () => {
         expect(documentation.isVisible()).toBe(true);
     });
 
+    // Emitted drag position and width style are a contract; plays do not measure layout.
     it("resizes documentation from the drag separator", async () => {
         const wrapper = mountWorkspace();
         await wrapper.setProps({ documentationVisible: true });

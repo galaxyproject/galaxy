@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { withCurrentUser } from "@tests/test-data/currentUser";
 import { withToasts } from "@tests/test-data/toasts";
+import { expect, waitFor } from "storybook/test";
 import { defineComponent, h, ref, watch } from "vue";
 
 import { NEW_TOOL_YAML } from "./customToolEditorDefaults";
@@ -79,9 +80,93 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** The workspace concentrates on YAML editing until its parent form opens documentation. */
-export const EditorOnly: Story = {};
+export const EditorOnly: Story = {
+    play: async ({ canvas, step }) => {
+        await step("Start with the editable source and no documentation", async () => {
+            await expect(canvas.getByRole("textbox", { name: "Tool YAML source" })).toBeVisible();
+            await expect(canvas.getByRole("button", { name: "Show documentation" })).toBeVisible();
+            await expect(canvas.queryByRole("article", { hidden: true })).not.toBeInTheDocument();
+            await expect(
+                canvas.queryByRole("heading", { name: "Authoring User-Defined Tools" }),
+            ).not.toBeInTheDocument();
+        });
+    },
+};
 
 /** The actual authoring guide sits alongside the editable YAML slot; it can expand to fill the workspace. */
 export const WithDocumentation: Story = {
     args: { documentationVisible: true },
+};
+
+/** Open the authoring guide while continuing to view the source. */
+export const OpensDocumentation: Story = {
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Show documentation beside the editor", async () => {
+            await expect(canvas.getByRole("textbox", { name: "Tool YAML source" })).toBeVisible();
+            await expect(
+                canvas.queryByRole("heading", { name: "Authoring User-Defined Tools" }),
+            ).not.toBeInTheDocument();
+            await userEvent.click(canvas.getByRole("button", { name: "Show documentation" }));
+            await expect(canvas.getByRole("heading", { name: "Authoring User-Defined Tools" })).toBeVisible();
+            await expect(canvas.getByRole("textbox", { name: "Tool YAML source" })).toBeVisible();
+            await expect(canvas.getByRole("button", { name: "Expand documentation" })).toHaveAttribute(
+                "aria-pressed",
+                "false",
+            );
+        });
+    },
+};
+
+/** Expand the guide to concentrate on its instructions. */
+export const ExpandsDocumentation: Story = {
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Expand documentation after opening it", async () => {
+            const editor = canvas.getByRole("textbox", { name: "Tool YAML source" });
+            await expect(editor).toBeVisible();
+            await expect(
+                canvas.queryByRole("heading", { name: "Authoring User-Defined Tools" }),
+            ).not.toBeInTheDocument();
+            await userEvent.click(canvas.getByRole("button", { name: "Show documentation" }));
+            const heading = canvas.getByRole("heading", { name: "Authoring User-Defined Tools" });
+            await expect(heading).toBeVisible();
+            const expand = canvas.getByRole("button", { name: "Expand documentation" });
+            await expect(expand).toHaveAttribute("aria-pressed", "false");
+            await userEvent.click(expand);
+            await expect(canvas.getByRole("button", { name: "Show side by side" })).toHaveAttribute(
+                "aria-pressed",
+                "true",
+            );
+            await expect(heading).toBeVisible();
+            await waitFor(() => expect(editor).not.toBeVisible());
+        });
+    },
+};
+
+/** Reopening an expanded guide restores both views. */
+export const ReopensSplitView: Story = {
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Close expanded documentation and reopen it beside the source", async () => {
+            const editor = canvas.getByRole("textbox", { name: "Tool YAML source" });
+            await expect(editor).toBeVisible();
+            await userEvent.click(canvas.getByRole("button", { name: "Show documentation" }));
+            const heading = canvas.getByRole("heading", { name: "Authoring User-Defined Tools" });
+            await expect(heading).toBeVisible();
+            await userEvent.click(canvas.getByRole("button", { name: "Expand documentation" }));
+            await expect(canvas.getByRole("button", { name: "Show side by side" })).toHaveAttribute(
+                "aria-pressed",
+                "true",
+            );
+            await waitFor(() => expect(editor).not.toBeVisible());
+            await userEvent.click(canvas.getByRole("button", { name: "Hide documentation" }));
+            await expect(editor).toBeVisible();
+            await waitFor(() => expect(heading).not.toBeVisible());
+            await userEvent.click(canvas.getByRole("button", { name: "Show documentation" }));
+            await expect(heading).toBeVisible();
+            await expect(editor).toBeVisible();
+            await expect(canvas.getByRole("button", { name: "Expand documentation" })).toHaveAttribute(
+                "aria-pressed",
+                "false",
+            );
+        });
+    },
 };
