@@ -675,7 +675,7 @@ def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTest
     if value is None and attributes.get("location") is None:
         return None
     as_dict: JsonTestDatasetDefDict = {
-        "class": "File",
+        "class": "Directory" if attributes.get("class") == "Directory" else "File",
     }
     if value:
         as_dict["path"] = value

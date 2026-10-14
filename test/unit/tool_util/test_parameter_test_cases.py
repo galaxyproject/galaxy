@@ -331,6 +331,16 @@ def test_test_case_state_conversion():
     ]
     dict_verify_each(state.tool_state.input_state, expectations)
 
+    tool_source = tool_source_for("zarr_store_root_compat")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["input", "class"], "Directory"),
+        (["input", "filetype"], "zarr"),
+        (["input", "path"], "flat_store.zarr"),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
     index = 0
     tool_source = tool_source_for("simple_constructs_y")
     test_cases = tool_source.parse_tests_to_dict()["tests"]
