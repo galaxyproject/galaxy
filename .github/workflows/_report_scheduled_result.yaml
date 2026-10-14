@@ -18,6 +18,14 @@ on:
         description: The calling job's needs context as JSON (toJSON(needs)); any result other than success is a failure.
         required: true
         type: string
+      tested-sha:
+        description: Tested commit; defaults to the caller SHA for existing consumers.
+        type: string
+        default: ''
+      job-name-prefix:
+        description: Restrict failure details to this branch-specific test name.
+        type: string
+        default: ''
 permissions: {}
 jobs:
   report:
@@ -38,9 +46,13 @@ jobs:
           LABELS: ${{ inputs.labels }}
           DESCRIPTION: ${{ inputs.description }}
           NEEDS: ${{ inputs.needs }}
+          TESTED_SHA: ${{ inputs.tested-sha }}
+          JOB_NAME_PREFIX: ${{ inputs.job-name-prefix }}
         with:
           script: |
             const title = process.env.TITLE;
+            const testedSha = process.env.TESTED_SHA || context.sha;
+            const jobNamePrefix = process.env.JOB_NAME_PREFIX;
             const labels = process.env.LABELS.split(",").map((label) => label.trim()).filter(Boolean);
             const repo = { owner: context.repo.owner, repo: context.repo.repo };
             const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
@@ -63,9 +75,10 @@ jobs:
                 per_page: 100,
               });
               const failedJobs = jobs
+                .filter((job) => !jobNamePrefix || job.name.includes(`${jobNamePrefix} (`))
                 .filter((job) => ["failure", "timed_out", "cancelled"].includes(job.conclusion))
                 .map((job) => job.name);
-              const failure = `${context.sha}: ${runUrl} (attempt ${context.runAttempt})`;
+              const failure = `${testedSha}: ${runUrl} (attempt ${context.runAttempt})`;
               const failedJobsLine = failedJobs.length ? `Failed jobs: ${failedJobs.join(", ")}` : "";
               if (tracking.length) {
                 await github.rest.issues.createComment({
@@ -93,7 +106,7 @@ jobs:
                 await github.rest.issues.createComment({
                   ...repo,
                   issue_number: issue.number,
-                  body: `Passing again on ${context.sha}: ${runUrl}`,
+                  body: `Passing again on ${testedSha}: ${runUrl}`,
                 });
                 await github.rest.issues.update({
                   ...repo,

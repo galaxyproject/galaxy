@@ -20,13 +20,23 @@ on:
       - '!.github/workflows/**'
       - '.github/workflows/unit.yaml'
       - '.github/workflows/_report_scheduled_result.yaml'
-  schedule:
-    # Run every supported Python version at midnight UTC daily
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      target-branch:
+        description: Branch being tested by the nightly dispatcher.
+        type: string
+        default: ''
+      target-sha:
+        description: Resolved commit to test and include in failure reports.
+        type: string
+        default: ''
+      python-version:
+        description: The single Python version configured for this branch.
+        type: string
+        default: ''
 concurrency:
   # Keep pushes to dev from cancelling the scheduled run.
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  group: unit-${{ github.workflow }}-${{ github.event_name }}-${{ inputs.target-branch || github.ref }}
   cancel-in-progress: true
 permissions: {}
 jobs:
@@ -36,28 +46,31 @@ jobs:
       || github.repository_owner != 'galaxyproject'
       || github.ref_name == 'dev'
       || startsWith(github.ref_name, 'release_')
-    name: Test
+    name: ${{ inputs.target-branch && format('Unit tests [{0}] ({1})', inputs.target-branch, matrix.python-version) || format('Test ({0})', matrix.python-version) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Pull requests and pushes to dev run only the newest Python; ruff and mypy catch most code too new for the oldest.
-        # Release branches get no nightly run, so they keep the oldest and newest.
+        # Release PRs keep both endpoints until their CI policy is backported.
         python-version: >-
           ${{ fromJSON(
-          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          inputs.python-version && format('["{0}"]', inputs.python-version)
           || startsWith(github.base_ref || github.ref_name, 'release_') && '["3.10", "3.14"]'
           || '["3.14"]'
           ) }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
+          repository: ${{ inputs.target-branch && 'galaxyproject/galaxy' || github.repository }}
+          ref: ${{ inputs.target-sha }}
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
         with:
-          version-file: galaxy root/.tool-versions
+          version: ${{ hashFiles('galaxy root/.tool-versions') == '' && '0.12.23' || '' }}
+          version-file: ${{ hashFiles('galaxy root/.tool-versions') != '' && 'galaxy root/.tool-versions' || '' }}
           python-version: ${{ matrix.python-version }}
       - name: Install ffmpeg and bubblewrap
         # bubblewrap: exercises the expression-evaluation isolation sandbox tests.
@@ -78,25 +91,26 @@ jobs:
       - uses: codecov/codecov-action@v7.1.1
         if: github.event_name != 'pull_request'
         with:
+          override_commit: ${{ inputs.target-sha }}
+          override_branch: ${{ inputs.target-branch }}
           flags: py-unit
           working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: Unit test results (${{ matrix.python-version }})
+          name: Unit test results (${{ inputs.target-branch || github.ref_name }}, ${{ matrix.python-version }})
           path: 'galaxy root/run_unit_tests.html'
   report:
     needs: [test]
-    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !cancelled() && inputs.target-branch != '' }}
     permissions:
       actions: read
       issues: write
     uses: $/.github/workflows/_report_scheduled_result.yaml
     with:
-      title: Scheduled unit tests are failing
+      title: Scheduled unit tests are failing (${{ inputs.target-branch }})
       labels: area/testing, kind/bug
-      description: |-
-        The nightly run of the Python unit tests across every supported Python version failed.
-
-        Pull requests to dev run the unit tests on the newest Python only; nightly runs cover every supported version. Release branches retain the oldest and newest versions.
+      description: Nightly unit tests on `${{ inputs.target-branch }}` using Python ${{ inputs.python-version }} failed.
       needs: ${{ toJSON(needs) }}
+      tested-sha: ${{ inputs.target-sha }}
+      job-name-prefix: Unit tests [${{ inputs.target-branch }}]

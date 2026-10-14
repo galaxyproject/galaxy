@@ -227,13 +227,23 @@ to the pull request - ping the Galaxy committers on the pull request and
 request a re-run. The GitHub Actions workflow definition for these tests is
 located in ``.github/workflows/unit.yaml`` below Galaxy's root.
 
-The same workflow runs nightly on ``dev`` against every supported Python
-version; it can also be started by hand from the Actions tab. When a nightly
-or manual run on ``dev`` fails, the workflow opens an issue titled "Scheduled
-unit tests are failing" (or comments on the one already open), and closes it
-after the next such run passes. Code too new for the oldest supported Python
-is mostly caught on pull requests by ``ruff`` and by ``mypy`` running on that
-version.
+The nightly compatibility dispatcher (``.github/workflows/nightly_tests.yaml``)
+runs these tests on ``dev`` and ``release_26.0``, ``release_26.1`` and
+``release_26.2``. Each branch has one independently configurable Python version
+in ``.github/nightly-test-targets.json`` (initially 3.10), rather than a matrix
+of every supported version. Unit runs start at 00:00 UTC; the dispatcher can
+also be started by hand from the Actions tab. A failing branch gets its own
+"Scheduled unit tests are failing (<branch>)" issue, subsequent failures add
+comments, and a passing run of that branch closes it. Reports identify the
+commit actually tested. Ruff and mypy on the oldest supported Python still
+catch many compatibility mistakes on pull requests.
+
+The dispatcher lives on ``dev`` and checks out release commits, so release
+branches do not need the dispatcher backported to receive nightly coverage.
+Their per-PR checks remain unchanged; reducing those matrices requires a
+separate backport of the CI policy. Tool Shed tests use the same branch/version
+configuration at 01:00 UTC, retaining both installation clients and the target
+branch's Tool Shed API variants.
 
 {#es6_unit}
 ## Frontend/ES6 Unit Tests
@@ -286,11 +296,12 @@ the pull request being tested. The GitHub Actions workflow definition for these
 tests is located in ``.github/workflows/framework_tools.yaml`` below Galaxy's
 root.
 
-The same workflow runs nightly on ``dev`` through both the tool request API and
-the legacy tool API; it can also be started by hand from the Actions tab. When
-a nightly or manual run on ``dev`` fails, the workflow opens an issue titled
-"Scheduled tool framework tests are failing" (or comments on the one already
-open), and closes it after the next such run passes.
+The nightly compatibility dispatcher runs both tool API modes at 02:00 UTC
+on the same configured branches and Python versions as the unit tests. Older
+releases retain their ``if_needed``/``always`` modes; newer branches use
+``never``/``always``. Failure issues are titled "Scheduled tool framework tests
+are failing (<branch>)" and close only after that branch passes. The Tuesday
+extended-metadata run on ``dev`` still tests both APIs and remains untracked.
 
 {#workflow_framework}
 ## Workflow Framework Tests
