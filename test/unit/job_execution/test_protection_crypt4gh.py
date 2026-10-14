@@ -88,7 +88,6 @@ def _protected_input(tmp_path, service, user, key_ref, dataset_id=1, plaintext=P
 def _plan(tmp_path, service, key_ref, inputs, **recryptor) -> ProtectionPlan:
     (tmp_path / "job").mkdir(exist_ok=True)
     return ProtectionPlan(
-        scheme="crypt4gh",
         job_directory=str(tmp_path / "job"),
         output_key_ref=key_ref,
         recryptor=RecryptorSettings(url=service.url, **recryptor),

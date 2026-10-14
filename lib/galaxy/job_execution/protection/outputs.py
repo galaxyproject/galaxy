@@ -30,13 +30,13 @@ from galaxy.util.crypt4gh import (
     wrap_crypt4gh_file_ext,
 )
 from . import (
-    load_runtime,
+    CRYPT4GH_SCHEME,
     ProtectedFileResult,
-    ProtectedJobRuntime,
     ProtectionError,
     ProtectionPlan,
     write_private_file,
 )
+from .crypt4gh import Crypt4GHJobRuntime
 
 if TYPE_CHECKING:
     from galaxy.datatypes.registry import Registry
@@ -57,7 +57,10 @@ MAX_CONCURRENT_FILES = 8
 
 
 class OutputProtector:
-    def __init__(self, runtime: ProtectedJobRuntime, datatypes_registry: "Registry"):
+    # Recorded as the protection scheme of the job.
+    scheme = CRYPT4GH_SCHEME
+
+    def __init__(self, runtime: Crypt4GHJobRuntime, datatypes_registry: "Registry"):
         self.runtime = runtime
         self.datatypes_registry = datatypes_registry
         self.records: dict[str, dict[str, Any]] = {}
@@ -72,7 +75,7 @@ class OutputProtector:
             return None
         if not os.path.exists(plan_path):
             raise ProtectionError("The protection plan of this job is missing, its outputs can't be protected.")
-        return cls(load_runtime(ProtectionPlan.read(plan_path)), datatypes_registry)
+        return cls(Crypt4GHJobRuntime(ProtectionPlan.read(plan_path)), datatypes_registry)
 
     def protect(
         self,
