@@ -277,7 +277,7 @@ class DatatypesApp:
         self.datatypes_registry = datatypes_registry
 
 
-def _adapt_input(extension, deferred_uri=None, metadata=None):
+def _adapt_input(extension, deferred_uri=None, metadata=None, deferred=False):
     registry = example_datatype_registry_for_sample()
     set_datatypes_registry(registry)
     hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
@@ -286,8 +286,9 @@ def _adapt_input(extension, deferred_uri=None, metadata=None):
     hda.dataset.file_size = Decimal(4)
     for name, value in (metadata or {}).items():
         setattr(hda.metadata, name, value)
-    if deferred_uri:
+    if deferred or deferred_uri:
         hda.dataset.state = Dataset.states.DEFERRED
+    if deferred_uri:
         hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
     _, adapt_dataset, _ = setup_for_runtimeify(
         cast(Any, DatatypesApp(registry)), cast(Any, RewritingComputeEnvironment()), {"input": hda}
@@ -326,6 +327,11 @@ def test_adapt_dataset_deferred_input_has_location_and_no_path():
     assert result.class_ == "Directory"
     assert result.location == "https://example.org/data/folder"
     assert result.path is None
+
+
+def test_adapt_dataset_deferred_input_without_a_source_is_rejected():
+    with pytest.raises(ValueError, match="has no source"):
+        _adapt_input("directory", deferred=True)
 
 
 @pytest.mark.parametrize("extension", ["directory", "zarr"])

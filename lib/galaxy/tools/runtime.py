@@ -128,7 +128,9 @@ def setup_for_runtimeify(
         }
         if hda_entry.has_deferred_data:
             # Not materialized: the tool consumes the source URI and there is no local path.
-            properties["location"] = hda_entry.deferred_source_uri
+            if not (source_uri := hda_entry.deferred_source_uri):
+                raise ValueError(f"Deferred dataset {hda_entry.id} has no source to read it from")
+            properties["location"] = source_uri
         elif isinstance(datatype, Directory):
             # The content sits at the root of the extra files, or in the folder an older dataset recorded.
             extra_files_path = (
