@@ -47,6 +47,8 @@ DATASETS = "datasets"
 UPLOADS = "uploads"
 # listings kept by the instance that serves a thread; nomad-fsspec drops the oldest past this
 MAX_LISTINGS = 100
+# a listing with more uploads than this, asked for without a page, keeps their ids
+MAX_NAMED = 100
 
 
 class NomadFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -87,7 +89,7 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             raise self.required_package_exception
         config = context.config
         self._refuse_a_private_address(config.base_url)
-        token = config.token or None
+        token = (config.token or "").strip() or None
         return NomadFileSystem(
             base_url=config.base_url,
             token=token,
@@ -109,8 +111,9 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             validate_non_local(f"{url.scheme}://{host}", self._file_sources_config.fetch_url_allowlist or [])
         except ConfigDoesNotAllowException as e:
             raise ConfigDoesNotAllowException(
-                f"{self.label} points to {host}, an address on this server's own network. Galaxy only "
-                "connects to those if an administrator adds them to fetch_url_allowlist."
+                f"{self.label} points to {host}, an address on this server's own network. An administrator "
+                "can allow it by adding its IP address to fetch_url_allowlist, which applies to every URL "
+                "Galaxy fetches."
             ) from e
         except RequestParameterInvalidException as e:
             raise MessageException(f"Could not find {host}, the address of {self.label}.") from e
@@ -194,6 +197,8 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             and entry.path.startswith(f"/{DATASETS}/")
             and entry.path.count("/") == 3
         }
+        if len(uploads) > MAX_NAMED:
+            return
         for upload_id, name in cast("NomadFileSystemType", fs).upload_names(uploads).items():
             uploads[upload_id].name = name
 
