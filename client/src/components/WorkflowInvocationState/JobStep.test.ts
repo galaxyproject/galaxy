@@ -1,6 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { composeStories } from "@storybook/vue3-vite";
 import { nth } from "@tests/vitest/helpers";
-import { enableAutoUnmount, mount, shallowMount } from "@vue/test-utils";
+import { useStoryMount } from "@tests/vitest/stories";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { disposePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
@@ -8,17 +10,19 @@ import { computed, type Ref, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { JobBaseModel } from "@/api/jobs";
+import type * as JobDetailsModule from "@/composables/jobDetails";
 import { statePlaceholders } from "@/composables/useInvocationGraph";
 
+import * as JobStepStories from "./JobStep.stories";
 import { TEST_JOBS_BY_STATES } from "./test/jobStepUtils";
-import TEST_JOBS_JSON_RAW from "./test/json/jobs.json";
+import { JOB_STEP_JOBS as TEST_JOBS_JSON } from "./test_fixtures";
 
 import JobStep from "./JobStep.vue";
+import JobDetails from "@/components/JobInformation/JobDetails.vue";
 
-// JSON imports widen `state` to string.
-const TEST_JOBS_JSON = TEST_JOBS_JSON_RAW as JobBaseModel[];
-
-const TEST_INVOCATION_ID = "test-invocation-id";
+const stories = composeStories(JobStepStories);
+const mountStory = useStoryMount();
+const TEST_INVOCATION_ID = JobStepStories.default.args.invocationId;
 
 const mockedJobsById = ref<Record<string, JobBaseModel>>({});
 
@@ -28,7 +32,8 @@ function mockJobs(jobs: JobBaseModel[]) {
 
 // Since `JobState` fetches its job via `useJobDetails`, we need to mock that composable to return
 // jobs reactively, as the table changes values as the states change.
-vi.mock("@/composables/jobDetails", () => ({
+vi.mock("@/composables/jobDetails", async (importOriginal) => ({
+    ...(await importOriginal<typeof JobDetailsModule>()),
     useJobDetails: (jobId: Ref<string | undefined>) => ({
         job: computed(() => (jobId.value ? (mockedJobsById.value[jobId.value] ?? null) : null)),
         error: computed(() => null),
@@ -47,9 +52,6 @@ const SELECTORS = {
     JOB_STATE_BUTTON: ".g-button",
     JOBS_TABLE: ".job-step-jobs",
     JOB_ROW: ".job-step-jobs .g-table tbody > tr:not(.g-table-details-row):not(.g-table-empty-row)",
-    // Stub name follows the `JobDetailsDisplayed` local import alias JobStep.vue
-    // registers it under, not JobDetails.vue's own inferred `<script setup>` name.
-    STUBBED_JOB_DETAILS: "job-details-displayed-stub",
 };
 
 function jobStepMountOptions(jobs: JobBaseModel[] = TEST_JOBS_JSON) {
@@ -69,8 +71,8 @@ describe("Job Step", () => {
     });
 
     it("shows jobs grouped by state in tables when multiple jobs", async () => {
-        mockJobs(TEST_JOBS_JSON as JobBaseModel[]);
-        const wrapper = mount(JobStep, jobStepMountOptions());
+        mockJobs(TEST_JOBS_JSON);
+        const wrapper = mountStory(stories.MappedJobs);
         await flushPromises();
 
         // verify that the job state buttons are rendered
@@ -158,16 +160,17 @@ describe("Job Step", () => {
     it("just renders the job when only one job", async () => {
         const singleJob = nth(TEST_JOBS_JSON, 0);
 
-        const wrapper = shallowMount(JobStep, jobStepMountOptions([singleJob]));
+        mockJobs([singleJob]);
+        const wrapper = mountStory(stories.SingleJob);
         await flushPromises();
 
         expect(wrapper.find(SELECTORS.JOBS_TABLE).exists()).toBe(false);
         expect(wrapper.find(SELECTORS.JOB_STATE_BUTTON_NAV).exists()).toBe(false);
 
-        const jobDetails = wrapper.find(SELECTORS.STUBBED_JOB_DETAILS);
+        const jobDetails = wrapper.findComponent(JobDetails);
         expect(jobDetails.exists()).toBe(true);
 
-        expect(jobDetails.attributes()["jobid"]).toBe(singleJob.id);
-        expect(jobDetails.attributes()["invocationid"]).toBe(TEST_INVOCATION_ID);
+        expect(jobDetails.props("jobId")).toBe(singleJob.id);
+        expect(jobDetails.props("invocationId")).toBe(TEST_INVOCATION_ID);
     });
 });
