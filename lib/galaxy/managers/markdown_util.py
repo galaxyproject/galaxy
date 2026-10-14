@@ -160,9 +160,13 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             object_id: int | None = None
             encoded_id: str | None = None
 
-            if id_match := re.search(UNENCODED_ID_PATTERN, match.group()):
+            for id_match in re.finditer(UNENCODED_ID_PATTERN, match.group()):
+                # invocation_id is the context for output/input labels, not the object being embedded
+                if id_match.group(1) == "invocation_id" and container != "invocation_time":
+                    continue
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
+                break
 
             # If no object_id but has output/input labels, return original match
             # for frontend resolution using the page's invocation context

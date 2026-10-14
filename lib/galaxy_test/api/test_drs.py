@@ -67,6 +67,7 @@ class TestDrsApi(ApiTestCase):
     def test_public_data_access(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
+        self.dataset_populator.make_dataset_public(history_id, hda["id"])
         drs_id = hda["drs_id"]
         for method in HTTP_METHODS:
             for _ in range(10):
@@ -99,6 +100,7 @@ class TestDrsApi(ApiTestCase):
     def test_public_data_access_util_code(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
+        self.dataset_populator.make_dataset_public(history_id, hda["id"])
         drs_id = hda["drs_id"]
         components = urlparse(self.url)
         netloc = components.netloc

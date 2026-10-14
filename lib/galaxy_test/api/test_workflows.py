@@ -71,6 +71,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_IMAGES_IN_REPORT,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_ACTIONS,
@@ -4940,6 +4941,17 @@ steps:
             assert "\n```galaxy\nhistory_dataset_display(invocation_id=" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
+
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_keeps_inline_output_labels(self):
+        test_data = {"image_input": {"value": "454Score.png", "type": "File", "file_type": "png"}}
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(WORKFLOW_WITH_IMAGES_IN_REPORT, test_data=test_data, history_id=history_id)
+            report_response = self._get(f"invocations/{summary.invocation_id}/report")
+            self._assert_status_code_is(report_response, 200)
+            markdown_content = report_response.json()["markdown"]
+            assert "| First Image | ${galaxy history_dataset_as_image(" in markdown_content
+            assert "output=output_image)} |" in markdown_content
 
     @skip_without_tool("cat")
     def test_workflow_invocation_report_invalid_hdca_id(self):

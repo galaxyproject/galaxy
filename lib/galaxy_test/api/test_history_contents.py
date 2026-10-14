@@ -79,6 +79,7 @@ class TestHistoryContentsApi(ApiTestCase):
     def _verify_dataset_permissions(self, history_id: str, api_endpoint):
         hda1 = self._wait_for_new_hda(history_id)
         hda_id = hda1["id"]
+        self.dataset_populator.make_dataset_public(history_id, hda_id)
         if api_endpoint == "history_contents":
             update_url = f"histories/{history_id}/contents/{hda_id}/permissions"
         else:
@@ -380,6 +381,10 @@ class TestHistoryContentsApi(ApiTestCase):
         combined_user_role_id = self.dataset_populator.create_role([user_id, different_user_id])["id"]
 
         ld = self.library_populator.new_library_dataset("test_inheritance_dataset")
+        remove_restrictions_response = self._post(
+            f"libraries/datasets/{ld['id']}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
+        )
+        self._assert_status_code_is_ok(remove_restrictions_response)
         self.library_populator.set_access_permission(ld["parent_library_id"], combined_user_role_id)
 
         with self._different_user():
