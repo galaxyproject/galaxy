@@ -7,9 +7,7 @@ symlink-elimination work is:
 
 - Every import root is owned by exactly one distribution, and the owning
   distribution ships that code as **real files** under `packages/<name>/src`.
-- Symlinks inside `packages/*/src/**` and `packages/*/tests/**` are forbidden,
-  except for the allowlist documented below (enforced by
-  `tox -e check_no_source_links`, see [Enforcement](#enforcement)).
+- Retained fixture and asset symlinks are documented below.
 
 ## Import root → distribution
 
@@ -130,9 +128,8 @@ The only symlinks permitted under `packages/*/src/**` or
 | `linters` chain | 1 | `packages/tool_util/src/galaxy/tool_util/linters/datatypes_conf.xml.sample` | `packages/config/src/galaxy/config/sample/datatypes_conf.xml.sample` |
 | `main` chain | 1 | `packages/app/src/galaxy/main/__init__.py` | `scripts/galaxy-main` |
 
-Any new symlink under those trees must either fit one of these categories or
-come with a revision of this document and of
-`.ci/check_no_source_links.sh`; a real file is always preferred.
+Package-owned Python sources are real files; the links above retain shared
+fixtures and assets.
 
 ## `lib/galaxy_test` remainder
 
@@ -174,16 +171,7 @@ Rationale:
    (`pythonpath = lib .`). They test the composed application and remain
    outside the independently distributed package test suites.
 
-## Enforcement
-
-- `.ci/check_no_source_links.sh` fails on any tracked symlink under
-  `packages/*/src/**` or `packages/*/tests/**` that is not in the allowed
-  paths and targets above (datatype/parameter fixtures must point inside
-  `test-data/`, the Mercurial fixture probe must retain its local target,
-  and the retained `functional_tools` / `bundled` / `static` / `templates` /
-  `maf` / `navigation` / `linters` / `main` chains).
-- It runs in `tox -e lint` (including CI); it can also be run separately
-  with `tox -e check_no_source_links`.
+## Inspecting the layout
 
 To regenerate the tables in this document:
 

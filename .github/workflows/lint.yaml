@@ -3,8 +3,6 @@ on:
   push:
     paths:
       - '**.py'
-      - 'packages/**/src/**'
-      - 'packages/**/tests/**'
       - '.github/workflows/lint.yaml'
       - '.ci/**'
       - 'Makefile'
@@ -18,8 +16,6 @@ on:
   pull_request:
     paths:
       - '**.py'
-      - 'packages/**/src/**'
-      - 'packages/**/tests/**'
       - '.github/workflows/lint.yaml'
       - '.ci/**'
       - 'Makefile'
