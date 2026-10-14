@@ -143,6 +143,7 @@ def related_items(sa_session, request):
     is_dataset = request.param == "dataset"
 
     def item(hid, copied_from=None, creating_input=None, history=history):
+        value: HistoryDatasetAssociation | HistoryDatasetCollectionAssociation
         if is_dataset:
             value = HistoryDatasetAssociation(sa_session=sa_session, history=history, hid=hid, create_dataset=True)
             if copied_from is not None:
@@ -156,7 +157,7 @@ def related_items(sa_session, request):
         if creating_input is not None:
             job = Job()
             job.history = history
-            if is_dataset:
+            if isinstance(value, HistoryDatasetAssociation):
                 job.add_input_dataset("input", creating_input)
                 job.add_output_dataset("output", value)
             else:
@@ -340,3 +341,41 @@ def test_related_hids_reused_collection_element_keeps_provenance(sa_session, col
     sa_session.commit()
     expected = [1, 2] if collection_input else [1, 2, 3]
     assert sorted(JobConnectionsManager(sa_session).get_related_hids(history.id, 1)) == expected
+
+
+def test_related_hids_empty_history(sa_session):
+    history = History()
+    sa_session.add(history)
+    sa_session.commit()
+    assert JobConnectionsManager(sa_session).get_related_hids(history.id, 99) == [99]
+
+
+def test_related_hids_missing_item(sa_session, related_items):
+    history, item = related_items
+    source = item(1)
+    item(2, creating_input=source)
+    sa_session.commit()
+    assert JobConnectionsManager(sa_session).get_related_hids(history.id, 99) == [99]
+
+
+def test_related_hids_same_hid_across_item_types(sa_session):
+    history = History()
+    dataset_input = HistoryDatasetAssociation(sa_session=sa_session, history=history, hid=1, create_dataset=True)
+    dataset_output = HistoryDatasetAssociation(sa_session=sa_session, history=history, hid=2, create_dataset=True)
+    collection_input = HistoryDatasetCollectionAssociation(
+        history=history, hid=1, collection=DatasetCollection(collection_type="list")
+    )
+    collection_output = HistoryDatasetCollectionAssociation(
+        history=history, hid=3, collection=DatasetCollection(collection_type="list")
+    )
+    dataset_job = Job()
+    dataset_job.add_input_dataset("input", dataset_input)
+    dataset_job.add_output_dataset("output", dataset_output)
+    collection_job = Job()
+    collection_job.add_input_dataset_collection("input", collection_input)
+    collection_job.add_output_dataset_collection("output", collection_output)
+    sa_session.add_all(
+        [history, dataset_input, dataset_output, collection_input, collection_output, dataset_job, collection_job]
+    )
+    sa_session.commit()
+    assert sorted(JobConnectionsManager(sa_session).get_related_hids(history.id, 1)) == [1, 2, 3]

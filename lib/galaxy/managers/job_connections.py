@@ -2,8 +2,11 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     and_,
+    func,
     literal,
     or_,
+    SQLColumnExpression,
+    true,
     union,
     union_all,
 )
@@ -13,7 +16,10 @@ from sqlalchemy.sql import (
     select,
     Select,
 )
-from sqlalchemy.sql.expression import CTE
+from sqlalchemy.sql.expression import (
+    CTE,
+    Subquery,
+)
 
 from galaxy import model
 
@@ -63,21 +69,24 @@ class JobConnectionsManager:
         hda = model.HistoryDatasetAssociation
         hdca = model.HistoryDatasetCollectionAssociation
         item_classes = (hda, hdca)
+        metadata_tables: list[Subquery] = []
         metadata_selects: list[ColumnElement[int] | ColumnElement[bool]] = []
         for item_class in item_classes:
             copied_from, _ = COPY_ASSOCIATIONS[item_class]
-            metadata_selects.extend(
-                (
-                    select(item_class.id)
-                    .where(item_class.history_id == history_id, item_class.hid == hid)
-                    .limit(1)
-                    .scalar_subquery(),
-                    select(item_class.id)
-                    .where(item_class.history_id == history_id, getattr(item_class, copied_from).is_not(None))
-                    .exists(),
+            # Find the clicked item and copy presence in the same pass over this history's rows.
+            metadata = (
+                select(
+                    func.min(item_class.id).filter(item_class.hid == hid).label("item_id"),
+                    (func.count(getattr(item_class, copied_from)) > 0).label("has_copies"),
                 )
+                .where(item_class.history_id == history_id)
+                .subquery()
             )
-        hda_id, hda_copies, hdca_id, hdca_copies = self.sa_session.execute(select(*metadata_selects)).one()
+            metadata_tables.append(metadata)
+            metadata_selects.extend((metadata.c.item_id, metadata.c.has_copies))
+        hda_id, hda_copies, hdca_id, hdca_copies = self.sa_session.execute(
+            select(*metadata_selects).select_from(metadata_tables[0].join(metadata_tables[1], true()))
+        ).one()
         if hda_id is None and hdca_id is None:
             return [hid]
         copies_by_class = {hda: hda_copies, hdca: hdca_copies}
@@ -91,7 +100,7 @@ class JobConnectionsManager:
                 chain = self._copied_from_chain(
                     item_class,
                     item_class.id == item_id,
-                    name=f"clicked_{item_class.__table__.name}",
+                    name=f"clicked_{item_class.__name__.lower()}",
                     collection_outputs=collection_outputs,
                 )
                 related_id = chain.c.ancestor_id
@@ -104,7 +113,7 @@ class JobConnectionsManager:
                 related_selects.extend(self.outputs_derived_from_input_hdca(related_id))
                 related_selects.extend(self.inputs_for_hdca(related_id))
         related = union_all(*related_selects).cte("related_items")
-        hid_selects = [select(literal(hid).label("hid"))]
+        hid_selects: list[Select[tuple[int | None]]] = [select(literal(hid).label("hid"))]
         for item_class in item_classes:
             related_ids = select(related.c.id).where(related.c.src == item_class.__name__)
             # Direct matches need no ancestry walk, including in histories that were never copied.
@@ -123,7 +132,7 @@ class JobConnectionsManager:
                     ~has_creating_job,
                     related_ids.exists(),
                 ),
-                name=f"copies_{item_class.__table__.name}",
+                name=f"copies_{item_class.__name__.lower()}",
                 stop_at=related_ids,
                 collection_outputs=collection_outputs,
             )
@@ -165,7 +174,7 @@ class JobConnectionsManager:
     def _has_creating_job(
         self,
         item_class: type[model.HistoryDatasetAssociation] | type[model.HistoryDatasetCollectionAssociation],
-        item_id: ColumnElement[int],
+        item_id: SQLColumnExpression[int],
         collection_outputs: CTE | None = None,
     ) -> ColumnElement[bool]:
         _, output_id = COPY_ASSOCIATIONS[item_class]
