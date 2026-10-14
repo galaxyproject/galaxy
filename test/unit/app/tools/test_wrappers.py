@@ -1,5 +1,6 @@
 import os
 import tempfile
+from types import SimpleNamespace
 from typing import cast
 from unittest.mock import Mock
 
@@ -8,6 +9,7 @@ import pytest
 from galaxy.datatypes.data import (
     Directory,
     Text,
+    ZarrDirectory,
 )
 from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.job_execution.compute_environment import ComputeEnvironment
@@ -267,6 +269,12 @@ class MockComputeEnvironment:
     def input_extra_files_rewrite(self, dataset):
         return self.false_extra_files_path
 
+    def output_path_rewrite(self, dataset):
+        return self.false_path
+
+    def output_extra_files_rewrite(self, dataset):
+        return self.false_extra_files_path
+
     def unstructured_path_rewrite(self, path):
         return f"Rewrite<{path}>"
 
@@ -323,9 +331,41 @@ def test_dataset_path_of_a_directory_datatype():
     assert wrapper.path == "/job/inputs/dataset_123_files"
 
 
+def test_dataset_path_of_a_zarr_store_in_a_recorded_wrapper_folder():
+    # Zarr datasets created before stores were moved to the root keep them in a subfolder.
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="wrapped.zarr")
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    assert wrapper.path == "/job/inputs/dataset_123_files/wrapped.zarr"
+
+
+def test_dataset_path_registers_the_extra_files_for_staging():
+    # Pulsar stages the extra files of every dataset whose extra files path was rewritten, so
+    # $input.path must go through input_extra_files_rewrite rather than build the path itself.
+    compute_environment = Mock(wraps=MockComputeEnvironment(false_path=None, false_extra_files_path="/remote/files"))
+    wrapper = DatasetFilenameWrapper(
+        _dataset_of_type(Directory()), compute_environment=cast(ComputeEnvironment, compute_environment)
+    )
+    assert wrapper.path == "/remote/files"
+    compute_environment.input_extra_files_rewrite.assert_called_once()
+
+
 def test_dataset_path_of_a_directory_output():
     wrapper = DatasetFilenameWrapper(_dataset_of_type(Directory()), io_type="output")
     assert wrapper.path == MOCK_DATASET_EXTRA_FILES_PATH
+
+
+def test_dataset_path_of_a_directory_output_ignores_a_copied_store_root():
+    # metadata_source="input" copies store_root from an older input, but new outputs have their content at the root.
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="wrapped.zarr")
+    compute_environment = MockComputeEnvironment(
+        false_path=None, false_extra_files_path="/job/outputs/dataset_123_files"
+    )
+    wrapper = DatasetFilenameWrapper(
+        dataset, compute_environment=cast(ComputeEnvironment, compute_environment), io_type="output"
+    )
+    assert wrapper.path == "/job/outputs/dataset_123_files"
 
 
 def test_dataset_path_of_a_deferred_dataset_is_empty():

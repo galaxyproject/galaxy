@@ -36,6 +36,8 @@ class TestZarrStoreRootMetadataResetIntegration(IntegrationTestCase):
         for input_id in (dataset_id, copy_id):
             # Published wrappers read $input.extra_files_path/$input.metadata.store_root.
             assert ".zgroup" in self._run_and_read(history_id, "zarr_store_root_compat", input_id)
+            # $input.path resolves the recorded wrapper folder too.
+            assert ".zgroup" in self._run_and_read(history_id, "dataset_path", input_id)
             # YAML tools get the store's folder as the path of a class: Directory input,
             # through the tool request API and through /api/tools alike.
             for listing in (

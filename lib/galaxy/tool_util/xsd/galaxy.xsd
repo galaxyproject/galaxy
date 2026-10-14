@@ -4375,11 +4375,13 @@ For bulk or nested collection staging, prefer a configfile using
 
 Datasets of directory datatypes (``directory`` and its subclasses) keep their
 content in a folder, ``$input.extra_files_path``, rather than in ``$input``
-itself, and that content always sits at the root of the folder.
+itself. New datasets have their content at the root of that folder; some
+Zarr datasets created before Galaxy 26.2 keep their store in a subfolder.
 ``$input.path`` is where a tool finds a dataset's data on disk: the dataset's
-file for regular datatypes, and that folder for directory datatypes. A single
-input can then accept both kinds of format through one value, the same way
-``$(inputs.input.path)`` works in YAML tools. For example, an input taking
+file for regular datatypes, and the folder holding the content, subfolder
+included, for directory datatypes. A single input can then accept both kinds
+of format through one value, the same way ``$(inputs.input.path)`` works in
+YAML tools. For example, an input taking
 AnnData either as an ``h5ad`` file or as a ``zarr`` store needs no branching.
 ``$input.path`` is available since Galaxy 26.2, so tools using it should set
 ``profile="26.2"`` or later:
@@ -4393,6 +4395,8 @@ python '$__tool_directory__/script.py' --input '$input.path'
 ```
 
 For a directory output, write the content directly into ``$output.path``.
+Galaxy does not create this folder, so the tool has to create it first, e.g.
+with ``mkdir -p '$output.path'``.
 
 With ``allow_uri_if_protocol``, a deferred dataset may reach the tool as its
 source URI instead of being downloaded first. ``$input.path`` is then empty and
@@ -4406,9 +4410,10 @@ source URI instead of being downloaded first. ``$input.path`` is then empty and
 #end if
 ```
 
-Zarr datasets no longer set the ``store_root`` metadata, since the store sits
-at the root of the folder. ``$input.extra_files_path/$input.metadata.store_root``
-still points at the store, but new tools should use ``$input.path``.
+Existing Zarr tools use ``$input.extra_files_path/$input.metadata.store_root``.
+That keeps pointing at the store, since ``store_root`` is empty for a store at
+the root and names the subfolder otherwise, but new tools should use
+``$input.path``.
 
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.
