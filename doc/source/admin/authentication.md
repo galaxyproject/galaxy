@@ -52,19 +52,23 @@ Galaxy refuses the login itself when the callback arrives without the matching l
 
 ### Authorization request parameters
 
-All backends except `azure` and `tapis` can add these standard [OIDC authorization request parameters](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest) to the redirect to the IdP: `acr_values`, `login_hint`, `max_age`, `ui_locales` and `display`. `prompt` has its own `<prompt>` element in `oidc_backends_config_file`. The others are set with `Setter` elements in `oidc_config_file`. A property prefixed with a backend name applies to that provider only. Without a prefix it applies to every provider.
+You can customize the login request Galaxy sends to an identity provider with standard [OIDC authorization request parameters](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). For example, you can request a particular authentication level or ask the IdP to re-authenticate users whose last authentication at the IdP is too old.
 
-```xml
-<OIDC>
-    ...
-    <!-- Ask the IdP to use multi-factor authentication for logins through the keycloak provider -->
-    <Setter Property="KEYCLOAK_ACR_VALUES" Value="https://refeds.org/profile/mfa" Type="str"/>
-    <!-- Make users of the generic oidc provider re-authenticate at the IdP if their last login there is older than an hour -->
-    <Setter Property="OIDC_MAX_AGE" Value="3600" Type="int"/>
-</OIDC>
-```
+The following parameters are supported by Galaxy's OIDC backends except `azure` and `tapis`, and require social-auth-core 4.7.0 or later:
 
-The prefix is the provider name in upper case, except for these providers:
+| Parameter    | Setter property | Purpose                                                        |
+| ------------ | --------------- | -------------------------------------------------------------- |
+| `acr_values` | `ACR_VALUES`    | Request authentication contexts understood by the IdP.         |
+| `login_hint` | `LOGIN_HINT`    | Suggest the user identifier to use at login.                   |
+| `max_age`    | `MAX_AGE`       | Request re-authentication after the specified age, in seconds. |
+| `ui_locales` | `UI_LOCALES`    | Request preferred languages for the IdP's login interface.     |
+| `display`    | `DISPLAY`       | Request how the IdP displays its login interface.              |
+
+Set these properties with `<Setter>` elements inside `<OIDC>` in `oidc_config_file` (usually `config/oidc_config.xml`). Configure `prompt` separately with the existing `<prompt>` element for the provider in `oidc_backends_config_file`.
+
+#### Configure a provider
+
+To apply a setting to one provider, prefix the Setter property with that provider's name in upper case followed by `_`: for example, `KEYCLOAK_ACR_VALUES`. Use the prefixes in this table for providers whose backend names differ from their configuration names:
 
 | Provider      | Prefix                  |
 | ------------- | ----------------------- |
@@ -74,9 +78,25 @@ The prefix is the provider name in upper case, except for these providers:
 | `einfracz`    | `E_INFRA_CZ_`           |
 | `nfdi`        | `INFRAPROXY_`           |
 
-Galaxy ignores a Setter with a wrong prefix without a warning, so check the redirect to the IdP in the browser's developer tools. `MAX_AGE` needs `Type="int"`. These parameters need social-auth-core 4.7.0 or later.
+Use `Type="int"` for `MAX_AGE` and `Type="str"` for the other properties.
 
-`acr_values` only asks the IdP for an authentication level. Galaxy does not check the `acr` claim the IdP returns, so to require multi-factor authentication, also enforce it for Galaxy's client at the IdP.
+For example, these Setters request the REFEDS MFA authentication context for `keycloak` and a maximum authentication age of one hour for the generic `oidc` provider:
+
+```xml
+<OIDC>
+    <!-- Keep the other OIDC settings here. -->
+    <Setter Property="KEYCLOAK_ACR_VALUES" Value="https://refeds.org/profile/mfa" Type="str"/>
+    <Setter Property="OIDC_MAX_AGE" Value="3600" Type="int"/>
+</OIDC>
+```
+
+To provide a default for all supported providers, omit the prefix: for example, `<Setter Property="MAX_AGE" Value="3600" Type="int"/>`. A provider-specific setting takes precedence over that default.
+
+#### Verify the request
+
+Open the browser's developer tools before logging in, then inspect the redirect to the IdP. Its query string should contain the configured parameter names and values, such as `max_age=3600`. Galaxy silently ignores a Setter with an incorrect provider prefix, so check the prefix if a parameter is missing.
+
+The IdP determines how it handles these parameters. In particular, `acr_values` requests an authentication level, but Galaxy does not check the `acr` claim returned by the IdP. To require multi-factor authentication, enforce it for Galaxy's client at the IdP as well.
 
 ## Authentication Framework
 
