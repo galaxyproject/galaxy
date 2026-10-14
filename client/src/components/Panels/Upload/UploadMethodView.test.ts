@@ -11,6 +11,7 @@ import type { HistorySummary } from "@/api";
 import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
+import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useHistoryStore } from "@/stores/historyStore";
 import { buildPreparedUpload } from "@/utils/upload";
 
@@ -150,6 +151,21 @@ describe("UploadMethodView history mismatch alert", () => {
         historyStore.setCurrentHistoryId("hist-a");
         await nextTick();
         expect(mismatchAlert(wrapper).exists()).toBe(false);
+    });
+});
+
+describe("UploadMethodView advanced mode switch", () => {
+    it("binds the advanced mode to a switch input that carries the test id", async () => {
+        const { advancedMode } = useUploadAdvancedMode();
+        advancedMode.value = false;
+        const { wrapper } = mountView();
+
+        const toggle = wrapper.find('input[data-test-id="upload-advanced-mode-toggle"]');
+        expect(toggle.attributes("role")).toBe("switch");
+
+        await toggle.setValue(true);
+        expect(advancedMode.value).toBe(true);
+        advancedMode.value = false;
     });
 });
 
