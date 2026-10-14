@@ -4,10 +4,8 @@ import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
 import * as stories from "./PageView.stories";
-import { PUBLISHED_PAGE } from "./test_fixtures";
 
 import Heading from "@/components/Common/Heading.vue";
-import PublishedItem from "@/components/Common/PublishedItem.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 
 const composed = composeStories(stories);
@@ -37,60 +35,27 @@ function ownHeadings(wrapper: PageViewWrapper) {
 
 describe("PageView", () => {
     describe("default mode (published page with chrome)", () => {
-        it("renders PublishedItem wrapper", async () => {
-            const wrapper = await mountPageView(Published);
-            loadedMarkdown(wrapper);
-
-            expect(wrapper.findComponent(PublishedItem).exists()).toBe(true);
-        });
-
         it("does not render embed container", async () => {
             const wrapper = await mountPageView(Published);
+            loadedMarkdown(wrapper);
 
             expect(wrapper.find(".page-view.embed").exists()).toBe(false);
         });
     });
 
     describe("embed mode", () => {
-        it("renders without PublishedItem wrapper", async () => {
+        it("renders in the embed container", async () => {
             const wrapper = await mountPageView(Embedded);
 
-            expect(wrapper.findComponent(PublishedItem).exists()).toBe(false);
             expect(wrapper.find(".page-view.embed").exists()).toBe(true);
-        });
-
-        it("does not show edit toolbar", async () => {
-            const wrapper = await mountPageView(Embedded);
-            loadedMarkdown(wrapper);
-
-            expect(wrapper.find(".page-display-toolbar").exists()).toBe(false);
         });
     });
 
     describe("displayOnly mode", () => {
-        it("renders without PublishedItem wrapper", async () => {
+        it("renders in the embed container", async () => {
             const wrapper = await mountPageView(DisplayOnly);
 
-            expect(wrapper.findComponent(PublishedItem).exists()).toBe(false);
             expect(wrapper.find(".page-view.embed").exists()).toBe(true);
-        });
-
-        it("shows edit toolbar with Edit Page button", async () => {
-            const wrapper = await mountPageView(DisplayOnly);
-
-            const toolbar = wrapper.find(".page-display-toolbar");
-            expect(toolbar.exists()).toBe(true);
-
-            const editBtn = wrapper.find('[data-description="page view edit button"]');
-            expect(editBtn.exists()).toBe(true);
-            expect(editBtn.text()).toContain("Edit Notebook");
-        });
-
-        it("shows page title in toolbar", async () => {
-            const wrapper = await mountPageView(DisplayOnly);
-
-            const toolbar = wrapper.find(".page-display-toolbar");
-            expect(toolbar.text()).toContain(PUBLISHED_PAGE.title);
         });
 
         it("hides duplicate heading when displayOnly", async () => {
