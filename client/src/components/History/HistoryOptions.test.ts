@@ -178,41 +178,6 @@ describe("History Navigation", () => {
         expect(optionTexts).toStrictEqual(unownedHistoryOptions);
     });
 
-    it("shows 'Delete History' for an active history", async () => {
-        const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        expect(wrapper.text()).toContain("Delete History");
-        expect(wrapper.text()).not.toContain("Permanently Delete History");
-    });
-
-    it("shows 'Permanently Delete History' for a deleted (not purged) history", async () => {
-        const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
-        expect(wrapper.text()).toContain("Permanently Delete History");
-    });
-
-    it("delete modal has correct title and ok-text for an active history", async () => {
-        const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        const modal = deleteModal(wrapper);
-        expect(modal.props("title")).toBe("Delete History?");
-        expect(modal.props("okText")).toBe("Delete");
-    });
-
-    it("delete modal has correct title and ok-text for a deleted (not purged) history", async () => {
-        const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
-        const modal = deleteModal(wrapper);
-        expect(modal.props("title")).toBe("Permanently Delete History?");
-        expect(modal.props("okText")).toBe("Delete Permanently");
-    });
-
-    it("purge checkbox is not disabled for an active history", async () => {
-        const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        expect(wrapper.get('[data-description="delete history checkbox"]').attributes("disabled")).toBeUndefined();
-    });
-
-    it("purge checkbox is disabled for an already-deleted history", async () => {
-        const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
-        expect(wrapper.get('[data-description="delete history checkbox"]').attributes("disabled")).toBeDefined();
-    });
-
     it("calls deleteHistory with purge=false when checkbox is unchecked", async () => {
         const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
         deleteModal(wrapper).vm.$emit("ok");

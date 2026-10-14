@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeAnonymousUser, getFakeHistorySummaryExtended } from "@tests/test-data";
 import { viewedBy, withCurrentUser } from "@tests/test-data/currentUser";
 import { withToasts } from "@tests/test-data/toasts";
+import { expect, waitFor, within } from "storybook/test";
 
 import { ANALYSIS_HISTORY, HISTORY_VIEWER, historyOperationsStory } from "./test_fixtures";
 
@@ -45,4 +46,87 @@ export const AnonymousHistory: Story = {
 export const UnownedHistory: Story = {
     args: { history: sharedHistory },
     ...historyOperationsStory(sharedHistory),
+};
+
+/** Open the active history's deletion confirmation without submitting it. */
+export const OpensDeleteConfirmation: Story = {
+    ...historyOperationsStory(),
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Open the active history menu with no deletion dialog", async () => {
+            const options = canvas.getByRole("button", { name: "History Options" });
+            await expect(options).toBeVisible();
+            await expect(canvas.queryByRole("dialog")).not.toBeInTheDocument();
+            await userEvent.click(options);
+            await expect(await canvas.findByRole("menuitem", { name: "Delete History" })).toBeVisible();
+            await expect(
+                canvas.queryByRole("menuitem", { name: "Permanently Delete History" }),
+            ).not.toBeInTheDocument();
+        });
+        await step("Read the confirmation and optional permanent deletion choice", async () => {
+            await userEvent.click(canvas.getByRole("menuitem", { name: "Delete History" }));
+            const dialog = within(await canvas.findByRole("dialog"));
+            await expect(dialog.getByRole("heading", { name: "Delete History?" })).toBeVisible();
+            await expect(dialog.getByRole("button", { name: "Delete" })).toBeVisible();
+            await expect(dialog.getByText(ANALYSIS_HISTORY.name, { exact: true })).toBeVisible();
+            const purge = dialog.getByRole("checkbox", { name: "Yes, permanently delete this history." });
+            await expect(purge).toBeEnabled();
+            await expect(purge).not.toBeChecked();
+            await userEvent.click(purge);
+            await expect(purge).toBeChecked();
+        });
+        await step("Cancel and return to the history menu", async () => {
+            await userEvent.click(within(canvas.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+            await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+            await expect(canvas.getByRole("button", { name: "History Options" })).toBeVisible();
+            await userEvent.click(canvas.getByRole("button", { name: "History Options" }));
+            await userEvent.click(canvas.getByRole("menuitem", { name: "Delete History" }));
+            await expect(
+                within(await canvas.findByRole("dialog")).getByRole("heading", {
+                    name: "Delete History?",
+                }),
+            ).toBeVisible();
+            await expect(
+                within(canvas.getByRole("dialog")).getByRole("checkbox", {
+                    name: "Yes, permanently delete this history.",
+                }),
+            ).not.toBeChecked();
+        });
+    },
+};
+
+/** Deleted history confirmation requires permanent deletion. */
+export const OpensPermanentDeleteConfirmation: Story = {
+    args: { history: deletedHistory },
+    ...historyOperationsStory(deletedHistory),
+    play: async ({ canvas, userEvent, step }) => {
+        await step("Open the deleted history menu with no deletion dialog", async () => {
+            const options = canvas.getByRole("button", { name: "History Options" });
+            await expect(options).toBeVisible();
+            await expect(canvas.queryByRole("dialog")).not.toBeInTheDocument();
+            await userEvent.click(options);
+            await expect(await canvas.findByRole("menuitem", { name: "Permanently Delete History" })).toBeVisible();
+        });
+        await step("Read the permanent deletion confirmation and fixed purge choice", async () => {
+            await userEvent.click(canvas.getByRole("menuitem", { name: "Permanently Delete History" }));
+            const dialog = within(await canvas.findByRole("dialog"));
+            await expect(dialog.getByRole("heading", { name: "Permanently Delete History?" })).toBeVisible();
+            await expect(dialog.getByRole("button", { name: "Delete Permanently" })).toBeVisible();
+            await expect(dialog.getByText(deletedHistory.name, { exact: true })).toBeVisible();
+            const purge = dialog.getByRole("checkbox", { name: "Yes, permanently delete this history." });
+            await expect(purge).toBeDisabled();
+            await expect(purge).toBeChecked();
+        });
+        await step("Cancel permanent deletion", async () => {
+            await userEvent.click(within(canvas.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+            await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+            await expect(canvas.getByRole("button", { name: "History Options" })).toBeVisible();
+            await userEvent.click(canvas.getByRole("button", { name: "History Options" }));
+            await userEvent.click(canvas.getByRole("menuitem", { name: "Permanently Delete History" }));
+            await expect(
+                within(await canvas.findByRole("dialog")).getByRole("heading", {
+                    name: "Permanently Delete History?",
+                }),
+            ).toBeVisible();
+        });
+    },
 };
