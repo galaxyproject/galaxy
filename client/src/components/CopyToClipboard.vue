@@ -2,10 +2,10 @@
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import type { ComponentSize } from "@/components/BaseComponents/componentVariants";
 import { copy } from "@/utils/clipboard";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import type { ComponentSize } from "@/components/BaseComponents/componentVariants";
 
 const props = withDefaults(
     defineProps<{
@@ -16,6 +16,7 @@ const props = withDefaults(
         size?: ComponentSize;
     }>(),
     {
+        title: "Copy to clipboard",
         transparent: true,
     },
 );

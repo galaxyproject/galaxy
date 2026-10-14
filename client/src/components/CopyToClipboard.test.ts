@@ -38,6 +38,11 @@ describe("CopyToClipboard", () => {
         expect(wrapper.find("button").attributes("title")).toBe(TITLE);
     });
 
+    it("has a default title", () => {
+        const wrapper = mountComponent();
+        expect(wrapper.find("button").attributes("title")).toBe("Copy to clipboard");
+    });
+
     it("is transparent by default", () => {
         const wrapper = mountComponent();
         expect(wrapper.find("button").classes()).toContain("g-transparent");
