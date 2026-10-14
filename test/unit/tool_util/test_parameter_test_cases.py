@@ -21,6 +21,7 @@ from galaxy.tool_util.parameters.case import (
 )
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.interface import (
+    TestCollectionDef,
     ToolSource,
     ToolSourceTest,
 )
@@ -340,6 +341,23 @@ def test_test_case_state_conversion():
         (["more_files", 0, "nestinput", "path"], "simple_line_alternative.txt"),
     ]
     dict_verify_each(state.tool_state.input_state, expectations)
+
+
+def test_json_collection_element_keeps_class_and_filetype():
+    collection_def = TestCollectionDef.from_dict(
+        {
+            "class": "Collection",
+            "collection_type": "list",
+            "elements": [
+                {"identifier": "store", "class": "Directory", "path": "flat_store.zarr", "filetype": "zarr"},
+                {"identifier": "text", "class": "File", "path": "simple_line.txt"},
+            ],
+        }
+    )
+    store, text = collection_def.collect_inputs()
+    # Staging reads these attributes to upload a folder as a directory dataset.
+    assert store["attributes"] == {"class": "Directory", "ftype": "zarr"}
+    assert text["attributes"] == {"class": "File"}
 
 
 def test_is_in_state_supports_nested_keys():
