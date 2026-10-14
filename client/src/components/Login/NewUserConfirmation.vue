@@ -14,15 +14,16 @@ import {
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { withPrefix } from "@/utils/redirect";
+import { redirectToUrl, withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 interface Props {
+    sessionCsrfToken: string;
     termsUrl?: string;
     registrationWarningMessage?: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "setRedirect", value: string): void;
@@ -36,31 +37,65 @@ const messageText = ref("");
 const termsRead = ref(false);
 const messageVariant = ref("");
 const provider = ref(urlParams.get("provider"));
-const token = ref(urlParams.get("provider_token"));
+const confirmationId = ref(urlParams.get("confirmation_id"));
+const pending = ref(false);
 
-function login() {
-    // set url to redirect user to 3rd party management after login
-    emit("setRedirect", "/user/external_ids");
-    router.push("/login");
+// Old confirmation links must never send provider credentials back to the server.
+if (urlParams.has("provider_token")) {
+    urlParams.delete("provider_token");
+    window.history.replaceState(null, "", `${window.location.pathname}?${urlParams}${window.location.hash}`);
+}
+
+function confirmationBody() {
+    return new URLSearchParams({
+        confirmation_id: confirmationId.value || "",
+        session_csrf_token: props.sessionCsrfToken,
+    });
+}
+
+async function login() {
+    if (pending.value) {
+        return;
+    }
+    pending.value = true;
+    try {
+        if (provider.value && confirmationId.value) {
+            await axios.post(
+                withPrefix(`/authnz/${encodeURIComponent(provider.value)}/cancel_user_creation`),
+                confirmationBody(),
+            );
+        }
+    } catch {
+        // Expiration still invalidates abandoned flows if cancellation fails.
+    } finally {
+        pending.value = false;
+        emit("setRedirect", "/user/external_ids");
+        router.push("/login");
+    }
 }
 
 async function submit() {
-    if (!provider.value || !token.value) {
+    if (!termsRead.value || pending.value) {
+        return;
+    }
+    if (!provider.value || !confirmationId.value) {
         messageVariant.value = "danger";
-        messageText.value = "Missing provider and/or token.";
-    } else {
-        try {
-            const response = await axios.post(withPrefix(`/authnz/${provider.value}/create_user?token=${token.value}`));
-
-            if (response.data.redirect_uri) {
-                router.push(response.data.redirect_uri);
-            } else {
-                router.push("/");
-            }
-        } catch (error: any) {
-            messageVariant.value = "danger";
-            messageText.value = errorMessageAsString(error, "Login failed for an unknown reason.");
-        }
+        messageText.value = "Authentication has expired or is invalid. Please start logging in again.";
+        return;
+    }
+    pending.value = true;
+    try {
+        const response = await axios.post(
+            withPrefix(`/authnz/${encodeURIComponent(provider.value)}/create_user`),
+            confirmationBody(),
+        );
+        // Login replaces the session; reload user state and the CSRF token.
+        redirectToUrl(response.data.redirect_uri || withPrefix("/"));
+    } catch (error: unknown) {
+        messageVariant.value = "danger";
+        messageText.value = errorMessageAsString(error, "Login failed. Please start logging in again.");
+    } finally {
+        pending.value = false;
     }
 }
 </script>
@@ -110,11 +145,17 @@ async function submit() {
                                 </BFormCheckbox>
                             </BFormGroup>
 
-                            <BButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
+                            <BButton
+                                name="confirm"
+                                type="submit"
+                                :disabled="!termsRead || pending"
+                                @click.prevent="submit">
                                 Yes, create new account
                             </BButton>
 
-                            <BButton name="cancel" type="submit" @click.prevent="login"> No, go back to login </BButton>
+                            <BButton name="cancel" type="submit" :disabled="pending" @click.prevent="login">
+                                No, go back to login
+                            </BButton>
                         </BCardBody>
 
                         <BCardFooter>

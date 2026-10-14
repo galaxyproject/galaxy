@@ -1,4 +1,4 @@
-"""Integration tests for the CLI shell plugins and runners."""
+"""Integration tests for OIDC login and account confirmation using Keycloak."""
 
 import html
 import os
@@ -14,10 +14,7 @@ from typing import (
 from urllib import parse
 
 from galaxy import model
-from galaxy.authnz.psa_authnz import (
-    PKCE_CODE_VERIFIER_COOKIE_MAX_AGE,
-    PKCE_CODE_VERIFIER_COOKIE_NAME,
-)
+from galaxy.security.validate_user_input import validate_publicname_str
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
@@ -54,8 +51,6 @@ DEBUG_AUTH_PIPELINE_EXTRA = ("galaxy.authnz.util.debug_access_token_data",)
 
 
 def wait_till_app_ready(url, timeout=60):
-    import time
-
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -182,7 +177,7 @@ class AbstractTestCases:
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
         def _login_via_keycloak(
-            self, username, password, expected_codes=None, save_cookies=False, session=None, remove_cookie=None
+            self, username, password, expected_codes=None, save_cookies=False, session=None, follow_callback=True
         ):
 
             if expected_codes is None:
@@ -190,13 +185,16 @@ class AbstractTestCases:
             session = session or requests.Session()
             response = session.get(f"{self.url}authnz/{self.provider_name}/login")
             provider_url = response.json()["redirect_uri"]
-            if remove_cookie:
-                del session.cookies[remove_cookie]
             response = session.get(provider_url, verify=False)
             matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
             assert matches
             auth_url = html.unescape(str(matches.group(1)))
-            response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
+            response = session.post(
+                auth_url,
+                data={"username": username, "password": password},
+                verify=False,
+                allow_redirects=follow_callback,
+            )
             assert response.status_code in expected_codes, response
             if save_cookies:
                 self.galaxy_interactor.cookies = session.cookies
@@ -245,8 +243,6 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         assert response.json()["email"] == "rincewind@galaxy.org"
 
         username = response.json()["username"]
-        from galaxy.security.validate_user_input import validate_publicname_str
-
         error = validate_publicname_str(username)
         assert error == "", f"OIDC-created username '{username}' is invalid: {error}"
         assert "(" not in username, f"Username '{username}' should not contain parentheses"
@@ -456,14 +452,9 @@ class TestGalaxyOIDCPKCELoginIntegration(AbstractTestCases.BaseKeycloakIntegrati
         provider_query = parse.parse_qs(parse.urlparse(response.json()["redirect_uri"]).query)
         assert provider_query["code_challenge_method"] == ["S256"]
         assert provider_query["code_challenge"]
-        (verifier_cookie,) = (
-            cookie
-            for cookie in response.raw.headers.getlist("Set-Cookie")
-            if cookie.startswith(f"{PKCE_CODE_VERIFIER_COOKIE_NAME}=")
+        assert not any(
+            cookie.startswith("galaxy-oidc-pkce-verifier=") for cookie in response.raw.headers.getlist("Set-Cookie")
         )
-        assert f"Max-Age={PKCE_CODE_VERIFIER_COOKIE_MAX_AGE}" in verifier_cookie
-        assert "SameSite=Lax" in verifier_cookie
-        assert "HttpOnly" in verifier_cookie
 
     def test_oidc_login_with_pkce(self):
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
@@ -472,16 +463,121 @@ class TestGalaxyOIDCPKCELoginIntegration(AbstractTestCases.BaseKeycloakIntegrati
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
 
-    def test_oidc_login_without_pkce_verifier_cookie_is_refused(self):
-        _, response = self._login_via_keycloak(
-            KEYCLOAK_TEST_USERNAME,
-            KEYCLOAK_TEST_PASSWORD,
-            save_cookies=True,
-            remove_cookie=PKCE_CODE_VERIFIER_COOKIE_NAME,
+
+class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
+    """Exercise deferred account creation with real provider exchanges and browser sessions."""
+
+    provider_name = "keycloak"
+    extra_provider_config = (
+        "<require_create_confirmation>true</require_create_confirmation><pkce_support>true</pkce_support>"
+    )
+
+    def _csrf_token(self, session):
+        response = session.get(f"{self.url}login/start")
+        self._assert_status_code_is(response, 200)
+        match = self.REGEX_GALAXY_CSRF_TOKEN.search(response.text)
+        assert match
+        return match.group(1)
+
+    def _assert_no_account(self, username):
+        sa_session = self._app.model.session
+        assert sa_session.query(model.User).filter_by(email=f"{username}@galaxy.org").count() == 0
+
+    def _begin_confirmation(self, username):
+        session, response = self._login_via_keycloak(
+            username, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
         )
-        assert "the login took longer than 10 minutes" in html.unescape(response.text)
-        response = self._get("users/current")
-        assert "id" not in response.json()
+        callback_url = response.headers["Location"]
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 302)
+        query = parse.parse_qs(parse.urlsplit(response.headers["Location"]).query)
+        assert set(query) == {"confirm", "provider", "confirmation_id"}
+        assert query["confirm"] == ["true"]
+        assert query["provider"] == ["keycloak"]
+        self._assert_no_account(username)
+        response = session.get(f"{self.url}api/users/current")
+        self._assert_status_code_is(response, 200)
+        assert "email" not in response.json()
+        return session, query["confirmation_id"][0]
+
+    def _submit_confirmation(self, session, identifier, *, cancel=False):
+        action = "cancel_user_creation" if cancel else "create_user"
+        return session.post(
+            f"{self.url}authnz/keycloak/{action}",
+            data={"confirmation_id": identifier, "session_csrf_token": self._csrf_token(session)},
+            allow_redirects=False,
+        )
+
+    def test_confirmation_requires_post_and_csrf_then_creates_account(self):
+        session, identifier = self._begin_confirmation("gxyuser")
+        csrf_token = self._csrf_token(session)
+        endpoint = f"{self.url}authnz/keycloak/create_user"
+        response = session.get(endpoint, params={"confirmation_id": identifier})
+        self._assert_status_code_is(response, 405)
+        assert response.headers["Allow"] == "POST"
+        response = session.post(endpoint, data={"confirmation_id": identifier})
+        self._assert_status_code_is(response, 403)
+        # The generic controller route must enforce the same request contract.
+        response = session.get(f"{self.url}authnz/create_user", params={"provider": "keycloak"})
+        self._assert_status_code_is(response, 405)
+        self._assert_no_account("gxyuser")
+
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.json()["redirect_uri"] == "/"
+        response = session.get(f"{self.url}api/users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+        assert self._csrf_token(session) != csrf_token
+        sa_session = self._app.model.session
+        user = sa_session.query(model.User).filter_by(email="gxyuser@galaxy.org").one()
+        association = sa_session.query(model.UserAuthnzToken).filter_by(user_id=user.id, provider="keycloak").one()
+        assert association.uid
+        extra_data = association.extra_data
+        assert extra_data is not None
+        assert extra_data["access_token"]
+        assert extra_data["refresh_token"]
+
+    def test_cancellation_prevents_confirmation_and_replay(self):
+        session, identifier = self._begin_confirmation("gxyuser_brand_new")
+        response = self._submit_confirmation(session, identifier, cancel=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json() == {}
+        assert response.headers["Cache-Control"] == "no-store"
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 400)
+        response = self._submit_confirmation(session, identifier, cancel=True)
+        self._assert_status_code_is(response, 400)
+        self._assert_no_account("gxyuser_brand_new")
+
+    def test_confirmation_is_bound_to_browser(self):
+        session, identifier = self._begin_confirmation("gxyuser_existing")
+        other_browser = requests.Session()
+        response = other_browser.get(f"{self.url}authnz/keycloak/login")
+        self._assert_status_code_is(response, 200)
+        response = self._submit_confirmation(other_browser, identifier)
+        self._assert_status_code_is(response, 400)
+        self._assert_no_account("gxyuser_existing")
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        response = other_browser.get(f"{self.url}api/users/current")
+        assert "email" not in response.json()
+
+    def test_callback_is_bound_to_browser_and_cannot_replay(self):
+        session, response = self._login_via_keycloak(
+            "gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False
+        )
+        callback_url = response.headers["Location"]
+        other_browser = requests.Session()
+        response = other_browser.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 401)
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 302)
+        assert "confirmation_id=" in response.headers["Location"]
+        response = session.get(callback_url, allow_redirects=False)
+        self._assert_status_code_is(response, 401)
+        self._assert_no_account("gxyuser_fixed_auth")
 
 
 class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
@@ -492,7 +588,6 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
     - User logged in vs not logged in (trans.user)
     - Existing Galaxy user with matching email vs no user
     - fixed_delegated_auth enabled vs disabled
-    - require_create_confirmation enabled vs disabled
 
     This ensures the PSA implementation matches the original custos behavior.
     """

@@ -3,11 +3,15 @@ import logging
 import time
 from typing import (
     Any,
+    cast,
     NoReturn,
     Optional,
     TYPE_CHECKING,
 )
-from urllib.parse import quote
+from urllib.parse import (
+    quote,
+    urlencode,
+)
 
 import jwt
 from jwt import InvalidTokenError
@@ -42,10 +46,7 @@ from galaxy import (
     exceptions as galaxy_exceptions,
 )
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import (
-    MalformedContents,
-    MalformedId,
-)
+from galaxy.exceptions import MalformedContents
 from galaxy.managers import users as user_managers
 from galaxy.model import (
     PSAAssociation,
@@ -61,11 +62,15 @@ from galaxy.util import (
     requests,
 )
 from . import IdentityProvider
+from .flow_state import (
+    authentication_id,
+    FlowState,
+    InvalidFlow,
+)
 from .oidc_utils import (
     decode_access_token as decode_access_token_oidc,
     is_decodable_jwt,
     is_oidc_backend,
-    PKCE_CODE_VERIFIER_SESSION_KEY,
     verify_oidc_response,
 )
 
@@ -73,15 +78,14 @@ if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2
     from social_core.strategy import HttpResponseProtocol
 
-    from galaxy.managers.context import ProvidesAppContext
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
     from galaxy.web.framework.base import Request
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
-
-PKCE_CODE_VERIFIER_COOKIE_NAME = "galaxy-oidc-pkce-verifier"
-# Long enough to sign in at the IdP.
-PKCE_CODE_VERIFIER_COOKIE_MAX_AGE = 600
 
 
 def locate_token_expiration(extra_data):
@@ -338,7 +342,8 @@ class PSAAuthnz(IdentityProvider):
 
     def authenticate(self, trans: "GalaxyWebTransaction", idphint: Optional[str] = None) -> "HttpResponseProtocol":
         on_the_fly_config(trans.sa_session)
-        strategy = Strategy(trans.request, trans.session, Storage, self.config)
+        flow_state = FlowState(trans.sa_session, trans.galaxy_session, self.config["provider"])
+        strategy = Strategy(trans.request, {}, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
         backend.DEFAULT_SCOPE = backend.DEFAULT_SCOPE or []
         if (
@@ -352,35 +357,12 @@ class PSAAuthnz(IdentityProvider):
             backend.DEFAULT_SCOPE.extend(self.config["EXTRA_SCOPES"])
 
         redirect = do_auth(backend)
-        self._save_pkce_code_verifier(strategy, trans)
+        # The post-login destination travels in the validated login-next cookie.
+        # Do not persist social-core's own copy of ``next``.
+        strategy.session.pop("next", None)
+        state = strategy.session_get(f"{backend.name}_state")
+        flow_state.save("authentication", strategy.session, identifier=authentication_id(state))
         return redirect
-
-    def _save_pkce_code_verifier(self, strategy: "Strategy", trans: "GalaxyWebTransaction") -> None:
-        # The verifier travels to the callback request in an encrypted cookie.
-        code_verifier = strategy.session_get(PKCE_CODE_VERIFIER_SESSION_KEY)
-        if code_verifier:
-            # encode_guid/decode_guid round-trip hexadecimal strings
-            trans.set_cookie(
-                trans.security.encode_guid(code_verifier.encode().hex()),
-                name=PKCE_CODE_VERIFIER_COOKIE_NAME,
-            )
-            # set_cookie counts age in days, so the lifetime is set on the cookie itself.
-            cookie = trans.response.cookies[PKCE_CODE_VERIFIER_COOKIE_NAME]
-            cookie["max-age"] = PKCE_CODE_VERIFIER_COOKIE_MAX_AGE
-            cookie["expires"] = PKCE_CODE_VERIFIER_COOKIE_MAX_AGE
-            cookie["samesite"] = "Lax"
-
-    def _restore_pkce_code_verifier(self, strategy: "Strategy", trans: "GalaxyWebTransaction") -> None:
-        encoded_code_verifier = trans.get_cookie(name=PKCE_CODE_VERIFIER_COOKIE_NAME)
-        if not encoded_code_verifier:
-            return
-        trans.set_cookie("", name=PKCE_CODE_VERIFIER_COOKIE_NAME, age=0)
-        try:
-            code_verifier = bytes.fromhex(trans.security.decode_guid(encoded_code_verifier)).decode()
-        except (MalformedId, ValueError):
-            log.warning("Ignoring malformed PKCE code verifier cookie")
-            return
-        strategy.session_set(PKCE_CODE_VERIFIER_SESSION_KEY, code_verifier)
 
     def callback(self, state_token: str, authz_code: str, trans: "GalaxyWebTransaction", login_redirect_url: str):
         on_the_fly_config(trans.sa_session)
@@ -389,9 +371,13 @@ class PSAAuthnz(IdentityProvider):
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
         # Make Galaxy app/trans available to downstream pipeline steps that need to apply Galaxy-specific invariants.
         self.config["GALAXY_TRANS"] = trans
-        strategy = Strategy(trans.request, trans.session, Storage, self.config)
-        strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
-        self._restore_pkce_code_verifier(strategy, trans)
+
+        flow_state = FlowState(trans.sa_session, trans.galaxy_session, self.config["provider"])
+        session = flow_state.consume("authentication", authentication_id(state_token))
+        if session.get(f"{BACKENDS_NAME[self.config['provider']]}_state") != state_token:
+            raise InvalidFlow()
+        strategy = Strategy(trans.request, session, Storage, self.config)
+        strategy.flow_state = flow_state
         backend = self._load_backend(strategy, self.config["redirect_uri"])
         redirect = do_complete(
             backend,
@@ -558,60 +544,43 @@ class PSAAuthnz(IdentityProvider):
             # so the authentication fails with a proper error message
             raise
 
-    def create_user(self, token: str, trans: "ProvidesAppContext", login_redirect_url: str):
-        """
-        Create a user from a stored token (deferred user creation).
+    def create_user(
+        self, confirmation_id: str, trans: "ProvidesUserContext", login_redirect_url: str
+    ) -> tuple[str, User]:
+        """Create only the identity authenticated by this browser's pending flow."""
+        data = self._consume_confirmation(confirmation_id, trans)
+        email, username, user_id = _confirmation_identity(data)
+        provider = BACKENDS_NAME[self.config["provider"]]
+        if (
+            trans.sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
+            or trans.sa_session.query(UserAuthnzToken).filter_by(provider=provider, uid=user_id).first()
+        ):
+            raise InvalidFlow()
 
-        This is used when require_create_confirmation is enabled. After the user
-        confirms they want to create an account, this method completes the user
-        creation process using the stored token from the authentication callback.
-
-        :param token: JSON-encoded token from the initial authentication
-        :param trans: Galaxy transaction object
-        :param login_redirect_url: URL to redirect after user creation
-        :return: Tuple of (redirect_url, user)
-        """
-        on_the_fly_config(trans.sa_session)
-        token_dict = json.loads(token)
-
-        # Decode the ID token to get user info
-        id_token = token_dict.get("id_token")
-        if not id_token:
-            raise Exception("Missing id_token in stored authentication data")
-
-        # Decode without verification (already verified during initial auth)
-        userinfo = jwt.decode(id_token, options={"verify_signature": False})
-
-        email = userinfo.get("email")
-        assert email is not None
-        username = userinfo.get("preferred_username", email)
-        if "@" in username:
-            username = username.split("@")[0]
-
-        # Clean username for Galaxy
-        username = ready_name_for_url(username).lower()
-
-        # Check if username already exists, append number if needed
         if trans.sa_session.query(User).filter_by(username=username).first():
             count = 0
             while trans.sa_session.query(User).filter_by(username=f"{username}{count}").first():
                 count += 1
             username = f"{username}{count}"
 
-        # Create the user and apply the activation policy
         user = create_and_activate_oidc_user(trans, email, username, self.config["REQUIRE_USER_ACTIVATION"])
-
-        # Create the UserAuthnzToken record
-        user_id = userinfo.get("sub")
-        user_authnz_token = UserAuthnzToken(
-            user=user, uid=user_id, provider=BACKENDS_NAME[self.config["provider"]], extra_data=token_dict
-        )
-
-        trans.sa_session.add(user)
+        user_authnz_token = UserAuthnzToken(user=user, uid=user_id, provider=provider, extra_data=data["response"])
         trans.sa_session.add(user_authnz_token)
-        trans.sa_session.commit()
-
+        try:
+            trans.sa_session.commit()
+        except Exception:
+            trans.sa_session.rollback()
+            raise
         return login_redirect_url, user
+
+    def cancel_user_creation(self, confirmation_id: str, trans: "ProvidesUserContext") -> None:
+        self._consume_confirmation(confirmation_id, trans)
+
+    def _consume_confirmation(self, confirmation_id: str, trans: "ProvidesUserContext") -> dict[str, Any]:
+        if not trans.app.config.enable_oidc or not self.config["REQUIRE_CREATE_CONFIRMATION"] or trans.user:
+            raise InvalidFlow()
+        flow_state = FlowState(trans.sa_session, trans.galaxy_session, self.config["provider"])
+        return flow_state.consume("confirmation", confirmation_id)
 
 
 class Strategy(BaseStrategy):
@@ -625,6 +594,7 @@ class Strategy(BaseStrategy):
     ) -> None:
         self.request = request
         self.session = session if session is not None else {}
+        self.flow_state: FlowState | None = None
         self.config = config
         self.config["SOCIAL_AUTH_REDIRECT_IS_HTTPS"] = (
             True if self.request and self.request.host.startswith("https:") else False
@@ -1121,54 +1091,60 @@ def associate_by_email_if_logged_in(
     return
 
 
+def _confirmation_identity(data):
+    email, username, uid = data.get("email"), data.get("username"), data.get("uid")
+    if (
+        not all(isinstance(value, str) and value.strip() for value in (email, username, uid))
+        or uid == "None"
+        or not isinstance(data.get("response"), dict)
+    ):
+        raise InvalidFlow()
+    username = ready_name_for_url(username.split("@")[0]).lower()
+    if not username or len(email) > 255 or len(uid) > 255:
+        raise InvalidFlow()
+    return email, username, uid
+
+
 def check_user_creation_confirmation(
-    strategy=None, backend=None, details=None, response=None, is_new=False, user=None, **kwargs
+    strategy=None, backend=None, details=None, response=None, is_new=False, user=None, uid=None, **kwargs
 ):
-    """
-    Pipeline step to handle deferred user creation (require_create_confirmation).
+    """Defer new accounts using identity data from the authenticated pipeline."""
+    if not strategy.config.get("REQUIRE_CREATE_CONFIRMATION", False) or not is_new or user:
+        return
 
-    This was a feature from custos where new users could be shown a confirmation
-    page before their account is created. If require_create_confirmation is enabled
-    and this is a new user (no existing Galaxy account), the pipeline is interrupted
-    and the user is redirected to a confirmation page with the token stored for later.
+    email = details.get("email")
+    sa_session = UserAuthnzToken.sa_session
+    if sa_session is None:
+        raise InvalidFlow()
+    if email and sa_session.query(User).where(func.lower(User.email) == email.lower()).first():
+        return
+    if strategy.flow_state is None or strategy.flow_state.galaxy_session.user_id is not None:
+        raise InvalidFlow()
 
-    This step should be placed before create_user_and_activate in the pipeline.
-    """
-    require_confirmation = strategy.config.get("REQUIRE_CREATE_CONFIRMATION", False)
+    expires_at = None
+    username = details.get("username") or email
+    if is_oidc_backend(backend):
+        # social-core verifies this token during the code exchange, including the
+        # nonce. Revalidating it here would try to consume that nonce twice.
+        claims = cast("dict[str, Any] | None", backend.id_token)
+        # Bind UserInfo to the ID token's subject, independently of the backend's
+        # UID convention (Google uses email by default).
+        if (
+            not isinstance(claims, dict)
+            or not isinstance(claims.get("sub"), str)
+            or not claims["sub"]
+            or not isinstance(response, dict)
+            or claims["sub"] != response.get("sub")
+        ):
+            raise InvalidFlow()
+        expires_at = claims.get("exp")
+        if not isinstance(expires_at, (int, float)):
+            raise InvalidFlow()
+        username = claims.get("preferred_username") or username
 
-    # Only apply if confirmation is required, this is a new association, and no user exists yet
-    if require_confirmation and is_new and not user:
-        # Check if there's an existing user with this email
-        email = details.get("email")
-        if email:
-            # sa_session is guaranteed to be set by on_the_fly_config() before pipeline runs
-            sa_session = UserAuthnzToken.sa_session
-            if sa_session is None:
-                raise RuntimeError("sa_session must be set by on_the_fly_config before pipeline execution")
-            existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
-
-            # If no existing user, redirect to confirmation page
-            if not existing_user:
-                provider = strategy.config.get("provider", "unknown")
-                login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
-
-                # Store the token response for later use
-                token_json = json.dumps(response)
-
-                # Store in session for the create_user_from_token endpoint
-                strategy.session_set(f"pending_oidc_token_{provider}", token_json)
-
-                # Construct redirect URL to confirmation page
-                redirect_url = (
-                    f"{login_redirect_url}login/start"
-                    f"?confirm=true"
-                    f"&provider_token={quote(token_json)}"
-                    f"&provider={provider}"
-                )
-
-                # Return the redirect URL - PSA will detect this and stop the pipeline
-                # This prevents user creation until they confirm
-                return redirect_url
-
-    # Continue with user creation if confirmation is not required or user already exists
-    return
+    data = {"email": email, "username": username, "uid": uid, "response": response}
+    _confirmation_identity(data)
+    confirmation_id = strategy.flow_state.save("confirmation", data, expires_at=expires_at)
+    query = urlencode({"confirm": "true", "provider": strategy.config["provider"], "confirmation_id": confirmation_id})
+    login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
+    return f"{login_redirect_url}login/start?{query}"
