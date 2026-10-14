@@ -25,7 +25,11 @@ class StubTrans:
         self.cookies: dict[str, str] = {}
         self.redirected_to: Optional[str] = None
         self.app = Bunch(
-            config=Bunch(enable_oidc=True, oidc={name: {} for name in oidc_providers}),
+            config=Bunch(
+                enable_oidc=True,
+                oidc={name: {} for name in oidc_providers},
+                allowed_login_redirect_hosts=[],
+            ),
             auth_manager=Bunch(authenticators=list(authenticators)),
             authnz_manager=Bunch(authenticate=lambda provider, trans: (True, "", IDP_URL)),
         )
