@@ -50,13 +50,9 @@ afterEach(() => {
 enableAutoUnmount(afterEach);
 
 describe("FormInputCollection", () => {
-    it("shows the values stored on the step", () => {
-        const wrapper = mountCollectionForm();
-        expect(wrapper.getComponent(FormCollectionType).props("value")).toBe("list");
-    });
-
     it("sends a later edit together with an earlier one the step has not echoed yet", async () => {
         const wrapper = mountCollectionForm();
+        expect(wrapper.getComponent(FormCollectionType).props("value")).toBe("list");
         vi.useFakeTimers();
         wrapper.getComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet:paired");
         await wrapper.vm.$nextTick();
@@ -87,6 +83,7 @@ describe("FormInputCollection", () => {
 
     it("keeps the edited value when the step echoes an older one", async () => {
         const wrapper = mountCollectionForm(true);
+        expect(wrapper.getComponent(FormCollectionType).props("value")).toBe("list");
         wrapper.getComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet");
         wrapper.getComponent(FormCollectionType).vm.$emit("onChange", "sample_sheet:paired");
         await wrapper.setProps({ step: stepWithCollectionType("sample_sheet") });
