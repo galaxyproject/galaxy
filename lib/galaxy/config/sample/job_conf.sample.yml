@@ -373,6 +373,9 @@ runners:
     amqp_url: <amqp_url>
     # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
     #galaxy_url: <galaxy_url>
+    # Runner-level default for the custom_vm_image destination param - applied to every
+    # destination that does not set custom_vm_image itself. A destination still wins.
+    #default_custom_vm_image: projects/<project>/global/images/<image>
 
 
 # Job handler configuration - for a full discussion of job handlers, see the documentation at:

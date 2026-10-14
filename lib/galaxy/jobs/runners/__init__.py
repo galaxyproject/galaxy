@@ -17,6 +17,7 @@ from queue import (
 )
 from typing import (
     Any,
+    ClassVar,
     Generic,
     TYPE_CHECKING,
     TypeVar,
@@ -109,7 +110,7 @@ class BaseJobRunner:
     # this behavior list the destination param names here (without the
     # ``default_`` prefix) and register the corresponding ``default_<param>``
     # entries in their runner param specs.
-    runner_default_destination_params: list[str] = []
+    runner_default_destination_params: ClassVar[list[str]] = []
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         """Start the job runner"""
@@ -123,6 +124,12 @@ class BaseJobRunner:
         if kwargs:
             log.debug("Loading %s with params: %s", self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
+        for name in self.runner_default_destination_params:
+            if f"default_{name}" not in runner_param_specs:
+                raise ConfigurationError(
+                    f"{self.runner_name} lists destination param '{name}' in runner_default_destination_params "
+                    f"but does not register a 'default_{name}' runner param spec"
+                )
         self.runner_state_handlers = build_state_handlers()
         self._should_stop = False
 
@@ -284,10 +291,15 @@ class BaseJobRunner:
     def _apply_runner_default_destination_params(self, job_destination: JobDestination) -> bool:
         """Seed unset destination params from runner-level ``default_<param>`` values.
 
-        For each ``<param>`` in :attr:`runner_default_destination_params`, if the
-        destination has not set ``<param>`` and the runner defines a truthy
-        ``default_<param>`` value, copy that value onto the destination. The
-        destination value always wins over the runner-level default.
+        For each ``<param>`` in :attr:`runner_default_destination_params`, resolve
+        destination param > runner-level ``default_<param>`` > that spec's default,
+        and copy the result onto the destination unless it is ``None``. A
+        destination that sets ``<param>`` always wins, including when it sets a
+        falsy value.
+
+        Seeded values live on the in-memory :class:`JobDestination` only; they are
+        not persisted to ``job.destination_params``, so this is not a suitable
+        mechanism for params that must survive job recovery.
 
         Returns ``True`` if any destination param was populated.
         """
@@ -297,11 +309,24 @@ class BaseJobRunner:
             if name in params:
                 # Destination overrides the runner-level default.
                 continue
-            runner_value = self.runner_params.get(f"default_{name}")
-            if runner_value:
+            # Subscript access on runner_params (a defaultdict) so unset keys fall back
+            # to the spec defaults defined in runner_param_specs; .get() would bypass
+            # __missing__ and yield None instead of the configured default.
+            runner_value = self.runner_params[f"default_{name}"]
+            if runner_value is not None:
                 params[name] = runner_value
                 updated = True
         return updated
+
+    def _populate_parameter_defaults(self, job_destination: JobDestination) -> bool:
+        """Fill in destination params the runner can supply defaults for.
+
+        Called from :meth:`prepare_job`; idempotent, so runners that do not route
+        through ``prepare_job`` may call it directly. Overrides should chain up.
+
+        Returns ``True`` if any destination param was populated.
+        """
+        return self._apply_runner_default_destination_params(job_destination)
 
     def prepare_job(
         self,
@@ -315,6 +340,7 @@ class BaseJobRunner:
         job_id = job_wrapper.get_id_tag()
         job_state = job_wrapper.get_state()
         job_wrapper.runner_command_line = None
+        self._populate_parameter_defaults(job_wrapper.job_destination)
 
         # Make sure the job hasn't been deleted
         if job_state == model.Job.states.DELETED:

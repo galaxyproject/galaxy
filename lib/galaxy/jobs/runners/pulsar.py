@@ -216,10 +216,6 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
-    custom_vm_image=dict(
-        map=specs.to_str_or_none,
-        default=None,
-    ),
     # Runner-level default for the ``custom_vm_image`` destination param. See
     # ``BaseJobRunner.runner_default_destination_params``; lets the image be set
     # once on the runner instead of on every GCP Batch destination.
@@ -636,20 +632,13 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
 
     def _populate_parameter_defaults(self, job_destination):
-        updated = False
+        updated = super()._populate_parameter_defaults(job_destination)
         params = job_destination.params
         for key, value in self.destination_defaults.items():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
                     log.warning(f"Pulsar runner in selected configuration ignores parameter {key}")
                 continue
-            # if self.runner_params.get( key, None ):
-            #    # Let plugin define defaults for some parameters -
-            #    # for instance that way jobs_directory can be
-            #    # configured next to AMQP url (where it belongs).
-            #    params[ key ] = self.runner_params[ key ]
-            #    continue
-
             if not value:
                 continue
 
@@ -1201,13 +1190,8 @@ class PulsarGcpBatchJobRunner(PulsarCoexecutionJobRunner):
 
     # Destination params seeded from runner-level ``default_<param>`` settings
     # (e.g. ``default_custom_vm_image``). Destination values override the
-    # runner-level default. See ``BaseJobRunner._apply_runner_default_destination_params``.
+    # runner-level default. See ``BaseJobRunner.runner_default_destination_params``.
     runner_default_destination_params = ["custom_vm_image"]
-
-    def _populate_parameter_defaults(self, job_destination):
-        updated = super()._populate_parameter_defaults(job_destination)
-        updated = self._apply_runner_default_destination_params(job_destination) or updated
-        return updated
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
