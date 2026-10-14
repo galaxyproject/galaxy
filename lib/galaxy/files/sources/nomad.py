@@ -7,6 +7,7 @@ from typing import (
 )
 
 from fsspec import AbstractFileSystem
+from pydantic import field_validator
 from urllib3.exceptions import LocationParseError
 from urllib3.util import parse_url
 
@@ -64,6 +65,11 @@ class NomadFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     writable: Literal[False] = False
     max_paths: int | None = MAX_LISTINGS
 
+    @field_validator("token")
+    @classmethod
+    def strip_token(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
+
 
 class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, NomadFileSourceConfiguration]):
     """Browse NOMAD and import raw files.
@@ -89,12 +95,11 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             raise self.required_package_exception
         config = context.config
         self._refuse_a_private_address(config.base_url)
-        token = (config.token or "").strip() or None
         return NomadFileSystem(
             base_url=config.base_url,
-            token=token,
+            token=config.token,
             # fsspec keeps every cached instance for the life of the process, one per token and thread
-            skip_instance_cache=token is not None,
+            skip_instance_cache=config.token is not None,
             **cache_options,
         )
 

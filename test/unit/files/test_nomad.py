@@ -103,8 +103,9 @@ def test_a_dataset_names_the_page_shown_and_searches_names_in_nomad(monkeypatch)
 
 
 def test_my_uploads_need_a_token_whose_instance_is_not_cached():
-    with pytest.raises(AuthenticationRequired, match="needs a NOMAD token"):
-        _list(_source(), "/uploads")
+    for blank in (None, " \n"):
+        with pytest.raises(AuthenticationRequired, match="needs a NOMAD token"):
+            _list(_source(token=blank), "/uploads")
     _list(_source(), "/")
     assert _list(_source(token="secret\n"), "/uploads") == [("My draft", "/uploads/up9")]
     assert [kwargs["skip_instance_cache"] for kwargs in FakeNomadFileSystem.instances] == [False, True]
