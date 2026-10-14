@@ -46,6 +46,7 @@ WORKING_DIR_CLEAN=false
 ERROR=false
 
 NEXT_RELEASE_TEMPLATE="import packaging.version as pv; v = pv.parse('RELEASE_CURR'); print(str(v.release[0]) + '.' + str(v.release[1] + 1))"
+NEXT_EXISTING_RELEASE_TEMPLATE="import sys, packaging.version as pv; c = pv.parse('RELEASE_CURR'); n = sorted((pv.parse(l), l) for l in sys.stdin.read().split() if pv.parse(l) > c); print(n[0][1] if n else '')"
 PACKAGE_VERSION_TEMPLATE="import packaging.version; print('.'.join(map(str, packaging.version.parse('VERSION').release)))"
 PACKAGE_DEV_VERSION_TEMPLATE="import packaging.version; print(packaging.version.parse('VERSION'))"
 
@@ -225,6 +226,18 @@ function release_next() {
 }
 
 
+# The next newer release that has an upstream branch, falling back to the minor increment when there is none.
+function release_next_existing() {
+    local curr="$1"
+    local next
+    next=$(git for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/${UPSTREAM_REMOTE}/release_[0-9]*.[0-9]*" \
+        | sed -n -E 's/^release_([0-9]+\.[0-9]+)$/\1/p' \
+        | python3 -c "${NEXT_EXISTING_RELEASE_TEMPLATE/RELEASE_CURR/$curr}")
+    [ -n "$next" ] || next=$(release_next "$curr")
+    echo "$next"
+}
+
+
 function packaging_version() {
     local version="$1"
     local dev_release="$2"
@@ -262,7 +275,7 @@ function branch_exists() {
 function _test_forward_merge() {
     local curr="$1"
     local next
-    next=$(release_next "$curr")
+    next=$(release_next_existing "$curr")
     local curr_branch="${UPSTREAM_REMOTE}/release_${curr}"
     local next_branch="${UPSTREAM_REMOTE}/release_${next}"
     local curr_local_branch="__release_merge_test_${curr}"
@@ -322,7 +335,7 @@ function perform_stable_merge() {
 function _perform_forward_merge() {
     local curr="$1"
     local next
-    next="$(release_next "$curr")"
+    next="$(release_next_existing "$curr")"
     local curr_branch="${UPSTREAM_REMOTE}/release_${curr}"
     local next_branch="${UPSTREAM_REMOTE}/release_${next}"
     local curr_local_branch="__release_${curr}"
