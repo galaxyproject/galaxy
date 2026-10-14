@@ -4,11 +4,15 @@ Metabolomics Datatypes
 
 import logging
 import re
+from collections.abc import Iterable
 from dataclasses import (
     dataclass,
     field,
 )
-from typing import Optional
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes import data
 from galaxy.datatypes.data import (
@@ -26,6 +30,9 @@ from galaxy.datatypes.sniff import (
 )
 
 log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 
 @dataclass
@@ -97,7 +104,7 @@ class MzTabM(Text):
         "M+S+F+E",
     }
 
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd: Any) -> None:
         """Set the peek and blurb text"""
 
         if not dataset.dataset.purged:
@@ -118,7 +125,7 @@ class MzTabM(Text):
             return bool(self._version_re.fullmatch(line))
         return False
 
-    def _read_mtd_header(self, lines) -> MzTabMHeader:
+    def _read_mtd_header(self, lines: Iterable[str]) -> MzTabMHeader:
         """
         Read and do minimal validation on the first three MTD fields.
 
@@ -170,7 +177,7 @@ class MzTabM(Text):
             header.errors.append("mzTab-ID metadata field is missing.")
         return header
 
-    def _infer_profile(self, lines) -> str:
+    def _infer_profile(self, lines: Iterable[str]) -> str:
         """Infer the mzTab-M profile from the section headers."""
 
         profile = "M"
@@ -209,14 +216,14 @@ class MzTabM(Text):
     def validate(
         self,
         dataset: DatasetProtocol,
-        **kwd,
+        **kwd: Any,
     ) -> DatatypeValidation:
         header = self._validate(dataset.get_file_name())
         if header.errors:
             return DatatypeValidation.invalid("\n".join(header.errors))
         return DatatypeValidation.validated()
 
-    def set_meta(self, dataset: DatasetProtocol, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, **kwd: Any) -> None:
         """Set mzTab-M metadata."""
 
         if dataset.dataset.purged:
@@ -238,13 +245,13 @@ class MzTabM(Text):
 
     def display_data(
         self,
-        trans,
+        trans: "GalaxyWebTransaction",
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        **kwd,
-    ):
+        filename: str | None = None,
+        to_ext: str | None = None,
+        **kwd: Any,
+    ) -> Any:
         # mzTab-M files conventionally use the .mztab extension, but Galaxy
         # already uses "mztab" for the mzTab datatype. Keep "mztabm" as the
         # Galaxy datatype extension and use .mztab extension when exporting.
