@@ -69,30 +69,18 @@ def unwrap_crypt4gh_file_ext(file_ext: str) -> str | None:
     return _unwrap_crypt4gh_suffix(file_ext)
 
 
-def _infer_crypt4gh_inner_file_ext(filename: str, registry: DatatypeFilenameLookup) -> str | None:
-    """Try to infer the inner datatype extension from *filename* via the registry."""
-    inner_filename = _unwrap_crypt4gh_suffix(filename) or filename
-    datatype = registry.get_datatype_from_filename(inner_filename)
-    file_ext = datatype.file_ext if datatype else None
-    if isinstance(file_ext, str) and file_ext not in ("data", "auto"):
-        return file_ext
-    return None
-
-
 def infer_crypt4gh_file_ext(filename: str, registry: DatatypeFilenameLookup, requested_ext: str = "auto") -> str:
     """Determine the best Crypt4GH wrapper extension for *filename*.
 
     Priority:
-    1. Inner type inferred from filename via the registry.
+    1. The wrapper the (Crypt4GH-enabled) registry gives *filename*, read as encrypted.
     2. Wrap the user-requested extension (if not ``auto``).
     3. Fall back to the generic ``c4gh``.
     """
-    inner_file_ext = _infer_crypt4gh_inner_file_ext(filename, registry)
-    if inner_file_ext is not None:
-        return wrap_crypt4gh_file_ext(inner_file_ext)
-    if requested_ext != "auto":
+    file_ext: str = registry.get_datatype_from_filename(wrap_crypt4gh_file_ext(filename)).file_ext
+    if file_ext == CRYPT4GH_FILE_EXT and requested_ext != "auto":
         return wrap_crypt4gh_file_ext(requested_ext)
-    return CRYPT4GH_FILE_EXT
+    return file_ext
 
 
 def preserve_crypt4gh_inner_file_ext(
@@ -110,7 +98,7 @@ def preserve_crypt4gh_inner_file_ext(
     if not _is_generic_crypt4gh_file_ext(guessed_ext):
         return guessed_ext
 
-    if current_ext and not _is_generic_crypt4gh_file_ext(current_ext) and is_crypt4gh_file_ext(current_ext):
+    if current_ext and unwrap_crypt4gh_file_ext(current_ext) is not None:
         return current_ext
 
     if (
