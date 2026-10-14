@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 
 import GroupForm from "./GroupForm.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 const { server, http } = useServerMock();
 const localVue = getLocalVue();
@@ -95,5 +96,25 @@ describe("GroupForm.vue edit mode", () => {
         const wrapper = await mountTarget();
         expect(wrapper.text()).toContain("Users failed");
         expect(wrapper.find("#admin-group-submit").exists()).toBe(false);
+    });
+});
+
+describe("GroupForm.vue create mode", () => {
+    it("asks for a role with the same name when the checkbox is ticked", async () => {
+        const requests: unknown[] = [];
+        server.use(
+            http.post("/api/groups", async ({ request, response }) => {
+                requests.push(await request.json());
+                return response(200).json([{ id: "g2", name: "New", url: "/api/groups/g2", model_class: "Group" }]);
+            }),
+        );
+        const wrapper = mount(GroupForm as object, {
+            global: { ...localVue, stubs: { ...localVue.stubs, FontAwesomeIcon: true } },
+        });
+        await flushPromises();
+        await wrapper.find("#admin-group-name-input").setValue("New");
+        await wrapper.findComponent(GCheckbox).find("input").setValue(true);
+        await submit(wrapper);
+        expect(requests).toEqual([{ name: "New", user_ids: [], role_ids: [], auto_create_role: true }]);
     });
 });
