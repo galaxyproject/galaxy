@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,14 +11,30 @@ const localVue = getLocalVue();
 
 const RECOMMENDED = { label: "Recommended", title: "Server order" };
 
-function mountHeader(propsData: Record<string, unknown> = {}) {
+const COLUMN_MENU = {
+    listId: "datasets",
+    showSortOptions: false,
+    columnOptions: [
+        { key: "name", label: "Name" },
+        { key: "size", label: "Size" },
+    ],
+    visibleColumns: ["name"],
+};
+
+function mountHeader(propsData: Record<string, unknown> = {}, options: { attachTo?: HTMLElement } = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
     return mount(ListHeader as object, {
         localVue,
         pinia,
         propsData: { listId: "test", showSortOptions: true, ...propsData },
+        ...options,
     });
+}
+
+async function pressKey(target: Element, key: string) {
+    target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+    await flushPromises();
 }
 
 function pressedSortIds(wrapper: ReturnType<typeof mountHeader>) {
@@ -105,5 +122,58 @@ describe("ListHeader", () => {
         const header = group.get(".dropdown-header");
         expect(header.attributes("role")).toBe("presentation");
         expect(header.find("button").exists()).toBe(true);
+    });
+
+    it("emits select-all from the select all checkbox", async () => {
+        const wrapper = mountHeader({ showSelectAll: true });
+        const checkbox = wrapper.get("input#list-header-select-all");
+
+        await checkbox.setValue(true);
+
+        expect(wrapper.emitted("select-all")).toHaveLength(1);
+    });
+
+    it("toggles a column once from its checkbox and leaves the checked state to the prop", async () => {
+        const wrapper = mountHeader(COLUMN_MENU);
+        const sizeCheckbox = wrapper.findAll<HTMLInputElement>("[role='menu'] input[type='checkbox']")[1]!;
+
+        sizeCheckbox.element.click();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.emitted("toggle-column")).toEqual([["size"]]);
+        expect(sizeCheckbox.element.checked).toBe(false);
+
+        await wrapper.setProps({ visibleColumns: ["name", "size"] } as object);
+
+        expect(sizeCheckbox.element.checked).toBe(true);
+        expect(wrapper.findAll("[role='menuitemcheckbox']")[1]!.attributes("aria-checked")).toBe("true");
+    });
+
+    it("makes each column item the checkbox, with the box inside only showing its state", () => {
+        const wrapper = mountHeader(COLUMN_MENU);
+
+        const items = wrapper.findAll("[role='menu'] .dropdown-item");
+        expect(items.map((item) => item.attributes("role"))).toEqual(["menuitemcheckbox", "menuitemcheckbox"]);
+        expect(items.map((item) => item.attributes("aria-checked"))).toEqual(["true", "false"]);
+        expect(items.map((item) => item.text())).toEqual(["Name", "Size"]);
+        for (const item of items) {
+            const input = item.get("input[type='checkbox']");
+            expect(input.attributes("aria-hidden")).toBe("true");
+            expect(input.attributes("tabindex")).toBe("-1");
+            // Clicks must reach the item: a click on the input itself would be cancelled and leave it stale
+            expect(item.get("label").classes()).toContain("list-header-column-checkbox");
+        }
+    });
+
+    it("reaches the column items with the keyboard and toggles one with Space", async () => {
+        const wrapper = mountHeader(COLUMN_MENU, { attachTo: document.body });
+
+        await pressKey(wrapper.get(".dropdown-toggle").element, "ArrowDown");
+        expect(document.activeElement?.textContent?.trim()).toBe("Size");
+
+        await pressKey(document.activeElement!, " ");
+        expect(wrapper.emitted("toggle-column")).toEqual([["size"]]);
+
+        wrapper.unmount();
     });
 });
