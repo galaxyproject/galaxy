@@ -12,6 +12,7 @@ from galaxy.datatypes.sniff import (
     handle_uploaded_dataset_file_internal,
     InappropriateDatasetContentError,
 )
+from galaxy.datatypes.upload_util import handle_upload
 from galaxy.util.bunch import Bunch
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
@@ -201,6 +202,31 @@ def test_upload_detects_crypt4gh(tmp_path, enabled_registry, filename, requested
     assert not response.converted_newlines
     with open(response.converted_path, "rb") as f:
         assert f.read() == contents
+
+
+@pytest.mark.parametrize("requested_ext", ["fastqsanger", "fastqsanger.c4gh"])
+def test_upload_validates_explicit_types_as_encrypted(tmp_path, enabled_registry, requested_ext):
+    _, contents = _crypt4gh_bytes()
+    # Uploads are staged under a name of their own.
+    path = tmp_path / "upload_file_data"
+    path.write_bytes(contents)
+    stdout, ext, *_ = handle_upload(
+        enabled_registry,
+        str(path),
+        requested_ext,
+        "reads.fastqsanger.c4gh",
+        tmp_prefix=None,
+        tmp_dir=str(tmp_path),
+        check_content=True,
+        link_data_only=False,
+        in_place=False,
+        auto_decompress=False,
+        convert_to_posix_lines=False,
+        convert_spaces_to_tabs=False,
+    )
+    assert ext == "fastqsanger.c4gh"
+    # Nothing is said about the file not being of the requested type.
+    assert stdout is None
 
 
 def test_upload_refuses_encrypted_datatype_for_plain_files(tmp_path, enabled_registry):
