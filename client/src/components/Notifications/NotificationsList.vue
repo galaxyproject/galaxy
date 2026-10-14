@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -11,6 +10,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -111,15 +111,15 @@ function togglePreferences() {
             <div class="notifications-list-filter card-container">
                 <div class="notifications-list-filter-selection">
                     <div>
-                        <BFormCheckbox
-                            :checked="allSelected"
+                        <GCheckbox
+                            :model-value="allSelected"
                             :indeterminate="
                                 selectedNotificationIds.length > 0 &&
                                 selectedNotificationIds.length < notifications.length
                             "
-                            @change="selectOrDeselectNotification(notifications)">
+                            @update:model-value="selectOrDeselectNotification(notifications)">
                             {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
-                        </BFormCheckbox>
+                        </GCheckbox>
                     </div>
 
                     <div v-if="haveSelected">
