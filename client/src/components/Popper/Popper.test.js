@@ -1,4 +1,6 @@
 import { createPopper } from "@popperjs/core";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import {
     advanceToJustBeforeTooltipHoverDelay,
     advanceTooltipHoverDelay,
@@ -10,7 +12,11 @@ import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
 
+import * as PopperStories from "./Popper.stories";
+
 import PopperComponent from "./Popper.vue";
+
+const stories = composeStories(PopperStories);
 
 vi.mock("@popperjs/core", () => ({
     createPopper: vi.fn(() => ({
@@ -24,18 +30,9 @@ vi.mock("@popperjs/core", () => ({
 // detached container.
 let container;
 
-function mountPopper(trigger = "click", interactive = false) {
-    return mount(PopperComponent, {
-        props: {
-            title: "Test Title",
-            placement: "bottom",
-            interactive,
-            trigger,
-        },
-        slots: {
-            reference: "<button>Reference</button>",
-            default: "<p>Popper Content</p>",
-        },
+function mountPlainPopper() {
+    return mount(PopperStories.InputPopover, {
+        props: PopperStories.default.args,
         attachTo: container,
     });
 }
@@ -54,9 +51,16 @@ describe("PopperComponent.vue", () => {
         container.remove();
     });
     enableAutoUnmount(afterEach);
+    const mountStory = useStoryMount();
+
+    function mountPopper(trigger = "click", interactive = false) {
+        const story =
+            trigger === "click" ? stories.ClickDetails : interactive ? stories.InteractiveHelp : stories.HoverHelp;
+        return mountStory(story, { attachTo: container });
+    }
 
     test("omits the header and close control without a title", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ title: undefined });
         await wrapper.get("button").trigger("click");
         expect(wrapper.get(".popper-element").isVisible()).toBe(true);
@@ -189,58 +193,29 @@ describe("PopperComponent.vue", () => {
         expect(document.activeElement).toBe(wrapper.get(".target").element);
     });
 
-    test("renders its configured title when opened", async () => {
-        const wrapper = mountPopper();
-        expect(wrapper.find(".popper-element").exists()).toBe(true);
-        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
-        const reference = wrapper.get("button");
-        await reference.trigger("click");
-        expect(wrapper.find(".popper-header").exists()).toBe(true);
-        expect(wrapper.get(".popper-header").text()).toContain("Test Title");
-    });
-
-    test("opens and closes popper on click trigger", async () => {
-        const wrapper = mountPopper();
-        const reference = wrapper.get("button");
-        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
-        await reference.trigger("click");
-        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
-        await wrapper.get(".popper-close").trigger("click");
-        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
-    });
-
-    test("closes a click-triggered popper when the document is clicked outside it", async () => {
-        const wrapper = mountPopper();
-        await wrapper.get("button").trigger("click");
-        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
-
-        document.body.click();
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
-    });
-
+    // Initial disabled visibility has no independent positive sync point; keep this guard in unit.
     test("disables popper when `disabled` prop is true", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ disabled: true });
         const reference = wrapper.get("button");
         await reference.trigger("click");
         expect(wrapper.get(".popper-element").isVisible()).toBe(false);
     });
 
+    // Decorative arrows, mode variants, and placement options stay as structural/contract checks.
     test("renders the arrow when `arrow` prop is true", () => {
         const wrapper = mountPopper();
         expect(wrapper.find(".popper-arrow").exists()).toBe(true);
     });
 
     test("does not render the arrow when `arrow` prop is false", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ arrow: false });
         expect(wrapper.find(".popper-arrow").exists()).toBe(false);
     });
 
     test("applies correct mode class", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ mode: "light" });
         expect(wrapper.get(".popper-element").classes()).toContain("popper-element-light");
         await wrapper.setProps({ mode: "dark" });
@@ -256,16 +231,7 @@ describe("PopperComponent.vue", () => {
         );
     });
 
-    test("updates visibility when props or watchers change", async () => {
-        const wrapper = mountPopper();
-        await wrapper.setProps({ disabled: false });
-        const reference = wrapper.get("button");
-        await reference.trigger("click");
-        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
-        await wrapper.setProps({ disabled: true });
-        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
-    });
-
+    // Fake-timer boundaries are the contract, including the interactive close grace period.
     test("shows and hides popper on hover trigger over reference", async () => {
         const wrapper = mountPopper("hover");
         const reference = wrapper.get("button");
@@ -298,20 +264,5 @@ describe("PopperComponent.vue", () => {
         await popperElement.trigger("mouseout");
         await advanceTooltipHoverDelay(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
         expect(popperElement.isVisible()).toBe(false);
-    });
-
-    test("popper remains visible when clicked inside of popper", async () => {
-        const wrapper = mountPopper("click");
-        const reference = wrapper.get("button");
-        const popperElement = wrapper.get(".popper-element");
-        expect(popperElement.isVisible()).toBe(false);
-        await reference.trigger("click");
-        expect(popperElement.isVisible()).toBe(true);
-        await popperElement.trigger("mouseover");
-        expect(popperElement.isVisible()).toBe(true);
-        await popperElement.trigger("mouseout");
-        expect(popperElement.isVisible()).toBe(true);
-        await popperElement.trigger("click");
-        expect(popperElement.isVisible()).toBe(true);
     });
 });
