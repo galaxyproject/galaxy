@@ -5,37 +5,39 @@ import time
 
 import pytest
 
-from galaxy.navigation.tours import load_tour_from_path
-from galaxy.selenium.scripts import dump_tour
+import galaxy.selenium.cli as cli
+import galaxy.selenium.scripts.dump_tour as dump_tour
+from galaxy.selenium.stories import Story
 from .browserless import BrowserlessContext
 
 TOUR = """
 name: Example Tour
 description: Walks the example.
+title_default: Welcome
 steps:
-    - title: "Welcome"
-      content: "Welcome to Galaxy."
+    - intro: "Welcome to Galaxy."
     - title: "History"
       content: "This is your history."
 """
 
 
 class TourWalkingContext(BrowserlessContext):
-    """Hands each step to the callback like run_tour, optionally failing after one."""
+    """Runs real tour steps, optionally interrupting after documenting a step."""
 
-    def __init__(self, fail_after_step: int | None = None):
-        self.fail_after_step = fail_after_step
+    def __init__(self, failure: BaseException | None = None):
+        self.failure = failure
+
+    def home(self) -> None:
+        pass
 
     def _screenshot_path(self, label, extension=".png"):
         # Like the CLI's DriverWrapper, keep screenshots only in the story.
         return None
 
-    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
-        assert tour_callback is not None
-        for index, step in enumerate(load_tour_from_path(path, resolve_components=False)["steps"]):
-            tour_callback.handle_step(step, index)
-            if index == self.fail_after_step:
-                raise AssertionError("element never appeared")
+    def document(self, markdown_content):
+        super().document(markdown_content)
+        if self.failure is not None:
+            raise self.failure
 
 
 @pytest.fixture
@@ -71,11 +73,43 @@ def test_dump_writes_a_story_per_run(tmp_path, tour_path):
     assert os.path.exists(f"{second.output_directory}.zip")
 
 
-def test_failed_dump_keeps_the_steps_reached(tmp_path, tour_path):
+@pytest.mark.parametrize("failure", [AssertionError("element never appeared"), KeyboardInterrupt()])
+def test_failed_dump_keeps_the_steps_reached(tmp_path, tour_path, failure):
     output = tmp_path / "dumps"
-    with pytest.raises(AssertionError, match="element never appeared"):
-        dump_tour.dump_tour(TourWalkingContext(fail_after_step=0), tour_path, str(output))
+    with pytest.raises(type(failure)) as raised:
+        dump_tour.dump_tour(TourWalkingContext(failure), tour_path, str(output))
+    assert raised.value is failure
 
     markdown = _markdown(str(output / "latest"))
     assert markdown.index("Welcome to Galaxy.") < markdown.index("Tour Failed")
     assert "This is your history." not in markdown
+
+
+def test_main_reports_story_write_failure(tmp_path, tour_path, monkeypatch, capsys):
+    context = TourWalkingContext()
+    finished = []
+    monkeypatch.setattr(cli, "DriverWrapper", lambda args: context)
+    monkeypatch.setattr(context, "finish", lambda: finished.append(True), raising=False)
+
+    def fail_to_finalize(story):
+        raise OSError("story disk full")
+
+    monkeypatch.setattr(Story, "finalize", fail_to_finalize)
+    with pytest.raises(OSError, match="story disk full"):
+        dump_tour.main([tour_path, "-o", str(tmp_path / "dumps")])
+
+    assert finished == [True]
+    assert "Wrote" not in capsys.readouterr().out
+    assert not (tmp_path / "dumps" / "latest").exists()
+
+
+def test_story_write_failure_preserves_tour_failure(tmp_path, tour_path, monkeypatch):
+    failure = KeyboardInterrupt()
+
+    def fail_to_finalize(story):
+        raise OSError("story disk full")
+
+    monkeypatch.setattr(Story, "finalize", fail_to_finalize)
+    with pytest.raises(KeyboardInterrupt) as raised:
+        dump_tour.dump_tour(TourWalkingContext(failure), tour_path, str(tmp_path / "dumps"))
+    assert raised.value is failure

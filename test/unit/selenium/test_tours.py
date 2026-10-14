@@ -60,10 +60,18 @@ def test_components_can_be_left_for_the_caller_to_resolve(tmp_path):
 class HighlightingContext(BrowserlessContext):
     """Records highlights and which screenshots were taken while one was drawn."""
 
+    element: WebElementProtocol
+
     def __init__(self):
         self.highlighted: list[WebElementProtocol] = []
         self.highlighted_screenshots: list[str] = []
         self._highlighting = False
+
+    def home(self) -> None:
+        pass
+
+    def tour_wait_for_element_present(self, selector):
+        return self.element
 
     def save_screenshot(self, path: str) -> None:
         super().save_screenshot(path)
@@ -81,11 +89,9 @@ class HighlightingContext(BrowserlessContext):
 
 
 def _walk(context: HighlightingContext, tmp_path, element: WebElementProtocol) -> None:
-    """Hand each step to the callback the way run_tour does, the second step having a target."""
-    tour = load_tour_from_path(_write_tour(tmp_path), resolve_components=False)
-    callback = StoryTourCallback(context)
-    for index, step in enumerate(tour["steps"]):
-        callback.handle_step(step, index, element if index == 1 else None)
+    """Run the real tour loop with a browserless target for the second step."""
+    context.element = element
+    context.run_tour(str(_write_tour(tmp_path)), tour_callback=StoryTourCallback(context))
 
 
 def test_tour_steps_become_story_sections(tmp_path, monkeypatch):

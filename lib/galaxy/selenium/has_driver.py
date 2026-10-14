@@ -744,19 +744,21 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         def _highlight_context():
             # The highlight is decoration: an element the page has re-rendered is
             # left unhighlighted (as Playwright does for a detached handle).
+            highlighted = False
             try:
                 original_border = self.execute_script("return arguments[0].style.border;", element)
                 self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                highlighted = True
             except StaleElementReferenceException:
-                yield
-                return
+                pass
             try:
                 yield
             finally:
-                try:
-                    self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
-                except StaleElementReferenceException:
-                    pass
+                if highlighted:
+                    try:
+                        self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+                    except StaleElementReferenceException:
+                        pass
 
         return _highlight_context()
 

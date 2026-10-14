@@ -12,6 +12,7 @@ from galaxy.navigation.tours import (
 from galaxy.selenium import cli
 from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.stories import (
+    link_latest,
     run_directory,
     Story,
     write_story,
@@ -45,10 +46,11 @@ def dump_tour(context: GalaxySeleniumContext, tour_path: str, output: str) -> St
     context.story = story
     try:
         context.run_tour(tour_path, tour_callback=DumpTourCallback(context))
-    except Exception:
+    except BaseException:
         write_story(story, failure_documentation=FAILURE_DOCUMENTATION)
         raise
-    write_story(story)
+    story.finalize()
+    link_latest(story.output_directory)
     return story
 
 

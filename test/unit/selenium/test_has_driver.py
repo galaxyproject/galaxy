@@ -7,6 +7,7 @@ from typing import cast
 import pytest
 from selenium.common.exceptions import (
     NoSuchElementException,
+    StaleElementReferenceException,
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.by import By
@@ -36,6 +37,7 @@ from galaxy.selenium.has_playwright_driver import (
     PlaywrightTimeoutException,
 )
 from galaxy.selenium.keys import Key
+from galaxy.selenium.web_element_protocol import WebElementProtocol
 from .util import (
     check_playwright_cached,
     check_selenium_cached,
@@ -1609,3 +1611,16 @@ class TestActiveElement:
         has_driver_instance.press(Key.TAB)
 
         assert has_driver_instance.active_element().get_attribute("id") == "key-target"
+
+
+def test_stale_highlight_does_not_become_screenshot_exception_context(monkeypatch):
+    driver = TestHasDriverImpl(cast(WebDriver, object()))
+
+    def stale(*args):
+        raise StaleElementReferenceException()
+
+    monkeypatch.setattr(driver, "execute_script", stale)
+    with pytest.raises(OSError, match="screenshot failed") as raised:
+        with driver.highlight_element(cast(WebElementProtocol, object())):
+            raise OSError("screenshot failed")
+    assert raised.value.__context__ is None
