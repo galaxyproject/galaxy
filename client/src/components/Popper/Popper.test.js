@@ -1,4 +1,6 @@
 import { createPopper } from "@popperjs/core";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import {
     advanceToJustBeforeTooltipHoverDelay,
     advanceTooltipHoverDelay,
@@ -6,10 +8,13 @@ import {
 } from "@tests/vitest/tooltipTestUtils";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
 
-import PopperComponent from "./Popper.vue";
+import * as PopperStories from "./Popper.stories";
+
+const stories = composeStories(PopperStories);
 
 vi.mock("@popperjs/core", () => ({
     createPopper: vi.fn(() => ({
@@ -23,18 +28,9 @@ vi.mock("@popperjs/core", () => ({
 // detached container.
 let container;
 
-function mountPopper(trigger = "click", interactive = false) {
-    return mount(PopperComponent, {
-        props: {
-            title: "Test Title",
-            placement: "bottom",
-            interactive,
-            trigger,
-        },
-        slots: {
-            reference: "<button>Reference</button>",
-            default: "<p>Popper Content</p>",
-        },
+function mountPlainPopper() {
+    return mount(PopperStories.InputPopover, {
+        props: PopperStories.default.args,
         attachTo: container,
     });
 }
@@ -53,6 +49,13 @@ describe("PopperComponent.vue", () => {
         container.remove();
     });
     enableAutoUnmount(afterEach);
+    const mountStory = useStoryMount();
+
+    function mountPopper(trigger = "click", interactive = false) {
+        const story =
+            trigger === "click" ? stories.ClickDetails : interactive ? stories.InteractiveHelp : stories.HoverHelp;
+        return mountStory(story, { attachTo: container });
+    }
 
     test("renders its configured title when opened", async () => {
         const wrapper = mountPopper();
@@ -61,7 +64,7 @@ describe("PopperComponent.vue", () => {
         const reference = wrapper.get("button");
         await reference.trigger("click");
         expect(wrapper.find(".popper-header").exists()).toBe(true);
-        expect(wrapper.get(".popper-header").text()).toContain("Test Title");
+        expect(wrapper.get(".popper-header").text()).toContain(PopperStories.default.args.title);
     });
 
     test("opens and closes popper on click trigger", async () => {
@@ -80,13 +83,13 @@ describe("PopperComponent.vue", () => {
         expect(wrapper.get(".popper-element").isVisible()).toBe(true);
 
         document.body.click();
-        await wrapper.vm.$nextTick();
+        await nextTick();
 
         expect(wrapper.get(".popper-element").isVisible()).toBe(false);
     });
 
     test("disables popper when `disabled` prop is true", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ disabled: true });
         const reference = wrapper.get("button");
         await reference.trigger("click");
@@ -99,13 +102,13 @@ describe("PopperComponent.vue", () => {
     });
 
     test("does not render the arrow when `arrow` prop is false", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ arrow: false });
         expect(wrapper.find(".popper-arrow").exists()).toBe(false);
     });
 
     test("applies correct mode class", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ mode: "light" });
         expect(wrapper.get(".popper-element").classes()).toContain("popper-element-light");
         await wrapper.setProps({ mode: "dark" });
@@ -122,7 +125,7 @@ describe("PopperComponent.vue", () => {
     });
 
     test("updates visibility when props or watchers change", async () => {
-        const wrapper = mountPopper();
+        const wrapper = mountPlainPopper();
         await wrapper.setProps({ disabled: false });
         const reference = wrapper.get("button");
         await reference.trigger("click");
