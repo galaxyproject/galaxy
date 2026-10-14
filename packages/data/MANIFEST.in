@@ -74,6 +74,10 @@ include src/galaxy/datatypes/converters/biom.xml
 include src/galaxy/datatypes/converters/hg17.len
 include src/galaxy/datatypes/converters/vcf_bgzip_to_tabix_converter.xml
 include src/galaxy/datatypes/converters/parquet_to_csv_converter.xml
+include src/galaxy/datatypes/converters/parquet_to_tabular_converter.xml
+include src/galaxy/datatypes/converters/parquet_to_tsv_converter.xml
+include src/galaxy/datatypes/converters/tabular_to_parquet_converter.xml
+include src/galaxy/datatypes/converters/tsv_to_parquet_converter.xml
 include src/galaxy/datatypes/converters/cram_to_bam_converter.xml
 include src/galaxy/datatypes/converters/smi_to_mol_converter.xml
 include src/galaxy/datatypes/converters/tabular_to_csv.xml
@@ -229,6 +233,8 @@ include src/galaxy/datatypes/test/eg2.agp
 include src/galaxy/datatypes/test/2.chain
 include src/galaxy/datatypes/test/1.fastq
 include src/galaxy/datatypes/test/example.parquet
+include src/galaxy/datatypes/test/nested_columns.parquet
+include src/galaxy/datatypes/test/utf8_decodable.parquet
 include src/galaxy/datatypes/test/hopper_1bit.pbm
 include src/galaxy/datatypes/test/test.dta2d
 include src/galaxy/datatypes/test/IIT2mean_top_2000bytes.trk

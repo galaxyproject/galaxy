@@ -40,7 +40,7 @@ class Otu(Text):
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> from galaxy.util.bunch import Bunch
         >>> dataset = Bunch()
-        >>> dataset.metadata = Bunch
+        >>> dataset.metadata = Bunch()
         >>> otu = Otu()
         >>> dataset.get_file_name = lambda : get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
         >>> dataset.has_data = lambda: True
