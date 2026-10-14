@@ -11,7 +11,7 @@ for package environment isolation, pip_ for installation, and wheel_ to provide 
 In addition to framework dependencies, since Galaxy 18.09, the client (UI) is no longer provided in its built format
 when downloading Galaxy. For more information, see https://github.com/galaxyproject/galaxy/blob/dev/client/README.md .
 
-.. _Python module dependencies: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/pipfiles/default/pinned-requirements.txt
+.. _Python module dependencies: https://github.com/galaxyproject/galaxy/blob/dev/packages/app/src/galaxy/dependencies/pipfiles/default/pinned-requirements.txt
 .. _Python packaging best practices: https://packaging.python.org
 .. _virtualenv: https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments
 .. _pip: https://packaging.python.org/tutorials/installing-packages/#use-pip-for-installing
@@ -119,7 +119,7 @@ If the virtualenv cannot be located, you will see job failures due to Python ``I
 	Traceback (most recent call last):
 	  File "/srv/galaxy/tmp/job_working_directory/001/set_metadata_RK41sy.py", line 1, in <module>
 		from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()
-	  File "/srv/galaxy/server/lib/galaxy_ext/metadata/set_metadata.py", line 23, in <module>
+	  File "/srv/galaxy/server/packages/app/src/galaxy_ext/metadata/set_metadata.py", line 23, in <module>
 		from sqlalchemy.orm import clear_mappers
 	ImportError: No module named sqlalchemy.orm
 
@@ -198,10 +198,10 @@ by Galaxy, you can skip to step 3 in the process below.
 3. Add the new dependency to the ``dependencies`` list in the ``[project]``
    section (or to ``dev`` list in the ``[dependency-groups]`` section if only
    needed for Galaxy development) of `pyproject.toml`_ .
-4. Run ``make update-dependencies`` to update the requirements files in `lib/galaxy/dependencies`_.
+4. Run ``make update-dependencies`` to update the requirements files in `packages/app/src/galaxy/dependencies`_.
 5. Submit a pull request to Galaxy with your changes.
 
 .. _uv: https://docs.astral.sh/uv/
 .. _Wheelforge: https://github.com/galaxyproject/wheelforge/
 .. _pyproject.toml: https://github.com/galaxyproject/galaxy/blob/dev/pyproject.toml
-.. _lib/galaxy/dependencies: https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/dependencies
+.. _packages/app/src/galaxy/dependencies: https://github.com/galaxyproject/galaxy/tree/dev/packages/app/src/galaxy/dependencies

@@ -116,4 +116,5 @@ where = ["src"]
 exclude = [
     "galaxy.tools.bundled*",
     "galaxy.tools.parameters.test*",
+    "tool_shed_client*",
 ]

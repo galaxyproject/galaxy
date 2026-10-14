@@ -154,6 +154,39 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
     $ git push --force
     ```
 
+## Python development environment
+
+Galaxy's Python backend is a single [uv
+workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/) rooted at
+the repository root: the root `pyproject.toml` is the only workspace manifest
+and the tracked `uv.lock` is the only lockfile. Regenerate it from the
+manifests rather than hand-editing it. Use the uv version pinned in
+`.tool-versions` at the repository root.
+
+Package sources live under `packages/*/src` and package test suites under
+`packages/*/tests`; composed application tests live under `test/`. Development commands:
+
+```
+$ uv lock --check                                          # verify the lock is up to date
+$ uv sync --locked --all-packages --all-extras --group dev  # server and development dependencies
+$ uv run --locked --inexact --package galaxy-util pytest packages/util/tests
+```
+
+`make test` run from a package directory (e.g. `packages/util/`) syncs the
+environment scoped to that package and runs its tests, and `bash
+packages/test.sh` is the authoritative check that each package works in
+isolation. `UV_CHECK=1 bash packages/app/src/galaxy/dependencies/update.sh`
+verifies the lock and the pinned requirements files without upgrading
+anything.
+
+If a pull request that moves sources conflicts on `uv.lock`, resolve the
+conflicts in the `pyproject.toml` manifests and dependency groups first, then
+regenerate the lock with the uv version pinned in `.tool-versions` and review the
+resulting dependency diff. Never concatenate lock files or run broad upgrades
+(e.g. `uv lock --upgrade`) in source-move pull requests. See the [Galaxy
+Development FAQ](doc/source/dev/faq.rst) and the [packages
+README](packages/README.md) for details.
+
 ## Style guidelines
 
 ### Python

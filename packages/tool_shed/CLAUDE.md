@@ -68,7 +68,7 @@ uv run pytest tool_shed/test/functional/test_frontend_login.py -v
 - [tool_shed/test/README.md](tool_shed/test/README.md) - Functional test guide
 - [tool_shed/test/base/README.md](tool_shed/test/base/README.md) - Test infrastructure
 - [tool_shed/test/test_data/repos/README.md](tool_shed/test/test_data/repos/README.md) - Mock repository data
-- [test/unit/tool_shed/README.md](../../test/unit/tool_shed/README.md) - Unit test guide
+- [packages/tool_shed/tests/tool_shed/README.md](../../packages/tool_shed/tests/tool_shed/README.md) - Unit test guide
 
 ### Component Showcase & Fixtures
 

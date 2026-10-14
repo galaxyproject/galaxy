@@ -11,8 +11,6 @@ import logging
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
-
 WARNING_MODULES = ["parso", "asyncio", "galaxy.datatypes"]
 for mod in WARNING_MODULES:
     logger = logging.getLogger(mod)

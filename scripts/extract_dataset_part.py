@@ -12,8 +12,6 @@ import logging
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
-
 # This junk is here to prevent loading errors
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 

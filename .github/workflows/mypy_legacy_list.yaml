@@ -26,9 +26,9 @@ jobs:
           for version in 3.10 3.14; do
             uv venv --python "$version" "$RUNNER_TEMP/venv-$version"
             uv pip install --python "$RUNNER_TEMP/venv-$version" \
-              -r lib/galaxy/dependencies/pinned-typecheck-requirements.txt \
-              -r lib/galaxy/dependencies/pinned-requirements.txt \
-              -r lib/galaxy/dependencies/pinned-test-requirements.txt
+              -r requirements/pinned-typecheck-requirements.txt \
+              -r packages/app/src/galaxy/dependencies/pinned-requirements.txt \
+              -r requirements/pinned-test-requirements.txt
           done
       - name: Remove stale entries
         run: |

@@ -19,7 +19,7 @@ By using this mechanism we are certain that web requests and celery tasks receiv
 
 Job and Workflow handlers perform multiple pieces of business logic in separate threads and care needs to be taken when deciding when to start a transaction, when to do a rollback and if and where a session lifespan can be introduced.
 
-The following paragraph discusses the choices made in <https://github.com/galaxyproject/galaxy/blob/064360dab053426ce166bb7274d6a3a5790eb7cc/lib/galaxy/jobs/runners/__init__.py#L835-L843>:
+The following paragraph discusses the choices made in <https://github.com/galaxyproject/galaxy/blob/064360dab053426ce166bb7274d6a3a5790eb7cc/packages/app/src/galaxy/jobs/runners/__init__.py#L835-L843>:
 
 The `JobHandlerQueue.monitor` method is executed as a thread within the job handler process,
 and all work that requires access to the database is happening inside `check_watched_items`,

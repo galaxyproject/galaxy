@@ -947,7 +947,7 @@ Fixes
 * Update Favorite Icon Style (Fixes `#12622 <https://github.com/galaxyproject/galaxy/issues/12622>`__)
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 13332`_
-* Bump tensorflow from 2.5.2 to 2.5.3 in /lib/galaxy/dependencies
+* Bump tensorflow from 2.5.2 to 2.5.3 in /packages/app/src/galaxy/dependencies
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 13345`_
 * Remove node_modules when upgrading Node
@@ -1214,7 +1214,7 @@ Fixes
 * Fix job metrics route is missing
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 13953`_
-* Bump tensorflow from 2.5.3 to 2.6.4 in /lib/galaxy/dependencies
+* Bump tensorflow from 2.5.3 to 2.6.4 in /packages/app/src/galaxy/dependencies
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 13954`_
 * Update/restore collection progress bar/13743
@@ -1232,7 +1232,7 @@ Fixes
 * Restore Tour List View as Vue Component [PR for issue `#13796 <https://github.com/galaxyproject/galaxy/issues/13796>`__]
   (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
   `Pull Request 13968`_
-* Bump tensorflow from 2.6.4 to 2.7.2 in /lib/galaxy/dependencies
+* Bump tensorflow from 2.6.4 to 2.7.2 in /packages/app/src/galaxy/dependencies
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 13972`_
 * Fix tag search non finding non-nametags

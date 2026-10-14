@@ -5,11 +5,8 @@ Otherwise the default sqlite database will be used.
 """
 
 import json
-import os
 import sys
 from collections import namedtuple
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from sqlalchemy import (
     create_engine,

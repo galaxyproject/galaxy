@@ -1,6 +1,6 @@
 /**
  * The Uri types here are based on `DataOrCollectionRequest` defined in
- * `lib/galaxy/tool_util_models/parameters.py`.
+ * `packages/tool_util_models/src/galaxy/tool_util_models/parameters.py`.
  */
 import type { FieldDict, SampleSheetColumnDefinition } from "@/api";
 

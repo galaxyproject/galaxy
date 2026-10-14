@@ -8,6 +8,7 @@ on:
       - 'Makefile'
       - .flake8
       - .isort.cfg
+      - requirements/**
       - packages/app/src/galaxy/dependencies/**
       - mypy.ini
       - pyproject.toml
@@ -20,6 +21,7 @@ on:
       - 'Makefile'
       - .flake8
       - .isort.cfg
+      - requirements/**
       - packages/app/src/galaxy/dependencies/**
       - mypy.ini
       - pyproject.toml
@@ -42,8 +44,8 @@ jobs:
       matrix:
         python-version: ['3.10', '3.14']
     env:
-      LINT_PATH: 'packages/app/src/galaxy/dependencies/pinned-lint-requirements.txt'
-      TYPE_PATH: 'packages/app/src/galaxy/dependencies/pinned-typecheck-requirements.txt'
+      LINT_PATH: 'requirements/pinned-lint-requirements.txt'
+      TYPE_PATH: 'requirements/pinned-typecheck-requirements.txt'
       CORE_PATH: 'packages/app/src/galaxy/dependencies/pinned-requirements.txt'
     steps:
       - uses: actions/checkout@v7.0.1

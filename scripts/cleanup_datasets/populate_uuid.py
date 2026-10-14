@@ -8,11 +8,7 @@ script fixes datasets that were generated before the change.
 """
 
 import argparse
-import os
-import sys
 import uuid
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
 import galaxy.config
 from galaxy.model.mapping import init_models_from_config

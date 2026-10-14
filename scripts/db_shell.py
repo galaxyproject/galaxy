@@ -16,7 +16,6 @@
 import datetime
 import decimal
 import logging
-import os.path
 import sys
 
 # Setup DB scripting environment
@@ -24,8 +23,6 @@ from sqlalchemy import *  # noqa
 from sqlalchemy.exc import *  # noqa
 from sqlalchemy.orm import *  # noqa
 from sqlalchemy.sql import label  # noqa
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.datatypes.registry import Registry
 from galaxy.model import *  # noqa

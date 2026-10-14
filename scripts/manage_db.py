@@ -5,10 +5,8 @@ manage_db.sh.
 """
 
 import logging
-import os.path
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 from galaxy.model.migrations.scripts import LegacyManageDb
 
 logging.basicConfig(level=logging.DEBUG)

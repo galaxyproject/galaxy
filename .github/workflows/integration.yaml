@@ -108,7 +108,7 @@ jobs:
       - if: github.event_name == 'schedule'
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
-          # --cov=lib line-traces a live Galaxy for the whole job, so integration
+          # --cov=packages line-traces a live Galaxy for the whole job, so integration
           # coverage is collected on this weekly run only.
           echo "GALAXY_TEST_COVERAGE=1" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar

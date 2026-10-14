@@ -319,7 +319,7 @@ Enhancements
   `Pull Request 2067`_
 * Fix pbs runner file touch.
   `Pull Request 2074`_
-* Move scripts out of lib/tool_shed.
+* Move scripts out of packages/tool_shed/src/tool_shed.
   `Pull Request 2093`_
 * Consolidate duplicated method in tool_shed/model.
   `Pull Request 2099`_

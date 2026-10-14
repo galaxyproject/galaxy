@@ -3,7 +3,7 @@
 #######
 # Extended set of database schema migration operaions.
 # For help, run `sh db_dev.sh -h`. 
-# For detailed help, see documentation at lib/galaxy/model/migrations/README.md.
+# For detailed help, see documentation at packages/data/src/galaxy/model/migrations/README.md.
 #######
 
 cd "$(dirname "$0")" || exit

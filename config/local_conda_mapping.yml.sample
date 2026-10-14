@@ -1,1 +1,1 @@
-../lib/galaxy/config/sample/local_conda_mapping.yml.sample
+../packages/config/src/galaxy/config/sample/local_conda_mapping.yml.sample

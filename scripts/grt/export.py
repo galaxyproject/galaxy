@@ -15,7 +15,6 @@ from collections import defaultdict
 
 import yaml
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 import galaxy
 import galaxy.app
 import galaxy.config

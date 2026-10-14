@@ -6,15 +6,12 @@
 """
 
 import argparse
-import os
 import subprocess
 import sys
 import tempfile
 from typing import (
     Any,
 )
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.tool_shed.util.hg_util import clone_repository
 from galaxy.util import requests

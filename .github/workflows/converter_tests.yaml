@@ -61,9 +61,9 @@ jobs:
         run: uv tool install planemo
       - name: Determine converters to check
         run: |
-          ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
+          ls 'galaxy root'/packages/data/src/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/packages/data/src/galaxy/datatypes/converters/.tt_skip > tool_list.txt
           echo "Skipping checks for the following converters:"
-          ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
+          ls 'galaxy root'/packages/data/src/galaxy/datatypes/converters/*xml | grep -f 'galaxy root'/packages/data/src/galaxy/datatypes/converters/.tt_skip
           echo "Checking only the following converters:"
           cat tool_list.txt
       - name: Lint converters

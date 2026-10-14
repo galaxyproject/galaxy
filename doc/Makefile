@@ -41,22 +41,22 @@ help:
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
-	@echo "  updaterst  to update Sphinx RST files for lib/ to reflect code structure changes"
+	@echo "  updaterst  to update Sphinx RST files for packages/ to reflect code structure changes"
 
 source/dev/run_tests_help.txt: ../run_tests.sh
 	bash ../run_tests.sh --help > source/dev/run_tests_help.txt
 
-source/dev/schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
-	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd > $@
+source/dev/schema.md: parse_gx_xsd.py schema_template.md ../packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
+	python parse_gx_xsd.py schema_template.md ../packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd > $@
 
 source/dev/user_defined_tools_authoring.md: gen_authoring_doc.py ../client/src/components/Tool/authoringHelp.yml ../client/src/components/Tool/ToolSourceSchema.json ## Build the user-defined tool authoring page from the help content the tool editor renders
 	python gen_authoring_doc.py ../client/src/components/Tool/authoringHelp.yml > $@
 
-source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config/__init__.py
+source/admin/config_logging_default_yaml.rst: ../packages/config/src/galaxy/config/__init__.py
 	printf '.. code-block:: yaml\n\n' > $@
 	printf '    galaxy:\n' >> $@
 	printf '      logging:\n        ' >> $@
-	PYTHONPATH=../lib python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n        ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=2, default_flow_style=False).splitlines()))' >> $@
+	python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n        ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=2, default_flow_style=False).splitlines()))' >> $@
 
 clean:
 	-rm -rf $(BUILDDIR)/* $(GENERATED_RST)
@@ -172,7 +172,7 @@ doctest: $(GENERATED_RST)
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
-# Update Sphinx RST files for lib/ to reflect code structure changes
+# Update Sphinx RST files for packages/ to reflect code structure changes
 updaterst:
 	-rm -rf source/lib/
-	$(SPHINXAPIDOC) -M --force -o source/lib/ ../lib/
+	$(SPHINXAPIDOC) -M --force -o source/lib/ ../packages/ ../packages/*/build/ ../packages/*/src/*.egg-info/

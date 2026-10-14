@@ -24,7 +24,6 @@ from sqlalchemy import (
 )
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(1, os.path.join(galaxy_root, "lib"))
 
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound

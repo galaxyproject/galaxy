@@ -6,7 +6,7 @@ This script renders/generates everything downstream of it:
 
   * client/src/components/Markdown/directives.md     - human-readable reference
   * client/src/components/Markdown/Utilities/requirements.yml - directive -> required object
-  * lib/galaxy/managers/_markdown_directives.py      - validator registry consumed by markdown_parse
+  * packages/app/src/galaxy/managers/_markdown_directives.py      - validator registry consumed by markdown_parse
 
 The generated Python module keeps ``galaxy.managers.markdown_parse`` self-contained (no
 YAML/file dependency at import) so it remains reusable outside Galaxy (e.g. gxformat2).
@@ -32,7 +32,9 @@ import yaml
 MARKDOWN_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), os.pardir, "client", "src", "components", "Markdown")
 )
-LIB_MANAGERS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib", "galaxy", "managers"))
+LIB_MANAGERS_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), os.pardir, "packages", "app", "src", "galaxy", "managers")
+)
 DIRECTIVES_YML = os.path.join(MARKDOWN_DIR, "directives.yml")
 REQUIREMENTS_YML = os.path.join(MARKDOWN_DIR, "Utilities", "requirements.yml")
 OUTPUT_MD = os.path.join(MARKDOWN_DIR, "directives.md")

@@ -6,7 +6,7 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 UPSTREAM?=galaxyproject
 SOURCE_DIR?=src/galaxy
-BUILD_SCRIPTS_DIR=scripts
+BUILD_SCRIPTS_DIR=../build_scripts
 DEV_RELEASE?=0
 VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
 PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
@@ -58,7 +58,7 @@ setup-venv:
 	uv sync --locked --inexact --package $(UV_PACKAGE) --all-extras
 
 _test:
-	uv run --locked --package $(UV_PACKAGE) pytest $(TESTS)
+	uv run --locked --inexact --package $(UV_PACKAGE) --all-extras --group test pytest $(TESTS)
 
 test: setup-venv _test
 
@@ -68,35 +68,20 @@ _dist:
 
 dist: clean _dist
 
-_setup-mypy-venv: setup-venv
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-
 _mypy:
-	uv run --locked --package $(UV_PACKAGE) mypy .
+	@if [ -n "$(wildcard src tests)" ]; then \
+	    cd ../.. && uv run --locked --inexact --package $(UV_PACKAGE) --all-extras --group typecheck mypy $(addprefix packages/$(notdir $(CURDIR))/, $(wildcard src tests)); \
+	fi
 
-mypy: _setup-mypy-venv _mypy
-
-_setup-lint-venv: setup-venv
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
+mypy: _mypy
 
 _lint:
-	uv run --locked --package $(UV_PACKAGE) ruff check .
+	uvx --with-requirements ../../requirements/pinned-lint-requirements.txt ruff check .
 
-lint: _setup-lint-venv _lint
+lint: _lint
 
 lint-dist:
-	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
-
-# black doesn't actually work on symlinked files because they are outside
-# the current directory
-
-#_setup-format-venv: setup-venv
-#	uv pip install isort black
-#_isort:
-#	uv run isort --sp ../../.isort.cfg .
-#_black:
-#	uv run black --config ../pyproject.toml .
-#format: _setup-format-venv _isort _black
+	uvx --from twine==6.2.0 twine check $(DIST)/*
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)

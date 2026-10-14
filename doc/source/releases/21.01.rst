@@ -750,7 +750,7 @@ Fixes
 * Fix label verifier in Github Maintenance Bot
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10836`_
-* Move new config files samples to `lib/galaxy/config/sample/`
+* Move new config files samples to `packages/config/src/galaxy/config/sample/`
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10842`_
 * Fix mulled unit test.

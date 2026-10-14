@@ -8,8 +8,7 @@ flags in a section for a single module, e.g.::
     disallow_untyped_defs = False
 
 The script runs mypy once (per ``--python`` interpreter) with a copy of mypy.ini
-that has all of these lines removed, over the same paths as ``make mypy`` plus
-the modules that only exist in the web_client package. Each error is mapped
+that has all of these lines removed, over the same paths as ``make mypy``. Each error is mapped
 back to a (module, flag) pair; red list lines without a matching error are
 stale. Glob sections such as the test code exemptions are left alone.
 
@@ -27,6 +26,7 @@ Run it with ``tox -e mypy_legacy``, passing arguments after ``--``.
 
 import argparse
 import collections
+import glob
 import json
 import os
 import re
@@ -57,13 +57,15 @@ STRICT_FLAGS = set(FLAG_FOR_CODE.values())
 # Values configparser reads as False
 FALSE_VALUES = {"false", "no", "off", "0"}
 
-# (working directory, paths) for each mypy invocation: `make mypy`, then the
-# web_client package, whose modules are not under lib/. packages/web_client/src
-# is checked from inside src/ so its modules are named galaxy.web_client.*.
+# Use the same source and test scope as make mypy; mypy.ini defines the
+# package import roots for both this command and module-name lookup.
 RUNS = [
-    ("lib", [".", "../test"]),
-    ("packages/web_client/src", ["."]),
-    ("packages/web_client", ["tests"]),
+    (
+        ".",
+        sorted(glob.glob(os.path.join(ROOT, "packages/*/src")))
+        + sorted(glob.glob(os.path.join(ROOT, "packages/*/tests")))
+        + ["test"],
+    )
 ]
 
 SECTION_RE = re.compile(r"^\[(?P<name>[^\]]+)\]\s*$")
@@ -219,7 +221,14 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         config_file = os.path.join(tmp, "mypy.ini")
         with open(config_file, "w") as f:
-            f.write("\n".join(line for i, line in enumerate(lines) if i not in entries.values()) + "\n")
+            f.write(
+                "\n".join(
+                    line.replace("$MYPY_CONFIG_FILE_DIR", ROOT)
+                    for i, line in enumerate(lines)
+                    if i not in entries.values()
+                )
+                + "\n"
+            )
         module_names = ModuleNames(config_file)
         failing: set[tuple[str, str]] = set()
         unexpected: list[str] = []

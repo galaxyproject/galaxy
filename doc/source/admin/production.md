@@ -119,7 +119,7 @@ Configuration is not difficult once your cluster is set up.  Details can be foun
 
 ### Distributing Data
 
-Information on distributing Galaxy datasets across multiple disk and leveraging services such as S3 can be found in the [Galaxy Training Materials](https://training.galaxyproject.org/training-material/topics/admin/tutorials/object-store/tutorial.html) and in the [sample object_store_conf.xml file](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/object_store_conf.xml.sample).
+Information on distributing Galaxy datasets across multiple disk and leveraging services such as S3 can be found in the [Galaxy Training Materials](https://training.galaxyproject.org/training-material/topics/admin/tutorials/object-store/tutorial.html) and in the [sample object_store_conf.xml file](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/object_store_conf.xml.sample).
 
 ### Cleaning up datasets
 
@@ -189,7 +189,7 @@ Galaxy can use [Celery](https://docs.celeryq.dev/en/stable/index.html) to handle
 -   Exporting histories or other data
 -   Running periodic tasks
 
-The list of tasks that are currently handled by `Celery` can be found in `lib/galaxy/celery/tasks.py`.
+The list of tasks that are currently handled by `Celery` can be found in `packages/app/src/galaxy/celery/tasks.py`.
 
 To enable Celery in your instance you need to follow some additional steps:
 

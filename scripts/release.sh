@@ -25,7 +25,20 @@ VERIFY_PACKAGES=(wheel packaging)
 
 BRANCH_CURR=$(git branch --show-current)
 
-: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
+# Release operations also inspect stable branches with the older source layout.
+function galaxy_version_file() {
+    local path
+    for path in packages/util/src/galaxy/version/__init__.py lib/galaxy/version/__init__.py lib/galaxy/version.py; do
+        if [ -f "$path" ]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    echo "No Galaxy version file in the checked-out branch" >&2
+    return 1
+}
+
+: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
 RELEASE_NEXT=
 RELEASE_CURR_MINOR=
 RELEASE_CURR_MINOR_NEXT=
@@ -422,12 +435,12 @@ function increment_minor() {
 
 
 function get_version_major() {
-    grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
+    grep '^VERSION_MAJOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
 }
 
 
 function get_version_minor() {
-    grep '^VERSION_MINOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/" | tr -d '[[:space:]]'
+    grep '^VERSION_MINOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/" | tr -d '[[:space:]]'
 }
 
 
@@ -447,8 +460,10 @@ function update_galaxy_version() {
     local key="$1"
     local val="$2"
     local match="${3:-.*}"
-    log "Updating lib/galaxy/version/__init__.py for ${key} = ${val}..."
-    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" lib/galaxy/version/__init__.py
+    local version_file
+    version_file="$(galaxy_version_file)"
+    log "Updating ${version_file} for ${key} = ${val}..."
+    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" "${version_file}"
 }
 
 
@@ -458,7 +473,7 @@ function packages_make_all() {
     (
         cd packages/
         for dir in *; do
-            [ ! -d "$dir" ] || [ ! -f "${dir}/setup.cfg" ] && continue
+            [ ! -d "$dir" ] || [ ! -f "${dir}/pyproject.toml" ] && continue
             # can't use log_exec here because we want to capture output
             echo + make -C "$dir" "$@" 1>&2
             make -C "$dir" "$@" >"${dir}/make-${1}.log" 2>&1
@@ -469,17 +484,9 @@ function packages_make_all() {
 
 function update_package_versions() {
     local package_version="${1:-$PACKAGE_VERSION}"
-    local project_file
     log "Updating package versions to '${package_version}'..."
-    (
-        cd packages/
-        for dir in *; do
-            project_file="${dir}/galaxy/setup.cfg"
-            if [ -f "${project_file}" ]; then
-                sed_inplace -e "s/^version =.*/version = \"${package_version}\"/" "$project_file"
-            fi
-        done
-    )
+    python scripts/set_package_versions.py "$package_version"
+    uv lock
     #git diff -- packages/
 }
 
@@ -487,7 +494,7 @@ function update_package_versions() {
 function perform_version_update() {
     local tag_version=
     update_package_versions
-    git add -- packages/
+    git add -- packages/ uv.lock
     log 'Cleaning package dirs...'
     packages_make_all clean
     log 'Building packages (logs in packages/*/make-dist.log)...'
@@ -518,9 +525,9 @@ function perform_version_update_dev() {
     log "Incrementing release version to '${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}' for development of next point release"
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT_DEV"
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version/__init__.py
+    git add -- "$(galaxy_version_file)"
     update_package_versions
-    git add -- packages/
+    git add -- packages/ uv.lock
     log_exec git commit -m "Update version to ${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}"
 }
 
@@ -538,7 +545,7 @@ function create_release_rc_initial() {
     update_galaxy_version 'VERSION_MAJOR' "$RELEASE_CURR"
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT"
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version/__init__.py
+    git add -- "$(galaxy_version_file)"
 
     perform_version_update
 
@@ -548,14 +555,14 @@ function create_release_rc_initial() {
     update_galaxy_version 'VERSION_MAJOR' "$RELEASE_NEXT"
     update_galaxy_version 'VERSION_MINOR' 'dev0'
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version/__init__.py
+    git add -- "$(galaxy_version_file)"
     sed_inplace -e "s/^RELEASE_CURR:=.*/RELEASE_CURR:=${RELEASE_NEXT}/" Makefile
     log_exec git diff --exit-code && { log_error 'Missing expected Makefile changes'; exit 1; } || true
     git add -- Makefile
     local package_version
     package_version=$(packaging_version "${RELEASE_NEXT}.0dev0" "true")
     update_package_versions "$package_version"
-    git add -- packages/
+    git add -- packages/ uv.lock
     log_exec git commit -m "Update version to ${RELEASE_NEXT}.dev0"
 
     # Resolve merge conflicts
@@ -590,7 +597,7 @@ function create_release_local() {
     update_galaxy_version 'VERSION_MINOR' "0+${RELEASE_LOCAL_VERSION}" '""'
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
     update_package_versions
-    ##git add -- lib/galaxy/version/__init__.py packages/*/galaxy/project_*.py
+    ##git add -- "$(galaxy_version_file)" packages/*/galaxy/project_*.py
     packages_make_all clean
     log 'Building packages (logs in packages/*/make-dist.log)...'
     packages_make_all dist
@@ -613,7 +620,7 @@ function create_release_normal() {
 
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT"
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version/__init__.py
+    git add -- "$(galaxy_version_file)"
 
     perform_version_update
     perform_stable_merge

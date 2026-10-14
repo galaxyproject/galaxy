@@ -1,7 +1,4 @@
 import os.path
-import sys
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.config import configure_logging
 from galaxy.tool_util.deps import build_dependency_manager

@@ -185,8 +185,52 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     exit 1
 fi
 
+# Bootstrap imports require installed local packages. Explicitly skipped
+# dependency installation (including shutdown) must not sync the environment.
+: "${GALAXY_WORKSPACE_SYNC:=1}"
+
+sync_workspace_packages() {
+    [ "$FETCH_WHEELS" -eq 0 ] && return 0
+    [ "$GALAXY_WORKSPACE_SYNC" = "0" ] && return 0
+    if command -v uv >/dev/null 2>&1 && [ -f pyproject.toml ] && [ -f uv.lock ]; then
+        # Sync the SERVER distribution closure (web-apps pulls galaxy-app and
+        # every library member as editable installs). For the Tool Shed,
+        # galaxy-tool-shed is the server dist. Override with
+        # $GALAXY_SYNC_PACKAGE for custom profiles.
+        if [ "$GALAXY_CONDITIONAL_DEPENDENCIES_APP" = "tool_shed" ]; then
+            : "${GALAXY_SYNC_PACKAGE:=galaxy-tool-shed}"
+        else
+            : "${GALAXY_SYNC_PACKAGE:=galaxy-web-apps}"
+        fi
+        echo "Syncing Galaxy workspace (server closure: $GALAXY_SYNC_PACKAGE) with 'uv sync --locked --inexact --all-extras'..."
+        # --inexact is deliberate: an exact root sync would strip packages that
+        # later steps install (conditional provider SDKs, dev tools), and would
+        # remove member editables installed by earlier --package syncs.
+        if [ -n "$VIRTUAL_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
+            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" --active || return 1
+        else
+            uv sync --locked --inexact --all-extras --package "$GALAXY_SYNC_PACKAGE" || return 1
+        fi
+        return 0
+    fi
+    # Without uv, install all local distributions together so pip resolves
+    # first-party dependencies against this checkout rather than PyPI.
+    if [ -d packages/util ] && [ -d packages/config ]; then
+        echo "Installing local Galaxy workspace packages for bootstrap..."
+        set --
+        for project in packages/*; do
+            [ -f "$project/pyproject.toml" ] || continue
+            set -- "$@" -e "./$project"
+        done
+        # shellcheck disable=SC2086
+        ${PIP_CMD} install "$@" || return 1
+    fi
+}
+
+sync_workspace_packages
+
 : "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
-: "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
+: "${GALAXY_DEV_REQUIREMENTS:=./requirements/dev-requirements.txt}"
 # Which app's config decides the conditional dependencies to install. Set by the
 # launcher (run_tool_shed.sh exports tool_shed) since this script is shared.
 : "${GALAXY_CONDITIONAL_DEPENDENCIES_APP:=galaxy}"
@@ -214,13 +258,13 @@ if [ $FETCH_WHEELS -eq 1 ]; then
         set_galaxy_config_file_var
         conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
     fi
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint packages/app/src/galaxy/dependencies/conditional-constraints.txt
     fi
 fi
 
@@ -256,7 +300,8 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         # Prebuilt install: pull the matching galaxy-web-client wheel from PyPI.
         # webapp.py picks it up via `import galaxy.web_client` and serves its
         # bundled dist/ directly -- no pnpm or staging required.
-        GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
+        # galaxy.version is provided by the installed galaxy-util package.
+        GALAXY_WEB_CLIENT_VERSION=$(python -c "from galaxy.version import VERSION; print(VERSION)")
         GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
         case "$GALAXY_WEB_CLIENT_VERSION" in
             *dev*|*rc*)
@@ -299,7 +344,7 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
         fi
         # We need GALAXY_CONFIG_FILE here, ensure it's set.
         set_galaxy_config_file_var
-        # Set plugin path
+        # Read the plugin path using installed workspace packages.
         GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
         cd client

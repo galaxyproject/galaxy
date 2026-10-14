@@ -6,7 +6,7 @@ import { createHash } from "crypto";
  * Vite plugin to generate build metadata JSON file
  */
 export function buildMetadataPlugin(options = {}) {
-    const { filename = resolve(__dirname, "../lib/galaxy/web/framework/meta.json"), buildDate = new Date() } = options;
+    const { filename = resolve(__dirname, "../packages/web_framework/src/galaxy/web/framework/meta.json"), buildDate = new Date() } = options;
 
     let buildHash = "";
 
