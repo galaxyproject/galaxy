@@ -5945,22 +5945,23 @@
     back to global ai_model/ai_api_key settings. All agents are
     enabled by default. Example: inference_services: { default: {
     model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled:
-    false }, jupyterlite: { model: gpt-4o } } Set static_responses to
-    a YAML file path to replace all LLM calls with deterministic
-    responses for testing: inference_services: { static_responses:
-    test/integration/static_agents.yml } Per-agent or default-block
-    ``structured_output_override: true|false`` beats the model
-    capability table -- see ``agent_model_capabilities_file`` for the
-    table's location and contents. Per-agent or default-block
-    ``retries`` sets the pydantic-ai retry budget (tool calls and
-    output validation); it defaults to 3. Raise it if a model
-    intermittently fails to produce conforming output ("Exceeded
-    maximum output retries"). custom_tool's producer keeps a budget of
-    0 because it runs its own reflection loop; a shared ``default``
-    block does not change that -- set ``custom_tool.retries``
-    explicitly to override it. custom_tool also accepts
-    ``quality_critic_enabled`` (default false) to turn on the LLM
-    clarity/idiomaticity critic, and
+    false }, jupyterlite: { model: gpt-4o } } Plugins also accept
+    top_p and timeout, and use max_tokens as an upper limit. Set
+    static_responses to a YAML file path to replace all LLM calls with
+    deterministic responses for testing: inference_services: {
+    static_responses: test/integration/static_agents.yml } Per-agent
+    or default-block ``structured_output_override: true|false`` beats
+    the model capability table -- see
+    ``agent_model_capabilities_file`` for the table's location and
+    contents. Per-agent or default-block ``retries`` sets the
+    pydantic-ai retry budget (tool calls and output validation); it
+    defaults to 3. Raise it if a model intermittently fails to produce
+    conforming output ("Exceeded maximum output retries").
+    custom_tool's producer keeps a budget of 0 because it runs its own
+    reflection loop; a shared ``default`` block does not change that
+    -- set ``custom_tool.retries`` explicitly to override it.
+    custom_tool also accepts ``quality_critic_enabled`` (default
+    false) to turn on the LLM clarity/idiomaticity critic, and
     ``container_recommendation_enabled`` (default false) to resolve
     the produced tool's container to a verified quay.io biocontainer.
     Container recommendation runs a dedicated container critic that
