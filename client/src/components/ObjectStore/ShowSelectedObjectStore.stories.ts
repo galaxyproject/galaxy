@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/vue3-vite";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { withCurrentUser } from "@tests/test-data/currentUser";
 import { getFakeObjectStoreInstance } from "@tests/test-data/objectStores";
+import { exactly } from "@tests/test-data/text";
+import { expect } from "storybook/test";
 
 import type { ConcreteObjectStoreModel } from "@/api";
 import { http } from "@/api/client/__mocks__/http";
@@ -63,11 +65,35 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+type PlayContext = Parameters<NonNullable<Story["play"]>>[0];
+
+async function readSelectedStorage({ canvas }: PlayContext, name: string, restriction: string) {
+    const selected = await canvas.findByText(name, { exact: true }, { timeout: 5000 });
+    await expect(selected).toBeVisible();
+    const introduction = canvas.getByText("New datasets will be stored in", { exact: true });
+    await expect(introduction).toBeVisible();
+    // The sentence contains the visible selection's name and sharing restriction.
+    await expect(introduction.parentElement!).toHaveTextContent(
+        exactly(`New datasets will be stored in a Galaxy ${restriction} storage named ${name}.`),
+    );
+    await expect(canvas.queryByText(/Loading Galaxy storage details/)).not.toBeInTheDocument();
+}
 
 /** The history's selected Galaxy-managed storage, shared rather than private. */
-export const GalaxyStorage: Story = {};
+export const GalaxyStorage: Story = {
+    play: async (context) => {
+        await context.step("Read the selected Galaxy storage after its details load", async () => {
+            await readSelectedStorage(context, "Shared scratch", "sharable");
+        });
+    },
+};
 
 /** The user's own project-scratch instance, loaded through its user_objects URI. */
 export const UserStorage: Story = {
     args: { preferredObjectStoreId: USER_STORAGE.object_store_id! },
+    play: async (context) => {
+        await context.step("Read the selected private project storage after its details load", async () => {
+            await readSelectedStorage(context, "RNA-seq project scratch", "private");
+        });
+    },
 };
