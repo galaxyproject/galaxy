@@ -831,11 +831,13 @@ export function getRouter(Galaxy) {
                         // Handles /workflows/invocations/{id}, /workflows/invocations/{id}/steps, /workflows/invocations/{id}/inputs, etc.
                         path: "workflows/invocations/:invocationId/:tab?",
                         component: WorkflowInvocationState,
+                        meta: { reuseOnQueryChange: true },
                         props: (route) => ({
                             invocationId: route.params.invocationId,
                             tab: route.params.tab,
                             isFullPage: true,
                             success: Boolean(route.query.success),
+                            syncSelection: true,
                         }),
                     },
                     {

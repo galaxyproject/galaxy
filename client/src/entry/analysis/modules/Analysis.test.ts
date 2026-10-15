@@ -4,6 +4,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 import { defineComponent, h, onMounted } from "vue";
+import type { RouteRecordRaw } from "vue-router";
 
 import Analysis from "./Analysis.vue";
 
@@ -28,13 +29,17 @@ function countingPage(name: string, mounts: string[]) {
     });
 }
 
-async function mountAnalysis() {
+async function mountAnalysis(
+    routes: (mounts: string[]) => RouteRecordRaw[] = () => [],
+    initialPath = "/tools/list?search=fastqc",
+) {
     const mounts: string[] = [];
     const router = createTestRouter([
         { path: "/tools/list", component: countingPage("ToolsList", mounts) },
         { path: "/other", component: countingPage("Other", mounts) },
+        ...routes(mounts),
     ]);
-    await router.push("/tools/list?search=fastqc");
+    await router.push(initialPath);
     mount(Analysis, {
         global: {
             plugins: [router, createTestingPinia({ createSpy: vi.fn })],
@@ -63,5 +68,33 @@ describe("Analysis", () => {
         await router.push("/other?x=2");
         await flushPromises();
         expect(mounts).toEqual(["ToolsList", "Other", "Other"]);
+    });
+
+    it("keeps opted-in invocation routes mounted across query changes but remounts others", async () => {
+        const { mounts, router } = await mountAnalysis(
+            (mounts) => [
+                { path: "/workflows/invocations/report", component: countingPage("Report", mounts) },
+                {
+                    path: "/workflows/invocations/:invocationId/:tab?",
+                    component: countingPage("Invocation", mounts),
+                    meta: { reuseOnQueryChange: true },
+                },
+            ],
+            "/workflows/invocations/run?step_number=1",
+        );
+        expect(mounts).toEqual(["Invocation"]);
+
+        await router.replace("/workflows/invocations/run?step_number=2&job=selected");
+        await flushPromises();
+        expect(mounts).toEqual(["Invocation"]);
+
+        await router.push("/workflows/invocations/run/steps?step_number=2");
+        await flushPromises();
+        expect(mounts).toEqual(["Invocation", "Invocation"]);
+
+        await router.push("/workflows/invocations/report?id=first");
+        await router.push("/workflows/invocations/report?id=second");
+        await flushPromises();
+        expect(mounts).toEqual(["Invocation", "Invocation", "Report", "Report"]);
     });
 });

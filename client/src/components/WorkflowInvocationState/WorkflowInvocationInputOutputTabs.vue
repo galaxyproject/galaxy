@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
+import { useInvocationSelection } from "@/composables/invocationSelection";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import type { Step } from "@/stores/workflowStepStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -21,6 +22,13 @@ const props = defineProps<{
     tab?: "inputs" | "outputs";
     terminal?: boolean;
 }>();
+
+const selection = useInvocationSelection();
+function selectOutput(name: string, expanded: boolean) {
+    if (selection) {
+        selection.output.value = expanded ? name : undefined;
+    }
+}
 
 // Fetching full workflow to get the workflow output labels (for when invocation is not terminal)
 const workflowOutputLabels = ref<string[]>([]);
@@ -77,7 +85,10 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
                 <GenericHistoryItem
                     :item-id="output.id ?? ''"
                     :item-src="output.src"
-                    data-description="terminal invocation output item" />
+                    data-description="terminal invocation output item"
+                    :expanded="selection ? selection.output.value === key : undefined"
+                    scroll-on-expand
+                    @update:expanded="selectOutput(key, $event)" />
             </div>
         </div>
         <div v-else-if="workflowOutputLabels.length">
