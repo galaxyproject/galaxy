@@ -21,8 +21,8 @@ on:
       - '.github/workflows/unit.yaml'
       - '.github/workflows/_report_scheduled_result.yaml'
   schedule:
-    # Run every supported Python version at midnight UTC daily
-    - cron: '0 0 * * *'
+    # Run every supported Python version at 00:17 UTC daily
+    - cron: '17 0 * * *'
   workflow_dispatch:
 concurrency:
   # Keep pushes to dev from cancelling the scheduled run.
@@ -72,11 +72,11 @@ jobs:
         run: tox -e "$TOX_ENV"
         env:
           PYTEST_ADDOPTS: -n 4
-          # Coverage slows the tests down; collect it for pushes and scheduled runs only.
-          TOX_ENV: ${{ github.event_name == 'pull_request' && 'unit' || 'unit-coverage' }}
+          # Coverage slows the tests down; collect it for pushes only, so nightly runs don't skew dev coverage.
+          TOX_ENV: ${{ github.event_name == 'push' && 'unit-coverage' || 'unit' }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push'
         with:
           flags: py-unit
           working-directory: 'galaxy root'

@@ -23,8 +23,8 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday, with extended metadata; this cron string is also matched below.
     - cron: '0 0 * * 2'
-    # Run the legacy tool API too at 02:00 UTC daily
-    - cron: '0 2 * * *'
+    # Run the legacy tool API too at 02:17 UTC daily
+    - cron: '17 2 * * *'
   workflow_dispatch:
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -84,11 +84,11 @@ jobs:
         run: ./run_tests.sh --framework-tools -- -n 4
         env:
           GALAXY_TEST_USE_LEGACY_TOOL_API: ${{ matrix.use-legacy-api }}
-          # Coverage slows the tests down; collect it for pushes and scheduled runs only.
-          GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}
+          # Coverage slows the tests down; collect it for pushes only, so nightly runs don't skew dev coverage.
+          GALAXY_TEST_COVERAGE: ${{ github.event_name == 'push' && '1' || '' }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push'
         with:
           flags: framework
           working-directory: 'galaxy root'

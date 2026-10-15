@@ -19,8 +19,8 @@ on:
       - '.github/workflows/toolshed.yaml'
       - '.github/workflows/_report_scheduled_result.yaml'
   schedule:
-    # Run every supported Python version at 01:00 UTC daily
-    - cron: '0 1 * * *'
+    # Run every supported Python version at 01:17 UTC daily
+    - cron: '17 1 * * *'
   workflow_dispatch:
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
