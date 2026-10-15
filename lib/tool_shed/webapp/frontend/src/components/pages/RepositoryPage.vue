@@ -113,6 +113,7 @@ watch(
             currentRevision.value = newest
         }
     },
+    { immediate: true },
 )
 
 const readmes = ref<{ [key: string]: string | undefined }>({})
@@ -125,29 +126,33 @@ watch(
     },
 )
 
-watch(currentRevision, () => {
-    if (currentRevision.value) {
-        ToolShedApi()
-            .GET("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes", {
-                params: {
-                    path: {
-                        encoded_repository_id: props.repositoryId,
-                        changeset_revision: currentRevision.value,
+watch(
+    currentRevision,
+    () => {
+        if (currentRevision.value) {
+            ToolShedApi()
+                .GET("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes", {
+                    params: {
+                        path: {
+                            encoded_repository_id: props.repositoryId,
+                            changeset_revision: currentRevision.value,
+                        },
                     },
-                },
-            })
-            .then((response) => {
-                if (response.data) {
-                    readmes.value = response.data
-                } else {
-                    readmes.value = {}
-                }
-            })
-            .catch(notifyOnCatch)
-    } else {
-        readmes.value = {}
-    }
-})
+                })
+                .then((response) => {
+                    if (response.data) {
+                        readmes.value = response.data
+                    } else {
+                        readmes.value = {}
+                    }
+                })
+                .catch(notifyOnCatch)
+        } else {
+            readmes.value = {}
+        }
+    },
+    { immediate: true },
+)
 
 // The header carries the one-line description; the about card only repeats it when there is more to say
 const longDescription = computed(() => {

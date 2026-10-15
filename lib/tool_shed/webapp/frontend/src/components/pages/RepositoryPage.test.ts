@@ -42,11 +42,15 @@ function revision(overrides: Record<string, unknown> = {}) {
     }
 }
 
-// Metadata lands after mount, as it does from the store's fetch, so the page picks the newest revision
-async function mountPage({ repositoryMetadata, ...state }: Record<string, unknown>) {
+// By default metadata lands after mount, as it does from the store's first fetch; `cached` mounts with it
+// already in the store, as when returning to a repository the store still holds
+async function mountPage({ repositoryMetadata, ...state }: Record<string, unknown>, { cached = false } = {}) {
     const store = useRepositoryStore()
     vi.spyOn(store, "setId").mockResolvedValue(undefined)
     store.$patch({ loading: false, empty: false, repositoryPermissions: { can_manage: false }, ...state })
+    if (cached) {
+        store.$patch({ repositoryMetadata } as Record<string, unknown>)
+    }
     const wrapper = mount(RepositoryPage, {
         props: { repositoryId: "repo1" },
         global: {
@@ -100,6 +104,15 @@ describe("RepositoryPage", () => {
         )
         const readme = wrapper.get(".repository-readme-wrapper")
         expect(readme.find("p").text()).toBe("hello\u00a0readme")
+    })
+
+    it("selects the newest revision when the store already holds the repository's metadata", async () => {
+        await mountPage({ repository: repository(), repositoryMetadata: revision() }, { cached: true })
+
+        expect(mockGet).toHaveBeenCalledWith(
+            "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
+            { params: { path: { encoded_repository_id: "repo1", changeset_revision: "abc123" } } },
+        )
     })
 
     it("puts the description in the header and leaves out an About card with nothing more to say", async () => {
