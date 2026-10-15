@@ -4,7 +4,6 @@ import logging
 import os
 import shutil
 import tempfile
-from collections.abc import Callable
 from typing import (
     cast,
     IO,
@@ -140,13 +139,8 @@ REVISION_CACHE_CONTROL = f"public, max-age={REVISION_MAX_AGE}"
 T = TypeVar("T")
 
 
-def _etag_from(validator: str) -> str:
+def _etag(validator: str) -> str:
     return f'"{hashlib.sha256(validator.encode("utf-8")).hexdigest()}"'
-
-
-def _etag_for(payload) -> str:
-    """Build an ETag from the payload the route is about to serialize."""
-    return _etag_from(json.dumps(jsonable_encoder(payload), sort_keys=True, separators=(",", ":")))
 
 
 def _if_none_match(request: Request) -> list[str]:
@@ -157,24 +151,21 @@ def _if_none_match(request: Request) -> list[str]:
     return [tag.strip().removeprefix("W/") for tag in header.split(",")]
 
 
-def _cached_or_built(etag: str, build: Callable[[], T], request: Request, response: Response) -> T | Response:
-    """Hand back a 304 if the client already has etag, otherwise build the payload with cache headers."""
+def _cacheable_result(result: CacheableResult[T], request: Request, response: Response) -> T | Response:
+    """Hand back a 304 if the client already has result's validator, otherwise build it with cache headers."""
+    etag = _etag(result.validator)
     headers = {"ETag": etag, "Cache-Control": REVISION_CACHE_CONTROL}
     if etag in _if_none_match(request):
         return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
-    payload = build()
+    payload = result.build()
     response.headers.update(headers)
     return payload
 
 
 def _cacheable(payload, request: Request, response: Response):
-    """Attach cache headers to payload, or hand back a 304 if the client already has it."""
-    return _cached_or_built(_etag_for(payload), lambda: payload, request, response)
-
-
-def _cacheable_result(result: CacheableResult[T], request: Request, response: Response) -> T | Response:
-    """Like _cacheable, but a 304 is decided from the validator before the payload is built."""
-    return _cached_or_built(_etag_from(result.validator), result.build, request, response)
+    """Like _cacheable_result for a payload already built; its serialized form is the validator."""
+    validator = json.dumps(jsonable_encoder(payload), sort_keys=True, separators=(",", ":"))
+    return _cacheable_result(CacheableResult(validator=validator, build=lambda: payload), request, response)
 
 
 @as_form
