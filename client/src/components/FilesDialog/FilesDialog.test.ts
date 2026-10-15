@@ -49,6 +49,11 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 vi.mock("app");
 
+const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
+vi.mock("@/composables/toast", () => ({
+    useToast: () => ({ error: toastError }),
+}));
+
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
@@ -266,6 +271,23 @@ describe("FilesDialog, file mode", () => {
         // back to the root folder
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
+    });
+
+    it("should show the error and undo the selection when a recursive listing fails", async () => {
+        await utils.openRootDirectory();
+        server.use(
+            http.get("/api/remote_files", ({ response }) => {
+                return response("4XX").json({ err_msg: someErrorText, err_code: 400 }, { status: 400 });
+            }),
+        );
+
+        suppressDebugConsole(); // expecting error message.
+
+        await utils.clickOn(utils.findRenderedDirectory(directoryId));
+        expect(toastError).toHaveBeenCalledWith(someErrorText);
+        expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
+        expect(utils.getSelectionDialog().props("isBusy")).toBe(false);
+        utils.expectOkButtonDisabled();
     });
 });
 
