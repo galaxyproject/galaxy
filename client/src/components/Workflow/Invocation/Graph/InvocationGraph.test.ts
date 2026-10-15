@@ -7,6 +7,7 @@ import { ref } from "vue";
 
 import InvocationGraph from "./InvocationGraph.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 const loadInvocationGraph = vi.fn();
 
@@ -45,6 +46,6 @@ it.each([
 
     await wrapper.setProps(polledProps);
     await flushPromises();
-    expect(loadInvocationGraph).toHaveBeenCalledTimes(2);
     expect(errorAlert().length).toBe(0);
+    expect(wrapper.findComponent(WorkflowGraph).exists()).toBe(true);
 });

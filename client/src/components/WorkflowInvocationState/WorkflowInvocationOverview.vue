@@ -16,7 +16,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Props {
     invocation: WorkflowInvocationElementView;
     stepsJobsSummary?: StepJobSummary[];
-    invocationAndJobTerminal: boolean;
     isFullPage?: boolean;
     isSubworkflow?: boolean;
     invocationMessages?: InvocationMessage[];
