@@ -142,6 +142,20 @@ class ProtectionError(Exception):
     """A user-facing error preparing or finishing a protected job. Never contains key material."""
 
 
+def insecure_destination_error(problems: list[str]) -> ProtectionError:
+    """Refuse a job whose destination can't keep the decrypted data of its inputs safe."""
+    return ProtectionError(
+        "This job uses encrypted datasets but its destination can't run it securely: "
+        + "; ".join(problems)
+        + ". Contact your Galaxy administrator."
+    )
+
+
+def user_message(error: BaseException) -> str:
+    """What users may see of an error: unexpected errors may show decrypted data, only their type is shown."""
+    return str(error) if isinstance(error, ProtectionError) else f"Unexpected error ({type(error).__name__})"
+
+
 @dataclass
 class ProtectionDestination:
     """What the job destination provides, as far as running protected jobs is concerned."""
@@ -200,11 +214,7 @@ class ProtectionDestination:
         if self.recryptor is None:
             problems.append("it has no Crypt4GH recryptor service (crypt4gh_recryptor_url) configured")
         if problems:
-            raise ProtectionError(
-                "This job uses encrypted datasets but its destination can't run it securely: "
-                + "; ".join(problems)
-                + ". Contact your Galaxy administrator."
-            )
+            raise insecure_destination_error(problems)
 
 
 @dataclass
