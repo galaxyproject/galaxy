@@ -1917,8 +1917,7 @@ class CuratedWorkflow(Model):
         title="Imported Workflow ID",
         description=(
             "Encoded id of the requesting user's import of this catalog workflow, if they have one. With several "
-            "imports, the one from the newest release, then the most recently updated. Always null for anonymous "
-            "requests and for workflows hosted here."
+            "imports, the most recent one. Always null for anonymous requests and for workflows hosted here."
         ),
     )
     imported_version: str | None = Field(
