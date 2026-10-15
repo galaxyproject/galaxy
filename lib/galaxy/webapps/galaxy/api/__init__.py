@@ -613,6 +613,8 @@ class APICorsRoute(APIRoute):
                 # Call the handler - it's already a callable that takes (request, exc)
                 response = await handler(request, exc)
             response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+            # The allowed origin is copied from the request, so caches must not share responses across origins
+            response.headers.add_vary_header("Origin")
             response.headers["Access-Control-Max-Age"] = "600"
             return response
 
