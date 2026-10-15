@@ -501,6 +501,25 @@ def test_jobs_refuse_extra_files_protected_for_another_user(tmp_path, creator_ex
         manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
 
 
+def test_jobs_refuse_extra_files_whose_authorization_expires(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    output.dataset.protection_grants = []
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=12)).replace(tzinfo=None)
+    grant = _grant_on(
+        output.dataset,
+        2,
+        extra_files={"index.html": "h"},
+        extra_files_key={"key_ref": "cnk:job", "expires_at": expires_at.isoformat()},
+    )
+    manager = _manager()
+    manager.inputs_needing_decryption = mock.MagicMock(return_value=[output])
+    manager.get_usable_grant = mock.MagicMock(return_value=grant)
+    tool = cast(Tool, Bunch(tool_type="default", config_files=[]))
+
+    with pytest.raises(RequestParameterInvalidException, match="can't be decrypted anymore"):
+        manager.check_job_inputs(cast(User, Bunch(id=2)), tool, {})
+
+
 def test_many_errors_are_summarized(tmp_path):
     output, _ = _protected_output(tmp_path)
     _write_sidecar(str(tmp_path), {}, errors=[f"Output '{i}' could not be protected." for i in range(1000)])
