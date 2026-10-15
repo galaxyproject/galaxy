@@ -124,6 +124,22 @@ describe("ToolCard", () => {
         expect(router.currentRoute.value.fullPath).toBe("/?tool_id=identifier&version=latest");
     });
 
+    it("offers a single focusable toggle for each tool menu", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: { ...wrapper.props("options"), versions: ["1.0", "2.0"] },
+        });
+        for (const menu of [".tool-dropdown", ".tool-versions"]) {
+            const toggle = wrapper.get(`${menu} button.dropdown-toggle`);
+            expect(toggle.find("button, a, [tabindex]").exists()).toBe(false);
+            expect(toggle.attributes("aria-label")).toBeTruthy();
+            await toggle.trigger("keydown", { key: "ArrowDown" });
+            await flushPromises();
+            expect(toggle.attributes("aria-expanded")).toBe("true");
+            await toggle.trigger("keydown", { key: "Escape" });
+        }
+    });
+
     it("does not show newer version badge for the latest lineage version", async () => {
         await wrapper.setProps({
             version: "2.0",

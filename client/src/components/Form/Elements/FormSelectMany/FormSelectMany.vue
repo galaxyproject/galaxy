@@ -340,11 +340,15 @@ const selectedCount = computed(() => {
                     type="search"
                     :state="regexInvalid ? false : undefined"
                     :debounce="300"
-                    :placeholder="props.placeholder" />
+                    :placeholder="props.placeholder"
+                    :aria-label="props.placeholder" />
                 <button
                     class="inline-icon-button"
                     :class="{ hidden: searchValue === '' }"
+                    type="button"
                     title="Clear search"
+                    aria-label="Clear search"
+                    :disabled="searchValue === ''"
                     @click="searchValue = ''">
                     <FontAwesomeIcon :icon="faTimes" />
                 </button>
@@ -393,18 +397,28 @@ const selectedCount = computed(() => {
                 tabindex="-1"
                 @keydown.up.down.prevent
                 @blur="highlightUnselected.abortHighlight">
-                <button
+                <div
                     v-for="(option, i) in unselectedOptionsFiltered"
-                    :id="`${props.id}-unselected-${i}`"
                     :key="option.label"
-                    :tabindex="i === 0 ? 0 : -1"
-                    :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
-                    @click="(e: MouseEvent) => selectOption(e, i)"
-                    @keydown="(e: KeyboardEvent) => optionOnKey('unselected', e, i)">
-                    <slot v-bind="{ option, selected: false }" name="label-area">
-                        {{ option.label }}
-                    </slot>
-                </button>
+                    class="option-row"
+                    :class="{
+                        highlighted: highlightUnselected.highlightedIndexes.includes(i),
+                        'with-custom-label': !!$slots['label-area'],
+                    }"
+                    @click="(e: MouseEvent) => selectOption(e, i)">
+                    <button
+                        :id="`${props.id}-unselected-${i}`"
+                        type="button"
+                        class="option-button"
+                        :tabindex="i === 0 ? 0 : -1"
+                        :aria-label="`Select ${option.label}`"
+                        @click.stop="(e: MouseEvent) => selectOption(e, i)"
+                        @keydown="(e: KeyboardEvent) => optionOnKey('unselected', e, i)">
+                        <FontAwesomeIcon v-if="$slots['label-area']" :icon="faLongArrowAltRight" />
+                        <template v-else>{{ option.label }}</template>
+                    </button>
+                    <slot v-bind="{ option, selected: false }" name="label-area" />
+                </div>
 
                 <span v-if="moreUnselected" class="show-more-indicator">
                     Limited to {{ unselectedDisplayCount }} options.
@@ -429,18 +443,28 @@ const selectedCount = computed(() => {
                 tabindex="-1"
                 @keydown.up.down.prevent
                 @blur="highlightSelected.abortHighlight">
-                <button
+                <div
                     v-for="(option, i) in selectedOptionsFiltered"
-                    :id="`${props.id}-selected-${i}`"
                     :key="option.label"
-                    :tabindex="i === 0 ? 0 : -1"
-                    :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
-                    @click="(e: MouseEvent) => deselectOption(e, i)"
-                    @keydown="(e: KeyboardEvent) => optionOnKey('selected', e, i)">
-                    <slot v-bind="{ option, selected: true }" name="label-area">
-                        {{ option.label }}
-                    </slot>
-                </button>
+                    class="option-row"
+                    :class="{
+                        highlighted: highlightSelected.highlightedIndexes.includes(i),
+                        'with-custom-label': !!$slots['label-area'],
+                    }"
+                    @click="(e: MouseEvent) => deselectOption(e, i)">
+                    <button
+                        :id="`${props.id}-selected-${i}`"
+                        type="button"
+                        class="option-button"
+                        :tabindex="i === 0 ? 0 : -1"
+                        :aria-label="`Deselect ${option.label}`"
+                        @click.stop="(e: MouseEvent) => deselectOption(e, i)"
+                        @keydown="(e: KeyboardEvent) => optionOnKey('selected', e, i)">
+                        <FontAwesomeIcon v-if="$slots['label-area']" :icon="faLongArrowAltLeft" />
+                        <template v-else>{{ option.label }}</template>
+                    </button>
+                    <slot v-bind="{ option, selected: true }" name="label-area" />
+                </div>
 
                 <span v-if="moreSelected" class="show-more-indicator">
                     Limited to {{ selectedDisplayCount }} options.
@@ -524,7 +548,7 @@ const selectedCount = computed(() => {
         justify-content: space-between;
 
         .selection-button {
-            height: 20px;
+            min-height: 24px;
             padding: 0 0.5rem;
             display: flex;
             align-items: center;
@@ -538,38 +562,56 @@ const selectedCount = computed(() => {
     display: flex;
     flex-direction: column;
 
-    button {
-        text-align: start;
-        border: none;
-        padding: 0 0.5rem;
-        background: none;
-        transition: none;
+    .option-row {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
+        min-height: 24px;
+        cursor: pointer;
+    }
+
+    .option-button {
+        min-height: 24px;
+        min-width: 24px;
+        flex-grow: 1;
+    }
+
+    .option-row.with-custom-label .option-button {
+        flex-grow: 0;
+    }
+
+    .option-row {
+        text-align: start;
+        background: none;
 
         &.highlighted {
             background-color: $brand-info;
-            border-radius: 0;
             color: $white;
 
             &:hover,
-            &:focus {
+            &:focus-within {
                 background-color: $brand-primary;
-
-                &::after {
-                    color: $white;
-                }
             }
         }
+    }
+
+    .option-button {
+        border: none;
+        padding: 0 0.5rem;
+        background: none;
+        color: inherit;
+        transition: none;
+        display: flex;
+        justify-content: space-between;
+        text-align: start;
 
         &:focus-visible {
-            outline-color: $brand-primary;
-            outline-width: 2px;
+            outline: 2px solid $brand-primary;
             outline-offset: -2px;
-            outline-style: solid;
             box-shadow: none;
         }
+    }
 
+    .option-row:not(.with-custom-label) .option-button {
         &:hover,
         &:focus {
             background-color: $brand-secondary;
@@ -583,6 +625,17 @@ const selectedCount = computed(() => {
 
         &:focus-visible::after {
             content: "enter to select";
+        }
+    }
+
+    .option-row.highlighted:not(.with-custom-label) .option-button {
+        &:hover,
+        &:focus {
+            background-color: $brand-primary;
+
+            &::after {
+                color: $white;
+            }
         }
     }
 
@@ -605,7 +658,7 @@ const selectedCount = computed(() => {
 }
 
 .options-list.selected {
-    button {
+    .option-row:not(.with-custom-label) .option-button {
         &:hover,
         &:focus {
             &::after {
@@ -621,7 +674,7 @@ const selectedCount = computed(() => {
 
 .bottom-row-info {
     font-style: italic;
-    color: darken($gray-400, 10%);
+    color: $gray-700;
     font-size: 0.75rem;
     padding: 0 0.25rem;
     width: 100%;

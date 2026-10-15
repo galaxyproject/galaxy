@@ -52,6 +52,10 @@ describe("InstallationSettings", () => {
         expect(wrapper.find(".description").text()).toBe("long_description");
         expect(wrapper.find(".revision").text()).toBe("owner rev. changesetRevision");
 
+        const sectionInput = wrapper.get("#repository-target-section");
+        expect(wrapper.get('label[for="repository-target-section"]').text()).toBe("Target Section:");
+        expect(sectionInput.attributes("list")).toBe("sectionSelect");
+
         expect(wrapper.vm.installToolDependencies).toBe(true);
         expect(wrapper.vm.installRepositoryDependencies).toBe(true);
         expect(wrapper.vm.installResolverDependencies).toBe(true);

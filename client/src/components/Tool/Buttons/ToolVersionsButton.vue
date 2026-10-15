@@ -3,7 +3,6 @@ import { faCheck, faCube, faCubes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import GButton from "@/components/BaseComponents/GButton.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
@@ -26,12 +25,10 @@ const availableVersions = computed(() => [...props.versions].reverse());
         variant="link"
         aria-label="Select Versions"
         class="tool-versions"
-        toggle-class="p-0"
+        toggle-class="px-2 py-1"
         size="sm">
         <template v-slot:button-content>
-            <GButton class="d-block" color="blue" transparent size="small" tooltip title="Versions">
-                <FontAwesomeIcon :icon="faCubes" />
-            </GButton>
+            <FontAwesomeIcon :icon="faCubes" />
         </template>
         <GDropdownItem
             v-for="v of availableVersions"
@@ -45,3 +42,10 @@ const availableVersions = computed(() => [...props.versions].reverse());
         </GDropdownItem>
     </GDropdown>
 </template>
+
+<style scoped>
+:deep(.dropdown-toggle) {
+    min-width: 24px;
+    min-height: 24px;
+}
+</style>

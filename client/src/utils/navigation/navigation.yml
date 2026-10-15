@@ -330,7 +330,7 @@ history_panel:
       selector: 'name input'
       type: data-description
     history_name_edit_label: '[data-description="name display"]'
-    history_name_edit_input: '[data-description="name display"] #click-to-edit-input'
+    history_name_edit_input: '[data-description="name display"] input'
     contents: '.history-index .content-item'
     empty_message: '#empty-history-message'
     size: '.history-size'
@@ -400,8 +400,8 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
-    datatype_dropdown: ' #datatype .multiselect'
-    dbkey_dropdown: '#dbkey .multiselect'
+    datatype_dropdown: '#datatype-container .multiselect'
+    dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'
     auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
@@ -574,9 +574,9 @@ histories:
 
 files_dialog:
   selectors:
-    ftp_label: 'a[title="label-gxftp://"]'
+    ftp_label: 'button[title="label-gxftp://"]'
     ftp_details: 'span[title="details-gxftp://"]'
-    row: 'span[title="label-${uri}"]'
+    row: '[title="label-${uri}"]'
     back_btn: '#back-btn'
     options_ready: '[data-description="selection dialog options"] .selection-dialog-table[aria-busy="false"]'
     ok: '[data-description="selection dialog ok"]'
@@ -831,7 +831,7 @@ tool_form:
     parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'
     parameter_text_input: 'div.ui-form-element[id="form-element-${parameter}"] input'
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
-    parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] i.multiselect__tag-icon'
+    parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] button.multiselect__tag-icon'
     parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
     parameter_value_list_input:
       type: xpath
@@ -1185,11 +1185,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Rename dataset']//input
-    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox']"
-    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox'] input"
-    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value='${datatype}']"
-    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value]:not([data-option-value*='${text}' i])"
-    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-selected-value]"
+    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype-container .multiselect__select"
+    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype[role='combobox']"
+    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype-container [data-option-value='${datatype}']"
+    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype-container [data-option-value]:not([data-option-value*='${text}' i])"
+    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype-container [data-selected-value]"
     add_tags_button:
       type: xpath
       selector: >
@@ -1429,7 +1429,7 @@ admin:
         selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
       remove_selected_user:
         type: xpath
-        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/button[contains(@class, 'multiselect__tag-icon')]"
       submit: '#admin-quota-submit'
 
   role:
@@ -1445,7 +1445,7 @@ admin:
         selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
       remove_selected_user:
         type: xpath
-        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/button[contains(@class, 'multiselect__tag-icon')]"
       groups: '#role-groups .multiselect'
       groups_input: '#role-groups input.multiselect__input'
       group_option:
@@ -1456,7 +1456,7 @@ admin:
         selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
       remove_selected_group:
         type: xpath
-        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/button[contains(@class, 'multiselect__tag-icon')]"
       submit: '#role-submit'
 
   user_roles_groups:
@@ -1472,7 +1472,7 @@ admin:
         selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
       remove_selected_role:
         type: xpath
-        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/button[contains(@class, 'multiselect__tag-icon')]"
       groups: '#admin-user-groups .multiselect'
       groups_input: '#admin-user-groups input.multiselect__input'
       group_option:
@@ -1483,7 +1483,7 @@ admin:
         selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
       remove_selected_group:
         type: xpath
-        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/button[contains(@class, 'multiselect__tag-icon')]"
       submit: '#admin-user-roles-groups-submit'
 
   index:
@@ -1569,6 +1569,7 @@ libraries:
       import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal [data-description="selection dialog busy spinners"]'
       import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
       import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[id^="g-table-cell-label-"]'
+      import_datasets_from_history_modal_open_history_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] button.selection-dialog-folder'
       import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       add_to_history_as_collection:

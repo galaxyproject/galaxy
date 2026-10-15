@@ -226,6 +226,7 @@ defineExpose({ showModal, hideModal });
                 <GButton
                     icon-only
                     class="g-modal-close-button"
+                    aria-label="Close dialog"
                     transparent
                     size="large"
                     :disabled="cancelDisabled"

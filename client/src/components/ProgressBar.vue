@@ -30,10 +30,10 @@ const props = withDefaults(defineProps<Props>(), {
             {{ props.note }}<span v-if="props.loading">.<span class="blinking">..</span></span>
         </small>
         <BProgress :max="props.total">
-            <BProgressBar variant="success" :value="props.okCount" />
-            <BProgressBar variant="danger" :value="props.errorCount" />
-            <BProgressBar variant="warning" :value="props.runningCount" />
-            <BProgressBar variant="warning" :value="props.newCount" />
+            <BProgressBar variant="success" :value="props.okCount" :aria-label="`${props.note} Completed`" />
+            <BProgressBar variant="danger" :value="props.errorCount" :aria-label="`${props.note} Failed`" />
+            <BProgressBar variant="warning" :value="props.runningCount" :aria-label="`${props.note} Running`" />
+            <BProgressBar variant="warning" :value="props.newCount" :aria-label="`${props.note} Waiting`" />
         </BProgress>
     </div>
 </template>

@@ -586,48 +586,44 @@ watchImmediate(isPaletteOpen, (open) => {
             </button>
         </div>
 
-        <div
-            :id="listboxId"
-            ref="resultsElement"
-            class="palette-results"
-            role="listbox"
-            :aria-label="localize('Search results')">
-            <div
-                v-for="(section, sectionIdx) in visibleSections"
-                :key="section.id"
-                role="group"
-                :aria-label="localize(section.title)"
-                :data-description="`palette section ${section.id}`">
-                <div class="palette-section-title" aria-hidden="true">{{ localize(section.title) }}</div>
+        <div ref="resultsElement" class="palette-results" tabindex="0">
+            <div :id="listboxId" role="listbox" :aria-label="localize('Search results')">
+                <div
+                    v-for="(section, sectionIdx) in visibleSections"
+                    :key="section.id"
+                    :role="section.items.length ? 'group' : undefined"
+                    :aria-label="section.items.length ? localize(section.title) : undefined"
+                    :data-description="`palette section ${section.id}`">
+                    <div class="palette-section-title" aria-hidden="true">{{ localize(section.title) }}</div>
 
-                <!-- Nothing rendered and nothing answered yet, so the section holds its place -->
-                <template v-if="section.loading && section.items.length === 0">
-                    <div
-                        v-for="row in SKELETON_ROWS"
-                        :key="row"
-                        class="palette-skeleton"
-                        aria-hidden="true"
-                        data-description="palette skeleton">
-                        <span class="skeleton-bar skeleton-title"></span>
+                    <!-- Nothing rendered and nothing answered yet, so the section holds its place -->
+                    <template v-if="section.loading && section.items.length === 0">
+                        <div
+                            v-for="row in SKELETON_ROWS"
+                            :key="row"
+                            class="palette-skeleton"
+                            aria-hidden="true"
+                            data-description="palette skeleton">
+                            <span class="skeleton-bar skeleton-title"></span>
 
-                        <span class="skeleton-bar skeleton-subtitle"></span>
-                    </div>
-                </template>
+                            <span class="skeleton-bar skeleton-subtitle"></span>
+                        </div>
+                    </template>
 
-                <template v-else>
-                    <CommandPaletteItem
-                        v-for="(item, itemIdx) in section.items"
-                        :id="optionId(optionIndex(sectionIdx, itemIdx))"
-                        :key="item.id"
-                        :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
-                        :item="item"
-                        :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
-                        :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
-                        @select="runItem(item, $event)"
-                        @highlight="highlightItem(optionIndex(sectionIdx, itemIdx))" />
-                </template>
+                    <template v-else>
+                        <CommandPaletteItem
+                            v-for="(item, itemIdx) in section.items"
+                            :id="optionId(optionIndex(sectionIdx, itemIdx))"
+                            :key="item.id"
+                            :active="optionIndex(sectionIdx, itemIdx) === selectedIndex"
+                            :item="item"
+                            :secondary-hint="secondaryHint(optionIndex(sectionIdx, itemIdx), item)"
+                            :show-external="showExternalIcon(optionIndex(sectionIdx, itemIdx), item)"
+                            @select="runItem(item, $event)"
+                            @highlight="highlightItem(optionIndex(sectionIdx, itemIdx))" />
+                    </template>
+                </div>
             </div>
-
             <div v-if="scopeHint" class="palette-hint" data-description="palette scope hint">
                 {{ scopeHint }}
             </div>

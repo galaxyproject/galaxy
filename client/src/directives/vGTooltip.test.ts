@@ -162,6 +162,42 @@ describe("vGTooltip", () => {
         vGTooltip.unmounted?.(element, bindingForCleanup(), unusedVNode, null);
     });
 
+    test("describes visible text without replacing its accessible name", async () => {
+        const wrapper = mount(
+            {
+                directives: { "g-tooltip": vGTooltip },
+                data: () => ({ text: "Run tool" }),
+                template: `<button v-g-tooltip title="Execute the analysis">{{ text }}</button>`,
+            } as object,
+            { attachTo: document.body },
+        );
+        expect(wrapper.attributes("aria-label")).toBeUndefined();
+        await wrapper.setData({ text: "" });
+        expect(wrapper.attributes("aria-label")).toBe("Execute the analysis");
+        await wrapper.setData({ text: "Run again" });
+        expect(wrapper.attributes("aria-label")).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    test("preserves explicit names and does not name generic tooltip containers", () => {
+        const wrapper = mount(
+            {
+                directives: { "g-tooltip": vGTooltip },
+                template: `<div>
+                <button v-g-tooltip title="More detail" aria-label="Run" />
+                <button v-g-tooltip title="More detail" aria-labelledby="run-label" />
+                <span id="run-label">Run</span>
+                <span v-g-tooltip title="Badge information"><svg /></span>
+            </div>`,
+            } as object,
+            { attachTo: document.body },
+        );
+        expect(wrapper.get("button[aria-label]").attributes("aria-label")).toBe("Run");
+        expect(wrapper.get("button[aria-labelledby]").attributes("aria-label")).toBeUndefined();
+        expect(wrapper.get("span[title]").attributes("aria-label")).toBeUndefined();
+        wrapper.unmount();
+    });
+
     describe("with a controlled show value", () => {
         function mountControlled(show: boolean) {
             return mount(

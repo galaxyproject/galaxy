@@ -84,6 +84,18 @@ beforeEach(() => {
 });
 
 describe("RoleForm.vue create mode", () => {
+    it("associates the visible field labels with editable controls", async () => {
+        useGroups();
+        const wrapper = await mountTarget();
+        const ids = ["role-name", "role-description", "role-type", "role-groups-select", "role-users-select"];
+        for (const id of ids) {
+            const label = wrapper.find(`label[for="${id}"]`);
+            expect(label.exists(), `Label for ${id}`).toBe(true);
+            expect(label.text().length).toBeGreaterThan(0);
+            expect(wrapper.find(`input[id="${id}"]`).exists(), `Input for ${id}`).toBe(true);
+        }
+    });
+
     it("shows a loading spinner until the groups are loaded", async () => {
         useGroups();
         const wrapper = mount(RoleForm as object, { localVue, stubs: { FontAwesomeIcon: true } });
@@ -119,7 +131,7 @@ describe("RoleForm.vue create mode", () => {
         const wrapper = await mountTarget();
         await wrapper.find("#role-name").setValue("Test Role");
         await wrapper.find("#role-description").setValue("Test Description");
-        const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.attributes("id") === "role-type");
+        const roleType = wrapper.findAllComponents(FormSelection).find((w) => w.props("id") === "role-type");
         roleType!.vm.$emit("input", "user_tool_execute");
         multiselect(wrapper, "role-groups").vm.$emit("update:modelValue", [{ id: "g1", name: "Group 1" }]);
         multiselect(wrapper, "role-users").vm.$emit("update:modelValue", [{ id: "u1", email: "user1@example.org" }]);

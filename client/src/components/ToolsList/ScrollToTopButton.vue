@@ -15,7 +15,10 @@ const props = defineProps<Props>();
         v-g-tooltip.hover
         class="back-to-top"
         :class="{ show: props.offset > 100 }"
-        :title="props.offset > 100 ? 'Scroll To Top' : ''"
+        title="Scroll To Top"
+        aria-label="Scroll to top"
+        :disabled="props.offset <= 100"
+        :tabindex="props.offset <= 100 ? -1 : 0"
         color="blue"
         @click="$emit('click')">
         <FontAwesomeIcon :icon="faChevronUp" />
