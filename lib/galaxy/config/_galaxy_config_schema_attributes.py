@@ -225,6 +225,7 @@ class GalaxyAppConfigurationAttributes:
     upstream_gzip: bool
     upstream_mod_zip: bool
     x_frame_options: str
+    widgets_allowed_origins: str | None
     nginx_upload_store: str | None
     nginx_upload_path: str | None
     nginx_upload_job_files_store: str | None
