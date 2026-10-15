@@ -19,6 +19,7 @@ from galaxy.tool_util.output_checker import (
     merge_runtime_environment_warnings,
     runtime_environment_job_messages,
 )
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.tool_util.parser.yaml import YamlToolSource as YamlParser
@@ -242,6 +243,7 @@ def test_merge_task_runtime_warnings(tmp_path):
 @pytest.mark.parametrize("fmt", ["xml", "yaml"])
 def test_invalid_declarations_are_skipped_individually_at_load(fmt, caplog):
     entries = [{"name": "GOOD", "required": True}, {"name": "PATH"}, {"name": "bad-name"}, {"name": "ALSO_GOOD"}]
+    source: ToolSource
     if fmt == "yaml":
         source = YamlParser({"class": "GalaxyTool", "runtime_environment_variables": entries})
     else:

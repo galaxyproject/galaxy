@@ -5,6 +5,10 @@ import subprocess
 import sys
 from os import getcwd
 from tempfile import mkdtemp
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 import pytest
 
@@ -26,6 +30,10 @@ from galaxy.tool_util.deps.dependencies import (
 from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
+    from galaxy.jobs.runners import BaseJobRunner
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
@@ -328,7 +336,9 @@ def test_required_variable_check_follows_dependency_activation(tmp_path, externa
             RuntimeEnvironmentVariable(name=name, required=True) for name in ["ACTIVATED", "EMPTY", "MISSING"]
         ]
     )
-    command = build_command(Bunch(), wrapper, include_work_dir_outputs=False)
+    command = build_command(
+        cast("BaseJobRunner", Bunch()), cast("MinimalJobWrapper", wrapper), include_work_dir_outputs=False
+    )
     subprocess.run(["sh", "-c", command], cwd=tmp_path, env={}, check=True)
     assert (tmp_path / "outputs" / "tool_stdout").read_text() == "available"
     assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"
@@ -385,7 +395,12 @@ os.execvpe(command[0], command, env)
     runner = Bunch(
         app=Bunch(job_metrics=Bunch(default_job_instrumenter=Bunch(get_configured_plugin=lambda name: None)))
     )
-    command = build_command(runner, wrapper, container=container, include_work_dir_outputs=False)
+    command = build_command(
+        cast("BaseJobRunner", runner),
+        cast("MinimalJobWrapper", wrapper),
+        container=container,
+        include_work_dir_outputs=False,
+    )
     subprocess.run(["sh", "-c", command], cwd=tmp_path, env={}, check=True)
     assert (tmp_path / "outputs" / "tool_stdout").read_text() == "runtime"
     assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"

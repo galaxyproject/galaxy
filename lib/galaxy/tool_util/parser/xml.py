@@ -438,7 +438,7 @@ class XmlToolSource(ToolSource):
 
     def parse_runtime_environment_variables(self, *, strict: bool = True):
         return parse_runtime_environment_variables(
-            (dict(element.attrib) for element in self.root.findall("requirements/runtime_environment_variable")),
+            (dict(element.items()) for element in self.root.findall("requirements/runtime_environment_variable")),
             strict=strict,
         )
 
