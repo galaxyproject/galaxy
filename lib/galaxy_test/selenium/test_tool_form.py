@@ -392,20 +392,13 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         collection_hids = []
         forward_labels = []
         for content in ("first\n", "second\n"):
-            response = self.dataset_collection_populator.upload_collection(
-                history_id,
-                "paired",
-                elements=[
-                    {"src": "pasted", "paste_content": content, "name": "forward", "ext": "txt"},
-                    {"src": "pasted", "paste_content": "reverse\n", "name": "reverse", "ext": "txt"},
-                ],
-                wait=True,
+            response = self.dataset_collection_populator.create_pair_in_history(
+                history_id, contents=[("forward", content), ("reverse", "reverse\n")], wait=True
             )
-            hdca = response.json()["output_collections"][0]
+            hdca = self.dataset_collection_populator.wait_for_fetched_collection(response)
             collection_hids.append(hdca["hid"])
-            details = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca["id"])
             forward = self.dataset_populator.get_history_dataset_details(
-                history_id, content_id=details["elements"][0]["object"]["id"]
+                history_id, content_id=hdca["elements"][0]["object"]["id"]
             )
             forward_labels.append(f"{forward['hid']}: (hidden) {forward['name']}")
 
