@@ -46,16 +46,14 @@ watch(localHideSourceItems, (newValue) => {
             {{ localize("Remove file extensions?") }}
         </GCheckbox>
 
-        <div>
-            <GCheckbox
-                v-model="localHideSourceItems"
-                data-description="hide original elements"
-                name="hide-originals"
-                switch>
-                <HelpText
-                    uri="galaxy.collections.collectionBuilder.hideOriginalElements"
-                    :text="localize('Hide original elements')" />
-            </GCheckbox>
-        </div>
+        <GCheckbox
+            v-model="localHideSourceItems"
+            data-description="hide original elements"
+            name="hide-originals"
+            switch>
+            <HelpText
+                uri="galaxy.collections.collectionBuilder.hideOriginalElements"
+                :text="localize('Hide original elements')" />
+        </GCheckbox>
     </BFormGroup>
 </template>
