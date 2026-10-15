@@ -47,7 +47,7 @@ const browsableRevisions = computed(() => {
 const changesets = computed(() => Object.values(browsableRevisions.value).map((r) => r.changeset_revision))
 const currentRevision = computed(() => props.revision || newestRevision(browsableRevisions.value))
 const revisionUnavailable = computed(() => !!props.revision && !changesets.value.includes(props.revision))
-// The files API 404s deprecated and deleted repositories, as hgweb does
+// The files API 404s deprecated and deleted repositories
 const withdrawn = computed(() => {
     if (repository.value?.deleted) {
         return "deleted"
