@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
-import { BFormCheckbox } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import PortletSection from "../Common/PortletSection.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -41,9 +41,9 @@ watch(props, () => {
         <div v-else-if="simplePermissions && !selectedAdvancedForm">
             <PortletSection :icon="faUsers" :title="title">
                 <div class="mb-3">
-                    <BFormCheckbox v-model="checkedInForm" name="check-button" switch @change="change">
+                    <GCheckbox v-model="checkedInForm" name="check-button" switch @update:model-value="change">
                         Make new datasets private
-                    </BFormCheckbox>
+                    </GCheckbox>
                 </div>
 
                 <a href="javascript:void(0)" @click="selectedAdvancedForm = true">Show advanced options.</a>
