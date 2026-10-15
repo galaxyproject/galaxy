@@ -243,7 +243,7 @@ files-sources-lint-verbose: ## Validate file sources configuration (verbose)
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version
-	$(IN_VENV) ./scripts/release.sh -c
+	$(IN_VENV) ./scripts/release.sh -c $(if $(RELEASE_NEXT),-n $(RELEASE_NEXT))
 
 release-create: ## Create a release branch
 	$(IN_VENV) ./scripts/release.sh
