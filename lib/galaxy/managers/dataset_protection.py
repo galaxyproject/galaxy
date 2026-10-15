@@ -154,13 +154,6 @@ def _shown_name(dataset_instance: DatasetInstance) -> str:
     return shown.name or ""
 
 
-def _copied_extra_files_message(dataset_instance: DatasetInstance) -> str:
-    return (
-        f"The extra files of dataset '{_shown_name(dataset_instance)}' copy encrypted inputs of the job that created "
-        "them and can't be decrypted. Use it in tools accepting encrypted datasets."
-    )
-
-
 def _lacks_extra_files(grant: DatasetProtectionGrant) -> bool:
     """Whether the dataset's extra files were protected by another user's job: users only authorize the primary file."""
     if _grant_data(grant).extra_files:
@@ -169,13 +162,6 @@ def _lacks_extra_files(grant: DatasetProtectionGrant) -> bool:
         _grant_data(other).extra_files
         for other in grant.dataset.protection_grants
         if other.scheme == grant.scheme and other.user_id != grant.user_id
-    )
-
-
-def _lacked_extra_files_message(dataset_instance: DatasetInstance) -> str:
-    return (
-        f"The extra files of dataset '{_shown_name(dataset_instance)}' were encrypted by a job of another user and "
-        "can only be decrypted in their jobs. Use it in tools accepting encrypted datasets."
     )
 
 
@@ -224,6 +210,30 @@ def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> boo
     """Whether extra files kept from an earlier grant use a compute keypair expiring within ``margin``."""
     expiration = _extra_files_expiration(grant)
     return expiration is not None and expiration <= now() + margin
+
+
+_ENCRYPTED_USE_HINT = "It can still be used as-is by tools taking Crypt4GH formats (e.g. c4gh) as input."
+
+
+def _grant_refusal(grant: DatasetProtectionGrant, dataset_instance: DatasetInstance, margin: timedelta) -> str | None:
+    """Why a usable grant still can't decrypt the dataset in a job finishing within ``margin``, if it can't."""
+    name = _shown_name(dataset_instance)
+    if _grant_data(grant).copied_extra_files:
+        return (
+            f"The extra files of dataset '{name}' copy encrypted inputs of the job that created them and can't be "
+            f"decrypted. {_ENCRYPTED_USE_HINT}"
+        )
+    if _lacks_extra_files(grant):
+        return (
+            f"The extra files of dataset '{name}' were encrypted by a job of another user and can only be decrypted "
+            f"in their jobs. {_ENCRYPTED_USE_HINT}"
+        )
+    if _extra_files_expire(grant, margin):
+        return (
+            f"The extra files of dataset '{name}' can't be decrypted anymore: their authorization comes from the job "
+            f"that created them, and it expires before this job can finish. {_ENCRYPTED_USE_HINT}"
+        )
+    return None
 
 
 def _needs_grant(record: ProtectedOutput) -> bool:
@@ -524,10 +534,8 @@ class DatasetProtectionManager:
                     f"Dataset '{_shown_name(dataset_instance)}' is encrypted and you are not authorized to decrypt it in jobs. "
                     "Authorize the dataset first (key icon)."
                 )
-            if _grant_data(grant).copied_extra_files:
-                raise RequestParameterInvalidException(_copied_extra_files_message(dataset_instance))
-            if _lacks_extra_files(grant):
-                raise RequestParameterInvalidException(_lacked_extra_files_message(dataset_instance))
+            if refusal := _grant_refusal(grant, dataset_instance, KEY_SERVICE_EXPIRY_MARGIN):
+                raise RequestParameterInvalidException(refusal)
 
     def authorize_job(
         self,
@@ -565,15 +573,8 @@ class DatasetProtectionManager:
                     f"You are not authorized to decrypt dataset '{_shown_name(dataset_instance)}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
                 )
-            if _grant_data(grant).copied_extra_files:
-                raise ProtectionError(_copied_extra_files_message(dataset_instance))
-            if _lacks_extra_files(grant):
-                raise ProtectionError(_lacked_extra_files_message(dataset_instance))
-            if _extra_files_expire(grant, margin):
-                raise ProtectionError(
-                    f"The extra files of dataset '{_shown_name(dataset_instance)}' can't be decrypted anymore: their "
-                    "authorization comes from the job that created them, and it expires before this job can finish."
-                )
+            if refusal := _grant_refusal(grant, dataset_instance, margin):
+                raise ProtectionError(refusal)
             grants.append(grant)
             protected_inputs.append(
                 self._protected_input(dataset_instance, grant, compute_environment, inputs_directory)
