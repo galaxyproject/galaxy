@@ -4,7 +4,7 @@ import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref, watch } from "vue";
 
-import { fetchDatasetDetails } from "@/api/datasets";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 
 import { stepJobSummaryLookup, useInvocationGraph } from "./useInvocationGraph";
@@ -17,34 +17,40 @@ vi.mock("@/stores/workflowStore", () => ({
         getFullWorkflowCached: vi.fn(async () => ({ steps: workflowSteps.value })),
     }),
 }));
-vi.mock("@/api/datasets", async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    fetchDatasetDetails: vi.fn(),
-}));
 vi.mock("@/components/Workflow/Editor/modules/model", () => ({ fromSimple: vi.fn() }));
 vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
+
+const { server, http } = useServerMock();
 
 /** Sets up the invocation graph composable for testing.
  * Initializes the composable and then loads it via its `loadInvocationGraph` function.
  */
-function setupComposable(invStep?: object, summaries: object[] = [], loadOntoEditor = false) {
+function setupComposable(invStep?: object, summaries: object[] = [], loadOntoEditor = false, invocationFields = {}) {
     const invocation = ref({
         id: "inv1",
         steps: invStep ? { 0: invStep } : {},
         inputs: {},
         input_step_parameters: {},
+        ...invocationFields,
     } as WorkflowInvocationElementView);
     const stepsJobsSummary = ref(summaries as StepJobSummary[]);
-    const { steps, loadInvocationGraph, loading } = useInvocationGraph(
-        invocation,
-        stepsJobsSummary,
-        ref("wf1"),
-        ref(0),
-    );
-    return { steps, loading, invocation, stepsJobsSummary, load: () => loadInvocationGraph(loadOntoEditor) };
+    const { steps, loadInvocationGraph } = useInvocationGraph(invocation, stepsJobsSummary, ref("wf1"), ref(0));
+    return { steps, invocation, stepsJobsSummary, load: () => loadInvocationGraph(loadOntoEditor) };
 }
 
-type DatasetDetails = Awaited<ReturnType<typeof fetchDatasetDetails>>;
+/** A workflow with a dataset input feeding a tool, and an invocation of it that has been scheduled */
+const inputAndToolSteps = {
+    0: { id: 0, type: "data_input", position: { left: 0, top: 0 } },
+    1: { ...toolStep, id: 1 },
+};
+const scheduledInputAndTool = {
+    steps: [
+        { id: "is0", workflow_step_id: 0 },
+        { id: "is1", job_id: "j1" },
+    ],
+    inputs: { 0: { id: "d1", src: "hda" } },
+};
+const inputDataset = { id: "d1", hid: 1, name: "input", state: "ok", history_content_type: "dataset" };
 
 function jobSummary(states: Record<string, number>, populated_state = "ok", id = "j1") {
     return { id, model: "Job", states, populated_state } as StepJobSummary;
@@ -229,21 +235,6 @@ describe.each([
         expect(steps.value[0]?.state).toBe("running");
     });
 
-    it("does not toggle loading when following polls", async () => {
-        const { loading, stepsJobsSummary, load } = setupComposable(
-            { job_id: "j1" },
-            [jobSummary({ queued: 1 }, "scheduled")],
-            loadOntoEditor,
-        );
-        await load();
-        const loadingValues: boolean[] = [];
-        watch(loading, (value) => loadingValues.push(value), { flush: "sync" });
-
-        stepsJobsSummary.value = [jobSummary({ ok: 1 })];
-        await flushPromises();
-        expect(loadingValues).toEqual([]);
-    });
-
     it("writes nothing to the steps when the polled data is unchanged", async () => {
         const { steps, invocation, stepsJobsSummary, load } = setupComposable(
             { job_id: "j1" },
@@ -264,40 +255,33 @@ describe.each([
     });
 
     it("keeps updating later steps when an input fetch fails, and retries the input", async () => {
-        workflowSteps.value = {
-            0: { id: 0, type: "data_input", position: { left: 0, top: 0 } },
-            1: { ...toolStep, id: 1 },
-        };
+        workflowSteps.value = inputAndToolSteps;
         const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
         await load();
-        vi.mocked(fetchDatasetDetails).mockRejectedValueOnce(new Error("429 Too Many Requests"));
+        server.use(
+            http.get("/api/datasets/{dataset_id}", ({ response }) =>
+                response("4XX").json({ err_code: 403002, err_msg: "Dataset is not accessible" }, { status: 403 }),
+            ),
+        );
         const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-        // the invocation is scheduled: both steps appear, but the input's dataset can't be fetched yet
+        // the invocation is scheduled: both steps appear, but the input's dataset can't be fetched
         invocation.value = {
             ...invocation.value,
-            steps: [
-                { id: "is0", workflow_step_id: 0 },
-                { id: "is1", job_id: "j1" },
-            ],
-            inputs: { 0: { id: "d1", src: "hda" } },
+            ...scheduledInputAndTool,
         } as unknown as WorkflowInvocationElementView;
         stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
-        await flushPromises();
+        await vi.waitFor(() =>
+            expect(consoleError).toHaveBeenCalledWith("Failed to update invocation graph steps", expect.any(Error)),
+        );
         expect(steps.value[1]?.state).toBe("running");
         expect(steps.value[0]?.nodeText).toBeUndefined();
-        expect(consoleError).toHaveBeenCalled();
 
-        vi.mocked(fetchDatasetDetails).mockResolvedValueOnce({
-            id: "d1",
-            hid: 1,
-            name: "input",
-            state: "ok",
-            history_content_type: "dataset",
-        } as DatasetDetails);
+        server.use(
+            http.get("/api/datasets/{dataset_id}", ({ response }) => response.untyped(HttpResponse.json(inputDataset))),
+        );
         stepsJobsSummary.value = [jobSummary({ ok: 1 })];
-        await flushPromises();
-        expect(steps.value[0]?.nodeText).toBe("1: <b>input</b>");
+        await vi.waitFor(() => expect(steps.value[0]?.nodeText).toBe("1: <b>input</b>"));
         expect(steps.value[1]?.state).toBe("ok");
         consoleError.mockRestore();
     });
@@ -320,38 +304,33 @@ describe.each([
     });
 
     it("applies the latest jobs summary that arrives while an update is running", async () => {
-        workflowSteps.value = {
-            0: { id: 0, type: "data_input", position: { left: 0, top: 0 } },
-            1: { ...toolStep, id: 1 },
-        };
-        let resolveDataset: (value: DatasetDetails) => void = () => {};
-        vi.mocked(fetchDatasetDetails).mockReturnValueOnce(new Promise((resolve) => (resolveDataset = resolve)));
-        const invocation = ref({
-            id: "inv1",
-            steps: [
-                { id: "is0", workflow_step_id: 0 },
-                { id: "is1", job_id: "j1" },
-            ],
-            inputs: { 0: { id: "d1", src: "hda" } },
-            input_step_parameters: {},
-        } as unknown as WorkflowInvocationElementView);
-        const stepsJobsSummary = ref([jobSummary({ queued: 1 }, "scheduled")]);
-        const { steps, loadInvocationGraph } = useInvocationGraph(invocation, stepsJobsSummary, ref("wf1"), ref(0));
+        workflowSteps.value = inputAndToolSteps;
+        let datasetRequested = () => {};
+        const requested = new Promise<void>((resolve) => (datasetRequested = resolve));
+        let releaseDataset = () => {};
+        const released = new Promise<void>((resolve) => (releaseDataset = resolve));
+        server.use(
+            http.get("/api/datasets/{dataset_id}", async ({ response }) => {
+                datasetRequested();
+                await released;
+                return response.untyped(HttpResponse.json(inputDataset));
+            }),
+        );
+        const { steps, stepsJobsSummary, load } = setupComposable(
+            undefined,
+            [jobSummary({ queued: 1 }, "scheduled")],
+            loadOntoEditor,
+            scheduledInputAndTool,
+        );
 
         // the first load waits on the input dataset while new polls land
-        const loaded = loadInvocationGraph(loadOntoEditor);
-        await flushPromises();
+        const loaded = load();
+        await requested;
         stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
         await flushPromises();
         stepsJobsSummary.value = [jobSummary({ ok: 1 })];
         await flushPromises();
-        resolveDataset({
-            id: "d1",
-            hid: 1,
-            name: "input",
-            state: "ok",
-            history_content_type: "dataset",
-        } as DatasetDetails);
+        releaseDataset();
         await loaded;
         await flushPromises();
 

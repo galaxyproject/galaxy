@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import InvocationGraph from "./InvocationGraph.vue";
@@ -20,7 +20,15 @@ vi.mock("@/composables/useInvocationGraph", () => ({
 }));
 vi.mock("@/composables/datatypesMapper", () => ({ useDatatypesMapper: () => ({ datatypesMapper: ref({}) }) }));
 
-it("retries a failed graph load when the parent polls new data", async () => {
+beforeEach(() => {
+    loadInvocationGraph.mockReset();
+});
+
+// The parent polls the invocation and the jobs summary separately; either may be the only one still polling
+it.each([
+    ["jobs summary", { stepsJobsSummary: [] }],
+    ["invocation", { invocation: { id: "inv1", steps: [] } }],
+])("retries a failed graph load when the parent polls a new %s", async (_name, polledProps) => {
     loadInvocationGraph.mockRejectedValueOnce(new Error("429 Too Many Requests")).mockResolvedValue(undefined);
     const wrapper: VueWrapper = shallowMount(InvocationGraph as object, {
         propsData: {
@@ -35,7 +43,7 @@ it("retries a failed graph load when the parent polls new data", async () => {
     const errorAlert = () => wrapper.findAllComponents(GAlert).filter((w) => w.props("variant") === "danger");
     expect(errorAlert().at(0)!.text()).toContain("429 Too Many Requests");
 
-    await wrapper.setProps({ stepsJobsSummary: [] });
+    await wrapper.setProps(polledProps);
     await flushPromises();
     expect(loadInvocationGraph).toHaveBeenCalledTimes(2);
     expect(errorAlert().length).toBe(0);

@@ -110,21 +110,35 @@ describe("rerunWhileBusy", () => {
         expect(task).toHaveBeenCalledTimes(1);
     });
 
-    it("runs once more after the current run for any calls made while it runs", async () => {
+    it("runs once more after the current run for any calls made while it runs, and all callers wait for it", async () => {
         const first = deferred<void>();
-        const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
+        const second = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
         const run = rerunWhileBusy(task);
-        const calls = [run(), run(), run()];
+        let settled = 0;
+        const calls = [run(), run(), run()].map((call) => call.then(() => settled++));
         expect(task).toHaveBeenCalledTimes(1);
+
         first.resolve();
+        await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(2));
+        expect(settled).toBe(0);
+
+        second.resolve();
         await Promise.all(calls);
+        expect(settled).toBe(3);
         expect(task).toHaveBeenCalledTimes(2);
     });
 
-    it("rejects waiting callers and runs again on the next call", async () => {
-        const task = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValue(undefined);
+    it("rejects every waiting caller and runs again on the next call", async () => {
+        const first = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
         const run = rerunWhileBusy(task);
-        await expect(run()).rejects.toThrow("boom");
+        const waiting = [run(), run()];
+
+        first.reject(new Error("boom"));
+        await Promise.all(waiting.map((call) => expect(call).rejects.toThrow("boom")));
+        expect(task).toHaveBeenCalledTimes(1);
+
         await run();
         expect(task).toHaveBeenCalledTimes(2);
     });
