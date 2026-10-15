@@ -156,6 +156,14 @@ class WorkflowsService(ServiceBase):
             workflow = stored_workflow.get_internal_version_by_id(workflow_id)
         else:
             workflow = stored_workflow.get_internal_version(version)
+        workflow_scheduler_id = payload.scheduler
+        if (
+            workflow_scheduler_id
+            and workflow_scheduler_id not in trans.app.workflow_scheduling_manager.workflow_schedulers
+        ):
+            raise exceptions.RequestParameterInvalidException(
+                f"Unknown workflow scheduler '{workflow_scheduler_id}' specified."
+            )
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
@@ -186,7 +194,6 @@ class WorkflowsService(ServiceBase):
 
         invocations = []
         for run_config in run_configs:
-            workflow_scheduler_id = payload.scheduler
             # TODO: workflow scheduler hints
             work_request_params = dict(scheduler=workflow_scheduler_id)
             workflow_invocation = queue_invoke(
