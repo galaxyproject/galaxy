@@ -1361,21 +1361,33 @@ def test_sort_curated_puts_runnable_entries_first_by_default() -> None:
 
 
 def test_sort_curated_orders_blocked_entries_by_how_many_tools_they_lack() -> None:
-    """On an instance where nothing runs yet, the closest-to-runnable workflows lead."""
+    """On an instance where nothing runs yet, the closest-to-runnable workflows lead.
+
+    Counted per tool, as the card's "Needs N tools" is: two versions of one tool are one install.
+    """
+    fastp = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
     entries = [
         {"id": "needs-three", "update_time": "2026-03-01T00:00:00"},
         {"id": "needs-one-old", "update_time": "2024-01-01T00:00:00"},
+        {"id": "needs-one-in-two-versions", "update_time": "2024-06-01T00:00:00"},
         {"id": "needs-one-new", "update_time": "2025-01-01T00:00:00"},
         {"id": "needs-two", "update_time": "2026-02-01T00:00:00"},
     ]
     missing: dict[str, list[str] | None] = {
         "needs-three": ["a", "b", "c"],
         "needs-one-old": ["a"],
+        "needs-one-in-two-versions": [f"{fastp}/0.23.4", f"{fastp}/0.24.0"],
         "needs-one-new": ["b"],
         "needs-two": ["a", "b"],
     }
     ordered = curated.sort_curated(entries, None, None, missing)
-    assert [entry["id"] for entry in ordered] == ["needs-one-new", "needs-one-old", "needs-two", "needs-three"]
+    assert [entry["id"] for entry in ordered] == [
+        "needs-one-new",
+        "needs-one-in-two-versions",
+        "needs-one-old",
+        "needs-two",
+        "needs-three",
+    ]
 
 
 def test_sort_curated_runnable_first_is_independent_of_input_order() -> None:

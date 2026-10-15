@@ -713,7 +713,11 @@ def sort_curated(
         def tools_needed(entry: dict[str, Any]) -> float:
             missing = missing_tools.get(entry.get("id") or "")
             # Unknown goes last: no badge vouches for it.
-            return len(missing) if missing is not None else float("inf")
+            if missing is None:
+                return float("inf")
+            # By tool, not by version: two missing versions of one tool are one install,
+            # and the card's "Needs N tools" counts them as one too.
+            return len({_tool_lineage(tool_id) for tool_id in missing})
 
         # Stable, so the id tiebreaker inside each group survives and pagination
         # stays deterministic. Counting rather than just runnable-or-not matters
