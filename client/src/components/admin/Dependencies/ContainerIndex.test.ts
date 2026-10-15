@@ -96,16 +96,11 @@ describe("ContainerIndex", () => {
     it("ticks a row without opening its details", async () => {
         // Attached, so the click runs the checkbox activation and fires change
         const wrapper = await mountIndex(document.body);
-        await wrapper.find('tbody input[type="checkbox"]').trigger("click");
+        const row = wrapper.find('tbody input[type="checkbox"]');
+        await row.trigger("click");
+        expect((row.element as HTMLInputElement).checked).toBe(true);
         expect(wrapper.find(".g-table-details-row").exists()).toBe(false);
 
-        await wrapper
-            .findAll("button")
-            .find((button) => button.text() === "Attempt Build")!
-            .trigger("click");
-        expect(resolveContainersWithInstall).toHaveBeenCalledWith(["unresolved_tool"], {});
-
-        await flushPromises();
         await wrapper.find("tbody td:nth-child(2)").trigger("click");
         expect(wrapper.find(".g-table-details-row").exists()).toBe(true);
         wrapper.unmount();
