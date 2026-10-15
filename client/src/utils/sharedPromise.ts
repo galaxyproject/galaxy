@@ -53,15 +53,13 @@ export function rerunWhileBusy(fn: () => Promise<void>): () => Promise<void> {
             rerun = true;
         } else {
             running = (async () => {
-                try {
-                    do {
-                        rerun = false;
-                        await fn();
-                    } while (rerun);
-                } finally {
-                    running = undefined;
-                }
-            })();
+                do {
+                    rerun = false;
+                    await callAsync(fn);
+                } while (rerun);
+            })().finally(() => {
+                running = undefined;
+            });
         }
         return running;
     };

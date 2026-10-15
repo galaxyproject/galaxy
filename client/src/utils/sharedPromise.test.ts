@@ -142,4 +142,18 @@ describe("rerunWhileBusy", () => {
         await run();
         expect(task).toHaveBeenCalledTimes(2);
     });
+
+    it("turns a synchronous throw into a rejection, then runs again on the next call", async () => {
+        const task = vi
+            .fn()
+            .mockImplementationOnce(() => {
+                throw new Error("boom");
+            })
+            .mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        await expect(run()).rejects.toThrow("boom");
+
+        await run();
+        expect(task).toHaveBeenCalledTimes(2);
+    });
 });
