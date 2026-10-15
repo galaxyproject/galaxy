@@ -134,7 +134,7 @@
             @user-clicked="(user) => appendTagFilter('user', user)">
             <template v-slot:head(selected)>
                 <GCheckbox
-                    v-model="allSelected"
+                    :model-value="allSelected"
                     aria-label="Select all jobs"
                     :disabled="!unfinishedJobs.length"
                     :indeterminate="indeterminate"
@@ -248,8 +248,6 @@ export default {
             ],
             selectedStopJobIds: [],
             selectedJobId: null,
-            allSelected: false,
-            indeterminate: false,
             stopMessage: "",
             message: "",
             status: "info",
@@ -262,6 +260,12 @@ export default {
         };
     },
     computed: {
+        allSelected() {
+            return this.unfinishedJobs.length > 0 && this.selectedStopJobIds.length === this.unfinishedJobs.length;
+        },
+        indeterminate() {
+            return this.selectedStopJobIds.length > 0 && !this.allSelected;
+        },
         finishedTableCaption() {
             return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
         },
@@ -292,18 +296,6 @@ export default {
         cutoffMin(newVal) {
             this.update();
         },
-        selectedStopJobIds(newVal) {
-            if (newVal.length === 0) {
-                this.indeterminate = false;
-                this.allSelected = false;
-            } else if (newVal.length === this.unfinishedJobs.length) {
-                this.indeterminate = false;
-                this.allSelected = true;
-            } else {
-                this.indeterminate = true;
-                this.allSelected = false;
-            }
-        },
         jobs(newVal) {
             const unfinishedJobs = [];
             const finishedJobs = [];
@@ -316,7 +308,6 @@ export default {
             });
             this.unfinishedJobs = unfinishedJobs;
             this.finishedJobs = finishedJobs;
-            // Always reassign so the select-all state is recomputed against the new list.
             const unfinishedIds = unfinishedJobs.map((job) => job.id);
             this.selectedStopJobIds = this.selectedStopJobIds.filter((id) => unfinishedIds.includes(id));
         },
