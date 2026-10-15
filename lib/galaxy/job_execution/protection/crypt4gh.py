@@ -27,12 +27,13 @@ from concurrent.futures import (
     wait,
 )
 from contextlib import contextmanager
-from typing import (
-    Any,
-    BinaryIO,
-)
+from typing import BinaryIO
 
 import requests
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
 from galaxy.util.crypt4gh import (
     check_crypt4gh,
@@ -65,6 +66,24 @@ ERROR_MESSAGES = {
     410: "The compute key of this dataset has expired, authorize the dataset again.",
     422: "The key service could not open the header of this dataset, authorize the dataset again.",
 }
+
+
+class RecryptorResponse(BaseModel):
+    """A header the recryptor service re-encrypted, with the compute keypair it used."""
+
+    crypt4gh_header: str
+    crypt4gh_compute_keypair_id: str | None = None
+    crypt4gh_compute_keypair_expiration_date: str | None = None
+    # Only when re-encrypting to a job key.
+    crypt4gh_compute_public_key: str | None = None
+
+
+class OutputKey(BaseModel):
+    """The compute keypair outputs get encrypted to, as found when staging the inputs."""
+
+    key_ref: str
+    compute_public_key: str
+    compute_keypair_expiration_date: str | None = None
 
 
 def format_public_key(public_key: bytes) -> str:
@@ -107,7 +126,7 @@ class RecryptorClient:
         session: Session = self._local.session
         return session
 
-    def recrypt_header_to_job_key(self, header: str, key_ref: str, job_public_key: str) -> dict[str, Any]:
+    def recrypt_header_to_job_key(self, header: str, key_ref: str, job_public_key: str) -> RecryptorResponse:
         return self._post(
             "recrypt_header_to_job_key",
             {
@@ -117,7 +136,7 @@ class RecryptorClient:
             },
         )
 
-    def recrypt_header_to_user_key(self, header: str, key_ref: str) -> dict[str, Any]:
+    def recrypt_header_to_user_key(self, header: str, key_ref: str) -> RecryptorResponse:
         return self._post(
             "recrypt_header_to_user_key",
             {"crypt4gh_header": header, "crypt4gh_compute_keypair_id": key_ref},
@@ -141,7 +160,7 @@ class RecryptorClient:
                 )
         self._tls_files_checked = True
 
-    def _post(self, route: str, payload: dict[str, str]) -> dict[str, Any]:
+    def _post(self, route: str, payload: dict[str, str]) -> RecryptorResponse:
         self._check_tls_files()
         url = f"{self.settings.url.rstrip('/')}/{route}"
         verify: bool | str = self.settings.ca_cert or True
@@ -162,8 +181,11 @@ class RecryptorClient:
                 log.warning("Key service request to %s failed (%s), retrying", route, type(e).__name__)
             else:
                 if response.status_code == 200:
-                    result: dict[str, Any] = response.json()
-                    return result
+                    try:
+                        return RecryptorResponse.model_validate_json(response.content)
+                    except ValidationError:
+                        # Errors would show the headers.
+                        raise ProtectionError(f"The key service returned an invalid response (from {route}).") from None
                 if response.status_code < 500 or last_attempt:
                     message = ERROR_MESSAGES.get(response.status_code, "The key service rejected the request")
                     raise ProtectionError(f"{message} (HTTP {response.status_code} from {route})")
@@ -197,11 +219,11 @@ def _decrypt_workers() -> int:
     return max(1, min(slots, MAX_CONCURRENT_REQUESTS))
 
 
-def _decrypt_staged(protected_file: ProtectedFile, response: dict[str, Any], job_secret_key: bytes) -> None:
+def _decrypt_staged(protected_file: ProtectedFile, response: RecryptorResponse, job_secret_key: bytes) -> None:
     """Decrypt an input next to the tool, with the header the key service recrypted for the job key."""
     from crypt4gh import lib as crypt4gh_lib
 
-    job_header = base64.b64decode(response["crypt4gh_header"])
+    job_header = base64.b64decode(response.crypt4gh_header)
     os.makedirs(os.path.dirname(protected_file.staged_path), exist_ok=True)
     with (
         _body_with_header(protected_file.source_path, job_header) as stream,
@@ -247,29 +269,27 @@ class Crypt4GHJobRuntime:
     def __init__(self, plan: ProtectionPlan, client: RecryptorClient | None = None):
         self.plan = plan
         self.client = client or RecryptorClient(plan.recryptor)
-        self._state: dict[str, Any] | None = None
+        self._output_key: OutputKey | None = None
         # Created upfront, outputs may be protected concurrently.
         self._writer_secret_key = os.urandom(32)
 
     @property
-    def state(self) -> dict[str, Any]:
-        """The compute key outputs get encrypted to, as found when staging the inputs."""
-        if self._state is None:
+    def output_key(self) -> OutputKey:
+        if self._output_key is None:
             state_path = os.path.join(self.plan.protected_directory, STATE_FILENAME)
             if not os.path.exists(state_path):
                 raise ProtectionError("The protected inputs of this job were not staged, outputs can't be protected.")
             with open(state_path) as f:
-                self._state = json.load(f)
-        return self._state
+                self._output_key = OutputKey.model_validate_json(f.read())
+        return self._output_key
 
     @property
     def key_ref(self) -> str:
-        key_ref: str = self.state["key_ref"]
-        return key_ref
+        return self.output_key.key_ref
 
     @property
     def key_expiration(self) -> str | None:
-        return self.state.get("compute_keypair_expiration_date")
+        return self.output_key.compute_keypair_expiration_date
 
     def protect_file(self, path: str) -> ProtectedFileResult:
         """Encrypt ``path`` in place for the job's user.
@@ -290,7 +310,7 @@ class Crypt4GHJobRuntime:
             with open(path, "rb") as f:
                 existing_header = read_crypt4gh_header(f)
             return ProtectedFileResult(header_sha256=hashlib.sha256(existing_header).hexdigest(), compute_header=None)
-        compute_public_key = parse_public_key(self.state["compute_public_key"])
+        compute_public_key = parse_public_key(self.output_key.compute_public_key)
         directory, name = os.path.split(path)
         protected_path = os.path.join(directory, f".{name}.c4gh")
         try:
@@ -305,7 +325,7 @@ class Crypt4GHJobRuntime:
             )
             encoded_compute_header = base64.b64encode(compute_header).decode()
             response = self.client.recrypt_header_to_user_key(encoded_compute_header, self.key_ref)
-            user_header = base64.b64decode(response["crypt4gh_header"])
+            user_header = base64.b64decode(response.crypt4gh_header)
             if read_crypt4gh_header(io.BytesIO(user_header)) != user_header:
                 raise ProtectionError("The key service returned an invalid header.")
             with open(path, "rb") as plaintext, open(protected_path, "wb") as protected:
@@ -345,7 +365,7 @@ class Crypt4GHJobRuntime:
                         files,
                     )
                 )
-            output_response = self._check_responses(files, responses)
+            output_key = self._check_responses(files, responses)
             # Large inputs (e.g. paired reads) are decrypted concurrently, within the job's slots. Every file
             # finishes before failing, so the cleanup doesn't race with files still being written.
             with ThreadPoolExecutor(max_workers=_decrypt_workers()) as executor:
@@ -356,7 +376,7 @@ class Crypt4GHJobRuntime:
                 wait(futures)
                 for future in futures:
                     future.result()
-            self._write_state(output_response)
+            self._write_state(output_key)
         except ProtectionError:
             self.cleanup_inputs()
             raise
@@ -382,32 +402,30 @@ class Crypt4GHJobRuntime:
                     raise ProtectionError("A protected input has extra files that this job can't decrypt.")
         return files
 
-    def _check_responses(
-        self, files: list[tuple[ProtectedFile, str]], responses: list[dict[str, Any]]
-    ) -> dict[str, Any]:
-        """Check the service answered for the requested keypairs, return the response for the output keypair."""
-        output_response = None
+    def _check_responses(self, files: list[tuple[ProtectedFile, str]], responses: list[RecryptorResponse]) -> OutputKey:
+        """Check the service answered for the requested keypairs, return the keypair outputs get encrypted to."""
+        output_key = None
         for (_, key_ref), response in zip(files, responses):
-            if response.get("crypt4gh_compute_keypair_id") != key_ref:
+            if response.crypt4gh_compute_keypair_id != key_ref:
                 raise ProtectionError("The key service answered with an unexpected compute key.")
-            parse_public_key(response.get("crypt4gh_compute_public_key") or "")
+            compute_public_key = response.crypt4gh_compute_public_key or ""
+            parse_public_key(compute_public_key)
             if key_ref == self.plan.output_key_ref:
-                output_response = response
-        if output_response is None:
+                output_key = OutputKey(
+                    key_ref=key_ref,
+                    compute_public_key=compute_public_key,
+                    compute_keypair_expiration_date=response.crypt4gh_compute_keypair_expiration_date,
+                )
+        if output_key is None:
             raise ProtectionError("No protected input uses the compute key selected for the outputs.")
-        if not output_response.get("crypt4gh_compute_keypair_expiration_date"):
+        if not output_key.compute_keypair_expiration_date:
             # Galaxy couldn't record until when the outputs can be decrypted in further jobs.
             raise ProtectionError("The key service didn't return the expiration date of the compute key.")
-        return output_response
+        return output_key
 
-    def _write_state(self, response: dict[str, Any]) -> None:
-        state = {
-            "key_ref": self.plan.output_key_ref,
-            "compute_public_key": response["crypt4gh_compute_public_key"],
-            "compute_keypair_expiration_date": response.get("crypt4gh_compute_keypair_expiration_date"),
-        }
+    def _write_state(self, output_key: OutputKey) -> None:
         with open(os.path.join(self.plan.protected_directory, STATE_FILENAME), "w") as f:
-            json.dump(state, f)
+            f.write(output_key.model_dump_json())
 
     def cleanup_inputs(self) -> None:
         if os.path.exists(self.plan.inputs_directory):
