@@ -529,7 +529,10 @@ steps:
         job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
 
         assert job["state"] == "error"
-        assert "Job setup failed: Could not decrypt the protected inputs" in output["misc_info"]
+        assert (
+            "Galaxy failed to prepare this job, so the tool was not run: Could not decrypt the protected inputs"
+            in output["misc_info"]
+        )
         assert "could not open the header" in output["misc_info"]
         assert self.service.routes_called() == ["recrypt_header_to_job_key"]
 
