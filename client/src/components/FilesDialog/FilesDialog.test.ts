@@ -49,6 +49,11 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 vi.mock("app");
 
+const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
+vi.mock("@/composables/toast", () => ({
+    useToast: () => ({ error: toastError }),
+}));
+
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
@@ -273,7 +278,8 @@ describe("FilesDialog, file mode", () => {
         suppressDebugConsole(); // expecting error message.
 
         await utils.clickOn(utils.findRenderedDirectory(directoryId));
-        utils.expectErrorMessage();
+        expect(toastError).toHaveBeenCalledWith(someErrorText);
+        expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
         expect(utils.getSelectionDialog().props("isBusy")).toBe(false);
         utils.expectOkButtonDisabled();
     });
