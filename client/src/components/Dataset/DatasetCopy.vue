@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormInput } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
@@ -11,6 +11,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -207,11 +208,11 @@ defineExpose({
                     <div v-else-if="sourceContents.length === 0" class="text-muted">This history has no datasets.</div>
                     <div v-else>
                         <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
-                            <BFormCheckbox
+                            <GCheckbox
                                 v-model="sourceContentSelection[`${item.type}|${item.id}`]"
                                 :data-description="`copy ${item.type}|${item.id}`">
                                 {{ item.hid }}: {{ item.name }}
-                            </BFormCheckbox>
+                            </GCheckbox>
                         </div>
                     </div>
                 </div>
@@ -247,14 +248,14 @@ defineExpose({
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
                     <div v-if="histories.length === 0" class="text-muted">There are no histories.</div>
                     <div v-for="h in histories" :key="h.id" class="d-flex align-items-center mb-1">
-                        <BFormCheckbox
+                        <GCheckbox
                             v-model="targetMultiSelections[h.id]"
-                            @change="
+                            @update:model-value="
                                 newHistoryName = '';
                                 targetSingleHistory = null;
                             ">
                             {{ h.name }}
-                        </BFormCheckbox>
+                        </GCheckbox>
                     </div>
                 </div>
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
