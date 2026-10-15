@@ -274,7 +274,7 @@ defineExpose({
             @sort-changed="onSort">
             <template v-slot:head(selected)>
                 <GCheckbox
-                    v-model="allSelected"
+                    :model-value="allSelected"
                     :aria-label="localize('Select all items')"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
