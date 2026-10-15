@@ -430,8 +430,10 @@ however, the container keeps running after Galaxy considers the job finished
 (see `#13511 <https://github.com/galaxyproject/galaxy/issues/13511>`__). If
 ``docker ps`` on your compute nodes shows containers named with a 32 character
 hex string (the names Galaxy gives job containers) whose jobs are no longer
-running, you can clean them up from the DRM's side. usegalaxy.org runs a Slurm
-epilog script as a safety net for exactly this reason.
+running, you can clean them up from the DRM's side. usegalaxy.org runs a
+`Slurm epilog script
+<https://github.com/galaxyproject/infrastructure-playbook/blob/8e96583f146bb79c0d5e3d8b8c3f4f975163c7af/files/slurm/epilog.sh>`__
+as a safety net for exactly this reason; the script below is adapted from it.
 
 For InteractiveTools Galaxy writes ``configs/container_config.json`` to the
 job directory, and its ``container_name`` field holds the name the container
