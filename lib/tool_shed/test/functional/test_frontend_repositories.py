@@ -160,6 +160,21 @@ class TestFrontendRepositories(PlaywrightTestCase):
         readme.scroll_into_view_if_needed()
         self.screenshot("repository_latest_revision_readme")
 
+    def test_explore_menu_logged_in_links_changelog(self):
+        self.login()
+        category = self.populator.new_category(prefix=TEST_CATEGORY_PREFIX)
+        repository = self.populator.setup_test_data_repo("column_maker", category_id=category.id)
+        self.visit_url(f"/repositories/{repository.id}")
+        browser = self._playwright_browser
+
+        browser.open_explore_repository_menu()
+        expect(browser.explore_repository_menu_item("Contents")).to_be_visible()
+        changelog = browser.explore_repository_menu_item("Changelog")
+        expect(changelog).to_be_visible()
+        expect(changelog).to_have_attribute("href", f"/repos/{repository.owner}/{repository.name}/shortlog")
+        self.screenshot("repository_explore_menu_logged_in")
+
+
 class TestFrontendRepositoryContents(PlaywrightTestCase):
     """Anonymous browsing of repository files (no login in this class's browser)."""
 
