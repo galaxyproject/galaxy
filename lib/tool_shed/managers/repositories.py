@@ -56,7 +56,6 @@ from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
-from tool_shed.util.hg_util import changectx_for_revision
 from tool_shed.util.metadata_util import (
     build_invalid_tools,
     get_all_dependencies,
@@ -568,7 +567,7 @@ def _browsable_changectx(app: ToolShedApp, repository: Repository, changeset_rev
     )
     if not metadata_revisions or not all(rm.downloadable and not rm.malicious for rm in metadata_revisions):
         raise not_found
-    ctx = changectx_for_revision(repository.hg_repo, changeset_revision)
+    ctx = hg_util.changectx_for_revision(repository.hg_repo, changeset_revision)
     if ctx is None:
         log.error(
             "Repository %s has downloadable metadata for revision %s but hg cannot find it.",
