@@ -5,6 +5,7 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
@@ -51,6 +52,8 @@ if TYPE_CHECKING:
 INPUT_STEP_TYPES = ["data_input", "data_collection_input", "parameter_input"]
 
 log = logging.getLogger(__name__)
+
+InputT = TypeVar("InputT")
 
 
 class WorkflowRunConfig:
@@ -312,6 +315,17 @@ def _get_target_history(
     return target_history
 
 
+def _get_input_or_not_found(
+    trans: "GalaxyWebTransaction", model_class: type[InputT], data_request, step: "WorkflowStep"
+) -> InputT:
+    item = trans.sa_session.get(model_class, trans.security.decode_id(data_request.id))
+    if item is None:
+        raise exceptions.ObjectNotFound(
+            f"{step.label or step.order_index + 1}: workflow input '{data_request.id}' ({data_request.src}) not found"
+        )
+    return item
+
+
 def build_workflow_run_configs(
     trans: "GalaxyWebTransaction", workflow: "Workflow", payload: dict[str, Any]
 ) -> list[WorkflowRunConfig]:
@@ -412,23 +426,19 @@ def build_workflow_run_configs(
                 except ValidationError as e:
                     raise validation_error_to_message_exception(e)
                 if data_request.src == "ldda":
-                    ldda = trans.sa_session.get(
-                        LibraryDatasetDatasetAssociation, trans.security.decode_id(data_request.id)
-                    )
-                    assert ldda
+                    ldda = _get_input_or_not_found(trans, LibraryDatasetDatasetAssociation, data_request, step)
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif data_request.src == "hda":
                     # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(data_request.id))
+                    content = _get_input_or_not_found(trans, HistoryDatasetAssociation, data_request, step)
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
                 elif data_request.src == "ld":
-                    library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(data_request.id))
-                    assert library_dataset
+                    library_dataset = _get_input_or_not_found(trans, LibraryDataset, data_request, step)
                     ldda = library_dataset.library_dataset_dataset_association
                     assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
@@ -436,9 +446,8 @@ def build_workflow_run_configs(
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif data_request.src == "hdca":
-                    content = app.dataset_collection_manager.get_dataset_collection_instance(
-                        trans, "history", data_request.id
-                    )
+                    hdca = _get_input_or_not_found(trans, HistoryDatasetCollectionAssociation, data_request, step)
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca.id)
                 elif isinstance(data_request, DataRequestCollectionUri):
                     hdca_input = dereference_input_to_hdca(trans, data_request, history)
                     added_to_history = True

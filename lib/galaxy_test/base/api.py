@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -178,6 +179,14 @@ class UsesApiTestCaseMixin:
             self.user_api_key = original_api_key
             self.galaxy_interactor.api_key = original_interactor_key
             self.galaxy_interactor.cookies = original_cookies
+
+    @contextmanager
+    def _different_user_history(self, email: Optional[str] = None) -> Iterator[str]:
+        """Act as a different user (see ``_different_user``) and yield a new history they own."""
+        with self._different_user(email=email):
+            create_response = self._post("histories", data={"name": "API Test History"})
+            assert_status_code_is_ok(create_response)
+            yield create_response.json()["id"]
 
     def _get_current_history_id(self) -> str:
         """Return the current session's history ID (works for anonymous users)."""
