@@ -20,8 +20,11 @@ void usersStore.getAll()
 
 const { users } = storeToRefs(usersStore)
 
-const allOptions = computed(() => users?.value.map((u) => u.username))
-const options = ref(allOptions.value)
+const needle = ref("")
+// Computed rather than copied on filter, so users loaded after the menu opened still show up.
+const options = computed(() =>
+    users.value.map((u) => u.username).filter((v) => v.toLocaleLowerCase().indexOf(needle.value) > -1),
+)
 const selected = ref(null)
 
 const emit = defineEmits(["selectedUser", "cleared"])
@@ -39,11 +42,7 @@ watch(selected, (user) => {
 
 function filterFn(val: string, update: (cbFn: () => void) => void) {
     update(() => {
-        const needle = val.toLocaleLowerCase()
-        if (needle == "") {
-            options.value = allOptions.value
-        }
-        options.value = options.value.filter((v) => v.toLocaleLowerCase().indexOf(needle) > -1)
+        needle.value = val.toLocaleLowerCase()
     })
 }
 
