@@ -16,7 +16,7 @@ def populate_model(
     other_values=None,
     options_pagination: Optional[OptionsPaginationT] = None,
     name_prefix: str = "",
-    incoming: Optional[dict[str, Any]] = None,
+    incoming: dict[str, Any] | None = None,
 ):
     """
     Populates the tool model consumed by the client form builder.
