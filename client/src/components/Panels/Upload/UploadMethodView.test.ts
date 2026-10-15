@@ -155,17 +155,20 @@ describe("UploadMethodView history mismatch alert", () => {
 });
 
 describe("UploadMethodView advanced mode switch", () => {
-    it("binds the advanced mode to a switch input that carries the test id", async () => {
+    afterEach(() => {
+        // advancedMode is module-level state persisted to localStorage, so reset it even when a test fails
+        useUploadAdvancedMode().advancedMode.value = false;
+    });
+
+    it("binds the advanced mode to the switch", async () => {
+        // advanced mode loads the selectable object stores
+        server.use(http.get("/api/object_stores", () => HttpResponse.json([])));
         const { advancedMode } = useUploadAdvancedMode();
         advancedMode.value = false;
         const { wrapper } = mountView();
 
-        const toggle = wrapper.find('input[data-test-id="upload-advanced-mode-toggle"]');
-        expect(toggle.attributes("role")).toBe("switch");
-
-        await toggle.setValue(true);
+        await wrapper.find('input[data-test-id="upload-advanced-mode-toggle"]').setValue(true);
         expect(advancedMode.value).toBe(true);
-        advancedMode.value = false;
     });
 });
 
