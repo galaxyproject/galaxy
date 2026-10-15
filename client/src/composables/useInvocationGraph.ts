@@ -219,7 +219,7 @@ export function useInvocationGraph(
             }
 
             /** The raw invocation step */
-            const invocationStep = invocation.value.steps[i];
+            const invocationStep = invocation.value.steps.find((step) => step.order_index === i);
 
             // `updateStep` only writes what changed, so unchanged steps don't re-render
             if (!isWorkflowInput(graphStepFromWfStep.type)) {

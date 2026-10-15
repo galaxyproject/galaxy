@@ -260,7 +260,7 @@ function toggleDetailedView() {
                         class="mr-2"
                         :workflow-step="activeStep"
                         :graph-step="steps[activeNodeId]"
-                        :invocation-step="props.invocation.steps[activeNodeId]" />
+                        :invocation-step="props.invocation.steps.find((step) => step.order_index === activeNodeId)" />
                     <div class="d-flex flex-gapx-1">
                         <GButton
                             v-if="!props.fitToPage"

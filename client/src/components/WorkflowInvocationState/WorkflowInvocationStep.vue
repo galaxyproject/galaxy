@@ -70,7 +70,9 @@ const workflowStepType = computed(() => props.workflowStep.type);
 
 const invocationInput = computed(() => props.invocation.inputs[props.workflowStep.id]);
 
-const invocationStep = computed(() => props.invocation.steps[props.workflowStep.id]);
+const invocationStep = computed(() =>
+    props.invocation.steps.find((step) => step.order_index === props.workflowStep.id),
+);
 
 const invocationStepId = computed(() => invocationStep.value?.id);
 
@@ -260,7 +262,11 @@ onUnmounted(() => {
                                                     v-for="stepInput in Object.values(props.workflowStep.input_steps)"
                                                     :key="stepInput.source_step">
                                                     <WorkflowStepTitle
-                                                        :invocation-step="props.invocation.steps[stepInput.source_step]"
+                                                        :invocation-step="
+                                                            props.invocation.steps.find(
+                                                                (step) => step.order_index === stepInput.source_step,
+                                                            )
+                                                        "
                                                         :workflow-step="props.workflowStep" />
                                                 </li>
                                             </ul>
