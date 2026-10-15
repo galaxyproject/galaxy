@@ -188,6 +188,9 @@ class ToolLike(Protocol):
     def tool_type(self) -> str: ...
 
     @property
+    def is_workflow_compatible(self) -> bool: ...
+
+    @property
     def old_id(self) -> str | None: ...
 
     @property
