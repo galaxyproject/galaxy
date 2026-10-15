@@ -29,6 +29,7 @@ const userStore = useUserStore();
 const router = useRouter();
 
 interface Props {
+    rerunOfInvocationId?: string;
     workflowId: string;
     version?: string;
     preferSimpleForm?: boolean;
@@ -41,6 +42,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    rerunOfInvocationId: undefined,
     version: undefined,
     preferSimpleForm: false,
     simpleFormTargetHistory: "current",
@@ -287,6 +289,7 @@ defineExpose({
                     <WorkflowRunFormSimple
                         v-if="fromVariant === 'simple'"
                         :model="workflowModel"
+                        :rerun-of-invocation-id="props.rerunOfInvocationId"
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"
                         :can-mutate-current-history="canRunOnHistory"
@@ -299,6 +302,7 @@ defineExpose({
                     <WorkflowRunForm
                         v-else
                         :model="workflowModel"
+                        :rerun-of-invocation-id="props.rerunOfInvocationId"
                         :can-mutate-current-history="canRunOnHistory"
                         :disable-simple-form="disableSimpleForm"
                         :disable-simple-form-reason="disableSimpleFormReason"
