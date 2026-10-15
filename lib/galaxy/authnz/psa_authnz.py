@@ -20,6 +20,7 @@ from social_core.actions import (
     do_disconnect,
 )
 from social_core.backends.utils import get_backend
+from social_core.pipeline.user import get_username as social_core_get_username
 from social_core.strategy import BaseStrategy
 from social_core.utils import (
     module_member,
@@ -119,12 +120,11 @@ AUTH_PIPELINE = (
     "galaxy.authnz.psa_authnz.verify",
     # Checks if the current social-account is already associated in the site.
     "social_core.pipeline.social_auth.social_user",
-    # Custom Galaxy step: Fall back to the email's local part when the IdP sends
-    # no username claim; otherwise get_username substitutes a random string.
-    "galaxy.authnz.psa_authnz.username_from_email",
-    # Make up a username for this person, appends a random string at the end if
-    # there's any collision.
-    "social_core.pipeline.user.get_username",
+    # Custom Galaxy step: Make up a username for this person, appends a random
+    # string at the end if there's any collision. Wraps social_core's
+    # get_username to fall back to the email's local part when the IdP sends no
+    # username claim, instead of a random string.
+    "galaxy.authnz.psa_authnz.get_username",
     # Send a validation email to the user to verify its email address.
     # 'social_core.pipeline.mail.mail_validation',
     # Custom Galaxy step: Associates by email only if user is logged in,
@@ -710,16 +710,21 @@ def contains_required_data(response=None, is_new=False, backend=None, **kwargs):
         raise MalformedContents(err_msg=f"Missing refresh token. {hint_msg}")
 
 
-def username_from_email(details=None, user=None, **kwargs):
+def get_username(strategy, details, backend, user=None, *args, **kwargs):
     """
-    Pipeline step: derive a username from the email's local part for new users
-    whose IdP sends no username claim (e.g. no ``preferred_username``).
+    Pipeline step: social_core's get_username, deriving the username from the
+    email's local part for new users whose IdP sends no username claim (e.g. no
+    ``preferred_username``).
+
+    The derived name is only passed to social_core's get_username; ``details``
+    is left unchanged for later steps, so it is never applied to an existing
+    user found by email.
     """
-    if user or not details or details.get("username") or not details.get("email"):
-        return
-    username = ready_name_for_url(details["email"].split("@")[0]).lower()
-    if username:
-        return {"details": {**details, "username": username}}
+    if not user and not details.get("username") and details.get("email"):
+        username = ready_name_for_url(details["email"].split("@")[0]).lower()
+        if username:
+            details = {**details, "username": username}
+    return social_core_get_username(strategy, details, backend, user, *args, **kwargs)
 
 
 def verify(strategy=None, response=None, details=None, **kwargs):
