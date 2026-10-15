@@ -23,6 +23,7 @@ import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import type { ParameterOutput, Step } from "@/stores/workflowStepStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
+import { rerunWhileBusy } from "@/utils/sharedPromise";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
@@ -129,10 +130,12 @@ export function useInvocationGraph(
 
     provideScopedWorkflowStores(storeId);
 
-    /** The running `updateSteps()` pass, if any */
-    let stepsUpdate: Promise<void> | null = null;
-    /** Whether the inputs changed while `stepsUpdate` was running, so it must run again */
-    let stepsUpdateStale = false;
+    /** Update the steps from the latest inputs; a poll landing mid-update makes it run again */
+    const refreshSteps = rerunWhileBusy(async () => {
+        if (stepsJobsSummary.value) {
+            await updateSteps(stepsJobsSummary.value);
+        }
+    });
 
     // Follow the invocation and job summaries polled by the parent, once the workflow has loaded.
     watch([invocation, stepsJobsSummary], async () => {
@@ -189,28 +192,6 @@ export function useInvocationGraph(
         }
     }
 
-    /** Run `updateSteps()` on the latest inputs. A request made while a pass is running
-     * makes that pass run again, so the last poll is never dropped. */
-    function refreshSteps(): Promise<void> {
-        if (stepsUpdate) {
-            stepsUpdateStale = true;
-        } else {
-            stepsUpdate = (async () => {
-                try {
-                    do {
-                        stepsUpdateStale = false;
-                        if (stepsJobsSummary.value) {
-                            await updateSteps(stepsJobsSummary.value);
-                        }
-                    } while (stepsUpdateStale);
-                } finally {
-                    stepsUpdate = null;
-                }
-            })();
-        }
-        return stepsUpdate;
-    }
-
     /** Update the steps of the invocation graph with the step job summaries, or initialize the steps
      * if they haven't been populated yet.
      * @param stepsJobsSummary - The job summary for each step in the invocation
@@ -222,6 +203,8 @@ export function useInvocationGraph(
             : steps.value;
         const stepCount = Object.keys(fullSteps).length;
         const findStepJobSummary = stepJobSummaryLookup(stepsJobsSummary);
+        /** The first failed input fetch, thrown once all other steps are updated */
+        let inputError: Error | undefined;
 
         // for each step, store the state and status of jobs
         for (let i = 0; i < stepCount; i++) {
@@ -241,13 +224,22 @@ export function useInvocationGraph(
             if (!isWorkflowInput(graphStepFromWfStep.type)) {
                 updateStep(graphStepFromWfStep, invocationStep, invocationStep && findStepJobSummary(invocationStep));
             } else if (invocationStep && graphStepFromWfStep.nodeText === undefined) {
-                await initializeGraphInput(graphStepFromWfStep, invocationStep);
+                try {
+                    await initializeGraphInput(graphStepFromWfStep, invocationStep);
+                } catch (e) {
+                    // `nodeText` stays unset, so the next update retries this input
+                    inputError ??= e as Error;
+                }
             }
 
             // add the graph step to the steps object if it doesn't exist yet
             if (!steps.value[i]) {
                 steps.value[i] = graphStepFromWfStep;
             }
+        }
+
+        if (inputError !== undefined) {
+            throw inputError;
         }
     }
 
@@ -356,8 +348,11 @@ export function useInvocationGraph(
     }
 
     function setHeaderClass(graphStep: GraphStep) {
-        /** Setting the header class for the graph step */
-        graphStep.headerClass = getHeaderClass(graphStep.state);
+        /** Setting the header class for the graph step (only if it changed, so headers and minimap don't redraw) */
+        const headerClass = getHeaderClass(graphStep.state);
+        if (JSON.stringify(graphStep.headerClass) !== JSON.stringify(headerClass)) {
+            graphStep.headerClass = headerClass;
+        }
 
         /** Setting the header icon for the graph step */
         if (graphStep.state) {

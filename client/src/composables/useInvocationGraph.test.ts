@@ -258,8 +258,64 @@ describe.each([
         invocation.value = JSON.parse(JSON.stringify(invocation.value));
         stepsJobsSummary.value = JSON.parse(JSON.stringify(stepsJobsSummary.value));
         await flushPromises();
-        // as the Overview graph's own poll loop used to do
+        // an explicit reload of unchanged data writes nothing either
         await load();
+        expect(writes).toBe(0);
+    });
+
+    it("keeps updating later steps when an input fetch fails, and retries the input", async () => {
+        workflowSteps.value = {
+            0: { id: 0, type: "data_input", position: { left: 0, top: 0 } },
+            1: { ...toolStep, id: 1 },
+        };
+        const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
+        await load();
+        vi.mocked(fetchDatasetDetails).mockRejectedValueOnce(new Error("429 Too Many Requests"));
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        // the invocation is scheduled: both steps appear, but the input's dataset can't be fetched yet
+        invocation.value = {
+            ...invocation.value,
+            steps: [
+                { id: "is0", workflow_step_id: 0 },
+                { id: "is1", job_id: "j1" },
+            ],
+            inputs: { 0: { id: "d1", src: "hda" } },
+        } as unknown as WorkflowInvocationElementView;
+        stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
+        await flushPromises();
+        expect(steps.value[1]?.state).toBe("running");
+        expect(steps.value[0]?.nodeText).toBeUndefined();
+        expect(consoleError).toHaveBeenCalled();
+
+        vi.mocked(fetchDatasetDetails).mockResolvedValueOnce({
+            id: "d1",
+            hid: 1,
+            name: "input",
+            state: "ok",
+            history_content_type: "dataset",
+        } as DatasetDetails);
+        stepsJobsSummary.value = [jobSummary({ ok: 1 })];
+        await flushPromises();
+        expect(steps.value[0]?.nodeText).toBe("1: <b>input</b>");
+        expect(steps.value[1]?.state).toBe("ok");
+        consoleError.mockRestore();
+    });
+
+    it("writes nothing to an input step without a value when the polled data is unchanged", async () => {
+        workflowSteps.value = { 0: { id: 0, type: "data_input", position: { left: 0, top: 0 } } };
+        const { steps, invocation, stepsJobsSummary, load } = setupComposable(
+            { id: "is0", workflow_step_id: 0 },
+            [],
+            loadOntoEditor,
+        );
+        await load();
+        let writes = 0;
+        watch(steps, () => writes++, { deep: true, flush: "sync" });
+
+        invocation.value = JSON.parse(JSON.stringify(invocation.value));
+        stepsJobsSummary.value = [];
+        await flushPromises();
         expect(writes).toBe(0);
     });
 

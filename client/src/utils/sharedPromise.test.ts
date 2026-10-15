@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { dedupeInFlight, memoizeUntilRejected } from "./sharedPromise";
+import { dedupeInFlight, memoizeUntilRejected, rerunWhileBusy } from "./sharedPromise";
 
 /** A promise whose settlement the test controls. */
 function deferred<T>() {
@@ -99,5 +99,33 @@ describe("dedupeInFlight", () => {
         await expect(fetch("a")).rejects.toThrow("boom");
         await expect(fetch("a")).rejects.toThrow("boom");
         expect(request).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("rerunWhileBusy", () => {
+    it("runs once when called while idle", async () => {
+        const task = vi.fn(async () => {});
+        const run = rerunWhileBusy(task);
+        await run();
+        expect(task).toHaveBeenCalledTimes(1);
+    });
+
+    it("runs once more after the current run for any calls made while it runs", async () => {
+        const first = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        const calls = [run(), run(), run()];
+        expect(task).toHaveBeenCalledTimes(1);
+        first.resolve();
+        await Promise.all(calls);
+        expect(task).toHaveBeenCalledTimes(2);
+    });
+
+    it("rejects waiting callers and runs again on the next call", async () => {
+        const task = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        await expect(run()).rejects.toThrow("boom");
+        await run();
+        expect(task).toHaveBeenCalledTimes(2);
     });
 });

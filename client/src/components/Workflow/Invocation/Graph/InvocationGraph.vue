@@ -95,7 +95,7 @@ watch(
 
 // Retry a failed load when the parent polls new data
 watch(
-    () => props.stepsJobsSummary,
+    () => [props.invocation, props.stepsJobsSummary],
     async () => {
         if (errored.value && workflowId.value) {
             await loadGraph();

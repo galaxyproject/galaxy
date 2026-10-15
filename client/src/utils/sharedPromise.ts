@@ -39,3 +39,30 @@ export function dedupeInFlight<K, T>(fn: (key: K) => Promise<T>): (key: K) => Pr
         return promise;
     };
 }
+
+/**
+ * Run `fn` one call at a time. Calls made while it runs make it run once more afterwards, so the
+ * last call always sees the latest state; they share the promise of that run.
+ * A rejection is shared with callers already waiting; the next call runs `fn` again.
+ */
+export function rerunWhileBusy(fn: () => Promise<void>): () => Promise<void> {
+    let running: Promise<void> | undefined;
+    let rerun = false;
+    return () => {
+        if (running) {
+            rerun = true;
+        } else {
+            running = (async () => {
+                try {
+                    do {
+                        rerun = false;
+                        await fn();
+                    } while (rerun);
+                } finally {
+                    running = undefined;
+                }
+            })();
+        }
+        return running;
+    };
+}
