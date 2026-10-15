@@ -26,6 +26,19 @@ describe("FormOptionalText", () => {
         expect(emittedArg(wrapper, "input", 1)).toEqual("");
     });
 
+    it("names an optional input and keeps its label associated after toggling", async () => {
+        const wrapper = await mountFormOptionalText({ value: "hg38" });
+        const label = wrapper.find("label.sr-only");
+        expect(label.text()).toBe("Optional value");
+        expect(label.attributes("for")).toBe(wrapper.find("input[type=text]").attributes("id"));
+        await wrapper.find("input[type=checkbox]").setValue(false);
+        await wrapper.setProps({ value: null });
+        expect(wrapper.find("label.sr-only").exists()).toBe(false);
+        await wrapper.find("input[type=checkbox]").setValue(true);
+        await wrapper.setProps({ value: "" });
+        expect(wrapper.find("label.sr-only").attributes("for")).toBe(label.attributes("for"));
+    });
+
     it("should initialize with null if value does not exist", async () => {
         const v = null;
         const wrapper = await mountFormOptionalText({ value: v });

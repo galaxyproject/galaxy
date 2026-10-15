@@ -137,6 +137,16 @@ def global_tool_logs(func, config_file: StrPath | None, action_str: str, tool: "
         ) from e
 
 
+def _check_materialized(materialized_objects: dict[str, DeferrableObjectsT]) -> None:
+    """Fail the job if a deferred input could not be materialized."""
+    for value in materialized_objects.values():
+        for item in value if isinstance(value, list) else [value]:
+            dataset_instances = [item] if isinstance(item, model.DatasetInstance) else item.dataset_instances
+            for dataset_instance in dataset_instances:
+                if dataset_instance.dataset and dataset_instance.dataset.state == model.Dataset.states.ERROR:
+                    raise Exception(dataset_instance.info or "Failed to materialize deferred input dataset")
+
+
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -346,6 +356,7 @@ class ToolEvaluator:
                 undeferred_collection = materialize_collection_input(value, dataset_materializer)
                 undeferred_objects[key] = undeferred_collection
 
+        _check_materialized(undeferred_objects)
         return undeferred_objects
 
     def _eval_format_source(

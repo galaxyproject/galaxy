@@ -195,6 +195,8 @@ const bodyStyle = computed(() => {
                         :class="step.isSkippable() ? 'skipped ' : ''">
                         <button
                             class="step-number"
+                            type="button"
+                            :aria-label="`${determineDisplayStepIndex(i)}: ${step.label}`"
                             :class="{ active: props.use.isCurrent(id), done: isStepDone(i) }"
                             :disabled="(!allStepsBeforeAreValid(i) && props.use.isBefore(id)) || isBusy"
                             @click="props.use.goTo(id)">

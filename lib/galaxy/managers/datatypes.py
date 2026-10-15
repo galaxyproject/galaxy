@@ -165,8 +165,11 @@ def get_preferred_visualization(datatypes_registry: Registry, datatype_extension
     datatypes_conf.xml configuration file. These mappings determine which visualization plugin
     should be used by default when viewing datasets of a specific type.
 
-    If no direct mapping exists for the extension, this method will walk up the inheritance
-    chain to find a preferred visualization from a parent datatype class.
+    If no direct mapping exists for the extension, this method walks the datatype's class
+    inheritance chain (its MRO) and returns the mapping of the nearest ancestor class that
+    has one. Datatypes declared with ``subclass="true"`` each get their own class derived
+    from the parent, so they inherit the parent's mapping but not the mappings of sibling
+    ``subclass="true"`` datatypes of the same parent.
 
     Example configuration:
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
@@ -181,22 +184,15 @@ def get_preferred_visualization(datatypes_registry: Registry, datatype_extension
     if not current_datatype:
         return None
 
-    # Use the same mapping approach as the datatypes API for consistency
-    mapping_data = view_mapping(datatypes_registry)
-
-    current_class_name = mapping_data.ext_to_class_name.get(datatype_extension)
-    if not current_class_name:
-        return None
-
-    current_class_mappings = mapping_data.class_to_classes.get(current_class_name, {})
-
+    mapping_by_class: dict[type, dict[str, str]] = {}
     for ext, visualization_mapping in datatypes_registry.visualization_mappings.items():
-        if ext == datatype_extension:
-            continue
+        datatype = datatypes_registry.get_datatype_by_extension(ext)
+        if datatype:
+            mapping_by_class.setdefault(type(datatype), visualization_mapping)
 
-        parent_class_name = mapping_data.ext_to_class_name.get(ext)
-        if parent_class_name and parent_class_name in current_class_mappings:
-            return visualization_mapping
+    for cls in type(current_datatype).__mro__:
+        if cls in mapping_by_class:
+            return mapping_by_class[cls]
 
     return None
 

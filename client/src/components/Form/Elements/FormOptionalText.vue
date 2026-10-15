@@ -3,9 +3,10 @@
         <BFormCheckbox v-model="currentStatus" class="ui-switch" switch>
             Set value for this optional select field?
         </BFormCheckbox>
+        <label v-if="currentStatus && !id" :for="inputId" class="sr-only">Optional value</label>
         <FormText
             v-if="currentStatus"
-            :id="id"
+            :id="inputId"
             v-model="currentValue"
             :readonly="readonly"
             :value="value"
@@ -19,6 +20,8 @@
 
 <script>
 import { BFormCheckbox } from "bootstrap-vue";
+
+import { uid } from "@/utils/utils";
 
 import FormText from "./FormText.vue";
 
@@ -67,9 +70,13 @@ export default {
     data() {
         return {
             status: false,
+            generatedId: `optional-text-${uid()}`,
         };
     },
     computed: {
+        inputId() {
+            return this.id || this.generatedId;
+        },
         currentValue: {
             get() {
                 return this.value;

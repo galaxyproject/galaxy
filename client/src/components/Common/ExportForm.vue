@@ -46,7 +46,12 @@ const doExport = () => {
 
 <template>
     <div class="export-to-remote-file">
-        <BFormGroup id="fieldset-directory" label-for="directory" :description="directoryDescription" class="mt-3">
+        <BFormGroup
+            id="fieldset-directory"
+            label="Repository directory"
+            label-for="directory"
+            :description="directoryDescription"
+            class="mt-3">
             <FilesInput
                 id="directory"
                 :value="directory"
@@ -56,7 +61,7 @@ const doExport = () => {
                 @input="(v: string) => (directory = v)" />
         </BFormGroup>
 
-        <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
+        <BFormGroup id="fieldset-name" label="File name" label-for="name" :description="nameDescription" class="mt-3">
             <BFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
 

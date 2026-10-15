@@ -205,26 +205,43 @@ loadData();
             <template v-if="!loadFailed">
                 <FormCard :title="isEditMode ? `Quota '${savedQuotaName}'` : 'Create Quota'" icon="fa-database">
                     <template v-slot:body>
-                        <FormElementLabel title="Name" :required="true" :condition="!!quotaName">
+                        <FormElementLabel
+                            title="Name"
+                            label-for="admin-quota-name"
+                            :required="true"
+                            :condition="!!quotaName">
                             <GFormInput id="admin-quota-name" v-model="quotaName" />
                         </FormElementLabel>
-                        <FormElementLabel title="Description" :required="!isEditMode" :condition="!!description">
+                        <FormElementLabel
+                            title="Description"
+                            label-for="admin-quota-description"
+                            :required="!isEditMode"
+                            :condition="!!description">
                             <GFormInput id="admin-quota-description" v-model="description" />
                         </FormElementLabel>
-                        <FormElementLabel title="Amount" :required="true" :condition="!!amount" :help="AMOUNT_HELP">
+                        <FormElementLabel
+                            title="Amount"
+                            label-for="admin-quota-amount"
+                            :required="true"
+                            :condition="!!amount"
+                            :help="AMOUNT_HELP">
                             <GFormInput id="admin-quota-amount" v-model="amount" />
                         </FormElementLabel>
-                        <FormElementLabel title="Assign, increase by amount, or decrease by amount?">
+                        <FormElementLabel
+                            title="Assign, increase by amount, or decrease by amount?"
+                            label-for="admin-quota-operation">
                             <FormSelection id="admin-quota-operation" v-model="operation" :data="operationOptions" />
                         </FormElementLabel>
                         <FormElementLabel
                             title="Is this quota a default for a class of users (if yes, what type)?"
+                            label-for="admin-quota-default"
                             help="Default quotas cannot be associated with specific users and groups.">
                             <FormSelection id="admin-quota-default" v-model="defaultType" :data="defaultOptions" />
                         </FormElementLabel>
                         <FormElementLabel
                             v-if="!isEditMode && quotaSourceOptions.length > 1"
-                            title="Apply quota to labeled object stores.">
+                            title="Apply quota to labeled object stores."
+                            label-for="admin-quota-source-label">
                             <FormSelection
                                 id="admin-quota-source-label"
                                 v-model="quotaSourceLabel"
@@ -232,7 +249,10 @@ loadData();
                         </FormElementLabel>
 
                         <template v-if="defaultType === 'no'">
-                            <FormElementLabel id="admin-quota-groups" title="Groups">
+                            <FormElementLabel
+                                id="admin-quota-groups"
+                                title="Groups"
+                                label-for="admin-quota-groups-select">
                                 <Multiselect
                                     id="admin-quota-groups-select"
                                     v-model="selectedGroups"
@@ -245,7 +265,7 @@ loadData();
                                     placeholder="Select groups..." />
                             </FormElementLabel>
 
-                            <FormElementLabel id="admin-quota-users" title="Users">
+                            <FormElementLabel id="admin-quota-users" title="Users" label-for="admin-quota-users-select">
                                 <Multiselect
                                     id="admin-quota-users-select"
                                     v-model="selectedUsers"

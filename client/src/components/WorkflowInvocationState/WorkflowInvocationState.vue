@@ -438,7 +438,7 @@ async function onCancel() {
                 Debug
             </BNavItem>
 
-            <div class="ml-auto d-flex align-items-center flex-gapx-1">
+            <li class="ml-auto d-flex align-items-center flex-gapx-1">
                 <WorkflowInvocationSearch
                     v-if="!props.tab"
                     :invocation-id="props.invocationId"
@@ -460,7 +460,7 @@ async function onCancel() {
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
                     Cancel Workflow
                 </GButton>
-            </div>
+            </li>
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto tab-content-container">

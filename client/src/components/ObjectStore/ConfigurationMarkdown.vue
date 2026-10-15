@@ -11,5 +11,11 @@ const props = defineProps<Props>();
 const markdownHtml = computed(() => markup(props.markdown ?? "", props.admin));
 </script>
 <template>
-    <div v-sanitize-html:links="markdownHtml" />
+    <div v-sanitize-html:links="markdownHtml" class="configuration-markdown" />
 </template>
+
+<style scoped>
+.configuration-markdown :deep(a) {
+    text-decoration: underline;
+}
+</style>

@@ -17,6 +17,7 @@ import { updateContentFields } from "@/components/History/model/queries";
 import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import DATASET_STATES from "@/utils/datasetStates";
+import localize from "@/utils/localization";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, type State, STATES } from "./model/states";
@@ -380,6 +381,7 @@ function unexpandedClick(event: Event) {
                         v-if="item.sub_items?.length && !isSubItem"
                         v-g-tooltip.hover
                         title="Show converted items"
+                        :aria-label="`${localize('Show converted items')} (${item.sub_items.length})`"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"
                         size="small"
