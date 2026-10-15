@@ -217,6 +217,7 @@ def test_unlisted_extra_files_are_refused(tmp_path, service, user):
         ("other_users_header", "could not open the header"),
         ("server_error", "HTTP 500"),
         ("no_expiration", "expiration date"),
+        ("no_header", "invalid response"),
     ],
 )
 def test_stage_inputs_failures_leave_no_plaintext(tmp_path, service, user, setup, message):
@@ -235,6 +236,8 @@ def test_stage_inputs_failures_leave_no_plaintext(tmp_path, service, user, setup
         bad_input.primary.compute_header = other.primary.compute_header
     elif setup == "no_expiration":
         service.omitted_fields.add("crypt4gh_compute_keypair_expiration_date")
+    elif setup == "no_header":
+        service.omitted_fields.add("crypt4gh_header")
     else:
         service.failures["recrypt_header_to_job_key"] = [500] * 10
     plan = _plan(tmp_path, service, plan_key_ref, [good_input, bad_input], retries=1)
@@ -544,7 +547,7 @@ def test_output_protector_discards_failed_outputs_when_protecting_concurrently(t
         record = protector.records.get(str(dataset_instance.dataset.uuid))
         # Failed outputs are removed, and so are outputs not attempted after the failure: they have no record,
         # Galaxy purges them.
-        assert record is None or record["outcome"] == "failed"
+        assert record is None or record.outcome == "failed"
         assert not os.path.exists(path)
 
 
