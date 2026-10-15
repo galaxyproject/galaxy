@@ -1,6 +1,7 @@
 import pytest
 
 from galaxy_test.driver.driver_util import (
+    _worker_database_connection,
     attempt_port,
     attempt_ports,
     reserve_port,
@@ -30,3 +31,18 @@ def test_reserved_port_cannot_be_reserved_twice():
             reserve_port("127.0.0.1", str(port))
     finally:
         sock.close()
+
+
+@pytest.mark.parametrize(
+    "database_connection,expected",
+    [
+        (
+            "postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8",
+            "postgresql+psycopg://postgres:postgres@localhost:5432/galaxy_gw1?client_encoding=utf8",
+        ),
+        ("sqlite:///galaxy.sqlite", "sqlite:///galaxy_gw1.sqlite"),
+        ("sqlite:////tmp/galaxy.sqlite", "sqlite:////tmp/galaxy_gw1.sqlite"),
+    ],
+)
+def test_worker_database_connection(database_connection, expected):
+    assert _worker_database_connection(database_connection, "gw1") == expected

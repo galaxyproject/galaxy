@@ -25,6 +25,7 @@ from urllib.parse import urlparse
 
 from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
+from sqlalchemy.engine import make_url
 from starlette.routing import Mount
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
@@ -425,9 +426,9 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
 
 
 def _worker_database_connection(database_connection: str, worker_id: str) -> str:
-    parsed = urlparse(database_connection)
-    root, ext = os.path.splitext(parsed.path)
-    return parsed._replace(path=f"{root}_{worker_id}{ext}").geturl()
+    url = make_url(database_connection)
+    root, ext = os.path.splitext(url.database or "")
+    return url.set(database=f"{root}_{worker_id}{ext}").render_as_string(hide_password=False)
 
 
 def install_database_conf(db_path, default_merged=False):
