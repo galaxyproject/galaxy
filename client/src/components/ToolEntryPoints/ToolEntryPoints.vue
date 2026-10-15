@@ -27,8 +27,8 @@ const props = defineProps<{
     /** A job object. `undefined` fetches/polls it here instead; `null` means
      * the parent confirms there's deliberately no job yet (also skips fetching). */
     job?: JobBaseModel | ShowFullJobResponse | null;
-    /** How many other jobs from this same run also produce Interactive Tool sessions. When set
-     * and > 1, shown as a badge on the card so a batch run's other sessions aren't missed. */
+    /** How many other jobs the same run submitted. When > 0, a header hint points to the
+     * pagination so the Interactive Tools of a batch run's other jobs are not missed. */
     otherJobsCount?: number;
 }>();
 
@@ -49,8 +49,11 @@ const otherJobsHint = computed(() => {
     if (!props.otherJobsCount) {
         return null;
     }
-    const plural = props.otherJobsCount > 1 ? "s" : "";
-    return `${props.otherJobsCount} other job${plural} in this run also have Interactive Tool sessions | paginate above to view them.`;
+    const jobs = props.otherJobsCount > 1 ? "jobs" : "job";
+    return {
+        label: `+${props.otherJobsCount} ${jobs}, paginate to view`,
+        title: `This run has ${props.otherJobsCount} other ${jobs}. Use the pagination above to view their Interactive Tools.`,
+    };
 });
 
 const primaryActions = computed(() => {
@@ -116,9 +119,9 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
 <template>
     <DetailBlock :header-icon="faLaptop" title="Interactive Tools">
         <template v-slot:header-indicators>
-            <span v-if="otherJobsHint" class="other-jobs-hint" :title="otherJobsHint">
+            <span v-if="otherJobsHint" class="other-jobs-hint" :title="otherJobsHint.title">
                 <FontAwesomeIcon :icon="faLayerGroup" />
-                +{{ props.otherJobsCount }} job{{ props.otherJobsCount! > 1 ? "s" : "" }}, paginate to view
+                {{ otherJobsHint.label }}
             </span>
         </template>
         <template v-slot:custom-content>
