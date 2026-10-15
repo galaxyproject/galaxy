@@ -4,6 +4,7 @@ on:
     paths:
       - '.ci/check_test_class_names.sh'
       - .github/workflows/check_test_class_names.yaml
+      - 'lib/galaxy_test/**'
       - 'packages/test_*/**'
       - 'test/**'
 concurrency:

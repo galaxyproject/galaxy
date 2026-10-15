@@ -167,7 +167,8 @@ class TestFolderContentsApi(ApiTestCase):
     def test_index_permissions(self, history_id):
         folder_name = "Test Folder Contents Index permissions"
         folder_id = self._create_folder_in_library(folder_name)
-        _, hda_id = self._create_dataset_in_folder(history_id, folder_id)
+        # The upload applies the history's default permissions when it finishes, so wait before changing them.
+        _, hda_id = self._create_dataset_in_folder(history_id, folder_id, wait=True)
 
         self._make_dataset_private(hda_id)
 
@@ -277,10 +278,9 @@ class TestFolderContentsApi(ApiTestCase):
                 content=f"{'0' * dataset_sizes[index]}",
                 ldda_message=ldda_messages[index],
                 file_type=file_types[index],
+                # The upload job finishing touches the library copy, so wait to keep update_time in creation order.
+                wait=True,
             )
-
-        # Wait for datasets to finish upload
-        self.dataset_populator.wait_for_history(history_id)
 
         # Folders always have priority (they show-up before any dataset regardless of the sorting) and they
         # can only be sorted by name, description and update_time, the other sorting attributes are ignored
@@ -476,14 +476,14 @@ class TestFolderContentsApi(ApiTestCase):
         ldda_message: str | None = None,
         **kwds,
     ) -> tuple[str, str]:
-        """Returns a tuple with the LDDA ID and the underlying HDA ID"""
+        """Returns a tuple with the library dataset ID and the underlying HDA ID"""
         hda_id = self._create_hda(history_id, name, content, **kwds)
         data = {
             "from_hda_id": hda_id,
             "ldda_message": ldda_message or "Test msg",
         }
         ldda = self._create_content_in_folder_with_payload(folder_id, data)
-        return ldda["id"], hda_id
+        return ldda["library_dataset_id"], hda_id
 
     def _create_content_in_folder_with_payload(self, folder_id: str, payload) -> Any:
         create_response = self._post(f"folders/{folder_id}/contents", data=payload, json=True)
@@ -502,8 +502,8 @@ class TestFolderContentsApi(ApiTestCase):
         hdca_id = hdca["id"]
         return hdca_id
 
-    def _delete_library_dataset(self, ldda_id: str) -> None:
-        delete_response = self._delete(f"libraries/datasets/{ldda_id}")
+    def _delete_library_dataset(self, library_dataset_id: str) -> None:
+        delete_response = self._delete(f"libraries/datasets/{library_dataset_id}")
         self._assert_status_code_is(delete_response, 200)
 
     def _delete_subfolder(self, folder_id: str) -> None:

@@ -31,6 +31,7 @@ const REMOTE_FILES_API_RESPONSE: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
         uri_root: "gxfiles://test-posix-source",
     },
@@ -47,6 +48,7 @@ const ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
         pagination: false,
         search: false,
         sorting: false,
+        recursive: true,
     },
     uri_root: "zenodo://",
 };
@@ -65,6 +67,7 @@ const USER_ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
         pagination: true,
         search: true,
         sorting: false,
+        recursive: true,
     },
     uri_root: "gxuserfiles://998c5bba-b18f-4223-9c93-0f36fa2fdae8",
 };

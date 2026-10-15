@@ -184,19 +184,26 @@ class PlaywrightShedBrowser(ShedBrowser):
 
     def logout_if_logged_in(self, assert_logged_out=True):
         self._page.wait_for_selector(f"{Locators.toolbar_login}, {Locators.toolbar_logout}")
+        # The toolbar shows the user cached in local storage until /api/users/current answers.
+        self._page.wait_for_load_state("networkidle")
         logout_locator = self._page.locator(Locators.toolbar_logout)
         if logout_locator.is_visible():
-            logout_locator.click()
-            self._page.wait_for_load_state("networkidle")
+            self._click_logout(logout_locator)
         if assert_logged_out:
             self.expect_not_logged_in()
 
     def explicit_logout(self):
         self._page.wait_for_selector(Locators.toolbar_logout)
         logout_locator = self._page.locator(Locators.toolbar_logout)
-        logout_locator.click()
-        self._page.wait_for_load_state("networkidle")
+        self._click_logout(logout_locator)
         expect(self._page.locator(Locators.toolbar_logout)).not_to_be_visible()
+
+    def _click_logout(self, logout_locator: Locator) -> None:
+        # Logging out loads /logout_success once the API call returns; a navigation started
+        # before then is interrupted by it.
+        with self._page.expect_navigation(url="**/logout_success"):
+            logout_locator.click()
+        self._page.wait_for_load_state("networkidle")
 
     def expect_not_logged_in(self):
         expect(self._page.locator(Locators.toolbar_logout)).not_to_be_visible()

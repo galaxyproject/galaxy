@@ -548,6 +548,7 @@ class BaseFileSourceTestSuite(ABC):
         assert "pagination" in supports
         assert "search" in supports
         assert "sorting" in supports
+        assert "recursive" in supports
 
         # Test serialization with user context
         user_context = user_context_fixture()

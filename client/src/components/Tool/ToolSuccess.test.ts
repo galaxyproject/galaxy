@@ -1,45 +1,267 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { advanceTimersAndFlush, getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { computed } from "vue";
 
+import { useServerMock } from "@/api/client/__mocks__";
+import type { JobRequest, JobResponse, ResponseVal } from "@/api/jobs";
+import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 import { useConfig } from "@/composables/config";
 
 import ToolSuccess from "./ToolSuccess.vue";
-import ToolSuccessMessage from "./ToolSuccessMessage.vue";
+import ToolSuccessOutputs from "./ToolSuccessOutputs.vue";
+import JobHeader from "@/components/JobInformation/JobHeader.vue";
+import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import JobState from "@/components/JobStates/JobState.vue";
 import ToolRecommendation from "@/components/ToolRecommendation.vue";
 
-vi.mock("@/composables/config", () => ({ useConfig: vi.fn() }));
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(),
+}));
+
+vi.mock("@/api/invocations", () => ({
+    fetchInvocationForJob: vi.fn(),
+}));
+
+vi.mock("axios", () => ({
+    default: {
+        get: vi.fn().mockResolvedValue({ data: [] }),
+    },
+}));
+
+vi.mock("@/stores/toolStore", () => ({
+    useToolStore: () => ({
+        getToolNameById: () => TEST_TOOL_NAME,
+        getToolForId: () => ({ is_workflow_compatible: true }),
+    }),
+}));
+
+const { server, http } = useServerMock();
+enableAutoUnmount(afterEach);
+
+beforeEach(() => {
+    server.use(
+        http.get("/api/jobs/{job_id}", ({ response, params }) =>
+            response(200).json({ ...jobInformationResponse, id: params.job_id, state: "ok" } as never),
+        ),
+        http.get("/api/jobs/{job_id}/console_output", ({ response }) =>
+            response(200).json({ stdout: "", stderr: "", state: "ok" }),
+        ),
+    );
+});
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 
-describe("ToolSuccess recommendations", () => {
-    it.each([
-        ["anonymous", { isAnonymous: true }, true, true],
-        ["unloaded", null, true, true],
-        ["registered", { id: "user-id", email: "user@example.org" }, true, true],
-        ["disabled", { id: "user-id", email: "user@example.org" }, false, false],
-    ])("handles %s users/configuration", (_label, currentUser, enabled, expected) => {
-        vi.mocked(useConfig).mockReturnValue({
-            config: { value: { enable_tool_recommendations: enabled } },
-        } as ReturnType<typeof useConfig>);
-        const pinia = createTestingPinia({
-            createSpy: vi.fn,
-            initialState: {
-                userStore: { currentUser },
-                jobStore: {
-                    latestResponse: {
-                        jobDef: { tool_id: "cat1" },
-                        jobResponse: { jobs: [], outputs: [], output_collections: [] },
-                        toolName: "Concatenate",
-                    },
+vi.mocked(useConfig).mockReturnValue({
+    config: computed(() => ({ enable_tool_recommendations: false })),
+    isConfigLoaded: computed(() => true),
+});
+
+const TEST_TOOL_NAME = "Test Tool";
+
+const TEST_JOB_DEF = {
+    tool_id: "test_tool",
+} as JobRequest;
+
+const TEST_JOB_RESPONSE = {
+    produces_entry_points: false,
+    jobs: [jobInformationResponse],
+    outputs: [],
+    output_collections: [],
+} as unknown as JobResponse;
+
+// Selectors
+const SELECTORS = {
+    PAGINATION_ITEM: ".page-item .page-link",
+};
+
+async function mountToolSuccess(latestResponse: ResponseVal | null, currentUser: unknown = null) {
+    const testPinia = createTestingPinia({
+        createSpy: vi.fn,
+        stubActions: false,
+        initialState: {
+            jobStore: {
+                latestResponse,
+            },
+            userStore: {
+                currentUser,
+            },
+        },
+    });
+    setActivePinia(testPinia);
+
+    const wrapper = mount(ToolSuccess as object, {
+        localVue,
+        router,
+        pinia: testPinia,
+        stubs: {
+            FontAwesomeIcon: true,
+        },
+    }) as VueWrapper;
+
+    await flushPromises();
+    return wrapper;
+}
+
+describe("ToolSuccess", () => {
+    it("redirects home when there is no response in the store", async () => {
+        const routerPush = vi.spyOn(router, "push");
+        await mountToolSuccess(null);
+        expect(routerPush).toHaveBeenCalledWith("/");
+    });
+
+    describe("ToolSuccess recommendations", () => {
+        it.each([
+            ["anonymous", { isAnonymous: true }, true, true],
+            ["unloaded", null, true, true],
+            ["registered", { id: "user-id", email: "user@example.org" }, true, true],
+            ["disabled", { id: "user-id", email: "user@example.org" }, false, false],
+        ])("handles %s users/configuration", async (_label, currentUser, enabled, expected) => {
+            vi.mocked(useConfig).mockReturnValue({
+                config: { value: { enable_tool_recommendations: enabled } },
+            } as ReturnType<typeof useConfig>);
+            const wrapper = await mountToolSuccess(
+                {
+                    jobDef: TEST_JOB_DEF,
+                    jobResponse: TEST_JOB_RESPONSE,
                 },
+                currentUser,
+            );
+            expect(wrapper.findComponent(ToolRecommendation).exists()).toBe(expected);
+            expect(wrapper.findComponent(JobInformation).exists()).toBe(true);
+            wrapper.unmount();
+        });
+    });
+
+    describe("with a single job", () => {
+        let wrapper: VueWrapper;
+
+        beforeEach(async () => {
+            wrapper = await mountToolSuccess({
+                jobDef: TEST_JOB_DEF,
+                jobResponse: TEST_JOB_RESPONSE,
+            });
+        });
+
+        it("renders JobHeader for the job with tool name", () => {
+            const jobHeader = wrapper.findComponent(JobHeader);
+            expect(jobHeader.text()).toContain(TEST_TOOL_NAME);
+            expect(jobHeader.props("jobId")).toEqual(jobInformationResponse.id);
+        });
+
+        it("does not show the multi-job pagination header", () => {
+            expect(wrapper.findAll(SELECTORS.PAGINATION_ITEM).length).toBe(0);
+        });
+    });
+
+    describe("with outputs", () => {
+        const TEST_OUTPUT = { id: "output_id", hid: 1, name: "output1", history_content_type: "dataset" };
+        const TEST_OUTPUT_COLLECTION = {
+            id: "collection_id",
+            hid: 2,
+            name: "collection1",
+            history_content_type: "dataset_collection",
+        };
+
+        it("passes both dataset and collection outputs through to ToolSuccessOutputs", async () => {
+            const wrapper = await mountToolSuccess({
+                jobDef: TEST_JOB_DEF,
+                jobResponse: {
+                    ...TEST_JOB_RESPONSE,
+                    outputs: [TEST_OUTPUT],
+                    output_collections: [TEST_OUTPUT_COLLECTION],
+                } as unknown as JobResponse,
+            });
+
+            const outputs = wrapper.findComponent(ToolSuccessOutputs);
+            expect(outputs.exists()).toBe(true);
+            expect(outputs.props("jobResponse").outputs).toEqual([TEST_OUTPUT]);
+            expect(outputs.props("jobResponse").output_collections).toEqual([TEST_OUTPUT_COLLECTION]);
+        });
+    });
+
+    describe("with multiple jobs", () => {
+        const SECOND_JOB = { ...jobInformationResponse, id: "test_id_2" };
+        let wrapper: VueWrapper;
+
+        beforeEach(async () => {
+            wrapper = await mountToolSuccess({
+                jobDef: TEST_JOB_DEF,
+                jobResponse: {
+                    ...TEST_JOB_RESPONSE,
+                    jobs: [jobInformationResponse, SECOND_JOB] as unknown as JobResponse["jobs"],
+                },
+            });
+        });
+
+        it("shows a pagination control for each job", () => {
+            expect(wrapper.findAll(SELECTORS.PAGINATION_ITEM).length).toBeGreaterThan(0);
+        });
+
+        it("shows JobState and RerunJobButton for the currently viewed job", () => {
+            const jobState = wrapper.findComponent(JobState);
+            expect(jobState.exists()).toBe(true);
+            expect(jobState.props("jobId")).toEqual(jobInformationResponse.id);
+        });
+
+        it("switches the viewed job when navigating to the next pagination page", async () => {
+            const pageTwo = wrapper
+                .findAll(SELECTORS.PAGINATION_ITEM)
+                .filter((link) => link.text() === "2")
+                .at(0);
+            await pageTwo?.trigger("click");
+
+            const jobState = wrapper.findComponent(JobState);
+            expect(jobState.props("jobId")).toEqual(SECOND_JOB.id);
+        });
+    });
+});
+
+describe("ToolSuccess live job state", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+
+    it("shares one poll between the header, details and entry points, and stops polling the previous page", async () => {
+        const calls: string[] = [];
+        let state = "running";
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) => {
+                calls.push(params.job_id as string);
+                return response(200).json({ ...jobInformationResponse, id: params.job_id, state } as never);
+            }),
+        );
+        const firstId = jobInformationResponse.id;
+        const secondId = "second-job";
+        const wrapper = await mountToolSuccess({
+            jobDef: TEST_JOB_DEF,
+            jobResponse: {
+                ...TEST_JOB_RESPONSE,
+                produces_entry_points: true,
+                jobs: [TEST_JOB_RESPONSE.jobs[0]!, { ...TEST_JOB_RESPONSE.jobs[0]!, id: secondId }],
             },
         });
-        const wrapper = shallowMount(ToolSuccess, { localVue, router, pinia });
-        expect(wrapper.findComponent(ToolRecommendation).exists()).toBe(expected);
-        expect(wrapper.findComponent(ToolSuccessMessage).exists()).toBe(true);
+        expect(wrapper.findComponent(JobState).text()).toContain("running");
+        expect(calls).toEqual([firstId]);
+        const pageTwo = wrapper.findAll(SELECTORS.PAGINATION_ITEM).find((link) => link.text() === "2");
+        expect(pageTwo).toBeDefined();
+        await pageTwo!.trigger("click");
+        await flushPromises();
+        expect(calls).toEqual([firstId, secondId]);
+        state = "ok";
+        await advanceTimersAndFlush(1000);
+        expect(calls).toEqual([firstId, secondId, secondId]);
+        expect(wrapper.findComponent(JobState).text()).toContain("ok");
+        expect(wrapper.find('[data-description="galaxy-job-state"]').text()).toContain("ok");
+        expect(wrapper.text()).toContain("No Interactive Tool sessions are currently available");
+        await advanceTimersAndFlush(3000);
+        expect(calls).toEqual([firstId, secondId, secondId]);
         wrapper.unmount();
     });
 });

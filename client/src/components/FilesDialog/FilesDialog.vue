@@ -121,8 +121,12 @@ function clicked(record: SelectionItem) {
         // record is file
         selectSingleRecord(record);
     } else {
-        // you cannot select entire root directory
-        urlTracker.isAtRoot.value ? open(record) : selectDirectoryRecursive(record);
+        // you cannot select entire root directory, nor a folder the file source cannot list recursively
+        if (urlTracker.isAtRoot.value || !filesSources.supportsRecursive(record.url)) {
+            open(record);
+        } else {
+            selectDirectoryRecursive(record);
+        }
     }
     formatRows();
 }
@@ -402,8 +406,17 @@ function onSelectAll() {
         return;
     }
     const isUnselectAll = selectionModel.value.pathExists(urlTracker.current.value.url);
+    // folders are selected by listing them recursively, which some file sources cannot do
+    const withFolders = filesSources.supportsRecursive(urlTracker.current.value.url);
 
     for (const item of items.value) {
+        if (!item.isLeaf && !withFolders) {
+            // unselect what was picked inside the folder, without listing it
+            if (isUnselectAll) {
+                unselectPath(item.url);
+            }
+            continue;
+        }
         if (isUnselectAll) {
             if (selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id)) {
                 item.isLeaf ? selectionModel.value.add(item) : selectDirectoryRecursive(item);
@@ -413,7 +426,7 @@ function onSelectAll() {
         }
     }
 
-    if (!isUnselectAll && items.value.length !== 0) {
+    if (!isUnselectAll && items.value.length !== 0 && withFolders) {
         selectedDirectories.value.push(urlTracker.current.value);
     } else if (isDirectorySelected(urlTracker.current.value.id)) {
         selectDirectoryRecursive(urlTracker.current.value);
