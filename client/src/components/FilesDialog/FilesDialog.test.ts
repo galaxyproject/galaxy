@@ -261,6 +261,22 @@ describe("FilesDialog, file mode", () => {
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
     });
+
+    it("should show the error and undo the selection when a recursive listing fails", async () => {
+        await utils.openRootDirectory();
+        server.use(
+            http.get("/api/remote_files", ({ response }) => {
+                return response("4XX").json({ err_msg: someErrorText, err_code: 400 }, { status: 400 });
+            }),
+        );
+
+        suppressDebugConsole(); // expecting error message.
+
+        await utils.clickOn(utils.findRenderedDirectory(directoryId));
+        utils.expectErrorMessage();
+        expect(utils.getSelectionDialog().props("isBusy")).toBe(false);
+        utils.expectOkButtonDisabled();
+    });
 });
 
 describe("FilesDialog, create new file source button", () => {

@@ -182,21 +182,29 @@ function selectDirectoryRecursive(record: SelectionItem) {
         // look for subdirectories
         const recursive = true;
         isBusy.value = true;
-        browseRemoteFiles(record.url, recursive).then((incoming) => {
-            incoming.entries.forEach((item) => {
-                // construct record
-                const subRecord = entryToRecord(item);
-                if (subRecord.isLeaf) {
-                    // select file under this path
-                    selectSingleRecord(subRecord, true);
-                } else {
-                    // select subdirectory
-                    selectedDirectories.value.push(subRecord);
-                }
+        browseRemoteFiles(record.url, recursive)
+            .then((incoming) => {
+                incoming.entries.forEach((item) => {
+                    // construct record
+                    const subRecord = entryToRecord(item);
+                    if (subRecord.isLeaf) {
+                        // select file under this path
+                        selectSingleRecord(subRecord, true);
+                    } else {
+                        // select subdirectory
+                        selectedDirectories.value.push(subRecord);
+                    }
+                });
+                totalItems.value = incoming.totalMatches;
+                isBusy.value = false;
+            })
+            .catch((error) => {
+                // undo the directory selection made above
+                unselectPath(record.url, false, record.id);
+                formatRows();
+                errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
-            totalItems.value = incoming.totalMatches;
-            isBusy.value = false;
-        });
     }
 }
 
