@@ -245,6 +245,15 @@ def resolve_curated_workflows_source(source: str | None, owners: list[str]) -> s
     return normalized
 
 
+def validate_widgets_allowed_origins(origins: str | None) -> None:
+    """Reject entries that would change the widgets' Content-Security-Policy beyond listing origins."""
+    for origin in listify(origins, do_strip=True):
+        if re.search(r"[;\s\x00-\x1f\x7f]", origin):
+            raise ConfigurationError(
+                f"Invalid entry in widgets_allowed_origins: {origin!r} (expected an origin such as https://example.org)"
+            )
+
+
 def find_root(kwargs) -> str:
     return os.path.abspath(kwargs.get("root_dir", "."))
 
@@ -921,6 +930,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.curated_workflows_source = resolve_curated_workflows_source(
             self.curated_workflows_source, self.curated_workflow_owners
         )
+        validate_widgets_allowed_origins(self.widgets_allowed_origins)
 
         self.user_tool_filters = listify(self.user_tool_filters, do_strip=True)
         self.user_tool_label_filters = listify(self.user_tool_label_filters, do_strip=True)
