@@ -1,11 +1,11 @@
 import type { Config } from "dompurify";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { PROFILE_CONFIGS, sanitizeHtml } from "@/directives/sanitizeHtml";
+import { PROFILE_CONFIGS, sanitizeHtml } from "./sanitizeHtml";
 
 // The global test setup replaces this module with a pass-through spy; these
 // tests exercise the real profiles against a DOMPurify stand-in instead.
-vi.unmock("@/directives/sanitizeHtml");
+vi.unmock("./sanitizeHtml");
 
 const { defaultInstance, linksInstance, createInstance } = vi.hoisted(() => {
     const makeInstance = () => ({

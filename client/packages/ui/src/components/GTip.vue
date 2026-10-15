@@ -71,7 +71,7 @@ onUnmounted(() => {
         <small class="text-muted tip-content" :class="{ 'has-controls': hasMultipleTips }">
             <span class="tip-item">
                 <strong>Tip:</strong>
-                <!-- v-sanitize-html is registered globally by the consuming app (client/src/utils/mountVueComponent.js) -->
+                <!-- v-sanitize-html (directives/vSanitizeHtml.ts) is registered globally by the consuming app -->
                 <span v-sanitize-html:links="tipList[currentIndex]"></span>
             </span>
         </small>
