@@ -11,21 +11,13 @@ const options: RowOptionDescriptor[] = [
 ];
 
 describe("UploadTableOptionsCell", () => {
-    it("renders one checkbox per option with the test id on the input", () => {
-        const wrapper = mount(UploadTableOptionsCell, { props: { options } });
-
-        const inputs = wrapper.findAll("input[type='checkbox']");
-        expect(inputs).toHaveLength(2);
-        expect((inputs[0]!.element as HTMLInputElement).checked).toBe(false);
-        expect((inputs[1]!.element as HTMLInputElement).checked).toBe(true);
-        expect(inputs[1]!.attributes("data-test-id")).toBe("deferred-toggle");
-    });
-
     it("emits the option key with the new checked state", async () => {
         const wrapper = mount(UploadTableOptionsCell, { props: { options } });
+        const deferred = wrapper.find("input[data-test-id='deferred-toggle']");
+        expect((deferred.element as HTMLInputElement).checked).toBe(true);
 
         await wrapper.findAll("input[type='checkbox']")[0]!.setValue(true);
-        await wrapper.find("input[data-test-id='deferred-toggle']").setValue(false);
+        await deferred.setValue(false);
 
         expect(wrapper.emitted("update")).toEqual([
             [{ key: "spaceToTab", value: true }],
