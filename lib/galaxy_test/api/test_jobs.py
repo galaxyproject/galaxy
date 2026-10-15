@@ -1080,8 +1080,7 @@ steps:
     @skip_without_tool("collection_paired_test")
     def test_dce_submission_security(self, history_id):
         rerun_params = self._get_simple_rerun_params(history_id, private=True)
-        with self._different_user():
-            other_history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as other_history_id:
             response = self._run(
                 history_id=other_history_id,
                 tool_id="collection_paired_test",

@@ -9816,8 +9816,7 @@ input:
         self._assert_has_keys(pja, "action_type", "output_name", "action_arguments")
 
     def test_invocation_filtering(self):
-        with self._different_user(email=f"{uuid4()}@test.com"):
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history(email=f"{uuid4()}@test.com") as history_id:
             # new user, start with no invocations
             assert not self._assert_invocation_for_url_is("invocations")
             self._run_jobs(
