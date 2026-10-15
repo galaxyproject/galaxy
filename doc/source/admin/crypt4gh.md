@@ -49,7 +49,8 @@ which runs in two modes:
    re-encrypt each input header to that key, and decrypts the inputs into
    `<job directory>/_protected/inputs/`, with a `umask` of `077`. The tool's
    command line points at these plaintext copies. If this step fails, the tool
-   does not run and the job fails with "Job setup failed".
+   does not run and the job fails with "Galaxy failed to prepare this job, so
+   the tool was not run".
 5. **Tool.** The tool reads the plaintext inputs. In a container, they are
    available through the job directory, which Galaxy mounts by default. The
    decrypted inputs are removed as soon as the tool exits.
@@ -425,8 +426,9 @@ Protected jobs fail closed:
 - **Decryption:** if the compute service can't be reached (after retries), doesn't
   know or no longer accepts the compute key (`404`, `410`), or can't open the
   header (`422`), the partially decrypted inputs are removed, the tool doesn't run,
-  and the job fails with "Job setup failed". The message tells the user to
-  authorize the dataset again when that would help.
+  and the job fails with "Galaxy failed to prepare this job, so the tool was not
+  run". The message tells the user to authorize the dataset again when that would
+  help.
 - **Output encryption:** if an output can't be encrypted, metadata collection
   fails and the job fails. Outputs Galaxy can't verify as encrypted are purged.
   An invalid expiration date for the compute key, for example one without a
