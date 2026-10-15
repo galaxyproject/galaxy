@@ -157,7 +157,7 @@ On non-containerized destinations, both scopes reach the tool.
 
 Container-native runners, including Kubernetes and Pulsar coexecution, run the
 whole job script inside the tool container. Consequently `env`, `job_env` and
-`tool_env` all reach the tool. Galaxy warns at config load when `job_env` is
+`tool_env` all reach the tool. Galaxy warns when loading the runner plugins if `job_env` is
 configured for these runners; it cannot provide host/tool separation there.
 
 Installed tools can also declare `<runtime_environment_variable name="X"
@@ -167,7 +167,9 @@ was set, including sourced files and executed setup commands. Installed YAML too
 use a `runtime_environment_variables` list with `name`, `required` and `description`.
 User-defined tools cannot make these declarations. Reserved names and prefixes
 are listed in the tool schema documentation. Secret-looking names trigger a lint
-warning recommending `<credentials>`.
+warning recommending `<credentials>`. Invalid declarations produce a load warning
+and are ignored individually; the tool still loads. The linter continues to
+report them as errors.
 
 Docker receives bare `-e NAME` arguments. With `docker_sudo`, sudo resets the
 environment, so set values are expanded on the host as `-e "NAME=value"` and no
@@ -175,7 +177,9 @@ sudoers change is needed. Singularity/Apptainer receives
 `SINGULARITYENV_NAME` only when `NAME` is set. An empty string is set; an undefined
 variable is omitted. Missing required declared variables produce a warning on
 the job information page and an info-level log entry, without failing the job.
-Only variable names are recorded. Optional variables produce no warning.
+Only variable names are recorded. The check runs in the tool environment after
+dependency activation, so runtime-specific values and activation exports count
+as set. Optional variables produce no warning.
 
 Prefer `tool_env` for variables consumed by tools. Setting them through
 `<param id="docker_env_VARIABLE">VALUE</param>` or

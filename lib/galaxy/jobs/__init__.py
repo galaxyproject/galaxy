@@ -189,30 +189,6 @@ def config_exception(e, file):
     return Exception(message)
 
 
-def _warn_on_container_native_job_env(
-    destination_id: str | None, runner_load: str, *, job_env_configured: bool
-) -> None:
-    """Warn that container-native runners expose job_env to the tool."""
-    if not job_env_configured:
-        return
-    container_native_runners = (
-        "KubernetesJobRunner",
-        "PulsarCoexecutionJobRunner",
-        "PulsarTesJobRunner",
-        "PulsarGcpBatchJobRunner",
-        "kubernetes",
-        "pulsar_kubernetes",
-        "pulsar_coexecution",
-        "pulsar_tes",
-        "pulsar_gcp_batch",
-    )
-    if any(name in runner_load for name in container_native_runners):
-        log.warning(
-            "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
-            destination_id,
-        )
-
-
 def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
     config_dict: dict[str, Any] = {}
 
@@ -270,7 +246,8 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
 
         # TODO: handle enabled/disabled in configure_from
         environment["params"] = params
-        environment["env"] = JobConfiguration.get_envs(destination)
+        environment["_scoped_env"] = JobConfiguration.get_envs(destination)
+        environment["_job_env_configured"] = bool(destination.findall("job_env"))
         destination_resubmits = JobConfiguration.get_resubmits(destination)
         if destination_resubmits:
             environment["resubmit"] = destination_resubmits
@@ -279,11 +256,6 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
         runner = destination.get("runner")
         if runner:
             environment["runner"] = runner
-        _warn_on_container_native_job_env(
-            destination_id,
-            runners.get(runner or "", {}).get("load", ""),
-            job_env_configured=bool(destination.findall("job_env")),
-        )
 
         tags = destination.get("tags")
         # Store tags as a list
@@ -530,6 +502,10 @@ class JobConfiguration(ConfiguresHandlers):
                         metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
                         job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
 
+            xml_env = environment_dict.pop("_scoped_env", None)
+            job_env_configured = environment_dict.pop("_job_env_configured", False) or bool(
+                environment_dict.get("job_env")
+            )
             params = environment_dict.get("params")
             if params is None:
                 # Treat the excess keys in the environment as the destination parameters
@@ -541,11 +517,11 @@ class JobConfiguration(ConfiguresHandlers):
                     params[key] = value
                 environment_dict["params"] = params
 
-            env_entries: list[DestinationEnvironmentEntry] = []
+            env_entries: list[DestinationEnvironmentEntry] = xml_env or []
             for key, entries in environment_dict.items():
-                scope: EnvironmentScope | None
+                scope: EnvironmentScope
                 if key == "env":
-                    scope = None  # Preserve scoped entries already parsed from XML.
+                    scope = "job"
                 elif key == "job_env":
                     scope = "job"
                 elif key == "tool_env":
@@ -561,11 +537,7 @@ class JobConfiguration(ConfiguresHandlers):
                 resubmit=environment_dict.get("resubmit", []),
                 params=params,
                 env=env_entries,
-            )
-            _warn_on_container_native_job_env(
-                environment_id,
-                job_config_dict["runners"].get(job_destination.runner or "", {}).get("load", ""),
-                job_env_configured=bool(environment_dict.get("job_env")),
+                job_env_configured=job_env_configured,
             )
             if not self.__is_enabled(job_destination.params):
                 continue
@@ -982,8 +954,20 @@ class JobConfiguration(ConfiguresHandlers):
                         class_name,
                     )
                     rval[id] = runner_class(self.app)
+                self._warn_on_container_native_job_env(id, runner_class)
                 log.debug(f"Loaded job runner '{module_name}:{class_name}' as '{id}'")
         return rval
+
+    def _warn_on_container_native_job_env(self, runner_id: str, runner_class: type["BaseJobRunner"]) -> None:
+        if not runner_class.runs_job_script_in_container:
+            return
+        destinations = {destination for entries in self.destinations.values() for destination in entries}
+        for destination in destinations:
+            if destination.runner == runner_id and destination.job_env_configured:
+                log.warning(
+                    "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
+                    destination.id,
+                )
 
     def is_id(self, collection):
         """Given a collection of handlers or destinations, indicate whether the collection represents a real ID

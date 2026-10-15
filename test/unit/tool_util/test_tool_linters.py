@@ -2,6 +2,7 @@ import inspect
 import os
 import tempfile
 from collections import Counter
+from unittest import mock
 
 import pytest
 from Cheetah.Template import Template
@@ -33,7 +34,9 @@ from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import ParameterParseException
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 from galaxy.util import (
     ElementTree,
     submodules,
@@ -3789,3 +3792,14 @@ def test_xsd_requirements_children_in_any_order(lint_ctx):
     tool_source = get_xml_tool_source(REQUIREMENTS_UNORDERED_CHILDREN)
     run_lint_module(lint_ctx, xsd, tool_source)
     assert not lint_ctx.error_messages
+
+
+def test_general_user_tool_runtime_environment_rejected(lint_ctx):
+    tool_source = YamlToolSource({"class": "GalaxyUserTool"})
+    with mock.patch.object(
+        tool_source,
+        "parse_runtime_environment_variables",
+        return_value=[RuntimeEnvironmentVariable(name="LICENSE_SERVER")],
+    ):
+        general.RuntimeEnvironmentVariables.lint(tool_source, lint_ctx)
+    assert "User-defined tools cannot declare runtime_environment_variable" in lint_ctx.error_messages

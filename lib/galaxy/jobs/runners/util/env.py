@@ -30,9 +30,8 @@ def env_to_statement(env: Mapping[str, object]) -> str:
         assert isinstance(execute, str)
         return execute
     name = env["name"]
-    value = env["value"]
+    value = str(env["value"])
     assert isinstance(name, str)
-    assert isinstance(value, str)
     value = __escape(value, env)
     return f"{name}={value}; export {name}"
 

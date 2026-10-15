@@ -112,6 +112,8 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
     Job runner that submits jobs to Google Cloud Batch.
     """
 
+    runs_job_script_in_container = True
+
     runner_name = "GoogleCloudBatchJobRunner"
     always_handle_metadata_externally = True
 

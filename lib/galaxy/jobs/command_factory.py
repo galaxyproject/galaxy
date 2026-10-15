@@ -77,7 +77,15 @@ def build_command(
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
 
+    for_pulsar = "pulsar_version" in remote_command_params
     commands_builder = CommandsBuilder(base_command_line)
+    working_directory = remote_job_directory or job_wrapper.working_directory
+    if job_wrapper.tool:
+        warning_path = join(
+            working_directory, "metadata" if for_pulsar else "outputs", RUNTIME_ENVIRONMENT_WARNING_FILE
+        )
+        if checks := required_environment_checks(job_wrapper.tool.runtime_environment_variables, warning_path):
+            commands_builder.prepend_command(checks)
 
     # Dependency resolution and task splitting are prepended to the
     # command - so they need to appear in the following order to ensure that
@@ -92,7 +100,6 @@ def build_command(
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     __handle_task_splitting(commands_builder, job_wrapper)
-    for_pulsar = "pulsar_version" in remote_command_params
     if container:
         if core_job_metric_plugin := runner.app.job_metrics.default_job_instrumenter.get_configured_plugin("core"):
             directory = join(job_wrapper.working_directory, "metadata") if for_pulsar else job_wrapper.working_directory
@@ -142,13 +149,6 @@ def build_command(
     if container_monitor_command := job_wrapper.container_monitor_command(container):
         commands_builder.prepend_command(container_monitor_command)
 
-    working_directory = remote_job_directory or job_wrapper.working_directory
-    if job_wrapper.tool:
-        warning_path = join(
-            working_directory, "metadata" if for_pulsar else "outputs", RUNTIME_ENVIRONMENT_WARNING_FILE
-        )
-        if checks := required_environment_checks(job_wrapper.tool.runtime_environment_variables, warning_path):
-            commands_builder.prepend_command(checks)
     commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
 
     if job_wrapper.is_cwl_job:

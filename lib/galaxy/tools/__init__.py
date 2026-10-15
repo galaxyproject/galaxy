@@ -1505,7 +1505,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                     break
         self.home_target = home_target
         self.tmp_target = tmp_target
-        self.runtime_environment_variables = tool_source.parse_runtime_environment_variables()
+        self.runtime_environment_variables = tool_source.parse_runtime_environment_variables(strict=False)
         if self.tool_type == "user_defined" and self.runtime_environment_variables:
             raise ValueError("User-defined tools cannot declare runtime_environment_variable")
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()

@@ -35,6 +35,8 @@ class JobDestination:
     shell: str | None = None
     env: list[DestinationEnvironmentEntry] = field(default_factory=list)
     """Ordered scoped statements, never included in persisted destination params."""
+    job_env_configured: bool = False
+    """Whether the administrator explicitly used job_env (rather than legacy env)."""
     resubmit: list["ResubmitConfigDict"] = field(default_factory=list)
     params: dict[str, Any] = field(default_factory=dict)
     from_job: InitVar[Union["Job", None]] = None

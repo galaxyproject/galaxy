@@ -1,8 +1,27 @@
-"""Shell checks for runtime requirements, without recording variable values."""
+"""Runtime declarations and shell checks, without recording variable values."""
 
+import logging
+from collections.abc import Iterable
 from shlex import quote
 
 from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
+
+log = logging.getLogger(__name__)
+
+
+def parse_runtime_environment_variables(
+    entries: Iterable[object], *, strict: bool = True
+) -> list[RuntimeEnvironmentVariable]:
+    variables = []
+    for entry in entries:
+        try:
+            variables.append(RuntimeEnvironmentVariable.model_validate(entry))
+        except ValueError as exc:
+            if strict:
+                raise
+            log.warning("Ignoring invalid runtime environment declaration: %s", exc)
+    return variables
+
 
 RUNTIME_ENVIRONMENT_WARNING_FILE = "runtime_environment_warnings"
 

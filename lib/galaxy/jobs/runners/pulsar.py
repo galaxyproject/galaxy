@@ -1048,7 +1048,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
-            dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN[:]
+            dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
             output_files = []
             work_dir_outputs = []
         else:
@@ -1320,6 +1320,8 @@ COEXECUTION_DESTINATION_DEFAULTS = {
 
 
 class PulsarCoexecutionJobRunner(PulsarJobRunner):
+    runs_job_script_in_container = True
+
     destination_defaults = COEXECUTION_DESTINATION_DEFAULTS
 
 

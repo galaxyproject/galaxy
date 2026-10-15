@@ -15,6 +15,7 @@ from typing_extensions import (
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
+from galaxy.tool_util_models.runtime_environment import ENVIRONMENT_VARIABLE_NAME
 
 if TYPE_CHECKING:
     from galaxy.tool_util.parser.stdio import (
@@ -303,7 +304,7 @@ def _runtime_environment_variable_names(job_directory: str) -> list[str]:
         path = Path(job_directory) / directory / RUNTIME_ENVIRONMENT_WARNING_FILE
         if path.is_file():
             names.extend(
-                name for name in path.read_text().splitlines() if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name)
+                name for name in path.read_text().splitlines() if re.fullmatch(ENVIRONMENT_VARIABLE_NAME, name)
             )
     return list(dict.fromkeys(names))
 

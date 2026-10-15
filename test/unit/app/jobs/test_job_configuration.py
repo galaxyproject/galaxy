@@ -9,6 +9,10 @@ from pykwalify.core import Core
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
+from galaxy.jobs.runners import (
+    BaseJobRunner,
+    local,
+)
 from galaxy.util import galaxy_directory
 from galaxy.util.path import StrPath
 from galaxy.util.resources import (
@@ -27,6 +31,13 @@ ADVANCED_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_advanced"
 ADVANCED_JOB_CONF_YAML = GALAXY_SAMPLES_DIRECTORY / "job_conf.sample.yml"
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
+
+
+class NativeRunner(BaseJobRunner):
+    runs_job_script_in_container = True
+
+    def __init__(self, *args, **kwargs):
+        pass
 
 
 class TestApplicationStack(ApplicationStack):
@@ -393,10 +404,12 @@ class TestScopedJobEnvironment(BaseJobConfXmlParserTestCase):
 
     def _check_xml_container_native_warning(self, tag, warns):
         self._write_config(
-            f'<job_conf><plugins><plugin id="native" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner" /></plugins><destinations default="native"><destination id="native" runner="native"><{tag} id="X">value</{tag}></destination></destinations></job_conf>'
+            f'<job_conf><plugins><plugin id="native" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" /></plugins><destinations default="native"><destination id="native" runner="native"><{tag} id="X">value</{tag}></destination></destinations></job_conf>'
         )
         with mock.patch("galaxy.jobs.log.warning") as warning:
             destination = self.job_config.get_destination("native")
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
         assert destination.env[0]["type"] == "job"
         assert warning.called is warns
         if warns:
@@ -406,7 +419,7 @@ class TestScopedJobEnvironment(BaseJobConfXmlParserTestCase):
         self.config.job_config_file = os.path.join(self.temp_directory, "job_conf.yml")
         self._write_config("""runners:
   native:
-    load: galaxy.jobs.runners.kubernetes:KubernetesJobRunner
+    load: galaxy.jobs.runners.local:LocalJobRunner
 execution:
   default: native
   environments:
@@ -424,7 +437,63 @@ execution:
 """)
         with mock.patch("galaxy.jobs.log.warning") as warning:
             destination = self.job_config.get_destination("native")
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
         assert [entry["value"] for entry in destination.env] == ["tool", "job", "legacy"]
         assert [entry["type"] for entry in destination.env] == ["tool", "job", "job"]
         assert "also reach the tool container" in warning.call_args[0][0]
         assert not {"env", "job_env", "tool_env"}.intersection(destination.params)
+
+    def test_yaml_legacy_env_cannot_select_tool_scope(self):
+        self.config.job_config_file = os.path.join(self.temp_directory, "job_conf.yml")
+        self._write_config("""runners:
+  local:
+    load: local
+execution:
+  default: local
+  environments:
+    local:
+      runner: local
+      env:
+        - name: X
+          value: legacy
+          type: tool
+""")
+        destination = self.job_config.get_destination("local")
+        assert destination.tool_env_names == []
+        assert destination.env[0]["type"] == "job"
+
+    def test_disabled_destination_has_no_container_native_warning(self):
+        self._write_config(
+            '<job_conf><plugins><plugin id="local" type="runner" load="local" /></plugins>'
+            '<destinations default="local"><destination id="local" runner="local" />'
+            '<destination id="disabled" runner="native"><param id="enabled">false</param>'
+            '<job_env id="X">value</job_env></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
+        assert "disabled" not in self.job_config.destinations
+        warning.assert_not_called()
+
+    def test_host_runner_job_env_has_no_warning(self):
+        self._write_config(
+            '<job_conf><plugins><plugin id="local" type="runner" load="local" /></plugins>'
+            '<destinations default="local"><destination id="local" runner="local">'
+            '<job_env id="X">value</job_env></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            with mock.patch.object(local.LocalJobRunner, "__init__", return_value=None):
+                self.job_config.get_job_runner_plugins("main")
+        warning.assert_not_called()
+
+    def test_tag_alias_warns_only_once(self):
+        self._write_config(
+            '<job_conf><plugins><plugin id="native" type="runner" load="local" /></plugins>'
+            '<destinations default="native"><destination id="native" runner="native" tags="alias">'
+            '<job_env id="X">value</job_env></destination></destinations></job_conf>'
+        )
+        with mock.patch("galaxy.jobs.log.warning") as warning:
+            with mock.patch.object(local, "LocalJobRunner", NativeRunner):
+                self.job_config.get_job_runner_plugins("main")
+        warning.assert_called_once()

@@ -632,7 +632,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
-        return "\n".join([*pass_through, run_command])
+        return "\n".join(["(", *pass_through, run_command, ")"])
 
 
 CONTAINER_CLASSES: dict[str, type[Container]] = dict(

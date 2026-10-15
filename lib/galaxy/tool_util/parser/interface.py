@@ -268,7 +268,7 @@ class ToolSource(metaclass=ABCMeta):
         """Directories to override if a tmp_target is not None."""
         return ["TMPDIR", "TMP", "TEMP"]
 
-    def parse_runtime_environment_variables(self) -> list[RuntimeEnvironmentVariable]:
+    def parse_runtime_environment_variables(self, *, strict: bool = True) -> list[RuntimeEnvironmentVariable]:
         """Runtime variable names consumed by an installed tool."""
         return []
 

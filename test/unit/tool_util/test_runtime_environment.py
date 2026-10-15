@@ -21,6 +21,7 @@ from galaxy.tool_util.output_checker import (
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.tool_util.parser.yaml import YamlToolSource as YamlParser
 from galaxy.tool_util.runtime_environment import required_environment_checks
 from galaxy.tool_util_models import (
     UserToolSource,
@@ -236,3 +237,35 @@ def test_merge_task_runtime_warnings(tmp_path):
             warning_file.write_text("")
     merge_runtime_environment_warnings(str(tmp_path), [str(task) for task in task_dirs])
     assert runtime_environment_job_messages(str(tmp_path)) == []
+
+
+@pytest.mark.parametrize("fmt", ["xml", "yaml"])
+def test_invalid_declarations_are_skipped_individually_at_load(fmt, caplog):
+    entries = [{"name": "GOOD", "required": True}, {"name": "PATH"}, {"name": "bad-name"}, {"name": "ALSO_GOOD"}]
+    if fmt == "yaml":
+        source = YamlParser({"class": "GalaxyTool", "runtime_environment_variables": entries})
+    else:
+        source = XmlToolSource(
+            parse_xml_string_to_etree(
+                '<tool><requirements><runtime_environment_variable name="GOOD" required="true"/>'
+                '<runtime_environment_variable name="PATH"/><runtime_environment_variable name="bad-name"/>'
+                '<runtime_environment_variable name="ALSO_GOOD"/></requirements></tool>'
+            )
+        )
+    with pytest.raises(ValidationError):
+        source.parse_runtime_environment_variables()
+    variables = source.parse_runtime_environment_variables(strict=False)
+    assert [v.name for v in variables] == ["GOOD", "ALSO_GOOD"]
+    assert variables[0].required is True
+    assert "Reserved runtime environment variable name: PATH" in caplog.text
+    assert "Invalid environment variable name: bad-name" in caplog.text
+
+
+def test_singularity_forwarding_does_not_reach_later_commands(tmp_path):
+    command = _containerize(tmp_path, "singularity", False)
+    # A later metadata container must not inherit the tool's forwarding exports.
+    command += "\n" + shlex.quote(str(tmp_path / "singularity"))
+    result = subprocess.run(["bash", "-c", command], env=HOST_ENVIRONMENT, check=True, capture_output=True, text=True)
+    tool, metadata = [json.loads(line) for line in result.stdout.splitlines()]
+    assert tool["container"]["DECLARED"] == TRICKY_VALUE
+    assert metadata["container"] == {}

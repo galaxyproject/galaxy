@@ -1,6 +1,7 @@
 """The destination keeps one ordered, serializable list outside persisted params."""
 
 import json
+import subprocess
 from typing import Any
 
 import pytest
@@ -84,3 +85,11 @@ def test_destination_rejects_invalid_tool_env_entries(entry):
     env: list[Any] = [{"type": "tool", **entry}]
     with pytest.raises(ValueError):
         JobDestination(env=env)
+
+
+@pytest.mark.parametrize("raw", [True, False])
+@pytest.mark.parametrize("value", [4096, 0, False])
+def test_legacy_scalar_values_are_rendered_as_strings(raw, value):
+    statement = env_to_statement({"name": "X", "value": value, "raw": raw})
+    result = subprocess.run(["sh", "-c", statement + '; printf "%s" "$X"'], check=True, capture_output=True, text=True)
+    assert result.stdout == str(value)

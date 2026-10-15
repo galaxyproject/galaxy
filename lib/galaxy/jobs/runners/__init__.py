@@ -112,6 +112,8 @@ class RunnerParams(ParamsWithSpecs):
 
 class BaseJobRunner:
     runner_name = "BaseJobRunner"
+    runs_job_script_in_container = False
+    """The entire job script executes inside the tool container."""
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
