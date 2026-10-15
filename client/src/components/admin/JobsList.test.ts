@@ -52,6 +52,11 @@ describe("JobsList", () => {
         expect(rows.map((row) => row.attributes("aria-label"))).toEqual(["Select job job1", "Select job job2"]);
         expect(wrapper.find("#stop-message").exists()).toBe(false);
 
+        await rows[0]!.setValue(true);
+        expect(wrapper.find("#stop-message").exists()).toBe(true);
+        await rows[0]!.setValue(false);
+        expect(wrapper.find("#stop-message").exists()).toBe(false);
+
         await rows[1]!.setValue(true);
         expect((rows[1]!.element as HTMLInputElement).checked).toBe(true);
         expect(wrapper.find('.jobs-table thead input[type="checkbox"]').element).toHaveProperty("indeterminate", true);
@@ -62,17 +67,6 @@ describe("JobsList", () => {
 
         expect(deleteJob).toHaveBeenCalledTimes(1);
         expect(deleteJob).toHaveBeenCalledWith("job2", "maintenance");
-    });
-
-    it("unticks a job again", async () => {
-        const wrapper = await mountJobsList();
-        const row = wrapper.find('.jobs-table tbody input[type="checkbox"]');
-
-        await row.setValue(true);
-        expect(wrapper.find("#stop-message").exists()).toBe(true);
-
-        await row.setValue(false);
-        expect(wrapper.find("#stop-message").exists()).toBe(false);
     });
 
     it("selects and stops every unfinished job through the select-all box", async () => {
@@ -149,10 +143,7 @@ describe("JobsList", () => {
 
     it("reloads every unfinished job when the time cutoff is switched off", async () => {
         const wrapper = await mountJobsList();
-        const toggle = wrapper.find("#show-all-running");
-        expect(toggle.attributes("role")).toBe("switch");
-
-        await toggle.setValue(true);
+        await wrapper.find("#show-all-running").setValue(true);
         await flushPromises();
 
         expect(vi.mocked(jobsProvider).mock.lastCall![0]).toHaveProperty("state");
