@@ -309,3 +309,22 @@ def build_evaluate_program(new_input: dict[str, Any]) -> str:
     lines.append(_js_var("$outdir", "outdir"))
     lines.append(f"JSON.stringify((function(){exp})())")
     return "\n".join(lines)
+
+
+def evaluate(config: Any, input: dict[str, Any]) -> Any:
+    # ``config`` is ignored: the expression runs in the QuickJS worker.
+    register()
+
+    default_context: dict[str, Any] = {
+        "engineConfig": [],
+        "job": {},
+        "context": None,
+        "outdir": None,
+        "tmpdir": None,
+    }
+
+    new_input = default_context
+    new_input.update(input)
+
+    program = build_evaluate_program(new_input)
+    return evaluate_program(program)

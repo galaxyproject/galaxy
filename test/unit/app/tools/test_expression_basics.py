@@ -17,10 +17,10 @@ from galaxy.tools.expressions import (
     do_eval,
     evaluate,
     ExpressionTemplateError,
-    js_engine,
     validate_expression_template,
 )
-from galaxy.tools.expressions.js_engine import (
+from galaxy_ext.expressions import js_engine
+from galaxy_ext.expressions.js_engine import (
     _bubblewrap_command,
     evaluate_program,
     resolve_isolation_command,
