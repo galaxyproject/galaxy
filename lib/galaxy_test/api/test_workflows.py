@@ -7400,6 +7400,53 @@ steps:
             self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             self._assert_history_job_count(history_id, 4)
 
+    @skip_without_tool("test_data_source")
+    @pytest.mark.parametrize("new_history", [False, True])
+    def test_run_with_workflow_incompatible_tool(self, history_id, new_history):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  data_source:
+    tool_id: test_data_source
+""")
+        history_name = f"incompatible workflow tool history {uuid4()}"
+        target = {"new_history_name": history_name} if new_history else {"history_id": history_id}
+        response = self._post(f"workflows/{workflow_id}/invocations", data=target, json=True)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "following tools are not workflow-compatible: test_data_source")
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert self._history_jobs(history_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @skip_without_tool("test_data_source")
+    @pytest.mark.parametrize("exact", [False, True])
+    def test_run_with_missing_and_incompatible_tools(self, exact):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  data_source:
+    tool_id: test_data_source
+  missing:
+    tool_id: nonexistent_tool
+    tool_version: "0.1"
+""")
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["steps"]["1"]["tool_id"] == "nonexistent_tool"
+        assert workflow["steps"]["1"]["tool_version"] == "0.1"
+        history_name = f"missing workflow tool history {uuid4()}"
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={"new_history_name": history_name, "require_exact_tool_versions": exact},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        expected_tool = "nonexistent_tool (version 0.1)" if exact else "nonexistent_tool"
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: " + expected_tool
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
     def test_run_with_optional_data_specified_to_multi_data(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
