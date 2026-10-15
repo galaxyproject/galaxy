@@ -93,6 +93,7 @@ async function requestInstallation() {
         confirm
         ok-text="Send Request"
         :ok-disabled="submitting"
+        :cancel-disabled="submitting"
         :close-on-ok="false"
         @ok="requestInstallation"
         @cancel="setShow(false)"

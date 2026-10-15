@@ -32,6 +32,7 @@ import ListHeader from "@/components/Common/ListHeader.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
+import ToolInstallationRequestDialog from "@/components/Workflow/ToolInstallationRequestDialog.vue";
 
 const IWC_URL = "https://iwc.galaxyproject.org";
 
@@ -95,6 +96,18 @@ const onlyRunnableFilter = computed(() => filterText.value.trim().toLowerCase() 
 function toggleRunnable() {
     const rest = filterText.value.replace(RUNNABLE_TERM, "$1").replace(/\s+/g, " ").trim();
     filterText.value = runnableOnly.value ? rest : `${rest} is:runnable`.trim();
+}
+
+/** The catalog workflow whose missing tools the user is asking the admins for; one dialog serves every card. */
+const toolRequestFor = ref<CuratedWorkflow | null>(null);
+// Only for this visit: the admins' answer arrives as a notification, and the card clears once they install.
+const toolsRequestedFor = ref(new Set<string>());
+
+function onToolsRequested() {
+    if (toolRequestFor.value) {
+        toolsRequestedFor.value.add(toolRequestFor.value.id);
+    }
+    Toast.success("Installation request sent. Check your notifications for updates.");
 }
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
@@ -368,10 +381,21 @@ onMounted(() => load());
                     :key="workflow.id"
                     :workflow="workflow"
                     :grid-view="currentListViewMode === 'grid'"
+                    :installation-requested="toolsRequestedFor.has(workflow.id)"
                     @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)"
-                    @collectionClick="toggleCollection" />
+                    @collectionClick="toggleCollection"
+                    @request-tools="(requested: CuratedWorkflow) => (toolRequestFor = requested)" />
             </div>
         </GOverlay>
+
+        <!-- A catalog workflow isn't stored here yet, so the request names it and links its IWC page instead. -->
+        <ToolInstallationRequestDialog
+            :show="toolRequestFor !== null"
+            :missing-tool-ids="toolRequestFor?.missing_tools ?? []"
+            :workflow-name="toolRequestFor?.name"
+            :workflow-url="toolRequestFor?.external_url ?? undefined"
+            @update:show="(show: boolean) => !show && (toolRequestFor = null)"
+            @submitted="onToolsRequested" />
 
         <div v-if="totalWorkflows > limit" class="workflow-list-footer">
             <BPagination

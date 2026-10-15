@@ -15,21 +15,12 @@ import { useUserStore } from "@/stores/userStore";
 import { ApiError } from "@/utils/simple-error";
 
 import CuratedWorkflowCard from "./CuratedWorkflowCard.vue";
-import GModal from "@/components/BaseComponents/GModal.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 const importTrsToolFromUrl = vi.fn();
 const copyWorkflow = vi.fn();
 
 vi.mock("@/composables/config");
-
-const { mockSubmitToolInstallationRequest } = vi.hoisted(() => ({
-    mockSubmitToolInstallationRequest: vi.fn(),
-}));
-
-vi.mock("@/api/notifications", () => ({
-    submitToolInstallationRequest: mockSubmitToolInstallationRequest,
-}));
 
 vi.mock("@/components/Workflow/services", () => ({
     Services: class MockServices {
@@ -102,7 +93,11 @@ function localWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflo
     });
 }
 
-function mountCard(workflow: CuratedWorkflow, isAnonymous = false, gridView = false) {
+function mountCard(
+    workflow: CuratedWorkflow,
+    isAnonymous = false,
+    props: { gridView?: boolean; installationRequested?: boolean } = {},
+) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
@@ -111,7 +106,7 @@ function mountCard(workflow: CuratedWorkflow, isAnonymous = false, gridView = fa
     userStore.currentUser = isAnonymous ? ANONYMOUS_USER : { ...FAKE_USER };
 
     const wrapper = mount(CuratedWorkflowCard as object, {
-        propsData: { workflow, gridView },
+        propsData: { workflow, ...props },
         localVue,
         router,
         pinia,
@@ -167,7 +162,6 @@ describe("CuratedWorkflowCard", () => {
         suppressBootstrapVueWarnings();
         importTrsToolFromUrl.mockReset();
         copyWorkflow.mockReset();
-        mockSubmitToolInstallationRequest.mockReset();
         setMockConfig({});
         // Stubbed so the assertions can see navigation; a real push would also
         // warn about redundant routes across repeated mounts.
@@ -234,7 +228,7 @@ describe("CuratedWorkflowCard", () => {
     it("leaves the colored tags to list view", () => {
         const workflow = iwcWorkflow();
 
-        expect(mountCard(workflow, false, true).findComponent(GCard).props("tags")).toEqual([]);
+        expect(mountCard(workflow, false, { gridView: true }).findComponent(GCard).props("tags")).toEqual([]);
         expect(mountCard(workflow).findComponent(GCard).props("tags")).toEqual(workflow.tags);
     });
 
@@ -459,34 +453,24 @@ describe("CuratedWorkflowCard", () => {
             setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
         });
 
-        it("offers the request from the menu and the missing-tools note", () => {
-            const workflow = iwcWorkflow({ missing_tools: MISSING });
-            const wrapper = mountCard(workflow);
-
-            expect(actionIds(wrapper)).toContain("curated-request-tools");
-            expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(true);
-        });
-
-        it("sends a request that names the catalog workflow, then marks it requested", async () => {
-            mockSubmitToolInstallationRequest.mockResolvedValue(undefined);
-            const toastSuccess = vi.spyOn(Toast, "success").mockImplementation(() => {});
-            toastSuccess.mockClear();
+        it("asks the list to request the tools, from the menu or the missing-tools note", async () => {
             const workflow = iwcWorkflow({ missing_tools: MISSING });
             const wrapper = mountCard(workflow);
 
             await missingToolsOf(wrapper, workflow).find("button").trigger("click");
-            await flushPromises();
-            expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-            wrapper.findComponent(GModal).vm.$emit("ok");
-            await flushPromises();
+            extraActionById(wrapper, "curated-request-tools").handler!();
 
-            const payload = mockSubmitToolInstallationRequest.mock.calls[0]![0];
-            expect(payload.workflow_id).toBeUndefined();
-            expect(payload.additional_remarks).toContain(`"${workflow.name}"`);
-            expect(payload.additional_remarks).toContain(workflow.external_url);
-            expect(toastSuccess).toHaveBeenCalledWith(expect.stringContaining("Installation request sent"));
-            expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-            expect(extraActionById(wrapper, "curated-request-tools").disabled).toBe(true);
+            expect(wrapper.emitted("requestTools")).toEqual([[workflow], [workflow]]);
+        });
+
+        it("stops offering the request once it has been sent", () => {
+            const workflow = iwcWorkflow({ missing_tools: MISSING });
+            const wrapper = mountCard(workflow, false, { installationRequested: true });
+
+            expect(extraActionById(wrapper, "curated-request-tools")).toMatchObject({
+                label: "Installation requested",
+                disabled: true,
+            });
             expect(missingToolsOf(wrapper, workflow).find("button").exists()).toBe(false);
         });
 

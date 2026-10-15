@@ -25,20 +25,23 @@ import { ApiError } from "@/utils/simple-error";
 
 import GCard from "@/components/Common/GCard.vue";
 import UtcDate from "@/components/UtcDate.vue";
-import ToolInstallationRequestDialog from "@/components/Workflow/ToolInstallationRequestDialog.vue";
 
 interface Props {
     workflow: CuratedWorkflow;
     gridView?: boolean;
+    /** The user already asked the admins for this workflow's tools during this visit. */
+    installationRequested?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
+    installationRequested: false,
 });
 
 const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
     (e: "collectionClick", collection: string): void;
+    (e: "requestTools", workflow: CuratedWorkflow): void;
 }>();
 
 const router = useRouter();
@@ -75,13 +78,9 @@ const titleBadges = computed<CardBadge[]>(() =>
 
 const canRequestTools = useCanRequestToolInstallation();
 const canRequestMissingTools = computed(() => canRequestTools.value && Boolean(workflow.value.missing_tools?.length));
-const showInstallationRequest = ref(false);
-// Only for this visit: the admins' answer arrives as a notification, and the badge clears once they install.
-const installationRequested = ref(false);
 
-function onInstallationRequested() {
-    installationRequested.value = true;
-    Toast.success("Installation request sent. Check your notifications for updates.");
+function requestTools() {
+    emit("requestTools", workflow.value);
 }
 
 /** `toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4` -> `fastp`; built-in ids pass through. */
@@ -112,14 +111,14 @@ const missingToolsDetail = computed<CardBadge | null>(() => {
         return null;
     }
     const names = [...new Set(missingTools.map(shortToolName))];
-    const canAsk = canRequestMissingTools.value && !installationRequested.value;
+    const canAsk = canRequestMissingTools.value && !props.installationRequested;
     return {
         id: "curated-missing-tools",
         label: `Needs ${names.length} ${names.length === 1 ? "tool" : "tools"}`,
         title: `Not installed on this Galaxy: ${names.join(", ")}${canAsk ? ". Click to ask the admins to install them." : ""}`,
         icon: faExclamationTriangle,
         variant: "warning",
-        handler: canAsk ? () => (showInstallationRequest.value = true) : undefined,
+        handler: canAsk ? requestTools : undefined,
     };
 });
 
@@ -262,11 +261,11 @@ const extraActions = computed<CardAction[]>(() => {
     if (canRequestMissingTools.value) {
         actions.push({
             id: "curated-request-tools",
-            label: installationRequested.value ? "Installation requested" : "Request tool installation",
+            label: props.installationRequested ? "Installation requested" : "Request tool installation",
             title: "Ask the admins to install the tools this workflow needs",
             icon: faBell,
-            disabled: installationRequested.value,
-            handler: () => (showInstallationRequest.value = true),
+            disabled: props.installationRequested,
+            handler: requestTools,
         });
     }
 
@@ -414,15 +413,6 @@ async function onImportLocal() {
                     </li>
                 </ul>
             </div>
-            <!-- Parked in a slot because the card needs GCard as its root; a <dialog> renders in the top layer anyway. -->
-            <ToolInstallationRequestDialog
-                v-if="canRequestMissingTools"
-                v-model:show="showInstallationRequest"
-                :missing-tool-ids="workflow.missing_tools ?? []"
-                :workflow-id="isLocal ? (workflow.stored_workflow_id ?? undefined) : undefined"
-                :workflow-name="workflow.name"
-                :workflow-url="workflow.external_url ?? undefined"
-                @submitted="onInstallationRequested" />
         </template>
     </GCard>
 </template>
