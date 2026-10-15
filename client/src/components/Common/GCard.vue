@@ -479,6 +479,14 @@ onBeforeUnmount(() => {
     }
 });
 
+function onCardClick(event: MouseEvent) {
+    // The select checkbox emits select; its clicks must not also click the card.
+    if (!props.clickable || props.disabled || selectElement.value?.contains(event.target as Node)) {
+        return;
+    }
+    emit("click", event);
+}
+
 function onKeyDown(event: KeyboardEvent) {
     if (props.disabled) {
         return;
@@ -514,7 +522,7 @@ function onKeyDown(event: KeyboardEvent) {
         ]"
         :tabindex="props.clickable && !props.disabled ? 0 : undefined"
         :title="props.disabled ? props.disabledTitle : undefined"
-        @click="props.clickable && !props.disabled ? emit('click', $event) : undefined"
+        @click="onCardClick"
         @keydown="onKeyDown">
         <div
             :id="`g-card-content-${props.id}`"
