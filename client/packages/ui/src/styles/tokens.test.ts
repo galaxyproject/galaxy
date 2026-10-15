@@ -104,7 +104,7 @@ describe("galaxy-ui design tokens", () => {
         expect(tokens.get("--color-gray-250")).toBe("#c1c8d0");
     });
 
-    it("declares every semantic color, resolving to a palette value", () => {
+    it("declares every semantic color, resolving to a hex color", () => {
         for (const name of SEMANTIC_COLORS) {
             expect(resolveToken(`--color-${name}`)).toMatch(/^#[0-9a-f]{6}$/);
         }
