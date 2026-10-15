@@ -577,7 +577,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 extra_file = safe_path_from_directory(extra_file, self.job_working_directory)
             outputs.append((dataset, path, link_data_only, extra_file))
         if self.output_protector:
-            # Protect the whole chunk first, concurrently: each file takes a request to the key service.
+            # Protect the whole chunk first, nothing unprotected may reach the object store.
             to_protect: list[tuple[DatasetInstance, str, str | None, bool]] = []
             for dataset, path, link_data_only, extra_file in outputs:
                 if path:
