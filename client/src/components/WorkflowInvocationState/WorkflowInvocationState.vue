@@ -6,6 +6,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
+import { provideInvocationSelection } from "@/composables/invocationSelection";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -46,6 +47,7 @@ interface Props {
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
+    syncSelection?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -117,6 +119,8 @@ const invocation = computed(() => {
         return null;
     }
 });
+provideInvocationSelection(invocation, Boolean(props.syncSelection));
+
 const invocationState = computed(() => invocation.value?.state || "new");
 const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
 const invocationSchedulingTerminal = computed(() => {

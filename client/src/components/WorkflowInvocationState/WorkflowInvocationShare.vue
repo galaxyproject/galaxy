@@ -2,10 +2,12 @@
 import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
 
 import { GalaxyApi, userOwnsHistory } from "@/api";
 import { hasImportable } from "@/api/histories";
 import { getFullAppUrl } from "@/app/utils";
+import { useInvocationSelection } from "@/composables/invocationSelection";
 import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -28,6 +30,8 @@ const props = defineProps<{
 }>();
 
 const modalToggle = ref(false);
+const selection = useInvocationSelection();
+const route = selection ? useRoute() : undefined;
 
 const userStore = useUserStore();
 
@@ -42,7 +46,9 @@ const owned = computed(
 );
 
 /** The link to the invocation. */
-const invocationLink = computed(() => getFullAppUrl(`workflows/invocations/${props.invocationId}`));
+const invocationLink = computed(() =>
+    getFullAppUrl(route ? route.fullPath.replace(/^\//, "") : `workflows/invocations/${props.invocationId}`),
+);
 
 /** If the history is already shareable.
  * (i.e. It has the `importable` property, and it is set to `true`)

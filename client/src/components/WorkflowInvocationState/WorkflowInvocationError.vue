@@ -26,7 +26,7 @@ const props = defineProps<InvocationMessageProps>();
 
 const emit = defineEmits<{
     (e: "view-step", stepId: number): void;
-    (e: "view-subworkflow-invocation", invocationId: string, stepId: number): void;
+    (e: "view-subworkflow-invocation", invocationId: string, stepId?: number): void;
 }>();
 
 // Use the composable to get enriched step data for the actual failing step

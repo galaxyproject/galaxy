@@ -78,7 +78,9 @@ onMounted(async () => {
     await nextTick();
 
     // @ts-ignore: TS2339 component method not exposed in template ref type
-    workflowGraph.value?.fitWorkflow(0.25, 1.0, 20.0);
+    if (activeNodeId.value === null) {
+        workflowGraph.value?.fitWorkflow(0.25, 1.0, 20.0);
+    }
 });
 
 // Equivalent to onMounted; this is where the graph is initialized. The graph then follows the

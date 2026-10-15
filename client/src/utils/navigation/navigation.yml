@@ -1340,6 +1340,16 @@ invocations:
       type: xpath
       selector: '//span[contains(@class, "content-title name")][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
+    job_dialog: '.g-dialog[open]'
+    job_dialog_id: '.g-dialog[open] h2 code'
+    job_dialog_next: '[data-description="invocation job next"]'
+    job_dialog_previous: '[data-description="invocation job previous"]'
+    job_dialog_close: '.g-dialog[open] [aria-label="Close dialog"]'
+    step_job_row:
+      type: xpath
+      selector: '//div[@data-step="${order_index}"]//tr[td//span[text()="${job_id}"]]'
+    step_job_state_filter: '[data-step="${order_index}"] [data-description="invocation job state filter"][data-state="${state}"]'
+    step_job_active_page: '[data-step="${order_index}"] .pagination .active'
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
     step_job_details_state_counter: '[data-description="invocation step state counter"][data-step-state="${state}"]'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'

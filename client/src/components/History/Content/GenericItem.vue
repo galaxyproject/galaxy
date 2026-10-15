@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from "@vueuse/core";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
@@ -15,15 +15,26 @@ import GenericElement from "./GenericElement.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const props = defineProps<{
-    itemId: string;
-    itemSrc: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        itemId: string;
+        itemSrc: string;
+        expanded?: boolean;
+        scrollOnExpand?: boolean;
+    }>(),
+    { expanded: undefined },
+);
+
+const emit = defineEmits<{ (e: "update:expanded", value: boolean): void }>();
 
 const historyStore = useHistoryStore();
 
 const viewCollection = ref(false);
 const expandDataset = ref(false);
+function setExpanded(value: boolean) {
+    expandDataset.value = value;
+    emit("update:expanded", value);
+}
 const view = ref(props.itemSrc === "hdca" ? "collection" : "element");
 
 const providerComponent = computed(() => {
@@ -48,6 +59,29 @@ const { stop: stopObserver } = useIntersectionObserver(containerEl, ([entry]) =>
         stopObserver();
     }
 });
+
+watch(
+    () => props.expanded,
+    async (value) => {
+        if (value === undefined) {
+            return;
+        }
+        expandDataset.value = props.itemSrc === "hda" && value;
+        viewCollection.value = props.itemSrc !== "hda" && value;
+        if (value) {
+            // URL targets must load even when they start below the viewport.
+            hasBeenVisible.value = true;
+            if (props.itemSrc === "hdca") {
+                view.value = "element";
+            }
+            await nextTick();
+            if (props.scrollOnExpand) {
+                containerEl.value?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+            }
+        }
+    },
+    { immediate: true },
+);
 
 async function onDelete(item: HistoryItemSummary, recursive = false) {
     try {
@@ -94,6 +128,7 @@ function onViewCollection(collection: any) {
         view.value = "element";
     }
     viewCollection.value = !viewCollection.value;
+    emit("update:expanded", viewCollection.value);
 }
 </script>
 
@@ -118,7 +153,7 @@ function onViewCollection(collection: any) {
                     :name="item.name || item.element_identifier"
                     :expand-dataset="expandDataset"
                     :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
-                    @update:expand-dataset="expandDataset = $event"
+                    @update:expand-dataset="setExpanded"
                     @view-collection="onViewCollection"
                     @delete="onDelete"
                     @toggleHighlights="onHighlight(item)"
