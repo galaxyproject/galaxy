@@ -1056,8 +1056,6 @@ class MinimalJobWrapper(HasResourceParameters):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
         self.__working_directory = None
-        # Set while preparing jobs that decrypt protected inputs: where the compute host finds the plan.
-        self.protection_plan_path: str | None = None
         if use_persisted_destination:
             self.set_cached_job_destination(JobDestination(from_job=job))
 
@@ -1158,6 +1156,11 @@ class MinimalJobWrapper(HasResourceParameters):
                 is_task=self.is_task,
             )
         return self._job_io
+
+    @property
+    def protection_plan_path(self) -> str | None:
+        """Where the compute host finds the protection plan, for jobs decrypting protected inputs."""
+        return self._job_io.protection_plan_path if self._job_io else None
 
     @property
     def outputs_directory(self):
@@ -1466,7 +1469,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """Refuse jobs that may not decrypt their inputs, plan the decryption of the others."""
         protection = self.app.dataset_protection
         job.protection_scheme = None
-        self.protection_plan_path = None
+        self.job_io.protection_plan_path = None
         if not protection.enabled or not protection.has_protected_inputs(job):
             # Most jobs: don't look at their parameters and destination.
             return None
@@ -1480,8 +1483,7 @@ class MinimalJobWrapper(HasResourceParameters):
         )
         if plan:
             # Where the command line finds the plan on the compute host.
-            self.protection_plan_path = os.path.join(compute_environment.config_directory(), PLAN_FILENAME)
-            self.job_io.protection_plan_path = self.protection_plan_path
+            self.job_io.protection_plan_path = os.path.join(compute_environment.config_directory(), PLAN_FILENAME)
         return plan
 
     def _write_protection_plan(self, plan: ProtectionPlan) -> str:
