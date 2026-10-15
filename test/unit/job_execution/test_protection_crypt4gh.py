@@ -490,8 +490,7 @@ def test_output_protector_protects_extra_files_and_reports_gaps(tmp_path, servic
     assert decrypt((extra_files / "sub" / "part.txt").read_bytes(), user.secret) == b"part"
 
     bypassed = _FakeDatasetInstance("txt")
-    protector.check_complete([protected, bypassed])  # type: ignore[list-item]
-    protector.write_sidecar(str(tmp_path))
+    assert not protector.finish([protected, bypassed], str(tmp_path))  # type: ignore[list-item]
     sidecar = json.load(open(tmp_path / SIDECAR_FILE))
     assert sidecar["datasets"][str(protected.dataset.uuid)]["extra_files"].keys() == {"sub/part.txt"}
     assert sidecar["datasets"][str(bypassed.dataset.uuid)] == {"outcome": "failed"}

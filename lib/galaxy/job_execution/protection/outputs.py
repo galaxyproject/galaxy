@@ -159,6 +159,32 @@ class OutputProtector:
             extra_files=extra_files,
         )
 
+    def protect_declared(
+        self, dataset_instance: "DatasetInstance", external_filename: str | None, link_data_only: bool
+    ) -> bool:
+        """Protect a declared output before anything queues it for the object store.
+
+        Returns whether the output was stored already, while discovering outputs (assign_primary_output).
+        """
+        dataset = dataset_instance.dataset
+        assert dataset
+        if external_filename is None:
+            self.record_outcome(dataset_instance, OUTCOME_DEFERRED)
+        elif dataset.purged:
+            self.record_outcome(dataset_instance, OUTCOME_PURGED)
+        elif protected_ext := self.protected_ext(dataset_instance):
+            # The tool provided extension may have been applied again since. Read it from the object
+            # store, not from the declared file.
+            dataset_instance.extension = protected_ext
+            dataset.external_filename = None
+            self.protect_extra_files(dataset_instance, dataset.external_extra_files_path)
+            return True
+        else:
+            self.protect(
+                dataset_instance, external_filename, dataset.external_extra_files_path, link_data=link_data_only
+            )
+        return False
+
     def protect_extra_files(self, dataset_instance: "DatasetInstance", extra_files_path: str | None) -> None:
         """Encrypt the extra files of an output protected earlier without them, see :meth:`protect`.
 
@@ -224,7 +250,19 @@ class OutputProtector:
         record = self.records.get(self._uuid(dataset_instance))
         return record.ext if isinstance(record, ProtectedOutput) else None
 
-    def check_complete(self, dataset_instances: list["DatasetInstance"]) -> None:
+    def fail(self, job_directory: str, message: str) -> ProtectionError:
+        """Fail the job before any output is stored, Galaxy shows the errors reported to it."""
+        self.errors.append(message)
+        self._write_sidecar(job_directory)
+        return ProtectionError(message)
+
+    def finish(self, dataset_instances: list["DatasetInstance"], job_directory: str) -> bool:
+        """Report the protection of every output to Galaxy, return whether all of them were protected."""
+        self._check_complete(dataset_instances)
+        self._write_sidecar(job_directory)
+        return not self.errors
+
+    def _check_complete(self, dataset_instances: list["DatasetInstance"]) -> None:
         """Record an error for every output that went around the protection."""
         for dataset_instance in dataset_instances:
             dataset = dataset_instance.dataset
@@ -235,7 +273,7 @@ class OutputProtector:
                 self.records[self._uuid(dataset_instance)] = UnprotectedOutput(outcome=OUTCOME_FAILED)
                 self.errors.append(f"Output '{dataset_instance.name}' was not protected.")
 
-    def write_sidecar(self, job_directory: str) -> None:
+    def _write_sidecar(self, job_directory: str) -> None:
         sidecar = ProtectionSidecar(datasets=self.records, errors=self.errors)
         try:
             sidecar.key_ref = self.runtime.key_ref
