@@ -483,6 +483,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                         }"
                                         :element="element"
                                         not-editable
+                                        selectable
                                         :selected="[pairElements.forward, pairElements.reverse].includes(element)"
                                         @element-is-selected="selectElement"
                                         @onRename="(name: string) => (element.name = name)" />

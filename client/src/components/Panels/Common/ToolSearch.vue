@@ -3,7 +3,7 @@ import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 import { onMounted, onUnmounted, type PropType, watch } from "vue";
 
-import { FAVORITES_KEYS, filterPanelByToolIds, searchTools } from "@/components/Panels/utilities";
+import { FAVORITES_KEYS, searchTools } from "@/components/Panels/utilities";
 import { type Tool, type ToolPanelItem, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
@@ -64,6 +64,7 @@ interface RequestPayload {
     tools: Tool[];
     query: string;
     currentPanel: Record<string, ToolPanelItem>;
+    favoriteToolIds: string[];
 }
 
 interface SearchEventQuery {
@@ -141,28 +142,29 @@ function parseFavoritesQuery(query: string) {
 function handlePost(event: SearchEvent) {
     const { type } = event.data;
     if (type === "searchTools") {
-        const { tools, query, currentPanel } = event.data.payload;
+        const { tools, query, currentPanel, favoriteToolIds } = event.data.payload;
         const favoritesQuery = parseFavoritesQuery(query);
         if (favoritesQuery && !favoritesQuery.isFavoritesOnly) {
-            const { results, resultPanel, closestTerm } = searchTools(tools, favoritesQuery.remainder, currentPanel);
             const favoriteToolIdSet = new Set(currentFavorites.value.tools);
-            const favoriteResults = results.filter((toolId) => favoriteToolIdSet.has(toolId));
-            const favoriteResultPanel =
-                resultPanel && favoriteResults.length > 0
-                    ? filterPanelByToolIds(resultPanel, new Set(favoriteResults))
-                    : resultPanel;
+            // Narrow to favorites before searching, so lineage de-duplication cannot drop a favorited version.
+            const favoriteTools = tools.filter((tool) => favoriteToolIdSet.has(tool.id));
+            const { results, resultPanel, closestTerm } = searchTools(
+                favoriteTools,
+                favoritesQuery.remainder,
+                currentPanel,
+            );
             onMessage({
                 data: {
                     type: "favoriteSearchToolsResult",
-                    payload: favoriteResults,
-                    sectioned: favoriteResultPanel,
+                    payload: results,
+                    sectioned: resultPanel,
                     query,
                     closestTerm,
                 },
             } as unknown as MessageEvent);
             return;
         }
-        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel);
+        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel, favoriteToolIds);
         // send the result back to the main thread
         onMessage({
             data: {
@@ -221,11 +223,12 @@ onUnmounted(() => {
 watch(
     () => currentFavorites.value.tools,
     () => {
-        const favoritesQuery = parseFavoritesQuery(props.query);
-        if (!favoritesQuery) {
+        // Plain searches re-run too, since favorites decide which tool version is shown.
+        if (!props.query || props.query.trim().length < MIN_QUERY_LENGTH) {
             return;
         }
-        if (favoritesQuery.isFavoritesOnly) {
+        const favoritesQuery = parseFavoritesQuery(props.query);
+        if (favoritesQuery?.isFavoritesOnly) {
             post({ type: "favoriteTools" });
         } else {
             post({
@@ -234,6 +237,7 @@ watch(
                     tools: props.toolsList,
                     query: props.query,
                     currentPanel: props.currentPanel,
+                    favoriteToolIds: [...currentFavorites.value.tools],
                 },
             });
         }
@@ -253,6 +257,7 @@ function checkQuery(q: string) {
                     tools: props.toolsList,
                     query: q,
                     currentPanel: props.currentPanel,
+                    favoriteToolIds: [...currentFavorites.value.tools],
                 },
             });
         }

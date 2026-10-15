@@ -14,7 +14,6 @@ import { loadWebhooks } from "@/utils/webhooks";
 import { copyId, copyLink, downloadTool, openLink } from "../utilities";
 
 import ToolTourGeneratorItem from "./ToolTourGeneratorItem.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -88,12 +87,10 @@ loadToolMenuWebhooks();
             variant="link"
             aria-label="View all Options"
             class="tool-dropdown"
-            toggle-class="p-0"
+            toggle-class="px-2 py-1"
             size="sm">
             <template v-slot:button-content>
-                <GButton class="d-block" color="blue" transparent size="small" tooltip title="Options">
-                    <FontAwesomeIcon :icon="faCaretDown" />
-                </GButton>
+                <FontAwesomeIcon :icon="faCaretDown" />
             </template>
 
             <GDropdownItem @click="onCopyLink">
@@ -128,3 +125,10 @@ loadToolMenuWebhooks();
         </GModal>
     </div>
 </template>
+
+<style scoped>
+:deep(.dropdown-toggle) {
+    min-width: 24px;
+    min-height: 24px;
+}
+</style>

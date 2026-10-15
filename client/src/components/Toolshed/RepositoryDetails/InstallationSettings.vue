@@ -14,8 +14,9 @@
         <BFormGroup
             v-if="requiresPanel"
             label="Target Section:"
+            label-for="repository-target-section"
             description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
-            <BFormInput v-model="toolSection" list="sectionSelect" />
+            <BFormInput id="repository-target-section" v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}

@@ -289,7 +289,9 @@ function resetWizard() {
                         :header="target.label"
                         class="wizard-selection-card"
                         @click="exportData.destination = target.destination">
-                        <div v-sanitize-html:links="renderMarkdown(target.markdownDescription)" />
+                        <div
+                            v-sanitize-html:links="renderMarkdown(target.markdownDescription)"
+                            class="destination-description" />
                     </BCard>
                 </BCardGroup>
             </div>
@@ -331,6 +333,7 @@ function resetWizard() {
             <div v-if="wizard.isCurrent('export-summary')">
                 <BFormGroup
                     v-if="needsFileName"
+                    label="File name"
                     label-for="exported-file-name"
                     :description="`Give the exported file a name.`"
                     class="mt-3">
@@ -372,6 +375,10 @@ function resetWizard() {
 </template>
 
 <style scoped lang="scss">
+.destination-description :deep(a) {
+    text-decoration: underline;
+}
+
 .zenodo-info {
     display: flex;
     align-items: flex-start;

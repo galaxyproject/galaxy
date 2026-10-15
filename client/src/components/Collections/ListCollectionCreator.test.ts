@@ -69,8 +69,8 @@ function inListElements(wrapper: ReturnType<typeof mount>): HDASummary[] {
 async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]) {
     for (const name of names) {
         const option = wrapper
-            .findAll(".options-list.unselected > button")
-            .find((candidate) => candidate.text().includes(name));
+            .findAll(".options-list.unselected .option-button")
+            .find((candidate) => candidate.attributes("aria-label") === `Select ${name}`);
         await option?.trigger("click");
         await flushPromises();
     }

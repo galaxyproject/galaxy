@@ -1604,17 +1604,7 @@ steps:
         self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
-        if self.backend_type == "playwright":
-            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
-            element.click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            pw_driver.page.keyboard.type(param_type)
-            self.sleep_for(self.wait_types.UX_RENDER)
-            pw_driver.page.keyboard.press("Enter")
-        else:
-            self.action_chains().move_to_element(element).click().pause(1).send_keys(param_type).pause(1).send_keys(
-                Keys.ENTER
-            ).perform()
+        self.select_set_value(element, param_type)
 
     @selenium_test
     def test_editor_invalid_tool_state(self):

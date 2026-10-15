@@ -41,6 +41,36 @@ describe("GenericWizard", () => {
         expect(call?.[0]).toContain('target="_blank"');
     });
 
+    it("keeps completed steps named when their number becomes an icon", async () => {
+        const host = defineComponent({
+            setup() {
+                const wizard = useWizard({
+                    format: {
+                        label: "Select format",
+                        instructions: "Choose format",
+                        isValid: () => true,
+                        isSkippable: () => false,
+                    },
+                    destination: {
+                        label: "Select destination",
+                        instructions: "Choose destination",
+                        isValid: () => true,
+                        isSkippable: () => false,
+                    },
+                });
+                return () => h(GenericWizard, { use: wizard });
+            },
+        });
+        const wrapper = mount(host, { localVue: getLocalVue() });
+        await wrapper.get(".go-next-btn").trigger("click");
+        const completedStep = wrapper.get(".step-number.done");
+        expect(completedStep.text()).toBe("");
+        expect(completedStep.attributes("aria-label")).toBe("1: Select format");
+        await completedStep.trigger("click");
+        expect(wrapper.get(".step-instructions").text()).toBe("Choose format");
+        wrapper.unmount();
+    });
+
     it("wraps the wizard in a card by default", () => {
         const wrapper = mount(Host as object, { localVue: getLocalVue(), propsData: { description: "Pick one" } });
 

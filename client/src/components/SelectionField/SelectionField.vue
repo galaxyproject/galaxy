@@ -16,9 +16,9 @@
         @dragleave.prevent="onDragLeave"
         @dragover.prevent
         @drop.prevent="onDrop">
-        <label class="form-label font-weight-bold mb-2" for="multiselect">{{ title }}:</label>
+        <label class="form-label font-weight-bold mb-2" :for="selectId">{{ title }}:</label>
         <Multiselect
-            id="multiselect"
+            :id="selectId"
             v-model="currentValue"
             name="multiselect"
             deselect-label=""
@@ -46,12 +46,14 @@ import {
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { uid } from "@/utils/utils";
 
 import type { OptionType } from "./types";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const selectId = `selection-field-${uid()}`;
 const DEFAULT_NAME = "...";
 const DELAY = 300;
 
