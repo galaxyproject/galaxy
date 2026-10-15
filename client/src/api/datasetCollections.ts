@@ -9,7 +9,7 @@ import {
     isHDCA,
 } from "@/api";
 import type { components } from "@/api/schema";
-import { ApiError, errorMessageAsString, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
+import { apiErrorFromResponse, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
 
@@ -33,7 +33,7 @@ export async function fetchCollectionDetails(params: { hdca_id: string }): Promi
     });
 
     if (error) {
-        return { data: undefined, error: new ApiError(errorMessageAsString(error), response.status) };
+        return { data: undefined, error: apiErrorFromResponse(error, response) };
     }
     return { data: data as HDCADetailed, error: undefined };
 }

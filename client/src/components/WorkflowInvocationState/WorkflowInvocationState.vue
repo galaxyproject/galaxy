@@ -541,7 +541,10 @@ async function onCancel() {
     <BAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </BAlert>
-    <BAlert v-else-if="!invocationLoaded" variant="info" show>
+    <BAlert
+        v-else-if="!invocationLoaded || invocationStore.isLoadingInvocation(props.invocationId)"
+        variant="info"
+        show>
         <LoadingSpan message="Loading invocation" />
     </BAlert>
     <BAlert v-else-if="invocationStore.getInvocationLoadError(props.invocationId)" variant="danger" show>

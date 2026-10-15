@@ -3,7 +3,7 @@ import axios, { type AxiosResponse } from "axios";
 import type { AnyHistory, HistorySummaryExtended } from "@/api";
 import { GalaxyApi } from "@/api";
 import { prependPath } from "@/utils/redirect";
-import { ApiError, errorMessageAsString, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
+import { apiErrorFromResponse, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
 
 /**
  * Generic json getter
@@ -106,7 +106,7 @@ export async function getHistoryByIdFromServer(id: string): Promise<GalaxyApiRes
     });
 
     if (error) {
-        return { data: undefined, error: new ApiError(errorMessageAsString(error), response.status) };
+        return { data: undefined, error: apiErrorFromResponse(error, response) };
     }
 
     // We know that the data is a HistorySummaryExtended because we requested it

@@ -1,8 +1,8 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
+import { useRetryGate } from "@/composables/retryGate";
 import { LastQueue } from "@/utils/lastQueue";
-import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 /**
  * Parameters for fetching an item from the server.
@@ -49,7 +49,7 @@ export function useKeyedCache<T>(
 
     const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
 
-    const retryCounts: { [key: string]: number } = {};
+    const retryGate = useRetryGate();
 
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
@@ -57,9 +57,7 @@ export function useKeyedCache<T>(
         return (id: string) => {
             const item = storedItems.value[id];
             const existingError = loadingErrors.value[id];
-            const canRetry =
-                existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
-            if (shouldFetch(item) && (!existingError || canRetry)) {
+            if (shouldFetch(item) && (!existingError || retryGate.canRetry(id, existingError))) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
@@ -75,14 +73,13 @@ export function useKeyedCache<T>(
 
     const isLoadingItem = computed(() => {
         return (id: string) => {
-            return Boolean(loadingRequests.value[id]);
+            // A pending retry counts as loading, so consumers show progress during backoff.
+            return Boolean(loadingRequests.value[id]) || retryGate.isRetryPending(id);
         };
     });
 
     const getItemLoadError = computed(() => {
-        return (id: string) => {
-            return loadingErrors.value[id] ?? null;
-        };
+        return (id: string) => retryGate.finalError(id, loadingErrors.value[id]);
     });
 
     async function fetchItemById(params: FetchParams): Promise<T | undefined> {
@@ -98,10 +95,11 @@ export function useKeyedCache<T>(
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
                 set(storedItems.value, itemId, item);
                 del(loadingErrors.value, itemId);
-                delete retryCounts[itemId];
+                retryGate.recordSuccess(itemId);
                 return item;
             } catch (error) {
-                retryCounts[itemId] = (retryCounts[itemId] ?? 0) + 1;
+                // A 429 here already went through the GalaxyApi rate-limiter middleware's own retries.
+                retryGate.recordFailure(itemId, error as Error);
                 set(loadingErrors.value, itemId, error as Error);
             } finally {
                 del(loadingRequests.value, itemId);
@@ -124,11 +122,11 @@ export function useKeyedCache<T>(
          */
         getItemById,
         /**
-         * A computed function holding errors
+         * A computed function returning the load error for an id; null while a retry is pending or in flight.
          */
         getItemLoadError,
         /**
-         * A computed function that returns true if the item with the given id is currently being fetched.
+         * A computed function that returns true if the item with the given id is being fetched or waiting to retry.
          */
         isLoadingItem,
         /**

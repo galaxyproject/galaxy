@@ -4,6 +4,8 @@ import { computed } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
 type AttributeType = "name" | "misc_blurb" | "peek" | "extension";
 
 const ATTRIBUTES: Record<string, AttributeType> = {
@@ -20,7 +22,7 @@ interface Dataset {
     extension?: string;
 }
 
-const { getDatasetError, getDataset } = useDatasetStore();
+const { getDatasetError, getDataset, isLoadingDataset } = useDatasetStore();
 
 const props = defineProps<{
     datasetId: string;
@@ -39,11 +41,14 @@ const attributeValue = computed(() => {
 
 const dataset = computed(() => getDataset(props.datasetId) as Dataset);
 const error = computed(() => getDatasetError(props.datasetId));
+// A cached history summary lacks detail attributes (e.g. peek) until the details fetch succeeds.
+const loading = computed(() => isLoadingDataset(props.datasetId) && !dataset.value?.[ATTRIBUTES[props.name]!]);
 const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 </script>
 
 <template>
     <BAlert v-if="error" show variant="warning">{{ error }}</BAlert>
+    <LoadingSpan v-else-if="loading" message="Loading Dataset" />
     <pre
         v-else-if="props.name === 'history_dataset_peek'"
         v-sanitize-html="attributeValue"

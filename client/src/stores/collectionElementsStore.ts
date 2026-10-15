@@ -10,9 +10,9 @@ import {
     isHDCA,
 } from "@/api";
 import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
+import { useRetryGate } from "@/composables/retryGate";
 import { ensureDefined } from "@/utils/assertions";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
-import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 /**
  * Represents an element in a collection that has not been fetched yet.
@@ -47,7 +47,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
-    const retryCounts: { [key: string]: number } = {};
+    const collectionRetryGate = useRetryGate();
 
     /**
      * Returns a key that can be used to store or retrieve the elements of a collection in the store.
@@ -67,15 +67,19 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
+    /** True while fetching or waiting out a retry backoff. */
     const isLoadingCollectionElements = computed(() => {
         return (collection: CollectionEntry) => {
-            return loadingCollectionElements.value[getCollectionKey(collection)] ?? false;
+            const key = getCollectionKey(collection);
+            return Boolean(loadingCollectionElements.value[key]) || collectionRetryGate.isRetryPending(key);
         };
     });
 
+    /** The final load error; null while a retry is pending or in flight. */
     const getLoadingCollectionElementsError = computed(() => {
         return (collection: CollectionEntry) => {
-            return loadingCollectionElementsErrors.value[getCollectionKey(collection)] ?? false;
+            const key = getCollectionKey(collection);
+            return collectionRetryGate.finalError(key, loadingCollectionElementsErrors.value[key]);
         };
     });
 
@@ -189,11 +193,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         return (collectionId: string) => {
             if (!storedCollections.value[collectionId]) {
                 const existingError = loadingCollectionElementsErrors.value[collectionId];
-                const canRetry =
-                    existingError &&
-                    isRetryableApiError(existingError) &&
-                    (retryCounts[collectionId] ?? 0) <= MAX_RETRIES;
-                if (!existingError || canRetry) {
+                if (!existingError || collectionRetryGate.canRetry(collectionId, existingError)) {
                     fetchCollection({ id: collectionId });
                 }
             }
@@ -205,11 +205,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         return (collectionId: string) => {
             if (!storedCollectionsDetailed.value[collectionId]) {
                 const existingError = loadingCollectionElementsErrors.value[collectionId];
-                const canRetry =
-                    existingError &&
-                    isRetryableApiError(existingError) &&
-                    (retryCounts[collectionId] ?? 0) <= MAX_RETRIES;
-                if (!existingError || canRetry) {
+                if (!existingError || collectionRetryGate.canRetry(collectionId, existingError)) {
                     fetchCollection({ id: collectionId });
                 }
             }
@@ -222,12 +218,12 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         try {
             const result = await fetchCollectionDetails({ hdca_id: params.id });
             if (result.error) {
-                retryCounts[params.id] = (retryCounts[params.id] ?? 0) + 1;
+                collectionRetryGate.recordFailure(params.id, result.error);
                 set(loadingCollectionElementsErrors.value, params.id, result.error);
             } else {
                 saveCollection(result.data);
                 del(loadingCollectionElementsErrors.value, params.id);
-                delete retryCounts[params.id];
+                collectionRetryGate.recordSuccess(params.id);
             }
         } finally {
             del(loadingCollectionElements.value, params.id);
