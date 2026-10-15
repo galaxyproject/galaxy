@@ -64,6 +64,7 @@ async function toggleSearch() {
             <GButton
                 tooltip
                 :title="toggled ? 'Close Search' : 'Search Invocation Graph'"
+                data-description="invocation graph search toggle"
                 :transparent="toggled"
                 @click="toggleSearch">
                 <FontAwesomeIcon :icon="toggled ? faChevronRight : faSearch" fixed-width />
