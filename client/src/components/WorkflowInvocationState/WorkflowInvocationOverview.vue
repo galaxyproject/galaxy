@@ -80,7 +80,6 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 :invocation="invocation"
                 :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
-                :is-terminal="invocationAndJobTerminal"
                 :is-full-page="isFullPage"
                 :show-minimap="isFullPage" />
         </div>

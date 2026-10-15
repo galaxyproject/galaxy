@@ -1,19 +1,25 @@
 import { createTestingPinia } from "@pinia/testing";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
-import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import { fetchDatasetDetails } from "@/api/datasets";
+import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 
-import { useInvocationGraph } from "./useInvocationGraph";
+import { stepJobSummaryLookup, useInvocationGraph } from "./useInvocationGraph";
 
-const { getFullWorkflowCached } = vi.hoisted(() => ({
-    getFullWorkflowCached: vi.fn().mockResolvedValue({
-        steps: { 0: { id: 0, type: "tool", position: { left: 0, top: 0 } } },
+const toolStep = { id: 0, type: "tool", position: { left: 0, top: 0 } };
+const workflowSteps = vi.hoisted(() => ({ value: {} as Record<number, object> }));
+
+vi.mock("@/stores/workflowStore", () => ({
+    useWorkflowStore: () => ({
+        getFullWorkflowCached: vi.fn(async () => ({ steps: workflowSteps.value })),
     }),
 }));
-vi.mock("@/stores/workflowStore", () => ({
-    useWorkflowStore: () => ({ getFullWorkflowCached }),
+vi.mock("@/api/datasets", async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    fetchDatasetDetails: vi.fn(),
 }));
 vi.mock("@/components/Workflow/Editor/modules/model", () => ({ fromSimple: vi.fn() }));
 vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
@@ -21,32 +27,40 @@ vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
 /** Sets up the invocation graph composable for testing.
  * Initializes the composable and then loads it via its `loadInvocationGraph` function.
  */
-function setupComposable(invStep?: object, summaries: object[] = [], inputStepParameters: object = {}) {
+function setupComposable(invStep?: object, summaries: object[] = [], loadOntoEditor = false) {
     const invocation = ref({
         id: "inv1",
         steps: invStep ? { 0: invStep } : {},
         inputs: {},
-        input_step_parameters: inputStepParameters,
+        input_step_parameters: {},
     } as WorkflowInvocationElementView);
-    const { steps, loadInvocationGraph } = useInvocationGraph(
+    const stepsJobsSummary = ref(summaries as StepJobSummary[]);
+    const { steps, loadInvocationGraph, loading } = useInvocationGraph(
         invocation,
-        ref(summaries as StepJobSummary[]),
+        stepsJobsSummary,
         ref("wf1"),
         ref(0),
     );
-    return { steps, load: () => loadInvocationGraph(false) };
+    return { steps, loading, invocation, stepsJobsSummary, load: () => loadInvocationGraph(loadOntoEditor) };
+}
+
+type DatasetDetails = Awaited<ReturnType<typeof fetchDatasetDetails>>;
+
+function jobSummary(states: Record<string, number>, populated_state = "ok", id = "j1") {
+    return { id, model: "Job", states, populated_state } as StepJobSummary;
 }
 
 /** Helper function to set up a a version of the composable with provided job states */
 function withJobStates(states: Record<string, number>, populated_state = "ok") {
-    return setupComposable({ job_id: "j1" }, [{ id: "j1", model: "Job", states, populated_state }]);
+    return setupComposable({ job_id: "j1" }, [jobSummary(states, populated_state)]);
 }
 
-describe("useInvocationGraph — step state", () => {
-    beforeEach(() => {
-        setActivePinia(createTestingPinia({ createSpy: vi.fn }));
-    });
+beforeEach(() => {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn }));
+    workflowSteps.value = { 0: toolStep };
+});
 
+describe("useInvocationGraph — step state", () => {
     it("is queued — no invocation step for this workflow step", async () => {
         const { steps, load } = setupComposable();
         await load();
@@ -162,6 +176,156 @@ describe("useInvocationGraph — step state", () => {
     });
 });
 
+// The Overview graph loads onto the editor canvas, the Steps tab and Feedback don't; both must follow the polls.
+describe.each([
+    ["Steps tab", false],
+    ["Overview graph", true],
+])("useInvocationGraph — following polled data (%s)", (_name, loadOntoEditor) => {
+    it("updates step states when a new jobs summary arrives", async () => {
+        const { steps, stepsJobsSummary, load } = setupComposable(
+            { job_id: "j1" },
+            [jobSummary({ queued: 1 }, "scheduled")],
+            loadOntoEditor,
+        );
+        await load();
+        expect(steps.value[0]?.state).toBe("queued");
+
+        stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
+        await flushPromises();
+        expect(steps.value[0]?.state).toBe("running");
+        expect(steps.value[0]?.headerClass).toEqual({ "node-header-invocation": true, "header-running": true });
+
+        stepsJobsSummary.value = [jobSummary({ ok: 1 })];
+        await flushPromises();
+        expect(steps.value[0]?.state).toBe("ok");
+        expect(steps.value[0]?.jobs).toEqual({ ok: 1 });
+    });
+
+    it("updates step states when only the invocation changes", async () => {
+        workflowSteps.value = { 0: { id: 0, type: "subworkflow", position: { left: 0, top: 0 } } };
+        const { steps, invocation, load } = setupComposable({ id: "is0", state: "new" }, [], loadOntoEditor);
+        await load();
+        expect(steps.value[0]?.state).toBe("new");
+
+        invocation.value = {
+            ...invocation.value,
+            steps: [{ id: "is0", state: "failed" }],
+        } as WorkflowInvocationElementView;
+        await flushPromises();
+        expect(steps.value[0]?.state).toBe("error");
+    });
+
+    it("updates a step once it is scheduled", async () => {
+        const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
+        await load();
+        expect(steps.value[0]?.state).toBe("queued");
+
+        invocation.value = {
+            ...invocation.value,
+            steps: [{ id: "is0", job_id: "j1" }],
+        } as WorkflowInvocationElementView;
+        stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
+        await flushPromises();
+        expect(steps.value[0]?.state).toBe("running");
+    });
+
+    it("does not toggle loading when following polls", async () => {
+        const { loading, stepsJobsSummary, load } = setupComposable(
+            { job_id: "j1" },
+            [jobSummary({ queued: 1 }, "scheduled")],
+            loadOntoEditor,
+        );
+        await load();
+        const loadingValues: boolean[] = [];
+        watch(loading, (value) => loadingValues.push(value), { flush: "sync" });
+
+        stepsJobsSummary.value = [jobSummary({ ok: 1 })];
+        await flushPromises();
+        expect(loadingValues).toEqual([]);
+    });
+
+    it("writes nothing to the steps when the polled data is unchanged", async () => {
+        const { steps, invocation, stepsJobsSummary, load } = setupComposable(
+            { job_id: "j1" },
+            [jobSummary({ running: 1 }, "scheduled")],
+            loadOntoEditor,
+        );
+        await load();
+        let writes = 0;
+        watch(steps, () => writes++, { deep: true, flush: "sync" });
+
+        // a re-fetch with nothing changed: equal copies, as the store produces on every poll
+        invocation.value = JSON.parse(JSON.stringify(invocation.value));
+        stepsJobsSummary.value = JSON.parse(JSON.stringify(stepsJobsSummary.value));
+        await flushPromises();
+        // as the Overview graph's own poll loop used to do
+        await load();
+        expect(writes).toBe(0);
+    });
+
+    it("applies the latest jobs summary that arrives while an update is running", async () => {
+        workflowSteps.value = {
+            0: { id: 0, type: "data_input", position: { left: 0, top: 0 } },
+            1: { ...toolStep, id: 1 },
+        };
+        let resolveDataset: (value: DatasetDetails) => void = () => {};
+        vi.mocked(fetchDatasetDetails).mockReturnValueOnce(new Promise((resolve) => (resolveDataset = resolve)));
+        const invocation = ref({
+            id: "inv1",
+            steps: [
+                { id: "is0", workflow_step_id: 0 },
+                { id: "is1", job_id: "j1" },
+            ],
+            inputs: { 0: { id: "d1", src: "hda" } },
+            input_step_parameters: {},
+        } as unknown as WorkflowInvocationElementView);
+        const stepsJobsSummary = ref([jobSummary({ queued: 1 }, "scheduled")]);
+        const { steps, loadInvocationGraph } = useInvocationGraph(invocation, stepsJobsSummary, ref("wf1"), ref(0));
+
+        // the first load waits on the input dataset while new polls land
+        const loaded = loadInvocationGraph(loadOntoEditor);
+        await flushPromises();
+        stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
+        await flushPromises();
+        stepsJobsSummary.value = [jobSummary({ ok: 1 })];
+        await flushPromises();
+        resolveDataset({
+            id: "d1",
+            hid: 1,
+            name: "input",
+            state: "ok",
+            history_content_type: "dataset",
+        } as DatasetDetails);
+        await loaded;
+        await flushPromises();
+
+        expect(steps.value[0]?.state).toBe("ok");
+        expect(steps.value[1]?.state).toBe("ok");
+        expect(steps.value[1]?.jobs).toEqual({ ok: 1 });
+    });
+});
+
+describe("stepJobSummaryLookup", () => {
+    const jobStep = { job_id: "x1", implicit_collection_jobs_id: null } as InvocationStep;
+    const collectionStep = { job_id: null, implicit_collection_jobs_id: "x1" } as InvocationStep;
+    const lookup = stepJobSummaryLookup([
+        { id: "x1", model: "Job", states: { ok: 1 }, populated_state: "ok" },
+        { id: "x1", model: "ImplicitCollectionJobs", states: { error: 2 }, populated_state: "ok" },
+    ] as StepJobSummary[]);
+
+    it("matches a step's job by job id", () => {
+        expect(lookup(jobStep)?.model).toBe("Job");
+    });
+
+    it("matches a mapped-over step by implicit collection jobs id", () => {
+        expect(lookup(collectionStep)?.model).toBe("ImplicitCollectionJobs");
+    });
+
+    it("finds nothing for a step without jobs", () => {
+        expect(lookup({ job_id: null, implicit_collection_jobs_id: null } as InvocationStep)).toBeUndefined();
+    });
+});
+
 describe("useInvocationGraph — parameter input text", () => {
     beforeEach(() => {
         setActivePinia(createTestingPinia({ createSpy: vi.fn }));
@@ -169,12 +333,13 @@ describe("useInvocationGraph — parameter input text", () => {
 
     async function loadParameterInput(parameterType: string, parameterValue: string) {
         const output = { name: "output", type: parameterType, optional: false, multiple: false, parameter: true };
-        getFullWorkflowCached.mockResolvedValueOnce({
-            steps: { 0: { id: 0, type: "parameter_input", position: { left: 0, top: 0 }, outputs: [output] } },
-        });
-        const { steps, load } = setupComposable({ workflow_step_id: 10 }, [], {
+        workflowSteps.value = {
+            0: { id: 0, type: "parameter_input", position: { left: 0, top: 0 }, outputs: [output] },
+        };
+        const { steps, invocation, load } = setupComposable({ workflow_step_id: 10 });
+        invocation.value.input_step_parameters = {
             param: { label: "param", parameter_value: parameterValue, workflow_step_id: 10 },
-        });
+        };
         await load();
         return steps.value[0]?.nodeText;
     }
