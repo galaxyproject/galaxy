@@ -1,3 +1,5 @@
+from urllib.parse import urljoin
+
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_OPTIONAL_TRUE_INPUT_DATA,
     WORKFLOW_SIMPLE_CAT_TWICE,
@@ -106,12 +108,16 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
             assert rerun_url != original_url
             self.refresh()
             source_link = invocations.source_invocation_link.wait_for_visible()
-            assert source_link.get_attribute("href") == original_url
+            assert urljoin(self.current_url, source_link.get_attribute("href")) == original_url
+            invocations.overview_graph.wait_for_visible()
+            self.history_panel_wait_for_hid_ok(output_hid)
             self.screenshot(f"workflow_rerun_lineage_{'expanded' if expanded else 'simple'}")
 
             source_link.click()
             latest_link = invocations.latest_rerun_invocation_link.wait_for_visible()
-            assert latest_link.get_attribute("href") == rerun_url
+            assert urljoin(self.current_url, latest_link.get_attribute("href")) == rerun_url
+            invocations.overview_graph.wait_for_visible()
+            self.history_panel_wait_for_hid_ok(output_hid)
             self.screenshot(f"workflow_rerun_lineage_source_{output_hid}")
             latest_link.click()
             invocations.source_invocation_link.wait_for_visible()
@@ -122,6 +128,12 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocation_id = original_url.rsplit("/", 1)[-1]
         invocations.lineage_rerun_badge(invocation_id=invocation_id).wait_for_visible()
         self.screenshot("workflow_rerun_lineage_list_marker")
+
+        invocations.activity_expand.wait_for_and_click()
+        invocations.invocations_table.wait_for_visible()
+        for row, expected in enumerate(("Rerun", "Rerun", "")):
+            assert invocations.lineage_grid_run_type(row=row).wait_for_text() == expected
+        self.screenshot("workflow_rerun_lineage_grid_markers")
 
     @selenium_test
     @managed_history

@@ -292,7 +292,8 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         invocation: WorkflowInvocation,
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.element,
-        trans: ProvidesUserContext | None = None,
+        *,
+        trans: ProvidesUserContext,
     ):
         return self.serialize_workflow_invocations([invocation], params, default_view=default_view, trans=trans)[0]
 
@@ -308,7 +309,8 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         invocations,
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.collection,
-        trans: ProvidesUserContext | None = None,
+        *,
+        trans: ProvidesUserContext,
     ):
         view = params.view or default_view
         responses = []
@@ -317,7 +319,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 view.value, step_details=params.step_details, legacy_job_state=params.legacy_job_state
             )
             as_dict["messages"] = invocation.messages
-            if trans is not None and view == InvocationSerializationView.element:
+            if view == InvocationSerializationView.element:
                 source = invocation.rerun_of_invocation
                 if source is not None and self._can_access_invocation(trans, source):
                     as_dict["rerun_of_invocation_id"] = source.id

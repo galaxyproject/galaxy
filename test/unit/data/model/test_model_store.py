@@ -537,6 +537,7 @@ def test_import_export_invocation():
     # never resolve those identifiers against the destination database.
     invocation_attrs_path = pathlib.Path(temp_directory) / store.ATTRS_FILENAME_INVOCATIONS
     invocation_attrs = json.loads(invocation_attrs_path.read_text())
+    assert "rerun_of_invocation_id" not in invocation_attrs[0]
     invocation_attrs[0]["rerun_of_invocation_id"] = source_invocation.id
     invocation_attrs_path.write_text(json.dumps(invocation_attrs))
     import_model_store.perform_import(history=h2)
