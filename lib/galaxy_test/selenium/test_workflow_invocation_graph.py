@@ -138,11 +138,10 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         def assert_single_result():
             results = invocations.graph_search_result.all()
             assert [result.text.strip() for result in results] == ["4: right_cat"]
-            return results[0]
 
-        result = assert_single_result()
+        assert_single_result()
         self.screenshot("invocation_graph_search")
-        result.click()
+        invocations.graph_search_result.wait_for_and_click()
         self._assert_step_card_title("right_cat")
 
     def _open_two_branches_invocation(self):
