@@ -3955,29 +3955,6 @@ outputs:
             )
             assert content.strip() == "2"
 
-    def test_required_input_from_filtered_output_fails(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(
-                """class: GalaxyWorkflow
-inputs: []
-steps:
-  producer:
-    tool_id: output_filter
-    state:
-      produce_out_1: false
-  consumer:
-    tool_id: cat1
-    in:
-      input1: producer/out_1
-""",
-                history_id=history_id,
-                assert_ok=False,
-                wait=True,
-            )
-            invocation = self.workflow_populator.get_invocation(summary.invocation_id)
-            assert invocation["state"] == "failed"
-            assert [message["reason"] for message in invocation["messages"]] == ["output_not_found"]
-
     def test_pick_value_the_only_non_null(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

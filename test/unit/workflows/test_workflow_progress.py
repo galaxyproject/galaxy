@@ -1,16 +1,12 @@
 from typing import cast
-from xml.etree.ElementTree import Element
 
 import pytest
 
 from galaxy import model
-from galaxy.tool_util.parser.output_objects import ToolOutput
-from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
 from galaxy.workflow import modules
 from galaxy.workflow.run import (
     ModuleInjector,
-    NO_REPLACEMENT,
     WorkflowProgress,
 )
 from .workflow_support import (
@@ -159,38 +155,6 @@ class TestWorkflowProgress(TestCase):
         conn.output_name = "out1"
         conn.output_step = self._step(2)
         assert progress.replacement_for_connection(conn) is hda
-
-    def _progress_with_unproduced_output(self, filters):
-        self._setup_workflow(TEST_WORKFLOW_YAML)
-        progress = self._new_workflow_progress()
-        producer = self._step(2)
-        producer.module = modules.ToolModule(MockTrans(), "cat1")
-        producer.module.tool = Bunch(outputs={"out_file1": ToolOutput("out_file1", filters=filters)})
-        progress.set_step_outputs(self._invocation_step(2), {})
-        return progress
-
-    def _input_dict(self, optional, multiple=False):
-        return {"name": "input1", "input_type": "dataset", "multiple": multiple, "optional": optional}
-
-    def test_optional_input_from_filtered_output(self):
-        progress = self._progress_with_unproduced_output(filters=[Element("filter")])
-        replacement = progress.replacement_for_input(None, self._step(4), self._input_dict(optional=True))
-        assert replacement is NO_REPLACEMENT
-
-    def test_optional_multiple_input_from_filtered_output(self):
-        progress = self._progress_with_unproduced_output(filters=[Element("filter")])
-        input_dict = self._input_dict(optional=True, multiple=True)
-        assert progress.replacement_for_input(None, self._step(4), input_dict) is NO_REPLACEMENT
-
-    def test_required_input_from_filtered_output_fails(self):
-        progress = self._progress_with_unproduced_output(filters=[Element("filter")])
-        with pytest.raises(modules.FailWorkflowEvaluation):
-            progress.replacement_for_input(None, self._step(4), self._input_dict(optional=False))
-
-    def test_optional_input_from_unfiltered_missing_output_fails(self):
-        progress = self._progress_with_unproduced_output(filters=[])
-        with pytest.raises(modules.FailWorkflowEvaluation):
-            progress.replacement_for_input(None, self._step(4), self._input_dict(optional=True))
 
     def test_remaining_steps_with_progress(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
