@@ -1235,6 +1235,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def rule_builder_show_and_get_source_as_json(self) -> dict:
         return json.loads(self.rule_builder_show_and_get_source())
 
+    def rule_builder_column_values(self, column_index: int) -> list[str]:
+        """Text of each rendered cell in a rule builder column, in row order.
+
+        The grid only renders cells in view, so this moves keyboard focus to the
+        column to scroll it in. Rows are not scrolled, so this suits small tables.
+        """
+        rule_builder = self.components.rule_builder
+        rendered_cell = rule_builder.table_row_cell(row_index=0).wait_for_visible()
+        self.press(Key.HOME, *[Key.ARROW_RIGHT] * column_index, element=rendered_cell)
+        row_count = len(rule_builder.table_row.all())
+        return [
+            rule_builder.table_cell(row_index=row_index, column_number=column_index + 1).wait_for_visible().text
+            for row_index in range(row_count)
+        ]
+
     def rule_builder_enter_source_text(self, json):
         rule_builder = self.components.rule_builder
         text_area_elem = rule_builder.source.wait_for_visible()

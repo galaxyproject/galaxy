@@ -1753,6 +1753,10 @@ rule_builder:
     view_source: '.rule-builder-view-source'
     source: '.rule-source'
     table: '#rules-ag-grid .ag-root'
+    table_row: '#rules-ag-grid .ag-row'
+    table_row_cell: '#rules-ag-grid .ag-row[row-index="${row_index}"] .ag-cell'
+    # row_index is 0-based, column_number is ag-grid's 1-based aria-colindex
+    table_cell: '#rules-ag-grid .ag-row[row-index="${row_index}"] .ag-cell[aria-colindex="${column_number}"]'
     extension_select: '.rule-footer-extension-group .extension-select'
 
 charts:
