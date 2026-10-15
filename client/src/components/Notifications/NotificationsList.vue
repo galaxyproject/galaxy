@@ -69,6 +69,10 @@ function selectOrDeselectNotification(items: UserNotification[]) {
     }
 }
 
+function onSelectAll(checked: boolean) {
+    selectedNotificationIds.value = checked ? notifications.value.map((n) => n.id) : [];
+}
+
 function togglePreferences() {
     preferencesOpen.value = !preferencesOpen.value;
 }
@@ -117,7 +121,7 @@ function togglePreferences() {
                                 selectedNotificationIds.length > 0 &&
                                 selectedNotificationIds.length < notifications.length
                             "
-                            @update:model-value="selectOrDeselectNotification(notifications)">
+                            @update:model-value="onSelectAll">
                             {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
                         </GCheckbox>
                     </div>
