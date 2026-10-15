@@ -48,6 +48,7 @@ def dump_tour(context: GalaxySeleniumContext, tour_path: str, output: str) -> St
         context.run_tour(tour_path, tour_callback=DumpTourCallback(context))
     except BaseException:
         write_story(story, failure_documentation=FAILURE_DOCUMENTATION)
+        print(f"Tour failed, partial story in {story.output_directory}", file=sys.stderr)
         raise
     story.finalize()
     link_latest(story.output_directory)

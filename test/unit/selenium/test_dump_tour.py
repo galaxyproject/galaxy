@@ -74,7 +74,7 @@ def test_dump_writes_a_story_per_run(tmp_path, tour_path):
 
 
 @pytest.mark.parametrize("failure", [AssertionError("element never appeared"), KeyboardInterrupt()])
-def test_failed_dump_keeps_the_steps_reached(tmp_path, tour_path, failure):
+def test_failed_dump_keeps_the_steps_reached(tmp_path, tour_path, failure, capsys):
     output = tmp_path / "dumps"
     with pytest.raises(type(failure)) as raised:
         dump_tour.dump_tour(TourWalkingContext(failure), tour_path, str(output))
@@ -83,6 +83,7 @@ def test_failed_dump_keeps_the_steps_reached(tmp_path, tour_path, failure):
     markdown = _markdown(str(output / "latest"))
     assert markdown.index("Welcome to Galaxy.") < markdown.index("Tour Failed")
     assert "This is your history." not in markdown
+    assert f"partial story in {os.readlink(output / 'latest')}" in capsys.readouterr().err
 
 
 def test_main_reports_story_write_failure(tmp_path, tour_path, monkeypatch, capsys):
