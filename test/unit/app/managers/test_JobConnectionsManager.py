@@ -261,6 +261,26 @@ def test_related_hids_shared_dataset_is_not_a_copy(sa_session):
     assert sorted(JobConnectionsManager(sa_session).get_related_hids(history.id, 1)) == [1, 2]
 
 
+def test_related_hids_sibling_copy_is_not_related(sa_session):
+    source_history = History()
+    source = HistoryDatasetAssociation(sa_session=sa_session, history=source_history, hid=1, create_dataset=True)
+    history = History()
+    used_copy = HistoryDatasetAssociation(sa_session=sa_session, history=history, hid=1, create_dataset=True)
+    sibling_copy = HistoryDatasetAssociation(sa_session=sa_session, history=history, hid=2, create_dataset=True)
+    output = HistoryDatasetAssociation(sa_session=sa_session, history=history, hid=3, create_dataset=True)
+    sa_session.add_all([source_history, source, history, used_copy, sibling_copy, output])
+    sa_session.flush()
+    used_copy.copy_from(source)
+    sibling_copy.copy_from(source)
+    job = Job()
+    job.add_input_dataset("input", used_copy)
+    job.add_output_dataset("output", output)
+    sa_session.add(job)
+    sa_session.commit()
+    # The sibling shares the input's dataset, but its copy chain never reaches the job input.
+    assert sorted(JobConnectionsManager(sa_session).get_related_hids(history.id, 3)) == [1, 3]
+
+
 def test_related_hids_cyclic_copy_links(sa_session, related_items):
     history, item = related_items
     first = item(1)

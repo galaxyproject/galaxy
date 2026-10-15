@@ -90,18 +90,20 @@ class JobConnectionsManager:
         if hda_id is None and hdca_id is None:
             return [hid]
         copies_by_class = {hda: hda_copies, hdca: hdca_copies}
-        # Avoid planning copy work in ordinary histories, and anchor the clicked item by primary key.
-        collection_outputs = self._collection_output_hda_ids(history_id) if hda_copies else None
         related_selects = []
         for item_class, item_id in ((hda, hda_id), (hdca, hdca_id)):
             if item_id is None:
                 continue
+            # Avoid planning copy work in ordinary histories, and anchor the clicked item by primary key.
             if copies_by_class[item_class]:
+                clicked = item_class.id == item_id
                 chain = self._copied_from_chain(
                     item_class,
-                    item_class.id == item_id,
+                    clicked,
                     name=f"clicked_{item_class.__name__.lower()}",
-                    collection_outputs=collection_outputs,
+                    collection_outputs=(
+                        self._collection_output_hda_ids(clicked, "clicked") if item_class is hda else None
+                    ),
                 )
                 related_id = chain.c.ancestor_id
             else:
@@ -123,15 +125,19 @@ class JobConnectionsManager:
             if not copies_by_class[item_class]:
                 continue
             copied_from, _ = COPY_ASSOCIATIONS[item_class]
-            has_creating_job = self._has_creating_job(item_class, item_class.id, collection_outputs)
+            candidates = and_(item_class.history_id == history_id, getattr(item_class, copied_from).is_not(None))
+            collection_outputs = None
+            if item_class is hda:
+                # Ordinary copies share their source's dataset; narrowing on it avoids walking every copy in the history.
+                related_hda = aliased(hda)
+                related_datasets = select(related_hda.dataset_id).where(related_hda.id.in_(related_ids))
+                candidates = and_(candidates, hda.dataset_id.in_(related_datasets))
+                collection_outputs = self._collection_output_hda_ids(candidates, "candidate")
+            else:
+                candidates = and_(candidates, related_ids.exists())
             copies = self._copied_from_chain(
                 item_class,
-                and_(
-                    item_class.history_id == history_id,
-                    getattr(item_class, copied_from).is_not(None),
-                    ~has_creating_job,
-                    related_ids.exists(),
-                ),
+                and_(candidates, ~self._has_creating_job(item_class, item_class.id, collection_outputs)),
                 name=f"copies_{item_class.__name__.lower()}",
                 stop_at=related_ids,
                 collection_outputs=collection_outputs,
@@ -183,24 +189,22 @@ class JobConnectionsManager:
             return or_(has_job, item_id.in_(select(collection_outputs.c.hda_id)))
         return has_job
 
-    def _collection_output_hda_ids(self, history_id: int) -> CTE:
-        """Find collection-owned outputs among this history's possible copy ancestors.
+    def _collection_output_hda_ids(self, seeds: ColumnElement[bool], name: str) -> CTE:
+        """Find collection-owned outputs among the seed HDAs' possible copy ancestors.
 
         Collection tools can register a collection without individual element outputs.
         Batch membership checks so every copy hop does not walk collections separately.
         """
         hda = model.HistoryDatasetAssociation
-        candidates = self._copied_from_chain(
-            hda,
-            and_(hda.history_id == history_id, hda.copied_from_history_dataset_association_id.is_not(None)),
-            name="possible_dataset_copy_ancestors",
+        candidates = self._copied_from_chain(hda, seeds, name=f"{name}_possible_dataset_copy_ancestors")
+        candidate_ids = (
+            select(candidates.c.ancestor_id.label("hda_id")).distinct().cte(f"{name}_possible_dataset_copy_ids")
         )
-        candidate_ids = select(candidates.c.ancestor_id.label("hda_id")).distinct().cte("possible_dataset_copy_ids")
         element = model.DatasetCollectionElement
         memberships = (
             select(element.hda_id, element.dataset_collection_id.label("collection_id"))
             .where(element.hda_id.in_(select(candidate_ids.c.hda_id)))
-            .cte("copy_element_collections", recursive=True)
+            .cte(f"{name}_copy_element_collections", recursive=True)
         )
         parent = aliased(element)
         memberships = memberships.union(
@@ -212,7 +216,7 @@ class JobConnectionsManager:
         memberships = (
             select(memberships.c.hda_id, memberships.c.collection_id)
             .distinct()
-            .cte("distinct_copy_element_collections")
+            .cte(f"{name}_distinct_copy_element_collections")
         )
         output = model.JobToOutputDatasetCollectionAssociation
         hdca = model.HistoryDatasetCollectionAssociation
@@ -226,7 +230,7 @@ class JobConnectionsManager:
         )
         input_collection = model.JobToInputDatasetCollectionAssociation
         input_hdca = aliased(hdca)
-        input_memberships = memberships.alias("input_element_collections")
+        input_memberships = memberships.alias(f"{name}_input_element_collections")
         is_collection_input = (
             select(input_collection.id)
             .join(input_hdca, input_hdca.id == input_collection.dataset_collection_id)
@@ -243,7 +247,7 @@ class JobConnectionsManager:
             .where(memberships.c.hda_id == candidate_ids.c.hda_id, ~is_input, ~is_collection_input)
             .exists()
         )
-        return select(candidate_ids.c.hda_id).where(is_output).cte("collection_output_hdas")
+        return select(candidate_ids.c.hda_id).where(is_output).cte(f"{name}_collection_output_hdas")
 
     def _get_union_results(self, *selects):
         result = []
