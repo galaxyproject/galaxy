@@ -568,10 +568,12 @@ def attempt_ports(port=None, set_galaxy_web_port=True) -> str:
 
 
 def reserve_port(host: str, port: str | None = None) -> socket.socket:
-    """Bind the server socket up front and keep it until the server serves on it.
+    """Bind and listen on the server socket now, and keep it until the server serves on it.
 
-    Releasing a probed port while the app builds would let another server (say, another
-    pytest-xdist worker's) take it, and the readiness check would then reach that server.
+    A port released while the app builds can be taken by another test server, whose
+    responses would then satisfy this server's readiness check. Listening makes the
+    reservation exclusive: Linux lets several SO_REUSEADDR sockets bind one port while
+    none of them listens.
     """
     candidates = [int(port)] if port is not None else [random.randint(8000, 10000) for _ in range(9)]
     for candidate in candidates:
@@ -579,6 +581,7 @@ def reserve_port(host: str, port: str | None = None) -> socket.socket:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             sock.bind((host, candidate))
+            sock.listen()
         except OSError:
             sock.close()
             continue

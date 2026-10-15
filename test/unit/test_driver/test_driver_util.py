@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+import pytest
 from fastapi import FastAPI
 from starlette.routing import Mount
 
@@ -25,6 +26,16 @@ def test_reserved_port_stays_taken_until_closed():
     finally:
         sock.close()
     assert attempt_port(port) == port
+
+
+def test_reserved_port_cannot_be_reserved_twice():
+    sock = reserve_port("127.0.0.1")
+    port = sock.getsockname()[1]
+    try:
+        with pytest.raises(Exception, match="bound to specified test server port"):
+            reserve_port("127.0.0.1", str(port))
+    finally:
+        sock.close()
 
 
 def _gx_app(new_file_path: str) -> Mock:
