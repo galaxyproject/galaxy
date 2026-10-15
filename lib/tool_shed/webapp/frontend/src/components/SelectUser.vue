@@ -21,7 +21,7 @@ void usersStore.getAll()
 const { users } = storeToRefs(usersStore)
 
 const needle = ref("")
-// Computed rather than copied on filter, so users loaded after the menu opened still show up.
+// Users can arrive after the menu opens, so filter the store's current list.
 const options = computed(() =>
     users.value.map((u) => u.username).filter((v) => v.toLocaleLowerCase().indexOf(needle.value) > -1),
 )

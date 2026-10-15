@@ -61,8 +61,8 @@ def _handle_galaxy_config_kwds(cls, config):
     job_conf_template = string.Template(JOB_CONF_TEMPLATE)
     job_conf_str = job_conf_template.substitute(
         amqp_url=AMQP_URL,
-        # The module's tool test instance outlives the classes that run after it; queues of its
-        # own keep its embedded Pulsar from taking their jobs.
+        # Queues per instance, so a still-running module-level instance cannot consume the
+        # job messages of another class.
         amqp_key_prefix=f"pulsar_{uuid.uuid4().hex[:12]}_",
         jobs_directory=jobs_directory,
         galaxy_home=os.path.join(SCRIPT_DIRECTORY, os.pardir),

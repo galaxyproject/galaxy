@@ -102,11 +102,7 @@ class HgWebConfigManager:
         return self._in_memory_config
 
     def write_config(self, config: configparser.ConfigParser) -> None:
-        """Write the configuration to the hgweb.config file on disk and use it as the in-memory configuration.
-
-        Callers pass the configuration they modified: a concurrent get_entry may have replaced
-        the shared in-memory configuration with an older copy of the file in the meantime.
-        """
+        """Write the configuration to the hgweb.config file on disk and use it as the in-memory configuration."""
         with open(self.hgweb_config, "w") as config_file:
             config.write(config_file)
         self._in_memory_config = config
