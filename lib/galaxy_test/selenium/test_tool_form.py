@@ -418,6 +418,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
             assert [tag.text for tag in tags] == forward_labels
 
         assert_server_labels()
+        self.screenshot("tool_form_batch_dropped_collection_elements")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
