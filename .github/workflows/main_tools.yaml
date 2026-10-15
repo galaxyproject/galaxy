@@ -61,6 +61,9 @@ jobs:
         env:
           # Coverage slows the tests down; collect it for pushes and scheduled runs only.
           GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}
+          # Each xdist worker has its own conda prefix and package cache, so a tool's first
+          # run creates its conda environment while the other workers keep the runner busy.
+          GALAXY_TEST_DEFAULT_WAIT: '180'
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
         if: github.event_name != 'pull_request'
