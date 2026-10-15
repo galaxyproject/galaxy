@@ -53,13 +53,16 @@ export function rerunWhileBusy(fn: () => Promise<void>): () => Promise<void> {
             rerun = true;
         } else {
             running = (async () => {
-                do {
-                    rerun = false;
-                    await callAsync(fn);
-                } while (rerun);
-            })().finally(() => {
-                running = undefined;
-            });
+                try {
+                    do {
+                        rerun = false;
+                        await callAsync(fn);
+                    } while (rerun);
+                } finally {
+                    // in the same microtask as the last `rerun` check, so no call is dropped in between
+                    running = undefined;
+                }
+            })();
         }
         return running;
     };

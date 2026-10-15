@@ -156,4 +156,17 @@ describe("rerunWhileBusy", () => {
         await run();
         expect(task).toHaveBeenCalledTimes(2);
     });
+
+    it("runs again for a call made just as the current run finishes", async () => {
+        const first = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        const firstRun = run();
+        let lateRun: Promise<void> | undefined;
+        first.promise.then(() => (lateRun = run()));
+        first.resolve();
+        await firstRun;
+        await lateRun;
+        expect(task).toHaveBeenCalledTimes(2);
+    });
 });
