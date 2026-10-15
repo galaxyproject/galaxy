@@ -14,6 +14,7 @@ from tool_shed.managers.repositories import (
     repository_files,
 )
 from tool_shed.structured_app import ToolShedApp
+from tool_shed.util import hg_util
 from tool_shed.webapp.model import Repository
 from ._util import upload_directories_to_repository
 
@@ -87,7 +88,7 @@ def test_repository_files_rejects_unbounded_revisions_without_opening_hg(
         raise AssertionError("hg repository was opened")
 
     monkeypatch.setattr(Repository, "hg_repo", property(hg_opened))
-    monkeypatch.setattr(repositories_manager.hg_util, "changectx_for_revision", hg_opened)
+    monkeypatch.setattr(hg_util, "changectx_for_revision", hg_opened)
     for revision in ("tip", "2", revisions["last"][:8], full_hash, "deadbeefdead"):
         with pytest.raises(ObjectNotFound):
             repository_files(provides_repositories.app, new_repository, revision)
