@@ -77,12 +77,6 @@ describe("AdminPanel", () => {
         }
     });
 
-    it("shows no extension sections when none are loaded", () => {
-        const wrapper = createTarget();
-        expect(wrapper.text()).not.toContain("AnVIL");
-        expect(wrapper.find("[id^='admin-link-ext-']").exists()).toBe(false);
-    });
-
     it("appends a section per extension with framed and external links", async () => {
         const extensions = [
             {

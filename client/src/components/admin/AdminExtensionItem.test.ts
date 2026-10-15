@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { type AdminExtension, useAdminExtensionsStore } from "@/stores/adminExtensionsStore";
 
@@ -38,14 +38,6 @@ function mountItem(state: StoreState, extensionId = "anvil", itemId = "monitor")
 }
 
 describe("AdminExtensionItem", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
     it("shows a loading message until extensions are loaded", () => {
         const wrapper = mountItem({ loaded: false });
         expect(wrapper.text()).toContain("Loading admin extension");
