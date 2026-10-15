@@ -39,6 +39,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     },
     {
@@ -53,6 +54,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     },
     {
@@ -67,6 +69,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     },
     {
@@ -80,6 +83,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: true,
             search: true,
             sorting: false,
+            recursive: true,
         },
         uri_root: "gxuserfiles://c5504eb8-51cf-4b44-88f8-24347c031f52",
     },

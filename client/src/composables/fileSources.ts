@@ -51,7 +51,10 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
         return sourceId;
     }
 
-    function supportsFeature(uri: string | null | undefined, feature: "pagination" | "search" | "sorting"): boolean {
+    function supportsFeature(
+        uri: string | null | undefined,
+        feature: "pagination" | "search" | "sorting" | "recursive",
+    ): boolean {
         if (!uri) {
             return false;
         }
@@ -69,6 +72,10 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
 
     function supportsSorting(uri: string | null | undefined): boolean {
         return supportsFeature(uri, "sorting");
+    }
+
+    function supportsRecursive(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "recursive");
     }
 
     return {
@@ -133,5 +140,12 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * @returns Whether the file source supports sorting.
          */
         supportsSorting,
+        /**
+         * Check if the file source at the given URI can list a folder recursively.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source can list a folder recursively.
+         */
+        supportsRecursive,
     };
 }

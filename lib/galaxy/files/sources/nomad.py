@@ -80,6 +80,7 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
     """
 
     plugin_type = "nomad"
+    supports_recursive = False
     required_module = NomadFileSystem
     required_package = "nomad-fsspec"
 

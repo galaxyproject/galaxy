@@ -135,6 +135,7 @@ class FileSourceSupports(StrictModel):
     pagination: Annotated[bool, Field(description="Whether this file source supports server-side pagination.")] = False
     search: Annotated[bool, Field(description="Whether this file source supports server-side search.")] = False
     sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
+    recursive: Annotated[bool, Field(description="Whether this file source can list a folder recursively.")] = True
 
 
 class FilesSourceProperties(StrictModel):

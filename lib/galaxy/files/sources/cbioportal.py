@@ -72,6 +72,7 @@ class CBioPortalFilesSource(
     plugin_type = "cbioportal"
     supports_pagination = True
     supports_search = True
+    supports_recursive = False
 
     template_config_class = CBioPortalFileSourceTemplateConfiguration
     resolved_config_class = CBioPortalFileSourceConfiguration
