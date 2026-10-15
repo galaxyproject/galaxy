@@ -1759,6 +1759,14 @@ galaxy:
   # `X-Frame-Options` header.
   #x_frame_options: SAMEORIGIN
 
+  # Comma-separated list of origins, besides Galaxy's own, that may
+  # embed Galaxy Widgets (`/widgets/`) in a frame, e.g.
+  # `https://example.org`. Widgets are served with
+  # `Content-Security-Policy: frame-ancestors 'self'` followed by these
+  # origins, instead of the `X-Frame-Options` header. Allowing an origin
+  # to embed widgets does not grant it access to any private resource.
+  #widgets_allowed_origins: null
+
   # nginx can also handle file uploads (user-to-Galaxy) via
   # nginx_upload_module. Configuration for this is complex and explained
   # in detail in the documentation linked above.  The upload store is a
