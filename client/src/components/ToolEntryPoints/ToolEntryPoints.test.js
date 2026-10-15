@@ -120,4 +120,45 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         expect(link.exists()).toBe(true);
         expect(link.attributes("target")).toBe("_blank");
     });
+
+    it.each([
+        [undefined, null, null],
+        [0, null, null],
+        [
+            1,
+            "+1 job, paginate to view",
+            "This run has 1 other job. Use the pagination above to view their Interactive Tools.",
+        ],
+        [
+            3,
+            "+3 jobs, paginate to view",
+            "This run has 3 other jobs. Use the pagination above to view their Interactive Tools.",
+        ],
+    ])("shows the other jobs hint for otherJobsCount=%s", async (otherJobsCount, expectedLabel, expectedTitle) => {
+        testPinia = createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+                entryPointStore: {
+                    entryPoints: ACTIVE_ITS,
+                },
+            },
+        });
+        setActivePinia(testPinia);
+        wrapper = mount(ToolEntryPoints, {
+            props: {
+                jobId: "b887d74393f85b6d",
+                otherJobsCount,
+            },
+            global: localVue,
+            pinia: testPinia,
+            router,
+        });
+        const hint = wrapper.find(".other-jobs-hint");
+        if (expectedLabel === null) {
+            expect(hint.exists()).toBe(false);
+        } else {
+            expect(hint.text()).toBe(expectedLabel);
+            expect(hint.attributes("title")).toBe(expectedTitle);
+        }
+    });
 });
