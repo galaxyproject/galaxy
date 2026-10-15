@@ -56,6 +56,7 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         invocations.graph_node_state(label="mixed_collection", state="error").wait_for_present()
         # Only the step with the failed job is marked, not the steps downstream of it.
         invocations.graph_node_state(label="cat", state="ok").wait_for_present()
+        self._wait_for_polling_to_stop()
         self.screenshot("invocation_graph_failed_step")
 
     @selenium_test
@@ -92,6 +93,7 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         invocations.graph_node_out_of_focus(label="right_cat").wait_for_present()
         invocations.graph_node_out_of_focus(label="left_input").assert_absent()
         invocations.graph_node_out_of_focus(label="left_cat").assert_absent()
+        self.sleep_for(self.wait_types.UX_RENDER)  # let the 0.2s dimming opacity transition finish
         self.screenshot("invocation_graph_isolated_step")
 
     @selenium_test
@@ -123,6 +125,7 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         invocations.step_card_config_tab.wait_for_and_click()
         invocations.step_card_config_form.wait_for_visible()
         label_input = self.components.workflow_editor.label_input.wait_for_visible()
+        self.scroll_into_view(label_input)
         self.screenshot("invocation_graph_step_config")
         assert label_input.get_attribute("value") == "left_cat"
         assert not label_input.is_enabled()
@@ -150,6 +153,11 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
         for label in TWO_BRANCHES_LABELS:
             self.components.invocations.graph_node_state(label=label, state="ok").wait_for_present(timeout=timeout)
+        self._wait_for_polling_to_stop()
+
+    def _wait_for_polling_to_stop(self):
+        # The graph keeps re-rendering until job polling ends; settle it before clicking or screenshotting.
+        self.components.invocations.polling_indicator.wait_for_absent(wait_type=self.wait_types.JOB_COMPLETION)
 
     def _click_node(self, label: str):
         self.components.workflow_editor.node._(label=label).title.wait_for_and_click()

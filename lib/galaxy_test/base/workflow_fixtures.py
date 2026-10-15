@@ -1288,21 +1288,26 @@ WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
 WORKFLOW_KEEP_SUCCESSFUL_DATASETS = """
 class: GalaxyWorkflow
 inputs:
-  input_c: collection
+  input_c:
+    type: collection
+    position: {left: 0, top: 0}
 
 steps:
   mixed_collection:
     tool_id: exit_code_from_file
+    position: {left: 230, top: 0}
     in:
        input: input_c
 
   filtered_collection:
     tool_id: "__KEEP_SUCCESS_DATASETS__"
+    position: {left: 460, top: 0}
     in:
       input: mixed_collection/out_file1
 
   cat:
     tool_id: cat
+    position: {left: 690, top: 0}
     in:
       input1: filtered_collection/output
 """
