@@ -14,6 +14,7 @@ import traceback
 from galaxy.job_execution.protection import (
     ProtectionError,
     ProtectionPlan,
+    user_message,
 )
 from galaxy.job_execution.protection.crypt4gh import Crypt4GHJobRuntime
 
@@ -48,7 +49,7 @@ def run(command: str, plan_path: str) -> int:
         else:
             runtime.cleanup()
     except Exception as e:
-        message = str(e) if isinstance(e, ProtectionError) else f"Unexpected error ({type(e).__name__})"
+        message = user_message(e)
         if command == "stage-in":
             message = f"Could not decrypt the protected inputs of this job: {message}"
             _report(job_directory, PROTECTION_SETUP_FAILURE_FILE, message)
