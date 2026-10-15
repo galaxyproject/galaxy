@@ -386,6 +386,15 @@ class ModuleInjector(Protocol):
         pass
 
 
+def _is_filtered_tool_output(connection: "WorkflowStepConnection") -> bool:
+    module = connection.output_step.module
+    output_name = connection.output_name
+    if output_name is None or not isinstance(module, modules.ToolModule) or not module.tool:
+        return False
+    output = module.tool.outputs.get(output_name)
+    return output is not None and bool(output.filters)
+
+
 class WorkflowProgress:
     def __init__(
         self,
@@ -464,10 +473,12 @@ class WorkflowProgress:
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
+        optional = input_dict.get("optional", False)
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
             if input_dict["input_type"] == "dataset" and multiple:
-                temp = [self.replacement_for_connection(c) for c in connection]
+                temp = [self.replacement_for_connection(c, optional=optional) for c in connection]
+                temp = [r for r in temp if r is not NO_REPLACEMENT]
                 # If replacement is just one dataset collection, replace tool
                 # input_dict with dataset collection - tool framework will extract
                 # datasets properly.
@@ -476,10 +487,10 @@ class WorkflowProgress:
                         replacement = temp[0]
                     else:
                         replacement = temp
-                else:
+                elif temp:
                     replacement = temp
             else:
-                replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+                replacement = self.replacement_for_connection(connection[0], is_data=is_data, optional=optional)
         elif (
             step.state
             and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None))
@@ -494,7 +505,12 @@ class WorkflowProgress:
                 replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
-    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
+    def replacement_for_connection(
+        self,
+        connection: "WorkflowStepConnection",
+        is_data: bool = True,
+        optional: bool = False,
+    ):
         output_step_id = connection.output_step.id
         output_name = connection.output_name
         if output_step_id not in self.outputs:
@@ -513,6 +529,10 @@ class WorkflowProgress:
         try:
             replacement = step_outputs[output_name]
         except KeyError:
+            if optional and _is_filtered_tool_output(connection):
+                # The tool's output filter left this output uncreated. An optional
+                # input treats that like an unconnected input.
+                return NO_REPLACEMENT
             raise modules.FailWorkflowEvaluation(
                 why=InvocationFailureOutputNotFound(
                     reason=FailureReason.output_not_found,
