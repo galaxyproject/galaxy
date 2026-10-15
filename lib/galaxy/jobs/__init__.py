@@ -1493,26 +1493,18 @@ class MinimalJobWrapper(HasResourceParameters):
         return path
 
     def _protection_destination(self) -> ProtectionDestination:
-        is_pulsar = self._runs_on_pulsar()
+        dispatcher = getattr(self.app.job_manager.job_handler, "dispatcher", None)
+        runner = dispatcher.runner_of(self) if dispatcher else None
+        if dispatcher is None or runner is None:
+            # Pulsar destinations have more requirements, don't guess.
+            raise ProtectionError(f"Can't find the job runner of destination '{self.job_destination.id}'.")
         return ProtectionDestination.from_params(
             self.job_destination.params,
             metadata_strategy=self.metadata_strategy or self.app.config.metadata_strategy,
-            # Like the job handler: tools with parallelism are split into tasks, except on Pulsar.
-            has_tasks=bool(self.can_split()) and not is_pulsar,
-            is_pulsar=is_pulsar,
+            has_tasks=dispatcher.splits_into_tasks(self, runner),
+            is_pulsar=dispatcher.is_pulsar(runner),
             walltime=self.app.job_config.limits.walltime_delta,
         )
-
-    def _runs_on_pulsar(self) -> bool:
-        """Whether the destination's runner plugin is a Pulsar runner, whatever its id in the job configuration."""
-        from galaxy.jobs.runners.pulsar import PulsarJobRunner
-
-        dispatcher = getattr(self.app.job_manager.job_handler, "dispatcher", None)
-        runner = dispatcher.job_runners.get(self.job_destination.runner) if dispatcher else None
-        if runner is None:
-            # Pulsar destinations have more requirements, don't guess.
-            raise ProtectionError(f"Can't find the job runner of destination '{self.job_destination.id}'.")
-        return isinstance(runner, PulsarJobRunner)
 
     def default_compute_environment(self, job=None):
         if not job:
