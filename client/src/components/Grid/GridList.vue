@@ -6,6 +6,8 @@ import { BCard, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
+import localize from "@/utils/localization";
+
 import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import LoadingOverlay from "../Common/LoadingOverlay.vue";
@@ -398,7 +400,7 @@ watch(operationMessage, () => {
                         <th v-if="!!gridConfig.batch">
                             <GCheckbox
                                 class="m-2"
-                                aria-label="Select all for bulk actions"
+                                :aria-label="localize('Select all for bulk actions')"
                                 :model-value="selectedAll"
                                 :indeterminate="selectedIndeterminate"
                                 @update:model-value="onSelectAll" />
@@ -434,7 +436,7 @@ watch(operationMessage, () => {
                                 <GCheckbox
                                     :model-value="selected.has(rowData)"
                                     class="m-2 cursor-pointer"
-                                    aria-label="Select for bulk actions"
+                                    :aria-label="localize('Select for bulk actions')"
                                     data-description="grid selected"
                                     @update:model-value="onSelect(rowData)" />
                             </td>

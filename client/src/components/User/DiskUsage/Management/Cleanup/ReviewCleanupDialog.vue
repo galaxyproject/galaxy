@@ -275,7 +275,7 @@ defineExpose({
             <template v-slot:head(selected)>
                 <GCheckbox
                     v-model="allSelected"
-                    aria-label="Select all items"
+                    :aria-label="localize('Select all items')"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
                     @update:model-value="toggleSelectAll" />
@@ -284,7 +284,7 @@ defineExpose({
             <template v-slot:cell(selected)="data">
                 <GCheckbox
                     :key="data.index"
-                    :aria-label="`Select ${data.item.name}`"
+                    :aria-label="`${localize('Select')} ${data.item.name}`"
                     :model-value="isItemSelected(data.item)"
                     @update:model-value="toggleItemSelection(data.item)" />
             </template>
