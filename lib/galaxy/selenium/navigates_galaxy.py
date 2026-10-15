@@ -2002,8 +2002,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Open the most recent invocation from the invocations panel, then close the panel."""
         self.home()
         invocations = self.components.invocations
-        invocations.activity.wait_for_and_click()
-        invocations.invocations_panel_list.wait_for_visible()
+
+        # A click that lands while the activity bar is still settling can leave the default panel open.
+        def ensure_open() -> None:
+            if invocations.invocations_panel_list.is_absent or not invocations.invocations_panel_list.is_displayed:
+                invocations.activity.wait_for_and_click()
+            invocations.invocations_panel_list.wait_for_visible()
+
+        retry_call_during_transitions(
+            ensure_open,
+            attempts=0,
+            exception_check=lambda exception: isinstance(exception, SeleniumTimeoutException)
+            or exception_seems_to_indicate_transition(exception),
+        )
 
         @retry_assertion_during_transitions
         def assert_has_row():

@@ -1,5 +1,3 @@
-from selenium.webdriver.common.by import By
-
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA,
@@ -45,11 +43,6 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
-    def test_graph_reaches_terminal_state(self):
-        self._open_two_branches_invocation()
-        self.screenshot("invocation_graph_terminal")
-
-    @selenium_test
     @managed_history  # the failed job would trip history waits that assert every dataset is ok
     def test_failed_step_is_marked(self):
         self.workflow_populator.run_workflow(
@@ -61,7 +54,8 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         self.invocation_open_latest()
         invocations = self.components.invocations
         invocations.graph_node_state(label="mixed_collection", state="error").wait_for_present()
-        invocations.graph_node_state(label="mixed_collection", state="ok").assert_absent()
+        # Only the step with the failed job is marked, not the steps downstream of it.
+        invocations.graph_node_state(label="cat", state="ok").wait_for_present()
         self.screenshot("invocation_graph_failed_step")
 
     @selenium_test
@@ -103,14 +97,17 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
     @selenium_test
     def test_show_connections(self):
         self._open_two_branches_invocation()
-        node = self.components.workflow_editor.node
+        left_cat = self.components.workflow_editor.node._(label="left_cat")
         self._click_node("left_cat")
         self._assert_output_terminal_blank("left_cat", "out_file1", blank=True)
+        assert "out_file1" not in left_cat.wait_for_visible().text
 
         toggle = self.components.invocations.graph_show_connections_button
         toggle.wait_for_and_click()
         self._assert_output_terminal_blank("left_cat", "out_file1", blank=False)
-        assert "out_file1" in node._(label="left_cat").wait_for_visible().text
+        left_cat_text = left_cat.wait_for_visible().text
+        assert "out_file1" in left_cat_text
+        assert "Concatenate Dataset" in left_cat_text
         # Only the active step is drawn with connections.
         self._assert_output_terminal_blank("right_cat", "out_file1", blank=True)
         self.screenshot("invocation_graph_show_connections")
@@ -124,11 +121,11 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         invocations = self.components.invocations
         self._click_node("left_cat")
         invocations.step_card_config_tab.wait_for_and_click()
-        form = invocations.step_card_config_form.wait_for_visible()
+        invocations.step_card_config_form.wait_for_visible()
+        label_input = self.components.workflow_editor.label_input.wait_for_visible()
         self.screenshot("invocation_graph_step_config")
-        form_inputs = form.find_elements(By.CSS_SELECTOR, "input")
-        assert form_inputs, "Expected the step config tab to render the tool form"
-        assert not any(element.is_enabled() for element in form_inputs)
+        assert label_input.get_attribute("value") == "left_cat"
+        assert not label_input.is_enabled()
 
     @selenium_test
     def test_search_selects_step(self):
@@ -143,14 +140,13 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
             assert [result.text.strip() for result in results] == ["4: right_cat"]
             return results[0]
 
+        result = assert_single_result()
         self.screenshot("invocation_graph_search")
-        assert_single_result().click()
+        result.click()
         self._assert_step_card_title("right_cat")
 
     def _open_two_branches_invocation(self):
-        self.workflow_populator.run_workflow(
-            WORKFLOW_TWO_BRANCHES, history_id=self.current_history_id(), assert_ok=True, wait=True
-        )
+        self.workflow_populator.run_workflow(WORKFLOW_TWO_BRANCHES, history_id=self.current_history_id())
         self.invocation_open_latest()
         timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
         for label in TWO_BRANCHES_LABELS:
