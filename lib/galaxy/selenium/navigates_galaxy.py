@@ -66,7 +66,10 @@ from .has_driver import (
     SeleniumTimeoutException,
 )
 from .has_driver_proxy import HasDriverProxy
-from .smart_components import SmartComponent
+from .smart_components import (
+    SmartComponent,
+    SmartTarget,
+)
 from .web_element_protocol import WebElementProtocol
 
 P = ParamSpec("P")
@@ -2002,19 +2005,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Open the most recent invocation from the invocations panel, then close the panel."""
         self.home()
         invocations = self.components.invocations
-
-        # A click that lands while the activity bar is still settling can leave the default panel open.
-        def ensure_open() -> None:
-            if invocations.invocations_panel_list.is_absent or not invocations.invocations_panel_list.is_displayed:
-                invocations.activity.wait_for_and_click()
-            invocations.invocations_panel_list.wait_for_visible()
-
-        retry_call_during_transitions(
-            ensure_open,
-            attempts=0,
-            exception_check=lambda exception: isinstance(exception, SeleniumTimeoutException)
-            or exception_seems_to_indicate_transition(exception),
-        )
+        self._ensure_panel_open(invocations.invocations_panel_list, invocations.activity.wait_for_and_click)
 
         @retry_assertion_during_transitions
         def assert_has_row():
@@ -2032,15 +2023,22 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def open_toolbox(self) -> None:
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        toolbox_panel = self.components._.toolbox_panel
+        def click_activity() -> None:
+            if self.components.tools.tools_activity_workflow_editor.is_absent:
+                self.components.tools.activity.wait_for_and_click()
+            else:
+                self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+
+        self._ensure_panel_open(self.components._.toolbox_panel, click_activity)
+
+    def _ensure_panel_open(self, panel: SmartTarget, open_panel: Callable[[], None]) -> None:
+        """Open ``panel`` if hidden, retrying once: a click that lands while the activity bar is
+        still settling can leave the default panel open instead."""
 
         def ensure_open() -> None:
-            if toolbox_panel.is_absent or not toolbox_panel.is_displayed:
-                if self.components.tools.tools_activity_workflow_editor.is_absent:
-                    self.components.tools.activity.wait_for_and_click()
-                else:
-                    self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
-            toolbox_panel.wait_for_visible()
+            if panel.is_absent or not panel.is_displayed:
+                open_panel()
+            panel.wait_for_visible()
 
         retry_call_during_transitions(
             ensure_open,
