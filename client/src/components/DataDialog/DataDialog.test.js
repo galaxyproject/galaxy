@@ -1,6 +1,8 @@
-import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
+import { flushPromises, shallowMount } from "@vue/test-utils";
+import { http } from "msw";
 import { describe, expect, it, vi } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { Model } from "./model";
 import { Services } from "./services";
@@ -9,6 +11,8 @@ import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 vi.mock("app");
+
+const { server } = useServerMock();
 
 const mockOptions = {
     callback: () => {},
@@ -51,20 +55,6 @@ describe("model.js", () => {
         expect(model.count()).toBe(1);
         result = model.finalize();
         expect(result[0]).toBe("tag_2");
-    });
-});
-
-describe("services/Services:get", () => {
-    // Browsers leave statusText empty over HTTP/2.
-    it.each([
-        [503, "", "Galaxy is temporarily unavailable (503)"],
-        [418, undefined, "The request failed (418)"],
-    ])("names a %d when the status text is %j", async (status, statusText, message) => {
-        vi.spyOn(axios, "get").mockRejectedValueOnce({
-            response: { status, statusText, data: "<html><body>nginx</body></html>" },
-        });
-        const services = new Services(mockOptions);
-        await expect(services.get("/api/datasets")).rejects.toBe(message);
     });
 });
 
@@ -144,5 +134,20 @@ describe("DataDialog.vue", () => {
         // expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
 
         // SelectionDialog DOM properties are tested now in SelectionDialog.test.js however.
+    });
+
+    it("describes a failed load by its status when there is no Galaxy error message", async () => {
+        // Browsers leave statusText empty over HTTP/2, and msw's HttpResponse would fill it in.
+        server.use(
+            http.get(
+                "/api/histories/:history_id/contents",
+                () => new Response("<html><body>nginx</body></html>", { status: 503 }),
+            ),
+        );
+        wrapper = shallowMount(DataDialog, { props: mockOptions, stubs: { Icon: true } });
+        await flushPromises();
+        expect(wrapper.findComponent(SelectionDialog).props("errorMessage")).toBe(
+            "Galaxy is temporarily unavailable (503)",
+        );
     });
 });

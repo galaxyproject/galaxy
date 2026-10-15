@@ -1,27 +1,11 @@
 import axios from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import { statusMessage } from "@/utils/simple-error";
 
 /** Data populator traverses raw server responses **/
 export class Services {
     get(url) {
-        return new Promise((resolve, reject) => {
-            axios
-                .get(url)
-                .then((response) => {
-                    const items = this.getItems(response.data);
-                    resolve(items);
-                })
-                .catch((e) => {
-                    let errorMessage = "Request failed.";
-                    if (e.response) {
-                        errorMessage =
-                            e.response.data.err_msg || statusMessage(e.response.status, e.response.statusText ?? "");
-                    }
-                    reject(errorMessage);
-                });
-        });
+        return axios.get(url).then((response) => this.getItems(response.data));
     }
 
     /** Returns the formatted results **/
