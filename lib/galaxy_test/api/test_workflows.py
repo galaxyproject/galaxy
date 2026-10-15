@@ -9573,6 +9573,116 @@ input1:
         cached_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=3)
         assert not cached_output["visible"], f"Expected output to be hidden with cached job: {cached_output}"
 
+    def test_workflow_invocation_rerun_lineage(self, history_id: str):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content="""
+class: GalaxyWorkflow
+inputs:
+  value:
+    type: int
+    default: 1
+steps: {}
+""")
+        original = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id)
+        self._assert_status_code_is(original, 200)
+        original_id = original.json()["id"]
+        assert original.json()["is_rerun"] is False
+        rerun = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": original_id}
+        )
+        self._assert_status_code_is(rerun, 200)
+        rerun_id = rerun.json()["id"]
+        assert rerun.json()["is_rerun"] is True
+        details = self._get(f"invocations/{rerun_id}").json()
+        assert details["rerun_of_invocation_id"] == original_id
+        assert details["latest_rerun_invocation_id"] is None
+        assert self._get(f"invocations/{original_id}").json()["latest_rerun_invocation_id"] == rerun_id
+        exported_request = self._get(f"invocations/{rerun_id}/request").json()
+        assert "rerun_of_invocation_id" not in exported_request
+        assert "is_rerun" not in exported_request
+        independent = self.workflow_populator.invoke_workflow(workflow_id, request=exported_request)
+        self._assert_status_code_is(independent, 200)
+        assert independent.json()["is_rerun"] is False
+        invocations = self._get("invocations", data={"history_id": history_id}).json()
+        assert next(inv for inv in invocations if inv["id"] == rerun_id)["is_rerun"] is True
+        element_invocations = self._get("invocations", data={"history_id": history_id, "view": "element"}).json()
+        assert (
+            next(inv for inv in element_invocations if inv["id"] == rerun_id)["rerun_of_invocation_id"] == original_id
+        )
+        # Every member of a batch rerun has the same explicitly selected source.
+        batch = self.workflow_populator.invoke_workflow(
+            workflow_id,
+            history_id=history_id,
+            request={
+                "batch": True,
+                "rerun_of_invocation_id": original_id,
+                "inputs_by": "name",
+                "inputs": {"value": {"batch": True, "values": [2, 3]}},
+            },
+        )
+        self._assert_status_code_is(batch, 200)
+        batch_invocations = batch.json()
+        assert len(batch_invocations) == 2
+        for invocation in batch_invocations:
+            assert invocation["is_rerun"] is True
+            assert self._get(f"invocations/{invocation['id']}").json()["rerun_of_invocation_id"] == original_id
+        assert (
+            self._get(f"invocations/{original_id}").json()["latest_rerun_invocation_id"] == batch_invocations[-1]["id"]
+        )
+        missing_source = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": "ffffffffffffffff"}
+        )
+        assert missing_source.status_code in (400, 404)
+
+    def test_workflow_invocation_rerun_access(self, history_id: str):
+        workflow_yaml = """
+class: GalaxyWorkflow
+inputs:
+  value:
+    type: int
+    default: 1
+steps: {}
+"""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=workflow_yaml)
+        original = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id)
+        self._assert_status_code_is(original, 200)
+        original_id = original.json()["id"]
+        with self._different_user():
+            other_workflow_id = self.workflow_populator.upload_yaml_workflow(yaml_content=workflow_yaml)
+            with self.dataset_populator.test_history() as other_history_id:
+                denied = self.workflow_populator.invoke_workflow(
+                    other_workflow_id,
+                    history_id=other_history_id,
+                    request={"rerun_of_invocation_id": original_id},
+                )
+                self._assert_status_code_is(denied, 403)
+        # Making only the source history public permits a rerun while preserving
+        # independent access checks on the new invocation's destination history.
+        self.dataset_populator.make_public(history_id)
+        visible_rerun = self.workflow_populator.invoke_workflow(
+            workflow_id, history_id=history_id, request={"rerun_of_invocation_id": original_id}
+        )
+        self._assert_status_code_is(visible_rerun, 200)
+        visible_rerun_id = visible_rerun.json()["id"]
+        with self._different_user():
+            with self.dataset_populator.test_history() as other_history_id:
+                rerun = self.workflow_populator.invoke_workflow(
+                    other_workflow_id,
+                    history_id=other_history_id,
+                    request={"rerun_of_invocation_id": original_id},
+                )
+                self._assert_status_code_is(rerun, 200)
+                rerun_id = rerun.json()["id"]
+                assert self._get(f"invocations/{rerun_id}").json()["rerun_of_invocation_id"] == original_id
+        # A newer private rerun must not hide the older accessible successor.
+        assert self._get(f"invocations/{original_id}").json()["latest_rerun_invocation_id"] == visible_rerun_id
+        # Revoking access to the source must also remove the link in existing reruns.
+        response = self._put(f"histories/{history_id}", data={"importable": False}, json=True)
+        self._assert_status_code_is(response, 200)
+        with self._different_user():
+            details = self._get(f"invocations/{rerun_id}").json()
+            assert details["is_rerun"] is True
+            assert details["rerun_of_invocation_id"] is None
+
     @skip_without_tool("cat1")
     @skip_without_tool("identifier_multiple")
     def test_workflow_rerun_with_cached_job_consumes_implicit_hdca(self, history_id: str):

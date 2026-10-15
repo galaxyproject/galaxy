@@ -4,6 +4,8 @@ from typing import (
     Any,
 )
 
+from sqlalchemy import select
+
 from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     prepare_invocation_download,
@@ -12,6 +14,8 @@ from galaxy.celery.tasks import (
 from galaxy.exceptions import (
     AdminRequiredException,
     InconsistentDatabase,
+    ItemAccessibilityException,
+    ItemOwnershipException,
     ObjectNotFound,
 )
 from galaxy.managers.context import (
@@ -136,12 +140,12 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             include_nested_invocations=invocation_payload.include_nested_invocations,
             check_ownership=False,
         )
-        invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
+        invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params, trans=trans)
         return invocation_dict, total_matches
 
     def show(self, trans: ProvidesUserContext, invocation_id, serialization_params):
         wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=False, check_accessible=True)
-        return self.serialize_workflow_invocation(wfi, serialization_params)
+        return self.serialize_workflow_invocation(wfi, serialization_params, trans=trans)
 
     def get_invocation(self, trans: ProvidesUserContext, invocation_id) -> WorkflowInvocation:
         """Get the raw WorkflowInvocation model object."""
@@ -155,7 +159,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
 
     def cancel(self, trans: ProvidesUserContext, invocation_id, serialization_params):
         wfi = self._workflows_manager.request_invocation_cancellation(trans, invocation_id)
-        return self.serialize_workflow_invocation(wfi, serialization_params)
+        return self.serialize_workflow_invocation(wfi, serialization_params, trans=trans)
 
     def show_invocation_report(self, trans: ProvidesUserContext, invocation_id, format="json"):
         wfi_report = self._workflows_manager.get_invocation_report(trans, invocation_id, format=format)
@@ -288,14 +292,23 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         invocation: WorkflowInvocation,
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.element,
+        trans: ProvidesUserContext | None = None,
     ):
-        return self.serialize_workflow_invocations([invocation], params, default_view=default_view)[0]
+        return self.serialize_workflow_invocations([invocation], params, default_view=default_view, trans=trans)[0]
+
+    def _can_access_invocation(self, trans: ProvidesUserContext, invocation: WorkflowInvocation) -> bool:
+        try:
+            self._workflows_manager.check_security(trans, invocation, check_ownership=False, check_accessible=True)
+        except (ItemAccessibilityException, ItemOwnershipException):
+            return False
+        return True
 
     def serialize_workflow_invocations(
         self,
         invocations,
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.collection,
+        trans: ProvidesUserContext | None = None,
     ):
         view = params.view or default_view
         responses = []
@@ -304,6 +317,22 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 view.value, step_details=params.step_details, legacy_job_state=params.legacy_job_state
             )
             as_dict["messages"] = invocation.messages
+            if trans is not None and view == InvocationSerializationView.element:
+                source = invocation.rerun_of_invocation
+                if source is not None and self._can_access_invocation(trans, source):
+                    as_dict["rerun_of_invocation_id"] = source.id
+                # Lineage links are local to this server. Check each related invocation's
+                # history access independently, since reruns can target another history.
+                successors = trans.sa_session.scalars(
+                    select(WorkflowInvocation)
+                    .where(WorkflowInvocation.rerun_of_invocation_id == invocation.id)
+                    .order_by(WorkflowInvocation.create_time.desc(), WorkflowInvocation.id.desc())
+                    .execution_options(yield_per=100)
+                )
+                for successor in successors:
+                    if self._can_access_invocation(trans, successor):
+                        as_dict["latest_rerun_invocation_id"] = successor.id
+                        break
             responses.append(WorkflowInvocationResponse(**as_dict))
         return responses
 
@@ -325,7 +354,9 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             payload,
             history=history,
         )
-        return self.serialize_workflow_invocations(object_tracker.invocations_by_key.values(), serialization_params)
+        return self.serialize_workflow_invocations(
+            object_tracker.invocations_by_key.values(), serialization_params, trans=trans
+        )
 
     def serialize_workflow_invocation_to_request(
         self, trans: ProvidesUserContext, invocation: WorkflowInvocation
