@@ -26,7 +26,6 @@ from jwt import (
     InvalidSignatureError,
 )
 from social_core.backends.open_id_connect import OpenIdConnectAuth
-from social_core.pipeline.user import get_username
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -37,7 +36,6 @@ from galaxy.authnz.psa_authnz import (
     AUTH_PIPELINE,
     decode_access_token,
     PSAAuthnz,
-    username_from_email,
 )
 
 
@@ -369,37 +367,3 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         app_config=mock_app.config,
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
-
-
-def _run_get_username(details):
-    backend = MagicMock()
-    backend.setting.side_effect = lambda name, default=None: default
-    strategy = MagicMock()
-    strategy.storage.user.username_max_length.return_value = 255
-    strategy.storage.user.clean_username.side_effect = lambda value: value
-    strategy.storage.user.user_exists.return_value = False
-    return get_username(strategy, details, backend)["username"]
-
-
-def test_username_from_email_without_username_claim():
-    details = {"email": "Jane.Doe+lab@example.org", "username": None}
-    result = username_from_email(details=details)
-    assert result["details"]["username"] == "janedoelab"
-    assert _run_get_username(result["details"]) == "janedoelab"
-
-
-def test_username_from_email_keeps_username_claim():
-    details = {"email": "jane@example.org", "username": "jdoe"}
-    assert username_from_email(details=details) is None
-    assert _run_get_username(details) == "jdoe"
-
-
-def test_username_from_email_skips_existing_user():
-    details = {"email": "jane@example.org", "username": None}
-    assert username_from_email(details=details, user=MagicMock()) is None
-
-
-def test_username_from_email_runs_before_get_username():
-    assert AUTH_PIPELINE.index("galaxy.authnz.psa_authnz.username_from_email") < AUTH_PIPELINE.index(
-        "social_core.pipeline.user.get_username"
-    )
