@@ -1,3 +1,11 @@
+from urllib.parse import (
+    parse_qs,
+    urlencode,
+    urlparse,
+)
+
+import yaml
+
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA,
@@ -151,3 +159,109 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         invocations = self.components.invocations
         invocations.step_details(order_index=order_index).wait_for_and_click()
         invocations.step_job_details(order_index=order_index).wait_for_visible()
+
+    @managed_history
+    def test_mapped_job_selection_urls(self):
+        """All step aliases open a mapped job; graph navigation preserves the mounted view."""
+        history_id = self.current_history_id()
+        # Enough successful jobs to exercise pagination, plus a different initial state.
+        test_data = {
+            "input_c": {
+                "collection_type": "list",
+                "elements": [
+                    {"identifier": f"item-{index}", "content": "1" if index == 0 else "0"} for index in range(13)
+                ],
+            }
+        }
+        workflow = yaml.safe_load(WORKFLOW_KEEP_SUCCESSFUL_DATASETS)
+        workflow["inputs"]["input_c"] = {"type": "collection", "position": {"left": 0, "top": 0}}
+        for index, workflow_step in enumerate(workflow["steps"].values(), start=1):
+            workflow_step["position"] = {"left": 320 * index, "top": 0}
+        summary = self.workflow_populator.run_workflow(
+            yaml.safe_dump(workflow),
+            test_data=test_data,
+            history_id=history_id,
+            assert_ok=False,
+        )
+        invocation_id = summary.invocation_id
+        invocation = self.workflow_populator.get_invocation(invocation_id)
+        step = next(step for step in invocation["steps"] if step["order_index"] == 1)
+        step_details = self.api_get(f"invocations/{invocation_id}/steps/{step['id']}")
+        successful_jobs = sorted(
+            (job for job in step_details["jobs"] if job["state"] == "ok"),
+            key=lambda job: job["update_time"],
+            reverse=True,
+        )
+        selected_job = successful_jobs[-1]["id"]
+        invocations = self.components.invocations
+
+        @retry_assertion_during_transitions
+        def assert_selected_job(job_id):
+            assert invocations.job_dialog_id.wait_for_text() == job_id
+            invocations.step_job_row(order_index=1, job_id=job_id).wait_for_visible()
+            assert invocations.step_job_active_page(order_index=1).wait_for_text() == "2"
+            assert invocations.step_job_state_filter(order_index=1, state="ok").has_class("g-pressed")
+
+        @retry_assertion_during_transitions
+        def assert_selected_node_centered():
+            offset = self.execute_script(
+                """
+                const center = (el) => {
+                    const r = el.getBoundingClientRect();
+                    return [r.left + r.width / 2, r.top + r.height / 2];
+                };
+                const [nodeX, nodeY] = center(arguments[0]);
+                const [canvasX, canvasY] = center(arguments[1]);
+                return [nodeX - canvasX, nodeY - canvasY];
+                """,
+                self.components.workflow_editor.node.by_id(id=1).wait_for_visible(),
+                invocations.graph_canvas.wait_for_visible(),
+            )
+            assert all(abs(delta) < 5 for delta in offset), offset
+
+        for selector, value in [("step_number", "2"), ("step_index", "1"), ("step_label", "mixed_collection")]:
+            query = urlencode({selector: value, "job": selected_job})
+            self.get(f"workflows/invocations/{invocation_id}?{query}")
+            assert_selected_node_centered()
+            invocations.job_dialog.wait_for_visible()
+            assert_selected_job(selected_job)
+            invocations.job_dialog_loading.wait_for_absent()
+            self.screenshot(f"invocation_mapped_job_{selector}")
+
+        invocations.job_dialog_previous.wait_for_and_click()
+
+        @retry_assertion_during_transitions
+        def assert_job_url_changed():
+            query = parse_qs(urlparse(self.current_url).query)
+            assert query.get("job") and query["job"] != [selected_job]
+            dialog_ids = invocations.job_dialog_id.all()
+            assert len(dialog_ids) == 1
+            assert dialog_ids[0].text == query["job"][0]
+
+        assert_job_url_changed()
+        invocations.job_dialog_loading.wait_for_absent()
+        self.screenshot("invocation_mapped_job_previous")
+        invocations.job_dialog_close.wait_for_and_click()
+        invocations.job_dialog.wait_for_absent_or_hidden()
+        self.screenshot("invocation_mapped_job_dialog_closed")
+
+        # Track the invocation DOM node identity to detect a route-triggered remount.
+        self.execute_script(
+            "window.invocationSelectionRoot = arguments[0]", invocations.state_details.wait_for_visible()
+        )
+        # The selected step is centered at 100%; zoom to 50% so its input clears the side overlay.
+        for _ in range(5):
+            invocations.graph_zoom_out.wait_for_and_click()
+        self.components.workflow_editor.node.by_id(id=0).wait_for_and_click()
+
+        @retry_assertion_during_transitions
+        def assert_other_node_selected():
+            query = parse_qs(urlparse(self.current_url).query)
+            assert query.get("step_label") == ["input_c"]
+            assert "job" not in query
+            assert self.execute_script(
+                "return window.invocationSelectionRoot === arguments[0]", invocations.state_details.wait_for_visible()
+            )
+
+        assert_other_node_selected()
+        self.screenshot("invocation_mapped_job_changed_node")
