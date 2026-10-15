@@ -341,7 +341,7 @@ onMounted(() => load());
             <GAlert v-if="!hasInvalidFilters && onlyRunnableFilter" id="no-curated-workflow-runnable" variant="info">
                 <span v-localize>
                     None of the curated workflows can run on this Galaxy yet: each needs at least one tool that isn't
-                    installed. The badge on each card says which.
+                    installed. Each card says which.
                 </span>
                 <GLink @click="toggleRunnable">Show all curated workflows</GLink>
             </GAlert>
