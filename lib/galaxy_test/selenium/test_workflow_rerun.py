@@ -132,7 +132,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.activity_expand.wait_for_and_click()
         invocations.invocations_table.wait_for_visible()
         for row, expected in enumerate(("Rerun", "Rerun", "")):
-            assert invocations.lineage_grid_run_type(row=row).wait_for_text() == expected
+            assert invocations.lineage_grid_run_type(row=row).wait_for_present().text == expected
         self.screenshot("workflow_rerun_lineage_grid_markers")
 
     @selenium_test
