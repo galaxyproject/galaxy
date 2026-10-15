@@ -131,7 +131,8 @@
 
     /* lines */
     --color-border: var(--color-gray-300);
-    --color-input: var(--color-gray-300);
+    /* brand-tokens' ebony-clay-400: a blue-gray like today's border, dark enough for 3:1 */
+    --color-input: #8992b2;
     --color-ring: var(--color-blue-500);
 
     /* deprecated: use --color-background */

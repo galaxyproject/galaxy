@@ -125,6 +125,7 @@ describe("galaxy-ui design tokens", () => {
         expect(resolveToken("--color-primary")).toBe(brandColor("--color-galaxy-primary"));
         expect(resolveToken("--color-foreground")).toBe(brandColor("--color-galaxy-dark"));
         expect(resolveToken("--color-highlight")).toBe(brandColor("--color-galaxy-gold"));
+        expect(resolveToken("--color-input")).toBe(brandColor("--color-ebony-clay-400"));
     });
 
     it("gives every X / X-foreground pair at least 4.5:1 contrast (WCAG 1.4.3)", () => {
