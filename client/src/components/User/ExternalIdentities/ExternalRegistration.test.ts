@@ -20,7 +20,6 @@ function mountExtReg(cfg: object) {
             GAlert: true,
             GButton: true,
             BForm: true,
-            BFormCheckbox: true,
             BFormGroup: true,
         },
     });
