@@ -9592,17 +9592,17 @@ steps: {}
         self._assert_status_code_is(rerun, 200)
         rerun_id = rerun.json()["id"]
         assert rerun.json()["is_rerun"] is True
-        details = self._get(f"invocations/{rerun_id}").json()
+        details = self.workflow_populator.get_invocation(rerun_id)
         assert details["rerun_of_invocation_id"] == original_id
         assert details["latest_rerun_invocation_id"] is None
-        assert self._get(f"invocations/{original_id}").json()["latest_rerun_invocation_id"] == rerun_id
-        exported_request = self._get(f"invocations/{rerun_id}/request").json()
+        assert self.workflow_populator.get_invocation(original_id)["latest_rerun_invocation_id"] == rerun_id
+        exported_request = self.workflow_populator.invocation_to_request(rerun_id)
         assert "rerun_of_invocation_id" not in exported_request
         assert "is_rerun" not in exported_request
         independent = self.workflow_populator.invoke_workflow(workflow_id, request=exported_request)
         self._assert_status_code_is(independent, 200)
         assert independent.json()["is_rerun"] is False
-        invocations = self._get("invocations", data={"history_id": history_id}).json()
+        invocations = self.workflow_populator.history_invocations(history_id)
         assert next(inv for inv in invocations if inv["id"] == rerun_id)["is_rerun"] is True
         element_invocations = self._get("invocations", data={"history_id": history_id, "view": "element"}).json()
         assert (
@@ -9624,9 +9624,10 @@ steps: {}
         assert len(batch_invocations) == 2
         for invocation in batch_invocations:
             assert invocation["is_rerun"] is True
-            assert self._get(f"invocations/{invocation['id']}").json()["rerun_of_invocation_id"] == original_id
+            assert self.workflow_populator.get_invocation(invocation["id"])["rerun_of_invocation_id"] == original_id
         assert (
-            self._get(f"invocations/{original_id}").json()["latest_rerun_invocation_id"] == batch_invocations[-1]["id"]
+            self.workflow_populator.get_invocation(original_id)["latest_rerun_invocation_id"]
+            == batch_invocations[-1]["id"]
         )
         missing_source = self.workflow_populator.invoke_workflow(
             workflow_id, history_id=history_id, request={"rerun_of_invocation_id": "ffffffffffffffff"}
@@ -9672,14 +9673,14 @@ steps: {}
                 )
                 self._assert_status_code_is(rerun, 200)
                 rerun_id = rerun.json()["id"]
-                assert self._get(f"invocations/{rerun_id}").json()["rerun_of_invocation_id"] == original_id
+                assert self.workflow_populator.get_invocation(rerun_id)["rerun_of_invocation_id"] == original_id
         # A newer private rerun must not hide the older accessible successor.
-        assert self._get(f"invocations/{original_id}").json()["latest_rerun_invocation_id"] == visible_rerun_id
+        assert self.workflow_populator.get_invocation(original_id)["latest_rerun_invocation_id"] == visible_rerun_id
         # Revoking access to the source must also remove the link in existing reruns.
-        response = self._put(f"histories/{history_id}", data={"importable": False}, json=True)
+        response = self.dataset_populator.update_history(history_id, {"importable": False})
         self._assert_status_code_is(response, 200)
         with self._different_user():
-            details = self._get(f"invocations/{rerun_id}").json()
+            details = self.workflow_populator.get_invocation(rerun_id)
             assert details["is_rerun"] is True
             assert details["rerun_of_invocation_id"] is None
 
