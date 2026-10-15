@@ -60,7 +60,7 @@ def test_guid_to_repository_parses_owner_and_name(monkeypatch):
 
 
 # Listing, contents, bad paths, deprecation and malicious revisions are covered through the API in
-# lib/tool_shed/test/functional/test_shed_repositories.py; these cover states the API can't set up.
+# lib/tool_shed/test/functional/test_shed_repository_files.py; these cover states the API can't set up.
 
 
 def _uploaded_unchanged(provides_repositories: ProvidesRepositoriesContext, repository: Repository) -> dict[str, str]:
