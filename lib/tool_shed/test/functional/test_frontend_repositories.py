@@ -176,21 +176,22 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
         page = self._page
 
         expect(page.locator("h1")).to_have_text("Contents")
-        folder = page.get_by_role("button", name="column_maker", exact=True)
+        tree = page.get_by_role("navigation", name="Files")
+        folder = tree.get_by_role("button", name="column_maker", exact=True)
         expect(folder).to_have_attribute("aria-expanded", "false")
         folder.click()
         expect(folder).to_have_attribute("aria-expanded", "true")
 
         # File paths keep real slashes in API requests and in the page URL
         with page.expect_response(lambda r: r.url.endswith("/files/column_maker/column_maker.xml")) as response:
-            page.get_by_role("button", name="column_maker.xml").click()
+            tree.get_by_role("button", name="column_maker.xml").click()
         assert response.value.ok
         code = page.locator(".config-file-contents pre")
         expect(code).to_contain_text("<tool")
         # Defaults to the newest installable revision
         expect(code).to_contain_text('version="1.3.0"')
         expect(page).to_have_url(re.compile(r"\?file=column_maker/column_maker\.xml$"))
-        expect(page.get_by_role("button", name="column_maker.xml")).to_have_attribute("aria-current", "true")
+        expect(tree.get_by_role("button", name="column_maker.xml")).to_have_attribute("aria-current", "true")
         self.screenshot("repository_contents_file")
 
     def test_contents_deep_link(self):
@@ -202,7 +203,25 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
         code = page.locator(".config-file-contents pre")
         expect(code).to_contain_text("<tool")
         expect(code).to_contain_text('version="1.1.0"')
-        expect(page.get_by_role("button", name="column_maker", exact=True)).to_have_attribute("aria-expanded", "true")
+        tree = page.get_by_role("navigation", name="Files")
+        expect(tree.get_by_role("button", name="column_maker", exact=True)).to_have_attribute("aria-expanded", "true")
+        expect(tree.get_by_role("button", name="column_maker.xml")).to_have_attribute("aria-current", "true")
+
+    def test_contents_switch_revision_keeps_file(self):
+        repository = self._setup_column_maker()
+        revisions = self._revisions(repository)
+        oldest, newest = revisions[0], revisions[-1]
+        self.visit_url(f"/repositories/{repository.id}/contents?revision={newest}&file=column_maker/column_maker.xml")
+        page = self._page
+
+        code = page.locator(".config-file-contents pre")
+        expect(code).to_contain_text('version="1.3.0"')
+        page.locator(".repository-select-input").click()
+        page.locator(".q-menu .q-item").filter(has_text=oldest).click()
+
+        expect(code).to_contain_text('version="1.1.0"')
+        expect(page).to_have_url(re.compile(rf"\?revision={oldest}&file=column_maker/column_maker\.xml$"))
+        expect(page.get_by_text("Newer revision(s) available")).to_be_visible()
 
     def test_explore_menu_links_contents(self):
         repository = self._setup_column_maker()
