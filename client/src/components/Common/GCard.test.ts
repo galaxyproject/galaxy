@@ -67,6 +67,31 @@ describe("GCard", () => {
         expect(handler).toHaveBeenCalledOnce();
     });
 
+    describe("keyboard", () => {
+        it.each([" ", "Enter"])("clicks a clickable card on %j", async (key) => {
+            const wrapper = mountCard({ clickable: true });
+            await wrapper.trigger("keydown", { key });
+            expect(wrapper.emitted("click")).toHaveLength(1);
+        });
+
+        it("does not click a card that is not clickable", async () => {
+            const wrapper = mountCard({ selectable: true });
+            await wrapper.trigger("keydown", { key: " " });
+            expect(wrapper.emitted("click")).toBeUndefined();
+        });
+
+        it.each([" ", "Enter"])("leaves %j on the select checkbox to the checkbox", async (key) => {
+            const wrapper = mountCard({ clickable: true, selectable: true });
+            const checkbox = wrapper.get("input#g-card-select-card");
+
+            await checkbox.trigger("keydown", { key });
+            expect(wrapper.emitted("click")).toBeUndefined();
+
+            await checkbox.setValue(true);
+            expect(wrapper.emitted("select")).toHaveLength(1);
+        });
+    });
+
     describe("header", () => {
         function mountHeader() {
             return mountCard({

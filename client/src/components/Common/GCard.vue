@@ -483,7 +483,9 @@ function onKeyDown(event: KeyboardEvent) {
     if (props.disabled) {
         return;
     }
-    if ((props.clickable && event.key === "Enter") || event.key === " ") {
+    // Enter and Space on inner controls (select checkbox, buttons, tag input) belong to them, not to the card.
+    const onCard = event.target === event.currentTarget;
+    if (onCard && props.clickable && (event.key === "Enter" || event.key === " ")) {
         event.stopPropagation();
         emit("click", event);
     } else if (props.clickable) {
