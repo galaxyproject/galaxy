@@ -25,7 +25,6 @@ class TestShedCorsApi(ShedApiTestCase):
         response = requests.get(f"{self.url}/api/repositories", headers={"Origin": ORIGIN})
         response.raise_for_status()
         assert response.headers.get("access-control-allow-origin") == ORIGIN
-        # The allowed origin is copied from the request, so caches must key on it.
         assert _varies_on_origin(response)
 
     def test_credentials_not_exposed_cross_origin(self):
@@ -56,8 +55,6 @@ class TestShedCorsApi(ShedApiTestCase):
             )
             assert not_modified.status_code == 304
             assert not_modified.headers.get("access-control-allow-origin") == ORIGIN
-            # These responses are publicly cacheable, so a cached copy built for one origin
-            # must not be served to another.
             assert _varies_on_origin(response)
             assert _varies_on_origin(not_modified)
 
