@@ -133,6 +133,39 @@ def test_final_failure_reraises_and_marks_the_story(stories_directory, finalize_
     assert markdown.index("Narration from attempt 1.") < markdown.index("Test Failed")
 
 
+def test_failed_story_points_at_the_error_directory(stories_directory, tmp_path, monkeypatch):
+    errors_directory = tmp_path / "errors"
+    monkeypatch.setattr(framework, "GALAXY_TEST_ERRORS_DIRECTORY", str(errors_directory))
+
+    @framework.selenium_test
+    def a_test(self):
+        raise AssertionError("the real failure")
+
+    case = BrowserlessTestCase()
+    with pytest.raises(AssertionError):
+        a_test(case)
+
+    (error_directory,) = (path for path in errors_directory.iterdir() if path.name != "latest")
+    assert (error_directory / "stacktrace.txt").exists()
+    markdown = _markdown(case)
+    assert "AssertionError: the real failure" in markdown
+    assert str(error_directory) in markdown
+
+
+def test_failed_story_without_an_error_directory_names_only_the_error(stories_directory):
+    @framework.selenium_test
+    def a_test(self):
+        raise AssertionError("the real failure")
+
+    case = BrowserlessTestCase()
+    with pytest.raises(AssertionError):
+        a_test(case)
+
+    markdown = _markdown(case)
+    assert "AssertionError: the real failure" in markdown
+    assert "error directory" not in markdown
+
+
 def test_accessibility_failure_fails_the_story(stories_directory, finalize_spy):
     failure = AssertionError("inaccessible")
 

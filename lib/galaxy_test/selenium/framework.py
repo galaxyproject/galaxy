@@ -154,7 +154,6 @@ TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFA
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
 GALAXY_TEST_STORIES_DIRECTORY = os.environ.get("GALAXY_TEST_STORIES_DIRECTORY", None)
-STORY_FAILURE_DOCUMENTATION = "## Test Failed\n\nSee the error directory for details."
 # Driver backend can be ["selenium", "playwright"]
 GALAXY_TEST_DRIVER_BACKEND = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
 # Test browser can be ["CHROME", "FIREFOX"]
@@ -272,7 +271,8 @@ def managed_history(f):
     return func_wrapper
 
 
-def dump_test_information(self, name_prefix):
+def dump_test_information(self, name_prefix) -> str | None:
+    """Write debugging information for the current exception, returning the directory used if any."""
     if GALAXY_TEST_ERRORS_DIRECTORY and GALAXY_TEST_ERRORS_DIRECTORY != "0":
         target_directory = run_directory(GALAXY_TEST_ERRORS_DIRECTORY, name_prefix)
 
@@ -313,6 +313,18 @@ def dump_test_information(self, name_prefix):
                 continue
 
         link_latest(target_directory)
+        return target_directory
+    return None
+
+
+def story_failure_documentation(exception: BaseException, error_directory: str | None) -> str:
+    error = "".join(traceback.format_exception_only(type(exception), exception)).strip()
+    documentation = f"## Test Failed\n\n```\n{error}\n```"
+    if error_directory:
+        documentation += (
+            f"\n\nSee the error directory `{error_directory}` for the stack trace, page source and a final screenshot."
+        )
+    return documentation
 
 
 def selenium_test(f):
@@ -340,15 +352,15 @@ def selenium_test(f):
                 write_story(self.story)
                 # Don't retry if we have purposely decided to skip the test.
                 raise
-            except Exception:
-                dump_test_information(self, test_name)
+            except Exception as e:
+                error_directory = dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
                     print(
                         f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}."
                     )
                 else:
-                    write_story(self.story, failure_documentation=STORY_FAILURE_DOCUMENTATION)
+                    write_story(self.story, failure_documentation=story_failure_documentation(e, error_directory))
                     raise
             else:
                 write_story(self.story)
