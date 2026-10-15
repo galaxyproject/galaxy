@@ -1015,7 +1015,7 @@ function onKeyDown(event: KeyboardEvent) {
         min-height: 1.5rem;
     }
 
-    :deep(.g-card-select-checkbox) {
+    .g-card-select-checkbox {
         min-width: 1.5rem;
     }
 
