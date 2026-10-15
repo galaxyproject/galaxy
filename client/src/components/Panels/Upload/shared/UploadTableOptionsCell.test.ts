@@ -12,7 +12,7 @@ const options: RowOptionDescriptor[] = [
 
 describe("UploadTableOptionsCell", () => {
     it("renders one checkbox per option with the test id on the input", () => {
-        const wrapper = mount(UploadTableOptionsCell as object, { props: { options } });
+        const wrapper = mount(UploadTableOptionsCell, { props: { options } });
 
         const inputs = wrapper.findAll("input[type='checkbox']");
         expect(inputs).toHaveLength(2);
@@ -22,7 +22,7 @@ describe("UploadTableOptionsCell", () => {
     });
 
     it("emits the option key with the new checked state", async () => {
-        const wrapper = mount(UploadTableOptionsCell as object, { props: { options } });
+        const wrapper = mount(UploadTableOptionsCell, { props: { options } });
 
         await wrapper.findAll("input[type='checkbox']")[0]!.setValue(true);
         await wrapper.find("input[data-test-id='deferred-toggle']").setValue(false);
