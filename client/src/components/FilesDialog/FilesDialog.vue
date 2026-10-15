@@ -21,6 +21,7 @@ import {
 } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
+import { useToast } from "@/composables/toast";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -33,6 +34,7 @@ import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 const filesSources = useFileSources();
+const toast = useToast();
 
 interface FilesDialogProps {
     /** Callback function to be called passing the results when selection is complete */
@@ -185,21 +187,30 @@ function selectDirectoryRecursive(record: SelectionItem) {
         // look for subdirectories
         const recursive = true;
         isBusy.value = true;
-        browseRemoteFiles(record.url, recursive).then((incoming) => {
-            incoming.entries.forEach((item) => {
-                // construct record
-                const subRecord = entryToRecord(item);
-                if (subRecord.isLeaf) {
-                    // select file under this path
-                    selectSingleRecord(subRecord, true);
-                } else {
-                    // select subdirectory
-                    selectedDirectories.value.push(subRecord);
-                }
+        browseRemoteFiles(record.url, recursive)
+            .then((incoming) => {
+                incoming.entries.forEach((item) => {
+                    // construct record
+                    const subRecord = entryToRecord(item);
+                    if (subRecord.isLeaf) {
+                        // select file under this path
+                        selectSingleRecord(subRecord, true);
+                    } else {
+                        // select subdirectory
+                        selectedDirectories.value.push(subRecord);
+                    }
+                });
+                totalItems.value = incoming.totalMatches;
+                isBusy.value = false;
+            })
+            .catch((error) => {
+                // undo the directory selection made above; formatRows also disables OK again
+                unselectPath(record.url, false, record.id);
+                formatRows();
+                // a toast keeps the folder listed, so files can still be picked one by one
+                toast.error(errorMessageAsString(error));
+                isBusy.value = false;
             });
-            totalItems.value = incoming.totalMatches;
-            isBusy.value = false;
-        });
     }
 }
 
