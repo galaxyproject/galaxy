@@ -250,12 +250,8 @@ export default {
             }
             return item.tool ? `Select ${names} (${item.tool})` : `Select ${names}`;
         },
-        changeToggleCheckboxState(event) {
-            if (event && this.unchecked().length === 1) {
-                this.toggleState = true;
-            } else {
-                this.toggleState = false;
-            }
+        changeToggleCheckboxState() {
+            this.toggleState = this.items.length > 0 && this.unchecked().length === 0;
         },
         toggleSelectAll: function (event) {
             this.items.forEach((item) => (item.selected = event));

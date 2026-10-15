@@ -121,4 +121,32 @@ describe("ResolutionIndex", () => {
             .trigger("click");
         expect(label()).toBe("Select secret_tool");
     });
+
+    describe("header select-all state", () => {
+        const headerBox = (wrapper: Awaited<ReturnType<typeof mountIndex>>) =>
+            wrapper.find('#g-table-requirements-table thead input[type="checkbox"]').element as HTMLInputElement;
+        const rowBoxes = (wrapper: Awaited<ReturnType<typeof mountIndex>>) =>
+            wrapper.findAll('#g-table-requirements-table tbody input[type="checkbox"]');
+
+        it("checks the header once both rows are ticked", async () => {
+            const wrapper = await mountIndex();
+            const rows = rowBoxes(wrapper);
+
+            await rows[0]!.setValue(true);
+            expect(headerBox(wrapper).checked).toBe(false);
+
+            await rows[1]!.setValue(true);
+            expect(headerBox(wrapper).checked).toBe(true);
+        });
+
+        it("unchecks the header when a row is unticked again", async () => {
+            const wrapper = await mountIndex();
+            const rows = rowBoxes(wrapper);
+
+            await rows[0]!.setValue(true);
+            await rows[1]!.setValue(true);
+            await rows[0]!.setValue(false);
+            expect(headerBox(wrapper).checked).toBe(false);
+        });
+    });
 });
