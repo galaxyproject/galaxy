@@ -17,9 +17,11 @@ import "@fontsource/atkinson-hyperlegible/700.css"
 import "@fontsource/atkinson-hyperlegible/700-italic.css"
 import "@/styles/shed.css"
 import router from "@/router"
+import { vSanitizeHtml } from "@galaxyproject/galaxy-ui"
 import { createPinia } from "pinia"
 
 // Quasar now only provides q-select and the markup inside it (RevisionSelect, SelectUser, OverviewTab)
 const quasarConfig = { iconSet }
 const app = createApp(App).use(createPinia()).use(router).use(Quasar, quasarConfig)
+app.directive("sanitize-html", vSanitizeHtml)
 app.mount("#app")

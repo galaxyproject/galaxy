@@ -8,7 +8,10 @@ import { config } from "@vue/test-utils";
 import { vi } from "vitest";
 
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
-import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
+
+// Straight from the file: the galaxy-ui index would load every component here,
+// before test files can mock their dependencies (@floating-ui/dom).
+import { vSanitizeHtml } from "../../packages/ui/src/directives/vSanitizeHtml";
 
 // Vue passes a warning's component props to console.warn as raw objects, and
 // vitest-fail-on-console formats every argument before deciding whether to
@@ -28,11 +31,11 @@ config.global.directives = {
         },
     },
     // v-sanitize-html is the real directive; only the DOMPurify call behind it is
-    // replaced with a pass-through spy (see directives/__mocks__/sanitizeHtml.ts).
+    // replaced with a pass-through spy (see galaxy-ui's directives/__mocks__/sanitizeHtml.ts).
     "sanitize-html": vSanitizeHtml,
     "no-sanitize-html": vNoSanitizeHtml,
 };
-vi.mock("@/directives/sanitizeHtml");
+vi.mock("../../packages/ui/src/directives/sanitizeHtml");
 
 // Auto-stubs drop compatConfig, so compat would rewire a modelValue component's
 // v-model back to value/input. Leave components that opted out unstubbed, even

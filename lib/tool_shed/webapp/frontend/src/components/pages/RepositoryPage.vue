@@ -315,7 +315,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                             <p v-if="longDescription" class="description">{{ longDescription }}</p>
                             <template v-if="currentMetadata">
                                 <div v-for="(content, key) of readmes" :key="key" class="repository-readme-wrapper">
-                                    <span class="repository-readme" v-html="content"></span>
+                                    <span v-sanitize-html="content" class="repository-readme"></span>
                                 </div>
                             </template>
                         </div>

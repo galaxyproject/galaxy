@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { defineComponent, nextTick } from "vue";
 
-import { sanitizeHtml } from "@/directives/sanitizeHtml";
+import { sanitizeHtml } from "./sanitizeHtml";
 
 // The directive is registered globally by the test setup, with sanitizeHtml
 // replaced by a pass-through spy; here it is swapped for a marker so the tests
