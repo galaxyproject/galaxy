@@ -112,31 +112,3 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         invocations.step_title(order_index=1).wait_for_and_click()
         invocations.step_title(order_index=2).assert_absent()
         self.screenshot("invocation_steps_view_with_failed_jobs_debug_job_expanded")
-
-    def invocation_open_latest(self):
-        # TODO: migrate retry_assertion_during_transitions to navigates_galaxy.py so this
-        # can be moved there.
-
-        # open invocations panel
-        self.home()
-        self.components.invocations.activity.wait_for_and_click()
-
-        invocations = self.components.invocations
-        invocations.invocations_panel_list.wait_for_visible()
-
-        @retry_assertion_during_transitions
-        def assert_has_row():
-            invocations.invocations_panel_list_items.wait_for_visible()
-            invocation_rows = invocations.invocations_panel_list_items.all()
-            assert len(invocation_rows) > 0
-            return invocation_rows[0]
-
-        assert_has_row()
-
-        invocations.state_details.assert_absent()
-        details = invocations.invocations_panel_list_items.all()[0]
-        details.click()
-        invocations.state_details.wait_for_visible()
-
-        # close invocations panel
-        self.components.invocations.activity.wait_for_and_click()

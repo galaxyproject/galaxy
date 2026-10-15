@@ -7,10 +7,7 @@ import logging
 import os
 import traceback
 import unittest
-from functools import (
-    partial,
-    wraps,
-)
+from functools import wraps
 from typing import (
     Any,
     cast,
@@ -36,9 +33,9 @@ from galaxy.selenium.has_driver_protocol import (
     HasDriverProtocol,
 )
 from galaxy.selenium.navigates_galaxy import (
-    exception_seems_to_indicate_transition,
     galaxy_timeout_handler,
     NavigatesGalaxy,
+    retry_assertion_during_transitions,
     retry_during_transitions,
 )
 from galaxy.tool_util.verify import (
@@ -350,20 +347,6 @@ def selenium_test(f):
                     raise
 
     return func_wrapper
-
-
-def exception_is_assertion_or_transition(e: Exception) -> bool:
-    """Drive the retry_assertion_during_transitions decorator.
-
-    Reuse logic for checking for transition exceptions but also retry
-    if there is an assertion error.
-    """
-    return exception_seems_to_indicate_transition(e) or isinstance(e, AssertionError)
-
-
-retry_assertion_during_transitions = partial(
-    retry_during_transitions, exception_check=exception_is_assertion_or_transition
-)
 
 
 class TestSnapshot:
@@ -1709,4 +1692,7 @@ class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.B
         return upload_response.json()
 
 
-__all__ = ("retry_during_transitions",)
+__all__ = (
+    "retry_assertion_during_transitions",
+    "retry_during_transitions",
+)
