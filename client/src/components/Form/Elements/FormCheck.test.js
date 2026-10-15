@@ -70,6 +70,11 @@ describe("FormCheck", () => {
         }
     });
 
+    it("names the option group by the given label id", async () => {
+        await wrapper.setProps({ options: [{ label: "label_0", value: "value_0" }], ariaLabelledby: "title-id" });
+        expect(wrapper.find("fieldset").attributes("aria-labelledby")).toBe("title-id");
+    });
+
     it("Confirm Select-All checkbox works in various states: select-all, unselect-all, indeterminate/partial-list-selection.", async () => {
         const n = 3;
         const options = [];

@@ -13,6 +13,8 @@ interface CheckOption {
 export interface FormCheckProps {
     value?: string | string[];
     options: Array<CheckOption>;
+    /** Id of the element that names the option group, e.g. the parameter title */
+    ariaLabelledby?: string;
 }
 
 const props = defineProps<FormCheckProps>();
@@ -58,7 +60,7 @@ function onSelectAll(selected: boolean): void {
             @update:model-value="onSelectAll">
             <span v-localize>Select / Deselect all</span>
         </GCheckbox>
-        <GCheckboxGroup v-model="currentValue" stacked class="pl-3">
+        <GCheckboxGroup v-model="currentValue" :aria-labelledby="props.ariaLabelledby" stacked class="pl-3">
             <GCheckbox v-for="(option, index) in options" :key="index" :value="option.value">
                 {{ option.label }}
             </GCheckbox>
