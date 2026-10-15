@@ -1,0 +1,52 @@
+- doc: A direct collection pass-through retains the inherited axis across two callable boundaries.
+  job:
+    outer_mapping_source:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: X
+          class: File
+          contents: "from_X"
+        - identifier: Y
+          class: File
+          contents: "from_Y"
+    direct_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: P
+          class: File
+          contents: "P_content"
+        - identifier: Q
+          class: File
+          contents: "Q_content"
+  outputs:
+    nested_passthrough:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
+      elements:
+        X:
+          class: Collection
+          count: 2
+          elements:
+            P:
+              asserts:
+              - that: has_text
+                text: "P_content"
+            Q:
+              asserts:
+              - that: has_text
+                text: "Q_content"
+        Y:
+          class: Collection
+          count: 2
+          elements:
+            P:
+              asserts:
+              - that: has_text
+                text: "P_content"
+            Q:
+              asserts:
+              - that: has_text
+                text: "Q_content"

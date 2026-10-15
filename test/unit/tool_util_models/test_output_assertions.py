@@ -133,10 +133,22 @@ def test_doc_is_optional_on_test_job():
     assert "doc" not in test_job.get("required", [])
 
 
+@pytest.mark.parametrize("timeout", [None, 0.5, 300])
+def test_test_job_accepts_valid_timeout(timeout):
+    tests = Tests.model_validate([{"job": {}, "outputs": {}, "timeout": timeout}])
+    assert tests.root[0].timeout == timeout
+
+
+@pytest.mark.parametrize("timeout", [0, -0.5, -1])
+def test_test_job_rejects_nonpositive_timeout(timeout):
+    with pytest.raises(ValidationError):
+        Tests.model_validate([{"job": {}, "outputs": {}, "timeout": timeout}])
+
+
 def test_test_job_top_level_properties_have_descriptions():
     schema = Tests.model_json_schema()
     props = schema["$defs"]["TestJob"]["properties"]
-    for name in ("doc", "job", "outputs", "expect_failure"):
+    for name in ("doc", "job", "outputs", "expect_failure", "timeout"):
         assert props[name].get("description"), f"missing description on TestJob.{name}"
 
 
@@ -146,6 +158,7 @@ def test_test_job_titles_are_human_readable_not_lowercase():
     assert props["doc"]["title"] == "Doc"
     assert props["outputs"]["title"] == "Outputs"
     assert props["expect_failure"]["title"] == "Expect Failure"
+    assert props["timeout"]["title"] == "Timeout"
 
 
 def test_assertion_model_titles_are_human_readable():

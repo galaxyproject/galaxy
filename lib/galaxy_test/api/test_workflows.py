@@ -4539,6 +4539,10 @@ test_data:
 class: GalaxyWorkflow
 inputs:
   boolean_input_files: collection
+  direct_dataset: data
+  direct_collection:
+    type: collection
+    collection_type: list
 steps:
   create_list_of_boolean:
     tool_id: param_value_from_file
@@ -4552,6 +4556,10 @@ steps:
       inputs:
         boolean_input_file: data
         should_run: boolean
+        direct_dataset: data
+        direct_collection:
+          type: collection
+          collection_type: list
       steps:
         consume_expression_parameter:
           tool_id: cat1
@@ -4563,13 +4571,27 @@ steps:
       outputs:
         inner_output:
           outputSource: consume_expression_parameter/out_file1
+        fully_bound_passthrough:
+          outputSource: boolean_input_file/output
+        direct_dataset_passthrough:
+          outputSource: direct_dataset/output
+        direct_collection_passthrough:
+          outputSource: direct_collection/output
     in:
       boolean_input_file: boolean_input_files
       should_run: create_list_of_boolean/boolean_param
+      direct_dataset: direct_dataset
+      direct_collection: direct_collection
     when: $(inputs.should_run)
 outputs:
   outer_output:
     outputSource: subworkflow/inner_output
+  fully_bound_passthrough:
+    outputSource: subworkflow/fully_bound_passthrough
+  direct_dataset_passthrough:
+    outputSource: subworkflow/direct_dataset_passthrough
+  direct_collection_passthrough:
+    outputSource: subworkflow/direct_collection_passthrough
 test_data:
   boolean_input_files:
     collection_type: list
@@ -4578,6 +4600,16 @@ test_data:
         content: true
       - identifier: false
         content: false
+  direct_dataset:
+    value: 1.bed
+    type: File
+  direct_collection:
+    collection_type: list
+    elements:
+      - identifier: first
+        content: first
+      - identifier: second
+        content: second
 """,
                 history_id=history_id,
             )
@@ -4590,6 +4622,136 @@ test_data:
             assert outer_hdca["job_state_summary"]["all_jobs"] == 2
             assert outer_hdca["job_state_summary"]["ok"] == 1
             assert outer_hdca["job_state_summary"]["skipped"] == 1
+
+            boolean_source = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=summary.inputs["boolean_input_files"]["id"]
+            )
+            workflow_inputs = json.loads(summary.workflow_request["inputs"])
+            active_passthrough_ids = {
+                "fully_bound_passthrough": boolean_source["elements"][0]["object"]["id"],
+                "direct_dataset_passthrough": workflow_inputs["direct_dataset"]["id"],
+            }
+            for output_name in ("fully_bound_passthrough", "direct_dataset_passthrough"):
+                output_id = invocation_details["output_collections"][output_name]["id"]
+                output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+                assert output["collection_type"] == "list"
+                assert [element["element_identifier"] for element in output["elements"]] == ["True", "False"]
+                assert output["elements"][0]["object"]["id"] == active_passthrough_ids[output_name]
+                false_hda_id = output["elements"][1]["object"]["id"]
+                false_hda = self.dataset_populator.get_history_dataset_details(
+                    history_id=history_id, content_id=false_hda_id
+                )
+                assert false_hda["file_ext"] == "expression.json"
+                assert false_hda["misc_blurb"] == "skipped"
+
+            direct_collection_id = invocation_details["output_collections"]["direct_collection_passthrough"]["id"]
+            direct_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=direct_collection_id
+            )
+            assert direct_collection["collection_type"] == "list:list"
+            assert [element["element_identifier"] for element in direct_collection["elements"]] == ["True", "False"]
+            source_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=summary.inputs["direct_collection"]["id"]
+            )
+            assert [element["object"]["id"] for element in direct_collection["elements"][0]["object"]["elements"]] == [
+                element["object"]["id"] for element in source_collection["elements"]
+            ]
+            false_collection = direct_collection["elements"][1]["object"]
+            assert [element["element_identifier"] for element in false_collection["elements"]] == [
+                "first",
+                "second",
+            ]
+            for element in false_collection["elements"]:
+                false_hda = self.dataset_populator.get_history_dataset_details(
+                    history_id=history_id, content_id=element["object"]["id"]
+                )
+                assert false_hda["file_ext"] == "expression.json"
+                assert false_hda["misc_blurb"] == "skipped"
+
+    @pytest.mark.parametrize(
+        "conditions", [(True, False), (False, True), (False, False)], ids=["skip_second", "skip_first", "skip_all"]
+    )
+    def test_conditional_subworkflow_independent_mapping_preserves_positions(self, history_id, conditions):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  conditions: collection
+  references:
+    type: collection
+    collection_type: list
+steps:
+  read_conditions:
+    tool_id: param_value_from_file
+    in:
+      input1: conditions
+    state:
+      param_type: boolean
+  sub:
+    in:
+      should_run: read_conditions/boolean_param
+      references: references
+    when: $(inputs.should_run)
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        should_run: boolean
+        references:
+          type: collection
+          collection_type: list
+      steps:
+        copy_reference:
+          tool_id: cat1
+          in:
+            input1: references
+      outputs:
+        copied:
+          outputSource: copy_reference/out_file1
+        passthrough:
+          outputSource: references/output
+outputs:
+  copied:
+    outputSource: sub/copied
+  passthrough:
+    outputSource: sub/passthrough
+""",
+            test_data={
+                "conditions": {
+                    "collection_type": "list",
+                    "elements": [
+                        {"identifier": identifier, "content": json.dumps(condition)}
+                        for identifier, condition in zip(("X", "Y"), conditions)
+                    ],
+                },
+                "references": {
+                    "collection_type": "list",
+                    "elements": [
+                        {"identifier": "P", "content": "P_content"},
+                        {"identifier": "Q", "content": "Q_content"},
+                    ],
+                },
+            },
+            history_id=history_id,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        for output_name in ("copied", "passthrough"):
+            output = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=invocation["output_collections"][output_name]["id"]
+            )
+            assert output["collection_type"] == "list:list"
+            assert [element["element_identifier"] for element in output["elements"]] == ["X", "Y"]
+            if output_name == "copied":
+                assert output["job_state_summary"]["all_jobs"] == 4
+                assert output["job_state_summary"]["skipped"] == 2 * conditions.count(False)
+            for outer, condition in zip(output["elements"], conditions):
+                references = outer["object"]["elements"]
+                assert [element["element_identifier"] for element in references] == ["P", "Q"]
+                for reference in references:
+                    content = self.dataset_populator.get_history_dataset_content(
+                        history_id, content_id=reference["object"]["id"]
+                    )
+                    expected = f"{reference['element_identifier']}_content" if condition else "null"
+                    assert content.strip() == expected
 
     def test_run_workflow_conditional_subworkflow_step_map_over_expression_tool_with_extra_nesting(self):
         with self.dataset_populator.test_history() as history_id:
@@ -7040,6 +7202,146 @@ test_data:
         elements = hdca_details["elements"]
         assert len(elements) == 1
         assert elements[0]["element_identifier"] == "test_level_1"
+
+    @skip_without_tool("cat")
+    @skip_without_tool("collection_creates_pair_from_type")
+    @skip_without_tool("identifier_all_collection_types")
+    @pytest.mark.parametrize("empty_outer", [False, True], ids=["two_outer_elements", "empty_outer"])
+    def test_subworkflow_mapping_callable_boundary_job_cardinality(self, history_id, empty_outer):
+        workflow_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "workflow",
+            "subworkflow_mapping_per_step.gxwf.yml",
+        )
+        tests_path = workflow_path.replace(".gxwf.yml", ".gxwf-tests.yml")
+        with open(tests_path) as tests_file:
+            test_case = yaml.safe_load(tests_file)[1 if empty_outer else 0]
+
+        summary = self._run_workflow(
+            workflow_path,
+            test_data=test_case["job"],
+            history_id=history_id,
+            source_type="path",
+            wait=True,
+            assert_ok=True,
+        )
+        parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        child_invocation_ids = {
+            step["subworkflow_invocation_id"]
+            for step in parent_invocation["steps"]
+            if step.get("subworkflow_invocation_id")
+        }
+        assert len(child_invocation_ids) == 1
+
+        child_invocation = self.workflow_populator.get_invocation(child_invocation_ids.pop(), step_details=True)
+        child_steps = {step["workflow_step_label"]: step for step in child_invocation["steps"]}
+        if empty_outer:
+            assert all(not step.get("jobs") for step in child_steps.values())
+            for output_name, expected in test_case["outputs"].items():
+                output = self.dataset_populator.get_history_collection_details(
+                    history_id, content_id=parent_invocation["output_collections"][output_name]["id"]
+                )
+                assert output["collection_type"] == expected["collection_type"]
+                assert output["elements"] == []
+            return
+
+        assert len(child_steps["cat_outer_mapping_source"]["jobs"]) == 2
+        assert len(child_steps["cat_inner_mapping_source"]["jobs"]) == 6
+        assert len(child_steps["cat_mixed_mapping_sources"]["jobs"]) == 6
+        assert len(child_steps["cat_chained_mapping_output"]["jobs"]) == 6
+        assert len(child_steps["cat_after_pick_value"]["jobs"]) == 6
+        assert len(child_steps["cat_second_inner_mapping_source"]["jobs"]) == 6
+        assert len(child_steps["cat_zip_chained_outputs"]["jobs"]) == 6
+        assert len(child_steps["consume_mapped_output_as_collection"]["jobs"]) == 2
+        assert len(child_steps["make_pair_per_outer"]["jobs"]) == 2
+        assert len(child_steps["consume_pair_elements"]["jobs"]) == 4
+
+        for output_name in (
+            "local_mapping_output",
+            "mixed_mapping_output",
+            "chained_mapping_output",
+            "pick_value_mapping_output",
+            "chained_pick_value_output",
+            "zipped_chained_output",
+        ):
+            output_id = parent_invocation["output_collections"][output_name]["id"]
+            output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+            assert output["collection_type"] == "list:list"
+            assert len(output["elements"]) == 2
+            assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
+            leaf_hda_ids = {
+                leaf["object"]["id"] for outer in output["elements"] for leaf in outer["object"]["elements"]
+            }
+            assert len(leaf_hda_ids) == 6
+            assert [element["element_identifier"] for element in output["elements"]] == ["X", "Y"]
+            assert all(
+                [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["P", "Q", "R"]
+                for outer in output["elements"]
+            )
+            if output_name in ("mixed_mapping_output", "chained_pick_value_output", "zipped_chained_output"):
+                for outer in output["elements"]:
+                    for index, leaf in enumerate(outer["object"]["elements"]):
+                        reference_content = f"{leaf['element_identifier']}_content"
+                        if output_name == "zipped_chained_output":
+                            expected_content = f"{reference_content}{'UVW'[index]}_content"
+                        else:
+                            expected_content = f"from_{outer['element_identifier']}{reference_content}"
+                        content = self.dataset_populator.get_history_dataset_content(
+                            history_id, content_id=leaf["object"]["id"]
+                        )
+                        assert content == expected_content
+
+        collection_consumer_id = parent_invocation["output_collections"]["collection_consumer_output"]["id"]
+        collection_consumer = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=collection_consumer_id
+        )
+        assert collection_consumer["collection_type"] == "list"
+        assert [element["element_identifier"] for element in collection_consumer["elements"]] == ["X", "Y"]
+
+        scalar_consumer_id = parent_invocation["output_collections"]["collection_output_scalar_consumer"]["id"]
+        scalar_consumer = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=scalar_consumer_id
+        )
+        assert scalar_consumer["collection_type"] == "list:paired"
+        assert [element["element_identifier"] for element in scalar_consumer["elements"]] == ["X", "Y"]
+        assert all(
+            [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["forward", "reverse"]
+            for outer in scalar_consumer["elements"]
+        )
+
+        mapped_passthrough_id = parent_invocation["output_collections"]["mapped_input_passthrough"]["id"]
+        mapped_passthrough = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=mapped_passthrough_id
+        )
+        assert mapped_passthrough_id == summary.inputs["outer_mapping_source"]["id"]
+        assert mapped_passthrough["collection_type"] == "list"
+        assert [element["element_identifier"] for element in mapped_passthrough["elements"]] == ["X", "Y"]
+
+        direct_passthrough_id = parent_invocation["output_collections"]["direct_collection_passthrough"]["id"]
+        direct_passthrough = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=direct_passthrough_id
+        )
+        assert direct_passthrough["collection_type"] == "list:list"
+        assert [element["element_identifier"] for element in direct_passthrough["elements"]] == ["X", "Y"]
+        child_collection_ids = [element["object"]["id"] for element in direct_passthrough["elements"]]
+        assert len(set(child_collection_ids)) == 2
+        passthrough_hda_ids = {
+            leaf["object"]["id"] for outer in direct_passthrough["elements"] for leaf in outer["object"]["elements"]
+        }
+        direct_collection_source = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=summary.inputs["inner_mapping_source"]["id"]
+        )
+        source_hda_ids = {element["object"]["id"] for element in direct_collection_source["elements"]}
+        assert passthrough_hda_ids == source_hda_ids
+
+        direct_dataset_id = parent_invocation["output_collections"]["direct_dataset_passthrough"]["id"]
+        direct_dataset = self.dataset_populator.get_history_collection_details(history_id, content_id=direct_dataset_id)
+        assert direct_dataset["collection_type"] == "list"
+        assert [element["element_identifier"] for element in direct_dataset["elements"]] == ["X", "Y"]
+        assert {element["object"]["id"] for element in direct_dataset["elements"]} == {
+            summary.inputs["direct_dataset"]["id"]
+        }
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection(self, history_id):

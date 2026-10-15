@@ -5,7 +5,10 @@ from typing import (
 
 import pytest
 from sqlalchemy import (
+    inspect,
+    MetaData,
     select,
+    Table,
     text,
 )
 
@@ -41,6 +44,53 @@ def upgrade_database_after_test():
     """Run after each test for proper cleanup"""
     yield
     run_command(f"{COMMAND} upgrade")
+
+
+def test_8d1f0c7a4b2e(monkeypatch, session, make_workflow_invocation):
+    dburl = str(session.bind.url)
+    monkeypatch.setenv("GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION", dburl)
+    monkeypatch.setenv("GALAXY_INSTALL_CONFIG_OVERRIDE_INSTALL_DATABASE_CONNECTION", dburl)
+
+    def migrate(command):
+        result = run_command(f"{COMMAND} {command}")
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    migrate("init")
+    invocation = make_workflow_invocation()
+    step = m.WorkflowStep()
+    step.workflow = invocation.workflow
+    step.type = "tool"
+    step.order_index = 0
+    invocation_step = m.WorkflowInvocationStep(workflow_step=step, workflow_invocation=invocation, state="scheduled")
+    session.add(invocation_step)
+    session.commit()
+    invocation_step_id = invocation_step.id
+
+    migrate("downgrade 64d49ad328d4")
+    assert "output_mapping" not in {
+        column["name"] for column in inspect(session.bind).get_columns("workflow_invocation_step")
+    }
+
+    migrate("upgrade 26.2")
+    session.expire_all()
+    assert invocation_step.state == "scheduled"
+    assert invocation_step.output_mapping is None
+    mapping = {"version": 1, "outputs": {"out_file1": {"axes": []}}}
+    invocation_step.output_mapping = mapping
+    session.commit()
+    session.expire_all()
+    assert invocation_step.output_mapping == mapping
+    session.commit()
+
+    migrate("downgrade 64d49ad328d4")
+    table = Table("workflow_invocation_step", MetaData(), autoload_with=session.bind)
+    assert "output_mapping" not in table.c
+    assert session.scalar(select(table.c.state).where(table.c.id == invocation_step_id)) == "scheduled"
+    session.commit()
+    migrate("upgrade 26.2")
+    session.expire_all()
+    assert invocation_step.output_mapping is None
+    session.commit()
 
 
 def test_1cf595475b58(monkeypatch, session, make_user, make_history):

@@ -10200,6 +10200,13 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     @staticmethod
     def poll_active_workflow_ids(engine, scheduler=None, handler=None):
+        has_parent = (
+            select(WorkflowInvocationToSubworkflowInvocationAssociation.id)
+            .where(
+                WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id == WorkflowInvocation.id
+            )
+            .exists()
+        )
         and_conditions = [
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
@@ -10207,6 +10214,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 WorkflowInvocation.state == WorkflowInvocation.states.READY,
                 WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING,
             ),
+            # Child execution needs the parent's mapping context. Cancellation
+            # still runs independently, even after the parent has finished.
+            or_(~has_parent, WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING),
         ]
         if scheduler is not None:
             and_conditions.append(WorkflowInvocation.scheduler == scheduler)
@@ -10761,6 +10771,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         ForeignKey("implicit_collection_jobs.id"), index=True
     )
     action: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    output_mapping: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
 
     workflow_step: Mapped[WorkflowStep] = relationship("WorkflowStep")
     job: Mapped[Optional["Job"]] = relationship(back_populates="workflow_invocation_step", uselist=False)

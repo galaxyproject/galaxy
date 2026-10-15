@@ -2,6 +2,10 @@
 
 import time
 from json import dumps
+from pathlib import Path
+
+import pytest
+import yaml
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -76,6 +80,245 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
             self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             assert "a\nc\nb\nd\ne\ng\nf\nh\n" == self.dataset_populator.get_history_dataset_content(history_id, hid=0)
+
+    def test_subworkflow_mapping_axes_survive_scheduling_rounds(self):
+        workflow_path = (
+            Path(__file__).parents[2] / "lib" / "galaxy_test" / "workflow" / "subworkflow_mapping_per_step.gxwf.yml"
+        )
+        tests_path = workflow_path.with_name("subworkflow_mapping_per_step.gxwf-tests.yml")
+        with tests_path.open() as tests_file:
+            test_job = yaml.safe_load(tests_file)[0]["job"]
+
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                str(workflow_path),
+                test_data=test_job,
+                history_id=history_id,
+                source_type="path",
+                wait=True,
+            )
+            parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            child_invocation_ids = {
+                step["subworkflow_invocation_id"]
+                for step in parent_invocation["steps"]
+                if step.get("subworkflow_invocation_id")
+            }
+            assert len(child_invocation_ids) == 1
+
+            child_invocation = self.workflow_populator.get_invocation(child_invocation_ids.pop(), step_details=True)
+            child_steps = {step["workflow_step_label"]: step for step in child_invocation["steps"]}
+            assert len(child_steps["cat_mixed_mapping_sources"]["jobs"]) == 6
+            assert len(child_steps["cat_chained_mapping_output"]["jobs"]) == 6
+            assert len(child_steps["cat_after_pick_value"]["jobs"]) == 6
+            assert len(child_steps["cat_zip_chained_outputs"]["jobs"]) == 6
+            assert len(child_steps["consume_mapped_output_as_collection"]["jobs"]) == 2
+            assert len(child_steps["consume_pair_elements"]["jobs"]) == 4
+
+            output_id = parent_invocation["output_collections"]["chained_pick_value_output"]["id"]
+            output = self.dataset_populator.get_history_collection_details(history_id, content_id=output_id)
+            assert output["collection_type"] == "list:list"
+            assert len(output["elements"]) == 2
+            assert all(len(element["object"]["elements"]) == 3 for element in output["elements"])
+
+            passthrough_id = parent_invocation["output_collections"]["direct_collection_passthrough"]["id"]
+            passthrough = self.dataset_populator.get_history_collection_details(history_id, content_id=passthrough_id)
+            assert passthrough["collection_type"] == "list:list"
+            assert [element["element_identifier"] for element in passthrough["elements"]] == ["X", "Y"]
+            assert all(
+                [leaf["element_identifier"] for leaf in outer["object"]["elements"]] == ["P", "Q", "R"]
+                for outer in passthrough["elements"]
+            )
+
+            direct_dataset_id = parent_invocation["output_collections"]["direct_dataset_passthrough"]["id"]
+            direct_dataset = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=direct_dataset_id
+            )
+            assert direct_dataset["collection_type"] == "list"
+            assert len({element["object"]["id"] for element in direct_dataset["elements"]}) == 1
+
+            # Pass-through outputs become available before the child's tool
+            # outputs. Delayed scheduling retries must not re-materialize and
+            # leak a fresh history collection on every retry.
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            history_collection_names = [
+                item["name"] for item in history_contents if item["history_content_type"] == "dataset_collection"
+            ]
+            assert history_collection_names.count("sub: direct_collection_passthrough") == 1
+            assert history_collection_names.count("sub: direct_dataset_passthrough") == 1
+
+    def test_conditional_subworkflow_passthrough_is_materialized_once(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+  direct_dataset: data
+steps:
+  create_list_of_boolean:
+    tool_id: param_value_from_file
+    in:
+      input1: boolean_input_files
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        boolean_input_file: data
+        should_run: boolean
+        direct_dataset: data
+      steps:
+        consume_expression_parameter:
+          tool_id: cat1
+          in:
+            input1: boolean_input_file
+      outputs:
+        inner_output:
+          outputSource: consume_expression_parameter/out_file1
+        direct_dataset_passthrough:
+          outputSource: direct_dataset/output
+    in:
+      boolean_input_file: boolean_input_files
+      should_run: create_list_of_boolean/boolean_param
+      direct_dataset: direct_dataset
+    when: $(inputs.should_run)
+outputs:
+  inner_output:
+    outputSource: subworkflow/inner_output
+  direct_dataset_passthrough:
+    outputSource: subworkflow/direct_dataset_passthrough
+""",
+                test_data="""
+boolean_input_files:
+  collection_type: list
+  elements:
+    - identifier: true
+      content: true
+    - identifier: false
+      content: false
+direct_dataset:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            skipped_passthroughs = [
+                item
+                for item in history_contents
+                if item["history_content_type"] == "dataset" and item["name"] == "Subworkflow pass-through - skipped"
+            ]
+            assert len(skipped_passthroughs) == 1
+
+    @pytest.mark.parametrize("expose_tool_output", [True, False], ids=["tool_output", "passthrough_only"])
+    def test_nested_passthrough_consumer_keeps_mapping_after_scheduling_delay(self, expose_tool_output):
+        with self.dataset_populator.test_history() as history_id:
+            workflow = yaml.safe_load("""
+class: GalaxyWorkflow
+inputs:
+  samples: collection
+  references:
+    type: collection
+    collection_type: list
+steps:
+  outer:
+    in:
+      sample: samples
+      references: references
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        sample: data
+        references:
+          type: collection
+          collection_type: list
+      steps:
+        nested:
+          in:
+            references: references
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              references:
+                type: collection
+                collection_type: list
+            steps:
+              copy_references:
+                tool_id: cat1
+                in:
+                  input1: references
+              copy_again:
+                tool_id: cat1
+                in:
+                  input1: copy_references/out_file1
+            outputs:
+              passthrough:
+                outputSource: references/output
+              copied:
+                outputSource: copy_again/out_file1
+        consume_passthrough:
+          tool_id: cat1
+          in:
+            input1: nested/passthrough
+      outputs:
+        consumed:
+          outputSource: consume_passthrough/out_file1
+outputs:
+  consumed:
+    outputSource: outer/consumed
+""")
+            if not expose_tool_output:
+                del workflow["steps"]["outer"]["run"]["steps"]["nested"]["run"]["outputs"]["copied"]
+            summary = self.workflow_populator.run_workflow(
+                workflow,
+                test_data={
+                    "samples": {
+                        "collection_type": "list",
+                        "elements": [
+                            {"identifier": "X", "content": "sample_X"},
+                            {"identifier": "Y", "content": "sample_Y"},
+                        ],
+                    },
+                    "references": {
+                        "collection_type": "list",
+                        "elements": [
+                            {"identifier": identifier, "content": f"{identifier}_content"}
+                            for identifier in ("P", "Q", "R")
+                        ],
+                    },
+                },
+                history_id=history_id,
+            )
+            parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            outer_step = next(step for step in parent_invocation["steps"] if step["workflow_step_label"] == "outer")
+            outer_invocation = self.workflow_populator.get_invocation(
+                outer_step["subworkflow_invocation_id"], step_details=True
+            )
+            assert outer_invocation["state"] in ("scheduled", "completed")
+            outer_steps = {step["workflow_step_label"]: step for step in outer_invocation["steps"]}
+            assert len(outer_steps["consume_passthrough"]["jobs"]) == 6
+            nested_invocation = self.workflow_populator.get_invocation(
+                outer_steps["nested"]["subworkflow_invocation_id"], step_details=True
+            )
+            assert nested_invocation["state"] in ("scheduled", "completed")
+            nested_steps = {step["workflow_step_label"]: step for step in nested_invocation["steps"]}
+            assert len(nested_steps["copy_references"]["jobs"]) == 6
+            assert len(nested_steps["copy_again"]["jobs"]) == 6
+            output = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=parent_invocation["output_collections"]["consumed"]["id"]
+            )
+            assert output["collection_type"] == "list:list"
+            assert [element["element_identifier"] for element in output["elements"]] == ["X", "Y"]
+            for outer in output["elements"]:
+                references = outer["object"]["elements"]
+                assert [element["element_identifier"] for element in references] == ["P", "Q", "R"]
+                for reference in references:
+                    content = self.dataset_populator.get_history_dataset_content(
+                        history_id, content_id=reference["object"]["id"]
+                    )
+                    assert content.strip() == f"{reference['element_identifier']}_content"
 
     def test_scheduling_rounds(self):
         with self.dataset_populator.test_history() as history_id:
