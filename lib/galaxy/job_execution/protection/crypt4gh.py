@@ -106,6 +106,20 @@ def describe_error(error: BaseException, verbose: bool) -> str:
     return f"{type(error).__name__}: {error}" if verbose else type(error).__name__
 
 
+@contextmanager
+def _as_protection_error(failure: str, verbose: bool) -> Iterator[None]:
+    """Report unexpected errors, e.g. the generic ones of the crypt4gh library, as ``failure``.
+
+    Their description is added, see :func:`describe_error`.
+    """
+    try:
+        yield
+    except ProtectionError:
+        raise
+    except Exception as e:
+        raise ProtectionError(f"{failure} ({describe_error(e, verbose)}).") from e
+
+
 class RecryptorClient:
     """Client for the compute-side recryptor service.
 
@@ -305,31 +319,26 @@ class Crypt4GHJobRuntime:
         directory, name = os.path.split(path)
         protected_path = os.path.join(directory, f".{name}.c4gh")
         try:
-            # As crypt4gh.lib.encrypt() does, but the header is recrypted for the user before encrypting
-            # the body, so the body is written once, right behind it.
-            session_key = os.urandom(32)
-            compute_header = crypt4gh_header.serialize(
-                crypt4gh_header.encrypt(
-                    crypt4gh_header.make_packet_data_enc(0, session_key),
-                    [(0, self._writer_secret_key, compute_public_key)],
+            with _as_protection_error("Failed to encrypt an output of this job", self.plan.recryptor.verbose_errors):
+                # As crypt4gh.lib.encrypt() does, but the header is recrypted for the user before encrypting
+                # the body, so the body is written once, right behind it.
+                session_key = os.urandom(32)
+                compute_header = crypt4gh_header.serialize(
+                    crypt4gh_header.encrypt(
+                        crypt4gh_header.make_packet_data_enc(0, session_key),
+                        [(0, self._writer_secret_key, compute_public_key)],
+                    )
                 )
-            )
-            encoded_compute_header = base64.b64encode(compute_header).decode()
-            response = self.client.recrypt_header_to_user_key(encoded_compute_header, self.key_ref)
-            user_header = base64.b64decode(response.crypt4gh_header)
-            if read_crypt4gh_header(io.BytesIO(user_header)) != user_header:
-                raise ProtectionError("The key service returned an invalid header.")
-            with open(path, "rb") as plaintext, open(protected_path, "wb") as protected:
-                protected.write(user_header)
-                _encrypt_body(plaintext, protected, session_key)
-            # Replacing the file drops the plaintext.
-            os.replace(protected_path, path)
-        except ProtectionError:
-            raise
-        except Exception as e:
-            raise ProtectionError(
-                f"Failed to encrypt an output of this job ({describe_error(e, self.plan.recryptor.verbose_errors)})."
-            ) from e
+                encoded_compute_header = base64.b64encode(compute_header).decode()
+                response = self.client.recrypt_header_to_user_key(encoded_compute_header, self.key_ref)
+                user_header = base64.b64decode(response.crypt4gh_header)
+                if read_crypt4gh_header(io.BytesIO(user_header)) != user_header:
+                    raise ProtectionError("The key service returned an invalid header.")
+                with open(path, "rb") as plaintext, open(protected_path, "wb") as protected:
+                    protected.write(user_header)
+                    _encrypt_body(plaintext, protected, session_key)
+                # Replacing the file drops the plaintext.
+                os.replace(protected_path, path)
         finally:
             if os.path.exists(protected_path):
                 os.remove(protected_path)
@@ -347,31 +356,26 @@ class Crypt4GHJobRuntime:
         job_public_key = format_public_key(sodium.derive_pk(job_secret_key))
         files = self._files_to_stage()
         try:
-            responses = [
-                self.client.recrypt_header_to_job_key(protected_file.compute_header, key_ref, job_public_key)
-                for protected_file, key_ref in files
-            ]
-            output_key = self._check_responses(files, responses)
-            # Large inputs (e.g. paired reads) are decrypted concurrently, within the job's slots. Every file
-            # finishes before failing, so the cleanup doesn't race with files still being written.
-            with ThreadPoolExecutor(max_workers=_decrypt_workers()) as executor:
-                futures = [
-                    executor.submit(_decrypt_staged, protected_file, response, job_secret_key)
-                    for (protected_file, _), response in zip(files, responses)
+            with _as_protection_error("Failed to decrypt a protected input", self.plan.recryptor.verbose_errors):
+                responses = [
+                    self.client.recrypt_header_to_job_key(protected_file.compute_header, key_ref, job_public_key)
+                    for protected_file, key_ref in files
                 ]
-                wait(futures)
-                for future in futures:
-                    future.result()
-            self._write_state(output_key)
+                output_key = self._check_responses(files, responses)
+                # Large inputs (e.g. paired reads) are decrypted concurrently, within the job's slots. Every file
+                # finishes before failing, so the cleanup doesn't race with files still being written.
+                with ThreadPoolExecutor(max_workers=_decrypt_workers()) as executor:
+                    futures = [
+                        executor.submit(_decrypt_staged, protected_file, response, job_secret_key)
+                        for (protected_file, _), response in zip(files, responses)
+                    ]
+                    wait(futures)
+                    for future in futures:
+                        future.result()
+                self._write_state(output_key)
         except ProtectionError:
             self.cleanup_inputs()
             raise
-        except Exception as e:
-            self.cleanup_inputs()
-            # Errors from the crypt4gh library are generic, don't let them pass as-is.
-            raise ProtectionError(
-                f"Failed to decrypt a protected input ({describe_error(e, self.plan.recryptor.verbose_errors)})."
-            ) from e
 
     def _files_to_stage(self) -> list[tuple[ProtectedFile, str]]:
         files: list[tuple[ProtectedFile, str]] = []

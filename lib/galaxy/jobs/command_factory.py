@@ -15,7 +15,7 @@ from os.path import (
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
-from galaxy.job_execution.protection import ProtectionError
+from galaxy.job_execution.protection import insecure_destination_error
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     ScriptIntegrityChecks,
@@ -37,6 +37,15 @@ if typing.TYPE_CHECKING:
 
 log = getLogger(__name__)
 
+
+def _source_or_package(galaxy_file: str, source_command: str, package_command: str) -> str:
+    """Let a remote host run Galaxy's sources if it has them (``galaxy_file``), the package otherwise."""
+    return (
+        f'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/{galaxy_file}" ]; '
+        f"then {source_command}; else {package_command}; fi"
+    )
+
+
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
@@ -45,9 +54,8 @@ REMOTE_TOOL_EVAL_SOURCE_COMMAND = (
     'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" "${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
 )
 REMOTE_TOOL_EVAL_PACKAGE_COMMAND = "galaxy-remote-tool-eval"
-REMOTE_TOOL_EVAL_PULSAR_COMMAND = (
-    'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/tools/remote_tool_eval.py" ]; '
-    f"then {REMOTE_TOOL_EVAL_SOURCE_COMMAND}; else {REMOTE_TOOL_EVAL_PACKAGE_COMMAND}; fi"
+REMOTE_TOOL_EVAL_PULSAR_COMMAND = _source_or_package(
+    "galaxy/tools/remote_tool_eval.py", REMOTE_TOOL_EVAL_SOURCE_COMMAND, REMOTE_TOOL_EVAL_PACKAGE_COMMAND
 )
 PROTECTED_STAGE_SOURCE_COMMAND = "python -m galaxy.job_execution.protection.stage"
 PROTECTED_STAGE_PACKAGE_COMMAND = "galaxy-protected-stage"
@@ -150,20 +158,14 @@ def build_command(
         commands_builder.prepend_command("cd working")
 
     protected_stage_command = __protected_stage_command(job_wrapper, for_pulsar=for_pulsar)
-    if protected_stage_command and not (include_metadata and job_wrapper.requires_setting_metadata):
-        # Outputs are encrypted while collecting metadata: that must happen in the job, on the compute host,
-        # before the protected data is removed. Runners collecting metadata afterwards can't do that.
-        raise ProtectionError(
-            "This job uses encrypted datasets but its destination can't run it securely: metadata must be "
-            "collected within the job (embed_metadata_in_job). Contact your Galaxy administrator."
-        )
-    if protected_stage_command and for_pulsar and job_wrapper.remote_command_line:
-        # The tool script runs right after evaluating it there, the inputs couldn't be decrypted in between.
-        raise ProtectionError(
-            "This job uses encrypted datasets but its destination can't run it securely: Pulsar destinations "
-            "can't use remote tool evaluation. Contact your Galaxy administrator."
-        )
     if protected_stage_command:
+        if not (include_metadata and job_wrapper.requires_setting_metadata):
+            # Outputs are encrypted while collecting metadata: that must happen in the job, on the compute host,
+            # before the protected data is removed. Runners collecting metadata afterwards can't do that.
+            raise insecure_destination_error(["metadata must be collected within the job (embed_metadata_in_job)"])
+        if for_pulsar and job_wrapper.remote_command_line:
+            # The tool script runs right after evaluating it there, the inputs couldn't be decrypted in between.
+            raise insecure_destination_error(["Pulsar destinations can't use remote tool evaluation"])
         # Decrypt protected inputs on the host, before (and outside of any container of) the tool.
         # The tool only runs if that worked.
         commands_builder.run_only_if(protected_stage_command("stage-in"))
@@ -291,11 +293,10 @@ def __protected_stage_command(job_wrapper: "MinimalJobWrapper", for_pulsar=False
     def command(action: str) -> str:
         args = f"{action} {shlex.quote(plan_path)}"
         if for_pulsar:
-            # As for remote_tool_eval, let the remote host pick between Galaxy's sources and the package.
-            return (
-                'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/job_execution/protection/stage.py" ]; '
-                f"then {_in_galaxy_environment(f'{PROTECTED_STAGE_SOURCE_COMMAND} {args}')}; "
-                f"else {PROTECTED_STAGE_PACKAGE_COMMAND} {args}; fi"
+            return _source_or_package(
+                "galaxy/job_execution/protection/stage.py",
+                _in_galaxy_environment(f"{PROTECTED_STAGE_SOURCE_COMMAND} {args}"),
+                f"{PROTECTED_STAGE_PACKAGE_COMMAND} {args}",
             )
         if job_wrapper.galaxy_lib_dir:
             return _in_galaxy_environment(f"{PROTECTED_STAGE_SOURCE_COMMAND} {args}")

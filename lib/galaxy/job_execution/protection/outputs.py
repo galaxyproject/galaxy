@@ -36,6 +36,7 @@ from . import (
     CRYPT4GH_SCHEME,
     ProtectionError,
     ProtectionPlan,
+    user_message,
     write_private_file,
 )
 from .crypt4gh import Crypt4GHJobRuntime
@@ -169,9 +170,9 @@ class OutputProtector:
         dataset = dataset_instance.dataset
         assert dataset
         if external_filename is None:
-            self.record_outcome(dataset_instance, OUTCOME_DEFERRED)
+            self._record_outcome(dataset_instance, OUTCOME_DEFERRED)
         elif dataset.purged:
-            self.record_outcome(dataset_instance, OUTCOME_PURGED)
+            self._record_outcome(dataset_instance, OUTCOME_PURGED)
         elif protected_ext := self.protected_ext(dataset_instance):
             # The tool provided extension may have been applied again since. Read it from the object
             # store, not from the declared file.
@@ -202,10 +203,7 @@ class OutputProtector:
 
     def _failed(self, dataset_instance: "DatasetInstance", error: Exception) -> ProtectionError:
         """Record that an output could not be protected, its plaintext must be discarded already."""
-        if isinstance(error, ProtectionError):
-            message = str(error)
-        else:
-            message = f"Unexpected error ({type(error).__name__})"
+        message = user_message(error)
         self.records[self._uuid(dataset_instance)] = UnprotectedOutput(outcome=OUTCOME_FAILED)
         self.errors.append(f"Output '{dataset_instance.name}' could not be protected: {message}")
         return ProtectionError(message)
@@ -234,11 +232,11 @@ class OutputProtector:
                         self._discard(path, extra_files_path)
                 raise
 
-    def record_outcome(self, dataset_instance: "DatasetInstance", outcome: UnprotectedOutcome) -> None:
+    def _record_outcome(self, dataset_instance: "DatasetInstance", outcome: UnprotectedOutcome) -> None:
         self.records.setdefault(self._uuid(dataset_instance), UnprotectedOutput(outcome=outcome))
 
     def record_deferred(self, dataset_instance: "DatasetInstance") -> None:
-        self.record_outcome(dataset_instance, OUTCOME_DEFERRED)
+        self._record_outcome(dataset_instance, OUTCOME_DEFERRED)
 
     @staticmethod
     def without_tool_metadata(attributes: dict[str, Any] | None) -> dict[str, Any]:
@@ -267,7 +265,7 @@ class OutputProtector:
         for dataset_instance in dataset_instances:
             dataset = dataset_instance.dataset
             if dataset is not None and dataset.purged:
-                self.record_outcome(dataset_instance, OUTCOME_PURGED)
+                self._record_outcome(dataset_instance, OUTCOME_PURGED)
                 continue
             if self._uuid(dataset_instance) not in self.records:
                 self.records[self._uuid(dataset_instance)] = UnprotectedOutput(outcome=OUTCOME_FAILED)
