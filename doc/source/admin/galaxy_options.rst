@@ -2922,6 +2922,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``widgets_allowed_origins``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated origins allowed to embed Galaxy Widgets.
+    Unset allows any origin; widgets are meant to be read-only views.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``nginx_upload_store``
 ~~~~~~~~~~~~~~~~~~~~~~
