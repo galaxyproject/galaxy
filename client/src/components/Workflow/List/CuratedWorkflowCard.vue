@@ -203,7 +203,8 @@ const importedBadge = computed<CardBadge | null>(() => {
 
 const importAction = computed<CardAction>(() => ({
     id: "curated-import",
-    label: updateAvailable.value ? `Update to v${workflow.value.release}` : "Import",
+    // Not "Update": this imports a second copy, it doesn't upgrade the one the user has.
+    label: updateAvailable.value ? `Import v${workflow.value.release}` : "Import",
     icon: faUpload,
     title: !canImport.value
         ? "This workflow cannot be imported automatically"
@@ -224,7 +225,7 @@ const primaryActions = computed<CardAction[]>(() => {
             title: "Run your imported copy of this workflow",
             to: `/workflows/run?id=${importedWorkflowId.value}`,
         };
-        // Up to date, another import would just be a duplicate, so it steps back into the menu.
+        // Up to date, importing again only hands back this copy (the server matches on TRS id and version).
         return updateAvailable.value ? [runImported, importAction.value] : [runImported];
     }
 

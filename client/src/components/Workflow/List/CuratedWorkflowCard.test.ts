@@ -417,13 +417,18 @@ describe("CuratedWorkflowCard", () => {
             expect(wrapper.find(`#g-card-badge-curated-imported-${workflow.id}`).text()).toBe("In your workflows");
         });
 
-        it("offers the newer release when the user's copy is older", () => {
-            const workflow = iwcWorkflow({ release: "0.2", imported_workflow_id: "abc123", imported_version: "v0.1" });
+        it.each([
+            ["the user's copy is older", "0.2", "v0.1"],
+            ["the releases differ only numerically, not as text", "0.10", "v0.9"],
+        ])("offers the newer release as another import when %s", (_, release, imported) => {
+            const workflow = iwcWorkflow({ release, imported_workflow_id: "abc123", imported_version: imported });
             const wrapper = mountCard(workflow);
 
             expect(primaryIds(wrapper)).toEqual(["curated-run", "curated-import"]);
-            expect(importActionOf(wrapper).label).toBe("Update to v0.2");
-            expect(wrapper.find(`#g-card-badge-curated-update-available-${workflow.id}`).text()).toBe("You have v0.1");
+            expect(importActionOf(wrapper).label).toBe(`Import v${release}`);
+            expect(wrapper.find(`#g-card-badge-curated-update-available-${workflow.id}`).text()).toBe(
+                `You have ${imported}`,
+            );
         });
 
         it.each([
@@ -436,14 +441,6 @@ describe("CuratedWorkflowCard", () => {
             );
 
             expect(primaryIds(wrapper)).toEqual(["curated-run"]);
-        });
-
-        it("compares releases numerically, not as text", () => {
-            const wrapper = mountCard(
-                iwcWorkflow({ release: "0.10", imported_workflow_id: "abc123", imported_version: "v0.9" }),
-            );
-
-            expect(importActionOf(wrapper).label).toBe("Update to v0.10");
         });
 
         it("does not call a copy imported from the branch out of date", () => {
