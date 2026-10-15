@@ -83,6 +83,48 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
     @selenium_test
     @managed_history
+    def test_workflow_rerun_lineage(self):
+        """Both run forms retain lineage across reloads and allow navigation in either direction."""
+        invocations = self.components.invocations
+        self.workflow_run_open_workflow(WORKFLOW_BOOLEAN_PARAMETER_DEFAULT_TRUE)
+        self.workflow_run_submit()
+        invocations.state_details.wait_for_visible()
+        self.workflow_run_wait_for_ok(hid=1)
+        original_url = self.current_url.split("?")[0]
+        invocations.source_invocation_link.assert_absent()
+        invocations.latest_rerun_invocation_link.assert_absent()
+
+        for expanded, output_hid in ((False, 2), (True, 3)):
+            invocations.workflow_rerun_button.wait_for_and_click()
+            self.components.workflow_run.run_workflow.wait_for_visible()
+            if expanded:
+                self.workflow_run_ensure_expanded()
+            self.workflow_run_submit()
+            invocations.source_invocation_link.wait_for_visible()
+            self.workflow_run_wait_for_ok(hid=output_hid)
+            rerun_url = self.current_url.split("?")[0]
+            assert rerun_url != original_url
+            self.refresh()
+            source_link = invocations.source_invocation_link.wait_for_visible()
+            assert source_link.get_attribute("href") == original_url
+            self.screenshot(f"workflow_rerun_lineage_{'expanded' if expanded else 'simple'}")
+
+            source_link.click()
+            latest_link = invocations.latest_rerun_invocation_link.wait_for_visible()
+            assert latest_link.get_attribute("href") == rerun_url
+            self.screenshot(f"workflow_rerun_lineage_source_{output_hid}")
+            latest_link.click()
+            invocations.source_invocation_link.wait_for_visible()
+            assert self.current_url.split("?")[0] == rerun_url
+            original_url = rerun_url
+
+        invocations.activity.wait_for_and_click()
+        invocation_id = original_url.rsplit("/", 1)[-1]
+        invocations.lineage_rerun_badge(invocation_id=invocation_id).wait_for_visible()
+        self.screenshot("workflow_rerun_lineage_list_marker")
+
+    @selenium_test
+    @managed_history
     def test_workflow_rerun_preserves_false_boolean_parameter(self):
         """Regression test for boolean workflow parameters reverting to default on rerun.
 

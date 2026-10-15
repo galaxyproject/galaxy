@@ -140,6 +140,16 @@ describe("WorkflowRunForm", () => {
         expect(wrapper.emitted("submissionSuccess")).toEqual([[[{ id: "invocation_id" }]]]);
     });
 
+    it("records the source invocation when submitting a rerun", async () => {
+        const wrapper = mountForm();
+        await wrapper.setProps({ rerunOfInvocationId: "source-invocation" });
+        await run(wrapper);
+        expect(invokeWorkflow).toHaveBeenCalledWith(
+            "ebab00128497f9d7",
+            expect.objectContaining({ rerun_of_invocation_id: "source-invocation" }),
+        );
+    });
+
     it("sends results to a new history when requested", async () => {
         const wrapper = mountForm(false);
         const button = wrapper.findComponent({ name: "ButtonSpinner" });

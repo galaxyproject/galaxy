@@ -133,6 +133,12 @@ const fields: FieldArray = [
         },
     },
     {
+        key: "is_rerun",
+        title: "Run type",
+        type: "text",
+        converter: (data) => (data.is_rerun ? "Rerun" : ""),
+    },
+    {
         key: "execute",
         title: "Rerun",
         type: "button",

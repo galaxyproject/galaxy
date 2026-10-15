@@ -48,6 +48,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 interface Props {
+    rerunOfInvocationId?: string;
     model: Record<string, any>;
     targetHistory?: string;
     useJobCache?: boolean;
@@ -60,6 +61,7 @@ interface Props {
 type PaginatedDataOption = Pick<DataOption, "id" | "src" | "name" | "hid" | "keep" | "tags">;
 
 const props = withDefaults(defineProps<Props>(), {
+    rerunOfInvocationId: undefined,
     targetHistory: "current",
     useJobCache: false,
     requestState: undefined,
@@ -471,6 +473,7 @@ async function onExecute() {
     }
 
     const data: Record<string, any> = {
+        ...(props.rerunOfInvocationId ? { rerun_of_invocation_id: props.rerunOfInvocationId } : {}),
         replacement_dict: replacementParams,
         inputs: inputs,
         inputs_by: "step_index",

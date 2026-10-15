@@ -91,6 +91,12 @@ function cardClicked(invocation: WorkflowInvocation) {
 function getInvocationBadges(invocation: WorkflowInvocation) {
     return [
         {
+            id: "rerun",
+            label: "Rerun",
+            title: "This invocation is a rerun of an earlier invocation",
+            visible: invocation.is_rerun,
+        },
+        {
             id: "state",
             label: invocation.state,
             title: "",

@@ -52,6 +52,7 @@ watch(
     <WorkflowRun
         v-else-if="ready && requestData"
         :workflow-id="requestData.workflow_id"
+        :rerun-of-invocation-id="invocationId"
         :instance="requestData.instance"
         :request-state="requestData.inputs"
         prefer-simple-form
