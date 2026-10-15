@@ -1016,6 +1016,7 @@ function onKeyDown(event: KeyboardEvent) {
     }
 
     .g-card-select-checkbox {
+        // A square slot as wide as the first row is tall, so the title keeps its indent next to the small native box.
         min-width: 1.5rem;
     }
 
