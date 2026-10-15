@@ -1118,6 +1118,184 @@ $$tool(i=C) \rightarrow \left\{o: \text{dataset}\right\}$$
 
 
 
+## Callable workflow boundaries
+
+### Start with two samples and three references
+
+A parent workflow passes two samples, `A = [X, Y]`, to a subworkflow input
+that expects **one dataset**. Galaxy maps the subworkflow over the samples.
+The parent also passes three references, `B = [P, Q, R]`, to a child input
+that expects a **whole list**.
+
+Inside the child, a tool processes each reference. Even if this tool never
+reads the sample input, it belongs to the workflow being run for each sample.
+It therefore runs **2 × 3 = 6 jobs**, with results grouped by sample:
+
+```text
+Before: 3 reference jobs          After: 6 reference jobs
+list                             list:list
+  P → result                       X
+  Q → result                         P → result for X/P
+  R → result                         Q → result for X/Q
+                                     R → result for X/R
+                                   Y
+                                     P → result for Y/P
+                                     Q → result for Y/Q
+                                     R → result for Y/R
+```
+
+Previously, a branch disconnected from the sample input could run just
+three jobs and omit the sample level from its output. Mapping now applies
+to every executable step inside the child. A reference-only tool receives
+the same reference contents for `X/P` and `Y/P`, but these are distinct jobs
+and output datasets.
+
+For the same child call, with no conditional skips:
+
+| What a child tool consumes | Jobs | Output from a tool producing one dataset |
+| --- | ---: | --- |
+| One sample | 2 | `list`: one result under each of `X`, `Y` |
+| One reference | 6 | `list:list`: `X`, `Y`, each containing `P`, `Q`, `R` |
+| One sample and one reference | 6 | The same `list:list` structure |
+| The complete reference list | 2 | `list`: one result under each of `X`, `Y` |
+
+The reference input still expects a `list`; mapping the child adds an outer
+level to its results without changing its declared input type. The
+[example workflow](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_per_step.gxwf.yml)
+and its [expected outputs](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_per_step.gxwf-tests.yml)
+make this example executable.
+
+### Combining independent and linked inputs
+
+An **axis** records a collection choice used when scheduling a step. Here,
+one axis chooses a sample; a second chooses a reference. A **coordinate**
+is a particular choice, such as `(X, P)`. An axis can cover several nested
+collection levels; it does not always correspond to one `list` in a type.
+
+Every child step inherits the sample axis from the subworkflow call. A
+reference axis introduced inside the child follows it. Independent axes
+produce every combination, in sample-then-reference order. Downstream
+steps recognize axes already carried by their inputs, so consuming these
+six results produces six jobs without adding the sample axis again.
+
+**Linked inputs advance together.** For example, two reference lists
+`[P, Q, R]` and `[U, V, W]`, linked at the same child step, pair as
+`(P, U)`, `(Q, V)`, `(R, W)` for each sample. This gives six jobs. Linking
+still requires compatible collection structures; it does not create all
+nine reference combinations.
+
+Nested subworkflows inherit these choices in the same order, once per
+boundary. The [nested example](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_nested_passthrough.gxwf-tests.yml)
+checks that another child call does not duplicate the outer level.
+
+### Returning an input unchanged
+
+A **pass-through output** connects a child input directly to a child output.
+It creates no producer jobs, but its collection shape still reflects the
+mapped call:
+
+| Child output | Returned value for samples `X`, `Y` |
+| --- | --- |
+| The mapped sample input | `X → X`, `Y → Y` |
+| A separate, single dataset `D` | `X → D`, `Y → D` |
+| The direct reference list | `X → [P, Q, R]`, `Y → [P, Q, R]` |
+
+Galaxy reuses an existing collection when it already covers the complete
+mapping. Otherwise it builds the required collection structure. Each new
+inner collection has its own identity, while its dataset entries can refer
+to the same original history datasets. No data files are copied merely to
+repeat a pass-through value.
+
+Identifiers, element order, collection types, and sample-sheet rows and
+columns are preserved. Tags on newly created collection associations are
+not copied by this mechanism; shared dataset entries retain their metadata
+and tags.
+
+### Empty inputs and skipped calls
+
+An empty sample list schedules no child jobs. Outputs retain their declared
+nesting: the reference branch returns an empty `list:list`, for example.
+
+If a condition skips sample `Y`, a pass-through output must not expose `Y`'s
+input as a successful result. For a known reference list, Galaxy preserves
+its identifiers and inserts skipped `expression.json` datasets containing
+null values at the leaves. The result retains the `Y` position and its
+`P`, `Q`, `R` positions.
+
+A tool that discovers collection elements only while running presents a
+different case: a skipped tool has not discovered its inner shape. Existing
+behavior can leave that branch empty. This chapter does not equate that
+empty branch with a null collection. The API tests named below cover both
+known-shape pass-through and dynamically discovered outputs.
+
+### Compatibility and implementation
+
+Existing workflows with independent child branches can schedule more jobs
+and return an extra outer collection level. Review downstream consumers
+that previously received a flat reference list. If reference processing
+should happen only once, place it outside the mapped subworkflow and pass
+its results into the child.
+
+Galaxy records one child **invocation** for this call. That record groups
+the child steps; each tool step records its own jobs at the relevant
+coordinates. Thus one child invocation and six reference jobs describe
+different parts of the same execution.
+
+The scheduler persists each output's mapping axes and their association
+with collection levels. It restores them before scheduling dependent
+steps on a later pass. This prevents a resumed step from forgetting or
+counting an inherited mapping twice. The scheduling integration test runs
+with a one-job-per-iteration limit to exercise this recovery. A nested
+pass-through must retain its sample and reference choices even when its
+consumer is scheduled later. Likewise, approving a review pause for two
+samples must resume two consumer jobs with the original sample grouping.
+
+A child resumes through its parent so it retains that mapping context.
+The parent's subworkflow step stays pending until all child work has been
+scheduled, including tools whose outputs are not exported, even when
+pass-through outputs are already available. Those jobs may still be running
+when the step finishes scheduling.
+Cancelling a paused child also cancels its parent; consumers waiting for
+review remain unscheduled.
+
+### Limits and separate questions
+
+Mapped dataset and collection pass-throughs are supported. Mapped raw
+parameter/`output_value` pass-throughs, such as returning an input number
+directly, are rejected: persisting a collection of those values requires a
+separate representation.
+
+Some deeper linked structures cannot currently be reconciled. In
+particular, a linked input may need more collection levels than the
+corresponding part of an already refined inherited axis can select.
+Galaxy rejects this case rather than silently pairing the wrong elements;
+`test_direct_linked_peer_deeper_than_embedded_component_is_rejected`
+records a concrete example.
+
+These mapping rules determine which execution positions and collection
+levels exist. They do not settle when a tool's filtered output should
+become null, when an optional input should use its default, or whether an
+ordinary multiple-data input should remove absent entries. Those policies
+need their own examples and tests. Known-shape conditional pass-throughs
+above specify one absence case, not a general absence policy.
+
+### Where to verify each rule
+
+These references describe test coverage, not the outcome of a particular
+test run:
+
+| Rule | Tests |
+| --- | --- |
+| Job counts, output shape, shared dataset identities | [API tests](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_workflows.py): `test_subworkflow_mapping_callable_boundary_job_cardinality` |
+| Independent products, linked pairing, empty axes | [Collection matcher tests](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/data/dataset_collections/test_matching.py): `test_independent_mapping_axes_cross_product_in_stable_order`, `test_linked_inputs_slice_in_zip_order` |
+| Known-shape conditional pass-throughs and dynamic skipped branches | API tests: `test_run_workflow_conditional_subworkflow_step_map_over_expression_tool` and its `with_extra_nesting` variants |
+| Partial pass-through structure and rejected cases | [Workflow module tests](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/workflows/test_modules.py): `test_partial_refined_axis_passthrough_is_broadcast_over_missing_suffix`, `test_mapped_parameter_passthrough_is_explicitly_unsupported`, and the deeper linked-input test above |
+| Recovery across scheduling rounds; no repeated pass-through collections | [Scheduling integration tests](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/test_workflow_scheduling_options.py): `test_subworkflow_mapping_axes_survive_scheduling_rounds`, `test_conditional_subworkflow_passthrough_is_materialized_once` |
+| Nested pass-through consumed after a scheduling delay, including unexported child work | Scheduling integration tests: `test_nested_passthrough_consumer_keeps_mapping_after_scheduling_delay` |
+| Review approval preserves mapping; child cancellation cancels the parent | [Pause integration test](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/test_subworkflow_pause_mapping.py): `test_child_pause_preserves_mapping_and_cancellation` |
+| Editor input/output types and connection order | [Workflow-editor terminal tests](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Workflow/Editor/modules/terminals.test.ts) |
+
+
 ## Type Compatibility Algebra
 
 This section is for implementers. It describes the three operations that
