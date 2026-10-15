@@ -142,7 +142,6 @@
             </template>
             <template v-slot:cell(selected)="data">
                 <GCheckbox
-                    :key="data.index"
                     :aria-label="`Select job ${data.item.id}`"
                     :model-value="selectedStopJobIds.includes(data.item.id)"
                     @click.stop
