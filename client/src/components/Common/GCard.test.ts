@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { defineComponent, h, ref } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
@@ -89,6 +90,78 @@ describe("GCard", () => {
 
             await checkbox.setValue(true);
             expect(wrapper.emitted("select")).toHaveLength(1);
+        });
+    });
+
+    describe("select checkbox", () => {
+        const paths: Array<[string, (input: HTMLInputElement) => void]> = [
+            ["a click on the box", (input) => input.click()],
+            ["a click on its label", (input) => input.closest("label")!.click()],
+            [
+                "Space",
+                (input) => {
+                    input.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+                    input.click();
+                    input.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true }));
+                },
+            ],
+        ];
+
+        const mounted: Array<{ unmount: () => void }> = [];
+        afterEach(() => mounted.splice(0).forEach((wrapper) => wrapper.unmount()));
+
+        // The box only fires change when connected, as in the browser.
+        function mountToggleConsumer() {
+            const selected = ref(false);
+            const toggle = () => (selected.value = !selected.value);
+            const Consumer = defineComponent({
+                setup: () => () =>
+                    h(GCard, {
+                        id: "card",
+                        title: "Card",
+                        clickable: true,
+                        selectable: true,
+                        selected: selected.value,
+                        onSelect: toggle,
+                        onClick: toggle,
+                    }),
+            });
+            const wrapper = mount(Consumer as object, {
+                attachTo: document.body,
+                localVue,
+                pinia: createTestingPinia({ createSpy: vi.fn }),
+                stubs: { FontAwesomeIcon: true },
+            });
+            mounted.push(wrapper);
+            return { card: wrapper.findComponent(GCard), selected, wrapper };
+        }
+
+        it.each(paths)("selects without clicking the card on %s", async (_name, activate) => {
+            const { card, selected, wrapper } = mountToggleConsumer();
+            activate(card.get("input#g-card-select-card").element as HTMLInputElement);
+            await wrapper.vm.$nextTick();
+
+            expect(card.emitted("click")).toBeUndefined();
+            expect(card.emitted("select")).toHaveLength(1);
+            expect(selected.value).toBe(true);
+        });
+
+        it("still clicks a clickable card outside the checkbox", async () => {
+            const wrapper = mountCard({ clickable: true, selectable: true });
+            await wrapper.trigger("click");
+
+            expect(wrapper.emitted("click")).toHaveLength(1);
+            expect(wrapper.emitted("select")).toBeUndefined();
+        });
+
+        it.each([
+            ["not clickable", { selectable: true }],
+            ["disabled", { clickable: true, disabled: true, selectable: true }],
+        ])("does not click a card that is %s", async (_name, props) => {
+            const wrapper = mountCard(props);
+            await wrapper.trigger("click");
+
+            expect(wrapper.emitted("click")).toBeUndefined();
         });
     });
 
