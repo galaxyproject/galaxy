@@ -2602,15 +2602,13 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
 
         # When rerunning a job, other_values carries the original job's input
-        # values (HDAs, HDCAs, DCEs, LDDAs). Track them as we walk pages so
-        # the survivors land in `pinned` (live HDAs outside the page) or
+        # values (HDAs, HDCAs, DCEs, LDDAs); a batch selection adds its later
+        # values. Track them as we walk pages so the survivors land in
+        # `pinned` (live HDAs outside the page) or
         # carry-over `options` entries (deleted/hidden/foreign-history items,
         # DCEs, LDDAs) — clients rely on this to pre-select the rerun input
         # regardless of pagination state.
-        job_input_values = util.listify(other_values.get(self.name))
-        for value in self._batch_selection(trans, other_values, incoming_value):
-            if value not in job_input_values:
-                job_input_values.append(value)
+        job_input_values = self._selected_values(trans, other_values, incoming_value)
 
         job_input_values = self._page_hda_matches(
             trans, builder, history, dataset_matcher, dataset_matcher_factory, job_input_values
@@ -2627,19 +2625,21 @@ class DataToolParameter(BaseDataToolParameter):
         builder.sort_by_hid()
         return d
 
-    def _batch_selection(self, trans, other_values, incoming_value) -> list:
-        """Resolve every value of a batch selection. The form state keeps only
-        the first, so later values would otherwise miss the pinned/carried
-        options and lose their server-side label."""
+    def _selected_values(self, trans, other_values, incoming_value) -> list:
+        """Selected values from the form state, plus the later values of a
+        batch selection (the state keeps only the first)."""
+        selected = list(util.listify(other_values.get(self.name)))
         if not (isinstance(incoming_value, MutableMapping) and incoming_value.get("batch")):
-            return []
-        selection: list = []
+            return selected
         for value in incoming_value.get("values") or []:
             try:
-                selection.extend(util.listify(self.from_json(value, trans, other_values)))
+                resolved = util.listify(self.from_json(value, trans, other_values))
             except ValueError:
                 continue
-        return selection
+            for item in resolved:
+                if item not in selected:
+                    selected.append(item)
+        return selected
 
     def _fill_to_dict_static(self, d: dict) -> None:
         """Populate the non-history-dependent fields of the ``to_dict`` response

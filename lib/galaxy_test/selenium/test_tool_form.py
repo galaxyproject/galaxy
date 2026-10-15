@@ -387,7 +387,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_batch_input_labels_dropped_collection_elements(self):
         """Every hidden collection element dragged into a batch input gets the
-        server's label, not only the first one (issue #24093)."""
+        server's label, not only the first one."""
         history_id = self.current_history_id()
         collection_hids = []
         forward_labels = []

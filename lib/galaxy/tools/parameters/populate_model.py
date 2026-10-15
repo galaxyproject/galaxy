@@ -96,8 +96,7 @@ def populate_model(
         else:
             to_dict_kwargs: dict[str, Any] = {}
             if input.type in ("data", "data_collection"):
-                if (pagination_spec := options_pagination.get(full_name)) is not None:
-                    to_dict_kwargs["pagination"] = pagination_spec
+                to_dict_kwargs["pagination"] = options_pagination.get(full_name)
             if input.type == "data":
                 to_dict_kwargs["incoming_value"] = incoming.get(full_name)
             try:
