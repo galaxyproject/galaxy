@@ -77,6 +77,22 @@ def test_repository_files_rejects_revision_without_metadata(provides_repositorie
         repository_files(provides_repositories.app, new_repository, revisions["first"])
 
 
+def test_repository_files_rejects_unbounded_revisions_without_opening_hg(
+    provides_repositories, new_repository, monkeypatch
+):
+    revisions = _uploaded_unchanged(provides_repositories, new_repository)
+    full_hash = new_repository.hg_repo[2].hex().decode()
+
+    def hg_opened(*args, **kwargs):
+        raise AssertionError("hg repository was opened")
+
+    monkeypatch.setattr(Repository, "hg_repo", property(hg_opened))
+    monkeypatch.setattr(repositories_manager.hg_util, "changectx_for_revision", hg_opened)
+    for revision in ("tip", "2", revisions["last"][:8], full_hash, "deadbeefdead"):
+        with pytest.raises(ObjectNotFound):
+            repository_files(provides_repositories.app, new_repository, revision)
+
+
 def test_repository_files_rejects_deleted_repository(provides_repositories, new_repository):
     revisions = _uploaded_unchanged(provides_repositories, new_repository)
     new_repository.deleted = True
