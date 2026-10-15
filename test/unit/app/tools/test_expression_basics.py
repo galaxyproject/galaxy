@@ -320,7 +320,8 @@ def test_timeout_kills_worker_under_waiting_wrapper(tmp_path, short_timeout_grac
     pid = int(pid_file.read_text())
     try:
         child = psutil.Process(pid)
-        assert child.status() == psutil.STATUS_ZOMBIE
+        # The orphaned worker is reaped asynchronously by init or a subreaper.
+        assert child.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD)
     except psutil.NoSuchProcess:
         pass
 

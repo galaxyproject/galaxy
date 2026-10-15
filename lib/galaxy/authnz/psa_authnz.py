@@ -369,6 +369,9 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans.request, {}, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
         redirect = do_auth(backend)
+        # The post-login destination travels in the validated login-next cookie.
+        # Do not persist social-core's own copy of ``next``.
+        strategy.session.pop("next", None)
         state = strategy.session_get(f"{backend.name}_state")
         flow_state.save("authentication", strategy.session, identifier=authentication_id(state))
         return redirect

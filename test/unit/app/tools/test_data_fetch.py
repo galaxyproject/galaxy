@@ -469,7 +469,8 @@ def test_hdas_single_url_error(test_http_server):
         assert "error_message" not in elements[0]
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
-        assert f"Failed to fetch url {url_12_bed}" in error
+        assert error.startswith("Failed to fetch url: 404 Client Error")
+        assert url_12_bed in error
 
 
 def test_hdca_collection_element_failed(test_http_server):
@@ -503,7 +504,8 @@ def test_hdca_collection_element_failed(test_http_server):
         output = _unnamed_output(execute_context)
         assert "error_message" in output
         error = output["error_message"]
-        assert f"Failed to fetch url {url_12_bed}" in error
+        assert "- Failed to fetch url: 404 Client Error" in error
+        assert url_12_bed in error
 
 
 def test_hdca_allow_failed_collections(test_http_server):
@@ -543,7 +545,43 @@ def test_hdca_allow_failed_collections(test_http_server):
         assert "error_message" not in elements[0]
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
-        assert f"Failed to fetch url {url_12_bed}" in error
+        assert error.startswith("Failed to fetch url: 404 Client Error")
+        assert url_12_bed in error
+
+
+def test_hdas_long_url_error_reason_survives_truncation(test_http_server):
+    long_url = (
+        test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+            status=404,
+            body="Not Found",
+        )
+        + "?"
+        + "&".join(f"param{i}=value{i}" for i in range(30))
+    )
+    assert len(long_url) > 255
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": long_url,
+                        },
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        error = output["elements"][0]["error_message"]
+        assert long_url in error
+        # HDA info is a TrimmedString(255), so the failure reason must come before the URL.
+        assert "404 Client Error" in error[:255]
 
 
 def test_hdca_failed_expansion():
