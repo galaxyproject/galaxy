@@ -708,8 +708,13 @@ class ExecutionTracker:
                 no_replacement_value=NO_REPLACEMENT,
             )
 
+        # Every job of a fully skipped step produces null placeholders for all outputs,
+        # filtered ones included, so the step's consumers receive skipped values.
+        all_skipped = bool(self.param_combinations) and all(
+            params.get("__when_value__") is False for params in self.param_combinations
+        )
         for output_name, output in self.tool.outputs.items():
-            if filter_output(self.tool, output, example_params):
+            if not all_skipped and filter_output(self.tool, output, example_params):
                 continue
             output_collection_name = self.output_name(trans, history, params, output, incoming=label_state)
             effective_structure = self._mapped_output_structure(trans, output)
