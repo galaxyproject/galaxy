@@ -551,8 +551,16 @@ def parse_curated_search(search: str) -> ParsedSearch:
     return capped
 
 
-def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[dict[str, Any]]:
-    """Filter projected entries by a name/tag/collection search string, ANDing the terms."""
+def search_curated(
+    entries: list[dict[str, Any]],
+    search: str | None,
+    missing_tools: dict[str, list[str] | None] | None = None,
+) -> list[dict[str, Any]]:
+    """Filter projected entries by a name/tag/collection search string, ANDing the terms.
+
+    ``is:runnable`` keeps the entries ``missing_tools`` says lack nothing; without
+    it nothing can be vouched for, so nothing qualifies.
+    """
     if not search:
         return entries
     parsed = parse_curated_search(search)
@@ -576,22 +584,13 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
                     matched = [item for item in matched if needle in item.collections]
                 else:
                     matched = [item for item in matched if any(needle in c for c in item.collections)]
-            elif term.filter == "is" and needle != RUNNABLE_FLAG:
-                # is:runnable needs the toolbox, so ``list_catalog`` applies it; any other flag is unknown.
-                matched = []
+            elif term.filter == "is":
+                # Any flag other than runnable is unknown and matches nothing.
+                runs_here = missing_tools if needle == RUNNABLE_FLAG else None
+                matched = [item for item in matched if runs_here and runs_here.get(item.entry.get("id") or "") == []]
         elif isinstance(term, RawTextTerm):
             matched = [item for item in matched if needle in item.all_text]
     return [item.entry for item in matched]
-
-
-def wants_runnable_only(search: str | None) -> bool:
-    """Whether ``search`` asks for only the workflows that run here as-is (``is:runnable``)."""
-    if not search:
-        return False
-    return any(
-        isinstance(term, FilteredTerm) and term.filter == "is" and term.text.lower() == RUNNABLE_FLAG
-        for term in parse_curated_search(search).terms
-    )
 
 
 class CuratedToolbox(Protocol):
@@ -798,11 +797,10 @@ def list_catalog(
     if is_projection_stale(path, max_age_seconds):
         request_background_refresh(path)
 
-    matched = search_curated(entries, search)
-    missing = find_missing_tools(matched, toolbox_availability(toolbox, is_admin)) if toolbox is not None else None
-    if wants_runnable_only(search):
-        # Without a toolbox nothing can be vouched for, so nothing qualifies.
-        matched = [entry for entry in matched if missing is not None and missing.get(entry.get("id") or "") == []]
+    # Checked before searching so is:runnable can filter on it. The unfiltered
+    # default view checks every entry anyway, so a search never costs more than that.
+    missing = find_missing_tools(entries, toolbox_availability(toolbox, is_admin)) if toolbox is not None else None
+    matched = search_curated(entries, search, missing)
     ordered = sort_curated(matched, sort_by, sort_desc, missing)
     page = [
         {**entry, "missing_tools": (missing or {}).get(entry.get("id") or "")}
