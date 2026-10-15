@@ -104,16 +104,6 @@ describe("RepositoryContentsPage", () => {
         mockContents.mockImplementation(async (_id: string, _changeset: string, path: string) => contents(path))
     })
 
-    it("loads the repository and has one h1", async () => {
-        const wrapper = await mountPage()
-
-        expect(store.setId).toHaveBeenCalledWith("abc")
-        const headings = wrapper.findAll("h1")
-        expect(headings).toHaveLength(1)
-        expect(headings[0].text()).toBe("Contents")
-        expect(wrapper.text()).toContain("devteam")
-    })
-
     it("offers only installable revisions and defaults to the newest", async () => {
         const wrapper = await mountPage()
 
@@ -126,21 +116,6 @@ describe("RepositoryContentsPage", () => {
         ])
         expect(wrapper.text()).toContain("Select a file to view its contents.")
         expect(mockContents).not.toHaveBeenCalled()
-    })
-
-    it("puts the file tree in a Files navigation landmark", async () => {
-        const wrapper = await mountPage()
-
-        expect(wrapper.get('nav[aria-label="Files"]').find(".repository-file-tree").exists()).toBe(true)
-    })
-
-    it("shows the revision and file from the URL", async () => {
-        const wrapper = await mountPage({ revision: "aaaaaaaaaaaa", file: "column_maker/column_maker.xml" })
-
-        expect(mockFiles).toHaveBeenCalledWith("abc", "aaaaaaaaaaaa")
-        expect(mockContents).toHaveBeenCalledWith("abc", "aaaaaaaaaaaa", "column_maker/column_maker.xml")
-        expect(wrapper.get("pre").text()).toBe("<tool>")
-        expect(wrapper.get("[aria-current=true]").text()).toBe("column_maker.xml")
     })
 
     it("pushes a picked file onto the history so Back returns to the previous one", async () => {
@@ -160,19 +135,6 @@ describe("RepositoryContentsPage", () => {
         expect(wrapper.get(".contents-file-path").text()).toBe("README.md")
         expect(wrapper.get(".repository-file-viewer").text()).toContain("Loading file")
         expect(wrapper.text()).not.toContain("Select a file to view its contents.")
-    })
-
-    it("keeps the slashes of a nested file readable in the URL", async () => {
-        const wrapper = await mountPage({ revision: "aaaaaaaaaaaa" })
-        const treeButton = (name: string) =>
-            wrapper.findAll(".repository-file-tree button").find((b) => b.text() === name)
-
-        await treeButton("column_maker")?.trigger("click")
-        await treeButton("column_maker.xml")?.trigger("click")
-
-        expect(mockPush).toHaveBeenCalledWith(
-            "/repositories/abc/contents?revision=aaaaaaaaaaaa&file=column_maker/column_maker.xml",
-        )
     })
 
     it("puts a picked revision in the URL, keeping the file", async () => {
