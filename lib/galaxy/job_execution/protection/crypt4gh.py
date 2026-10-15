@@ -19,7 +19,6 @@ import json
 import logging
 import os
 import shutil
-import threading
 import time
 from collections.abc import Iterator
 from concurrent.futures import (
@@ -56,7 +55,8 @@ log = logging.getLogger(__name__)
 # Never let those reach job logs, whatever the logging configuration.
 logging.getLogger("crypt4gh").setLevel(logging.WARNING)
 
-MAX_CONCURRENT_REQUESTS = 8
+# Inputs are decrypted within the job's slots, up to this many at once.
+MAX_DECRYPT_WORKERS = 8
 # Copies of decrypted inputs made for links to them, in the protected directory.
 COPIES_FILENAME = "copied_inputs.json"
 RETRY_BACKOFF_SECONDS = 0.5
@@ -114,17 +114,9 @@ class RecryptorClient:
 
     def __init__(self, settings: RecryptorSettings):
         self.settings = settings
-        # Reuses connections, every file of a job takes a request. Files are recrypted from several
-        # threads, and sessions aren't thread-safe.
-        self._local = threading.local()
+        # Reuses connections, every file of a job takes a request.
+        self.session = Session()
         self._tls_files_checked = False
-
-    @property
-    def session(self) -> Session:
-        if not hasattr(self._local, "session"):
-            self._local.session = Session()
-        session: Session = self._local.session
-        return session
 
     def recrypt_header_to_job_key(self, header: str, key_ref: str, job_public_key: str) -> RecryptorResponse:
         return self._post(
@@ -216,7 +208,7 @@ def _decrypt_workers() -> int:
         slots = int(os.environ.get("GALAXY_SLOTS", "1"))
     except ValueError:
         slots = 1
-    return max(1, min(slots, MAX_CONCURRENT_REQUESTS))
+    return max(1, min(slots, MAX_DECRYPT_WORKERS))
 
 
 def _decrypt_staged(protected_file: ProtectedFile, response: RecryptorResponse, job_secret_key: bytes) -> None:
@@ -270,7 +262,6 @@ class Crypt4GHJobRuntime:
         self.plan = plan
         self.client = client or RecryptorClient(plan.recryptor)
         self._output_key: OutputKey | None = None
-        # Created upfront, outputs may be protected concurrently.
         self._writer_secret_key = os.urandom(32)
 
     @property
@@ -356,15 +347,10 @@ class Crypt4GHJobRuntime:
         job_public_key = format_public_key(sodium.derive_pk(job_secret_key))
         files = self._files_to_stage()
         try:
-            with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS) as executor:
-                responses = list(
-                    executor.map(
-                        lambda file_and_key: self.client.recrypt_header_to_job_key(
-                            file_and_key[0].compute_header, file_and_key[1], job_public_key
-                        ),
-                        files,
-                    )
-                )
+            responses = [
+                self.client.recrypt_header_to_job_key(protected_file.compute_header, key_ref, job_public_key)
+                for protected_file, key_ref in files
+            ]
             output_key = self._check_responses(files, responses)
             # Large inputs (e.g. paired reads) are decrypted concurrently, within the job's slots. Every file
             # finishes before failing, so the cleanup doesn't race with files still being written.

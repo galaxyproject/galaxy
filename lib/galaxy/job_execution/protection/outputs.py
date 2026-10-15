@@ -11,11 +11,6 @@ the grants to use the outputs in further jobs.
 import logging
 import os
 import shutil
-import threading
-from concurrent.futures import (
-    ThreadPoolExecutor,
-    wait,
-)
 from typing import (
     Annotated,
     Any,
@@ -39,7 +34,6 @@ from galaxy.util.crypt4gh import (
 )
 from . import (
     CRYPT4GH_SCHEME,
-    ProtectedFileResult,
     ProtectionError,
     ProtectionPlan,
     write_private_file,
@@ -60,8 +54,6 @@ OUTCOME_DEFERRED: Final = "deferred"
 OUTCOME_FAILED: Final = "failed"
 # Outputs without content, nothing to protect.
 CONTENTLESS_OUTCOMES = (OUTCOME_PURGED, OUTCOME_DEFERRED)
-# Each protected file takes a request to the key service.
-MAX_CONCURRENT_FILES = 8
 
 UnprotectedOutcome = Literal["purged", "deferred", "failed"]
 
@@ -126,8 +118,6 @@ class OutputProtector:
         self.datatypes_registry = datatypes_registry
         self.records: dict[str, OutputRecord] = {}
         self.errors: list[str] = []
-        # Every file of every output is protected through this pool, it caps the calls to the key service.
-        self._file_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES, thread_name_prefix="protect_file")
 
     @classmethod
     def for_job(cls, metadata_params: dict[str, Any], datatypes_registry: "Registry") -> "OutputProtector | None":
@@ -155,7 +145,7 @@ class OutputProtector:
                 # Linked files stay where they are, they can't be encrypted in place.
                 raise ProtectionError("outputs of protected jobs can't be linked data")
             ext = self._protected_ext(dataset_instance.extension, path)
-            result = self._protect_file(path)
+            result = self.runtime.protect_file(path)
             extra_files = self._protect_extra_files(extra_files_path)
         except Exception as e:
             if not link_data:
@@ -198,42 +188,25 @@ class OutputProtector:
         """Encrypt every extra file in place, return their compute headers by relative path."""
         if not extra_files_path or not os.path.isdir(extra_files_path):
             return {}
-        futures = {
-            relpath: self._file_executor.submit(self.runtime.protect_file, os.path.join(extra_files_path, relpath))
+        return {
+            relpath: self.runtime.protect_file(os.path.join(extra_files_path, relpath)).compute_header
             for relpath in iter_relpaths(extra_files_path)
         }
-        # Let every file finish before failing, the files are discarded then.
-        wait(futures.values())
-        return {relpath: future.result().compute_header for relpath, future in futures.items()}
 
     def protect_all(self, outputs: list[tuple["DatasetInstance", str, str | None, bool]]) -> None:
-        """Protect several outputs concurrently, see :meth:`protect`: ``(dataset_instance, path, extra_files_path, link_data)``."""
-        failed = threading.Event()
+        """Protect several outputs, see :meth:`protect`: ``(dataset_instance, path, extra_files_path, link_data)``.
 
-        def protect(output: tuple["DatasetInstance", str, str | None, bool]) -> None:
-            if failed.is_set():
-                # The job fails anyway, don't keep calling the key service. Galaxy purges what isn't protected,
-                # remove the plaintext like for failed outputs.
-                _, path, extra_files_path, link_data = output
-                if not link_data:
-                    self._discard(path, extra_files_path)
-                return
+        Stops at the first failure: the job fails anyway, don't keep calling the key service. Galaxy purges
+        what isn't protected, the plaintext of the remaining outputs is removed like for failed outputs.
+        """
+        for index, output in enumerate(outputs):
             try:
                 self.protect(*output)
             except Exception:
-                failed.set()
+                for _, path, extra_files_path, link_data in outputs[index + 1 :]:
+                    if not link_data:
+                        self._discard(path, extra_files_path)
                 raise
-
-        with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_FILES) as executor:
-            # Not executor.map(): it cancels the outputs left after an error, their plaintext would stay.
-            futures = [executor.submit(protect, output) for output in outputs]
-            wait(futures)
-        for future in futures:
-            # Raises the first error once every output is protected or discarded.
-            future.result()
-
-    def _protect_file(self, path: str) -> ProtectedFileResult:
-        return self._file_executor.submit(self.runtime.protect_file, path).result()
 
     def record_outcome(self, dataset_instance: "DatasetInstance", outcome: UnprotectedOutcome) -> None:
         self.records.setdefault(self._uuid(dataset_instance), UnprotectedOutput(outcome=outcome))
