@@ -25,6 +25,8 @@ class Locators:
     push_access_username = ".push-access-username"
     push_access_remove = ".push-access-remove"
     push_access_add = ".push-access-add"
+    file_contents_body = ".config-file-contents-body"
+    revision_select = ".repository-select-input"
 
 
 class PlaywrightShedBrowser(ShedBrowser):
@@ -181,6 +183,26 @@ class PlaywrightShedBrowser(ShedBrowser):
         entry = self.push_access_entry(username)
         entry.locator(Locators.push_access_remove).click()
         expect(entry).to_have_count(0)
+
+    def repository_file_tree(self) -> Locator:
+        return self._page.get_by_role("navigation", name="Files")
+
+    def repository_file_tree_item(self, name: str) -> Locator:
+        return self.repository_file_tree().get_by_role("button", name=name, exact=True)
+
+    def file_contents_body(self) -> Locator:
+        return self._page.locator(Locators.file_contents_body)
+
+    def select_revision(self, changeset_revision: str) -> None:
+        self._page.locator(Locators.revision_select).click()
+        self._page.get_by_role("option").filter(has_text=changeset_revision).click()
+        expect(self._page.get_by_role("listbox")).to_be_hidden()
+
+    def open_explore_repository_menu(self) -> None:
+        self._page.get_by_role("button", name="Explore repository").click()
+
+    def explore_repository_menu_item(self, name: str) -> Locator:
+        return self._page.get_by_role("menuitem", name=name, exact=True)
 
     def logout_if_logged_in(self, assert_logged_out=True):
         self._page.wait_for_selector(f"{Locators.toolbar_login}, {Locators.toolbar_logout}")

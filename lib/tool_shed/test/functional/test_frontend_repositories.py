@@ -6,6 +6,7 @@ from ..base.playwrighttestcase import PlaywrightTestCase
 
 TEST_CATEGORY_PREFIX = "guitestcategory"
 TEST_REPO_PREFIX = "guitestcolumnmaker"
+COLUMN_MAKER_XML = "column_maker/column_maker.xml"
 
 
 class TestFrontendRepositories(PlaywrightTestCase):
@@ -147,69 +148,77 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
         metadata = self.populator.get_metadata(repository, downloadable_only=True)
         return [revision.changeset_revision for revision in metadata.root.values()]
 
+    def _visit_contents(self, repository, revision: str, file: str) -> None:
+        self.visit_url(f"/repositories/{repository.id}/contents?revision={revision}&file={file}")
+
     def test_contents_browse_and_view_file(self):
         repository = self._setup_column_maker()
         self.visit_url(f"/repositories/{repository.id}/contents")
         page = self._page
+        browser = self._playwright_browser
 
-        expect(page.locator("h1")).to_have_text("Contents")
-        tree = page.get_by_role("navigation", name="Files")
-        folder = tree.get_by_role("button", name="column_maker", exact=True)
+        expect(page.get_by_role("heading", level=1)).to_have_text("Contents")
+        folder = browser.repository_file_tree_item("column_maker")
         expect(folder).to_have_attribute("aria-expanded", "false")
         folder.click()
         expect(folder).to_have_attribute("aria-expanded", "true")
 
         # File paths keep real slashes in API requests and in the page URL
-        with page.expect_response(lambda r: r.url.endswith("/files/column_maker/column_maker.xml")) as response:
-            tree.get_by_role("button", name="column_maker.xml").click()
+        tool_xml = browser.repository_file_tree_item("column_maker.xml")
+        with page.expect_response(lambda r: r.url.endswith(f"/files/{COLUMN_MAKER_XML}")) as response:
+            tool_xml.click()
         assert response.value.ok
-        code = page.locator(".config-file-contents pre")
+        code = browser.file_contents_body()
         expect(code).to_contain_text("<tool")
         # Defaults to the newest installable revision
         expect(code).to_contain_text('version="1.3.0"')
-        expect(page).to_have_url(re.compile(r"\?file=column_maker/column_maker\.xml$"))
-        expect(tree.get_by_role("button", name="column_maker.xml")).to_have_attribute("aria-current", "true")
+        expect(page).to_have_url(re.compile(rf"\?file={re.escape(COLUMN_MAKER_XML)}$"))
+        expect(tool_xml).to_have_attribute("aria-current", "true")
         self.screenshot("repository_contents_file")
 
     def test_contents_deep_link(self):
         repository = self._setup_column_maker()
         oldest = self._revisions(repository)[0]
-        self.visit_url(f"/repositories/{repository.id}/contents?revision={oldest}&file=column_maker/column_maker.xml")
-        page = self._page
+        self._visit_contents(repository, oldest, COLUMN_MAKER_XML)
+        browser = self._playwright_browser
 
-        code = page.locator(".config-file-contents pre")
+        code = browser.file_contents_body()
         expect(code).to_contain_text("<tool")
         expect(code).to_contain_text('version="1.1.0"')
-        tree = page.get_by_role("navigation", name="Files")
-        expect(tree.get_by_role("button", name="column_maker", exact=True)).to_have_attribute("aria-expanded", "true")
-        expect(tree.get_by_role("button", name="column_maker.xml")).to_have_attribute("aria-current", "true")
+        expect(browser.repository_file_tree_item("column_maker")).to_have_attribute("aria-expanded", "true")
+        expect(browser.repository_file_tree_item("column_maker.xml")).to_have_attribute("aria-current", "true")
 
     def test_contents_switch_revision_keeps_file(self):
         repository = self._setup_column_maker()
         revisions = self._revisions(repository)
         oldest, newest = revisions[0], revisions[-1]
-        self.visit_url(f"/repositories/{repository.id}/contents?revision={newest}&file=column_maker/column_maker.xml")
+        self._visit_contents(repository, newest, COLUMN_MAKER_XML)
         page = self._page
+        browser = self._playwright_browser
 
-        code = page.locator(".config-file-contents pre")
+        code = browser.file_contents_body()
         expect(code).to_contain_text('version="1.3.0"')
-        page.locator(".repository-select-input").click()
-        page.locator(".q-menu .q-item").filter(has_text=oldest).click()
+        browser.select_revision(oldest)
 
         expect(code).to_contain_text('version="1.1.0"')
-        expect(page).to_have_url(re.compile(rf"\?revision={oldest}&file=column_maker/column_maker\.xml$"))
+        expect(page).to_have_url(re.compile(rf"\?revision={oldest}&file={re.escape(COLUMN_MAKER_XML)}$"))
         expect(page.get_by_text("Newer revision(s) available")).to_be_visible()
+        self.screenshot("repository_contents_older_revision")
 
     def test_explore_menu_links_contents(self):
         repository = self._setup_column_maker()
         newest = self._revisions(repository)[-1]
         self.visit_url(f"/repositories/{repository.id}")
         page = self._page
+        browser = self._playwright_browser
 
-        page.get_by_role("button", name="Explore repository").click()
+        browser.open_explore_repository_menu()
+        contents = browser.explore_repository_menu_item("Contents")
+        expect(contents).to_be_visible()
         # hgweb views are login-gated, so anonymous users get no changelog link
-        expect(page.locator("a.dropdown-item").filter(has_text="Changelog")).to_have_count(0)
-        page.locator("a.dropdown-item").filter(has_text="Contents").click()
+        expect(browser.explore_repository_menu_item("Changelog")).to_have_count(0)
+        self.screenshot("repository_explore_menu_anonymous")
+        contents.click()
 
         expect(page).to_have_url(re.compile(rf"/repositories/{repository.id}/contents\?revision={newest}$"))
-        expect(page.get_by_role("button", name="column_maker", exact=True)).to_be_visible()
+        expect(browser.repository_file_tree_item("column_maker")).to_be_visible()
