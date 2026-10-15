@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BLink } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
@@ -17,6 +16,7 @@ import { WorkflowRunModel } from "./model";
 import { getRunData, WorkflowMissingToolsError } from "./services";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowMissingToolsRequest from "@/components/Workflow/Run/WorkflowMissingToolsRequest.vue";
 import WorkflowRunForm from "@/components/Workflow/Run/WorkflowRunForm.vue";
@@ -272,7 +272,7 @@ defineExpose({
                         saved or some other problems have been detected. Please
                     </span>
                     <RouterLink v-if="isOwner" :to="editorLink">click here to edit and review the issues</RouterLink>
-                    <BLink v-else @click="onImport">click here to import the workflow and review the issues</BLink>
+                    <GLink v-else @click="onImport">click here to import the workflow and review the issues</GLink>
                     <span>before running this workflow.</span>
                 </GAlert>
                 <div v-else class="h-100">

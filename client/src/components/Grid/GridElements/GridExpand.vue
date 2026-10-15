@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
+
+import GLink from "@/components/BaseComponents/GLink.vue";
 
 interface Props {
     detailsShowing?: boolean;
@@ -22,10 +23,10 @@ function showDetails() {
 </script>
 
 <template>
-    <BLink data-description="toggle row details" @click.stop="showDetails">
+    <GLink data-description="toggle row details" @click.stop="showDetails">
         <FontAwesomeIcon
             :title="props.detailsShowing ? 'Hide details' : 'Show details'"
             size="lg"
             :icon="props.detailsShowing ? faChevronUp : faChevronDown" />
-    </BLink>
+    </GLink>
 </template>
