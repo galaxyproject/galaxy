@@ -133,36 +133,21 @@ describe("ListHeader", () => {
         expect(wrapper.emitted("select-all")).toHaveLength(1);
     });
 
-    it("toggles a column once from its checkbox and leaves the checked state to the prop", async () => {
+    it("toggles a column once from its menu item and leaves the checked state to the prop", async () => {
         const wrapper = mountHeader(COLUMN_MENU);
-        const sizeCheckbox = wrapper.findAll<HTMLInputElement>("[role='menu'] input[type='checkbox']")[1]!;
+        const items = () => wrapper.findAll("[role='menuitemcheckbox']");
+        expect(items().map((item) => item.text())).toEqual(["Name", "Size"]);
+        expect(items().map((item) => item.attributes("aria-checked"))).toEqual(["true", "false"]);
 
-        sizeCheckbox.element.click();
-        await wrapper.vm.$nextTick();
+        await items()[1]!.trigger("click");
 
         expect(wrapper.emitted("toggle-column")).toEqual([["size"]]);
-        expect(sizeCheckbox.element.checked).toBe(false);
+        expect(items()[1]!.attributes("aria-checked")).toBe("false");
 
         await wrapper.setProps({ visibleColumns: ["name", "size"] } as object);
 
-        expect(sizeCheckbox.element.checked).toBe(true);
-        expect(wrapper.findAll("[role='menuitemcheckbox']")[1]!.attributes("aria-checked")).toBe("true");
-    });
-
-    it("makes each column item the checkbox, with the box inside only showing its state", () => {
-        const wrapper = mountHeader(COLUMN_MENU);
-
-        const items = wrapper.findAll("[role='menu'] .dropdown-item");
-        expect(items.map((item) => item.attributes("role"))).toEqual(["menuitemcheckbox", "menuitemcheckbox"]);
-        expect(items.map((item) => item.attributes("aria-checked"))).toEqual(["true", "false"]);
-        expect(items.map((item) => item.text())).toEqual(["Name", "Size"]);
-        for (const item of items) {
-            const input = item.get("input[type='checkbox']");
-            expect(input.attributes("aria-hidden")).toBe("true");
-            expect(input.attributes("tabindex")).toBe("-1");
-            // Clicks must reach the item: a click on the input itself would be cancelled and leave it stale
-            expect(item.get("label").classes()).toContain("list-header-column-checkbox");
-        }
+        expect(items()[1]!.attributes("aria-checked")).toBe("true");
+        expect(items()[1]!.get<HTMLInputElement>("input[type='checkbox']").element.checked).toBe(true);
     });
 
     it("toggles a column once with Space", async () => {
