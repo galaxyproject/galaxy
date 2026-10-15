@@ -120,6 +120,7 @@ def test_refusals_keep_their_status():
         _list(_source(), "/datasets/no-such-dataset")
     with pytest.raises(ObjectNotFound, match="Reason: /entries/query: Not Found"):
         _list(_source(), "/datasets/ds1", query="gone")
+    assert _source().to_dict()["supports"]["recursive"] is False
     for path in ("/", "/datasets/ds1", "/datasets/ds1/up1", "/uploads"):
         with pytest.raises(RequestParameterInvalidException, match="Recursive listing is not supported"):
             _list(_source(token="secret"), path, recursive=True)

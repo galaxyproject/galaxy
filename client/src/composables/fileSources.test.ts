@@ -47,6 +47,7 @@ function buildFakeFileSource(id: string, writable: boolean = true): BrowsableFil
             pagination: false,
             search: false,
             sorting: false,
+            recursive: true,
         },
     };
 }
