@@ -4,6 +4,7 @@ on:
     paths:
       - '**'
       - '!client/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/docs.yaml'
@@ -11,6 +12,7 @@ on:
     paths:
       - '**'
       - '!client/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/docs.yaml'

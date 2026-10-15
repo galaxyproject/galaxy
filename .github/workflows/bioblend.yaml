@@ -3,9 +3,9 @@ on:
   pull_request:
     paths:
       - .github/workflows/bioblend.yaml
-      - packages/schema/src/galaxy/schema/**
-      - packages/web_apps/src/galaxy/webapps/galaxy/api/**
-      - packages/web_apps/src/galaxy/webapps/galaxy/services/**
+      - lib/galaxy/schema/**
+      - lib/galaxy/webapps/galaxy/api/**
+      - lib/galaxy/webapps/galaxy/services/**
   workflow_dispatch:
 
 concurrency:
