@@ -245,10 +245,8 @@ export default {
         },
         rowLabel(item) {
             const names = item.requirements.map((requirement) => requirement.name).join(", ");
-            if (!names) {
-                return `Select ${item.tool ?? item.tool_ids.join(", ")}`;
-            }
-            return item.tool ? `Select ${names} (${item.tool})` : `Select ${names}`;
+            const tool = names && item.tool ? ` (${item.tool})` : "";
+            return `Select ${names || item.tool || item.tool_ids.join(", ")}${tool}`;
         },
         changeToggleCheckboxState() {
             this.toggleState = this.items.length > 0 && this.unchecked().length === 0;
