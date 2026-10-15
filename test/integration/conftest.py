@@ -24,21 +24,24 @@ from galaxy_test.conftest import (
 )
 from galaxy_test.shard import pytest_report_collectionfinish  # noqa: F401
 
+HOST_SERVICES_SCOPE = "host-services"
+INTEGRATION_LANES = (HOST_SERVICES_SCOPE, "default")
+
 # Tests that share something outside their Galaxy instance -- a fixed host port, the AMQP
 # broker, the minikube cluster, the host's Docker image cache -- keyed by test file or class.
 # With --dist loadscope, each scope runs on a single pytest-xdist worker.
 SHARED_RESOURCE_SCOPES = {
     "test/integration/oidc/test_auth_oidc.py": "keycloak",
     "test/integration/test_cli_runners.py": "cli-runner-containers",
-    "test/integration/test_container_resolvers.py": "host-services",
-    "test/integration/test_containerized_jobs.py": "host-services",
-    "test/integration/test_coexecution.py": "host-services",
-    "test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration": "host-services",
-    "test/integration/test_interactivetools_api.py::TestKubernetesNativeInteractiveToolsIntegration": "host-services",
-    "test/integration/test_kubernetes_runner.py": "host-services",
-    "test/integration/test_pulsar_embedded_mq.py": "host-services",
-    "test/integration/test_pulsar_embedded_relay.py": "host-services",
-    "test/integration/test_resolvers.py": "host-services",
+    "test/integration/test_container_resolvers.py": HOST_SERVICES_SCOPE,
+    "test/integration/test_containerized_jobs.py": HOST_SERVICES_SCOPE,
+    "test/integration/test_coexecution.py": HOST_SERVICES_SCOPE,
+    "test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration": HOST_SERVICES_SCOPE,
+    "test/integration/test_interactivetools_api.py::TestKubernetesNativeInteractiveToolsIntegration": HOST_SERVICES_SCOPE,
+    "test/integration/test_kubernetes_runner.py": HOST_SERVICES_SCOPE,
+    "test/integration/test_pulsar_embedded_mq.py": HOST_SERVICES_SCOPE,
+    "test/integration/test_pulsar_embedded_relay.py": HOST_SERVICES_SCOPE,
+    "test/integration/test_resolvers.py": HOST_SERVICES_SCOPE,
 }
 
 
@@ -81,8 +84,31 @@ def pytest_configure(config):
     shard.pytest_configure(config)
 
 
+def select_integration_lane(config, items: list) -> None:
+    """Keep the tests of the CI lane named by GALAXY_TEST_INTEGRATION_LANE.
+
+    The host-services lane runs the tests that need minikube, the AMQP broker or the host's
+    Docker image cache; the default lane runs everything else. Unset, all tests run.
+    """
+    lane = os.environ.get("GALAXY_TEST_INTEGRATION_LANE")
+    if not lane:
+        return
+    if lane not in INTEGRATION_LANES:
+        raise pytest.UsageError(f"GALAXY_TEST_INTEGRATION_LANE must be one of {INTEGRATION_LANES}, not {lane!r}")
+    keep_host_services = lane == HOST_SERVICES_SCOPE
+    selected: list = []
+    deselected: list = []
+    for item in items:
+        in_host_services = shared_resource_scope(item.nodeid) == HOST_SERVICES_SCOPE
+        (selected if in_host_services == keep_host_services else deselected).append(item)
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = selected
+
+
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(config, items):
+    select_integration_lane(config, items)
     shard.pytest_collection_modifyitems(config, items)
     if os.environ.get("PYTEST_XDIST_WORKER"):
         items[:] = longest_scopes_first(items)

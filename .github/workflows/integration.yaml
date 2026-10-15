@@ -103,7 +103,22 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.10']
+        # The host-services lane runs the tests that need minikube, the AMQP broker in it or the
+        # host's Docker image cache, one test class at a time; the default lane runs the rest.
+        lane: ['default']
         chunk: ['0', '1']
+        include:
+          - python-version: '3.10'
+            lane: 'host-services'
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - if: github.event_name == 'schedule'
         run: |
@@ -137,17 +152,20 @@ jobs:
           sudo apt-get update && sudo apt-get -y install ffmpeg bubblewrap
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: Create the CNI config directory minikube's none driver expects
+        if: matrix.lane == 'host-services'
         # The action chmods /etc/cni/net.d without creating it, and current
         # runner images no longer ship the directory. See
         # https://github.com/medyagh/setup-minikube/issues/835
         run: sudo mkdir -p /etc/cni/net.d
       - name: Setup Minikube
+        if: matrix.lane == 'host-services'
         uses: medyagh/setup-minikube@latest
         with:
           driver: none
           container-runtime: docker
           kubernetes-version: '1.28.0'
       - name: Check pods
+        if: matrix.lane == 'host-services'
         run: kubectl get pods -A
       - uses: actions/checkout@v7.0.1
         with:
@@ -169,12 +187,18 @@ jobs:
         uses: './galaxy root/.github/actions/install_apptainer'
       - name: Run tests
         env:
+          GALAXY_TEST_INTEGRATION_LANE: ${{ matrix.lane }}
           GALAXY_TEST_MULLED_RESOLUTION_CACHE_SEED: '${{ runner.temp }}/mulled-resolution-seed/biocontainers.json'
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_DATA_DIR: '${{ runner.temp }}/mulled-resolution-cache/data'
           GALAXY_CONFIG_OVERRIDE_MULLED_RESOLUTION_CACHE_LOCK_DIR: '${{ runner.temp }}/mulled-resolution-cache/locks'
         run: |
-          . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh -integration test/integration -- --num-shards=2 --shard-id=${{ matrix.chunk }} -n 3 --dist loadscope --no-loadscope-reorder
+          if [ "${{ matrix.lane }}" = "host-services" ]; then
+            . .ci/minikube-test-setup/start_services.sh
+            ./run_tests.sh -integration test/integration
+          else
+            export GALAXY_TEST_DBURI='postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+            ./run_tests.sh -integration test/integration -- --num-shards=2 --shard-id=${{ matrix.chunk }} -n 3 --dist loadscope --no-loadscope-reorder
+          fi
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
         if: github.event_name == 'schedule'
@@ -184,5 +208,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: Integration test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          name: Integration test results (${{ matrix.python-version }}, ${{ matrix.lane }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_integration_tests.html'
