@@ -129,18 +129,35 @@ describe("rerunWhileBusy", () => {
         expect(task).toHaveBeenCalledTimes(2);
     });
 
-    it("rejects every waiting caller and runs again on the next call", async () => {
+    it("still runs for a call made during a failing run, and callers get the last run's result", async () => {
         const first = deferred<void>();
         const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
         const run = rerunWhileBusy(task);
         const waiting = [run(), run()];
 
         first.reject(new Error("boom"));
-        await Promise.all(waiting.map((call) => expect(call).rejects.toThrow("boom")));
-        expect(task).toHaveBeenCalledTimes(1);
+        await Promise.all(waiting);
+        expect(task).toHaveBeenCalledTimes(2);
+    });
+
+    it("rejects every waiting caller with the last run's error, then runs again on the next call", async () => {
+        const first = deferred<void>();
+        const second = deferred<void>();
+        const task = vi
+            .fn()
+            .mockReturnValueOnce(first.promise)
+            .mockReturnValueOnce(second.promise)
+            .mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        const waiting = [run(), run()];
+
+        first.reject(new Error("first"));
+        await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(2));
+        second.reject(new Error("second"));
+        await Promise.all(waiting.map((call) => expect(call).rejects.toThrow("second")));
 
         await run();
-        expect(task).toHaveBeenCalledTimes(2);
+        expect(task).toHaveBeenCalledTimes(3);
     });
 
     it("turns a synchronous throw into a rejection, then runs again on the next call", async () => {

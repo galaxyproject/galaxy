@@ -130,22 +130,12 @@ export function useInvocationGraph(
 
     provideScopedWorkflowStores(storeId);
 
-    /** The first input that failed to load in the last update, if any */
-    let lastInputError: Error | undefined;
     /** Update the steps from the latest polled data; a poll landing mid-update makes it run again */
-    const runUpdate = rerunWhileBusy(async () => {
-        lastInputError = stepsJobsSummary.value ? await updateSteps(stepsJobsSummary.value) : undefined;
-    });
-
-    /** Update the steps, then throw if an input failed to load. Throwing here, not in `runUpdate`,
-     * keeps a failing input from cancelling the rerun for a poll that landed mid-update.
-     */
-    async function refreshSteps() {
-        await runUpdate();
-        if (lastInputError !== undefined) {
-            throw lastInputError;
+    const refreshSteps = rerunWhileBusy(async () => {
+        if (stepsJobsSummary.value) {
+            await updateSteps(stepsJobsSummary.value);
         }
-    }
+    });
 
     // Follow the invocation and job summaries polled by the parent, once the workflow has loaded.
     watch([invocation, stepsJobsSummary], async () => {
@@ -205,9 +195,9 @@ export function useInvocationGraph(
     /** Update the steps of the invocation graph with the step job summaries, or initialize the steps
      * if they haven't been populated yet.
      * @param stepsJobsSummary - The job summary for each step in the invocation
-     * @returns The first input that failed to load, if any; all other steps are still updated
+     * @throws The first input that failed to load, after all other steps are updated
      * */
-    async function updateSteps(stepsJobsSummary: StepJobSummary[]): Promise<Error | undefined> {
+    async function updateSteps(stepsJobsSummary: StepJobSummary[]) {
         /** Initialize with the original steps of the workflow, else update the existing graph steps */
         const fullSteps: Record<string, Step | GraphStep> = !stepsPopulated.value
             ? { ...loadedWorkflow.value.steps }
@@ -249,7 +239,9 @@ export function useInvocationGraph(
             }
         }
 
-        return inputError;
+        if (inputError) {
+            throw inputError;
+        }
     }
 
     /**
