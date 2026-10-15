@@ -224,7 +224,11 @@ class DataManager:
         self.tool = tool
         return tool
 
-    def process_result(self, out_data: dict[str, OutputDataset]) -> None:
+    def process_result(
+        self,
+        out_data: dict[str, OutputDataset],
+        source_extra_files_paths: Mapping[str, str] | None = None,
+    ) -> None:
         tool_data_tables = self.data_managers.app.tool_data_tables
         options = BundleProcessingOptions(
             what=f"data manager '{self.id}'",
@@ -236,6 +240,7 @@ class DataManager:
             self.processor_description,
             self.repo_info,
             options,
+            source_extra_files_paths,
         )
         self._reload(updated_data_tables)
 

@@ -28,7 +28,9 @@ class DataManagerInterface(Protocol):
     GUID_TYPE: str = "data_manager"
     DEFAULT_VERSION: str = "0.0.1"
 
-    def process_result(self, out_data): ...
+    def process_result(
+        self, out_data: dict[str, OutputDataset], source_extra_files_paths: Mapping[str, str] | None = None
+    ) -> None: ...
 
     def write_bundle(
         self, out: dict[str, OutputDataset], source_extra_files_paths: Mapping[str, str] | None = None
