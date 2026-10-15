@@ -13,7 +13,6 @@ one can be added next to it.
 import base64
 import hashlib
 import io
-import json
 import logging
 import os
 from collections.abc import Callable
@@ -27,6 +26,8 @@ from typing import (
 )
 
 from pydantic import (
+    BaseModel,
+    Field,
     TypeAdapter,
     ValidationError,
 )
@@ -50,8 +51,8 @@ from galaxy.job_execution.protection import (
 )
 from galaxy.job_execution.protection.outputs import (
     CONTENTLESS_OUTCOMES,
-    OUTCOME_PROTECTED,
-    SIDECAR_FILE,
+    ProtectedOutput,
+    ProtectionSidecar,
 )
 from galaxy.job_execution.protection.stage import (
     CLEANUP_FAILURE_FILE,
@@ -106,6 +107,36 @@ KEY_SERVICE_EXPIRY_MARGIN = timedelta(days=1)
 MAX_GRANT_LIFETIME = timedelta(days=31)
 
 
+class ExtraFilesKey(BaseModel):
+    """The compute keypair of extra files kept from the job that created them."""
+
+    key_ref: str
+    expires_at: datetime
+
+
+class Crypt4GHGrantData(BaseModel):
+    """The ``grant_data`` of Crypt4GH grants. Headers are bearer capabilities."""
+
+    # Header of the primary file encrypted to the grant's compute keypair. Missing for job outputs
+    # copying an encrypted input, until the user authorizes them.
+    compute_header: str | None = None
+    # Headers of the extra files by relative path, from the job that created the dataset.
+    extra_files: dict[str, str] = Field(default_factory=dict)
+    # When the extra files are encrypted to another compute keypair than the primary file.
+    extra_files_key: ExtraFilesKey | None = None
+    # Extra files copying encrypted inputs of the job that created them, they can't be decrypted.
+    copied_extra_files: list[str] = Field(default_factory=list)
+
+
+def _grant_data(grant: DatasetProtectionGrant) -> Crypt4GHGrantData:
+    return Crypt4GHGrantData.model_validate(grant.grant_data or {})
+
+
+def _set_grant_data(grant: DatasetProtectionGrant, grant_data: Crypt4GHGrantData) -> None:
+    # Only what was set, the stored data stays as small as it was.
+    grant.grant_data = grant_data.model_dump(mode="json", exclude_unset=True)
+
+
 def _can_decrypt_inputs(tool: "Tool") -> bool:
     if tool.tool_type not in PROTECTED_TOOL_TYPES:
         return False
@@ -132,10 +163,10 @@ def _copied_extra_files_message(dataset_instance: DatasetInstance) -> str:
 
 def _lacks_extra_files(grant: DatasetProtectionGrant) -> bool:
     """Whether the dataset's extra files were protected by another user's job: users only authorize the primary file."""
-    if grant.grant_data.get("extra_files"):
+    if _grant_data(grant).extra_files:
         return False
     return any(
-        other.grant_data.get("extra_files")
+        _grant_data(other).extra_files
         for other in grant.dataset.protection_grants
         if other.scheme == grant.scheme and other.user_id != grant.user_id
     )
@@ -183,10 +214,10 @@ def _outputs_in_directory(job: Job, compute_environment: "ComputeEnvironment", d
 
 def _extra_files_expiration(grant: DatasetProtectionGrant) -> datetime | None:
     """Expiration of the compute keypair of extra files kept from an earlier grant, if any."""
-    extra_files_key = grant.grant_data.get("extra_files_key")
-    if not extra_files_key or not grant.grant_data.get("extra_files"):
+    grant_data = _grant_data(grant)
+    if not grant_data.extra_files_key or not grant_data.extra_files:
         return None
-    return datetime.fromisoformat(extra_files_key["expires_at"])
+    return grant_data.extra_files_key.expires_at
 
 
 def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> bool:
@@ -195,12 +226,12 @@ def _extra_files_expire(grant: DatasetProtectionGrant, margin: timedelta) -> boo
     return expiration is not None and expiration <= now() + margin
 
 
-def _needs_grant(record: dict[str, Any]) -> bool:
+def _needs_grant(record: ProtectedOutput) -> bool:
     """Whether an output has files sealed to the job's compute keypair, or extra files copying encrypted inputs.
 
     Outputs only copying an encrypted input are used with the grant of the input's copy.
     """
-    return bool(record["compute_header"] or record["extra_files"])
+    return bool(record.compute_header or record.extra_files)
 
 
 def _summarize(errors: list[str], limit: int = 3) -> str:
@@ -218,16 +249,6 @@ def _read_report(job_directory: str, relative_path: str, default: str) -> str | 
         return None
     with open(path) as f:
         return f.read().strip() or default
-
-
-def _read_sidecar(job_directory: str) -> dict[str, Any] | None:
-    """Protection results written by the compute host, ``None`` if it wrote none."""
-    path = os.path.join(job_directory, SIDECAR_FILE)
-    if not os.path.exists(path):
-        return None
-    with open(path) as f:
-        sidecar: dict[str, Any] = json.load(f)
-    return sidecar
 
 
 def _parse_key_expiration(value: str) -> datetime:
@@ -292,7 +313,7 @@ def _read_datasets(
 
 
 class GrantRecord:
-    def __init__(self, key_ref: str, expires_at: datetime, grant_data: dict[str, Any]):
+    def __init__(self, key_ref: str, expires_at: datetime, grant_data: Crypt4GHGrantData):
         self.key_ref = key_ref
         # Stored as naive UTC, like every other Galaxy timestamp.
         self.expires_at = expires_at
@@ -328,7 +349,7 @@ def validate_crypt4gh_grant(payload: Crypt4GHGrantPayload) -> GrantRecord:
     return GrantRecord(
         key_ref=payload.crypt4gh_compute_keypair_id,
         expires_at=expires_at,
-        grant_data={"compute_header": payload.crypt4gh_compute_header},
+        grant_data=Crypt4GHGrantData(compute_header=payload.crypt4gh_compute_header),
     )
 
 
@@ -362,7 +383,7 @@ class DatasetProtectionManager:
         if not self.is_protected(dataset_instance) or dataset is None or dataset.purged:
             return None
         grant = self.get_grant(user, dataset)
-        if grant is None or grant.is_expired(KEY_SERVICE_EXPIRY_MARGIN) or "compute_header" not in grant.grant_data:
+        if grant is None or grant.is_expired(KEY_SERVICE_EXPIRY_MARGIN) or _grant_data(grant).compute_header is None:
             # Without a compute header, the user still has to authorize the primary file.
             return None
         return grant
@@ -426,20 +447,20 @@ class DatasetProtectionManager:
 
     def _store_user_grant(self, user: User, dataset: Dataset, record: GrantRecord) -> None:
         grant = self._get_or_create_grant(user, dataset)
-        grant_data = dict(record.grant_data)
-        if copied_extra_files := (grant.grant_data or {}).get("copied_extra_files"):
-            grant_data["copied_extra_files"] = copied_extra_files
-        if extra_files := (grant.grant_data or {}).get("extra_files"):
+        previous = _grant_data(grant)
+        grant_data = record.grant_data.model_copy()
+        if previous.copied_extra_files:
+            grant_data.copied_extra_files = previous.copied_extra_files
+        if previous.extra_files:
             # Users only authorize the primary file again: keep the extra files of protected job outputs,
             # with the compute keypair they are encrypted to, until it expires.
-            grant_data["extra_files"] = extra_files
-            grant_data["extra_files_key"] = grant.grant_data.get("extra_files_key") or {
-                "key_ref": grant.key_ref,
-                "expires_at": grant.expires_at.isoformat(),
-            }
+            grant_data.extra_files = previous.extra_files
+            grant_data.extra_files_key = previous.extra_files_key or ExtraFilesKey(
+                key_ref=grant.key_ref, expires_at=grant.expires_at
+            )
         grant.key_ref = record.key_ref
         grant.expires_at = record.expires_at
-        grant.grant_data = grant_data
+        _set_grant_data(grant, grant_data)
         grant.source = GRANT_SOURCE_USER
         self.sa_session.commit()
 
@@ -503,7 +524,7 @@ class DatasetProtectionManager:
                     f"Dataset '{_shown_name(dataset_instance)}' is encrypted and you are not authorized to decrypt it in jobs. "
                     "Authorize the dataset first (key icon)."
                 )
-            if grant.grant_data.get("copied_extra_files"):
+            if _grant_data(grant).copied_extra_files:
                 raise RequestParameterInvalidException(_copied_extra_files_message(dataset_instance))
             if _lacks_extra_files(grant):
                 raise RequestParameterInvalidException(_lacked_extra_files_message(dataset_instance))
@@ -544,7 +565,7 @@ class DatasetProtectionManager:
                     f"You are not authorized to decrypt dataset '{_shown_name(dataset_instance)}', or your authorization "
                     "expires before this job can finish. Authorize the dataset again (key icon) and rerun the job."
                 )
-            if grant.grant_data.get("copied_extra_files"):
+            if _grant_data(grant).copied_extra_files:
                 raise ProtectionError(_copied_extra_files_message(dataset_instance))
             if _lacks_extra_files(grant):
                 raise ProtectionError(_lacked_extra_files_message(dataset_instance))
@@ -583,7 +604,9 @@ class DatasetProtectionManager:
         staged_extra_files_path = os.path.join(staged_directory, "plaintext_files")
         source_extra_files_path = None
         extra_files: dict[str, ProtectedFile] = {}
-        extra_files_key = grant.grant_data.get("extra_files_key") or {}
+        grant_data = _grant_data(grant)
+        # The extra files of job outputs without a compute header keep the job's compute keypair.
+        extra_files_key_ref = grant_data.extra_files_key.key_ref if grant_data.extra_files_key else None
         # Only ask for extra files that exist: Pulsar stages every directory it is asked about.
         if dataset_instance.extra_files_path_exists():
             source_extra_files_path = compute_environment.input_extra_files_rewrite(dataset_instance)
@@ -592,9 +615,9 @@ class DatasetProtectionManager:
                     source_path=os.path.join(source_extra_files_path, relpath),
                     staged_path=os.path.join(staged_extra_files_path, relpath),
                     compute_header=compute_header,
-                    key_ref=extra_files_key.get("key_ref"),
+                    key_ref=extra_files_key_ref,
                 )
-                for relpath, compute_header in grant.grant_data.get("extra_files", {}).items()
+                for relpath, compute_header in grant_data.extra_files.items()
             }
         return ProtectedInput(
             dataset_id=dataset.id,
@@ -602,7 +625,7 @@ class DatasetProtectionManager:
             primary=ProtectedFile(
                 source_path=compute_environment.input_path_rewrite(dataset_instance),
                 staged_path=os.path.join(staged_directory, f"plaintext.{inner_ext}"),
-                compute_header=grant.grant_data["compute_header"],
+                compute_header=grant_data.compute_header,
             ),
             staged_extra_files_path=staged_extra_files_path,
             source_extra_files_path=source_extra_files_path,
@@ -627,26 +650,26 @@ class DatasetProtectionManager:
         ):
             errors.append(cleanup_failure)
 
-        sidecar = _read_sidecar(job_directory)
+        sidecar = ProtectionSidecar.read(job_directory)
         if sidecar is None:
-            sidecar = {"datasets": {}}
+            sidecar = ProtectionSidecar()
             errors.append("The outputs of this job could not be verified to be encrypted.")
-        errors.extend(sidecar.get("errors", []))
+        errors.extend(sidecar.errors)
         expires_at: datetime | None = None
-        if key_expiration := sidecar.get("key_expiration"):
+        if key_expiration := sidecar.key_expiration:
             try:
                 expires_at = _parse_key_expiration(key_expiration)
             except ValidationError:
                 errors.append("The key service returned an invalid expiration date for the keys of this job's outputs.")
 
-        protected: list[tuple[DatasetInstance, dict[str, Any]]] = []
+        protected: list[tuple[DatasetInstance, ProtectedOutput]] = []
         unprotected: list[DatasetInstance] = []
         for dataset_instance in _job_outputs(job):
             assert dataset_instance.dataset
-            record = sidecar["datasets"].get(str(dataset_instance.dataset.uuid))
-            if record and self._is_verified(dataset_instance, record):
+            record = sidecar.datasets.get(str(dataset_instance.dataset.uuid))
+            if isinstance(record, ProtectedOutput) and self._is_verified(dataset_instance, record):
                 protected.append((dataset_instance, record))
-            elif record and record["outcome"] in CONTENTLESS_OUTCOMES and not _has_content(dataset_instance):
+            elif record and record.outcome in CONTENTLESS_OUTCOMES and not _has_content(dataset_instance):
                 continue
             else:
                 unprotected.append(dataset_instance)
@@ -660,7 +683,7 @@ class DatasetProtectionManager:
             return _summarize(errors)
         needing_grants = [(instance, record) for instance, record in protected if _needs_grant(record)]
         if job.user and needing_grants:
-            key_ref = sidecar.get("key_ref")
+            key_ref = sidecar.key_ref
             if not (expires_at and key_ref):
                 # Users couldn't decrypt the outputs in further jobs, without knowing why.
                 return "The key service didn't say until when the outputs of this job can be decrypted in further jobs."
@@ -674,32 +697,32 @@ class DatasetProtectionManager:
         Returns the errors the compute host recorded while protecting the outputs, they explain the failure.
         """
         try:
-            sidecar = _read_sidecar(job_directory) or {}
+            sidecar = ProtectionSidecar.read(job_directory) or ProtectionSidecar()
         except Exception:
             log.exception("Could not read the protection results of failed job %s", job.id)
-            sidecar = {}
-        records = sidecar.get("datasets", {})
+            sidecar = ProtectionSidecar()
         for dataset_instance in _job_outputs(job):
             dataset = dataset_instance.dataset
             assert dataset
-            record = records.get(str(dataset.uuid))
-            if not dataset.purged and not (record and self._is_verified(dataset_instance, record)):
+            record = sidecar.datasets.get(str(dataset.uuid))
+            if not dataset.purged and not (
+                isinstance(record, ProtectedOutput) and self._is_verified(dataset_instance, record)
+            ):
                 dataset.full_delete()
-        errors = sidecar.get("errors", [])
-        return _summarize(errors) if errors else None
+        return _summarize(sidecar.errors) if sidecar.errors else None
 
-    def _is_verified(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
+    def _is_verified(self, dataset_instance: DatasetInstance, record: ProtectedOutput) -> bool:
         try:
-            return record["outcome"] == OUTCOME_PROTECTED and self._is_protected_as_recorded(dataset_instance, record)
+            return self._is_protected_as_recorded(dataset_instance, record)
         except Exception:
             log.exception("Could not verify that dataset %s is encrypted", dataset_instance.id)
             return False
 
-    def _is_protected_as_recorded(self, dataset_instance: DatasetInstance, record: dict[str, Any]) -> bool:
-        if dataset_instance.extension != record["ext"] or not self.is_protected(dataset_instance):
+    def _is_protected_as_recorded(self, dataset_instance: DatasetInstance, record: ProtectedOutput) -> bool:
+        if dataset_instance.extension != record.ext or not self.is_protected(dataset_instance):
             return False
         header = dataset_instance.metadata.crypt4gh_header
-        if not header or hashlib.sha256(base64.b64decode(header)).hexdigest() != record["header_sha256"]:
+        if not header or hashlib.sha256(base64.b64decode(header)).hexdigest() != record.header_sha256:
             return False
         dataset = dataset_instance.dataset
         assert dataset
@@ -711,12 +734,11 @@ class DatasetProtectionManager:
                     stored_header = read_crypt4gh_header(f)
                 except ValueError:
                     return False
-            if hashlib.sha256(stored_header).hexdigest() != record["header_sha256"]:
+            if hashlib.sha256(stored_header).hexdigest() != record.header_sha256:
                 return False
         if dataset.extra_files_path_exists() and os.path.isdir(extra_files_path := dataset.extra_files_path):
-            recorded = record.get("extra_files", {})
             for relpath in iter_relpaths(extra_files_path):
-                if relpath not in recorded or not check_crypt4gh(os.path.join(extra_files_path, relpath)):
+                if relpath not in record.extra_files or not check_crypt4gh(os.path.join(extra_files_path, relpath)):
                     return False
         return True
 
@@ -725,7 +747,7 @@ class DatasetProtectionManager:
         job: Job,
         key_ref: str,
         expires_at: datetime,
-        protected: list[tuple[DatasetInstance, dict[str, Any]]],
+        protected: list[tuple[DatasetInstance, ProtectedOutput]],
     ) -> None:
         assert job.user
         for dataset_instance, record in protected:
@@ -733,17 +755,19 @@ class DatasetProtectionManager:
             grant = self._get_or_create_grant(job.user, dataset_instance.dataset)
             grant.key_ref = key_ref
             grant.expires_at = expires_at
-            extra_files = {relpath: header for relpath, header in record["extra_files"].items() if header}
-            grant.grant_data = {"extra_files": extra_files}
-            if record["compute_header"]:
-                grant.grant_data["compute_header"] = record["compute_header"]
-            elif extra_files:
+            grant_data = Crypt4GHGrantData(
+                extra_files={relpath: header for relpath, header in record.extra_files.items() if header}
+            )
+            if record.compute_header:
+                grant_data.compute_header = record.compute_header
+            elif grant_data.extra_files:
                 # The primary file copies an encrypted input, the user authorizes it as any other dataset
                 # and the extra files keep the job's compute keypair.
-                grant.grant_data["extra_files_key"] = {"key_ref": key_ref, "expires_at": expires_at.isoformat()}
-            if copied := sorted(relpath for relpath, header in record["extra_files"].items() if not header):
+                grant_data.extra_files_key = ExtraFilesKey(key_ref=key_ref, expires_at=expires_at)
+            if copied := sorted(relpath for relpath, header in record.extra_files.items() if not header):
                 # Copies of encrypted inputs, their headers were never sealed to a compute key.
-                grant.grant_data["copied_extra_files"] = copied
+                grant_data.copied_extra_files = copied
+            _set_grant_data(grant, grant_data)
             grant.source = f"job:{job.id}"
 
     def grant_status(self, user: User | None, dataset_instance: DatasetInstance) -> DatasetProtectionStatus:

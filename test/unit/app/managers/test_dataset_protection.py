@@ -66,7 +66,8 @@ def test_valid_grant_is_stored_as_naive_utc():
     assert record.key_ref == "cnk:0123456789abcdef"
     assert record.expires_at.tzinfo is None
     assert record.expires_at == expiration.astimezone(timezone.utc).replace(tzinfo=None)
-    assert base64.b64decode(record.grant_data["compute_header"]) == _header(b"compute packet")
+    assert record.grant_data.compute_header
+    assert base64.b64decode(record.grant_data.compute_header) == _header(b"compute packet")
 
 
 @pytest.mark.parametrize(
@@ -231,6 +232,15 @@ def test_finish_job_records_no_grants_for_outputs_encrypted_by_the_tool(tmp_path
 
 def test_finish_job_without_sidecar_purges_outputs(tmp_path):
     output, _ = _protected_output(tmp_path)
+    error = _manager().finish_job(_job(output), str(tmp_path))
+    assert error and "could not be verified" in error
+    assert output.dataset.purged
+
+
+def test_finish_job_with_invalid_sidecar_purges_outputs(tmp_path):
+    output, record = _protected_output(tmp_path)
+    del record["header_sha256"]
+    _write_sidecar(str(tmp_path), {str(output.dataset.uuid): record})
     error = _manager().finish_job(_job(output), str(tmp_path))
     assert error and "could not be verified" in error
     assert output.dataset.purged
