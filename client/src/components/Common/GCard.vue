@@ -386,6 +386,8 @@ function measureTitle() {
     titleClamped.value = !!props.titleNLines && !!link && link.scrollHeight > link.clientHeight + 1;
 }
 
+const selectLabel = computed(() => props.selectTitle || localize("Select for bulk actions"));
+
 const hasExtraActions = computed(() => props.extraActions?.some((ea) => ea.visible ?? true) ?? false);
 
 const hasBadges = computed(() => props.badges?.some((b) => b.visible ?? true) ?? false);
@@ -533,8 +535,8 @@ function onKeyDown(event: KeyboardEvent) {
                                     v-g-tooltip.hover
                                     class="g-card-select-checkbox"
                                     :model-value="selected"
-                                    :title="props.selectTitle || localize('Select for bulk actions')"
-                                    :aria-label="props.selectTitle || localize('Select for bulk actions')"
+                                    :title="selectLabel"
+                                    :aria-label="selectLabel"
                                     @update:model-value="emit('select')" />
                             </slot>
                         </div>
