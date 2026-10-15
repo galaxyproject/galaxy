@@ -265,6 +265,18 @@ def test_google_confirmation_preserves_backend_identity(trans, provider, monkeyp
     assert association.user.email == "verified@example.com"
 
 
+def test_authentication_state_omits_social_core_next(trans, provider):
+    trans.request = Request.blank(
+        "https://galaxy.example/authnz/keycloak/login", POST={"next": "/workflows/login/start"}
+    )
+    query = start(trans, provider)
+    record = trans.sa_session.query(model.PSAPartial).filter_by(next_step=-1).one()
+    session = json.loads(record.data)["payload"]
+    assert "next" not in session
+    assert session["keycloak_state"] == query["state"][0]
+    assert session["pkce_code_verifier"]
+
+
 @pytest.mark.parametrize("invalid", ["signature", "subject", "state", "policy"])
 def test_failed_callback_never_issues_confirmation(trans, provider, invalid, monkeypatch):
     query = start(trans, provider)
