@@ -1,4 +1,5 @@
 {
+    "is_rerun": false,
     "model_class": "WorkflowInvocation",
     "id": "5f1915bcf9f35612",
     "update_time": "2021-01-04T17:40:58.604118",
@@ -37,7 +38,7 @@
         "Workflow Input Parameter": {
             "parameter_value": true,
             "label": "Workflow Input Parameter",
-            "workflow_step_id": "22bdbe9d6e0775fe" 
+            "workflow_step_id": "22bdbe9d6e0775fe"
         }
     },
     "outputs": {
