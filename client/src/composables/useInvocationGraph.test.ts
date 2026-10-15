@@ -286,6 +286,42 @@ describe.each([
         consoleError.mockRestore();
     });
 
+    it("applies a jobs summary that arrives while an input fetch is failing", async () => {
+        workflowSteps.value = inputAndToolSteps;
+        const { steps, invocation, stepsJobsSummary, load } = setupComposable(undefined, [], loadOntoEditor);
+        await load();
+        let datasetRequested = () => {};
+        const requested = new Promise<void>((resolve) => (datasetRequested = resolve));
+        let releaseDataset = () => {};
+        const released = new Promise<void>((resolve) => (releaseDataset = resolve));
+        server.use(
+            http.get("/api/datasets/{dataset_id}", async ({ response }) => {
+                datasetRequested();
+                await released;
+                return response("4XX").json(
+                    { err_code: 403002, err_msg: "Dataset is not accessible" },
+                    { status: 403 },
+                );
+            }),
+        );
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        invocation.value = {
+            ...invocation.value,
+            ...scheduledInputAndTool,
+        } as unknown as WorkflowInvocationElementView;
+        stepsJobsSummary.value = [jobSummary({ running: 1 }, "scheduled")];
+        await requested;
+        // the last poll lands while the input fetch is still on its way to failing; no poll follows it
+        stepsJobsSummary.value = [jobSummary({ ok: 1 })];
+        await flushPromises();
+        releaseDataset();
+
+        await vi.waitFor(() => expect(steps.value[1]?.state).toBe("ok"));
+        expect(steps.value[0]?.nodeText).toBeUndefined();
+        consoleError.mockRestore();
+    });
+
     it("writes nothing to an input step without a value when the polled data is unchanged", async () => {
         workflowSteps.value = { 0: { id: 0, type: "data_input", position: { left: 0, top: 0 } } };
         const { steps, invocation, stepsJobsSummary, load } = setupComposable(
