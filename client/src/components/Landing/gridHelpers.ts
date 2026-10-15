@@ -23,8 +23,8 @@ export function enforceColumnUniqueness(colDef: ColDef) {
     };
 }
 
-export function useGridHelpers() {
-    const { effectiveExtensions, listDbKeys } = useUploadConfigurations(undefined);
+export function useGridHelpers(uploadConfigurations = useUploadConfigurations(undefined)) {
+    const { effectiveExtensions, listDbKeys } = uploadConfigurations;
 
     function makeExtensionColumn(colDef: ColDef) {
         const options = () => {
