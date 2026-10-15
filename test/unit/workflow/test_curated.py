@@ -743,26 +743,6 @@ def test_refresh_projection_skips_the_download_when_upstream_is_unchanged(projec
     assert curated.is_projection_stale(projection_path, 3600) is False
 
 
-def test_refresh_projection_does_not_trust_a_cold_download_by_its_mtime(projection_path: str, monkeypatch) -> None:
-    """A cold download never asked upstream for a date. Its mtime only says when it was
-    fetched, and a CDN can have served a body older than that, so the first check after it
-    has to download again rather than compare dates against the file."""
-    downloads: list[float] = []
-
-    def recording_download(timeout: float) -> list[dict[str, Any]]:
-        downloads.append(timeout)
-        return SAMPLE_MANIFEST
-
-    serve_manifest(monkeypatch, recording_download)
-    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
-
-    curated.refresh_projection(projection_path)
-    assert len(downloads) == 1
-    # Upstream's date predates the file, which an mtime comparison would call "unchanged".
-    curated.refresh_projection(projection_path)
-    assert len(downloads) == 2
-
-
 def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check(
     projection_path: str, monkeypatch
 ) -> None:
@@ -802,6 +782,14 @@ def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check
     # Once the CDN catches up, the publish must be picked up.
     served[0] = new_publish
     assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
+    assert len(downloads) == 2
+
+    # An edge that still has the old publish must not swap it back in, nor lower the
+    # watermark so the next fresh answer looks like news.
+    served[0] = old_publish
+    assert curated.refresh_projection(projection_path) is None
+    served[0] = new_publish
+    assert curated.refresh_projection(projection_path) is None
     assert len(downloads) == 2
 
 
@@ -881,19 +869,21 @@ def test_refresh_projection_stamps_the_version_of_the_body_it_was_served(project
     assert len(downloads) == 2
 
 
-def test_refresh_projection_trusts_a_cold_download_that_came_with_a_date(projection_path: str, monkeypatch) -> None:
-    downloads: list[float] = []
-
-    def recording_download(timeout: float) -> list[dict[str, Any]]:
-        downloads.append(timeout)
-        return SAMPLE_MANIFEST
-
-    serve_manifest(monkeypatch, recording_download, last_modified=LONG_AGO)
-    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
-
+def test_refresh_projection_keeps_its_copy_when_the_download_is_older(projection_path: str, monkeypatch) -> None:
+    """The HEAD can reach a fresh edge while the GET reaches one still serving an older
+    publish than the copy we have. Writing that body would roll the catalog back."""
+    stored, stale, newest = (datetime(2026, 1, day, tzinfo=timezone.utc) for day in (2, 1, 3))
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST, last_modified=stored)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
     curated.refresh_projection(projection_path)
+    kept = curated.load_projection(projection_path)
+
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: newest)
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST[:1], last_modified=stale)
     assert curated.refresh_projection(projection_path) is None
-    assert len(downloads) == 1
+
+    assert curated.load_projection(projection_path) == kept
+    assert curated._read_watermark(Path(projection_path)) == stored
 
 
 def test_refresh_projection_downloads_when_upstream_moved(projection_path: str, monkeypatch) -> None:

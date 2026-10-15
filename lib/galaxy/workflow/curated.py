@@ -373,7 +373,7 @@ def refresh_projection(path: str, timeout: float = DEFAULT_FETCH_TIMEOUT_SECONDS
     """Refresh the projection at ``path``, downloading only when upstream changed.
 
     Returns the number of projected workflows, or None when the local copy was
-    already current and nothing was downloaded. Raises ``RefreshInProgress``
+    kept: already current, or newer than what the download turned out to be. Raises ``RefreshInProgress``
     without touching the network when another process is already refreshing.
     Other exceptions propagate too -- the celery task and the background thread
     each decide how to report them.
@@ -401,18 +401,30 @@ def _refresh_projection_locked(path: str, timeout: float) -> int | None:
     # wrong-version file is exactly the case that must re-fetch, and asking
     # "modified since this file's mtime?" about it would answer no and strand it.
     current = load_projection(path)
+    # Which upstream publish this copy is, compared by Last-Modified rather than the
+    # file's mtime: the manifest sits behind a CDN that can answer with the old date
+    # for minutes after a publish, and stamping "now" during that window would read
+    # as newer than the publish and hide it until the next one.
+    seen = _read_watermark(target) if current is not None else None
     remote = iwc_manifest.manifest_last_modified(timeout) if current is not None else None
-    if current is not None and remote is not None and not _upstream_changed(target, remote):
+    # Strictly newer only: an edge still serving the previous publish answers with an older date.
+    if seen is not None and remote is not None and remote <= seen:
         # Nothing new upstream. Stamp the file so it stops looking stale, or every
         # subsequent request would re-arm this check until the manifest happens to
         # change -- turning a once-an-interval HEAD into a permanent poll. The
-        # watermark, not this mtime, is what the next check compares against.
-        _write_watermark(target, remote)
+        # watermark, not this mtime, is what the next check compares against, and
+        # it stays put: a stale edge's older date must not lower it.
         os.utime(target, None)
         log.debug("Curated catalog at %s is already current", path)
         return None
 
     manifest, served = iwc_manifest.fetch_manifest(timeout)
+    if seen is not None and served is not None and served < seen:
+        # The GET reached an edge still serving an older publish than the copy we have,
+        # though the HEAD saw a newer one (or failed). Keep ours and leave the file stale,
+        # so the next check, once the edge has caught up, fetches again.
+        log.debug("Curated catalog download at %s was older than the copy we have; keeping ours", path)
+        return None
     entries = project_manifest(manifest)
     if not entries and current:
         # An upstream generation failure that returns HTTP 200 with an empty or
@@ -435,18 +447,16 @@ def _watermark_path(target: Path) -> Path:
     return target.with_name(f"{target.name}.last-modified")
 
 
-def _upstream_changed(target: Path, remote: datetime) -> bool:
-    # Compared against the Last-Modified we last saw rather than the file's mtime:
-    # the manifest sits behind a CDN that can answer with the old date for minutes
-    # after a publish, and stamping "now" during that window would read as newer
-    # than the publish and hide it until the next one.
+def _read_watermark(target: Path) -> datetime | None:
+    """The Last-Modified of the publish the projection at ``target`` was built from, if recorded.
+
+    None means nothing says which upstream version the copy is. Its mtime only says
+    when it was fetched, and a CDN can serve a body older than that, so it re-fetches once.
+    """
     try:
-        seen = datetime.fromisoformat(_watermark_path(target).read_text().strip())
+        return datetime.fromisoformat(_watermark_path(target).read_text().strip())
     except (OSError, ValueError):
-        # Nothing says which upstream version this copy is. Its mtime only says when
-        # it was fetched, and a CDN can serve a body older than that, so re-fetch once.
-        return True
-    return remote != seen
+        return None
 
 
 def _write_watermark(target: Path, remote: datetime) -> None:
