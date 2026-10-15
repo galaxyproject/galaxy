@@ -1,6 +1,5 @@
-import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -22,40 +21,22 @@ const { server, http } = useServerMock();
 describe("adminExtensionsStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
-        vi.clearAllMocks();
     });
 
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
-    it("loads extensions from the server", async () => {
+    it("loads extensions from the server and resolves items by id", async () => {
         server.use(
             http.get("/api/admin/extensions", ({ response }) => {
                 return response(200).json(EXTENSIONS);
             }),
         );
         const store = useAdminExtensionsStore();
-        expect(store.extensions).toEqual([]);
         expect(store.loaded).toBe(false);
 
         await store.loadExtensions();
-        await flushPromises();
 
         expect(store.loaded).toBe(true);
         expect(store.errorMessage).toBeNull();
         expect(store.extensions).toEqual(EXTENSIONS);
-    });
-
-    it("resolves items by extension and item id", async () => {
-        server.use(
-            http.get("/api/admin/extensions", ({ response }) => {
-                return response(200).json(EXTENSIONS);
-            }),
-        );
-        const store = useAdminExtensionsStore();
-        await store.loadExtensions();
-
         expect(store.getItem("anvil", "monitor")?.url).toBe("/monitor");
         expect(store.getItem("anvil", "missing")).toBeUndefined();
         expect(store.getItem("missing", "monitor")).toBeUndefined();

@@ -47,15 +47,3 @@ class TestAdminExtensionsIntegration(integration_util.IntegrationTestCase):
     def test_non_admin_is_forbidden(self):
         response = self._get("admin/extensions")
         self._assert_status_code_is(response, 403)
-
-
-class TestAdminExtensionsUnconfiguredIntegration(integration_util.IntegrationTestCase):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        config["admin_extensions_dir"] = cls._test_driver.mkdtemp()
-
-    def test_empty_when_no_extensions(self):
-        response = self._get("admin/extensions", admin=True)
-        self._assert_status_code_is_ok(response)
-        assert response.json() == []

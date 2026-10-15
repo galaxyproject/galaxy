@@ -7969,7 +7969,7 @@ export interface components {
             type: "link";
             /**
              * Url
-             * @description URL to open. Relative URLs are resolved against Galaxy's root.
+             * @description URL to open: an absolute http(s) URL, or a path starting with '/' that is served by Galaxy.
              */
             url: string;
         };

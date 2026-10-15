@@ -4,8 +4,10 @@
 id: sample
 section: Sample Extension
 items:
-  # Shown inside Galaxy's center panel. Relative URLs are resolved against
-  # Galaxy's root, so this works behind a URL prefix.
+  # Shown inside Galaxy's center panel. A URL is either absolute (http:// or
+  # https://) or a path starting with '/', which is resolved against Galaxy's
+  # root so it works behind a URL prefix. External sites can only be framed if
+  # they allow it (X-Frame-Options / Content-Security-Policy frame-ancestors).
   - id: welcome
     type: link
     title: Welcome Page

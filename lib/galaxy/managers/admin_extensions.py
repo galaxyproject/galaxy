@@ -1,4 +1,4 @@
-"""Loading and lookup of Admin panel extensions."""
+"""Loading of Admin panel extensions."""
 
 import logging
 import os
@@ -7,11 +7,7 @@ import yaml
 from pydantic import ValidationError
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ObjectNotFound
-from galaxy.schema.admin_extensions import (
-    AdminExtension,
-    AdminExtensionLinkItem,
-)
+from galaxy.schema.admin_extensions import AdminExtension
 from galaxy.util import config_directories_from_setting
 
 log = logging.getLogger(__name__)
@@ -56,7 +52,8 @@ def _load_extension_dir(extension_dir: str) -> AdminExtension | None:
         None,
     )
     if config_path is None:
-        log.warning("Admin extension directory %s has no config.yml, skipping", extension_dir)
+        # Like webhooks, a directory without a config (e.g. the shipped sample) is not an extension.
+        log.debug("Admin extension directory %s has no config.yml, skipping", extension_dir)
         return None
     try:
         with open(config_path) as fh:
@@ -77,24 +74,3 @@ class AdminExtensionsManager:
     def extensions(self) -> list[AdminExtension]:
         """All loaded extensions."""
         return list(self._extensions)
-
-    def get_extension(self, extension_id: str) -> AdminExtension:
-        """Return the extension with the given id.
-
-        :raises ObjectNotFound: if no loaded extension has that id.
-        """
-        for extension in self._extensions:
-            if extension.id == extension_id:
-                return extension
-        raise ObjectNotFound(f"No admin extension with id '{extension_id}'")
-
-    def get_item(self, extension_id: str, item_id: str) -> AdminExtensionLinkItem:
-        """Return one item of an extension.
-
-        :raises ObjectNotFound: if the extension or the item does not exist.
-        """
-        extension = self.get_extension(extension_id)
-        for item in extension.items:
-            if item.id == item_id:
-                return item
-        raise ObjectNotFound(f"No item '{item_id}' in admin extension '{extension_id}'")

@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.admin_extensions import (
     AdminExtensionsManager,
     load_extensions,
@@ -74,14 +73,24 @@ def test_load_extensions_skips_directory_without_config(tmp_path: Path):
     assert [e.id for e in load_extensions(str(tmp_path))] == ["anvil"]
 
 
-def test_load_extensions_skips_invalid_config(tmp_path: Path):
-    write_extension(tmp_path, "bad_yaml", "id: [unterminated")
-    write_extension(tmp_path, "no_items", "id: x\nsection: X\nitems: []\n")
-    write_extension(tmp_path, "bad_id", VALID_CONFIG.replace("id: anvil", "id: 'has space'"))
-    write_extension(tmp_path, "bad_type", VALID_CONFIG.replace("type: link", "type: form"))
-    write_extension(tmp_path, "good", VALID_CONFIG)
+@pytest.mark.parametrize(
+    "content",
+    [
+        pytest.param("id: [unterminated", id="bad_yaml"),
+        pytest.param("id: x\nsection: X\nitems: []\n", id="no_items"),
+        pytest.param(VALID_CONFIG.replace("id: anvil", "id: 'has space'"), id="bad_id"),
+        pytest.param(VALID_CONFIG.replace("type: link", "type: form"), id="bad_type"),
+        pytest.param(VALID_CONFIG.replace("id: docs", "id: monitor"), id="dup_item"),
+        pytest.param(VALID_CONFIG.replace("target: new_tab", "traget: new_tab"), id="unknown_key"),
+        pytest.param(VALID_CONFIG.replace("url: /monitor", "url: 'javascript:alert(1)'"), id="js_url"),
+        pytest.param(VALID_CONFIG.replace("url: /monitor", "url: '//example.org/x'"), id="protocol_relative"),
+        pytest.param(VALID_CONFIG.replace("url: /monitor", "url: monitor"), id="bare_path"),
+    ],
+)
+def test_load_extensions_skips_invalid_config(tmp_path: Path, content: str):
+    write_extension(tmp_path, "invalid", content)
 
-    assert [e.id for e in load_extensions(str(tmp_path))] == ["anvil"]
+    assert load_extensions(str(tmp_path)) == []
 
 
 def test_load_extensions_skips_duplicate_ids(tmp_path: Path):
@@ -94,27 +103,8 @@ def test_load_extensions_skips_duplicate_ids(tmp_path: Path):
     assert extensions[0].section == "AnVIL"
 
 
-@pytest.fixture
-def manager(tmp_path: Path) -> AdminExtensionsManager:
+def test_manager_lists_extensions(tmp_path: Path):
     write_extension(tmp_path, "anvil", VALID_CONFIG)
     config = GalaxyAppConfiguration(admin_extensions_dir=str(tmp_path), override_tempdir=False)
-    return AdminExtensionsManager(config)
 
-
-def test_manager_lists_extensions(manager: AdminExtensionsManager):
-    assert [e.id for e in manager.extensions] == ["anvil"]
-
-
-def test_manager_get_extension(manager: AdminExtensionsManager):
-    assert manager.get_extension("anvil").section == "AnVIL"
-    with pytest.raises(ObjectNotFound):
-        manager.get_extension("missing")
-
-
-def test_manager_get_item(manager: AdminExtensionsManager):
-    item = manager.get_item("anvil", "monitor")
-    assert item.url == "/monitor"
-    with pytest.raises(ObjectNotFound):
-        manager.get_item("anvil", "missing")
-    with pytest.raises(ObjectNotFound):
-        manager.get_item("missing", "monitor")
+    assert [e.id for e in AdminExtensionsManager(config).extensions] == ["anvil"]
