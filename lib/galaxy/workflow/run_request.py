@@ -357,7 +357,7 @@ def build_workflow_run_configs(
                     f"Invalid '{object_store_id_key}': {validation_error}"
                 )
 
-    add_to_history = "no_add_to_history" not in payload
+    add_to_history = not payload.get("no_add_to_history", False)
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
     raw_parameters = payload.get("parameters") or {}
