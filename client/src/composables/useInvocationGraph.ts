@@ -348,11 +348,8 @@ export function useInvocationGraph(
     }
 
     function setHeaderClass(graphStep: GraphStep) {
-        /** Setting the header class for the graph step (only if it changed, so headers and minimap don't redraw) */
-        const headerClass = getHeaderClass(graphStep.state);
-        if (JSON.stringify(graphStep.headerClass) !== JSON.stringify(headerClass)) {
-            graphStep.headerClass = headerClass;
-        }
+        /** Setting the header class for the graph step */
+        graphStep.headerClass = getHeaderClass(graphStep.state);
 
         /** Setting the header icon for the graph step */
         if (graphStep.state) {
@@ -376,6 +373,7 @@ export function useInvocationGraph(
                 graphStep.state = getContentItemState(hdca) as GraphStep["state"];
                 graphStep.nodeText = `${hdca.hid}: <b>${hdca.name}</b>`;
             }
+            setHeaderClass(graphStep);
         } else if (inputParam) {
             const parameterValue = inputParam.parameter_value;
             const parameterType = (graphStep.outputs[0] as ParameterOutput | undefined)?.type;
@@ -387,7 +385,6 @@ export function useInvocationGraph(
                 graphStep.nodeText = `<b>${parameterValue}</b>`;
             }
         }
-        setHeaderClass(graphStep);
     }
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
