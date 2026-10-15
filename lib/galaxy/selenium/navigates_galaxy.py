@@ -223,20 +223,6 @@ def retry_index_during_transitions():
     return partial(retry_during_transitions, exception_check=exception_check)
 
 
-def exception_is_assertion_or_transition(e: Exception) -> bool:
-    """Drive the retry_assertion_during_transitions decorator.
-
-    Reuse logic for checking for transition exceptions but also retry
-    if there is an assertion error.
-    """
-    return exception_seems_to_indicate_transition(e) or isinstance(e, AssertionError)
-
-
-retry_assertion_during_transitions = partial(
-    retry_during_transitions, exception_check=exception_is_assertion_or_transition
-)
-
-
 def edit_details(f, scope=".history-index"):
     """Open the editor, run the edits, hit the save button"""
 
@@ -2007,15 +1993,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         invocations = self.components.invocations
         self._ensure_panel_open(invocations.invocations_panel_list, invocations.activity.wait_for_and_click)
 
-        @retry_assertion_during_transitions
-        def assert_has_row():
-            invocations.invocations_panel_list_items.wait_for_visible()
-            assert len(invocations.invocations_panel_list_items.all()) > 0
-
-        assert_has_row()
-
         invocations.state_details.assert_absent()
-        invocations.invocations_panel_list_items.all()[0].click()
+        invocations.invocations_panel_list_items.wait_for_and_click()
         invocations.state_details.wait_for_visible()
 
         invocations.activity.wait_for_and_click()
