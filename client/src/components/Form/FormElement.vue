@@ -172,6 +172,7 @@ function onConnect() {
 
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
+const titleId = computed(() => `${elementId.value}-title`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
@@ -330,11 +331,11 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     </GButton>
 
                     <span v-if="props.title" class="ui-form-title-text ml-1">
-                        <label :for="props.id">{{ props.title }}</label>
+                        <label :id="titleId" :for="props.id">{{ props.title }}</label>
                     </span>
                 </span>
                 <span v-else-if="props.title" class="ui-form-title-text">
-                    <label :for="props.id">{{ props.title }}</label>
+                    <label :id="titleId" :for="props.id">{{ props.title }}</label>
                 </span>
 
                 <span
@@ -439,6 +440,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     "
                     :id="props.id"
                     v-model="currentValue"
+                    :aria-labelledby="props.title ? titleId : undefined"
                     :data="attrs.data"
                     :display="attrs.display"
                     :options="attrs.options"
