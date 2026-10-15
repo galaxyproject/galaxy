@@ -204,14 +204,6 @@ describe("test helpers in tool searching utilities", () => {
                 panel: tempToolPanel.default,
             },
             {
-                // a full Tool Shed GUID (with `.`, `/` and `+`) is searchable if provided "id:"
-                q: "id:toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
-                expectedResults: ["toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2"],
-                keys: { description: 1, name: 2 },
-                tools: Object.values(tempToolsList.tools),
-                panel: tempToolPanel.default,
-            },
-            {
                 // section is searchable if provided "section:"
                 q: "section:Lift-Over",
                 expectedResults: ["liftOver1"],
@@ -232,6 +224,17 @@ describe("test helpers in tool searching utilities", () => {
             const { results } = searchToolsByKeys(search.tools, search.keys, search.q, search.panel);
             expect(results).toEqual(search.expectedResults);
         });
+    });
+
+    it.each(["id", "tool_id"])("finds a full Tool Shed GUID with the %s filter", (filter) => {
+        const guid = "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2";
+        const { results } = searchToolsByKeys(
+            Object.values(tempToolsList.tools),
+            { description: 1, name: 2 },
+            `${filter}:${guid}`,
+            tempToolPanel.default,
+        );
+        expect(results).toEqual([guid]);
     });
 
     it("test tool fuzzy search", async () => {

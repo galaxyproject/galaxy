@@ -4,7 +4,7 @@ from .framework import (
     SeleniumIntegrationTestCase,
 )
 
-COMPOSE_TEXT_PARAM_GUID = "toolshed.g2.bx.psu.edu/repos/iuc/compose_text_param/compose_text_param/0.1.1"
+FASTQC_GUID = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73+galaxy0"
 
 
 class TestToolShedToolIds(SeleniumIntegrationTestCase, UsesShed):
@@ -17,14 +17,13 @@ class TestToolShedToolIds(SeleniumIntegrationTestCase, UsesShed):
 
     def setUp(self):
         super().setUp()
-        self.install_repository("iuc", "compose_text_param", "e188c9826e0f")  # 0.1.1
+        self.install_repository("devteam", "fastqc", "3d0c7bdf12f5")  # 0.73+galaxy0
 
     @selenium_test
     def test_tool_open_by_tool_shed_guid(self):
         self.home()
-        # A special-form tool: the click loads into the hidden galaxy_main frame, so check the panel, not a form.
-        self.tool_open(COMPOSE_TEXT_PARAM_GUID)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.tool_open(FASTQC_GUID)
+        self._assert_fastqc_form_open()
         self.screenshot("tool_panel_search_by_tool_shed_id")
 
     @selenium_test
@@ -33,10 +32,17 @@ class TestToolShedToolIds(SeleniumIntegrationTestCase, UsesShed):
         self.components.tool_panel.discover_tools_link.wait_for_and_click()
         tools_list = self.components.tools_list
         tools_list._.wait_for_visible()
-        tools_list.search_input.wait_for_and_send_keys("compose text")
-        tools_list.tool_card(tool_id=COMPOSE_TEXT_PARAM_GUID).wait_for_visible()
-        tools_list.version_button(tool_id=COMPOSE_TEXT_PARAM_GUID).wait_for_visible()
-        tools_list.favorite_tool_button(tool_id=COMPOSE_TEXT_PARAM_GUID).wait_for_visible()
-        tools_list.toggle_help(tool_id=COMPOSE_TEXT_PARAM_GUID).wait_for_and_click()
-        tools_list.tool_help(tool_id=COMPOSE_TEXT_PARAM_GUID).wait_for_visible()
+        tools_list.search_input.wait_for_and_send_keys("FastQC")
+        tools_list.tool_card(tool_id=FASTQC_GUID).wait_for_visible()
+        tools_list.version_button(tool_id=FASTQC_GUID).wait_for_visible()
+        tools_list.favorite_tool_button(tool_id=FASTQC_GUID).wait_for_visible()
+        tools_list.toggle_help(tool_id=FASTQC_GUID).wait_for_and_click()
+        tools_list.tool_help(tool_id=FASTQC_GUID).wait_for_visible()
         self.screenshot("tools_list_tool_shed_tool_help")
+        tools_list.open_tool_button(tool_id=FASTQC_GUID).wait_for_and_click()
+        tools_list._.wait_for_absent()
+        self._assert_fastqc_form_open()
+
+    def _assert_fastqc_form_open(self):
+        tool_version = self.components.tool_form.tool_version.wait_for_visible()
+        assert tool_version.get_attribute("data-version") == "0.73+galaxy0"
