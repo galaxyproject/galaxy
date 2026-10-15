@@ -117,7 +117,8 @@
     --color-inverse-foreground: #ffffff;
     --color-success: var(--color-green-500);
     --color-success-foreground: var(--color-foreground);
-    --color-info: var(--color-blue-500);
+    /* today's $brand-info: no palette shade carries white text at 4.5:1 and looks the same */
+    --color-info: #2077b3;
     --color-info-foreground: #ffffff;
     --color-warning: var(--color-orange-600);
     --color-warning-foreground: var(--color-foreground);
