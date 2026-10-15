@@ -3242,6 +3242,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             state_inputs,
             tool_model["inputs"],
             options_pagination=options_pagination,
+            incoming=params.__dict__,
         )
         unset_dataset_matcher_factory(request_context)
 
@@ -3307,6 +3308,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         group_inputs,
         other_values=None,
         options_pagination: Optional[OptionsPaginationT] = None,
+        incoming: Optional[dict[str, Any]] = None,
     ):
         """
         Populates the tool model consumed by the client form builder.
@@ -3318,6 +3320,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             group_inputs=group_inputs,
             other_values=other_values,
             options_pagination=options_pagination,
+            incoming=incoming,
         )
 
     def _map_source_to_history(self, trans: WorkRequestContext, tool_inputs: "ToolInputsT", params: dict) -> None:
