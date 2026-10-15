@@ -122,7 +122,6 @@
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
         <JobsTable
-            v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
             :table-caption="runningTableCaption"
@@ -216,7 +215,6 @@ export default {
             jobs: [],
             finishedJobs: [],
             unfinishedJobs: [],
-            jobsItemsModel: [],
             finishedJobFields: [...commonJobFields, { key: "update_time", label: "Finished", sortable: true }],
             unfinishedJobFields: [
                 { key: "selected", label: "" },
@@ -273,7 +271,7 @@ export default {
             if (newVal.length === 0) {
                 this.indeterminate = false;
                 this.allSelected = false;
-            } else if (newVal.length === this.jobsItemsModel.length) {
+            } else if (newVal.length === this.unfinishedJobs.length) {
                 this.indeterminate = false;
                 this.allSelected = true;
             } else {
@@ -399,7 +397,7 @@ export default {
             this.stopMessage = "";
         },
         toggleAll(checked) {
-            this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
+            this.selectedStopJobIds = checked ? this.unfinishedJobs.map((job) => job.id) : [];
         },
     },
 };
