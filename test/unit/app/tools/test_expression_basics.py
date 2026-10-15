@@ -26,6 +26,7 @@ from galaxy_ext.expressions.js_engine import (
     resolve_isolation_command,
     SandboxedJSEngine,
 )
+from galaxy.util.wait import wait_on
 from galaxy_ext.expressions.sandbox_worker import MAX_MESSAGE_BYTES
 
 # A benign stand-in for a real jail command (e.g. bwrap): `/usr/bin/env` just execs
@@ -318,12 +319,16 @@ def test_timeout_kills_worker_under_waiting_wrapper(tmp_path, short_timeout_grac
             sandbox_command=[sys.executable, str(wrapper), str(pid_file)],
         )
     pid = int(pid_file.read_text())
-    try:
-        child = psutil.Process(pid)
-        # The orphaned worker is reaped asynchronously by init or a subreaper.
-        assert child.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD)
-    except psutil.NoSuchProcess:
-        pass
+
+    def worker_exited():
+        try:
+            # The orphaned worker is reaped asynchronously by init or a subreaper.
+            return psutil.Process(pid).status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD) or None
+        except psutil.NoSuchProcess:
+            return True
+
+    # SIGKILL takes effect asynchronously; on a busy machine the worker can still run for a moment.
+    wait_on(worker_exited, "killed expression worker to exit", timeout=10, delta=0.05)
 
 
 @_needs_env
