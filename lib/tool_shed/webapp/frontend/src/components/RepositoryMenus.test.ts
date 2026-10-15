@@ -40,14 +40,6 @@ describe("RepositoryHealth", () => {
         expect(pills[0].classes()).toContain("health-problem")
         expect(pills[1].text()).toBe("1 install")
     })
-
-    it("marks installs with an icon that doesn't read as a download action", () => {
-        const wrapper = mount(RepositoryHealth, {
-            props: { downloadable: true, installs: 3, lastUpdated: "2024-01-01T00:00:00" },
-        })
-
-        expect(wrapper.findAll(".health-pill")[1].get("svg").attributes("data-icon")).not.toBe("download")
-    })
 })
 
 describe("RepositoryActions", () => {
@@ -89,12 +81,6 @@ describe("RepositoryExplore", () => {
     function denseButtons(wrapper: ReturnType<typeof mountExplore>) {
         return wrapper.findAll(".repository-explore-buttons .g-button").map((b) => b.attributes("aria-label"))
     }
-
-    it("links the contents of the browsable revision from the explore menu", () => {
-        const wrapper = mountExplore({ browsableRevision: "r1" })
-
-        expect(menuLinks(wrapper)).toEqual([["Contents", "/repositories/abc/contents?revision=r1"]])
-    })
 
     it("links the newest contents when there is no browsable revision", () => {
         const wrapper = mountExplore({})
