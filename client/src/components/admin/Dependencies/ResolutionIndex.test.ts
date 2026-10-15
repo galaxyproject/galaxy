@@ -30,6 +30,13 @@ async function mountIndex(attachTo?: HTMLElement) {
     return wrapper;
 }
 
+async function clickButton(wrapper: Awaited<ReturnType<typeof mountIndex>>, text: string) {
+    await wrapper
+        .findAll("button")
+        .find((button) => button.text() === text)!
+        .trigger("click");
+}
+
 describe("ResolutionIndex", () => {
     beforeEach(() => {
         vi.mocked(getToolboxDependencies).mockReset().mockResolvedValue(REQUIREMENTS);
@@ -62,10 +69,7 @@ describe("ResolutionIndex", () => {
         expect(rows.map((row) => (row.element as HTMLInputElement).checked)).toEqual([true, true]);
         expect(rows[0]!.attributes("aria-label")).toBe("Select bwa");
 
-        await wrapper
-            .findAll("button")
-            .find((button) => button.text() === "Install")!
-            .trigger("click");
+        await clickButton(wrapper, "Install");
         expect(installDependencies).toHaveBeenCalledWith(["bwa_tool", "samtools_tool"]);
     });
 
@@ -76,10 +80,7 @@ describe("ResolutionIndex", () => {
         ]);
         const wrapper = await mountIndex();
 
-        await wrapper
-            .findAll("button")
-            .find((button) => button.text() === "Expand Tools")!
-            .trigger("click");
+        await clickButton(wrapper, "Expand Tools");
         const rows = wrapper.findAll('#g-table-requirements-table tbody input[type="checkbox"]');
         expect(rows.map((row) => row.attributes("aria-label"))).toEqual([
             "Select bwa (bwa_tool)",
@@ -88,19 +89,22 @@ describe("ResolutionIndex", () => {
         ]);
     });
 
+    it("installs only the ticked requirement", async () => {
+        const wrapper = await mountIndex();
+        await wrapper.find('#g-table-requirements-table tbody input[type="checkbox"]').setValue(true);
+
+        await clickButton(wrapper, "Install");
+        expect(installDependencies).toHaveBeenCalledWith(["bwa_tool"]);
+    });
+
     it("ticks a row without opening its details", async () => {
         // Attached, so the click runs the checkbox activation and fires change
         const wrapper = await mountIndex(document.body);
-        await wrapper.find('#g-table-requirements-table tbody input[type="checkbox"]').trigger("click");
+        const row = wrapper.find('#g-table-requirements-table tbody input[type="checkbox"]');
+        await row.trigger("click");
+        expect((row.element as HTMLInputElement).checked).toBe(true);
         expect(wrapper.find(".g-table-details-row").exists()).toBe(false);
 
-        await wrapper
-            .findAll("button")
-            .find((button) => button.text() === "Install")!
-            .trigger("click");
-        expect(installDependencies).toHaveBeenCalledWith(["bwa_tool"]);
-
-        await flushPromises();
         await wrapper.find("#g-table-requirements-table tbody td:nth-child(2)").trigger("click");
         expect(wrapper.find(".g-table-details-row").exists()).toBe(true);
         wrapper.unmount();
@@ -115,10 +119,7 @@ describe("ResolutionIndex", () => {
             wrapper.find('#g-table-requirements-table tbody input[type="checkbox"]').attributes("aria-label");
         expect(label()).toBe("Select secret_tool");
 
-        await wrapper
-            .findAll("button")
-            .find((button) => button.text() === "Expand Tools")!
-            .trigger("click");
+        await clickButton(wrapper, "Expand Tools");
         expect(label()).toBe("Select secret_tool");
     });
 
