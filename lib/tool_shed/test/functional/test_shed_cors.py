@@ -33,8 +33,7 @@ class TestShedCorsApi(ShedApiTestCase):
     def test_repository_files_allow_cross_origin_reads(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker", end=1)
-        metadata = populator.get_metadata(repository, downloadable_only=True)
-        revision = next(iter(metadata.root.values())).changeset_revision
+        revision = populator.get_downloadable_revisions(repository)[0]
         origin = {"Origin": ORIGIN}
         for path in (None, "column_maker/column_maker.xml"):
             response = populator.get_repository_files_raw(
