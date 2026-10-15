@@ -511,7 +511,7 @@ def test_output_protector_discards_plaintext_on_failure(tmp_path, service, user,
     assert protector.errors
 
 
-def test_output_protector_protects_outputs_concurrently(tmp_path, service, user, registry):
+def test_output_protector_protects_several_outputs(tmp_path, service, user, registry):
     runtime, _ = _staged_runtime(tmp_path, service, user)
     protector = OutputProtector(runtime, registry)
     outputs = []
@@ -529,7 +529,7 @@ def test_output_protector_protects_outputs_concurrently(tmp_path, service, user,
     assert len(protector.records) == 20
 
 
-def test_output_protector_discards_failed_outputs_when_protecting_concurrently(tmp_path, service, user, registry):
+def test_output_protector_discards_the_outputs_left_after_a_failure(tmp_path, service, user, registry):
     runtime, _ = _staged_runtime(tmp_path, service, user)
     protector = OutputProtector(runtime, registry)
     service.failures["recrypt_header_to_user_key"] = [422] * 20
