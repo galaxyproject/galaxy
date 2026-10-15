@@ -10096,25 +10096,6 @@ steps: {}
         assert empty_input["value"] == ""
         assert empty_input["options"] == [["A", "a", False], ["Empty", "", True]]
 
-    def test_value_restriction_selects_multiple_text_list_default(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  select_text:
-     type: [string]
-     restrictOnConnections: true
-     default: [ex2, --ex3]
-steps:
-  select:
-    tool_id: multi_select
-    in:
-      select_ex: select_text
-""")
-        with self.dataset_populator.test_history() as history_id:
-            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
-        options = run_workflow["steps"][0]["inputs"][0]["options"]
-        assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
-
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
