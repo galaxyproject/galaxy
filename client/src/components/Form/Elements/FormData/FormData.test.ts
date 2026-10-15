@@ -514,12 +514,12 @@ describe("FormData", () => {
         expect(emittedArg(wrapper, "input", 3)).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
         const checkLinked = wrapper.find("input[type='checkbox']");
-        expect(wrapper.find(".custom-switch span").text()).toBe(
+        expect(wrapper.find(".g-switch .g-checkbox-label").text()).toBe(
             "Linked:Datasets will be run in matched order with other datasets.",
         );
         expect((checkLinked.element as HTMLInputElement).checked).toBeTruthy();
         await checkLinked.setValue(false);
-        expect(wrapper.find(".custom-switch span").text()).toBe(
+        expect(wrapper.find(".g-switch .g-checkbox-label").text()).toBe(
             "Unlinked:Dataset will be run against *all* other datasets.",
         );
         expect(emittedArg(wrapper, "input", 4)).toEqual({
