@@ -39,6 +39,13 @@ describe("FormOptionalText", () => {
         expect(wrapper.find("label.sr-only").attributes("for")).toBe(label.attributes("for"));
     });
 
+    it("renders the optional toggle as a switch on the ui-switch label", async () => {
+        const wrapper = await mountFormOptionalText({ value: null });
+        const toggle = wrapper.find("label.ui-switch");
+        expect(toggle.text()).toBe("Set value for this optional select field?");
+        expect(toggle.find("input[type=checkbox]").attributes("role")).toBe("switch");
+    });
+
     it("should initialize with null if value does not exist", async () => {
         const v = null;
         const wrapper = await mountFormOptionalText({ value: v });
