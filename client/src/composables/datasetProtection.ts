@@ -1,7 +1,7 @@
 import axios from "axios";
 import { type Ref, ref, watch } from "vue";
 
-import { GalaxyApi } from "@/api";
+import { GalaxyApi, type HDADetailed } from "@/api";
 import type { components } from "@/api/schema";
 import { Toast } from "@/composables/toast";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -18,6 +18,17 @@ interface RecryptServiceResponse {
 }
 
 const RECRYPT_SERVICE_PORT_PREFERENCE = "crypt4gh_recrypt_service|port";
+
+/** Whether a datatype extension is an encrypted one: the generic `c4gh`, or a typed one like `fastqsanger.c4gh`. */
+export function isCrypt4ghExtension(extension: string | null | undefined): boolean {
+    return extension === "c4gh" || Boolean(extension?.endsWith(".c4gh"));
+}
+
+/** The public Crypt4GH header Galaxy stores in the metadata of an encrypted dataset. */
+export function getCrypt4ghHeader(dataset: HDADetailed): string | undefined {
+    const header = (dataset as Record<string, unknown>)["metadata_crypt4gh_header"];
+    return typeof header === "string" ? header : undefined;
+}
 
 /**
  * URL of the user-side recryptor service. The port can be overridden in the

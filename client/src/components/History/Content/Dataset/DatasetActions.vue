@@ -16,7 +16,7 @@ import { useRouter } from "vue-router";
 
 import { type HDADetailed, userOwnsHistory } from "@/api";
 import { useConfig } from "@/composables/config";
-import { useDatasetProtection } from "@/composables/datasetProtection";
+import { getCrypt4ghHeader, isCrypt4ghExtension, useDatasetProtection } from "@/composables/datasetProtection";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
@@ -82,8 +82,7 @@ const { config } = useConfig();
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const isCrypt4gh = computed(() => {
-    const ext = props.item.extension;
-    return Boolean(config.value?.crypt4gh_enabled) && (ext === "c4gh" || Boolean(ext?.endsWith(".c4gh")));
+    return Boolean(config.value?.crypt4gh_enabled) && isCrypt4ghExtension(props.item.extension);
 });
 const showAuthorizeCompute = computed(() => {
     return isCrypt4gh.value && !isAnonymous.value && !props.item.purged && props.item.state === "ok";
@@ -149,7 +148,7 @@ function onRerun() {
 }
 
 function onAuthorizeCompute() {
-    authorize((props.item as Record<string, unknown>)["metadata_crypt4gh_header"] as string | undefined);
+    authorize(getCrypt4ghHeader(props.item));
 }
 </script>
 

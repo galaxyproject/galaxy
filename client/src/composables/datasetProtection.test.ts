@@ -8,7 +8,7 @@ import { defineComponent, ref } from "vue";
 import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
 
-import { getRecryptServiceUrl, useDatasetProtection } from "./datasetProtection";
+import { getRecryptServiceUrl, isCrypt4ghExtension, useDatasetProtection } from "./datasetProtection";
 
 vi.mock("axios");
 vi.mock("@/composables/toast", () => {
@@ -48,6 +48,18 @@ function mountWithProtection(protectedDataset = true, extraPreferences: string |
     });
     return mount(TestComponent, { global: { plugins: [pinia] } });
 }
+
+describe("isCrypt4ghExtension", () => {
+    it.each([
+        ["c4gh", true],
+        ["fastqsanger.c4gh", true],
+        ["fastqsanger", false],
+        ["c4ghx", false],
+        [null, false],
+    ])("classifies %s", (extension, expected) => {
+        expect(isCrypt4ghExtension(extension)).toBe(expected);
+    });
+});
 
 describe("getRecryptServiceUrl", () => {
     it("uses the configured service", () => {
