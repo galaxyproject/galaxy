@@ -1540,8 +1540,7 @@ class MinimalJobWrapper(HasResourceParameters):
         return plan
 
     def _write_protection_plan(self, plan: ProtectionPlan) -> str:
-        path = os.path.join(self.working_directory, "configs", PLAN_FILENAME)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        path = os.path.join(ensure_configs_directory(self.working_directory), PLAN_FILENAME)
         plan.write(path)
         return path
 
