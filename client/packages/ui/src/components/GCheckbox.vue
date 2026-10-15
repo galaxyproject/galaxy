@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * A checkbox/switch component with optional label.
- * Supports v-model for two-way binding.
+ * Supports v-model for two-way binding. With a bound model the box always shows the model, so a
+ * parent that ignores an update keeps it unchanged; without one the box keeps the user's choice.
  *
  * `class`, `style`, `title` and native listeners (`@click.stop`, ...) land on the root label, so
  * non-bubbling `@focus`/`@blur` never fire there (use `@focusin`/`@focusout`). Every other
@@ -14,7 +15,7 @@
  * switch mode, as in BootstrapVue.
  */
 
-import { computed, inject, useAttrs } from "vue";
+import { computed, inject, nextTick, ref, useAttrs } from "vue";
 
 import { checkboxGroupKey } from "./checkboxGroupContext";
 import { type ComponentSize, prefix } from "./componentVariants";
@@ -25,28 +26,32 @@ defineOptions({
     compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
-const props = defineProps<{
-    /** The v-model value (checked state) */
-    modelValue?: boolean;
-    /** ID attribute for the checkbox input */
-    id?: string;
-    /** Accessible name when no visible label is provided */
-    ariaLabel?: string;
-    /** Disabled state */
-    disabled?: boolean;
-    /** Partly-checked state, e.g. a select-all box when only some rows are selected */
-    indeterminate?: boolean;
-    /** Name attribute for the checkbox input */
-    name?: string;
-    /** Required attribute for the checkbox input */
-    required?: boolean;
-    /** Displayed size; unset keeps the surrounding font size */
-    size?: ComponentSize;
-    /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
-    switch?: boolean;
-    /** Value attribute for the checkbox input, rendered as a string whenever it is set */
-    value?: unknown;
-}>();
+const props = withDefaults(
+    defineProps<{
+        /** The v-model value (checked state) */
+        modelValue?: boolean;
+        /** ID attribute for the checkbox input */
+        id?: string;
+        /** Accessible name when no visible label is provided */
+        ariaLabel?: string;
+        /** Disabled state */
+        disabled?: boolean;
+        /** Partly-checked state, e.g. a select-all box when only some rows are selected */
+        indeterminate?: boolean;
+        /** Name attribute for the checkbox input */
+        name?: string;
+        /** Required attribute for the checkbox input */
+        required?: boolean;
+        /** Displayed size; unset keeps the surrounding font size */
+        size?: ComponentSize;
+        /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
+        switch?: boolean;
+        /** Value attribute for the checkbox input, rendered as a string whenever it is set */
+        value?: unknown;
+    }>(),
+    // Undefined, not Vue's false for an absent boolean, so an unbound checkbox can be told apart
+    { modelValue: undefined },
+);
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: boolean): void;
@@ -56,6 +61,8 @@ const emit = defineEmits<{
 const attrs = useAttrs();
 
 const group = inject(checkboxGroupKey, null);
+
+const inputRef = ref<HTMLInputElement | null>(null);
 
 // Plain functions, not computeds: $attrs is not reactive, so the render function must read it each time
 function rootAttrs() {
@@ -74,6 +81,8 @@ function inputAttrs() {
 }
 
 const isChecked = computed(() => (group ? group.isChecked(props.value) : (props.modelValue ?? false)));
+
+const isControlled = computed(() => Boolean(group) || props.modelValue !== undefined);
 
 const isDisabled = computed(() => props.disabled || Boolean(group?.disabled.value));
 
@@ -99,6 +108,15 @@ function onChange(event: Event) {
         emit("update:modelValue", target.checked);
     }
     emit("change", event);
+    // Vue patches checked/indeterminate only when the props change, so a parent that ignores or rewrites the update leaves the box out of sync
+    nextTick(() => {
+        if (inputRef.value) {
+            if (isControlled.value) {
+                inputRef.value.checked = isChecked.value;
+            }
+            inputRef.value.indeterminate = Boolean(props.indeterminate);
+        }
+    });
 }
 </script>
 
@@ -110,6 +128,7 @@ function onChange(event: Event) {
         <input
             v-bind="inputAttrs()"
             :id="id"
+            ref="inputRef"
             :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
