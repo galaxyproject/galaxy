@@ -146,7 +146,6 @@ class OpenBisFilesSource(BaseFilesSource[OpenBisFileSourceTemplateConfiguration,
     supports_pagination = False
     supports_search = False
     supports_sorting = False
-    supports_recursive = False
 
     template_config_class = OpenBisFileSourceTemplateConfiguration
     resolved_config_class = OpenBisFileSourceConfiguration

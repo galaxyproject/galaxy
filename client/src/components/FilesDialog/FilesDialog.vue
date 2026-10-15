@@ -411,6 +411,10 @@ function onSelectAll() {
 
     for (const item of items.value) {
         if (!item.isLeaf && !withFolders) {
+            // unselect what was picked inside the folder, without listing it
+            if (isUnselectAll) {
+                unselectPath(item.url);
+            }
             continue;
         }
         if (isUnselectAll) {

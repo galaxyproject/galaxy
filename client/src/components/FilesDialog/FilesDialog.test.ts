@@ -320,10 +320,19 @@ describe("FilesDialog, file source that cannot list recursively", () => {
         await utils.clickOn(utils.findRenderedDirectory(directoryId));
         expect(utils.getRenderedRows().map(({ id }) => id)).toEqual(directory1Response.map(({ uri }) => uri));
 
+        const expectOnlyFilesSelected = () =>
+            utils.getRenderedRows().forEach((item) => {
+                expect(item.selectionState).toBe(item.isLeaf ? SELECTION_STATES.SELECTED : SELECTION_STATES.UNSELECTED);
+            });
         await utils.selectAll();
-        utils.getRenderedRows().forEach((item) => {
-            expect(item.selectionState).toBe(item.isLeaf ? SELECTION_STATES.SELECTED : SELECTION_STATES.UNSELECTED);
-        });
+        expectOnlyFilesSelected();
+
+        // one level up, select all first unselects the files picked inside the folder, then selects
+        await utils.navigateBack();
+        await utils.selectAll();
+        utils.getRenderedRows().forEach((item) => expect(item.selectionState).toBe(SELECTION_STATES.UNSELECTED));
+        await utils.selectAll();
+        expectOnlyFilesSelected();
     });
 });
 

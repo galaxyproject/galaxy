@@ -67,7 +67,6 @@ class IrodsFileSourceConfiguration(BaseFileSourceConfiguration):
 
 class IrodsFilesSource(PyFilesystem2FilesSource[IrodsFileSourceTemplateConfiguration, IrodsFileSourceConfiguration]):
     plugin_type = "irods"
-    supports_recursive = False
     required_module = iRODSFS
     required_package = "fs-irods"
 

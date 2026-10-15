@@ -83,7 +83,7 @@ export const rootResponse: BrowsableFilesSourcePlugin[] = [
             pagination: true,
             search: true,
             sorting: false,
-            recursive: true,
+            recursive: false,
         },
         uri_root: "gxuserfiles://c5504eb8-51cf-4b44-88f8-24347c031f52",
     },

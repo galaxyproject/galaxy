@@ -8827,7 +8827,7 @@ export interface components {
              * @description Features supported by this file source.
              * @default {
              *       "pagination": false,
-             *       "recursive": true,
+             *       "recursive": false,
              *       "search": false,
              *       "sorting": false
              *     }
@@ -13881,7 +13881,7 @@ export interface components {
              * @description Features supported by this file source.
              * @default {
              *       "pagination": false,
-             *       "recursive": true,
+             *       "recursive": false,
              *       "search": false,
              *       "sorting": false
              *     }
@@ -13933,7 +13933,7 @@ export interface components {
             /**
              * Recursive
              * @description Whether this file source can list a folder recursively.
-             * @default true
+             * @default false
              */
             recursive: boolean;
             /**
