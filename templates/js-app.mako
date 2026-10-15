@@ -24,6 +24,7 @@
 
         <!-- Set relative href for site root -->
         <link rel="index" href="${ h.url_for( '/' ) }"/>
+        <link rel="icon" href="${ h.url_for('/favicon.ico') }" />
 
         <!-- Load stylesheets -->
         ${ h.dist_css('base') }
