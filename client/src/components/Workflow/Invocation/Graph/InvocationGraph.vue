@@ -242,7 +242,7 @@ function toggleDetailedView() {
                         class="w-100 pr-2"
                         :workflow-step="activeStep"
                         :graph-step="steps[activeNodeId]"
-                        :invocation-step="props.invocation.steps[activeNodeId]" />
+                        :invocation-step="props.invocation.steps.find((step) => step.order_index === activeNodeId)" />
                     <div class="d-flex flex-gapx-1">
                         <GButton title="Scroll to Step" size="small" transparent @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />

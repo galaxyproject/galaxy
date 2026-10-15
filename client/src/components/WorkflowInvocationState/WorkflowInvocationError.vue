@@ -73,7 +73,7 @@ const dependentWorkflowStep = computed(() => {
 });
 const dependentInvocationStep = computed(() => {
     if (dependentWorkflowStep.value) {
-        return props.invocation.steps[dependentWorkflowStep.value.id];
+        return props.invocation.steps.find((step) => step.order_index === dependentWorkflowStep.value?.id);
     }
     return undefined;
 });

@@ -50,7 +50,7 @@ const filteredWorkflowSteps = computed(() => {
     // Filter steps based on the search query matching the step title
     const query = currentQuery.value.toLowerCase().trim();
     return steps.filter((step) => {
-        const invocationStep = props.invocation.steps[step.id];
+        const invocationStep = props.invocation.steps.find((candidate) => candidate.order_index === step.id);
 
         const toolId = step.tool_uuid || step.tool_id;
         const toolName = toolId ? toolStore.getToolNameById(toolId) : undefined;
