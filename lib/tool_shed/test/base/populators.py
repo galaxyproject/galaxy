@@ -433,6 +433,13 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(metadata_response)
         return RepositoryMetadata(root=metadata_response.json())
 
+    def get_downloadable_revisions(self, repository: HasRepositoryId) -> list[str]:
+        """Changeset hashes of the repository's downloadable revisions, oldest first."""
+        return [
+            revision.changeset_revision
+            for revision in self.get_metadata(repository, downloadable_only=True).root.values()
+        ]
+
     def get_repository_files_raw(
         self,
         repository: HasRepositoryId,

@@ -167,10 +167,6 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
         category = self.populator.new_category(prefix=TEST_CATEGORY_PREFIX)
         return self.populator.setup_test_data_repo("column_maker", category_id=category.id)
 
-    def _revisions(self, repository) -> list[str]:
-        metadata = self.populator.get_metadata(repository, downloadable_only=True)
-        return [revision.changeset_revision for revision in metadata.root.values()]
-
     def _visit_contents(self, repository, revision: str, file: str) -> None:
         self.visit_url(f"/repositories/{repository.id}/contents?revision={revision}&file={file}")
 
@@ -201,7 +197,7 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
 
     def test_contents_deep_link(self):
         repository = self._setup_column_maker()
-        oldest = self._revisions(repository)[0]
+        oldest = self.populator.get_downloadable_revisions(repository)[0]
         self._visit_contents(repository, oldest, COLUMN_MAKER_XML)
         browser = self._playwright_browser
 
@@ -213,7 +209,7 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
 
     def test_contents_switch_revision_keeps_file(self):
         repository = self._setup_column_maker()
-        revisions = self._revisions(repository)
+        revisions = self.populator.get_downloadable_revisions(repository)
         oldest, newest = revisions[0], revisions[-1]
         self._visit_contents(repository, newest, COLUMN_MAKER_XML)
         page = self._page
@@ -230,7 +226,7 @@ class TestFrontendRepositoryContents(PlaywrightTestCase):
 
     def test_explore_menu_links_contents(self):
         repository = self._setup_column_maker()
-        newest = self._revisions(repository)[-1]
+        newest = self.populator.get_downloadable_revisions(repository)[-1]
         self.visit_url(f"/repositories/{repository.id}")
         page = self._page
         browser = self._playwright_browser
