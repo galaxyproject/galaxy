@@ -23,6 +23,17 @@ function resolveToken(name: string, seen: string[] = []): string {
     return reference ? resolveToken(reference[1] as string, [...seen, name]) : value.toLowerCase();
 }
 
+// WCAG 2.x contrast ratio between two #rrggbb colors.
+function contrast(first: string, second: string): number {
+    const luminance = (hex: string) =>
+        [1, 3, 5]
+            .map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255)
+            .map((channel) => (channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+            .reduce((sum, channel, index) => sum + channel * ([0.2126, 0.7152, 0.0722][index] as number), 0);
+    const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a) as [number, number];
+    return (lighter + 0.05) / (darker + 0.05);
+}
+
 const COLOR_FAMILIES = ["blue", "gray", "green", "yellow", "orange", "red"];
 const COLOR_SHADES = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 
@@ -114,5 +125,20 @@ describe("galaxy-ui design tokens", () => {
         expect(resolveToken("--color-primary")).toBe(brandColor("--color-galaxy-primary"));
         expect(resolveToken("--color-foreground")).toBe(brandColor("--color-galaxy-dark"));
         expect(resolveToken("--color-highlight")).toBe(brandColor("--color-galaxy-gold"));
+    });
+
+    it("gives every X / X-foreground pair at least 4.5:1 contrast (WCAG 1.4.3)", () => {
+        const failures = SEMANTIC_COLORS.filter((name) => SEMANTIC_COLORS.includes(`${name}-foreground`))
+            .map((name) => ({
+                name,
+                ratio: contrast(resolveToken(`--color-${name}`), resolveToken(`--color-${name}-foreground`)),
+            }))
+            .filter(({ ratio }) => ratio < 4.5)
+            .map(({ name, ratio }) => `${name}-foreground on ${name}: ${ratio.toFixed(2)}:1`);
+        expect(failures).toEqual([]);
+    });
+
+    it("gives input borders at least 3:1 against the background (WCAG 1.4.11)", () => {
+        expect(contrast(resolveToken("--color-input"), resolveToken("--color-background"))).toBeGreaterThanOrEqual(3);
     });
 });
