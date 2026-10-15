@@ -34,7 +34,11 @@ class TestComponentShowcase(PlaywrightTestCase):
         )
         expect(component).to_be_visible()
         screenshot_name = component_name.replace(" ", "_")
-        component.screenshot(path=self._get_screenshot_path(screenshot_name))
+        # Cards taller than the viewport are captured by scrolling, which would paint the sticky masthead over them
+        component.screenshot(
+            path=self._get_screenshot_path(screenshot_name),
+            style=".shed-header { position: static !important; }",
+        )
 
     def _get_screenshot_path(self, name: str) -> str:
         """Get full path for screenshot, creating dir if needed."""
