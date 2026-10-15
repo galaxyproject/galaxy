@@ -24,7 +24,9 @@ class FastAPIWidgets:
         public=True,
         unstable=True,
         summary="Lists the widgets this Galaxy serves",
-        description="`/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, "
+        description="Widgets are meant to be interactive, read-only views of single resources that respect "
+        "Galaxy's authorization. Any origin may embed them unless `widgets_allowed_origins` is set. "
+        "`/widgets/` serves the widgets app for any path, so a widget this Galaxy lacks still loads, "
         "showing only an error inside the page. Consumers check this list for the widgets and parameters "
         "an instance supports instead of hardcoding routes per Galaxy version.",
     )
