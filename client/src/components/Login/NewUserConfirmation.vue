@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard, BCardBody, BCardFooter, BEmbed, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BCard, BCardBody, BCardFooter, BEmbed, BForm, BFormGroup } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 interface Props {
     sessionCsrfToken: string;
@@ -134,9 +135,9 @@ async function submit() {
                             </p>
 
                             <BFormGroup>
-                                <BFormCheckbox v-model="termsRead">
+                                <GCheckbox v-model="termsRead">
                                     I have read and accept these terms to create a new Galaxy account.
-                                </BFormCheckbox>
+                                </GCheckbox>
                             </BFormGroup>
 
                             <GButton
