@@ -9,6 +9,8 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import DatasetPopoverLink from "./DatasetPopoverLink.vue";
 
+const RETRY_BACKOFF_CAP_MS = 30_000;
+
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
@@ -74,5 +76,41 @@ describe("DatasetPopoverLink", () => {
         expect(datasetRequests).toBe(1);
         expect(link.find("#dataset-details").exists()).toBe(true);
         expect(link.find(".dataset-details-popover").text()).not.toContain("Loading dataset details");
+    });
+
+    it("shows loading during a retry backoff and the dataset once the retry succeeds", async () => {
+        vi.useFakeTimers();
+        failNext = 1;
+        const link = mountLink();
+        await link.find(`#storage-run-item-dataset-${DATASET_ID}`).trigger("mouseenter");
+        link.findComponent(POPOVER_STUB).vm.$emit("show");
+        await flushPromises();
+        expect(datasetRequests).toBe(1);
+        expect(historyRequests).toBe(0);
+        expect(link.find(".dataset-details-popover").text()).toContain("Loading dataset details");
+
+        await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
+        await flushPromises();
+        expect(datasetRequests).toBe(2);
+        expect(link.find(".dataset-details-popover").text()).not.toContain("Loading dataset details");
+        expect(link.find("#dataset-details").exists()).toBe(true);
+        // Nothing in the popover reads the dataset's history.
+        expect(historyRequests).toBe(0);
+    });
+
+    it("does not retry a failed fetch after the popover is hidden", async () => {
+        vi.useFakeTimers();
+        failNext = 1;
+        const link = mountLink();
+        await link.find(`#storage-run-item-dataset-${DATASET_ID}`).trigger("mouseenter");
+        const popover = link.findComponent(POPOVER_STUB);
+        popover.vm.$emit("show");
+        await flushPromises();
+        expect(datasetRequests).toBe(1);
+
+        popover.vm.$emit("hidden");
+        await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
+        await flushPromises();
+        expect(datasetRequests).toBe(1);
     });
 });

@@ -115,4 +115,47 @@ describe("WorkflowRerun", () => {
         );
         expect(wrapper.findComponent(WorkflowRun).exists()).toBe(true);
     });
+
+    it("shows loading while a failed rerun request waits to retry", async () => {
+        vi.useFakeTimers();
+        server.use(
+            http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
+                response("5XX").json({ err_msg: "unavailable", err_code: 0 }, { status: 503 }),
+            ),
+        );
+        wrapper = shallowMount(WorkflowRerun as object, {
+            propsData: { invocationId: "invocation-id" },
+            localVue,
+            pinia: createPinia(),
+        });
+        await flushPromises();
+        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading workflow rerun data");
+        expect(wrapper.findComponent(GAlert).exists()).toBe(false);
+        expect(wrapper.findComponent(WorkflowRun).exists()).toBe(false);
+    });
+
+    it("renders the run form after failing to switch to the original history", async () => {
+        const toast = vi.spyOn(Toast, "error");
+        server.use(
+            http.get("/api/invocations/{invocation_id}/request", ({ response }) =>
+                response.untyped(
+                    HttpResponse.json({ history_id: "history-id", workflow_id: "workflow-id", instance: true }),
+                ),
+            ),
+            http.untyped.get("/history/set_as_current", () =>
+                HttpResponse.json({ err_msg: "unavailable", err_code: 0 }, { status: 500 }),
+            ),
+        );
+        wrapper = shallowMount(WorkflowRerun as object, {
+            propsData: { invocationId: "invocation-id" },
+            localVue,
+            pinia: createPinia(),
+        });
+        await flushPromises();
+        expect(wrapper.find("loadingspan-stub").exists()).toBe(false);
+        expect(wrapper.findComponent(WorkflowRun).exists()).toBe(true);
+        expect(toast).toHaveBeenCalledExactlyOnceWith(
+            "Unable to switch to the history with the original workflow inputs. unavailable",
+        );
+    });
 });

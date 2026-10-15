@@ -52,4 +52,29 @@ describe("useWorkflowCardBadges", () => {
         expect(countBadge?.visible).toBe(true);
         expect(countBadge?.label).toBe("workflow runs: 2");
     });
+
+    it("does not fetch invocation count when runs are hidden", async () => {
+        renderBadges(makeWorkflow(USERNAME), { hideRuns: true });
+        await flushPromises();
+        expect(countRequests).toEqual([]);
+    });
+
+    it("does not fetch invocation count for a workflow owned by another user", async () => {
+        renderBadges(makeWorkflow("someone_else"), { publishedView: true });
+        await flushPromises();
+        expect(countRequests).toEqual([]);
+    });
+
+    it("does not fetch invocation count for anonymous users", async () => {
+        useUserStore().currentUser = { isAnonymous: true, total_disk_usage: 0, nice_total_disk_usage: "0 bytes" };
+        renderBadges(makeWorkflow(USERNAME));
+        await flushPromises();
+        expect(countRequests).toEqual([]);
+    });
+
+    it("does not fetch invocation count when step count is shown", async () => {
+        renderBadges(makeWorkflow(USERNAME, { number_of_steps: 3 }));
+        await flushPromises();
+        expect(countRequests).toEqual([]);
+    });
 });

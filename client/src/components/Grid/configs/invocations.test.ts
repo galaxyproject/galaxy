@@ -70,4 +70,32 @@ describe("invocations grid getData", () => {
         expect(historyRequests.mock.calls.map(([id]) => id).sort()).toEqual(["history-1", "history-2"]);
         expect(useHistoryStore().getHistoryById("history-1", false)?.name).toBe("History history-1");
     });
+
+    it("handles failed workflow fetches without unhandled rejections", async () => {
+        mockServer(true);
+        const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+        const [data] = await getData(0, 25, "", "create_time", true);
+        await flushPromises();
+
+        expect(data).toHaveLength(4);
+        expect(workflowRequests).toHaveBeenCalledTimes(2);
+        expect(consoleWarnSpy).toHaveBeenCalledWith("Failed to load workflow instance-a", expect.any(Error));
+        expect(useWorkflowStore().getStoredWorkflowNameByInstanceId("instance-a")).toBe("...");
+        consoleWarnSpy.mockRestore();
+    });
+
+    it("does not re-request failing histories on reload while they back off", async () => {
+        vi.useFakeTimers();
+        mockServer(false, true);
+        vi.spyOn(console, "warn").mockImplementation(() => {});
+
+        await getData(0, 25, "", "create_time", true);
+        await flushPromises();
+        expect(historyRequests).toHaveBeenCalledTimes(2);
+
+        await getData(0, 25, "", "create_time", true);
+        await flushPromises();
+        expect(historyRequests).toHaveBeenCalledTimes(2);
+    });
 });

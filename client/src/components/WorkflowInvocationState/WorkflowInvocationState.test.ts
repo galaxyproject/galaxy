@@ -30,6 +30,7 @@ const selectors = {
 const invocationById = {
     [invocationData.id]: invocationData,
     "not-fetched-invocation": null,
+    "retrying-invocation": null,
     "non-terminal-id": {
         ...invocationData,
         id: "non-terminal-id",
@@ -62,6 +63,7 @@ const invocationDataJobsSummary = {
 const invocationJobsSummaryById = {
     [invocationData.id]: invocationDataJobsSummary,
     "not-fetched-invocation": null,
+    "retrying-invocation": null,
     "non-terminal-id": invocationDataJobsSummary,
     "non-terminal-jobs": {
         ...invocationDataJobsSummary,
@@ -122,6 +124,7 @@ vi.mock("@/stores/invocationStore", async () => {
                     },
                 ];
             }),
+            isLoadingInvocation: vi.fn().mockImplementation((invocationId) => invocationId === "retrying-invocation"),
             fetchInvocationById: mockFetchInvocationById,
             fetchInvocationJobsSummaryForId: mockFetchInvocationJobsSummaryForId,
         }),
@@ -237,6 +240,15 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const alert = wrapper.find(selectors.bAlertStub);
         expect(alert.attributes("variant")).toBe("danger");
         expect(alert.text()).toBe("User does not own specified item.");
+    });
+
+    it("shows loading, not 'not found', while a failed fetch waits to retry", async () => {
+        const wrapper = await mountWorkflowInvocationState("retrying-invocation");
+
+        const alert = wrapper.find(selectors.bAlertStub);
+        expect(alert.attributes("variant")).toBe("info");
+        expect(alert.find("loadingspan-stub").attributes("message")).toBe("Loading invocation");
+        expect(alert.text()).not.toContain("Invocation not found.");
     });
 });
 
