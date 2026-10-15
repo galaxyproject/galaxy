@@ -19,6 +19,7 @@ src/
 ├── components/    # Vue components
 │   ├── pages/     # Route-level page components
 │   └── help/      # Help section components
+├── composables/   # Reusable composition functions (use*)
 ├── schema/        # OpenAPI-generated types + client
 ├── stores/        # Pinia stores (auth, categories, repository, users)
 ├── main.ts        # App entry
