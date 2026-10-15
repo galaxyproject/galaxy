@@ -291,6 +291,8 @@ export default {
             });
             this.unfinishedJobs = unfinishedJobs;
             this.finishedJobs = finishedJobs;
+            const unfinishedIds = unfinishedJobs.map((job) => job.id);
+            this.selectedStopJobIds = this.selectedStopJobIds.filter((id) => unfinishedIds.includes(id));
         },
     },
     created() {

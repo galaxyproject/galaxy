@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { deleteJob } from "@/api/jobs";
+import { jobsProvider } from "@/components/providers/JobProvider";
 
 import JobsList from "./JobsList.vue";
 
@@ -83,5 +84,31 @@ describe("JobsList", () => {
         await flushPromises();
 
         expect(isChecked(headerBox(wrapper))).toBe(true);
+    });
+
+    it("drops selected jobs that a refresh no longer lists", async () => {
+        const wrapper = await mountJobsList();
+        await headerBox(wrapper).setChecked(true);
+        await flushPromises();
+
+        const job3 = { id: "job3", state: "new", user_id: "user3", update_time: "2026-10-06T11:28:00.000000" };
+        vi.mocked(jobsProvider).mockResolvedValueOnce([
+            { id: "job1", state: "running", user_id: "user1", update_time: "2026-10-06T11:29:52.707969" },
+            job3,
+        ]);
+        await wrapper.find('form[name="jobs"]').trigger("submit");
+        await flushPromises();
+
+        expect(rowBoxes(wrapper).map(isChecked)).toEqual([true, false]);
+        expect(isChecked(headerBox(wrapper))).toBe(false);
+        expect((headerBox(wrapper).element as HTMLInputElement).indeterminate).toBe(true);
+
+        await wrapper.find("#stop-message").setValue("maintenance");
+        const stopForm = wrapper.findAll("form").wrappers.find((form) => form.find("#stop-message").exists());
+        await stopForm?.trigger("submit");
+        await flushPromises();
+
+        expect(deleteJob).toHaveBeenCalledTimes(1);
+        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
     });
 });
