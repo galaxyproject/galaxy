@@ -7400,6 +7400,21 @@ steps:
             self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             self._assert_history_job_count(history_id, 4)
 
+    @pytest.mark.parametrize(
+        "field",
+        ["preferred_object_store_id", "preferred_outputs_object_store_id", "preferred_intermediate_object_store_id"],
+    )
+    def test_run_with_unselectable_object_store_creates_no_history(self, field):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"invalid object store history {uuid4()}"
+        response = self._post(
+            f"workflows/{workflow_id}/invocations",
+            data={"new_history_name": history_name, field: "not_an_object_store"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 400)
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
     def test_run_with_optional_data_specified_to_multi_data(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
