@@ -113,6 +113,7 @@ watch(
             currentRevision.value = newest
         }
     },
+    { immediate: true },
 )
 
 const readmes = ref<{ [key: string]: string | undefined }>({})
