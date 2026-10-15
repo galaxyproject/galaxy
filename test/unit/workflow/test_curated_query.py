@@ -316,23 +316,28 @@ def test_trs_imports_maps_the_users_live_imports(manager: WorkflowsManager, tran
     make_import(
         trans,
         user,
-        "Velocyto (first copy)",
+        "Velocyto v0.1, renamed since",
         {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.1"},
-        update_time=datetime(2025, 1, 1),
+        update_time=datetime(2026, 1, 1),
     )
     newer = make_import(
         trans,
         user,
-        "Velocyto (second copy)",
+        "Velocyto v0.2",
         {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.2"},
-        update_time=datetime(2026, 1, 1),
+        update_time=datetime(2025, 1, 1),
     )
-    make_import(trans, user, "Deleted copy", {"trs_tool_id": "#workflow/deleted", "trs_version_id": "v1"}, deleted=True)
+    make_import(trans, user, "Deleted copy", {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v9"}, deleted=True)
+    make_import(trans, make_user(trans, "someone-else"), "Not mine", {"trs_tool_id": VELOCYTO_TRS_ID})
     make_import(trans, user, "Uploaded by hand", None)
-    make_import(trans, make_user(trans, "someone-else"), "Not mine", {"trs_tool_id": "#workflow/theirs"})
+    make_import(trans, user, "From a URL", {"url": "https://example.org/workflow.ga"})
+    make_import(trans, user, "Not on this page", {"trs_tool_id": "#workflow/elsewhere", "trs_version_id": "v1"})
 
-    # The most recent import wins; deleted, hand-made and other users' workflows don't count.
-    assert manager.trs_imports(trans.sa_session, user.id) == {VELOCYTO_TRS_ID: (newer.id, "v0.2")}
+    # The most recent import wins, even when an older copy was touched more recently;
+    # deleted, hand-made, URL and other users' workflows don't count, nor ids not asked about.
+    assert manager.trs_imports(trans.sa_session, user.id, [VELOCYTO_TRS_ID, "#workflow/never-imported"]) == {
+        VELOCYTO_TRS_ID: (newer.id, "v0.2")
+    }
 
 
 def test_trs_imports_drops_an_import_once_it_is_edited(manager: WorkflowsManager, trans: MockTrans) -> None:
@@ -346,7 +351,7 @@ def test_trs_imports_drops_an_import_once_it_is_edited(manager: WorkflowsManager
     stored_workflow.latest_workflow = edited
     trans.sa_session.commit()
 
-    assert manager.trs_imports(trans.sa_session, user.id) == {}
+    assert manager.trs_imports(trans.sa_session, user.id, [VELOCYTO_TRS_ID]) == {}
 
 
 def test_trs_imports_ignores_hidden_subworkflow_copies(manager: WorkflowsManager, trans: MockTrans) -> None:
@@ -357,27 +362,4 @@ def test_trs_imports_ignores_hidden_subworkflow_copies(manager: WorkflowsManager
         trans, user, "Velocyto (subworkflow)", {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.1"}, hidden=True
     )
 
-    assert manager.trs_imports(trans.sa_session, user.id) == {}
-
-
-def test_trs_imports_prefers_the_most_recent_import_over_the_latest_update(
-    manager: WorkflowsManager, trans: MockTrans
-) -> None:
-    """Renaming or tagging an older copy bumps its update_time, but it's still the older import."""
-    user = make_user(trans, "two-copies")
-    make_import(
-        trans,
-        user,
-        "Velocyto v0.1, renamed since",
-        {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.1"},
-        update_time=datetime(2026, 1, 1),
-    )
-    current = make_import(
-        trans,
-        user,
-        "Velocyto v0.2",
-        {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.2"},
-        update_time=datetime(2025, 1, 1),
-    )
-
-    assert manager.trs_imports(trans.sa_session, user.id) == {VELOCYTO_TRS_ID: (current.id, "v0.2")}
+    assert manager.trs_imports(trans.sa_session, user.id, [VELOCYTO_TRS_ID]) == {}

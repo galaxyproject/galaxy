@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import uuid
+from collections.abc import Collection
 from typing import (
     Annotated,
     Any,
@@ -440,14 +441,18 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         stmt = stmt.limit(payload.limit).offset(payload.offset)
         return list(trans.sa_session.scalars(stmt).unique().all()), total_matches
 
-    def trs_imports(self, sa_session: scoped_session, user_id: int) -> dict[str, tuple[int, str | None]]:
-        """Map each TRS tool id the user has imported to (stored workflow id, imported version).
+    def trs_imports(
+        self, sa_session: scoped_session, user_id: int, trs_tool_ids: Collection[str]
+    ) -> dict[str, tuple[int, str | None]]:
+        """Map each of ``trs_tool_ids`` the user has imported to (stored workflow id, imported version).
 
         Only the user's own live, visible workflows count, and only while their latest
         revision is the import: an editor save drops source_metadata, as it does for
         get_workflow_by_trs_id_and_version. When the same TRS tool was imported more
         than once, the most recent import wins.
         """
+        if not trs_tool_ids:
+            return {}
         stmt = (
             select(StoredWorkflow.id, Workflow.source_metadata)
             .join(Workflow, Workflow.id == StoredWorkflow.latest_workflow_id)
@@ -455,14 +460,15 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             .where(StoredWorkflow.deleted == false())
             # Subworkflows pulled in by TRS are hidden copies that carry the same metadata.
             .where(StoredWorkflow.hidden == false())
-            .where(Workflow.source_metadata.is_not(None))
+            # Only the rows the caller asked about, so the cost doesn't grow with every
+            # URL or TRS import the user has ever made.
+            .where(to_json(sa_session, Workflow.source_metadata, ["trs_tool_id"]).in_(list(trs_tool_ids)))
             .order_by(StoredWorkflow.id.desc())
         )
         imports: dict[str, tuple[int, str | None]] = {}
         for stored_workflow_id, source_metadata in sa_session.execute(stmt):
-            # JSON null slips past the IS NOT NULL above on some backends.
-            trs_tool_id = (source_metadata or {}).get("trs_tool_id")
-            if trs_tool_id and trs_tool_id not in imports:
+            trs_tool_id = source_metadata["trs_tool_id"]
+            if trs_tool_id not in imports:
                 imports[trs_tool_id] = (stored_workflow_id, source_metadata.get("trs_version_id"))
         return imports
 

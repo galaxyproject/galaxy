@@ -280,10 +280,11 @@ class WorkflowsService(ServiceBase):
         )
         source = CuratedWorkflowSourceEnum(page.source)
         imports: dict[str, tuple[int, str | None]] = {}
-        if trans.user is not None and page.entries:
-            # Lets the card offer the user's copy, or an update to it, instead of another import.
+        if trans.user is not None:
+            # Lets the card offer the user's copy, or a newer release, instead of another import.
+            page_trs_tool_ids = [trs_id for entry in page.entries if (trs_id := curated.entry_trs_tool_id(entry))]
             imports = curated.find_imports(
-                page.entries, self._workflows_manager.trs_imports(trans.sa_session, trans.user.id)
+                page.entries, self._workflows_manager.trs_imports(trans.sa_session, trans.user.id, page_trs_tool_ids)
             )
         return CuratedWorkflowsIndexResponse(
             source=source,
