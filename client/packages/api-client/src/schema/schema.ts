@@ -13932,7 +13932,7 @@ export interface components {
             pagination: boolean;
             /**
              * Recursive
-             * @description Whether this file source can list a folder recursively.
+             * @description Whether a whole folder of this file source can be selected at once.
              * @default false
              */
             recursive: boolean;

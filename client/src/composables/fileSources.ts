@@ -141,10 +141,10 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          */
         supportsSorting,
         /**
-         * Check if the file source at the given URI can list a folder recursively.
+         * Check if a whole folder of the file source at the given URI can be selected at once.
          *
          * @param uri - The URI of the file source.
-         * @returns Whether the file source can list a folder recursively.
+         * @returns Whether a whole folder can be selected at once.
          */
         supportsRecursive,
     };
