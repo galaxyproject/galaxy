@@ -583,8 +583,8 @@ def uvicorn_serve(app, sock: socket.socket, host=None):
 
     port = str(sock.getsockname()[1])
     access_log = False if "GALAXY_TEST_DISABLE_ACCESS_LOG" in os.environ else True
-    # Test clients keep connections in a pool across slow steps such as running a script. A POST
-    # sent just as the server drops an idle connection fails without a retry, so keep them open.
+    # requests does not retry a POST on a pooled connection that the server just closed, so
+    # keep idle connections open across slow test steps.
     config = Config(app, host=host, port=int(port), access_log=access_log, timeout_keep_alive=600)
     server = Server(config=config)
 

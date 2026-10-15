@@ -113,9 +113,8 @@ class AbstractTestCases:
 
         @classmethod
         def setUpClass(cls):
-            # pytest skips tearDownClass when setUpClass raises, so undo each step here on failure:
-            # a leftover container keeps the Keycloak port, and the CA bundle variables would
-            # break every later HTTPS request in this process.
+            # pytest skips tearDownClass when setUpClass raises, so undo each step on failure: a
+            # leftover container holds the Keycloak port and the CA bundle variables break HTTPS.
             with ExitStack() as cleanup:
                 cls.backend_config_file = cls.generate_oidc_config_file(provider_name=cls.provider_name)
                 cleanup.callback(os.remove, cls.backend_config_file)
@@ -128,7 +127,7 @@ class AbstractTestCases:
                 start_keycloak_docker(container_name=cls.container_name)
                 cleanup.callback(stop_keycloak_docker, cls.container_name)
                 # A non-optimized Keycloak start rebuilds the server first, which can take over a
-                # minute on a runner shared with other test workers.
+                # minute on a busy runner.
                 wait_till_app_ready(f"{KEYCLOAK_URL}/.well-known/openid-configuration", timeout=180)
 
                 super().setUpClass()
