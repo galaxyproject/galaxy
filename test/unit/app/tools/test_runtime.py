@@ -317,8 +317,10 @@ def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
     assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
 
 
-def test_adapt_dataset_ignores_a_store_root_outside_the_dataset():
-    result = _adapt_input("zarr", metadata={"store_root": "../elsewhere"})
+@pytest.mark.parametrize("store_root", ["../elsewhere", "nested/store.zarr", "a';touch pwned;'.zarr", "$(id).zarr"])
+def test_adapt_dataset_ignores_an_unsafe_store_root(store_root):
+    # store_root reaches command lines through $input.path, so it must be a plain folder name.
+    result = _adapt_input("zarr", metadata={"store_root": store_root})
     assert result.path == "/job/inputs/dataset_1_files"
 
 

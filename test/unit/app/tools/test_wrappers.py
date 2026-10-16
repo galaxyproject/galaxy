@@ -368,6 +368,13 @@ def test_dataset_path_of_a_directory_output_ignores_a_copied_store_root():
     assert wrapper.path == "/job/outputs/dataset_123_files"
 
 
+def test_dataset_path_ignores_a_store_root_with_shell_syntax():
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="a';touch pwned;'.zarr")
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    assert wrapper.path == "/job/inputs/dataset_123_files"
+
+
 def test_dataset_path_of_a_deferred_dataset_is_empty():
     wrapper = DatasetFilenameWrapper(_dataset_of_type(Directory(), has_deferred_data=True))
     assert wrapper.path == ""

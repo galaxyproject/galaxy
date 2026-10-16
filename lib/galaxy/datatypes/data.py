@@ -55,6 +55,7 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
+    safe_filename_component,
     to_content_disposition,
     unicodify,
     UNKNOWN,
@@ -65,7 +66,6 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
-from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -1547,8 +1547,9 @@ class ZarrDirectory(Directory):
 
     def content_root(self, dataset: HasMetadata) -> str:
         store_root = dataset.metadata.store_root or ""
-        # Tools can provide metadata too; never point outside the dataset.
-        return store_root if safe_relpath(store_root) else ""
+        # This comes from a folder name or from tool-provided metadata and reaches command
+        # lines through $input.path, so only accept a single folder name without shell syntax.
+        return store_root if safe_filename_component(store_root) == store_root else ""
 
     def sniff_directory(self, path: str) -> bool:
         return self._get_format_version(path) is not None
