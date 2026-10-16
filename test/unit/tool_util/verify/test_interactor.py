@@ -3,6 +3,7 @@
 import http.server
 import socket
 import struct
+import tarfile
 import threading
 import time
 from typing import (
@@ -18,6 +19,10 @@ from requests.exceptions import (
     HTTPError,
 )
 
+from galaxy.tool_util.cwl.util import (
+    DirectoryUploadTarget,
+    galactic_job_json,
+)
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     GalaxyInteractorApi,
@@ -196,6 +201,54 @@ def test_remote_to_input_forwards_force_path_paste_for_composite_data(force_path
     )
     assert len(interactor.calls) == 2
     assert all(call["force_path_paste"] is force_path_paste for call in interactor.calls)
+
+
+@pytest.mark.parametrize("force_path_paste", [True, False])
+def test_get_path_or_location_downloads_directory(tmp_path, force_path_paste):
+    """Directories are downloaded even under force_path_paste."""
+    interactor = _PathLookupInteractor(server_path="/server-only/test-data/test-cache", downloaded=str(tmp_path))
+    result = interactor._get_path_or_location(
+        "test-cache", {}, "some_tool", force_path_paste=force_path_paste, mode="directory"
+    )
+    assert result.location is None
+    assert result.path == str(tmp_path / "test-cache")
+    assert interactor.calls == []
+
+
+@pytest.mark.parametrize("force_path_paste", [True, False])
+def test_remote_directory_is_downloaded_before_archiving(tmp_path, force_path_paste):
+    """A server's Directory URI cannot be archived on a separate test client."""
+    directory = tmp_path / "test-cache"
+    directory.mkdir()
+    (directory / "reference.ann").write_text("index contents")
+    interactor = _PathLookupInteractor(server_path="/server-only/test-data/test-cache", downloaded=str(tmp_path))
+    staged = interactor.remote_to_input(
+        _test_data("test-cache", ftype="bwa_mem2_index", **{"class": "Directory"}),
+        "some_tool",
+        force_path_paste=force_path_paste,
+    )
+    assert interactor.calls == []
+    assert staged["path"] == str(directory)
+    assert staged["client_local"] is True
+    assert "location" not in staged
+
+    def upload(target):
+        assert isinstance(target, DirectoryUploadTarget)
+        assert target.client_local is True
+        assert target.file_type == "bwa_mem2_index"
+        with tarfile.open(target.tar_path) as archive:
+            member = archive.extractfile("./reference.ann")
+            assert member is not None
+            assert member.read() == b"index contents"
+        return {"outputs": [{"id": "index-dataset"}]}
+
+    def unused_collection_upload(*args, **kwds):
+        return {}
+
+    job, _ = galactic_job_json(
+        {"reference": staged}, str(tmp_path), upload, unused_collection_upload, tool_or_workflow="tool"
+    )
+    assert job["reference"] == {"src": "hda", "id": "index-dataset"}
 
 
 GALAXY_URL = "http://galaxy.example"

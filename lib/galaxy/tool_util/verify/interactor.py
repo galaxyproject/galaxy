@@ -784,7 +784,9 @@ class GalaxyInteractorApi:
         file_name = None
         file_name_exists = False
         location = self._ensure_valid_location_in(test_data)
-        if fname and force_path_paste:
+        # Directories are archived client-side, so they must be downloaded
+        # rather than path-pasted.
+        if fname and force_path_paste and mode == "file":
             file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
             file_name_exists = file_name is not None and os.path.exists(file_name)
         if not file_name_exists and location is not None:
