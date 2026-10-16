@@ -4,14 +4,17 @@ Unit tests for base DataTypes.
 """
 
 import os
+from types import SimpleNamespace
 from typing import Any
 
 from galaxy.datatypes.anvio import AnvioStructureDB
 from galaxy.datatypes.data import (
     Data,
+    Directory,
     get_file_peek,
     zarr_v2_store_keys,
     zarr_v3_store_keys,
+    ZarrDirectory,
 )
 from galaxy.datatypes.interval import (
     Bed,
@@ -101,3 +104,119 @@ def test_zarr_v2_store_keys_from_consolidated_metadata() -> None:
         "nested/1",
         "scalar/0",
     ]
+
+
+class MarkedDirectory(Directory):
+    """A directory datatype whose content root holds a MARKER file."""
+
+    def is_content_root(self, path):
+        return os.path.isfile(os.path.join(path, "MARKER"))
+
+
+def test_groom_moves_wrapped_content_to_the_root(tmp_path):
+    (tmp_path / "wrapper" / "data").mkdir(parents=True)
+    (tmp_path / "wrapper" / "MARKER").write_text("")
+
+    MarkedDirectory().groom_directory_content(str(tmp_path))
+
+    assert sorted(os.listdir(tmp_path)) == ["MARKER", "data"]
+
+
+def test_groom_leaves_content_already_at_the_root(tmp_path):
+    (tmp_path / "MARKER").write_text("")
+    (tmp_path / "data").mkdir()
+
+    MarkedDirectory().groom_directory_content(str(tmp_path))
+
+    assert sorted(os.listdir(tmp_path)) == ["MARKER", "data"]
+
+
+def test_groom_leaves_a_plain_directory_alone(tmp_path):
+    (tmp_path / "nested").mkdir()
+    (tmp_path / "nested" / "MARKER").write_text("")
+
+    Directory().groom_directory_content(str(tmp_path))
+
+    assert os.listdir(tmp_path) == ["nested"]
+
+
+def test_groom_leaves_a_symlinked_wrapper_alone(tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "MARKER").write_text("")
+    extra_files = tmp_path / "extra_files"
+    extra_files.mkdir()
+    (extra_files / "wrapper").symlink_to(outside)
+
+    MarkedDirectory().groom_directory_content(str(extra_files))
+
+    assert os.listdir(extra_files) == ["wrapper"]
+    assert os.listdir(outside) == ["MARKER"]
+
+
+def test_zarr_store_metadata_marks_its_content_root(tmp_path):
+    (tmp_path / "wrapped.zarr" / "0").mkdir(parents=True)
+    (tmp_path / "wrapped.zarr" / ".zgroup").write_text('{"zarr_format": 2}')
+
+    ZarrDirectory().groom_directory_content(str(tmp_path))
+
+    assert sorted(os.listdir(tmp_path)) == [".zgroup", "0"]
+
+
+def test_zarr_format_version_ignores_non_object_metadata(tmp_path):
+    (tmp_path / ".zgroup").write_text("[1, 2]")
+
+    assert ZarrDirectory()._get_format_version(str(tmp_path)) is None
+
+
+def _zarr_dataset(extra_files_path, **metadata):
+    metadata = {"store_root": None, "zarr_format": None, **metadata}
+    return SimpleNamespace(extra_files_path=str(extra_files_path), metadata=SimpleNamespace(**metadata))
+
+
+def test_zarr_set_meta_records_an_empty_store_root_for_a_store_at_the_root(tmp_path):
+    (tmp_path / ".zgroup").write_text('{"zarr_format": 2}')
+    dataset = _zarr_dataset(tmp_path)
+
+    ZarrDirectory().set_meta(dataset)
+
+    assert dataset.metadata.store_root == ""
+    assert dataset.metadata.zarr_format == 2
+
+
+def test_zarr_set_meta_leaves_a_wrapped_store_in_place_and_records_it(tmp_path):
+    # Metadata is also set on existing datasets, whose files may be shared and are not moved.
+    (tmp_path / "wrapped.zarr").mkdir()
+    (tmp_path / "wrapped.zarr" / ".zgroup").write_text('{"zarr_format": 2}')
+    dataset = _zarr_dataset(tmp_path)
+
+    ZarrDirectory().set_meta(dataset)
+
+    assert os.listdir(tmp_path) == ["wrapped.zarr"]
+    assert dataset.metadata.store_root == "wrapped.zarr"
+    assert dataset.metadata.zarr_format == 2
+    assert ZarrDirectory().content_path(dataset) == str(tmp_path / "wrapped.zarr")
+
+
+def test_zarr_content_path_stays_inside_the_dataset(tmp_path):
+    dataset = _zarr_dataset(tmp_path, store_root="../elsewhere")
+
+    assert ZarrDirectory().content_path(dataset) == str(tmp_path)
+
+
+def test_directory_content_path_is_the_extra_files_path(tmp_path):
+    dataset = SimpleNamespace(extra_files_path=str(tmp_path), metadata=SimpleNamespace())
+
+    assert Directory().content_path(dataset) == str(tmp_path)
+    assert Directory().content_path(dataset, "/compute/dataset_1_files") == "/compute/dataset_1_files"
+
+
+def test_directory_without_content_root_does_not_list_the_folder(tmp_path, monkeypatch):
+    (tmp_path / "wrapped").mkdir()
+
+    def fail_listdir(path):
+        raise AssertionError(f"listed {path}")
+
+    monkeypatch.setattr(os, "listdir", fail_listdir)
+
+    assert Directory().content_wrapper_name(str(tmp_path)) is None

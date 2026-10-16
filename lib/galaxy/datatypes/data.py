@@ -65,6 +65,7 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
+from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -1382,6 +1383,69 @@ class Directory(Data):
         """Return whether the extra-files directory at ``path`` matches this datatype."""
         return False
 
+    def is_content_root(self, path: str) -> bool:
+        """Return whether the folder at ``path`` directly holds this datatype's content.
+
+        Datatypes whose content has a recognizable root (e.g. a Zarr store's metadata
+        file) override this so a copy wrapped in a single folder is moved up to the root
+        of the extra files path. A plain ``directory`` has no such root and is left as is.
+        """
+        return False
+
+    def content_root(self, dataset: HasMetadata) -> str:
+        """Return the folder holding the dataset's content, relative to its extra files path.
+
+        Content is moved to the root when a dataset is created, so this is empty except for
+        datasets created before that with their content in a wrapper folder, which is left
+        in place and recorded in metadata (see ``ZarrDirectory``).
+        """
+        return ""
+
+    def content_path(self, dataset: HasExtraFilesAndMetadata, extra_files_path: str | None = None) -> str:
+        """Return the path of the folder holding the dataset's content.
+
+        ``extra_files_path`` replaces the dataset's own, e.g. with its path on a compute node.
+        """
+        if extra_files_path is None:
+            extra_files_path = dataset.extra_files_path
+        if content_root := self.content_root(dataset):
+            return os.path.join(extra_files_path, content_root)
+        return extra_files_path
+
+    def groom_directory_content(self, extra_files_path: str) -> None:
+        """Move content wrapped in a single folder up to the root of ``extra_files_path``."""
+        wrapper = self.content_wrapper_name(extra_files_path)
+        if wrapper is None:
+            return
+        wrapper_path = os.path.join(extra_files_path, wrapper)
+        if os.path.islink(extra_files_path) or os.path.islink(wrapper_path):
+            # Never move content through a link that may point outside the dataset.
+            return
+        # Stay inside extra_files_path, whose parent may not be writable. Rename the
+        # wrapper first so a child with the same name does not collide.
+        moved = tempfile.mkdtemp(prefix=".content_", dir=extra_files_path)
+        os.rmdir(moved)
+        os.rename(wrapper_path, moved)
+        for name in os.listdir(moved):
+            os.rename(os.path.join(moved, name), os.path.join(extra_files_path, name))
+        os.rmdir(moved)
+
+    def content_wrapper_name(self, path: str) -> str | None:
+        """Return the name of the single folder wrapping this datatype's content, if it is not at the root."""
+        if type(self).is_content_root is Directory.is_content_root:
+            # No recognizable content root, so nothing is ever wrapped; don't list a possibly large folder.
+            return None
+        if not os.path.isdir(path) or self.is_content_root(path):
+            return None
+        items_in_path = os.listdir(path)
+        if len(items_in_path) != 1:
+            return None
+        wrapper = items_in_path[0]
+        wrapper_path = os.path.join(path, wrapper)
+        if os.path.isdir(wrapper_path) and self.is_content_root(wrapper_path):
+            return wrapper
+        return None
+
     def _archive_main_file(
         self, archive: ZipstreamWrapper, display_name: str, data_filename: str
     ) -> tuple[bool, str, str]:
@@ -1399,12 +1463,11 @@ class ZarrDirectory(Directory):
     edam_format = "format_3915"
     file_ext = "zarr"
 
-    # This wouldn't be needed if the CompressedFile.extract function didn't
-    # create an extra folder under the dataset's extra_files_path.
-    # Maybe this can be avoided somehow?
+    # Published tool wrappers read the store as $input.extra_files_path/$input.metadata.store_root.
+    # It is empty unless the dataset was created with its store in a wrapper folder.
     MetadataElement(
         name="store_root",
-        default=None,
+        default="",
         desc="Name of the root folder where the zarr store is located",
         readonly=True,
         optional=False,
@@ -1428,14 +1491,11 @@ class ZarrDirectory(Directory):
             dataset.blurb = "file purged from disk"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        store_root_folder = self._find_store_root_folder_name(dataset)
-        if store_root_folder is None:
-            log.debug("Directory structure does not look like Zarr format")
-            return
-        dataset.metadata.store_root = store_root_folder
-
-        root_directory = os.path.join(dataset.extra_files_path, store_root_folder)
-        format_version = self._get_format_version(root_directory)
+        # New datasets have their store moved to the root (see groom_directory_content);
+        # existing ones are not moved, so record where their store is.
+        store_root = self.content_wrapper_name(dataset.extra_files_path) or ""
+        dataset.metadata.store_root = store_root
+        format_version = self._get_format_version(os.path.join(dataset.extra_files_path, store_root))
         if not format_version:
             log.debug("Could not determine Zarr format version")
             return
@@ -1455,8 +1515,7 @@ class ZarrDirectory(Directory):
         **kwd,
     ):
         if preview:
-            store_root_path = os.path.join(dataset.extra_files_path, dataset.metadata.store_root)
-            metadata_file_path = self._find_zarr_metadata_file(store_root_path)
+            metadata_file_path = self._find_zarr_metadata_file(self.content_path(dataset))
             if metadata_file_path:
                 headers = kwd.get("headers", {})
                 headers["content-type"] = "application/json"
@@ -1483,36 +1542,16 @@ class ZarrDirectory(Directory):
         # Chunks that only hold the fill value are not stored.
         reader.fetch_all(chunk_keys, extra_files_path)
 
+    def is_content_root(self, path: str) -> bool:
+        return self._find_zarr_metadata_file(path) is not None
+
+    def content_root(self, dataset: HasMetadata) -> str:
+        store_root = dataset.metadata.store_root or ""
+        # Tools can provide metadata too; never point outside the dataset.
+        return store_root if safe_relpath(store_root) else ""
+
     def sniff_directory(self, path: str) -> bool:
-        store_root = self._store_root_folder_name(path)
-        if store_root is None:
-            return False
-        try:
-            metadata = self._load_zarr_metadata_file(os.path.join(path, store_root))
-        except (OSError, ValueError):
-            return False
-        return isinstance(metadata, dict) and metadata.get("zarr_format") is not None
-
-    def _find_store_root_folder_name(self, dataset: DatasetProtocol) -> str | None:
-        """Returns the name of the root folder where the Zarr store is located.
-
-        The Zarr store can be directly in the extra files folder or in a subfolder.
-        """
-        return self._store_root_folder_name(dataset.extra_files_path)
-
-    def _store_root_folder_name(self, extra_files_path: str) -> str | None:
-        if not os.path.isdir(extra_files_path):
-            return None
-        if self._find_zarr_metadata_file(extra_files_path):
-            return ""  # The store is in the root of the extra files folder
-        items_in_path = os.listdir(extra_files_path)
-        if len(items_in_path) != 1:
-            return None
-        sub_folder_name = items_in_path[0]
-        zarr_store_path = os.path.join(extra_files_path, sub_folder_name)
-        if os.path.isdir(zarr_store_path) and self._find_zarr_metadata_file(zarr_store_path):
-            return sub_folder_name  # The store is in a subfolder of the extra files folder
-        return None  # The directory structure does not look like Zarr format
+        return self._get_format_version(path) is not None
 
     def _load_zarr_metadata_file(self, store_root_path: str) -> dict[str, Any] | None:
         """Returns the path to the metadata file in the Zarr store."""
@@ -1522,25 +1561,24 @@ class ZarrDirectory(Directory):
 
     def _find_zarr_metadata_file(self, store_root_path: str) -> str | None:
         """Returns the path to the metadata file in the Zarr store."""
-        meta_file = None
-        files_in_store = os.listdir(store_root_path)
-
         # Depending on the Zarr version, the metadata file can be in different locations
         # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
         # In v2 it can be in .zarray or .zgroup https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
         # In v3 the metadata is in a file named "zarr.json" https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+        # Probe the names directly; listing the store root scales with its chunk count.
         for meta_filename in ["meta", ".zarray", ".zgroup", "zarr.json"]:
-            if meta_filename in files_in_store:
-                meta_file = os.path.join(store_root_path, meta_filename)
-                break
-
-        if meta_file and os.path.isfile(meta_file):
-            return meta_file
+            meta_file = os.path.join(store_root_path, meta_filename)
+            if os.path.isfile(meta_file):
+                return meta_file
         return None
 
     def _get_format_version(self, store_root_path: str) -> str | None:
         """Returns the Zarr format version from the metadata file in the Zarr store."""
-        if metadata_file := self._load_zarr_metadata_file(store_root_path):
+        try:
+            metadata_file = self._load_zarr_metadata_file(store_root_path)
+        except (OSError, ValueError):
+            return None
+        if isinstance(metadata_file, dict):
             return metadata_file.get("zarr_format")
         return None
 
