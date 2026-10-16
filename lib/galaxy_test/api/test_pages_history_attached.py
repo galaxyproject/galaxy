@@ -1,13 +1,12 @@
 """API tests for history-attached pages (pages created with history_id)."""
 
-from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_agents,
     skip_without_tool,
-    TOOL_WITH_SHELL_COMMAND,
 )
+from galaxy_test.base.workflow_assertions import connection_step_id
 from .test_pages import BasePagesApiTestCase
 from .test_workflow_extraction import _ExtractionHelpersMixin
 
@@ -443,15 +442,11 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             "hda_ids": input_ids("input_dataset"),
             "hdca_ids": input_ids("input_collection"),
         }
-        response = self._post("workflows/extract", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        download = self._get(f"workflows/{response.json()['id']}/download")
-        self._assert_status_code_is(download, 200)
-        return list(download.json()["steps"].values())
+        workflow_id = self._extract_by_ids(payload)["id"]
+        return list(self.workflow_populator.download_workflow(workflow_id)["steps"].values())
 
     def _connected_step_id(self, step: dict, input_name: str) -> int:
-        connection = step["input_connections"][input_name]
-        return (connection[0] if isinstance(connection, list) else connection)["id"]
+        return connection_step_id(step["input_connections"][input_name])
 
     def _run_random_lines_mapped_over_pair(self, history_id):
         """Upload a pair and map random_lines1 over it. Returns
@@ -643,7 +638,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             summary = self._extraction_summary(page["id"])
             cat1_row = self._rows_by_type(summary, "tool")[0]
             assert {o["id"] for o in cat1_row["outputs"]} == {output_id, copy["id"]}, cat1_row["outputs"]
-            flagged = [o["id"] for o in cat1_row["outputs"] if o["referenced_by_report"]]
+            flagged = [o["id"] for o in cat1_row["outputs"] if o.get("referenced_by_report")]
             assert flagged == [output_id], cat1_row["outputs"]
             assert [o["id"] for o in cat1_row["outputs"] if o["exposed"]] == [output_id], cat1_row["outputs"]
 
@@ -867,19 +862,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         """An output whose producing tool became inaccessible is a closure boundary; its
         invalid tool row cannot be extracted, so the output is seeded as an input instead."""
         with self.dataset_populator.test_history() as history_id:
-            with self.dataset_populator.user_tool_execute_permissions():
-                dynamic_tool = self.dataset_populator.create_unprivileged_tool(
-                    UserToolSource(**TOOL_WITH_SHELL_COMMAND)
-                )
-                hda = self.dataset_populator.new_dataset(history_id, content="hello", wait=True)
-                payload = self.dataset_populator.run_tool_payload(
-                    tool_id=None, inputs={"input": {"src": "hda", "id": hda["id"]}}, history_id=history_id
-                )
-                payload["tool_uuid"] = dynamic_tool["uuid"]
-                udt_response = self.dataset_populator.tools_post(payload)
-                self._assert_status_code_is(udt_response, 200)
-                udt_output_id = udt_response.json()["outputs"][0]["id"]
-                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            udt_output_id = self._run_user_tool(history_id)
             run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": udt_output_id}}, history_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
