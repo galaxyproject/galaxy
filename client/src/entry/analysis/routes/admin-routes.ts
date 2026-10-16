@@ -7,6 +7,7 @@ import adminQuotasGridConfig from "@/components/Grid/configs/adminQuotas";
 import adminRolesGridConfig from "@/components/Grid/configs/adminRoles";
 import adminUsersGridConfig from "@/components/Grid/configs/adminUsers";
 
+import AdminExtensionItem from "@/components/admin/AdminExtensionItem.vue";
 import AdminHome from "@/components/admin/AdminHome.vue";
 import DataManager from "@/components/admin/DataManager/DataManager.vue";
 import DataManagerJob from "@/components/admin/DataManager/DataManagerJob.vue";
@@ -50,6 +51,11 @@ const adminRoutes: RouteRecordRaw[] = [
             { path: "data_types", component: DataTypes },
             { path: "display_applications", component: DisplayApplications },
             { path: "error_stack", component: ErrorStack },
+            {
+                path: "extensions/:extensionId/:itemId",
+                component: AdminExtensionItem,
+                props: true,
+            },
             {
                 path: "invocations",
                 component: GridInvocation,
