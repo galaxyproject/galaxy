@@ -7,12 +7,13 @@ import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invoca
 
 import { useInvocationGraph } from "./useInvocationGraph";
 
-vi.mock("@/stores/workflowStore", () => ({
-    useWorkflowStore: () => ({
-        getFullWorkflowCached: vi.fn().mockResolvedValue({
-            steps: { 0: { id: 0, type: "tool", position: { left: 0, top: 0 } } },
-        }),
+const { getFullWorkflowCached } = vi.hoisted(() => ({
+    getFullWorkflowCached: vi.fn().mockResolvedValue({
+        steps: { 0: { id: 0, type: "tool", position: { left: 0, top: 0 } } },
     }),
+}));
+vi.mock("@/stores/workflowStore", () => ({
+    useWorkflowStore: () => ({ getFullWorkflowCached }),
 }));
 vi.mock("@/components/Workflow/Editor/modules/model", () => ({ fromSimple: vi.fn() }));
 vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
@@ -20,12 +21,12 @@ vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
 /** Sets up the invocation graph composable for testing.
  * Initializes the composable and then loads it via its `loadInvocationGraph` function.
  */
-function setupComposable(invStep?: object, summaries: object[] = []) {
+function setupComposable(invStep?: object, summaries: object[] = [], inputStepParameters: object = {}) {
     const invocation = ref({
         id: "inv1",
         steps: invStep ? { 0: invStep } : {},
         inputs: {},
-        input_step_parameters: {},
+        input_step_parameters: inputStepParameters,
     } as WorkflowInvocationElementView);
     const { steps, loadInvocationGraph } = useInvocationGraph(
         invocation,
@@ -158,5 +159,31 @@ describe("useInvocationGraph — step state", () => {
             await load();
             expect(steps.value[0]?.state).toBe("deleted");
         });
+    });
+});
+
+describe("useInvocationGraph — parameter input text", () => {
+    beforeEach(() => {
+        setActivePinia(createTestingPinia({ createSpy: vi.fn }));
+    });
+
+    async function loadParameterInput(parameterType: string, parameterValue: string) {
+        const output = { name: "output", type: parameterType, optional: false, multiple: false, parameter: true };
+        getFullWorkflowCached.mockResolvedValueOnce({
+            steps: { 0: { id: 0, type: "parameter_input", position: { left: 0, top: 0 }, outputs: [output] } },
+        });
+        const { steps, load } = setupComposable({ workflow_step_id: 10 }, [], {
+            param: { label: "param", parameter_value: parameterValue, workflow_step_id: 10 },
+        });
+        await load();
+        return steps.value[0]?.nodeText;
+    }
+
+    it("passes a color parameter's raw hex through so the node renders a swatch", async () => {
+        expect(await loadParameterInput("color", "#ff0000")).toBe("#ff0000");
+    });
+
+    it("bolds a text parameter even when its value looks like a color", async () => {
+        expect(await loadParameterInput("text", "#ff0000")).toBe("<b>#ff0000</b>");
     });
 });

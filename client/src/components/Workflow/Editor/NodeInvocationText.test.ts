@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
@@ -16,5 +16,16 @@ describe("NodeInvocationText", () => {
 
         expect(sanitizeHtml).toHaveBeenCalledWith(expect.any(String), "default");
         expect(wrapper.find(".sanitized").exists()).toBe(true);
+    });
+
+    it("renders a color swatch for a hex color input value", () => {
+        const wrapper = mount(NodeInvocationText as object, {
+            localVue: getLocalVue(),
+            propsData: { invocationStep: { type: "parameter_input", nodeText: "#ff0000" } },
+        });
+
+        const swatch = wrapper.find("input[type=color]");
+        expect(swatch.exists()).toBe(true);
+        expect((swatch.element as HTMLInputElement).value).toBe("#ff0000");
     });
 });
