@@ -43,8 +43,8 @@ in the future.
 
 ## Adding a New Data Type (Subclassed)
 
-This specification describes the Galaxy source code
-changes required to add support for a new data type.
+This specification describes the changes
+required to add support for a new data type.
 
 Every Galaxy dataset is associated with a datatype
 which can be determined by the file extension (or
@@ -54,7 +54,7 @@ datatypes are contained in the
 the responsibility of mapping extensions to datatype
 instances. At start up this registry is initialized
 with data type values from the `datatypes_conf.xml`
-file. All data type classes are a subclass of the
+which is documented [here](datatypes_conf.html). All data type classes are a subclass of the
 `galaxy.datatypes.data:Data` class.
 
 We'll pretend to add a new datatype format named
@@ -67,8 +67,13 @@ example `Foobar` data type will be a subclass of
 ### Step 1: Register Data Type
 
 We'll add the new data type to the `<registration>`
-tag section of the `datatypes_conf.xml` file. Sample
-`<datatype>` tag attributes in this section are:
+tag section of the `datatypes_conf.xml` file. In _many cases_
+this is all that you need to do to add a datatype. If your datatype
+behaves largely like an existing one, for example if it is a directory or
+a binary file that needs no further visualisation, changing `datatypes_conf.xml`
+(and adding some test data) is the only change that is necessary.
+
+Sample `<datatype>` tag attributes in the registration section are:
 
 ```xml
 <datatype extension="ab1" type="galaxy.datatypes.images:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
