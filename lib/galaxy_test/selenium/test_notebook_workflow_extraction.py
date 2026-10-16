@@ -1,7 +1,10 @@
 """Selenium tests for extracting a workflow from a notebook (history-attached page)."""
 
 from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.base.workflow_assertions import WorkflowStructureAssertions
+from galaxy_test.base.workflow_assertions import (
+    connection_step_id,
+    WorkflowStructureAssertions,
+)
 from .framework import (
     ExtractsWorkflows,
     managed_history,
@@ -185,9 +188,7 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         workflow = self.get_workflow_by_name(workflow_name)
         input_steps = self.assert_steps_of_type(workflow, "data_input", expected_len=1)
         tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
-        connection = tool_steps[0]["input_connections"]["input1"]
-        connection = connection[0] if isinstance(connection, list) else connection
-        assert connection["id"] == input_steps[0]["id"], tool_steps[0]
+        assert connection_step_id(tool_steps[0]["input_connections"]["input1"]) == input_steps[0]["id"], tool_steps[0]
 
     @skip_without_tool("cat1")
     @selenium_test
