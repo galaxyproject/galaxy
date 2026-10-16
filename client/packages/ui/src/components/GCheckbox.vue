@@ -177,7 +177,7 @@ function onChange(event: Event) {
         margin-right: 3px;
     }
 
-    .g-disabled & {
+    .g-checkbox.g-disabled > & {
         cursor: not-allowed;
     }
 
@@ -191,26 +191,26 @@ function onChange(event: Event) {
     margin-left: var(--spacing-2, 0.5rem);
 }
 
-.g-small {
+.g-checkbox.g-small {
     font-size: var(--font-size-small, 0.75rem);
 
-    &:not(.g-switch) .g-checkbox-input {
+    &:not(.g-switch) > .g-checkbox-input {
         width: 0.75rem;
         height: 0.75rem;
     }
 }
 
-.g-large {
+.g-checkbox.g-large {
     font-size: var(--font-size-large, 1rem);
 
-    &:not(.g-switch) .g-checkbox-input {
+    &:not(.g-switch) > .g-checkbox-input {
         width: 1.25rem;
         height: 1.25rem;
     }
 }
 
 // Switch: the input itself is the track, so it stays visible, clickable and focusable
-.g-switch .g-checkbox-input {
+.g-checkbox.g-switch > .g-checkbox-input {
     --g-switch-width: 2rem;
     --g-switch-height: 1.125rem;
     --g-switch-knob-color: var(--color-grey-500, #63656d);
@@ -253,12 +253,12 @@ function onChange(event: Event) {
     }
 }
 
-.g-switch.g-small .g-checkbox-input {
+.g-checkbox.g-switch.g-small > .g-checkbox-input {
     --g-switch-width: 1.5rem;
     --g-switch-height: 0.875rem;
 }
 
-.g-switch.g-large .g-checkbox-input {
+.g-checkbox.g-switch.g-large > .g-checkbox-input {
     --g-switch-width: 2.5rem;
     --g-switch-height: 1.375rem;
 }
