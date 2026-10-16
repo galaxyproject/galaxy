@@ -2,7 +2,12 @@
 
 import logging
 import re
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from datetime import datetime
+from functools import partial
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_parse import (
@@ -16,7 +21,6 @@ from galaxy.managers.markdown_util import (
     GalaxyInternalMarkdownDirectiveHandler,
     OBJECT_ID_ARGUMENTS,
     referenced_content_ids,
-    ReferencedContent,
     remap_galaxy_markdown_calls,
     remap_galaxy_markdown_embedded_containers,
 )
@@ -63,7 +67,10 @@ def reconcile_and_build_report(
     if not content:
         return "", []
     referenced = referenced_content_ids(trans, content)
-    exposure_warnings = reconcile_report_labels(trans, index, referenced)
+    contents = [c for c in (resolve_content(trans, ref) for ref in referenced.refs) if c is not None]
+    exposure_warnings = reconcile_report_labels(
+        index, contents, referenced.job_refs, referenced.icj_refs, partial(_suggested, trans)
+    )
     markdown, warnings = _rewrite_page_markdown(trans, content, index, page.history_id)
     return markdown, referenced.warnings + exposure_warnings + warnings
 
@@ -275,30 +282,32 @@ class _ReportLabelRewriter(GalaxyInternalMarkdownDirectiveHandler):
 
 
 def reconcile_report_labels(
-    trans: ProvidesHistoryContext, index: ExtractionLabelIndex, referenced: ReferencedContent
+    index: ExtractionLabelIndex,
+    contents: Iterable[HistoryItem],
+    job_refs: Iterable[int],
+    icj_refs: Iterable[int],
+    suggest: Callable[[HistoryItem], str | None],
 ) -> list[str]:
     """Label each referenced input/step and expose each referenced tool output, if extracted and unlabeled.
 
-    Returns a warning for each output exposed here that the request had not exposed.
+    ``suggest`` names a referenced content item. Returns a warning for each output exposed here
+    that the request had not exposed.
     """
     used = _used_labels(index)
     warnings: list[str] = []
 
-    for ref in referenced.refs:
-        content = resolve_content(trans, ref)
-        if content is None:
-            continue
+    for content in contents:
         pair = index.step_for_content(content)
         if pair is None:
             continue
         step, output_name = pair
         if step.type in ("data_input", "data_collection_input"):
             if not step.label:
-                step.label = _generate_label(_suggested(trans, content), used)
+                step.label = _generate_label(suggest(content), used)
         else:
             workflow_output = step.workflow_output_for(output_name)
             if workflow_output is None or not workflow_output.label:
-                label = _generate_label(_suggested(trans, content) or output_name, used)
+                label = _generate_label(suggest(content) or output_name, used)
                 step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
                 if workflow_output is None:
                     warnings.append(
@@ -306,9 +315,9 @@ def reconcile_report_labels(
                         "because the notebook report uses it."
                     )
 
-    for job_id in referenced.job_refs:
+    for job_id in job_refs:
         _label_step(index.job_to_step.get(job_id), used)
-    for icj_id in referenced.icj_refs:
+    for icj_id in icj_refs:
         _label_step(index.icj_to_step.get(icj_id), used)
     return warnings
 
