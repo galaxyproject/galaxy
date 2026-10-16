@@ -2,7 +2,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DCESummary, HDCASummary, SubCollection } from "@/api";
+import type { DCESummary, HDCASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { type DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { MAX_RETRIES } from "@/utils/simple-error";
@@ -195,27 +195,23 @@ describe("useCollectionElementsStore collection loading", () => {
         expect(requests).toBe(2);
     });
 
-    it("reports a collection load error only once retries are exhausted, loading meanwhile", async () => {
+    it("keeps a failed collection fetch out of the elements state of a collection with the same key", async () => {
         server.use(
             http.get("/api/dataset_collections/{hdca_id}", ({ response }) =>
                 response("5XX").json({ err_msg: "Service Unavailable", err_code: 0 }, { status: 503 }),
             ),
         );
         const store = useCollectionElementsStore();
-        // Errors and loading state of ``fetchCollection`` are keyed by the requested id.
-        const entry = { id: "hdca-1" } as SubCollection;
+        // Encoded HDCA and dataset collection ids share one id space, so they can coincide.
+        const otherCollection = { ...mockCollection("other"), collection_id: "shared-id" };
 
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            store.getCollectionById("hdca-1");
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            store.getCollectionById("shared-id");
             await flushPromises();
-            expect(store.getLoadingCollectionElementsError(entry)).toBeNull();
-            expect(store.isLoadingCollectionElements(entry)).toBe(true);
+            expect(store.isLoadingCollectionElements(otherCollection)).toBe(false);
             await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
         }
-        store.getCollectionById("hdca-1");
-        await flushPromises();
-        expect(store.getLoadingCollectionElementsError(entry)).toBeInstanceOf(Error);
-        expect(store.isLoadingCollectionElements(entry)).toBe(false);
+        expect(store.getLoadingCollectionElementsError(otherCollection)).toBe(false);
     });
 
     it("reports a 5xx error fetching collection elements immediately", async () => {

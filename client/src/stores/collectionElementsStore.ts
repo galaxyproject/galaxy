@@ -47,6 +47,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
+    // Keyed by HDCA id, apart from element state: an HDCA id can equal another collection's key.
+    const collectionLoadErrors = ref<{ [key: string]: Error }>({});
     const collectionRetryGate = useRetryGate();
 
     /**
@@ -67,19 +69,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
-    /** True while fetching or waiting out a retry backoff. */
     const isLoadingCollectionElements = computed(() => {
         return (collection: CollectionEntry) => {
-            const key = getCollectionKey(collection);
-            return Boolean(loadingCollectionElements.value[key]) || collectionRetryGate.isRetryPending(key);
+            return loadingCollectionElements.value[getCollectionKey(collection)] ?? false;
         };
     });
 
-    /** The final load error; null while a retry is pending or in flight. */
     const getLoadingCollectionElementsError = computed(() => {
         return (collection: CollectionEntry) => {
-            const key = getCollectionKey(collection);
-            return collectionRetryGate.finalError(key, loadingCollectionElementsErrors.value[key]);
+            return loadingCollectionElementsErrors.value[getCollectionKey(collection)] ?? false;
         };
     });
 
@@ -192,7 +190,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const getCollectionById = computed(() => {
         return (collectionId: string) => {
             if (!storedCollections.value[collectionId]) {
-                const existingError = loadingCollectionElementsErrors.value[collectionId];
+                const existingError = collectionLoadErrors.value[collectionId];
                 if (!existingError || collectionRetryGate.canRetry(collectionId, existingError)) {
                     fetchCollection({ id: collectionId });
                 }
@@ -204,7 +202,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const getDetailedCollectionById = computed(() => {
         return (collectionId: string) => {
             if (!storedCollectionsDetailed.value[collectionId]) {
-                const existingError = loadingCollectionElementsErrors.value[collectionId];
+                const existingError = collectionLoadErrors.value[collectionId];
                 if (!existingError || collectionRetryGate.canRetry(collectionId, existingError)) {
                     fetchCollection({ id: collectionId });
                 }
@@ -214,19 +212,14 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     });
 
     async function fetchCollection(params: { id: string }) {
-        set(loadingCollectionElements.value, params.id, true);
-        try {
-            const result = await fetchCollectionDetails({ hdca_id: params.id });
-            if (result.error) {
-                collectionRetryGate.recordFailure(params.id, result.error);
-                set(loadingCollectionElementsErrors.value, params.id, result.error);
-            } else {
-                saveCollection(result.data);
-                del(loadingCollectionElementsErrors.value, params.id);
-                collectionRetryGate.recordSuccess(params.id);
-            }
-        } finally {
-            del(loadingCollectionElements.value, params.id);
+        const result = await fetchCollectionDetails({ hdca_id: params.id });
+        if (result.error) {
+            collectionRetryGate.recordFailure(params.id, result.error);
+            set(collectionLoadErrors.value, params.id, result.error);
+        } else {
+            saveCollection(result.data);
+            del(collectionLoadErrors.value, params.id);
+            collectionRetryGate.recordSuccess(params.id);
         }
     }
 

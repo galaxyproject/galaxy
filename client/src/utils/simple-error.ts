@@ -100,10 +100,11 @@ export function isRetryableApiError(error: Error): boolean {
 }
 
 /**
- * Exponential backoff delay for a 1-based retry attempt, with jitter in
- * [50%, 100%] so concurrent failures don't retry in lockstep. Capped at
- * ``capMs``, otherwise never shorter than ``retryAfterMs``; callers give up
- * instead of retrying when ``retryAfterMs`` exceeds ``capMs``.
+ * Exponential backoff delay for a 1-based retry attempt: at least half the
+ * backoff and at least ``retryAfterMs``, plus jitter of up to half the backoff
+ * so concurrent failures don't retry in lockstep, even when they all carry the
+ * same ``Retry-After``. Capped at ``capMs``; callers give up instead of retrying
+ * when ``retryAfterMs`` exceeds ``capMs``.
  */
 export function retryBackoffMs(
     attempt: number,
@@ -112,6 +113,6 @@ export function retryBackoffMs(
     capMs = RETRY_BACKOFF_CAP_MS,
 ): number {
     const capped = Math.min(capMs, baseMs * 2 ** (attempt - 1));
-    const backoff = capped * (0.5 + Math.random() * 0.5);
-    return Math.min(capMs, Math.max(backoff, retryAfterMs));
+    const jitter = capped * 0.5 * Math.random();
+    return Math.min(capMs, Math.max(capped * 0.5, retryAfterMs) + jitter);
 }
