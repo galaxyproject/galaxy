@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * A checkbox/switch component with optional label.
- * Supports v-model for two-way binding.
+ * Supports v-model for two-way binding. With a bound model the box always shows the model, so a
+ * parent that ignores an update keeps it unchanged; without one the box keeps the user's choice.
  *
  * `class`, `style`, `title` and native listeners (`@click.stop`, ...) land on the root label, so
  * non-bubbling `@focus`/`@blur` never fire there (use `@focusin`/`@focusout`). Every other
@@ -14,7 +15,7 @@
  * switch mode, as in BootstrapVue.
  */
 
-import { computed, inject, useAttrs } from "vue";
+import { computed, inject, nextTick, ref, useAttrs } from "vue";
 
 import { checkboxGroupKey } from "./checkboxGroupContext";
 import { type ComponentSize, prefix } from "./componentVariants";
@@ -25,7 +26,7 @@ defineOptions({
     compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
-const props = defineProps<{
+interface Props {
     /** The v-model value (checked state) */
     modelValue?: boolean;
     /** ID attribute for the checkbox input */
@@ -45,8 +46,17 @@ const props = defineProps<{
     /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
     switch?: boolean;
     /** Value attribute for the checkbox input, rendered as a string whenever it is set */
+    // eslint-disable-next-line vue/require-default-prop
     value?: unknown;
-}>();
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    modelValue: undefined,
+    ariaLabel: undefined,
+    id: undefined,
+    name: undefined,
+    size: undefined,
+});
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: boolean): void;
@@ -56,6 +66,8 @@ const emit = defineEmits<{
 const attrs = useAttrs();
 
 const group = inject(checkboxGroupKey, null);
+
+const inputRef = ref<HTMLInputElement | null>(null);
 
 // Plain functions, not computeds: $attrs is not reactive, so the render function must read it each time
 function rootAttrs() {
@@ -74,6 +86,8 @@ function inputAttrs() {
 }
 
 const isChecked = computed(() => (group ? group.isChecked(props.value) : (props.modelValue ?? false)));
+
+const isControlled = computed(() => Boolean(group) || props.modelValue !== undefined);
 
 const isDisabled = computed(() => props.disabled || Boolean(group?.disabled.value));
 
@@ -99,6 +113,15 @@ function onChange(event: Event) {
         emit("update:modelValue", target.checked);
     }
     emit("change", event);
+    // Vue patches checked/indeterminate only when the props change, so a parent that ignores or rewrites the update leaves the box out of sync
+    nextTick(() => {
+        if (inputRef.value) {
+            if (isControlled.value) {
+                inputRef.value.checked = isChecked.value;
+            }
+            inputRef.value.indeterminate = Boolean(props.indeterminate);
+        }
+    });
 }
 </script>
 
@@ -110,6 +133,7 @@ function onChange(event: Event) {
         <input
             v-bind="inputAttrs()"
             :id="id"
+            ref="inputRef"
             :aria-label="ariaLabel"
             type="checkbox"
             class="g-checkbox-input"
@@ -139,9 +163,15 @@ function onChange(event: Event) {
         cursor: not-allowed;
         opacity: 0.6;
     }
+
+    &:not(.g-switch) {
+        vertical-align: middle;
+    }
 }
 
 .g-checkbox-input {
+    width: 1rem;
+    height: 1rem;
     margin: 0;
     accent-color: var(--color-blue-600, #25537b);
     cursor: pointer;
@@ -150,7 +180,7 @@ function onChange(event: Event) {
         margin-right: 3px;
     }
 
-    .g-disabled & {
+    .g-checkbox.g-disabled > & {
         cursor: not-allowed;
     }
 
@@ -164,26 +194,26 @@ function onChange(event: Event) {
     margin-left: var(--spacing-2, 0.5rem);
 }
 
-.g-small {
+.g-checkbox.g-small {
     font-size: var(--font-size-small, 0.75rem);
 
-    &:not(.g-switch) .g-checkbox-input {
+    &:not(.g-switch) > .g-checkbox-input {
         width: 0.75rem;
         height: 0.75rem;
     }
 }
 
-.g-large {
+.g-checkbox.g-large {
     font-size: var(--font-size-large, 1rem);
 
-    &:not(.g-switch) .g-checkbox-input {
+    &:not(.g-switch) > .g-checkbox-input {
         width: 1.25rem;
         height: 1.25rem;
     }
 }
 
 // Switch: the input itself is the track, so it stays visible, clickable and focusable
-.g-switch .g-checkbox-input {
+.g-checkbox.g-switch > .g-checkbox-input {
     --g-switch-width: 2rem;
     --g-switch-height: 1.125rem;
     --g-switch-knob-color: var(--color-grey-500, #63656d);
@@ -226,12 +256,12 @@ function onChange(event: Event) {
     }
 }
 
-.g-switch.g-small .g-checkbox-input {
+.g-checkbox.g-switch.g-small > .g-checkbox-input {
     --g-switch-width: 1.5rem;
     --g-switch-height: 0.875rem;
 }
 
-.g-switch.g-large .g-checkbox-input {
+.g-checkbox.g-switch.g-large > .g-checkbox-input {
     --g-switch-width: 2.5rem;
     --g-switch-height: 1.375rem;
 }
