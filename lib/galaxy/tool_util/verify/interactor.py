@@ -689,9 +689,10 @@ class GalaxyInteractorApi:
                 with open(local_path, mode="rb") as f:
                     result = f.read()
             elif mode == "directory":
-                # Make a copy, since we are going to clean up the returned path
+                # Make a copy, since we are going to clean up the returned path.
+                # Keep the root directory, matching the downloaded archive layout.
                 path = tempfile.mkdtemp()
-                shutil.copytree(local_path, path)
+                shutil.copytree(local_path, os.path.join(path, os.path.basename(filename)))
                 result = path
 
         if result is None:

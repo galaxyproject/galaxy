@@ -1,11 +1,13 @@
 """Tests for adapting test output properties onto dataset API response keys."""
 
 import http.server
+import io
+import os
 import socket
 import struct
-import tarfile
 import threading
 import time
+import zipfile
 from typing import (
     Any,
     Literal,
@@ -19,10 +21,6 @@ from requests.exceptions import (
     HTTPError,
 )
 
-from galaxy.tool_util.cwl.util import (
-    DirectoryUploadTarget,
-    galactic_job_json,
-)
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     GalaxyInteractorApi,
@@ -203,54 +201,6 @@ def test_remote_to_input_forwards_force_path_paste_for_composite_data(force_path
     assert all(call["force_path_paste"] is force_path_paste for call in interactor.calls)
 
 
-@pytest.mark.parametrize("force_path_paste", [True, False])
-def test_get_path_or_location_downloads_directory(tmp_path, force_path_paste):
-    """Directories are downloaded even under force_path_paste."""
-    interactor = _PathLookupInteractor(server_path="/server-only/test-data/test-cache", downloaded=str(tmp_path))
-    result = interactor._get_path_or_location(
-        "test-cache", {}, "some_tool", force_path_paste=force_path_paste, mode="directory"
-    )
-    assert result.location is None
-    assert result.path == str(tmp_path / "test-cache")
-    assert interactor.calls == []
-
-
-@pytest.mark.parametrize("force_path_paste", [True, False])
-def test_remote_directory_is_downloaded_before_archiving(tmp_path, force_path_paste):
-    """A server's Directory URI cannot be archived on a separate test client."""
-    directory = tmp_path / "test-cache"
-    directory.mkdir()
-    (directory / "reference.ann").write_text("index contents")
-    interactor = _PathLookupInteractor(server_path="/server-only/test-data/test-cache", downloaded=str(tmp_path))
-    staged = interactor.remote_to_input(
-        _test_data("test-cache", ftype="bwa_mem2_index", **{"class": "Directory"}),
-        "some_tool",
-        force_path_paste=force_path_paste,
-    )
-    assert interactor.calls == []
-    assert staged["path"] == str(directory)
-    assert staged["client_local"] is True
-    assert "location" not in staged
-
-    def upload(target):
-        assert isinstance(target, DirectoryUploadTarget)
-        assert target.client_local is True
-        assert target.file_type == "bwa_mem2_index"
-        with tarfile.open(target.tar_path) as archive:
-            member = archive.extractfile("./reference.ann")
-            assert member is not None
-            assert member.read() == b"index contents"
-        return {"outputs": [{"id": "index-dataset"}]}
-
-    def unused_collection_upload(*args, **kwds):
-        return {}
-
-    job, _ = galactic_job_json(
-        {"reference": staged}, str(tmp_path), upload, unused_collection_upload, tool_or_workflow="tool"
-    )
-    assert job["reference"] == {"src": "hda", "id": "index-dataset"}
-
-
 GALAXY_URL = "http://galaxy.example"
 API = f"{GALAXY_URL}/api"
 
@@ -266,6 +216,42 @@ def interactor():
 def mocked():
     with responses.RequestsMock() as rsps:
         yield rsps
+
+
+def _mock_test_data_download(mocked, **kwds):
+    mocked.get(f"{API}/version", json={"version_major": "26.2"})
+    mocked.get(f"{API}/tools/some_tool/test_data_download", **kwds)
+
+
+def _read_staged(staged, name):
+    with open(os.path.join(staged["path"], name)) as fh:
+        return fh.read()
+
+
+def test_directory_input_is_downloaded_under_force_path_paste(interactor, mocked):
+    """The client archives directories itself, so a server-side path is of no use."""
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("test-cache/reference.ann", "index contents")
+    # No test_data_path endpoint is registered, so asking for a server path fails the test.
+    _mock_test_data_download(mocked, body=archive.getvalue())
+    staged = interactor.remote_to_input(
+        _test_data("test-cache", **{"class": "Directory"}), "some_tool", force_path_paste=True
+    )
+    assert _read_staged(staged, "reference.ann") == "index contents"
+    assert staged["client_local"] is True
+    assert "location" not in staged
+
+
+def test_directory_input_falls_back_to_local_test_data(tmp_path, mocked):
+    (tmp_path / "test-cache").mkdir()
+    (tmp_path / "test-cache" / "reference.ann").write_text("index contents")
+    interactor = GalaxyInteractorApi(
+        galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key", test_data=[str(tmp_path)]
+    )
+    _mock_test_data_download(mocked, status=404, json={})
+    staged = interactor.remote_to_input(_test_data("test-cache", **{"class": "Directory"}), "some_tool")
+    assert _read_staged(staged, "reference.ann") == "index contents"
 
 
 def test_session_is_available_while_resolving_user_key(mocked):
