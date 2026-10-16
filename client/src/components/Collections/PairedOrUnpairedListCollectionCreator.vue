@@ -64,17 +64,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { gridApi, AgGridVue, onGridReady, theme } = useAgGrid(resize);
+const { gridApi, AgGridVue, onGridReady, resize, theme } = useAgGrid();
 
 const { updateIdentifierIfUnchanged } = useUpdateIdentifiersForRemoveExtensions(props);
 
 const showAutoPairing = ref<boolean>(false);
-
-function resize() {
-    if (gridApi.value) {
-        gridApi.value.sizeColumnsToFit();
-    }
-}
 
 const emit = defineEmits<{
     (e: "on-create", options: CreateNewCollectionPayload): void;

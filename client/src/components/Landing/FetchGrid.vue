@@ -20,13 +20,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { gridApi, AgGridVue, onGridReady, theme } = useAgGrid(resize);
-
-function resize() {
-    if (gridApi.value) {
-        gridApi.value.sizeColumnsToFit();
-    }
-}
+const { AgGridVue, onGridReady, theme } = useAgGrid();
 
 const style = computed(() => {
     return { width: "100%" };
@@ -65,12 +59,6 @@ const title = computed(() => {
     }
     return title;
 });
-
-function initializeRowData(rowData: AgRowData[], rows: RowsType) {
-    for (const row of rows) {
-        rowData.push({ ...row });
-    }
-}
 
 const BOOLEAN_COLUMNS: ParsedFetchWorkbookColumnType[] = [
     "to_posix_lines",
@@ -120,6 +108,12 @@ function initializeTabularVersionOfTarget() {
         table = fetchTargetToTable(props.target);
     } catch {
         richSupportForTarget.value = false;
+        viewMode.value = "raw";
+        gridRowData.value = [];
+        gridColumns.value = [];
+        columnsRef.value = [];
+        collectionTypeRef.value = undefined;
+        autoDecompressRef.value = undefined;
         return;
     }
     const { columns, rows, collectionType } = table;
@@ -127,8 +121,8 @@ function initializeTabularVersionOfTarget() {
     collectionTypeRef.value = collectionType;
     autoDecompressRef.value = table.autoDecompress;
     initializeColumns(columns);
-    gridRowData.value.splice(0, gridRowData.value.length);
-    initializeRowData(gridRowData.value, rows);
+    // ag-grid-vue3 marks the bound array raw, so in-place changes stop reaching the grid
+    gridRowData.value = rows.map((row) => ({ ...row }));
     richSupportForTarget.value = true;
     viewMode.value = "table";
 }
@@ -147,7 +141,7 @@ const defaultColDef = ref<ColDef>({
 });
 
 function asTarget(): AnyFetchTarget {
-    if (modified.value) {
+    if (modified.value && richSupportForTarget.value) {
         const newTable: FetchTable = {
             columns: columnsRef.value,
             rows: gridRowData.value as RowsType,
@@ -165,25 +159,7 @@ defineExpose({
     asTarget,
 });
 
-watch(
-    () => {
-        props.target;
-    },
-    () => {
-        initialize();
-        // is this block needed?
-        if (gridApi.value) {
-            const params = {
-                force: true,
-                suppressFlash: true,
-            };
-            gridApi.value!.refreshCells(params);
-        }
-    },
-    {
-        immediate: true,
-    },
-);
+watch(() => props.target, initialize, { immediate: true });
 
 const viewRequestAction: CardAction = {
     id: "source",

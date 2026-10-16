@@ -18,8 +18,9 @@ export type ParsedFetchWorkbookForCollectionCollectionType =
 export type RawRowData = string[][];
 export type ParsedSampleSheetWorkbook = components["schemas"]["ParsedWorkbook"];
 export type ParsedWorkbookForCollection = components["schemas"]["ParsedWorkbookForCollection"];
-export type AnyParsedSampleSheetWorkbook = ParsedSampleSheetWorkbook | ParsedWorkbookForCollection;
-export type InitialElements = RawRowData | HDCADetailed | ParsedSampleSheetWorkbook | ParsedWorkbookForCollection;
+export type CollectionSampleSheetWorkbook = ParsedSampleSheetWorkbook & { elements: HDCADetailed["elements"] };
+export type AnyParsedSampleSheetWorkbook = ParsedSampleSheetWorkbook | CollectionSampleSheetWorkbook;
+export type InitialElements = RawRowData | HDCADetailed | AnyParsedSampleSheetWorkbook;
 export type PrefixColumnsType = "URI" | "ModelObjects";
 
 // types and helpers around initializing the rule builder with data

@@ -51,6 +51,8 @@ class PosixConfiguration(BaseFileSourceConfiguration):
 
 class PosixFilesSource(BaseFilesSource[PosixTemplateConfiguration, PosixConfiguration]):
     plugin_type = "posix"
+    # a local walk is cheap, so a whole folder can be selected
+    supports_recursive = True
 
     template_config_class = PosixTemplateConfiguration
     resolved_config_class = PosixConfiguration
