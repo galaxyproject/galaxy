@@ -22,6 +22,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
+    WORKFLOW_WHEN_NOT_CONNECTED,
     WORKFLOW_WITH_INVALID_STATE,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -788,6 +789,28 @@ steps:
             assert section_element.get_attribute("data-lint-status") == "ok"
 
         assert_linting_input_metadata_okay()
+
+    @selenium_test
+    def test_best_practices_dangling_conditional_gate(self):
+        editor = self.components.workflow_editor
+        self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item_text = best_practices.item_conditional_gate(index=0).wait_for_present().text
+        assert "cat1" in item_text
+        assert "when" in item_text
+
+        self.workflow_editor_connect("should_run#output", "cat1#when")
+        self.assert_connected("should_run#output", "cat1#when")
+
+        @retry_assertion_during_transitions
+        def assert_linting_conditional_gates_okay():
+            section_element = best_practices.section_conditional_gates.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_conditional_gates_okay()
 
     @selenium_test
     def test_rendering_rules_workflow_1(self):
@@ -1577,11 +1600,10 @@ steps:
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
-        # Assert save button is disabled because of disconnected when
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("g-disabled")
+        # Best practices flag the gate that reads nothing
+        editor.tool_bar.best_practices.wait_for_and_click()
+        section_element = editor.best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
 
     @selenium_test
     def test_conditional_subworkflow_step(self):
