@@ -2117,7 +2117,7 @@ def test_inputs_param_type(lint_ctx):
     assert "Found 2 input parameters." in lint_ctx.info_messages
     assert "Invalid XML: Element 'param': The attribute 'type' is required but missing." in lint_ctx.error_messages
     assert (
-        "Invalid XML: Element 'param', attribute 'type': [facet 'enumeration'] The value '' is not an element of the set {'text', 'integer', 'float', 'color', 'boolean', 'genomebuild', 'select', 'data_column', 'hidden', 'hidden_data', 'baseurl', 'file', 'data', 'drill_down', 'group_tag', 'data_collection', 'directory_uri'}."
+        "Invalid XML: Element 'param', attribute 'type': [facet 'enumeration'] The value '' is not an element of the set {'text', 'integer', 'float', 'color', 'boolean', 'genomebuild', 'select', 'data_column', 'hidden', 'hidden_data', 'baseurl', 'file', 'data', 'drill_down', 'group_tag', 'data_collection', 'directory_uri', 'rules'}."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1

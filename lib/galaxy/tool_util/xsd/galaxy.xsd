@@ -4557,6 +4557,11 @@ core Galaxy tools until the interface around files has stabilized.
 Currently ``directory_uri`` parameters provide user's the option of selecting a writable
 directory destination for unstructured outputs of tools (e.g. history exports).
 
+#### ``rules``
+
+This is used by the core ``__APPLY_RULES__`` tool to build a list of rules in the Galaxy
+rules DSL for reorganizing a collection. This should only be used by core Galaxy tools.
+
 This covers examples of the most common parameter types, the remaining parameter
 types are more obsecure and less likely to be useful for most tool authors.
 
@@ -4911,6 +4916,7 @@ Define the ``options`` inline instead, sharing them through macros if needed.</x
       <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
       <xs:enumeration value="directory_uri"/>
+      <xs:enumeration value="rules"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="Command">
