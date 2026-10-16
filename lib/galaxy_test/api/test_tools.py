@@ -26,15 +26,14 @@ from galaxy_test.base.api_asserts import (
     assert_error_code_is,
     assert_error_message_contains,
     assert_file_looks_like_xlsx,
-    assert_has_keys,
     assert_status_code_is,
 )
+from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.decorators import (
     requires_new_history,
     requires_new_user,
 )
 from galaxy_test.base.populators import (
-    BaseDatasetCollectionPopulator,
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
@@ -60,67 +59,6 @@ MINIMAL_TOOL_NO_ID = {
     "inputs": [],
     "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
-
-
-class TestsTools:
-    dataset_populator: DatasetPopulator
-    dataset_collection_populator: BaseDatasetCollectionPopulator
-
-    def _build_pair(self, history_id, contents):
-        create_response = self.dataset_collection_populator.create_pair_in_history(
-            history_id,
-            contents=contents,
-            direct_upload=True,
-            wait=True,
-        )
-        hdca_id = create_response.json()["outputs"][0]["id"]
-        return hdca_id
-
-    def _get_build_option_values(self, build, input_name):
-        matching = [i for i in build["inputs"] if i["name"] == input_name][0]
-        return [o[1] for o in matching["options"]]
-
-    def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
-        return self._run("cat", history_id, inputs, assert_ok=assert_ok, **kwargs)
-
-    def _run(
-        self,
-        tool_id=None,
-        history_id=None,
-        inputs=None,
-        tool_uuid=None,
-        assert_ok=False,
-        tool_version=None,
-        use_cached_job=False,
-        wait_for_job=False,
-        input_format="legacy",
-    ):
-        if inputs is None:
-            inputs = {}
-        if tool_id is None:
-            assert tool_uuid is not None
-        payload = self.dataset_populator.run_tool_payload(
-            tool_id=tool_id,
-            inputs=inputs,
-            history_id=history_id,
-            input_format=input_format,
-        )
-        if tool_uuid:
-            payload["tool_uuid"] = tool_uuid
-        if tool_version is not None:
-            payload["tool_version"] = tool_version
-        if use_cached_job:
-            payload["use_cached_job"] = True
-        create_response = self.dataset_populator._post("tools", data=payload)
-        if wait_for_job:
-            self.dataset_populator.wait_for_job(job_id=create_response.json()["jobs"][0]["id"])
-        if assert_ok:
-            assert_status_code_is(create_response, 200)
-            create = create_response.json()
-            assert_has_keys(create, "outputs")
-            return create
-        else:
-            return create_response
 
 
 class TestToolsApi(ApiTestCase, TestsTools):

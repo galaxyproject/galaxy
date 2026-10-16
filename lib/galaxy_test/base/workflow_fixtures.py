@@ -1,3 +1,18 @@
+WORKFLOW_SIMPLE = """
+class: GalaxyWorkflow
+name: Simple Workflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+"""
+
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |

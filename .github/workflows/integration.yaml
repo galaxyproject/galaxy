@@ -9,6 +9,14 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/integration.yaml'
+      # Test suites and test-only libraries used by other workflows. Code shared
+      # with integration tests belongs in lib/galaxy_test/base.
+      - '!test/unit/**'
+      - '!test/integration_selenium/**'
+      - '!lib/galaxy_test/api/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!lib/galaxy_test/workflow/**'
+      - '!lib/galaxy/selenium/**'
   pull_request:
     paths:
       - '**'
@@ -18,6 +26,14 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/integration.yaml'
+      # Test suites and test-only libraries used by other workflows. Code shared
+      # with integration tests belongs in lib/galaxy_test/base.
+      - '!test/unit/**'
+      - '!test/integration_selenium/**'
+      - '!lib/galaxy_test/api/**'
+      - '!lib/galaxy_test/selenium/**'
+      - '!lib/galaxy_test/workflow/**'
+      - '!lib/galaxy/selenium/**'
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'

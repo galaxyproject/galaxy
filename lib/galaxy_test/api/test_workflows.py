@@ -32,6 +32,10 @@ from galaxy.util.unittest_utils import (
 )
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import assert_error_message_contains
+from galaxy_test.base.api_mixins import (
+    ChangeDatatypeTests,
+    RunsWorkflowFixtures,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -64,15 +68,13 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+    WORKFLOW_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
-    WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
-    WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_IMAGES_IN_REPORT,
-    WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_ACTIONS,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -87,21 +89,6 @@ from .sharable import SharingApiTests
 def _default_file_location(test_http_server) -> str:
     return test_http_server.get_url(remote_url=DEFAULT_FILE_DATASET_INPUT_LOCATION, file_path="test-data/1.bed")
 
-
-WORKFLOW_SIMPLE = """
-class: GalaxyWorkflow
-name: Simple Workflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-"""
 
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
 class: GalaxyWorkflow
@@ -140,52 +127,6 @@ steps:
       input1: nested_workflow/1:out_file1
       queries_0|input2: nested_workflow/1:out_file1
 """
-
-
-class RunsWorkflowFixtures:
-    workflow_populator: WorkflowPopulator
-
-    def _run_workflow_with_inputs_as_outputs(self, history_id: str) -> RunJobsSummary:
-        summary = self.workflow_populator.run_workflow(
-            WORKFLOW_INPUTS_AS_OUTPUTS,
-            test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}},
-            history_id=history_id,
-        )
-        return summary
-
-    def _run_workflow_with_output_collections(self, history_id: str) -> RunJobsSummary:
-        summary = self.workflow_populator.run_workflow(
-            WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
-            test_data="""
-input1:
-  collection_type: list
-  name: the_dataset_list
-  elements:
-    - identifier: el1
-      value: 1.fastq
-      type: File
-""",
-            history_id=history_id,
-            round_trip_format_conversion=True,
-        )
-        return summary
-
-    def _run_workflow_with_runtime_data_column_parameter(self, history_id: str) -> RunJobsSummary:
-        return self.workflow_populator.run_workflow(
-            WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
-            test_data=WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
-            history_id=history_id,
-        )
-
-    def _run_workflow_once_get_invocation(self, name: str):
-        workflow = self.workflow_populator.load_workflow(name=name)
-        workflow_request, history_id, workflow_id = self.workflow_populator.setup_workflow_run(workflow)
-        usages = self.workflow_populator.workflow_invocations(workflow_id)
-        assert len(usages) == 0
-        self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request, assert_ok=True)
-        usages = self.workflow_populator.workflow_invocations(workflow_id)
-        assert len(usages) == 1
-        return workflow_id, usages[0]
 
 
 class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
@@ -277,45 +218,6 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         latest_download = self._download_workflow(workflow_id, style="run", history_id=history_id)
         latest_instance_id = latest_download["workflow_id"]
         return latest_instance_id
-
-
-class ChangeDatatypeTests:
-    dataset_populator: DatasetPopulator
-    workflow_populator: WorkflowPopulator
-
-    def test_assign_column_pja(self):
-        with self.dataset_populator.test_history() as history_id:
-            self.workflow_populator.run_workflow(
-                """
-class: GalaxyWorkflow
-inputs:
-  input1: data
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: input1
-    out:
-      out_file1:
-        change_datatype: bed
-        set_columns:
-          chromCol: 1
-          endCol: 2
-          startCol: 3
-""",
-                test_data="""
-input1:
-  value: 1.bed
-  type: File
-""",
-                history_id=history_id,
-            )
-            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(
-                history_id, hid=2, wait=True, assert_ok=True
-            )
-            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
-            assert details_dataset_new_col["metadata_endCol"] == 2
-            assert details_dataset_new_col["metadata_startCol"] == 3
 
 
 class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
