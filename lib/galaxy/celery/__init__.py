@@ -183,6 +183,11 @@ def init_fork_pool():
 @worker_init.connect
 def setup_worker_pool(sender=None, conf=None, instance=None, **kwargs):
     context = get_context("forkserver")
+    # pebble replaces a worker after max_tasks and when abort_when_job_stops cancels its running
+    # task. Import Galaxy once in the fork server so replacement workers start without re-importing it.
+    context.set_forkserver_preload(
+        ["__main__", "galaxy.celery.tasks", "galaxy.datatypes.registry", "galaxy.metadata.set_metadata"]
+    )
     celery_app.fork_pool = pebble.ProcessPool(
         max_workers=sender.concurrency, max_tasks=100, initializer=init_fork_pool, context=context
     )
