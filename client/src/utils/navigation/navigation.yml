@@ -1311,6 +1311,22 @@ invocations:
     step_job_details_state_counter: '[data-description="invocation step state counter"][data-step-state="${state}"]'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
+    polling_indicator: '[data-description="invocation polling indicator"]'
+    # Overview graph nodes are the editor's Node.vue drawn read-only; workflow_editor.node selectors match them too.
+    graph_node_state: "[node-label='${label}'] .card-header.header-${state}"
+    graph_node_out_of_focus: "[node-label='${label}'].node-not-in-focus"
+    graph_show_connections_button: '[data-description="toggle step connections button"]'
+    graph_search_toggle: '[data-description="invocation graph search toggle"]'
+    graph_search_input: '.search-container input[placeholder="search workflow"]'
+    graph_search_result: '.workflow-invocation-search-results .result-button'
+    step_card: '.invocation-step-card'
+    step_card_title: '.invocation-step-card .invocation-step-header .step-title'
+    step_card_icon: '.invocation-step-card .invocation-step-header .portlet-title-icon[data-icon="${icon}"]'
+    step_card_previous: '[data-description="invocation graph previous step button"]'
+    step_card_next: '[data-description="invocation graph next step button"]'
+    step_card_hide: '[data-description="invocation graph hide step button"]'
+    step_card_config_tab: '.invocation-step-card .invocation-step-config-tab > a.nav-link'
+    step_card_config_form: '.invocation-step-card .invocation-view-step-config fieldset[disabled]'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
     # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.

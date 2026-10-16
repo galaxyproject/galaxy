@@ -446,7 +446,12 @@ async function onCancel() {
                 <BBadge v-if="tabsDisabled" v-g-tooltip.hover :title="disabledTabTooltip" variant="primary">
                     <FontAwesomeIcon :icon="faExclamation" />
                 </BBadge>
-                <BBadge v-if="isPolling" v-g-tooltip.hover title="Polling for updates" variant="link">
+                <BBadge
+                    v-if="isPolling"
+                    v-g-tooltip.hover
+                    title="Polling for updates"
+                    variant="link"
+                    data-description="invocation polling indicator">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
                 <GButton
