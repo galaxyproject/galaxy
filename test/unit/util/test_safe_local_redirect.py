@@ -62,7 +62,7 @@ def test_empty_and_non_string_values_are_refused(path):
     assert is_safe_local_redirect(path) is False
 
 
-ALLOWED_HOSTS = ["tools.example.org", "data.example.org:8443"]
+ALLOWED_HOSTS = ["tools.example.org", "data.example.org:8443", "[2001:db8::1]"]
 
 
 @pytest.mark.parametrize(
@@ -72,6 +72,7 @@ ALLOWED_HOSTS = ["tools.example.org", "data.example.org:8443"]
         "https://TOOLS.example.org/landing",
         "https://tools.example.org:443/landing",
         "https://data.example.org:8443/back",
+        "https://[2001:db8::1]/back",
     ],
 )
 def test_allowlisted_hosts_are_safe_login_redirects(target):

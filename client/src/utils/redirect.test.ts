@@ -80,6 +80,8 @@ describe("safeLoginRedirect", () => {
         for (const target of [
             "https://evil.example.com/",
             "https://tools.example.org.evil.com/",
+            "https://tools\uFF0Eexample\uFF0Eorg/",
+            "https://tools%2eexample.org/",
             "https://tools.example.org:8443/",
             "https://data.example.org/",
             "http://tools.example.org/",

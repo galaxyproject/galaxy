@@ -1500,7 +1500,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         for host in listify(allowed_login_redirect_hosts, do_strip=True):
             if not host:
                 continue
-            if any(char in host for char in "/@\\"):
+            if any(char in host for char in "/@\\*") or any(char.isspace() for char in host):
                 log.warning("Ignoring allowed_login_redirect_hosts entry %r, expected host or host:port", host)
                 continue
             hosts.append(host.lower().removesuffix(":443"))

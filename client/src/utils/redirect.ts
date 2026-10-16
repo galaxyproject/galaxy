@@ -106,12 +106,14 @@ export function safeLoginRedirect(target: unknown, allowedHosts: string[]): stri
     if (!authority || authority.includes("@")) {
         return undefined;
     }
-    let url: URL;
     try {
-        url = new URL(target);
+        new URL(target);
     } catch {
         return undefined;
     }
-    const allowed = allowedHosts.map((host) => host.toLowerCase());
-    return allowed.includes(url.host) ? target : undefined;
+    // Compare the authority as written, as the server does: URL.host would map
+    // spellings such as punycode or full-width dots that the server refuses.
+    const host = authority.toLowerCase().replace(/:443$/, "");
+    const allowed = allowedHosts.map((allowedHost) => allowedHost.toLowerCase());
+    return allowed.includes(host) ? target : undefined;
 }

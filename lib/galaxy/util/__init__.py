@@ -1423,7 +1423,10 @@ def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bo
     # Credentials in the authority ("https://allowed@evil") are refused for the same reason.
     if url.scheme != "https" or "@" in url.netloc or not url.hostname:
         return False
-    host = url.hostname if port in (None, 443) else f"{url.hostname}:{port}"
+    # Compare the authority as written, so IPv6 entries keep their brackets.
+    host = url.netloc.lower()
+    if port == 443:
+        host = host.removesuffix(":443")
     return host in {allowed.lower() for allowed in allowed_hosts}
 
 
