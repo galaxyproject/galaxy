@@ -10,6 +10,23 @@ from .framework import (
     SeleniumTestCase,
 )
 
+# A tool step that keeps running long enough to open the invocation while it runs
+WORKFLOW_WITH_SLOW_STEP = """
+class: GalaxyWorkflow
+inputs:
+  text_input: data
+steps:
+  slow_cat:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: text_input
+    state:
+      sleep_time: 20
+test_data:
+  text_input: |
+    a
+"""
+
 
 class TestWorkflowInvocationDetails(SeleniumTestCase):
     ensure_registered = True
@@ -42,8 +59,7 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         assert "Step 2: split_up" in invocations.step_title(order_index="1").wait_for_visible().text
         assert "Step 3: paired" in invocations.step_title(order_index="2").wait_for_visible().text
 
-        invocations.step_details(order_index="1").wait_for_and_click()
-        invocations.step_job_details(order_index="1").wait_for_visible()
+        self.invocation_expand_step(order_index="1")
 
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("invocation_step_jobs")
@@ -90,8 +106,7 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         invocations.invocation_tab(label="Steps").wait_for_and_click()
 
         # Click on a step with multiple mixed failed and successful jobs
-        invocations.step_details(order_index="1").wait_for_and_click()
-        invocations.step_job_details(order_index="1").wait_for_visible()
+        self.invocation_expand_step(order_index="1")
 
         # Verify job state counters
         okay_counter = invocations.step_job_details_state_counter(state="ok").wait_for_visible()
@@ -112,6 +127,32 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         invocations.step_title(order_index=1).wait_for_and_click()
         invocations.step_title(order_index=2).assert_absent()
         self.screenshot("invocation_steps_view_with_failed_jobs_debug_job_expanded")
+
+    @selenium_test
+    def test_steps_follow_running_invocation(self):
+        history_id = self.dataset_populator.new_history()
+        self.workflow_populator.run_workflow(WORKFLOW_WITH_SLOW_STEP, history_id=history_id, wait=False)
+
+        self.invocation_open_latest()
+        invocations = self.components.invocations
+        invocations.invocation_tab(label="Steps").wait_for_and_click()
+        self.invocation_expand_step(order_index="1")
+        invocations.step_header_state(order_index="1", state="running").wait_for_visible(
+            timeout=self.wait_length(self.wait_types.JOB_COMPLETION)
+        )
+        self.screenshot("invocation_steps_running_step_expanded")
+
+        # the step header follows the job to completion, and the expanded step stays expanded
+        invocations.step_header_state(order_index="1", state="ok").wait_for_visible(
+            timeout=self.wait_length(self.wait_types.JOB_COMPLETION)
+        )
+        invocations.step_job_details(order_index="1").wait_for_visible()
+        self.screenshot("invocation_steps_completed_step_expanded")
+
+    def invocation_expand_step(self, order_index):
+        invocations = self.components.invocations
+        invocations.step_details(order_index=order_index).wait_for_and_click()
+        invocations.step_job_details(order_index=order_index).wait_for_visible()
 
     def invocation_open_latest(self):
         # TODO: migrate retry_assertion_during_transitions to navigates_galaxy.py so this

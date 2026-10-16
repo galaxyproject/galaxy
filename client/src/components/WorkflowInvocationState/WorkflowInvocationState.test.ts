@@ -27,6 +27,7 @@ const selectors = {
     invocationReportTab: ".invocation-report-tab",
     invocationExportTab: ".invocation-export-tab",
     fullPageHeading: "anonymous-stub[h1='true']",
+    cancelButton: "[data-description='cancel invocation button']",
 };
 
 /** Invocation data to be expected in the store */
@@ -181,7 +182,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id);
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
 
         // Invocation is fetched once and the jobs summary isn't fetched at all for terminal invocations
@@ -190,7 +191,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 
     it("determines that invocation and job states are not terminal with no fetched invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("not-fetched-invocation");
+        const wrapper = await mountWorkflowInvocationState("not-fetched-invocation", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Invocation is fetched once and the jobs summary is then never fetched if the invocation is not in the store
@@ -205,7 +206,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 
     it("determines that invocation is not terminal with non-terminal state", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-id");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Only the invocation is fetched for non-terminal invocations; once for the initial fetch and then for the polling
@@ -214,7 +215,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 
     it("determines that job states are not terminal with non-terminal jobs but scheduled invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-jobs", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
@@ -223,7 +224,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 
     it("determines that job states are not terminal with non-terminal populated state for summary", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-populated-state");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-populated-state", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
@@ -232,7 +233,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
     });
 
     it("determines that errored invocation fetches are handled correctly", async () => {
-        const wrapper = await mountWorkflowInvocationState("error-invocation");
+        const wrapper = await mountWorkflowInvocationState("error-invocation", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Invocation is fetched once and the jobs summary isn't fetched at all for errored invocations
@@ -272,26 +273,23 @@ describe("WorkflowInvocationState check 'Report' and 'Export' tab disabled state
 
 describe("WorkflowInvocationState check 'Debug' tab", () => {
     it("does not exist for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs", true);
+        const wrapper = await mountWorkflowInvocationState("non-terminal-error-jobs", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
         expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(false);
     });
 
     it("exists for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs", true);
+        const wrapper = await mountWorkflowInvocationState("terminal-error-jobs", true, true);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
         expect(wrapper.find(selectors.invocationDebugTab).exists()).toBe(true);
     });
 });
 
-/**
- * This is a somewhat hacky way to determine if the invocation and job states are terminal without
- * exposing the internals of the component. This is just to restore the previous behavior of the test
- * and it only uses the wrapper to check the props of the invocation summary component.
+/** The invocation and its jobs are terminal once the loaded invocation no longer offers a cancel button.
+ * Needs a full page mount with the navigation rendered, where the button lives.
  */
 function isInvocationAndJobTerminal(wrapper: VueWrapper): boolean {
-    const invocationSummary = wrapper.find(selectors.invocationSummary);
-    return invocationSummary.exists() && invocationSummary.html().includes('invocationandjobterminal="true"');
+    return wrapper.find(selectors.invocationSummary).exists() && !wrapper.find(selectors.cancelButton).exists();
 }
 
 /** Asserts that the invocation was fetched in the store the given number of times */
