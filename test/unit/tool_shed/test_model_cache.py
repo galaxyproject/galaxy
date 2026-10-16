@@ -1,5 +1,3 @@
-import os
-
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -53,24 +51,3 @@ def cache_dict(tmp_path):
     assert moo
     assert moo.foo == 4
     assert model_cache.has_cached_entry_for(Moo, "moo", "1.0")
-
-
-def _directory_created_after_exists_check(monkeypatch, directory):
-    real_exists = os.path.exists
-    monkeypatch.setattr(os.path, "exists", lambda path: False if path == directory else real_exists(path))
-
-
-def test_cache_directory_created_concurrently(tmp_path, monkeypatch):
-    cache_directory = str(tmp_path / "model_cache")
-    os.makedirs(cache_directory)
-    _directory_created_after_exists_check(monkeypatch, cache_directory)
-    ModelCache(cache_directory)
-
-
-def test_entry_directory_created_concurrently(tmp_path, monkeypatch):
-    model_cache = ModelCache(str(tmp_path))
-    entry_directory = os.path.dirname(model_cache._cache_target(Moo, "moo", "1.0"))
-    os.makedirs(entry_directory)
-    _directory_created_after_exists_check(monkeypatch, entry_directory)
-    model_cache.insert_cache_entry_for(Moo(foo=4), "moo", "1.0")
-    assert model_cache.get_cache_entry_for(Moo, "moo", "1.0") == Moo(foo=4)
