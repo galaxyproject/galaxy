@@ -30,13 +30,13 @@ index_name = "ix_workflow_invocation_rerun_of_invocation_id"
 foreign_key_name = "workflow_invocation_rerun_of_invocation_id_fkey"
 
 
-def upgrade():
+def upgrade() -> None:
     add_column(table_name, Column(column_name, Integer, nullable=True))
     create_foreign_key(foreign_key_name, table_name, table_name, [column_name], ["id"], ondelete="SET NULL")
     create_index(index_name, table_name, [column_name])
 
 
-def downgrade():
+def downgrade() -> None:
     drop_index(index_name, table_name)
     drop_constraint(foreign_key_name, table_name)
     drop_column(table_name, column_name)
