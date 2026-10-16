@@ -4,12 +4,14 @@ Plugins resource control over the API.
 
 import json
 import logging
+from functools import partial
 from typing import (
     Any,
     cast,
     Literal,
 )
 
+import anyio
 from fastapi import (
     Body,
     Path,
@@ -261,11 +263,12 @@ class FastAPIPlugins:
 
         # Build openai client with timeout
         try:
-            client = AsyncOpenAI(
-                api_key=ai_api_key,
-                timeout=timeout,
-                base_url=ai_api_base_url or None,
+            # Client setup and lazy resource imports can read files (including
+            # TLS certificates); keep them off the request's event loop.
+            client = await anyio.to_thread.run_sync(
+                partial(AsyncOpenAI, api_key=ai_api_key, timeout=timeout, base_url=ai_api_base_url or None)
             )
+            completions = await anyio.to_thread.run_sync(lambda: client.chat.completions)
         except Exception as e:
             log.debug("Failed to initialize OpenAI client.", exc_info=e)
             return self._create_error("Failed to initialize OpenAI client.", 500)
@@ -282,7 +285,7 @@ class FastAPIPlugins:
         # Connect to ai provider
         log.info(f"Proxying to {ai_model}, tokens: {max_tokens}.")
         try:
-            response = await client.chat.completions.create(
+            response = await completions.create(
                 max_tokens=max_tokens,
                 messages=messages,
                 model=ai_model,
