@@ -8,13 +8,15 @@
                         {{ title }}
                     </div>
                     <div>
-                        <BFormRadioGroup
+                        <GRadioGroup
                             v-if="!hasLabels"
                             v-model="editor"
                             v-g-tooltip.hover.bottom
-                            button-variant="outline-primary"
                             buttons
-                            size="sm"
+                            aria-label="Editor"
+                            button-variant="outline-blue"
+                            class="d-inline-block align-middle"
+                            size="small"
                             title="Editor"
                             :options="editorOptions" />
                         <slot name="buttons" />
@@ -49,7 +51,6 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { DirectiveMode } from "./directives";
@@ -57,6 +58,7 @@ import type { WorkflowLabel } from "./Editor/types";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import GRadioGroup from "../BaseComponents/GRadioGroup.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
 import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
