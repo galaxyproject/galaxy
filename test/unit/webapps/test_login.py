@@ -98,6 +98,7 @@ class TestLoginController(TestCase):
             ("https://tools.example.org/back", "https://tools.example.org/back"),
             ("/\\evil.example.com/", root),
             ("https://evil.example.com\\@galaxy.example/", root),
+            ("https://[galaxy.example/", root),
         ]:
             with patch("galaxy.webapps.galaxy.controllers.user.url_for", url_for):
                 response = json.loads(

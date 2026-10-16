@@ -47,7 +47,10 @@ def _is_absolute_url_to(base_url: str, url: str) -> bool:
     # A backslash or control character would let a browser read the authority differently.
     if not isinstance(url, str) or "\\" in url or util.CONTROL_CHARACTERS.search(url):
         return False
-    target, base = urlsplit(url), urlsplit(base_url)
+    try:
+        target, base = urlsplit(url), urlsplit(base_url)
+    except ValueError:
+        return False
     return bool(target.netloc) and (target.scheme, target.netloc) == (base.scheme, base.netloc)
 
 
@@ -380,7 +383,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         # in allowed_login_redirect_hosts. Never send the user into a logout/login loop.
         allowed_hosts = trans.app.config.allowed_login_redirect_hosts
         if not (_is_absolute_url_to(root_url, redirect) or util.is_safe_login_redirect(redirect, allowed_hosts)):
-            log.warning("Post-login redirect target is not allowed, will redirect to Galaxy root instead: %s", redirect)
+            log.warning("Ignoring post-login redirect target that is not allowed: %s", redirect)
             return root_url
         if util.compare_urls(logout_url, redirect):
             return root_url
