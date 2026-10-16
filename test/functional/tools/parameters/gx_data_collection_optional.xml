@@ -3,7 +3,7 @@
 cat '$parameter' >> '$output'
     ]]></command>
     <inputs>
-        <param name="parameter" type="data_collection" ext="data" optional="true" />
+        <param name="parameter" type="data_collection" optional="true" />
     </inputs>
     <outputs>
         <data name="output" format="data" />

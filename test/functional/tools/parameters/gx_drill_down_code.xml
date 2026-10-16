@@ -7,7 +7,7 @@
 echo "parameter: $parameter" > '$output'
     ]]></command>
     <inputs>
-        <param name="ref_parameter" type="data" ext="tabular" >
+        <param name="ref_parameter" type="data" format="tabular" >
         </param>
         <param name="parameter" type="drill_down" dynamic_options="collate_table(ref_parameter.dataset.get_file_name())">
         </param>

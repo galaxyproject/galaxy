@@ -3,7 +3,7 @@
 echo '$parameter.boolean_parameter' >> '$output'
     ]]></command>
     <inputs>
-        <section name="parameter">
+        <section name="parameter" title="Section Parameter">
             <param name="boolean_parameter" type="boolean" truevalue="mytrue" falsevalue="myfalse" />
         </section>
     </inputs>
