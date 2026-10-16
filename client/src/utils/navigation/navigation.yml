@@ -1704,7 +1704,7 @@ upload_activity:
     paste_content_row_textarea: '[data-test-id="paste-content-textarea-${row}"]'
     row_remove_button: '[data-test-id="upload-row-${row}-remove"]'
     paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"]'
-    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + label'
+    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + .g-checkbox-label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
     target_history_change_link: '.target-history-banner .change-history-link'
     history_selector_modal: '.g-dialog'
@@ -1727,7 +1727,7 @@ upload_activity:
     composite_slot_file_input: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-file-input"]'
     # Remote-files selectors
     remote_files_browser_label: '[data-test-id="remote-files-browser-label"][data-label="${label}"]'
-    remote_files_select_all: '[data-test-id="remote-files-select-all"] .custom-control-label'
+    remote_files_select_all: '[data-test-id="remote-files-select-all"]'
     remote_files_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "remote-files-browser-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
@@ -1735,7 +1735,7 @@ upload_activity:
     # Data-library selectors
     data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
     data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
-    data_library_select_all: '[data-test-id="data-library-select-all"] input[type="checkbox"]'
+    data_library_select_all: '[data-test-id="data-library-select-all"]'
     data_library_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'

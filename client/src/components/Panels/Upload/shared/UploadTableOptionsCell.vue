@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
-
 import type { RowOptionDescriptor } from "@/composables/upload/uploadOptionBindings";
 import type { UploadOptionKey } from "@/composables/upload/uploadOptionModel";
+
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 interface Props {
     /** Row option descriptors to render in order */
@@ -34,16 +34,16 @@ function getToggleTestId(key: UploadOptionKey): string | undefined {
 
 <template>
     <div class="options-cell options-controls d-inline-flex align-items-center flex-nowrap">
-        <BFormCheckbox
+        <GCheckbox
             v-for="option in options"
             :key="option.key"
             v-g-tooltip.hover
-            :checked="option.checked"
+            size="small"
             :data-test-id="getToggleTestId(option.key)"
-            size="sm"
+            :model-value="option.checked"
             :title="option.title"
-            @change="updateOption(option.key, $event)">
+            @update:model-value="updateOption(option.key, $event)">
             <span class="small">{{ option.label }}</span>
-        </BFormCheckbox>
+        </GCheckbox>
     </div>
 </template>
