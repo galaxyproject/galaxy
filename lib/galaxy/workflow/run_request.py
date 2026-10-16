@@ -334,6 +334,11 @@ def build_workflow_run_configs(
     if "inputs" in payload and "ds_map" in payload:
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
 
+    if payload.get("effective_outputs"):
+        raise exceptions.RequestParameterInvalidException(
+            "Cannot declare effective outputs on invocation in this fashion."
+        )
+
     preferred_object_store_id = payload.get("preferred_object_store_id")
     preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
     preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
@@ -534,10 +539,6 @@ def build_workflow_run_configs(
                                 f"Invalid value for parameter '{name}' found."
                             )
         history.add_pending_items()
-        if payload.get("effective_outputs"):
-            raise exceptions.RequestParameterInvalidException(
-                "Cannot declare effective outputs on invocation in this fashion."
-            )
         run_configs.append(
             WorkflowRunConfig(
                 target_history=history,
