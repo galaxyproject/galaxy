@@ -7610,6 +7610,17 @@ steps:
         assert self.workflow_populator.workflow_invocations(workflow_id) == []
         assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
 
+    @pytest.mark.parametrize("config", [None, {}])
+    def test_run_with_notification_completion_config(self, config):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.invoke_workflow_raw(
+                workflow_id,
+                {"history_id": history_id, "on_complete": [{"send_notification": config}]},
+            )
+            self._assert_status_code_is(response, 200)
+            assert response.json()["history_id"] == history_id
+
     def test_run_with_optional_data_specified_to_multi_data(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
