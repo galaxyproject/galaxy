@@ -3,6 +3,7 @@
 from importlib import import_module
 
 import pytest
+from alembic import context
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import (
@@ -17,7 +18,7 @@ from galaxy.model.migrations import util
 
 def test_invocation_rerun_migration_round_trip(monkeypatch):
     migration = import_module("galaxy.model.migrations.alembic.versions_gxy.6f9a3b2c1d80_add_invocation_rerun_lineage")
-    monkeypatch.setattr(util.context, "is_offline_mode", lambda: False)
+    monkeypatch.setattr(context, "is_offline_mode", lambda: False)
     monkeypatch.setattr(util.DDLOperation, "_is_repair_mode", lambda self: False)
     engine = create_engine("sqlite://")
     with engine.connect() as connection:
@@ -34,9 +35,9 @@ def test_invocation_rerun_migration_round_trip(monkeypatch):
         foreign_key = inspector.get_foreign_keys("workflow_invocation")[0]
         assert foreign_key["referred_table"] == "workflow_invocation"
         assert foreign_key["options"]["ondelete"] == "SET NULL"
-        assert connection.execute(text("SELECT rerun_of_invocation_id FROM workflow_invocation")).all() == [
-            (None,),
-            (None,),
+        assert connection.execute(text("SELECT rerun_of_invocation_id FROM workflow_invocation")).scalars().all() == [
+            None,
+            None,
         ]
         connection.commit()
         connection.execute(text("PRAGMA foreign_keys=ON"))
@@ -55,5 +56,5 @@ def test_invocation_rerun_migration_round_trip(monkeypatch):
         with Operations.context(MigrationContext.configure(connection)):
             migration.downgrade()
         assert [column["name"] for column in inspect(connection).get_columns("workflow_invocation")] == ["id", "state"]
-        assert connection.execute(text("SELECT * FROM workflow_invocation")).all() == [(2, "new")]
+        assert connection.execute(text("SELECT * FROM workflow_invocation")).tuples().all() == [(2, "new")]
     engine.dispose()
