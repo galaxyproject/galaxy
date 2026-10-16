@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import CopyModal from "./CopyModal.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 
 const localVue = getLocalVue();
 
@@ -81,6 +82,26 @@ describe("CopyModal", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
         expect(historyStore.copyHistory).toHaveBeenCalledWith(fakeHistory, "New Name", false);
+    });
+
+    it("offers the dataset choice as a labelled, stacked radio group", () => {
+        const { wrapper } = createWrapper();
+        // GRadioGroup is generic, so findComponent cannot infer its props
+        const group = wrapper.findComponent(GRadioGroup as object);
+        expect(group.props("label")).toBe("Choose which datasets from the original history to include.");
+        expect(group.props("stacked")).toBe(true);
+        expect(group.props("modelValue")).toBe(false);
+        expect(group.props("options").map((option: { value: boolean }) => option.value)).toEqual([false, true]);
+    });
+
+    it("calls copyHistory with copyAll=true when all datasets are chosen", async () => {
+        const { wrapper, historyStore } = createWrapper();
+        wrapper.findComponent(GFormInput).vm.$emit("update:modelValue", "New Name");
+        wrapper.findComponent(GRadioGroup as object).vm.$emit("update:modelValue", true);
+        await wrapper.vm.$nextTick();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(historyStore.copyHistory).toHaveBeenCalledWith(fakeHistory, "New Name", true);
     });
 
     it("emits update:show-modal false after copy completes", async () => {
