@@ -1447,6 +1447,9 @@ admin:
       repo_search: '#toolshed-repo-search'
       search_results: '#g-table-shed-search-results'
       upgrade_notification: '#g-table-repository-table .badge'
+      installed_only:
+        type: xpath
+        selector: '//label[normalize-space(.)="Installed Only"]/input[@type="radio"]'
 
   quota:
     selectors:
