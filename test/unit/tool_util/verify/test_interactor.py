@@ -232,11 +232,12 @@ def test_directory_input_is_downloaded_under_force_path_paste(interactor, mocked
     """The client archives directories itself, so a server-side path is of no use."""
     archive = io.BytesIO()
     with zipfile.ZipFile(archive, "w") as zf:
+        # The server roots the archive at the directory's basename.
         zf.writestr("test-cache/reference.ann", "index contents")
     # No test_data_path endpoint is registered, so asking for a server path fails the test.
     _mock_test_data_download(mocked, body=archive.getvalue())
     staged = interactor.remote_to_input(
-        _test_data("test-cache", **{"class": "Directory"}), "some_tool", force_path_paste=True
+        _test_data("indexes/test-cache", **{"class": "Directory"}), "some_tool", force_path_paste=True
     )
     assert _read_staged(staged, "reference.ann") == "index contents"
     assert staged["client_local"] is True
@@ -244,13 +245,13 @@ def test_directory_input_is_downloaded_under_force_path_paste(interactor, mocked
 
 
 def test_directory_input_falls_back_to_local_test_data(tmp_path, mocked):
-    (tmp_path / "test-cache").mkdir()
-    (tmp_path / "test-cache" / "reference.ann").write_text("index contents")
+    (tmp_path / "indexes" / "test-cache").mkdir(parents=True)
+    (tmp_path / "indexes" / "test-cache" / "reference.ann").write_text("index contents")
     interactor = GalaxyInteractorApi(
         galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key", test_data=[str(tmp_path)]
     )
     _mock_test_data_download(mocked, status=404, json={})
-    staged = interactor.remote_to_input(_test_data("test-cache", **{"class": "Directory"}), "some_tool")
+    staged = interactor.remote_to_input(_test_data("indexes/test-cache", **{"class": "Directory"}), "some_tool")
     assert _read_staged(staged, "reference.ann") == "index contents"
 
 

@@ -800,9 +800,9 @@ class GalaxyInteractorApi:
             tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
         )
         assert isinstance(path, str)
-        # Downloaded directories contain root directory
+        # Downloaded directories contain their root directory, named after its basename
         if path and mode == "directory":
-            path = os.path.join(path, fname)
+            path = os.path.join(path, os.path.basename(fname))
         return PathOrLocation(name=fname, location=None, path=path)
 
     def _ensure_valid_location_in(self, test_data: dict) -> str | None:
