@@ -189,7 +189,10 @@ describe("Rate Limiter Middleware retry timing", () => {
         vi.restoreAllMocks();
     });
 
-    it("spreads retries of concurrent 429s instead of retrying in lockstep", async () => {
+    it.each([
+        { retryAfter: undefined, expected: [500, 750, 1000] },
+        { retryAfter: "1", expected: [1000, 1250, 1500] },
+    ])("spreads retries of concurrent 429s with Retry-After $retryAfter", async ({ retryAfter, expected }) => {
         serve();
         vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.5).mockReturnValueOnce(1);
 
@@ -201,12 +204,15 @@ describe("Rate Limiter Middleware retry timing", () => {
             response: Response;
         }) => Promise<Response>;
         const request = () => new Request(`${window.location.origin}/api/histories/test`);
-        const results = Promise.all([1, 2, 3].map(() => onResponse({ request: request(), response: respond429() })));
+        const headers: Record<string, string> = retryAfter ? { "Retry-After": retryAfter } : {};
+        const results = Promise.all(
+            [1, 2, 3].map(() => onResponse({ request: request(), response: respond429(headers) })),
+        );
         await vi.runAllTimersAsync();
         const responses = await results;
 
         expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
-        expect(requestTimes).toEqual([500, 750, 1000]);
+        expect(requestTimes).toEqual(expected);
     });
 
     it("backs off exponentially between successive retries", async () => {
