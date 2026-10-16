@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue-next";
 import { computed } from "vue";
@@ -13,6 +12,7 @@ import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownForm from "@/components/BaseComponents/GDropdownForm.vue";
 import GDropdownItemButton from "@/components/BaseComponents/GDropdownItemButton.vue";
@@ -103,9 +103,11 @@ function updateStored(v: boolean) {
                     </template>
 
                     <GDropdownForm form-class="px-2" title="remember size for all steps using this tool">
-                        <BFormCheckbox :checked="inspectorStore.isStored(props.step)" @input="updateStored">
+                        <GCheckbox
+                            :model-value="inspectorStore.isStored(props.step)"
+                            @update:model-value="updateStored">
                             remember size
-                        </BFormCheckbox>
+                        </GCheckbox>
                     </GDropdownForm>
 
                     <GDropdownItemButton @click="inspectorStore.clearAllStored">

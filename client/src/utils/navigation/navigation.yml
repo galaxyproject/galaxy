@@ -132,7 +132,7 @@ toolbox_filters:
   selectors:
     input:
       type: xpath
-      selector: "//span[contains(., '${description}')]/../div/div/label[@class='custom-control-label']"
+      selector: "//span[contains(., '${description}')]/../div/label[contains(@class, 'g-checkbox')]"
     submit: '#submit:not([aria-disabled])'
 
 change_user_email:

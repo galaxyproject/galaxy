@@ -2,7 +2,6 @@
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useIntersectionObserver } from "@vueuse/core";
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import {
@@ -38,6 +37,7 @@ import FormDataContextButtons from "./FormDataContextButtons.vue";
 import FormDataExtensions from "./FormDataExtensions.vue";
 import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
@@ -1238,7 +1238,7 @@ const noOptionsWarningMessage = computed(() => {
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
             <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
-                <BFormCheckbox
+                <GCheckbox
                     v-if="currentVariant.batch === BATCH.ENABLED"
                     v-model="currentLinked"
                     class="checkbox no-highlight"
@@ -1253,7 +1253,7 @@ const noOptionsWarningMessage = computed(() => {
                         <b v-localize class="mr-1">Unlinked:</b>
                         <span v-localize>Dataset will be run against *all* other datasets.</span>
                     </span>
-                </BFormCheckbox>
+                </GCheckbox>
                 <div class="info text-info">
                     <FontAwesomeIcon :icon="faExclamation" />
                     <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">

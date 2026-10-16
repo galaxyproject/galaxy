@@ -29,7 +29,7 @@ describe("FormCheck", () => {
         }
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='checkbox']");
-        const labels = wrapper.findAll(".custom-control-label");
+        const labels = wrapper.findAll(".g-checkbox-label");
         expect(inputs.length).toBe(n + 1);
         let expectedValues = [];
         for (let i = 0; i < n; i++) {
@@ -38,6 +38,8 @@ describe("FormCheck", () => {
             expect(inputs.at(i + 1).attributes("value")).toBe(`value_${i}`);
             expectedValues.push(`value_${i}`);
             expect(emittedArg(wrapper, "input", i)).toEqual(expectedValues);
+            // the group owns no state of its own, so feed the emitted value back like v-model
+            await wrapper.setProps({ value: [...expectedValues] });
         }
         for (let i = 0; i < n; i++) {
             await inputs.at(i + 1).setValue(false);
@@ -46,6 +48,7 @@ describe("FormCheck", () => {
                 expectedValues = null;
             }
             expect(emittedArg(wrapper, "input", i + 3)).toEqual(expectedValues);
+            await wrapper.setProps({ value: expectedValues && [...expectedValues] });
         }
     });
 
@@ -65,6 +68,11 @@ describe("FormCheck", () => {
             expectedValues.push(expectedValues[i]);
             expect(emittedArg(wrapper, "input", i)).toEqual(expectedValues);
         }
+    });
+
+    it("names the option group by the given label id", async () => {
+        await wrapper.setProps({ options: [{ label: "label_0", value: "value_0" }], ariaLabelledby: "title-id" });
+        expect(wrapper.find("fieldset").attributes("aria-labelledby")).toBe("title-id");
     });
 
     it("Confirm Select-All checkbox works in various states: select-all, unselect-all, indeterminate/partial-list-selection.", async () => {
@@ -87,8 +95,14 @@ describe("FormCheck", () => {
         /* ...confirm corresponding options checked */
         const values = options.map((option) => option.value);
         expect(emittedArg(wrapper, "input")).toStrictEqual(values);
+        await wrapper.setProps({ value: values });
+        for (let i = 0; i < n; i++) {
+            expect(inputs.at(i + 1).element.checked).toBe(true);
+        }
         /* 2 - confirm select-all option UNchecked */
         await inputs.at(0).setValue(false);
+        expect(emittedArg(wrapper, "input", 1)).toBeNull();
+        await wrapper.setProps({ value: null });
         expect(inputs.at(0).element.checked).toBeFalsy();
         /* ...confirm corresponding options UNchecked */
         for (let i = 0; i < n; i++) {
