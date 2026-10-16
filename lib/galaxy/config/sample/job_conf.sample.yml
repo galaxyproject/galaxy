@@ -530,6 +530,39 @@ execution:
       # Docker.
       #docker_set_user: $UID
 
+      # Alternatively, resolve a username from an OIDC token claim. This can be used to
+      # launch the Docker container as that user and/or expose the username
+      # inside the container as an environment variable.
+      #
+      # When set_user is true, docker_set_user must be unset, null, or empty.
+      # Galaxy resolves the username to UID/GID on the execution host with
+      # id -u/id -g and adds the user's supplementary groups with --group-add.
+      # The account must exist there and have access to the job's mounted files;
+      # failed account/group lookups abort the job before Docker is invoked, with
+      # a diagnostic in the job's stderr rather than the tool's.
+      # Providers are tried in their configured order. For each provider, Galaxy
+      # tries the stored access token, then the ID token if no username matched.
+      # claim names a string claim. template is a regex whose whole matched prefix
+      # is the username, even when it contains capture groups. An unanchored template
+      # truncates - "^[a-z]+" turns alice@example.org into alice. Use an end anchor
+      # to require a full match.
+      # With set_user false, only expose_as_env is applied and no account lookup
+      # is needed. expose_as_env must be a valid environment variable name.
+      # Enabled configurations require docker_enabled on the same destination and at
+      # least one recognized OIDC provider; Galaxy refuses to start otherwise.
+      #
+      # This makes the destination OIDC-only: a user with no stored token from a
+      # configured provider cannot run jobs here. Route users who authenticate some
+      # other way to a destination without this setting.
+      #
+      #docker_username_from_oidc_token_claim:
+      #  set_user: true
+      #  expose_as_env: GALAXY_TOOL_USER
+      #  providers:
+      #    azure:
+      #      claim: unique_name
+      #      template: "^[a-z_][a-z0-9_-]*"
+
       # Pass extra arguments to the docker run command not covered by the
       # above options.
       #docker_run_extra_arguments:

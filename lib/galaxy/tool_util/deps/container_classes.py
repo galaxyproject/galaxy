@@ -1,4 +1,5 @@
 import os
+import shlex
 import string
 from abc import (
     ABCMeta,
@@ -490,6 +491,28 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
         else:
             cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
+
+        run_extra_arguments = self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS)
+        set_user = self.prop("set_user", docker_util.DEFAULT_SET_USER)
+        # Resolved by the job runner from an OIDC token claim - see galaxy.jobs.oidc_user.
+        token_username = self.prop(docker_util.USERNAME_FROM_TOKEN_PROP, None)
+        token_username_options = docker_util.parse_username_from_token_options(
+            self.prop(docker_util.USERNAME_FROM_OIDC_TOKEN_CLAIM_PROP, None)
+        )
+        user_setup_command = ""
+        if token_username and token_username_options.set_user:
+            # The account must resolve on the execution host before anything invokes Docker,
+            # so this is emitted above the image cache command rather than with docker run.
+            user_setup_command = docker_util.build_docker_user_setup_command(token_username, include_groups=True)
+            set_user = docker_util.HOST_RESOLVED_USER
+            run_extra_arguments = (
+                f"{run_extra_arguments} {docker_util.HOST_RESOLVED_GROUP_ARGUMENTS}"
+                if run_extra_arguments
+                else docker_util.HOST_RESOLVED_GROUP_ARGUMENTS
+            )
+        if token_username and token_username_options.expose_as_env:
+            env_directives.append(shlex.quote(f"{token_username_options.expose_as_env}={token_username}"))
+
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -499,8 +522,8 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             working_directory=working_directory,
             net=self.prop("net", None),  # By default, docker instance has networking disabled
             auto_rm=asbool(self.prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
-            set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
-            run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            set_user=set_user,
+            run_extra_arguments=run_extra_arguments,
             guest_ports=self.tool_info.guest_ports,
             host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
@@ -516,6 +539,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # Standard error is:
         #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
         return f"""
+{user_setup_command}
 _on_exit() {{
   {kill_command} &> /dev/null
 }}
