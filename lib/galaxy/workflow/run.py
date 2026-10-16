@@ -812,7 +812,14 @@ class WorkflowProgress:
         when_values=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
-        disconnected_input_steps = modules.disconnected_required_subworkflow_inputs(step, subworkflow)
+        if modules.disconnected_required_subworkflow_inputs(step, subworkflow):
+            raise modules.FailWorkflowEvaluation(
+                InvocationUnexpectedFailure(
+                    reason=FailureReason.unexpected_failure,
+                    workflow_step_id=step.id,
+                    details="Subworkflow has disconnected required input.",
+                )
+            )
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
             subworkflow_step_id = input_subworkflow_step.id
@@ -826,26 +833,6 @@ class WorkflowProgress:
                     )
                     subworkflow_inputs[subworkflow_step_id] = replacement
                     break
-
-            if input_subworkflow_step in disconnected_input_steps:
-                if not input_connections:
-                    # TODO: Prevent this on import; invocation requests are rejected at submission.
-                    raise modules.FailWorkflowEvaluation(
-                        InvocationUnexpectedFailure(
-                            reason=FailureReason.unexpected_failure,
-                            workflow_step_id=step.id,
-                            details="Subworkflow has disconnected required input.",
-                        )
-                    )
-
-                raise modules.FailWorkflowEvaluation(
-                    InvocationFailureOutputNotFound(
-                        reason=FailureReason.output_not_found,
-                        workflow_step_id=step.id,
-                        output_name=input_connection.output_name,
-                        dependent_workflow_step_id=input_connection.output_step.id,
-                    )
-                )
 
         return WorkflowProgress(
             subworkflow_invocation,
