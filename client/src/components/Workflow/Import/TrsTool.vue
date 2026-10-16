@@ -5,6 +5,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 
+import { compareTrsVersions, isTrsVersion } from "./trsVersion";
 import type { TrsTool, TrsToolVersion } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -23,43 +24,19 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-/** Parse a version string like "v1.2.3" into numeric parts, or null if not semver-like. */
-function parseSemver(name: string): number[] | null {
-    const match = name.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
-    if (!match) {
-        return null;
-    }
-    return [
-        parseInt(match[1] as string, 10),
-        match[2] !== undefined ? parseInt(match[2], 10) : 0,
-        match[3] !== undefined ? parseInt(match[3], 10) : 0,
-    ];
-}
-
-/** Compare two parsed semver arrays in descending order. */
-function compareSemverDesc(a: number[], b: number[]): number {
-    for (let i = 0; i < 3; i++) {
-        if ((a[i] as number) !== (b[i] as number)) {
-            return (b[i] as number) - (a[i] as number);
-        }
-    }
-    return 0;
-}
-
 const sortedVersions = computed(() => {
     return props.trsTool.versions.slice().sort((a, b) => {
-        const aParsed = parseSemver(a.name);
-        const bParsed = parseSemver(b.name);
-
-        if (aParsed && bParsed) {
-            return compareSemverDesc(aParsed, bParsed);
-        } else if (aParsed) {
-            return -1;
-        } else if (bParsed) {
-            return 1;
-        } else {
-            return b.name.localeCompare(a.name);
+        const comparison = compareTrsVersions(b.name, a.name);
+        if (comparison !== null) {
+            return comparison;
         }
+        // Version numbers first, newest at the top, then everything else (branches) by name.
+        const aIsVersion = isTrsVersion(a.name);
+        const bIsVersion = isTrsVersion(b.name);
+        if (aIsVersion !== bIsVersion) {
+            return aIsVersion ? -1 : 1;
+        }
+        return b.name.localeCompare(a.name);
     });
 });
 

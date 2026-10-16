@@ -350,6 +350,17 @@ const { renderMarkdown } = useMarkdown({ noMargin: true, openLinksInNewPage: tru
 const getElementId = (cardId: string, element: string) => `g-card-${element}-${cardId}`;
 const getIndicatorId = (cardId: string, indicatorId: string) => `g-card-indicator-${indicatorId}-${cardId}`;
 const getBadgeId = (cardId: string, badgeId: string) => `g-card-badge-${badgeId}-${cardId}`;
+
+/** Activates a handler badge from the keyboard; link badges (`to`/`href`) keep their native Enter. */
+function onBadgeKeydown(event: KeyboardEvent, badge: CardBadge) {
+    if (!badge.handler) {
+        return;
+    }
+    // Space would otherwise scroll the page, and Enter bubble to the card.
+    event.preventDefault();
+    event.stopPropagation();
+    badge.handler();
+}
 const getActionId = (cardId: string, actionId: string) => `g-card-action-${actionId}-${cardId}`;
 
 /**
@@ -629,7 +640,10 @@ function onKeyDown(event: KeyboardEvent) {
                                             :title="localize(badge.title)"
                                             :variant="badge.variant || 'secondary'"
                                             :to="badge.to"
-                                            @click.stop="badge.handler && badge.handler()">
+                                            :role="badge.handler ? 'button' : undefined"
+                                            :tabindex="badge.handler ? 0 : undefined"
+                                            @click.stop="badge.handler && badge.handler()"
+                                            @keydown.enter.space="onBadgeKeydown($event, badge)">
                                             <FontAwesomeIcon v-if="badge.icon" :icon="badge.icon" fixed-width />
                                             {{ localize(badge.label) }}
                                         </BBadge>
@@ -664,7 +678,10 @@ function onKeyDown(event: KeyboardEvent) {
                                             :variant="badge.variant || 'secondary'"
                                             :to="badge.to"
                                             :href="badge.href"
-                                            @click.stop="badge.handler && badge.handler()">
+                                            :role="badge.handler ? 'button' : undefined"
+                                            :tabindex="badge.handler ? 0 : undefined"
+                                            @click.stop="badge.handler && badge.handler()"
+                                            @keydown.enter.space="onBadgeKeydown($event, badge)">
                                             <FontAwesomeIcon
                                                 v-if="badge.icon"
                                                 :icon="badge.icon"

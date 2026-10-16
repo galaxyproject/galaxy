@@ -10702,6 +10702,16 @@ export interface components {
              */
             id: string;
             /**
+             * Imported Version
+             * @description The TRS version the user's import came from, such as v0.3, when it was recorded.
+             */
+            imported_version?: string | null;
+            /**
+             * Imported Workflow ID
+             * @description Encoded id of the requesting user's import of this catalog workflow, if they have one. With several imports, the most recent one. Always null for anonymous requests and for workflows hosted here.
+             */
+            imported_workflow_id?: string | null;
+            /**
              * Missing Tools
              * @description Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when the workflow will run here after import; null when this Galaxy did not check.
              */
@@ -55291,13 +55301,16 @@ export interface operations {
                  *     `collection`
                  *     : An IWC collection the curated workflow belongs to. (The tag `c` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `is`
+                 *     : Use 'is:runnable' for workflows whose tools are all available here (IWC catalog only; matches nothing for a local feed).
+                 *
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Curated Workflows: `name`, `description`, `tag`, `collection`.
                  */
                 search?: string | null;
-                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */
+                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, ordered first by how many of their tools this Galaxy is missing, so the ones that run here as-is lead and the ones it couldn't check come last. */
                 sort_by?: ("create_time" | "update_time" | "name") | null;
                 /** @description Sort in descending order? */
                 sort_desc?: boolean | null;
