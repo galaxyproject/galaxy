@@ -5,12 +5,12 @@
  */
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { applySectionPatches, diffStats, type SectionChange, sectionDiff } from "./sectionDiffUtils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 const props = defineProps<{
     original: string;
@@ -114,12 +114,12 @@ function sectionLabel(sc: SectionChange): string {
                 class="patch-section"
                 :class="{ 'section-accepted': accepted.has(sectionHeading(sc)) }">
                 <div class="section-header d-flex align-items-center p-2">
-                    <BFormCheckbox
-                        :checked="accepted.has(sectionHeading(sc))"
+                    <GCheckbox
+                        :model-value="accepted.has(sectionHeading(sc))"
                         :data-description="`toggle section ${sectionHeading(sc)}`"
-                        @change="toggleSection(sectionHeading(sc))">
+                        @update:model-value="toggleSection(sectionHeading(sc))">
                         <strong>{{ sectionLabel(sc) }}</strong>
-                    </BFormCheckbox>
+                    </GCheckbox>
                     <span class="ml-auto diff-stats-inline">
                         <span class="text-success">+{{ diffStats(sc.changes).additions }}</span>
                         <span class="text-danger ml-1">-{{ diffStats(sc.changes).deletions }}</span>

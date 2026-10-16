@@ -12,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useResizeObserver } from "@vueuse/core";
-import { BBadge, BFormCheckbox, BLink } from "bootstrap-vue";
+import { BBadge, BLink } from "bootstrap-vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
@@ -26,6 +26,7 @@ import { chooseHeaderLayout, type GCardHeaderLayout } from "./gCardHeaderLayout"
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
@@ -385,6 +386,8 @@ function measureTitle() {
     titleClamped.value = !!props.titleNLines && !!link && link.scrollHeight > link.clientHeight + 1;
 }
 
+const selectLabel = computed(() => props.selectTitle || localize("Select for bulk actions"));
+
 const hasExtraActions = computed(() => props.extraActions?.some((ea) => ea.visible ?? true) ?? false);
 
 const hasBadges = computed(() => props.badges?.some((b) => b.visible ?? true) ?? false);
@@ -476,11 +479,21 @@ onBeforeUnmount(() => {
     }
 });
 
+function onCardClick(event: MouseEvent) {
+    // The select checkbox emits select; its clicks must not also click the card.
+    if (!props.clickable || props.disabled || selectElement.value?.contains(event.target as Node)) {
+        return;
+    }
+    emit("click", event);
+}
+
 function onKeyDown(event: KeyboardEvent) {
     if (props.disabled) {
         return;
     }
-    if ((props.clickable && event.key === "Enter") || event.key === " ") {
+    // Enter and Space on inner controls (select checkbox, buttons, tag input) belong to them, not to the card.
+    const onCard = event.target === event.currentTarget;
+    if (onCard && props.clickable && (event.key === "Enter" || event.key === " ")) {
         event.stopPropagation();
         emit("click", event);
     } else if (props.clickable) {
@@ -509,7 +522,7 @@ function onKeyDown(event: KeyboardEvent) {
         ]"
         :tabindex="props.clickable && !props.disabled ? 0 : undefined"
         :title="props.disabled ? props.disabledTitle : undefined"
-        @click="props.clickable && !props.disabled ? emit('click', $event) : undefined"
+        @click="onCardClick"
         @keydown="onKeyDown">
         <div
             :id="`g-card-content-${props.id}`"
@@ -527,12 +540,14 @@ function onKeyDown(event: KeyboardEvent) {
                             ref="selectElement"
                             class="g-card-header-select g-card-header-line align-items-center d-flex flex-shrink-0">
                             <slot name="select">
-                                <BFormCheckbox
+                                <GCheckbox
                                     :id="getElementId(props.id, 'select')"
                                     v-g-tooltip.hover
-                                    :checked="selected"
-                                    :title="props.selectTitle || localize('Select for bulk actions')"
-                                    @change="emit('select')" />
+                                    class="g-card-select-checkbox"
+                                    :model-value="selected"
+                                    :title="selectLabel"
+                                    :aria-label="selectLabel"
+                                    @update:model-value="emit('select')" />
                             </slot>
                         </div>
 
@@ -1008,6 +1023,11 @@ function onKeyDown(event: KeyboardEvent) {
     .g-card-header-line {
         // One shared first-row height so the checkbox, title, badges and actions center on the same line.
         min-height: 1.5rem;
+    }
+
+    .g-card-select-checkbox {
+        // A square slot as wide as the first row is tall, so the title keeps its indent next to the small native box.
+        min-width: 1.5rem;
     }
 
     .g-card-title-section {

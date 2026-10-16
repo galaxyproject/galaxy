@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
@@ -137,16 +137,16 @@ defineExpose({
     <div class="list-header">
         <div class="list-header-select-all">
             <slot name="select-all">
-                <BFormCheckbox
+                <GCheckbox
                     v-if="showSelectAll"
                     id="list-header-select-all"
                     class="unselectable"
                     :disabled="selectAllDisabled"
-                    :checked="allSelected"
+                    :model-value="allSelected"
                     :indeterminate="indeterminateSelected"
-                    @change="emit('select-all')">
+                    @update:model-value="emit('select-all')">
                     Select all
-                </BFormCheckbox>
+                </GCheckbox>
             </slot>
         </div>
 
@@ -210,14 +210,19 @@ defineExpose({
                     <GDropdownItem
                         v-for="column in columnOptions"
                         :key="column.key"
+                        role="menuitemcheckbox"
+                        :aria-checked="isColumnVisible(column.key) ? 'true' : 'false'"
                         :disabled="column.key === 'name'"
                         @click="column.key !== 'name' && onToggleColumn(column.key)">
-                        <BFormCheckbox
-                            :checked="isColumnVisible(column.key)"
-                            :disabled="column.key === 'name'"
-                            @click.prevent>
+                        <!-- The item is the checkbox: a click cancelled on the input itself would leave it showing a stale state -->
+                        <GCheckbox
+                            aria-hidden="true"
+                            class="list-header-column-checkbox"
+                            tabindex="-1"
+                            :model-value="isColumnVisible(column.key)"
+                            :disabled="column.key === 'name'">
                             {{ column.label }}
-                        </BFormCheckbox>
+                        </GCheckbox>
                     </GDropdownItem>
                 </GDropdownGroup>
             </GDropdown>
@@ -269,5 +274,9 @@ defineExpose({
         flex-wrap: wrap;
         align-items: center;
     }
+}
+
+.list-header-column-checkbox {
+    pointer-events: none;
 }
 </style>

@@ -16,7 +16,7 @@ const localVue = getLocalVue(true);
 
 const { notifications: FAKE_NOTIFICATIONS, messageCount, sharedItemCount } = generateNotificationsList(10);
 
-async function mountNotificationsList() {
+async function mountNotificationsList(attachTo?: HTMLElement) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
@@ -29,6 +29,7 @@ async function mountNotificationsList() {
         stubs: {
             FontAwesomeIcon: true,
         },
+        attachTo,
     });
 
     await flushPromises();
@@ -55,6 +56,31 @@ describe("NotificationsList", () => {
         await wrapper.vm.$nextTick();
 
         expect(wrapper.findAll(".g-card")).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length);
+    });
+
+    it("selects all from a partial selection, then none, keeping the header box in sync", async () => {
+        // Attached, so a native click on the box dispatches change
+        const wrapper = await mountNotificationsList(document.body);
+        const header = wrapper.get(".notifications-list-filter-selection");
+        const headerBox = header.get<HTMLInputElement>("input[type='checkbox']");
+        const total = FAKE_NOTIFICATIONS.length;
+
+        await wrapper.get(".g-card-select-checkbox input").setValue(true);
+        expect(wrapper.findAll(".g-card-select-checkbox input:checked")).toHaveLength(1);
+
+        headerBox.element.click();
+        await flushPromises();
+        expect(wrapper.findAll(".g-card-select-checkbox input:checked")).toHaveLength(total);
+        expect(headerBox.element.checked).toBe(true);
+        expect(header.text()).toContain(`${total} selected`);
+
+        headerBox.element.click();
+        await flushPromises();
+        expect(wrapper.findAll(".g-card-select-checkbox input:checked")).toHaveLength(0);
+        expect(headerBox.element.checked).toBe(false);
+        expect(header.text()).toContain("Select all");
+
+        wrapper.unmount();
     });
 
     it("show no notifications message", async () => {

@@ -14,6 +14,8 @@ import { useFloatingPosition } from "../composables/floatingPosition";
 import { useUid } from "../composables/uid";
 import { dropdownHideKey } from "./dropdownContext";
 
+const MENU_ITEM_SELECTOR = '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]';
+
 const props = withDefaults(
     defineProps<{
         /** Text for the toggle button */
@@ -179,8 +181,9 @@ function ownsMenuItem(element: HTMLElement) {
 }
 
 function getMenuItems() {
-    const selector = '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])';
-    return Array.from(menuEl.value?.querySelectorAll<HTMLElement>(selector) ?? []).filter(ownsMenuItem);
+    return Array.from(menuEl.value?.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR) ?? []).filter(
+        (item) => ownsMenuItem(item) && !item.matches('[disabled], [aria-disabled="true"]'),
+    );
 }
 
 /** Focuses the item at `index`, wrapping around at both ends; -1 is the last item. */
@@ -213,7 +216,7 @@ function onToggleClick(event: MouseEvent) {
 function onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
     const onToggle = target === toggleEl.value;
-    const onMenuItem = target.getAttribute("role") === "menuitem" && ownsMenuItem(target);
+    const onMenuItem = target.matches(MENU_ITEM_SELECTOR) && ownsMenuItem(target);
     const inMenuNavigation = onMenuItem || target === menuEl.value;
     let handled = true;
 
