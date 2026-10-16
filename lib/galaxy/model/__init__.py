@@ -10008,12 +10008,15 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         session = object_session(self)
         priority_states = (WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED)
         if session and self.id and state not in priority_states:
-            # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
+            # generate statement that will not revert CANCELLING, CANCELLED or COMPLETED. Scheduling a
+            # parent's subworkflow step runs the child's invoker again, and a child whose completion
+            # was already recorded must stay completed for the parent to complete.
+            final_states = (*priority_states, WorkflowInvocation.states.COMPLETED)
             session.execute(
                 update(WorkflowInvocation)
                 .where(
                     WorkflowInvocation.id == self.id,
-                    or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
+                    or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
                 )
                 .values(state=state)
             )
