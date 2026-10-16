@@ -26,39 +26,37 @@ defineOptions({
     compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_ATTRS_CLASS_STYLE: false, INSTANCE_LISTENERS: false },
 });
 
-const props = withDefaults(
-    defineProps<{
-        /** The v-model value (checked state) */
-        modelValue?: boolean;
-        /** ID attribute for the checkbox input */
-        id?: string;
-        /** Accessible name when no visible label is provided */
-        ariaLabel?: string;
-        /** Disabled state */
-        disabled?: boolean;
-        /** Partly-checked state, e.g. a select-all box when only some rows are selected */
-        indeterminate?: boolean;
-        /** Name attribute for the checkbox input */
-        name?: string;
-        /** Required attribute for the checkbox input */
-        required?: boolean;
-        /** Displayed size; unset keeps the surrounding font size */
-        size?: ComponentSize;
-        /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
-        switch?: boolean;
-        /** Value attribute for the checkbox input, rendered as a string whenever it is set */
-        // eslint-disable-next-line vue/require-default-prop -- withDefaults types no undefined default for unknown, and any other default narrows the prop's type
-        value?: unknown;
-    }>(),
-    {
-        // Undefined, not Vue's false for an absent boolean, so an unbound checkbox can be told apart
-        modelValue: undefined,
-        ariaLabel: undefined,
-        id: undefined,
-        name: undefined,
-        size: undefined,
-    },
-);
+interface Props {
+    /** The v-model value (checked state) */
+    modelValue?: boolean;
+    /** ID attribute for the checkbox input */
+    id?: string;
+    /** Accessible name when no visible label is provided */
+    ariaLabel?: string;
+    /** Disabled state */
+    disabled?: boolean;
+    /** Partly-checked state, e.g. a select-all box when only some rows are selected */
+    indeterminate?: boolean;
+    /** Name attribute for the checkbox input */
+    name?: string;
+    /** Required attribute for the checkbox input */
+    required?: boolean;
+    /** Displayed size; unset keeps the surrounding font size */
+    size?: ComponentSize;
+    /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
+    switch?: boolean;
+    /** Value attribute for the checkbox input, rendered as a string whenever it is set */
+    // eslint-disable-next-line vue/require-default-prop
+    value?: unknown;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    modelValue: undefined,
+    ariaLabel: undefined,
+    id: undefined,
+    name: undefined,
+    size: undefined,
+});
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: boolean): void;
