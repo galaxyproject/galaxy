@@ -62,6 +62,9 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_0"
         workflow_editor: "accepts paired data -> data connection"
+        algebra:
+          - {op: can_map_over, output: paired, input: NULL}
+          - {op: effective_map_over, output: paired, input: NULL}
 
 - example:
     label: BASIC_MAPPING_PAIRED_OR_UNPAIRED_PAIRED
@@ -96,6 +99,9 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_1"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
+        algebra:
+          - {op: can_map_over, output: paired_or_unpaired, input: NULL}
+          - {op: effective_map_over, output: paired_or_unpaired, input: NULL}
 
 - example:
     label: BASIC_MAPPING_PAIRED_OR_UNPAIRED_UNPAIRED
@@ -126,6 +132,9 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_2"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
+        algebra:
+          - {op: can_map_over, output: paired_or_unpaired, input: NULL}
+          - {op: effective_map_over, output: paired_or_unpaired, input: NULL}
 
 - example:
     label: BASIC_MAPPING_LIST
@@ -157,6 +166,11 @@
                         output: o
     tests:
         workflow_editor: "accepts collection data -> data connection"
+        workflow_format_validation:
+            fixture: ok_list_to_dataset
+        algebra:
+          - {op: can_map_over, output: list, input: NULL}
+          - {op: effective_map_over, output: list, input: NULL}
 
 - doc: |
     The above description of mapping over inputs works naturally and as expected for
@@ -200,6 +214,9 @@
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_map_over_nested_collections"
         workflow_editor: "accepts list:list data -> data connection"
+        algebra:
+          - {op: can_map_over, output: "list:list", input: NULL}
+          - {op: effective_map_over, output: "list:list", input: NULL}
 
 - example:
     label: BASIC_MAPPING_LIST_PAIRED_OR_UNPAIRED
@@ -237,6 +254,9 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_3"
         workflow_editor: "accepts list:paired_or_unpaired data -> data connection"
+        algebra:
+          - {op: can_map_over, output: "list:paired_or_unpaired", input: NULL}
+          - {op: effective_map_over, output: "list:paired_or_unpaired", input: NULL}
 
 - doc: |
 
@@ -362,6 +382,10 @@
         tool_runtime:
             tool: collection_paired_test
         workflow_editor: "accepts paired -> paired connection"
+        workflow_format_validation:
+            fixture: ok_paired_to_paired
+        algebra:
+          - {op: can_match, output: paired, input: paired}
 
 - example:
     label: COLLECTION_INPUT_LIST
@@ -383,6 +407,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_collection_0"
         workflow_editor: "accepts list -> list connection"
+        algebra:
+          - {op: can_match, output: list, input: list}
 
 - example:
     label: COLLECTION_INPUT_PAIRED_OR_UNPAIRED
@@ -406,6 +432,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_0"
         workflow_editor: "accepts paired_or_unpaired data -> paired_or_unpaired connection"
+        algebra:
+          - {op: can_match, output: paired_or_unpaired, input: paired_or_unpaired}
 
 - example:
     label: COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED
@@ -429,6 +457,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_list_paired_or_unpaired_0"
         workflow_editor: "accepts list:paired_or_unpaired data -> list:paired_or_unpaired connection"
+        algebra:
+          - {op: can_match, output: "list:paired_or_unpaired", input: "list:paired_or_unpaired"}
 
 - doc: |
     For nested collections where each rank is a ``list`` or a ``paired`` collection,
@@ -451,6 +481,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects connecting paired -> list"
+        algebra:
+          - {op: can_match, output: paired, input: list}
 
 - example:
     label: COLLECTION_INPUT_PAIRED_NOT_CONSUMES_LIST
@@ -469,6 +501,10 @@
     is_valid: false
     tests:
         workflow_editor: "rejects connecting list -> paired"
+        workflow_format_validation:
+            fixture: fail_list_to_paired
+        algebra:
+          - {op: can_match, output: list, input: paired}
 
 - example:
     label: COLLECTION_INPUT_LIST_PAIRED_NOT_CONSUMES_PAIRED_PAIRED
@@ -487,6 +523,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired:paired -> list:paired connection"
+        algebra:
+          - {op: can_match, output: "paired:paired", input: "list:paired"}
 
 - example:
     label: COLLECTION_INPUT_LIST_PAIRED_OR_NOT_PAIRED_NOT_CONSUMES_PAIRED_PAIRED
@@ -505,6 +543,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired:paired -> list:paired_or_unpaired connection"
+        algebra:
+          - {op: can_match, output: "paired:paired", input: "list:paired_or_unpaired"}
 
 - doc: |
     In addition to explicit collection inputs, tool inputs of ``type`` ``data``
@@ -534,6 +574,10 @@
         workflow_runtime:
             framework_test: "collection_semantics_multi_data_optional_0"
         workflow_editor: "treats multi data input as list input"
+        workflow_format_validation:
+            fixture: ok_list_to_multi_data
+        algebra:
+          - {op: can_match, output: list, input: list}
 
 - doc: |
     Paired collections cannot be reduced this way. ``paired`` is not meant
@@ -556,6 +600,48 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired input on multi-data input"
+        algebra:
+          - {op: can_match, output: paired, input: list}
+
+- doc: |
+    A ``paired`` collection cannot reduce into a ``multiple=true`` data input
+    (see PAIRED_REDUCTION_INVALID — only list-like collections reduce). It can,
+    however, map over such an input: each pair element is fed singly, and the
+    step runs twice. ``multiple=true`` does not block this — the slot accepts
+    >=1 dataset, and the per-execution cardinality is 1.
+
+- example:
+    label: PAIRED_MAPS_OVER_MULTI_DATA
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "dataset<multiple=true>"}
+        out: {o: dataset}
+    - collections:
+        C: [paired, {forward: d_f, reverse: d_r}]
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: paired
+                elements:
+                    forward:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset_list, refs: [d_f]}}}
+                        output: o
+                    reverse:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset_list, refs: [d_r]}}}
+                        output: o
+    tests:
+        workflow_format_validation:
+            fixture: ok_paired_maps_over_multi_data
+        algebra:
+          - {op: can_map_over, output: paired, input: NULL}
 
 - example:
     label: PAIRED_OR_UNPAIRED_REDUCTION_INVALID
@@ -574,6 +660,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired_or_unpaired input on multi-data input"
+        algebra:
+          - {op: can_match, output: paired_or_unpaired, input: list}
 
 - doc: "## Sub-collection Mapping"
 - doc: |
@@ -607,6 +695,11 @@
         tool_runtime:
             api_test: "test_tool_execute.py::test_simple_subcollection_mapping"
         workflow_editor: "accepts list:paired -> paired connection"
+        workflow_format_validation:
+            fixture: ok_list_paired_to_paired
+        algebra:
+          - {op: can_map_over, output: "list:paired", input: paired}
+          - {op: effective_map_over, output: "list:paired", input: paired}
 
 - doc: |
     The natural extension of multiple data input parameters consuming list collections as described
@@ -645,6 +738,9 @@
                         output: o
     tests:
         workflow_editor: "maps list:list over multi data input"
+        algebra:
+          - {op: can_map_over, output: "list:list", input: list}
+          - {op: effective_map_over, output: "list:list", input: list}
 
 - doc: |
     Just as a paired collection won't be reduced by a multiple data input, any sort of nested
@@ -668,6 +764,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects list:paired input on multi-data input"
+        algebra:
+          - {op: can_map_over, output: "list:paired", input: list}
 
 - example:
     label: LIST_PAIRED_OR_UNPAIRED_REDUCTION_INVALID
@@ -686,6 +784,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects list:paired_or_unpaired input on multi-data input"
+        algebra:
+          - {op: can_map_over, output: "list:paired_or_unpaired", input: list}
 
 - doc: "## paired_or_unpaired Collections"
 - doc: |
@@ -722,6 +822,10 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_1"
         workflow_editor: "accepts paired -> paired_or_unpaired connection"
+        workflow_format_validation:
+            fixture: ok_paired_to_paired_or_unpaired
+        algebra:
+          - {op: can_match, output: paired, input: paired_or_unpaired}
 
 - doc: |
 
@@ -748,6 +852,10 @@
     is_valid: false
     tests:
         workflow_editor: "rejects paired_or_unpaired -> paired connection"
+        workflow_format_validation:
+            fixture: fail_paired_or_unpaired_to_paired
+        algebra:
+          - {op: can_match, output: paired_or_unpaired, input: paired}
 
 - doc: |
 
@@ -778,6 +886,11 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_2"
         workflow_editor: "accepts list:paired -> paired_or_unpaired connection"
+        workflow_format_validation:
+            fixture: ok_list_paired_to_paired_or_unpaired
+        algebra:
+          - {op: can_map_over, output: "list:paired", input: paired_or_unpaired}
+          - {op: effective_map_over, output: "list:paired", input: paired_or_unpaired}
 
 - example:
     label: PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED_WHEN_MAPPING
@@ -798,6 +911,8 @@
         tool_runtime:
             api_test: "test_tool_execute.py::test_paired_or_unpaired_not_consumed_by_paired_when_mapping"
         workflow_editor: "rejects list:paired_or_unpaired -> paired connection"
+        algebra:
+          - {op: can_map_over, output: "list:paired_or_unpaired", input: paired}
 
 - example:
     label: PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_LIST_WHEN_MAPPING
@@ -816,6 +931,35 @@
     is_valid: false
     tests:
         workflow_editor: "rejects list:paired_or_unpaired -> list connection"
+        algebra:
+          - {op: can_map_over, output: "list:paired_or_unpaired", input: list}
+
+- doc: |
+    Sibling map-over rejection: when two inputs to the same tool step
+    contribute incompatible map-over types (e.g. ``list`` vs ``paired``),
+    the validator rejects the step. Contributions are checked symmetrically
+    via ``compatible()`` so order of arrival doesn't change the answer.
+
+- example:
+    label: SIBLING_MAP_OVER_TYPE_MISMATCH_INVALID
+    assumptions:
+    - datasets: ["d_1,...,d_n", d_f, d_r]
+    - tool:
+        in: {i1: dataset, i2: dataset}
+        out: {o: dataset}
+    - collections:
+        C_list: [list, {i1: d_1, ..., in: d_n}]
+        C_paired: [paired, {forward: d_f, reverse: d_r}]
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i1: {type: map_over, collection: C_list}
+                i2: {type: map_over, collection: C_paired}
+    is_valid: false
+    tests:
+        workflow_format_validation:
+            fixture: fail_incompatible_map_over
 
 - doc: |
     This logic extends naturally into higher dimensional collections. A ``list:list:paired``
@@ -844,6 +988,11 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_3"
         workflow_editor: "accepts list:list:paired -> paired_or_unpaired connection"
+        workflow_format_validation:
+            fixture: ok_list_list_paired_to_paired_or_unpaired
+        algebra:
+          - {op: can_map_over, output: "list:list:paired", input: paired_or_unpaired}
+          - {op: effective_map_over, output: "list:list:paired", input: paired_or_unpaired}
 
 - doc: |
 
@@ -886,6 +1035,11 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_7"
         workflow_editor: "accepts list -> paired_or_unpaired connection"
+        workflow_format_validation:
+            fixture: ok_list_to_paired_or_unpaired
+        algebra:
+          - {op: can_map_over, output: list, input: paired_or_unpaired}
+          - {op: effective_map_over, output: list, input: paired_or_unpaired}
 
 - doc: |
     This treatment of lists without pairing extends to nested structures naturally.
@@ -932,6 +1086,9 @@
                                 output: o
     tests:
         workflow_editor: "accepts list:list -> paired_or_unpaired connection"
+        algebra:
+          - {op: can_map_over, output: "list:list", input: paired_or_unpaired}
+          - {op: effective_map_over, output: "list:list", input: paired_or_unpaired}
 
 - example:
     label: MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
@@ -968,6 +1125,11 @@
         workflow_runtime:
             framework_test: "collection_semantics_list_paired_or_unpaired_2"
         workflow_editor: "accepts list:list -> list:paired_or_unpaired connection"
+        workflow_format_validation:
+            fixture: ok_list_list_over_list_paired_or_unpaired
+        algebra:
+          - {op: can_map_over, output: "list:list", input: "list:paired_or_unpaired"}
+          - {op: effective_map_over, output: "list:list", input: "list:paired_or_unpaired"}
 
 - doc: |
     Due only to implementation time, the special casing of allowing paired_or_unpaired
@@ -1021,6 +1183,9 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_4"
         workflow_editor: "accepts sample_sheet data -> data connection (maps like list)"
+        algebra:
+          - {op: can_map_over, output: sample_sheet, input: NULL}
+          - {op: effective_map_over, output: sample_sheet, input: NULL}
 
 - example:
     label: SAMPLE_SHEET_MATCHES_LIST
@@ -1042,6 +1207,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_collection_1"
         workflow_editor: "accepts sample_sheet -> list connection (accepts)"
+        algebra:
+          - {op: can_match, output: sample_sheet, input: list}
 
 - doc: |
     Sub-collection mapping works the same as for ``list`` composites. A
@@ -1076,6 +1243,9 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_5"
         workflow_editor: "accepts sample_sheet:paired -> paired connection (maps over like list:paired)"
+        algebra:
+          - {op: can_map_over, output: "sample_sheet:paired", input: paired}
+          - {op: effective_map_over, output: "sample_sheet:paired", input: paired}
 
 - example:
     label: SAMPLE_SHEET_PAIRED_MATCHES_LIST_PAIRED
@@ -1097,6 +1267,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_list_paired_0"
         workflow_editor: "accepts sample_sheet:paired -> list:paired connection (accepts)"
+        algebra:
+          - {op: can_match, output: "sample_sheet:paired", input: "list:paired"}
 
 - doc: |
     The ``paired_or_unpaired`` integration rules carry over from ``list`` to
@@ -1140,6 +1312,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_8"
         workflow_editor: "accepts sample_sheet -> paired_or_unpaired connection"
+        algebra:
+          - {op: can_map_over, output: sample_sheet, input: paired_or_unpaired}
 
 - example:
     label: SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED_OR_UNPAIRED
@@ -1163,6 +1337,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_paired_or_unpaired_6"
         workflow_editor: "accepts sample_sheet:paired -> paired_or_unpaired connection"
+        algebra:
+          - {op: can_map_over, output: "sample_sheet:paired", input: paired_or_unpaired}
 
 - example:
     label: SAMPLE_SHEET_PAIRED_OR_UNPAIRED_MATCHES_LIST_PAIRED_OR_UNPAIRED
@@ -1184,6 +1360,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_list_paired_or_unpaired_1"
         workflow_editor: "accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (accepts)"
+        algebra:
+          - {op: can_match, output: "sample_sheet:paired_or_unpaired", input: "list:paired_or_unpaired"}
 
 - doc: |
     The type matching is asymmetric: a ``sample_sheet`` output can satisfy a ``list``
@@ -1209,6 +1387,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects list -> sample_sheet connection (asymmetry)"
+        algebra:
+          - {op: can_match, output: list, input: sample_sheet}
 
 - example:
     label: LIST_PAIRED_NOT_MATCHES_SAMPLE_SHEET_PAIRED
@@ -1227,6 +1407,8 @@
     is_valid: false
     tests:
         workflow_editor: "rejects list:paired -> sample_sheet:paired connection (asymmetry)"
+        algebra:
+          - {op: can_match, output: "list:paired", input: "sample_sheet:paired"}
 
 - example:
     label: SAMPLE_SHEET_MATCHES_SAMPLE_SHEET
@@ -1248,6 +1430,8 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_sample_sheet_0"
         workflow_editor: "accepts sample_sheet -> sample_sheet connection"
+        algebra:
+          - {op: can_match, output: sample_sheet, input: sample_sheet}
 
 - doc: "## Type Compatibility Algebra"
 - doc: |

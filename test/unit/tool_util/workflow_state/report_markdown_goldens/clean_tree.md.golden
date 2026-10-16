@@ -1,0 +1,21 @@
+# Stale State Cleaning Report
+
+Root: `/tmp/workflows`
+Workflows: 4 | 3 stale key(s) across 1 workflow(s)
+
+## Affected Workflows
+
+| Workflow | Steps Affected | Keys Removed | Details |
+| --- | --- | --- | --- |
+| catA/wf_affected.ga | 2 | 3 | Step 1 (tool_1): old_key; Step 2 (tool_2): deprecated_a, deprecated_b |
+| catB/wf_err.ga | - | - | ERROR: parse failed |
+
+## Clean Workflows (1)
+
+All other workflows have no stale keys.
+
+## Per-Workflow Details
+
+### catA/wf_affected.ga
+- Step 1 (tool_1 1.0.0): Removed `old_key`
+- Step 2 (tool_2): Removed `deprecated_a`, `deprecated_b`

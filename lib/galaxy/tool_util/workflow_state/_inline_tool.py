@@ -1,0 +1,336 @@
+"""Local parse + validate for inline user-defined tool representations.
+
+Galaxy's workflow exporter inlines a step's UDT YAML under
+``step.tool_representation`` whenever the originating ``dynamic_tool`` row
+resolves on export. The offline ``workflow_state`` stack has no
+``DynamicTool`` table to resolve against, so we re-parse the embedded
+representation locally and run the same pydantic gate / lint pipeline
+Galaxy uses when the user creates the tool through the editor.
+
+This module is the Phase A foundation for the resolver swap (Phase B)
+described in ``USER_DEFINED_TOOL_STEP_VALIDATION.md``. Only
+``InlineToolSourceResult`` is public; the parse/validate helpers stay
+underscore-prefixed until Phase B settles the resolver call site.
+"""
+
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
+    ValidationError,
+)
+
+from galaxy.tool_util.lint import lint_user_tool_source_structured
+from galaxy.tool_util.model_factory import parse_tool
+from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util_models import (
+    format_validation_errors,
+    ParsedTool,
+    UserToolSource,
+)
+from ._types import GetToolInfo
+from ._util import (
+    inline_class_from_run,
+    step_inline_tool_class,
+    step_is_inline_tool,
+    step_tool_id,
+    step_tool_representation,
+    step_tool_version,
+    StepLike,
+)
+
+
+class InlineToolSourceResult(BaseModel):
+    """Report bundle for one inline ``tool_representation`` validation pass.
+
+    Serializes through the same Pydantic surface as the rest of the
+    workflow_state report models so JSON / Markdown rendering picks it up
+    without bespoke code.
+    """
+
+    ok: bool = Field(description="True iff pydantic validation succeeded and no lint errors were emitted.")
+    inline_class: str | None = Field(
+        default=None,
+        description="The ``class`` value found on the representation (e.g. ``GalaxyUserTool``).",
+    )
+    supported: bool = Field(
+        default=True,
+        description="False for inline classes outside this plan's scope (e.g. ``GalaxyTool``).",
+    )
+    validation_errors: list[str] = Field(
+        default_factory=list,
+        description="Pydantic errors against ``UserToolSource``, formatted as ``<dotted.loc>: <msg>``.",
+    )
+    lint_errors: list[str] = Field(default_factory=list)
+    lint_warnings: list[str] = Field(default_factory=list)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def has_issues(self) -> bool:
+        return bool(self.validation_errors or self.lint_errors or self.lint_warnings or not self.supported)
+
+
+def _parse_inline_tool(tool_representation: dict) -> ParsedTool:
+    """Parse an inline ``tool_representation`` into a :class:`ParsedTool`.
+
+    Mirrors Galaxy's own ``tools/__init__.py`` path: wrap the dict in a
+    :class:`YamlToolSource` and run :func:`parse_tool`. Caller is responsible
+    for validating against :class:`UserToolSource` first — this helper does
+    not gate.
+    """
+    return parse_tool(YamlToolSource(tool_representation))
+
+
+def validate_inline_tool_source_for_step(step: StepLike, *, offline: bool = False) -> InlineToolSourceResult | None:
+    """Return inline-source diagnostics for *step*, or ``None`` if not inline.
+
+    Single entry point for the diagnostics surface: callers walk steps and
+    attach the returned :class:`InlineToolSourceResult` to their per-step
+    report row when non-None.
+    """
+    if not step_is_inline_tool(step):
+        return None
+    representation = step_tool_representation(step)
+    if representation is None:
+        return None
+    return _validate_inline_tool_source(representation, offline=offline)
+
+
+def _validate_inline_tool_source(tool_representation: dict, *, offline: bool = False) -> InlineToolSourceResult:
+    """Validate an inline ``tool_representation`` against the pydantic schema + linter.
+
+    ``offline=True`` skips network-touching linters (EDAM, bio.tools);
+    matches the ``--offline`` CLI flag plumbed in Phase C.
+    """
+    class_ = tool_representation.get("class") if isinstance(tool_representation, dict) else None
+
+    if class_ != "GalaxyUserTool":
+        # Admin dynamic tools (class: GalaxyTool) and unknown classes are
+        # out of scope per §3 — surface as ``supported=False`` so the
+        # caller can emit an ``inline_source_unsupported`` warning.
+        return InlineToolSourceResult(
+            ok=False,
+            inline_class=class_ if isinstance(class_, str) else None,
+            supported=False,
+        )
+
+    try:
+        user_tool_source = UserToolSource.model_validate(tool_representation)
+    except ValidationError as exc:
+        return InlineToolSourceResult(
+            ok=False,
+            inline_class="GalaxyUserTool",
+            validation_errors=format_validation_errors(exc),
+        )
+
+    lint_errors, lint_warnings = lint_user_tool_source_structured(user_tool_source, skip_network=offline)
+    return InlineToolSourceResult(
+        ok=not lint_errors,
+        inline_class="GalaxyUserTool",
+        lint_errors=lint_errors,
+        lint_warnings=lint_warnings,
+    )
+
+
+def resolve_for_step(
+    get_tool_info: GetToolInfo,
+    step: StepLike,
+    *,
+    offline: bool = False,
+) -> ParsedTool | None:
+    """Resolve a step's :class:`ParsedTool`, preferring an inline representation.
+
+    Order:
+
+    1. If ``get_tool_info`` is an :class:`InlineResolver`, route through its
+       per-step cache (memoizes parsed ``tool_representation`` and any
+       remote ``GetToolInfo`` lookups for the lifetime of the resolver).
+    2. If the step carries an inline ``GalaxyUserTool`` representation,
+       parse it locally and return immediately — no network.
+    3. If the inline class is anything else (``GalaxyTool`` admin dynamic
+       tools, unknown classes), return ``None`` so callers can surface an
+       ``inline_source_unsupported`` diagnostic.
+    4. Otherwise fall back to the injected :class:`GetToolInfo` resolver.
+
+    ``offline`` is accepted for forward compatibility with the Phase C
+    ``--offline`` plumbing; it does not affect parsing itself (the lint
+    pipeline is the only network consumer and runs in
+    :func:`_validate_inline_tool_source`).
+    """
+    if isinstance(get_tool_info, InlineResolver):
+        return get_tool_info.resolve(step)
+    return _resolve_for_step_uncached(get_tool_info, step, offline=offline)
+
+
+class InlineToolInventoryEntry(BaseModel):
+    """One inline-tool entry surfaced by ``walk_inline_tools``.
+
+    Phase D consumer: ``galaxy-tool-cache populate-workflow`` /
+    ``list-inline-tools`` / ``embedded-schema``. ``step_path`` follows the
+    dotted prefix convention used by ``_validate_native`` / ``_validate_format2``
+    (e.g. ``"2.1"`` for a step inside a subworkflow).
+    """
+
+    step_path: str
+    workflow_path: str | None = None
+    inline_class: str
+    tool_id: str | None = Field(
+        default=None,
+        description="The tool id declared inside the inline representation (``id`` field).",
+    )
+    tool_version: str | None = None
+
+
+def walk_inline_tools(workflow_dict: dict, *, workflow_path: str | None = None) -> list[InlineToolInventoryEntry]:
+    """Walk a native or format2 workflow dict and return inline-tool entries.
+
+    Subworkflow steps are recursed into; ``step_path`` is dotted (e.g. ``"3.0"``).
+    Detection mirrors :func:`step_is_inline_tool` (works on raw dicts).
+    """
+    workflow_class = workflow_dict.get("class")
+    if workflow_class == "GalaxyWorkflow":
+        return _walk_inline_tools_format2(workflow_dict, prefix="", workflow_path=workflow_path)
+    return _walk_inline_tools_native(workflow_dict, prefix="", workflow_path=workflow_path)
+
+
+def _entry_from_representation(
+    representation: dict, step_path: str, workflow_path: str | None
+) -> InlineToolInventoryEntry:
+    return InlineToolInventoryEntry(
+        step_path=step_path,
+        workflow_path=workflow_path,
+        inline_class=str(representation.get("class") or ""),
+        tool_id=representation.get("id"),
+        tool_version=representation.get("version"),
+    )
+
+
+def _walk_inline_tools_native(
+    workflow_dict: dict, *, prefix: str, workflow_path: str | None
+) -> list[InlineToolInventoryEntry]:
+    entries: list[InlineToolInventoryEntry] = []
+    steps = workflow_dict.get("steps", {})
+    for step_index, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
+        step_label = f"{prefix}{step_index}" if prefix else str(step_index)
+        if step_def.get("type") == "subworkflow" and "subworkflow" in step_def:
+            entries.extend(
+                _walk_inline_tools_native(step_def["subworkflow"], prefix=f"{step_label}.", workflow_path=workflow_path)
+            )
+            continue
+        rep = step_def.get("tool_representation")
+        if inline_class_from_run(rep) is not None:
+            entries.append(_entry_from_representation(rep, step_label, workflow_path))
+    return entries
+
+
+def _walk_inline_tools_format2(
+    workflow_dict: dict, *, prefix: str, workflow_path: str | None
+) -> list[InlineToolInventoryEntry]:
+    entries: list[InlineToolInventoryEntry] = []
+    steps = workflow_dict.get("steps", {})
+    if isinstance(steps, dict):
+        step_items = list(steps.items())
+    elif isinstance(steps, list):
+        step_items = [(str(i), step) for i, step in enumerate(steps)]
+    else:
+        return entries
+
+    for step_key, step_def in step_items:
+        step_label = f"{prefix}{step_key}" if prefix else str(step_key)
+        if not isinstance(step_def, dict):
+            continue
+        run = step_def.get("run")
+        # Inline subworkflow: recurse with the nested dict.
+        if isinstance(run, dict) and run.get("class") == "GalaxyWorkflow":
+            entries.extend(_walk_inline_tools_format2(run, prefix=f"{step_label}.", workflow_path=workflow_path))
+            continue
+        if isinstance(run, dict) and inline_class_from_run(run) is not None:
+            entries.append(_entry_from_representation(run, step_label, workflow_path))
+    return entries
+
+
+class InlineResolver:
+    """Per-walk memoization layered over :func:`resolve_for_step`.
+
+    Wraps a :class:`GetToolInfo` resolver and caches per-step parse results
+    so repeated ``resolve_for_step`` calls on the same step object — common
+    when multiple validation phases walk the same workflow (clean, validate,
+    connections, labelling) — re-use one ``parse_tool(YamlToolSource(...))``
+    invocation.
+
+    Structurally satisfies :class:`GetToolInfo` itself by delegating
+    ``get_tool_info(tool_id, version)`` to the wrapped instance, so callers
+    can pass an :class:`InlineResolver` anywhere a :class:`GetToolInfo` is
+    expected. :func:`resolve_for_step` detects the wrapper and routes
+    through :meth:`resolve` automatically.
+
+    Keyed by step identity (``id(step)``) — content-hash dedupe deferred
+    until profiling says it matters. Lifetime is bound to a single workflow
+    walk; the original step objects are kept alive by the workflow document
+    the cache was built from.
+    """
+
+    def __init__(self, get_tool_info: GetToolInfo, *, offline: bool = False) -> None:
+        self._get_tool_info = get_tool_info
+        self._offline = offline
+        self._step_cache: dict = {}
+
+    @property
+    def offline(self) -> bool:
+        return self._offline
+
+    @property
+    def inner(self) -> GetToolInfo:
+        """The wrapped :class:`GetToolInfo`. Useful when a caller needs to
+        bypass the cache (e.g. a downstream API that builds its own cache
+        keyed differently)."""
+        return self._get_tool_info
+
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
+        """Delegate to the wrapped :class:`GetToolInfo` (no caching here —
+        the wrapped resolver is expected to cache by ``(tool_id, version)``
+        already; this method exists only to satisfy the Protocol)."""
+        return self._get_tool_info.get_tool_info(tool_id, tool_version)
+
+    def resolve(self, step: StepLike) -> ParsedTool | None:
+        key = id(step)
+        if key in self._step_cache:
+            return self._step_cache[key]
+        parsed = _resolve_for_step_uncached(self._get_tool_info, step, offline=self._offline)
+        self._step_cache[key] = parsed
+        return parsed
+
+
+def _resolve_for_step_uncached(
+    get_tool_info: GetToolInfo, step: StepLike, *, offline: bool = False
+) -> ParsedTool | None:
+    """Internal: the un-memoized core of :func:`resolve_for_step`.
+
+    Split out so :meth:`InlineResolver.resolve` can avoid the
+    ``isinstance(get_tool_info, InlineResolver)`` short-circuit that would
+    otherwise recurse back into itself.
+    """
+    if step_is_inline_tool(step):
+        if step_inline_tool_class(step) != "GalaxyUserTool":
+            return None
+        representation = step_tool_representation(step)
+        if representation is None:
+            return None
+        return _parse_inline_tool(representation)
+    tool_id = step_tool_id(step)
+    if not tool_id:
+        return None
+    return get_tool_info.get_tool_info(tool_id, step_tool_version(step))
+
+
+def ensure_inline_resolver(get_tool_info: GetToolInfo, *, offline: bool = False) -> "InlineResolver":
+    """Wrap *get_tool_info* in an :class:`InlineResolver`, idempotently.
+
+    If *get_tool_info* is already an :class:`InlineResolver`, it is returned
+    unchanged (existing cache preserved). Otherwise a fresh resolver is
+    constructed. Use at the top of any walk that would benefit from
+    per-step parse memoization.
+    """
+    if isinstance(get_tool_info, InlineResolver):
+        return get_tool_info
+    return InlineResolver(get_tool_info, offline=offline)

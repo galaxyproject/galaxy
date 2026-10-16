@@ -80,6 +80,7 @@ from .model_validation import (
     validate_test_case_json,
     validate_workflow_step,
     validate_workflow_step_linked,
+    validate_workflow_step_native,
     ValidationFunctionT,
 )
 from .state import (
@@ -95,12 +96,17 @@ from .state import (
     TestCaseToolState,
     ToolState,
     WorkflowStepLinkedToolState,
+    WorkflowStepNativeToolState,
     WorkflowStepToolState,
 )
 from .visitor import (
+    active_branch_params,
     flat_state_path,
     keys_starting_with,
+    NATIVE_BOOKKEEPING_KEYS,
     repeat_inputs_to_array,
+    select_which_when_native,
+    strip_undeclared_keys,
     validate_explicit_conditional_test_value,
     visit_input_values,
     VISITOR_NO_REPLACEMENT,
@@ -150,6 +156,7 @@ __all__ = (
     "RepeatParameterModel",
     "RawStateDict",
     "ValidationFunctionT",
+    "is_optional",
     "validate_against_model",
     "validate_internal_job",
     "validate_internal_landing_request",
@@ -163,6 +170,7 @@ __all__ = (
     "validate_test_case_json",
     "validate_workflow_step",
     "validate_workflow_step_linked",
+    "validate_workflow_step_native",
     "validate_explicit_conditional_test_value",
     "is_optional",
     "ToolState",
@@ -183,6 +191,10 @@ __all__ = (
     "keys_starting_with",
     "visit_input_values",
     "repeat_inputs_to_array",
+    "strip_undeclared_keys",
+    "select_which_when_native",
+    "active_branch_params",
+    "NATIVE_BOOKKEEPING_KEYS",
     "VISITOR_NO_REPLACEMENT",
     "decode",
     "encode",
@@ -200,4 +212,5 @@ __all__ = (
     "CROSS_PRODUCT_MAP_OVER_ERROR_MESSAGE",
     "WorkflowStepToolState",
     "WorkflowStepLinkedToolState",
+    "WorkflowStepNativeToolState",
 )

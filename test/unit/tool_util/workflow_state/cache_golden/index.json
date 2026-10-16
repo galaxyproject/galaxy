@@ -1,0 +1,32 @@
+{
+  "entries": {
+    "4442926e78fe6e6574ffb9110be50f9b72cc3eb3b133e5435cf7b8658cd0a0f5": {
+      "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc",
+      "tool_version": "0.74+galaxy0",
+      "source": "api",
+      "source_url": "https://toolshed.g2.bx.psu.edu/api/tools/devteam~fastqc~fastqc/versions/0.74+galaxy0",
+      "cached_at": "2026-03-29T15:39:54.752229+00:00"
+    },
+    "37fb932a513aedd35009403f007a9ba35cc011e80e7cdb30722bac1d2bdc8510": {
+      "tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc",
+      "tool_version": "1.11+galaxy1",
+      "source": "api",
+      "source_url": "https://toolshed.g2.bx.psu.edu/api/tools/iuc~multiqc~multiqc/versions/1.11+galaxy1",
+      "cached_at": "2026-03-29T15:40:00.938754+00:00"
+    },
+    "8216213a63af9c900ccccd871df8a722b616b8b0b2c7c653834941bac448a472": {
+      "tool_id": "toolshed.g2.bx.psu.edu/repos/pjbriggs/trimmomatic/trimmomatic",
+      "tool_version": "0.39+galaxy2",
+      "source": "api",
+      "source_url": "https://toolshed.g2.bx.psu.edu/api/tools/pjbriggs~trimmomatic~trimmomatic/versions/0.39+galaxy2",
+      "cached_at": "2026-03-29T15:40:02.206747+00:00"
+    },
+    "2d433bc1156aa8e5774724b24280cf7ffccc0a563f9a2541adb2712347e15900": {
+      "tool_id": "toolshed.g2.bx.psu.edu/repos/cat1",
+      "tool_version": "1.0.0",
+      "source": "api",
+      "source_url": "https://toolshed.g2.bx.psu.edu/api/tools/cat1/versions/1.0.0",
+      "cached_at": "2026-03-29T15:40:02.932499+00:00"
+    }
+  }
+}

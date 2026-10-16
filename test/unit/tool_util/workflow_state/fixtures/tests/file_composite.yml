@@ -1,0 +1,10 @@
+- doc: Composite data File input
+  job:
+    input:
+      class: File
+      filetype: galaxy.datatypes.binary:BamNative
+      composite_data:
+        - test-data/a.bam.bai
+        - test-data/a.bam
+  outputs:
+    out: expected.bam

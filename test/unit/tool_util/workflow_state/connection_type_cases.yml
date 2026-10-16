@@ -1,0 +1,547 @@
+# Truth table for collection-type algebra used by the connection validator.
+#
+# Consumed by Python test_connection_types.py and (via sync) the TS
+# galaxy-tool-util-ts workflow-graph tests. Both sides exercise the same
+# corpus so divergence surfaces quickly.
+#
+# Each entry:
+#   op:       can_match | can_map_over | effective_map_over
+#   output:   collection type string, or sentinel NULL / ANY
+#   input:    collection type string, or sentinel NULL / ANY
+#   expected: bool for can_match/can_map_over; collection type string
+#             or null for effective_map_over
+#   semantics_ref: optional label from collection_semantics.yml
+#   note:     optional human-readable note
+#
+# Sentinels:
+#   NULL - NULL_COLLECTION_TYPE (a non-collection dataset)
+#   ANY  - ANY_COLLECTION_TYPE  (matches any collection, rank -1)
+
+# --------------------------------------------------------------------------
+# can_match  -  output satisfies input without mapping
+# --------------------------------------------------------------------------
+
+- op: can_match
+  output: list
+  input: list
+  expected: true
+  note: exact match
+
+- op: can_match
+  output: paired
+  input: paired
+  expected: true
+  note: exact match
+
+- op: can_match
+  output: "list:paired"
+  input: "list:paired"
+  expected: true
+  note: exact match
+
+- op: can_match
+  output: paired
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: PAIRED_OR_UNPAIRED_CONSUMES_PAIRED
+
+- op: can_match
+  output: paired_or_unpaired
+  input: paired
+  expected: false
+  semantics_ref: PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED
+
+- op: can_match
+  output: sample_sheet
+  input: list
+  expected: true
+  semantics_ref: SAMPLE_SHEET_MATCHES_LIST
+
+- op: can_match
+  output: list
+  input: sample_sheet
+  expected: false
+  semantics_ref: LIST_NOT_MATCHES_SAMPLE_SHEET
+
+- op: can_match
+  output: "sample_sheet:paired"
+  input: "list:paired"
+  expected: true
+  semantics_ref: SAMPLE_SHEET_PAIRED_MATCHES_LIST_PAIRED
+
+- op: can_match
+  output: "list:paired"
+  input: "sample_sheet:paired"
+  expected: false
+  semantics_ref: LIST_PAIRED_NOT_MATCHES_SAMPLE_SHEET_PAIRED
+
+- op: can_match
+  output: "list:paired"
+  input: "list:paired_or_unpaired"
+  expected: true
+
+- op: can_match
+  output: list
+  input: "list:paired_or_unpaired"
+  expected: true
+
+- op: can_match
+  output: "sample_sheet:paired_or_unpaired"
+  input: "list:paired_or_unpaired"
+  expected: true
+  semantics_ref: SAMPLE_SHEET_PAIRED_OR_UNPAIRED_MATCHES_LIST_PAIRED_OR_UNPAIRED
+
+- op: can_match
+  output: list
+  input: paired
+  expected: false
+
+- op: can_match
+  output: paired
+  input: list
+  expected: false
+
+- op: can_match
+  output: "list:paired"
+  input: "list:list"
+  expected: false
+
+# ANY / NULL sentinel combinations
+- op: can_match
+  output: list
+  input: ANY
+  expected: true
+
+- op: can_match
+  output: paired
+  input: ANY
+  expected: true
+
+- op: can_match
+  output: NULL
+  input: ANY
+  expected: false
+
+- op: can_match
+  output: NULL
+  input: list
+  expected: false
+
+- op: can_match
+  output: list
+  input: NULL
+  expected: false
+
+- op: can_match
+  output: NULL
+  input: NULL
+  expected: false
+
+# Same-on-same reductions (validity via exact match)
+- op: can_match
+  output: paired_or_unpaired
+  input: paired_or_unpaired
+  expected: true
+
+- op: can_match
+  output: "list:paired_or_unpaired"
+  input: "list:paired_or_unpaired"
+  expected: true
+
+- op: can_match
+  output: sample_sheet
+  input: sample_sheet
+  expected: true
+
+# Nested rejections
+- op: can_match
+  output: "paired:paired"
+  input: "list:paired"
+  expected: false
+
+- op: can_match
+  output: "paired:paired"
+  input: "list:paired_or_unpaired"
+  expected: false
+
+# paired_or_unpaired cannot be reduced by a list/multi-data input
+- op: can_match
+  output: paired_or_unpaired
+  input: list
+  expected: false
+
+# --------------------------------------------------------------------------
+# can_map_over  -  output mapped over input
+# --------------------------------------------------------------------------
+
+- op: can_map_over
+  output: list
+  input: NULL
+  expected: true
+  note: any collection can map over a plain dataset
+
+- op: can_map_over
+  output: paired
+  input: NULL
+  expected: true
+
+- op: can_map_over
+  output: "list:paired"
+  input: NULL
+  expected: true
+
+- op: can_map_over
+  output: paired_or_unpaired
+  input: NULL
+  expected: true
+
+- op: can_map_over
+  output: "list:list"
+  input: NULL
+  expected: true
+
+- op: can_map_over
+  output: "list:paired_or_unpaired"
+  input: NULL
+  expected: true
+
+- op: can_map_over
+  output: sample_sheet
+  input: NULL
+  expected: true
+
+- op: can_map_over
+  output: "list:paired"
+  input: paired
+  expected: true
+  semantics_ref: MAPPING_LIST_PAIRED_OVER_PAIRED
+
+- op: can_map_over
+  output: "list:paired"
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: MAPPING_LIST_PAIRED_OVER_PAIRED_OR_UNPAIRED
+
+- op: can_map_over
+  output: "list:list"
+  input: list
+  expected: true
+  semantics_ref: NESTED_LIST_REDUCTION
+
+- op: can_map_over
+  output: "list:paired"
+  input: list
+  expected: false
+  note: paired tail does not align with list input
+
+- op: can_map_over
+  output: paired
+  input: list
+  expected: false
+  note: rank too low
+
+- op: can_map_over
+  output: list
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: MAPPING_LIST_OVER_PAIRED_OR_UNPAIRED
+
+- op: can_map_over
+  output: "list:list"
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: MAPPING_LIST_LIST_OVER_PAIRED_OR_UNPAIRED
+
+- op: can_map_over
+  output: "list:paired_or_unpaired"
+  input: paired
+  expected: false
+  semantics_ref: PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED_WHEN_MAPPING
+
+- op: can_map_over
+  output: "list:paired_or_unpaired"
+  input: list
+  expected: false
+  semantics_ref: PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_LIST_WHEN_MAPPING
+
+- op: can_map_over
+  output: list
+  input: list
+  expected: false
+  note: cannot map over self
+
+- op: can_map_over
+  output: paired
+  input: paired
+  expected: false
+  note: cannot map over self
+
+# Compound :paired_or_unpaired suffix cases
+- op: can_map_over
+  output: "list:list"
+  input: "list:paired_or_unpaired"
+  expected: true
+  semantics_ref: MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
+
+- op: can_map_over
+  output: "list:list:paired"
+  input: "list:paired_or_unpaired"
+  expected: true
+
+- op: can_map_over
+  output: "list:list:list"
+  input: "list:paired_or_unpaired"
+  expected: true
+
+- op: can_map_over
+  output: "list:paired"
+  input: "list:paired_or_unpaired"
+  expected: false
+  note: same rank, no remainder after stripping :paired
+
+- op: can_map_over
+  output: "paired:paired"
+  input: "list:paired_or_unpaired"
+  expected: false
+  note: outer ranks don't align
+
+# sample_sheet mapping
+- op: can_map_over
+  output: "sample_sheet:paired"
+  input: paired
+  expected: true
+  semantics_ref: SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED
+
+- op: can_map_over
+  output: sample_sheet
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: SAMPLE_SHEET_MAPPING_OVER_PAIRED_OR_UNPAIRED
+
+- op: can_map_over
+  output: "sample_sheet:paired"
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED_OR_UNPAIRED
+
+- op: can_map_over
+  output: "list:list:paired"
+  input: paired_or_unpaired
+  expected: true
+  semantics_ref: MAPPING_LIST_LIST_PAIRED_OVER_PAIRED_OR_UNPAIRED
+
+# Sentinels
+- op: can_map_over
+  output: NULL
+  input: list
+  expected: false
+
+- op: can_map_over
+  output: NULL
+  input: NULL
+  expected: false
+
+- op: can_map_over
+  output: list
+  input: ANY
+  expected: false
+
+- op: can_map_over
+  output: ANY
+  input: list
+  expected: false
+
+# --------------------------------------------------------------------------
+# effective_map_over  -  remainder collection type after mapping
+# expected: collection type string, or null for incompatible / self
+# --------------------------------------------------------------------------
+
+- op: effective_map_over
+  output: "list:paired"
+  input: paired
+  expected: list
+
+- op: effective_map_over
+  output: "list:paired"
+  input: paired_or_unpaired
+  expected: list
+
+- op: effective_map_over
+  output: "list:list"
+  input: list
+  expected: list
+
+- op: effective_map_over
+  output: list
+  input: paired_or_unpaired
+  expected: list
+  note: paired_or_unpaired acts like single_datasets, full type preserved
+
+- op: effective_map_over
+  output: "list:list"
+  input: paired_or_unpaired
+  expected: "list:list"
+
+- op: effective_map_over
+  output: "list:list:paired"
+  input: paired_or_unpaired
+  expected: "list:list"
+
+- op: effective_map_over
+  output: "list:list"
+  input: "list:paired_or_unpaired"
+  expected: list
+  semantics_ref: MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
+
+- op: effective_map_over
+  output: "list:list:paired"
+  input: "list:paired_or_unpaired"
+  expected: list
+
+- op: effective_map_over
+  output: "list:list:list"
+  input: "list:paired_or_unpaired"
+  expected: "list:list"
+
+- op: effective_map_over
+  output: list
+  input: NULL
+  expected: list
+
+- op: effective_map_over
+  output: "list:paired"
+  input: NULL
+  expected: "list:paired"
+
+- op: effective_map_over
+  output: paired
+  input: NULL
+  expected: paired
+
+- op: effective_map_over
+  output: paired_or_unpaired
+  input: NULL
+  expected: paired_or_unpaired
+
+- op: effective_map_over
+  output: "list:list"
+  input: NULL
+  expected: "list:list"
+
+- op: effective_map_over
+  output: "list:paired_or_unpaired"
+  input: NULL
+  expected: "list:paired_or_unpaired"
+
+- op: effective_map_over
+  output: sample_sheet
+  input: NULL
+  expected: sample_sheet
+
+- op: effective_map_over
+  output: "sample_sheet:paired"
+  input: paired
+  expected: sample_sheet
+
+# Incompatible -> null
+- op: effective_map_over
+  output: paired
+  input: list
+  expected: null
+
+- op: effective_map_over
+  output: "list:paired"
+  input: list
+  expected: null
+
+- op: effective_map_over
+  output: NULL
+  input: list
+  expected: null
+
+- op: effective_map_over
+  output: list
+  input: list
+  expected: null
+  note: self returns null
+
+# --------------------------------------------------------------------------
+# compatible  -  symmetric sibling-matching: do these match such that they
+#                could drive a common map-over over sibling inputs of one
+#                tool? Order of args must not change the answer.
+# --------------------------------------------------------------------------
+
+- op: compatible
+  output: list
+  input: list
+  expected: true
+  note: identity
+
+- op: compatible
+  output: paired
+  input: paired
+  expected: true
+
+- op: compatible
+  output: paired
+  input: paired_or_unpaired
+  expected: true
+  note: >
+    Symmetric: paired_or_unpaired.accepts(paired) is true even though
+    paired.accepts(paired_or_unpaired) is false. Pre-rebase code routed
+    sibling matching through can_match (asymmetric), making the answer
+    depend on which sibling arrived first.
+
+- op: compatible
+  output: paired_or_unpaired
+  input: paired
+  expected: true
+  note: same as above with args flipped — must match
+
+- op: compatible
+  output: "list:paired"
+  input: "list:paired_or_unpaired"
+  expected: true
+
+- op: compatible
+  output: "list:paired_or_unpaired"
+  input: "list:paired"
+  expected: true
+
+- op: compatible
+  output: list
+  input: paired
+  expected: false
+  note: incompatible siblings — neither side accepts the other
+
+- op: compatible
+  output: sample_sheet
+  input: list
+  expected: true
+  note: >
+    list.accepts(sample_sheet) is true (sample_sheet is a list with extra
+    metadata); reverse direction is false. compatible covers both.
+
+- op: compatible
+  output: list
+  input: sample_sheet
+  expected: true
+  note: same as above with args flipped
+
+- op: compatible
+  output: NULL
+  input: NULL
+  expected: true
+  note: two non-collection siblings trivially match
+
+- op: compatible
+  output: NULL
+  input: list
+  expected: false
+  note: non-collection sibling cannot drive a list map-over
+
+- op: compatible
+  output: ANY
+  input: list
+  expected: true
+  note: ANY matches any collection sibling

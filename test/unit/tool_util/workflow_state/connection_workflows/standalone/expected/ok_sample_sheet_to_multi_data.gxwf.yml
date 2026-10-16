@@ -1,0 +1,8 @@
+- target: [valid]
+  value: true
+- target: [step_results, 1, connections, 0, status]
+  value: "ok"
+- target: [summary, ok]
+  value: 1
+- target: [summary, invalid]
+  value: 0

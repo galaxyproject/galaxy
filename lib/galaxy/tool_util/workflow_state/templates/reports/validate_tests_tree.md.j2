@@ -1,0 +1,39 @@
+{#-
+  Tree-level report for ``gxwf validate-tests-tree``.
+
+  Context:
+    report — TestsTreeReport as json-dumped dict (``results`` → ``tests_files``)
+-#}
+{% set s = report.summary %}
+# Workflow Tests Validation Report
+
+Root: `{{ report.root }}`
+Files: {{ s.total }} | Valid: {{ s.valid }} | Invalid: {{ s.invalid }} | Load errors: {{ s.load_errors }} | Diagnostics: {{ s.diagnostics }}
+
+{% for cat in report.categories %}
+## {{ cat.name }} ({{ cat.results | length }} files)
+
+| File | Status | Diagnostics |
+| --- | --- | --- |
+{% for r in cat.results %}
+{% if r.load_error %}
+| {{ r.name }} | LOAD_ERROR | {{ r.load_error }} |
+{% elif r.valid %}
+| {{ r.name }} | OK | - |
+{% else %}
+| {{ r.name }} | INVALID | {{ r.diagnostics | length }} |
+{% endif %}
+{% endfor %}
+
+{% endfor %}
+{% set any_diags = [] %}
+{% for r in report.tests_files %}
+{% if r.diagnostics %}
+## Diagnostics: {{ r.path }}
+
+{% for d in r.diagnostics %}
+- `{{ d.path or "(root)" }}` — {{ d.message }}{% if d.category %} [{{ d.category }}]{% endif %}
+
+{% endfor %}
+{% endif %}
+{% endfor %}

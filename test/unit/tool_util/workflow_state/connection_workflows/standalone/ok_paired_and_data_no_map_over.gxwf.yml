@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  paired_input:
+    type: collection
+    collection_type: paired
+  data_input:
+    type: data
+steps:
+  step1:
+    tool_id: collection_mixed_param
+    in:
+      f1: paired_input
+      f2: data_input

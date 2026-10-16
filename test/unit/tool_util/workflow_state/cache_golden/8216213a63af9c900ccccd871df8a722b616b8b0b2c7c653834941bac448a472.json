@@ -1,0 +1,928 @@
+{
+  "id": "trimmomatic",
+  "version": "0.39+galaxy2",
+  "name": "Trimmomatic",
+  "description": "flexible read trimming tool for Illumina NGS data",
+  "inputs": [
+    {
+      "name": "readtype",
+      "parameter_type": "gx_conditional",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "conditional",
+      "test_parameter": {
+        "name": "single_or_paired",
+        "parameter_type": "gx_select",
+        "hidden": false,
+        "label": null,
+        "help": null,
+        "argument": null,
+        "is_dynamic": false,
+        "optional": false,
+        "type": "select",
+        "options": [
+          {
+            "label": "Single-end",
+            "value": "se",
+            "selected": true
+          },
+          {
+            "label": "Paired-end (two separate input files)",
+            "value": "pair_of_files",
+            "selected": false
+          },
+          {
+            "label": "Paired-end (as collection)",
+            "value": "collection",
+            "selected": false
+          }
+        ],
+        "multiple": false,
+        "validators": []
+      },
+      "whens": [
+        {
+          "discriminator": "se",
+          "parameters": [
+            {
+              "name": "fastq_in",
+              "parameter_type": "gx_data",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "data",
+              "extensions": [
+                "data"
+              ],
+              "multiple": false,
+              "min": null,
+              "max": null
+            }
+          ],
+          "is_default_when": true
+        },
+        {
+          "discriminator": "pair_of_files",
+          "parameters": [
+            {
+              "name": "fastq_r1_in",
+              "parameter_type": "gx_data",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "data",
+              "extensions": [
+                "data"
+              ],
+              "multiple": false,
+              "min": null,
+              "max": null
+            },
+            {
+              "name": "fastq_r2_in",
+              "parameter_type": "gx_data",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "data",
+              "extensions": [
+                "data"
+              ],
+              "multiple": false,
+              "min": null,
+              "max": null
+            }
+          ],
+          "is_default_when": false
+        },
+        {
+          "discriminator": "collection",
+          "parameters": [
+            {
+              "name": "fastq_pair",
+              "parameter_type": "gx_data_collection",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "data_collection",
+              "collection_type": "paired",
+              "extensions": [
+                "data"
+              ],
+              "value": null
+            }
+          ],
+          "is_default_when": false
+        }
+      ]
+    },
+    {
+      "name": "illuminaclip",
+      "parameter_type": "gx_conditional",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "conditional",
+      "test_parameter": {
+        "name": "do_illuminaclip",
+        "parameter_type": "gx_select",
+        "hidden": false,
+        "label": null,
+        "help": null,
+        "argument": null,
+        "is_dynamic": false,
+        "optional": false,
+        "type": "select",
+        "options": [
+          {
+            "label": "no",
+            "value": "no",
+            "selected": true
+          },
+          {
+            "label": "yes",
+            "value": "yes",
+            "selected": false
+          }
+        ],
+        "multiple": false,
+        "validators": []
+      },
+      "whens": [
+        {
+          "discriminator": "yes",
+          "parameters": [
+            {
+              "name": "adapter_type",
+              "parameter_type": "gx_conditional",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "conditional",
+              "test_parameter": {
+                "name": "standard_or_custom",
+                "parameter_type": "gx_select",
+                "hidden": false,
+                "label": null,
+                "help": null,
+                "argument": null,
+                "is_dynamic": false,
+                "optional": false,
+                "type": "select",
+                "options": [
+                  {
+                    "label": "Standard",
+                    "value": "standard",
+                    "selected": true
+                  },
+                  {
+                    "label": "Custom",
+                    "value": "custom",
+                    "selected": false
+                  }
+                ],
+                "multiple": false,
+                "validators": []
+              },
+              "whens": [
+                {
+                  "discriminator": "standard",
+                  "parameters": [
+                    {
+                      "name": "adapter_fasta",
+                      "parameter_type": "gx_select",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "select",
+                      "options": [
+                        {
+                          "label": "TruSeq2 (single-ended, for Illumina GAII)",
+                          "value": "TruSeq2-SE.fa",
+                          "selected": false
+                        },
+                        {
+                          "label": "TruSeq3 (single-ended, for MiSeq and HiSeq)",
+                          "value": "TruSeq3-SE.fa",
+                          "selected": false
+                        },
+                        {
+                          "label": "TruSeq2 (paired-ended, for Illumina GAII)",
+                          "value": "TruSeq2-PE.fa",
+                          "selected": false
+                        },
+                        {
+                          "label": "TruSeq3 (paired-ended, for MiSeq and HiSeq)",
+                          "value": "TruSeq3-PE.fa",
+                          "selected": false
+                        },
+                        {
+                          "label": "TruSeq3 (additional seqs) (paired-ended, for MiSeq and HiSeq)",
+                          "value": "TruSeq3-PE-2.fa",
+                          "selected": false
+                        },
+                        {
+                          "label": "Nextera (paired-ended)",
+                          "value": "NexteraPE-PE.fa",
+                          "selected": false
+                        }
+                      ],
+                      "multiple": false,
+                      "validators": []
+                    }
+                  ],
+                  "is_default_when": true
+                },
+                {
+                  "discriminator": "custom",
+                  "parameters": [
+                    {
+                      "name": "adapter_text",
+                      "parameter_type": "gx_text",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": true,
+                      "type": "text",
+                      "area": false,
+                      "default_value": null,
+                      "default_options": [],
+                      "validators": []
+                    }
+                  ],
+                  "is_default_when": false
+                }
+              ]
+            },
+            {
+              "name": "seed_mismatches",
+              "parameter_type": "gx_integer",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "integer",
+              "value": 2,
+              "min": null,
+              "max": null,
+              "validators": []
+            },
+            {
+              "name": "palindrome_clip_threshold",
+              "parameter_type": "gx_integer",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "integer",
+              "value": 30,
+              "min": null,
+              "max": null,
+              "validators": []
+            },
+            {
+              "name": "simple_clip_threshold",
+              "parameter_type": "gx_integer",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "integer",
+              "value": 10,
+              "min": null,
+              "max": null,
+              "validators": []
+            },
+            {
+              "name": "min_adapter_len",
+              "parameter_type": "gx_integer",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "integer",
+              "value": 8,
+              "min": null,
+              "max": null,
+              "validators": []
+            },
+            {
+              "name": "keep_both_reads",
+              "parameter_type": "gx_boolean",
+              "hidden": false,
+              "label": null,
+              "help": null,
+              "argument": null,
+              "is_dynamic": false,
+              "optional": false,
+              "type": "boolean",
+              "value": true,
+              "truevalue": null,
+              "falsevalue": null
+            }
+          ],
+          "is_default_when": false
+        },
+        {
+          "discriminator": "no",
+          "parameters": [],
+          "is_default_when": true
+        }
+      ]
+    },
+    {
+      "name": "operations",
+      "parameter_type": "gx_repeat",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "repeat",
+      "parameters": [
+        {
+          "name": "operation",
+          "parameter_type": "gx_conditional",
+          "hidden": false,
+          "label": null,
+          "help": null,
+          "argument": null,
+          "is_dynamic": false,
+          "optional": false,
+          "type": "conditional",
+          "test_parameter": {
+            "name": "name",
+            "parameter_type": "gx_select",
+            "hidden": false,
+            "label": null,
+            "help": null,
+            "argument": null,
+            "is_dynamic": false,
+            "optional": false,
+            "type": "select",
+            "options": [
+              {
+                "label": "Sliding window trimming (SLIDINGWINDOW)",
+                "value": "SLIDINGWINDOW",
+                "selected": true
+              },
+              {
+                "label": "Drop reads below a specified length (MINLEN)",
+                "value": "MINLEN",
+                "selected": false
+              },
+              {
+                "label": "Cut bases off the start of a read, if below a threshold quality (LEADING)",
+                "value": "LEADING",
+                "selected": false
+              },
+              {
+                "label": "Cut bases off the end of a read, if below a threshold quality (TRAILING)",
+                "value": "TRAILING",
+                "selected": false
+              },
+              {
+                "label": "Cut the read to a specified length (CROP)",
+                "value": "CROP",
+                "selected": false
+              },
+              {
+                "label": "Cut the specified number of bases from the start of the read (HEADCROP)",
+                "value": "HEADCROP",
+                "selected": false
+              },
+              {
+                "label": "Drop reads with average quality lower than a specified level (AVGQUAL)",
+                "value": "AVGQUAL",
+                "selected": false
+              },
+              {
+                "label": "Trim reads adaptively, balancing read length and error rate to maximise the value of each read (MAXINFO)",
+                "value": "MAXINFO",
+                "selected": false
+              }
+            ],
+            "multiple": false,
+            "validators": []
+          },
+          "whens": [
+            {
+              "discriminator": "SLIDINGWINDOW",
+              "parameters": [
+                {
+                  "name": "window_size",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": 4,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                },
+                {
+                  "name": "required_quality",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": 20,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": true
+            },
+            {
+              "discriminator": "MINLEN",
+              "parameters": [
+                {
+                  "name": "minlen",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": 20,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "LEADING",
+              "parameters": [
+                {
+                  "name": "leading",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": 3,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "TRAILING",
+              "parameters": [
+                {
+                  "name": "trailing",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": 3,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "CROP",
+              "parameters": [
+                {
+                  "name": "crop",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": null,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "HEADCROP",
+              "parameters": [
+                {
+                  "name": "headcrop",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": null,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "AVGQUAL",
+              "parameters": [
+                {
+                  "name": "avgqual",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": null,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "MAXINFO",
+              "parameters": [
+                {
+                  "name": "target_length",
+                  "parameter_type": "gx_integer",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "integer",
+                  "value": null,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                },
+                {
+                  "name": "strictness",
+                  "parameter_type": "gx_float",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "float",
+                  "value": null,
+                  "min": null,
+                  "max": null,
+                  "validators": []
+                }
+              ],
+              "is_default_when": false
+            }
+          ]
+        }
+      ],
+      "min": 1,
+      "max": null
+    },
+    {
+      "name": "quality_score",
+      "parameter_type": "gx_select",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "select",
+      "options": [
+        {
+          "label": "Phred33",
+          "value": "-phred33",
+          "selected": false
+        },
+        {
+          "label": "Phred64",
+          "value": "-phred64",
+          "selected": false
+        }
+      ],
+      "multiple": false,
+      "validators": []
+    },
+    {
+      "name": "output_logs",
+      "parameter_type": "gx_boolean",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "boolean",
+      "value": false,
+      "truevalue": null,
+      "falsevalue": null
+    },
+    {
+      "name": "output_err",
+      "parameter_type": "gx_boolean",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "boolean",
+      "value": false,
+      "truevalue": null,
+      "falsevalue": null
+    }
+  ],
+  "outputs": [
+    {
+      "name": "fastq_out_paired",
+      "label": "${tool.name} on ${on_string}: paired",
+      "hidden": false,
+      "type": "collection",
+      "structure": {
+        "collection_type": "paired",
+        "collection_type_source": null,
+        "collection_type_from_rules": null,
+        "structured_like": null,
+        "discover_datasets": []
+      }
+    },
+    {
+      "name": "fastq_out_unpaired",
+      "label": "${tool.name} on ${on_string}: unpaired",
+      "hidden": false,
+      "type": "collection",
+      "structure": {
+        "collection_type": "paired",
+        "collection_type_source": null,
+        "collection_type_from_rules": null,
+        "structured_like": null,
+        "discover_datasets": []
+      }
+    },
+    {
+      "name": "fastq_out_r1_paired",
+      "label": "${tool.name} on ${readtype.fastq_r1_in.name} (R1 paired)",
+      "hidden": false,
+      "type": "data",
+      "format": "data",
+      "format_source": "fastq_r1_in",
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": null,
+      "precreate_directory": false
+    },
+    {
+      "name": "fastq_out_r2_paired",
+      "label": "${tool.name} on ${readtype.fastq_r2_in.name} (R2 paired)",
+      "hidden": false,
+      "type": "data",
+      "format": "data",
+      "format_source": "fastq_r2_in",
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": null,
+      "precreate_directory": false
+    },
+    {
+      "name": "fastq_out_r1_unpaired",
+      "label": "${tool.name} on ${readtype.fastq_r1_in.name} (R1 unpaired)",
+      "hidden": false,
+      "type": "data",
+      "format": "data",
+      "format_source": "fastq_r1_in",
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": null,
+      "precreate_directory": false
+    },
+    {
+      "name": "fastq_out_r2_unpaired",
+      "label": "${tool.name} on ${readtype.fastq_r2_in.name} (R2 unpaired)",
+      "hidden": false,
+      "type": "data",
+      "format": "data",
+      "format_source": "fastq_r2_in",
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": null,
+      "precreate_directory": false
+    },
+    {
+      "name": "fastq_out",
+      "label": "${tool.name} on ${readtype.fastq_in.name}",
+      "hidden": false,
+      "type": "data",
+      "format": "data",
+      "format_source": "fastq_in",
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": null,
+      "precreate_directory": false
+    },
+    {
+      "name": "log_file",
+      "label": "${tool.name} on ${on_string} (trimlog file)",
+      "hidden": false,
+      "type": "data",
+      "format": "txt",
+      "format_source": null,
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": "trimlog",
+      "precreate_directory": false
+    },
+    {
+      "name": "err_file",
+      "label": "${tool.name} on ${on_string} (log file)",
+      "hidden": false,
+      "type": "data",
+      "format": "txt",
+      "format_source": null,
+      "metadata_source": null,
+      "discover_datasets": [
+        {
+          "discover_via": "pattern",
+          "format": null,
+          "visible": false,
+          "assign_primary_output": false,
+          "directory": null,
+          "recurse": false,
+          "match_relative_path": false,
+          "sort_key": "filename",
+          "sort_comp": "lexical",
+          "sort_reverse": false,
+          "pattern": "primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
+        }
+      ],
+      "from_work_dir": "trimmomatic.log",
+      "precreate_directory": false
+    }
+  ],
+  "citations": [
+    {
+      "type": "doi",
+      "content": "10.1093/bioinformatics/btu170"
+    }
+  ],
+  "license": null,
+  "profile": "16.01",
+  "edam_operations": [],
+  "edam_topics": [],
+  "xrefs": [],
+  "help": {
+    "format": "restructuredtext",
+    "content": "\n.. class:: infomark\n\n**What it does**\n\nTrimmomatic performs a variety of useful trimming tasks for illumina paired-end and\nsingle ended data.\n\nThis tool allows the following trimming steps to be performed:\n\n * **ILLUMINACLIP:** Cut adapter and other illumina-specific sequences from the read\n\n   * If **Always keep both reads (PE specific/palindrome mode)** is True, the reverse read will also be retained in palindrome mode.\n     After read-though has been detected by palindrome mode, and the adapter sequence removed,\n     the reverse read contains the same sequence information as the forward read, albeit in reverse complement.\n     For this reason, the default behaviour is to entirely drop the reverse read.\n     Retaining the reverse read may be useful e.g. if the downstream tools cannot handle a combination of paired and unpaired reads.\n * **SLIDINGWINDOW:** Perform a sliding window trimming, cutting once the average\n   quality within the window falls below a threshold\n * **MINLEN:** Drop the read if it is below a specified length\n * **LEADING:** Cut bases off the start of a read, if below a threshold quality\n * **TRAILING:** Cut bases off the end of a read, if below a threshold quality\n * **CROP:** Cut the read to a specified length\n * **HEADCROP:** Cut the specified number of bases from the start of the read\n * **AVGQUAL:** Drop the read if the average quality is below a specified value\n * **MAXINFO:** Trim reads adaptively, balancing read length and error rate to\n   maximise the value of each read\n\nIf ILLUMINACLIP is requested then it is always performed first; subsequent options\ncan be mixed and matched and will be performed in the order that they have been\nspecified.\n\n.. class:: warningmark\n\nNote that trimming operation order is important.\n\n-------------\n\n.. class:: infomark\n\n**Inputs**\n\nFor single-end data this Trimmomatic tool accepts a single FASTQ file; for\npaired-end data it will accept either two FASTQ files (R1 and R2), or a\ndataset collection containing the R1/R2 FASTQ pair.\n\n.. class:: infomark\n\n**Outputs**\n\nFor paired-end data a particular strength of Trimmomatic is that it retains the\npairing of reads (from R1 and R2) in the filtered output files:\n\n * Two FASTQ files (R1-paired and R2-paired) contain one read from each pair where\n   both have survived filtering.\n * Additionally two FASTQ files (R1-unpaired and R2-unpaired) contain reads where\n   one of the pair failed the filtering steps.\n\n.. class:: warningmark\n\nIf the input consists of a dataset collection with the R1/R2 FASTQ pair then\nthe outputs will also inclue two dataset collections: one for the 'paired'\noutputs and one for the 'unpaired' (as described above)\n\nRetaining the same order and number of reads in the filtered output fastq files is\nessential for many downstream analysis tools.\n\nFor single-end data the output is a single FASTQ file containing just the filtered\nreads.\n\n-------------\n\n.. class:: infomark\n\n**Credits**\n\nThis Galaxy tool was originally developed within the Bioinformatics Core\nFacility at the University of Manchester, with contributions from Peter van\nHeusden, Marius van den Beek, Jelle Scholtalbers, Charles Girardot, Matthias\nBernt and Cristóbal Gallardo. It is now maintained as part of the IUC tool\ncollection.\n\nIt runs the Trimmomatic program which has been developed\nwithin Bjorn Usadel's group at RWTH Aachen university.\n\nTrimmomatic website (including documentation):\n\n * http://www.usadellab.org/cms/index.php?page=trimmomatic\n\nThe reference for Trimmomatic is:\n\n * Bolger, A.M., Lohse, M., &amp; Usadel, B. (2014). Trimmomatic: A flexible trimmer\n   for Illumina Sequence Data. Bioinformatics, btu170.\n\nPlease kindly acknowledge both this Galaxy tool and the Trimmomatic program if you\nuse it.\n  "
+  }
+}

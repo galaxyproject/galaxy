@@ -1,0 +1,13 @@
+<tool id="multiple_versions_restructured" name="multiple_versions_restructured" version="0.1">
+    <command><![CDATA[echo "$filter_type $radius" > '$out_file1']]></command>
+    <inputs>
+        <param name="filter_type" type="select">
+            <option value="gaussian" selected="true">Gaussian</option>
+            <option value="median">Median</option>
+        </param>
+        <param name="radius" type="integer" value="3" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

@@ -1,0 +1,17 @@
+class: GalaxyWorkflow
+label: Synthetic Cat1 Format2
+inputs:
+  input_dataset:
+    type: data
+steps:
+  concat:
+    tool_id: cat1
+    tool_version: "1.0.0"
+    in:
+      input1:
+        source: input_dataset
+    state:
+      queries: []
+outputs:
+  concatenated:
+    outputSource: concat/out_file1

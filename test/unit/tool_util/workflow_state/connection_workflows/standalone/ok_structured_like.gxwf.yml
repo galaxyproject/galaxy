@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: paired
+steps:
+  struct_tool:
+    tool_id: collection_paired_structured_like
+    in:
+      input1: input_collection
+  consumer:
+    tool_id: collection_paired_test
+    in:
+      f1:
+        source: struct_tool/list_output

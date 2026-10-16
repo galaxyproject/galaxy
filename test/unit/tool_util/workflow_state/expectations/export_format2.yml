@@ -1,0 +1,114 @@
+# Declarative tests for the export_format2 operation.
+# Operations return the format2 dict directly;
+# assertions navigate its structure.
+
+export_cat1_class_and_steps:
+  fixture: test_workflow_1.ga
+  operation: export_format2
+  assertions:
+    - path: [class]
+      value: GalaxyWorkflow
+    - path: [steps, $length]
+      value: 1
+    - path: [steps, 0, tool_id]
+      value: cat1
+    - path: [steps, 0, tool_version]
+      value: "1.0.0"
+
+export_cat1_inputs:
+  fixture: test_workflow_1.ga
+  operation: export_format2
+  assertions:
+    - path: [inputs, $length]
+      value: 2
+
+export_random_lines_class_and_steps:
+  fixture: test_workflow_2.ga
+  operation: export_format2
+  assertions:
+    - path: [class]
+      value: GalaxyWorkflow
+    - path: [steps, $length]
+      value: 2
+
+export_synthetic_cat1_structure:
+  fixture: synthetic-cat1-stale.ga
+  operation: export_format2
+  assertions:
+    - path: [class]
+      value: GalaxyWorkflow
+    - path: [inputs, $length]
+      value: 1
+    - path: [steps, $length]
+      value: 1
+    - path: [steps, 0, tool_id]
+      value: cat1
+
+export_synthetic_cat1_outputs:
+  fixture: synthetic-cat1-stale.ga
+  operation: export_format2
+  assertions:
+    - path: [outputs, $length]
+      value: 1
+
+# --- Format2 input (round-trip: format2 -> native -> format2) ---
+
+export_format2_roundtrip_structure:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: export_format2
+  assertions:
+    - path: [class]
+      value: GalaxyWorkflow
+    - path: [label]
+      value: Synthetic Cat1 Format2
+    - path: [inputs, $length]
+      value: 1
+    - path: [steps, $length]
+      value: 1
+    - path: [steps, 0, tool_id]
+      value: cat1
+    - path: [outputs, $length]
+      value: 1
+
+# --- IWC workflows ---
+
+export_iwc_repeatmasking_structure:
+  fixture: RepeatMasking-Workflow.ga
+  operation: export_format2
+  assertions:
+    - path: [class]
+      value: GalaxyWorkflow
+    - path: [inputs, $length]
+      value: 1
+    - path: [steps, $length]
+      value: 2
+
+export_iwc_rnaseq_structure:
+  fixture: rnaseq-sr.ga
+  operation: export_format2
+  assertions:
+    - path: [class]
+      value: GalaxyWorkflow
+    - path: [inputs, $length]
+      value: 10
+    - path: [steps, $length]
+      value: 15
+
+export_iwc_rnaseq_subworkflow_inline:
+  fixture: rnaseq-sr.ga
+  operation: export_format2
+  assertions:
+    # "Generate Unstranded Coverage" subworkflow exported as inline run
+    - path: [steps, 7, label]
+      value: Generate Unstranded Coverage
+    - path: [steps, 7, run]
+      value_type: dict
+    - path: [steps, 7, run, class]
+      value: GalaxyWorkflow
+    - path: [steps, 7, run, steps, $length]
+      value: 5
+    # verify tool_ids inside the subworkflow steps
+    - path: [steps, 7, run, steps, 0, tool_id]
+      value_contains: tp_awk_tool
+    - path: [steps, 7, run, steps, 4, tool_id]
+      value: wig_to_bigWig

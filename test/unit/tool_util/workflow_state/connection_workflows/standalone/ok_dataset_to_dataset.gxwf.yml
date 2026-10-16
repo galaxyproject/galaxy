@@ -1,0 +1,9 @@
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
+steps:
+  step1:
+    tool_id: gx_data
+    in:
+      parameter: input1

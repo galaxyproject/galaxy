@@ -1,0 +1,8 @@
+- doc: Single File input via location
+  job:
+    input:
+      class: File
+      location: https://example.org/input.fq
+      filetype: fastq
+  outputs:
+    out: expected.fq

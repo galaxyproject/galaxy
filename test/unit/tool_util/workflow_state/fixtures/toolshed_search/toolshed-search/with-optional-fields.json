@@ -1,0 +1,21 @@
+{
+  "total_results": "1",
+  "page": "1",
+  "page_size": "10",
+  "hostname": "https://toolshed.example",
+  "hits": [
+    {
+      "tool": {
+        "id": "fastqc",
+        "name": "FastQC",
+        "description": "Read quality reports",
+        "repo_name": "fastqc",
+        "repo_owner_username": "devteam",
+        "version": "0.74+galaxy0",
+        "changeset_revision": "abc123def456"
+      },
+      "matched_terms": { "name": "fastqc" },
+      "score": 47.96
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Synthetic Cat Conditional",
+    "steps": {
+        "0": {
+            "id": 0,
+            "type": "data_input",
+            "tool_id": null,
+            "label": "input_dataset",
+            "tool_state": {
+                "name": "input_dataset"
+            }
+        },
+        "1": {
+            "id": 1,
+            "type": "parameter_input",
+            "tool_id": null,
+            "label": "run_it",
+            "tool_state": {
+                "validators": [],
+                "parameter_type": "boolean",
+                "optional": false
+            }
+        },
+        "2": {
+            "id": 2,
+            "type": "tool",
+            "tool_id": "cat",
+            "tool_version": "1.0.0",
+            "label": "concat",
+            "when": "$(inputs.when)",
+            "tool_state": {
+                "input1": {"__class__": "ConnectedValue"},
+                "queries": []
+            },
+            "input_connections": {
+                "input1": {"id": 0, "output_name": "output"},
+                "when": {"id": 1, "output_name": "output"}
+            },
+            "workflow_outputs": [
+                {"label": "concatenated", "output_name": "out_file1"}
+            ]
+        }
+    }
+}

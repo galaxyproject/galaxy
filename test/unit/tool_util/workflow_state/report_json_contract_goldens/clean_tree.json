@@ -1,0 +1,144 @@
+{
+  "categories": [
+    {
+      "name": "catA",
+      "results": [
+        {
+          "category": "catA",
+          "error": null,
+          "name": "wf1.ga",
+          "path": "catA/wf1.ga",
+          "results": [
+            {
+              "display_label": "cat1 1.0.0",
+              "removed_state_keys": [
+                "legacy_param",
+                "bookkeeping_key"
+              ],
+              "removed_step_keys": [],
+              "revert_reason": "",
+              "reverted": false,
+              "skip_reason": "",
+              "skipped": false,
+              "step": "1",
+              "tool_id": "cat1",
+              "version": "1.0.0"
+            },
+            {
+              "display_label": "Grep1",
+              "removed_state_keys": [],
+              "removed_step_keys": [],
+              "revert_reason": "",
+              "reverted": false,
+              "skip_reason": "",
+              "skipped": false,
+              "step": "2",
+              "tool_id": "Grep1",
+              "version": null
+            },
+            {
+              "display_label": "unknown",
+              "removed_state_keys": [],
+              "removed_step_keys": [],
+              "revert_reason": "",
+              "reverted": false,
+              "skip_reason": "non-tool step",
+              "skipped": true,
+              "step": "3",
+              "tool_id": null,
+              "version": null
+            }
+          ],
+          "skipped_reason": null,
+          "steps_affected": 1,
+          "total_removed": 2
+        }
+      ]
+    },
+    {
+      "name": "catB",
+      "results": [
+        {
+          "category": "catB",
+          "error": null,
+          "name": "wf_skip.ga",
+          "path": "catB/wf_skip.ga",
+          "results": [],
+          "skipped_reason": "legacy_encoding",
+          "steps_affected": 0,
+          "total_removed": 0
+        }
+      ]
+    }
+  ],
+  "root": "/tmp/workflows",
+  "summary": {
+    "affected": 1,
+    "clean": 0,
+    "errors": 0,
+    "skipped": 1,
+    "total_keys": 2
+  },
+  "workflows": [
+    {
+      "category": "catA",
+      "error": null,
+      "name": "wf1.ga",
+      "path": "catA/wf1.ga",
+      "results": [
+        {
+          "display_label": "cat1 1.0.0",
+          "removed_state_keys": [
+            "legacy_param",
+            "bookkeeping_key"
+          ],
+          "removed_step_keys": [],
+          "revert_reason": "",
+          "reverted": false,
+          "skip_reason": "",
+          "skipped": false,
+          "step": "1",
+          "tool_id": "cat1",
+          "version": "1.0.0"
+        },
+        {
+          "display_label": "Grep1",
+          "removed_state_keys": [],
+          "removed_step_keys": [],
+          "revert_reason": "",
+          "reverted": false,
+          "skip_reason": "",
+          "skipped": false,
+          "step": "2",
+          "tool_id": "Grep1",
+          "version": null
+        },
+        {
+          "display_label": "unknown",
+          "removed_state_keys": [],
+          "removed_step_keys": [],
+          "revert_reason": "",
+          "reverted": false,
+          "skip_reason": "non-tool step",
+          "skipped": true,
+          "step": "3",
+          "tool_id": null,
+          "version": null
+        }
+      ],
+      "skipped_reason": null,
+      "steps_affected": 1,
+      "total_removed": 2
+    },
+    {
+      "category": "catB",
+      "error": null,
+      "name": "wf_skip.ga",
+      "path": "catB/wf_skip.ga",
+      "results": [],
+      "skipped_reason": "legacy_encoding",
+      "steps_affected": 0,
+      "total_removed": 0
+    }
+  ]
+}

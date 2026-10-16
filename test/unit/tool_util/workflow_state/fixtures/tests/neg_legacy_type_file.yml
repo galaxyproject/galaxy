@@ -1,0 +1,7 @@
+- doc: Legacy Planemo type:File form, not modeled
+  job:
+    input:
+      type: File
+      value: test-data/input.fq
+  outputs:
+    out: expected.fq

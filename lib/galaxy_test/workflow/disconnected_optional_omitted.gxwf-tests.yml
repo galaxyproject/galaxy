@@ -1,0 +1,17 @@
+- doc: |
+    Control for disconnected_optional_runtime_value: same optional data param with the
+    marker omitted entirely. Identical output proves dropping the RuntimeValue marker is
+    behavior-preserving (marker-present == marker-absent).
+  job: {}
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_line
+          line: "INPUT None"
+        - that: has_line
+          line: "INPUT ext data"
+        - that: has_line
+          line: "ISOFTYPE mothur.names False"
+        - that: has_line
+          line: "ISOFTYPE mothur.count_table False"

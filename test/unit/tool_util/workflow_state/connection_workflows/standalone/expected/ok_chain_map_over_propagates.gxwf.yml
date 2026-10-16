@@ -1,0 +1,8 @@
+- target: [step_results, 1, map_over]
+  value: "list"
+- target: [step_results, 2, map_over]
+  value: "list"
+- target: [step_results, 1, resolved_outputs, 0, collection_type]
+  value: "list"
+- target: [step_results, 2, resolved_outputs, 0, collection_type]
+  value: "list"

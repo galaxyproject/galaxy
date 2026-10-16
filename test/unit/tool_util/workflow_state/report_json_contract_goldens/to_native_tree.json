@@ -1,0 +1,111 @@
+{
+  "categories": [
+    {
+      "name": "catA",
+      "results": [
+        {
+          "category": "catA",
+          "error": null,
+          "name": "wf_ok.gxwf.yml",
+          "ok": true,
+          "path": "catA/wf_ok.gxwf.yml",
+          "skipped_reason": null,
+          "status": "ok",
+          "steps_encoded": 5,
+          "steps_fallback": 0
+        },
+        {
+          "category": "catA",
+          "error": null,
+          "name": "wf_fallback.gxwf.yml",
+          "ok": true,
+          "path": "catA/wf_fallback.gxwf.yml",
+          "skipped_reason": null,
+          "status": "ok",
+          "steps_encoded": 3,
+          "steps_fallback": 2
+        }
+      ]
+    },
+    {
+      "name": "catB",
+      "results": [
+        {
+          "category": "catB",
+          "error": "encode failed",
+          "name": "wf_err.gxwf.yml",
+          "ok": false,
+          "path": "catB/wf_err.gxwf.yml",
+          "skipped_reason": null,
+          "status": "error",
+          "steps_encoded": 0,
+          "steps_fallback": 0
+        },
+        {
+          "category": "catB",
+          "error": null,
+          "name": "wf_skip.gxwf.yml",
+          "ok": false,
+          "path": "catB/wf_skip.gxwf.yml",
+          "skipped_reason": "legacy encoding",
+          "status": "skipped",
+          "steps_encoded": 0,
+          "steps_fallback": 0
+        }
+      ]
+    }
+  ],
+  "output_dir": "/tmp/out",
+  "root": "/tmp/workflows",
+  "summary": {
+    "fail": 1,
+    "ok": 2,
+    "skipped": 1
+  },
+  "workflows": [
+    {
+      "category": "catA",
+      "error": null,
+      "name": "wf_ok.gxwf.yml",
+      "ok": true,
+      "path": "catA/wf_ok.gxwf.yml",
+      "skipped_reason": null,
+      "status": "ok",
+      "steps_encoded": 5,
+      "steps_fallback": 0
+    },
+    {
+      "category": "catA",
+      "error": null,
+      "name": "wf_fallback.gxwf.yml",
+      "ok": true,
+      "path": "catA/wf_fallback.gxwf.yml",
+      "skipped_reason": null,
+      "status": "ok",
+      "steps_encoded": 3,
+      "steps_fallback": 2
+    },
+    {
+      "category": "catB",
+      "error": "encode failed",
+      "name": "wf_err.gxwf.yml",
+      "ok": false,
+      "path": "catB/wf_err.gxwf.yml",
+      "skipped_reason": null,
+      "status": "error",
+      "steps_encoded": 0,
+      "steps_fallback": 0
+    },
+    {
+      "category": "catB",
+      "error": null,
+      "name": "wf_skip.gxwf.yml",
+      "ok": false,
+      "path": "catB/wf_skip.gxwf.yml",
+      "skipped_reason": "legacy encoding",
+      "status": "skipped",
+      "steps_encoded": 0,
+      "steps_fallback": 0
+    }
+  ]
+}

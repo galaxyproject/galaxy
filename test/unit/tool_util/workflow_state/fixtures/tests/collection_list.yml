@@ -1,0 +1,14 @@
+- doc: List collection input
+  job:
+    input:
+      class: Collection
+      collection_type: list
+      elements:
+        - class: File
+          identifier: sample1
+          path: test-data/s1.fq
+        - class: File
+          identifier: sample2
+          path: test-data/s2.fq
+  outputs:
+    out: expected.fq

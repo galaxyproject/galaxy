@@ -1,0 +1,8 @@
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: opt/output
+steps:
+  opt:
+    tool_id: data_optional

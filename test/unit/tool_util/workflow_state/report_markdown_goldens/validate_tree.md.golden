@@ -1,0 +1,30 @@
+# Workflow Validation Report
+
+Root: `/tmp/workflows`
+Workflows: 4 | Steps: 4 OK, 2 FAIL, 1 SKIP, 1 ERROR | 1 workflow(s) skipped
+
+## catA (2 workflows)
+
+| Workflow | Steps | OK | Fail | Skip | Details |
+| --- | --- | --- | --- | --- | --- |
+| wf_ok.ga | 3 | 3 | 0 | 0 |  |
+| wf_fail.ga | 4 | 1 | 2 | 1 | 2 failure(s) |
+
+## catB (2 workflows)
+
+| Workflow | Steps | OK | Fail | Skip | Details |
+| --- | --- | --- | --- | --- | --- |
+| wf_err.ga | - | - | - | - | ERROR: parse failed |
+| wf_skip.ga | - | - | - | - | SKIPPED: legacy_encoding |
+
+## Failure Details
+
+- **catA/wf_fail.ga** Step 2 (Grep1): param X is invalid
+- **catA/wf_fail.ga** Step 3 (Cut1): missing required param
+
+## Connections: catA/wf_ok.ga
+
+## Connection Validation
+
+**Status:** VALID
+**Connections:** 1 OK, 0 INVALID, 0 SKIP

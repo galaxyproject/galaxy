@@ -1,0 +1,20 @@
+- target: [valid]
+  value: false
+- target: [step_results, 1, tool_id]
+  value: cat_user_defined
+- target: [step_results, 1, connections, 0, status]
+  value: "ok"
+- target: [step_results, 1, connections, 0, errors]
+  value: []
+- target: [step_results, 1, errors]
+  value: []
+- target: [step_results, 2, tool_id]
+  value: gx_data_collection_list
+- target: [step_results, 2, connections, 0, source_step]
+  value: "1"
+- target: [step_results, 2, connections, 0, status]
+  value: "invalid"
+- target: [summary, ok]
+  value: 1
+- target: [summary, invalid]
+  value: 1
