@@ -47,10 +47,17 @@ const props = withDefaults(
         /** Render as a toggle switch instead of a checkbox; inside a group, the group's `switches` decides */
         switch?: boolean;
         /** Value attribute for the checkbox input, rendered as a string whenever it is set */
+        // eslint-disable-next-line vue/require-default-prop -- withDefaults types no undefined default for unknown, and any other default narrows the prop's type
         value?: unknown;
     }>(),
-    // Undefined, not Vue's false for an absent boolean, so an unbound checkbox can be told apart
-    { modelValue: undefined },
+    {
+        // Undefined, not Vue's false for an absent boolean, so an unbound checkbox can be told apart
+        modelValue: undefined,
+        ariaLabel: undefined,
+        id: undefined,
+        name: undefined,
+        size: undefined,
+    },
 );
 
 const emit = defineEmits<{

@@ -228,6 +228,15 @@ describe("GCheckbox", () => {
         expect(wrapper.find("input").attributes("value")).toBe("0");
     });
 
+    it("renders no id, name, aria-label or value when they are unset", () => {
+        const input = mount(GCheckbox, { props: { modelValue: false } }).find("input");
+
+        expect(input.attributes("id")).toBeUndefined();
+        expect(input.attributes("name")).toBeUndefined();
+        expect(input.attributes("aria-label")).toBeUndefined();
+        expect(input.attributes("value")).toBeUndefined();
+    });
+
     it.each([
         ["small", "g-small"],
         ["large", "g-large"],
