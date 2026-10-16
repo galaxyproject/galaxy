@@ -947,8 +947,12 @@ def _populate_store_inline_unlocked(
                     continue
                 d, stored, tool_source = index_input
                 new_entry = build_index_entry_from_source(d, stored, tool_source, biotools_metadata_source)
-                if new_entry is not None:
-                    index.add_entry(new_entry, new_placements_first=not full_scan)
+                if new_entry is None:
+                    # The tool is left out of the index, so a consumer of this store
+                    # won't load it: report it like a parse failure.
+                    stats["errors"] += 1
+                    continue
+                index.add_entry(new_entry, new_placements_first=not full_scan)
             if full_scan and previous_index is not None and previous_index.panel_items:
                 # The placements list is the panel's ordering memory — the
                 # role integrated_tool_panel.xml plays for the eager toolbox.
