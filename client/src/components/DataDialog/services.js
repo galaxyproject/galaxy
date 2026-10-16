@@ -5,21 +5,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 /** Data populator traverses raw server responses **/
 export class Services {
     get(url) {
-        return new Promise((resolve, reject) => {
-            axios
-                .get(url)
-                .then((response) => {
-                    const items = this.getItems(response.data);
-                    resolve(items);
-                })
-                .catch((e) => {
-                    let errorMessage = "Request failed.";
-                    if (e.response) {
-                        errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-                    }
-                    reject(errorMessage);
-                });
-        });
+        return axios.get(url).then((response) => this.getItems(response.data));
     }
 
     /** Returns the formatted results **/
