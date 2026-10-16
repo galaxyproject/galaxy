@@ -7403,13 +7403,28 @@ steps:
     def test_run_with_unknown_on_complete_action_creates_no_history(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
         history_name = f"unknown completion action history {uuid4()}"
-        response = self._post(
-            f"workflows/{workflow_id}/invocations",
-            data={"new_history_name": history_name, "on_complete": [{"not_an_action": {}}]},
-            json=True,
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "on_complete": [{"not_an_action": {}}]},
         )
         self._assert_status_code_is(response, 400)
         assert_error_message_contains(response, "Unknown on_complete action 'not_an_action'")
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize(
+        "config",
+        [None, [], "invalid", {}, {"target_uri": None}, {"target_uri": ""}, {"target_uri": "   "}, {"target_uri": 42}],
+    )
+    def test_run_with_invalid_export_completion_config_creates_no_history(self, config):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        history_name = f"invalid completion export history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "on_complete": [{"export_to_file_source": config}]},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "export_to_file_source")
         assert self.workflow_populator.workflow_invocations(workflow_id) == []
         assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
 

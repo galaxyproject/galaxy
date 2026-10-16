@@ -662,6 +662,9 @@ class WorkflowsService(ServiceBase):
                     raise exceptions.RequestParameterInvalidException(
                         f"Unknown on_complete action '{action_name}', available actions are: {', '.join(available_actions)}"
                     )
+                hook = self._completion_hook_registry.get_hook(action_name)
+                assert hook is not None  # The action name was checked against the registry above.
+                hook.validate_config(action[action_name])
 
     def _create_landing_request_association(
         self, trans: ProvidesUserContext, landing_uuid: UUID4 | None, invocations: list[WorkflowInvocation]
