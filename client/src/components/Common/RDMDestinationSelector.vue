@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BCard, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -11,6 +11,8 @@ import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GRadio from "@/components/BaseComponents/GRadio.vue";
+import GRadioGroup from "@/components/BaseComponents/GRadioGroup.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
@@ -106,15 +108,15 @@ defineExpose({
             <b>new record</b> or select an existing <b>draft record</b> and then export your {{ what }} to it.
         </p>
 
-        <BFormRadioGroup v-model="exportChoice" class="export-radio-group">
-            <BFormRadio :id="`radio-new-${uniqueSourceId}`" v-localize name="exportChoice" value="new">
-                Export to new record
-            </BFormRadio>
+        <GRadioGroup v-model="exportChoice" class="export-radio-group" :aria-label="localize('Export destination')">
+            <GRadio :id="`radio-new-${uniqueSourceId}`" value="new">
+                {{ localize("Export to new record") }}
+            </GRadio>
 
-            <BFormRadio :id="`radio-existing-${uniqueSourceId}`" v-localize name="exportChoice" value="existing">
-                Export to existing draft record
-            </BFormRadio>
-        </BFormRadioGroup>
+            <GRadio :id="`radio-existing-${uniqueSourceId}`" value="existing">
+                {{ localize("Export to existing draft record") }}
+            </GRadio>
+        </GRadioGroup>
 
         <div v-if="exportChoice === 'new'">
             <div v-if="newEntry">
