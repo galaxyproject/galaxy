@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDebounce } from "@vueuse/core";
-import { BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
@@ -8,6 +8,7 @@ import { EMBED_LABELS } from "@/components/Page/constants";
 import { copy } from "@/utils/clipboard";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import PageView from "@/components/Page/PageView.vue";
 
 interface Props {
@@ -59,9 +60,12 @@ function onCopy() {
         <div class="settings">
             <h4>Settings</h4>
 
-            <BFormCheckbox v-model="settings.showHeading" switch> {{ EMBED_LABELS.showTitle }} </BFormCheckbox>
+            <!-- GCheckbox renders inline, so stack the switches here -->
+            <div class="d-flex flex-column align-items-start">
+                <GCheckbox v-model="settings.showHeading" switch> {{ EMBED_LABELS.showTitle }} </GCheckbox>
 
-            <BFormCheckbox v-model="settings.applyStyle" switch> Apply default styling </BFormCheckbox>
+                <GCheckbox v-model="settings.applyStyle" switch> Apply default styling </GCheckbox>
+            </div>
 
             <div v-if="settings.applyStyle" class="dimension-controls">
                 <label>
@@ -88,7 +92,7 @@ function onCopy() {
                 </BInputGroup>
             </label>
 
-            <BFormCheckbox v-model="showEmbed" switch>Show embed Preview</BFormCheckbox>
+            <GCheckbox v-model="showEmbed" class="align-self-start" switch>Show embed Preview</GCheckbox>
             <PageView
                 v-if="showEmbedDebounced"
                 :page-id="props.id"

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface SharingIndicatorProps {
@@ -36,18 +36,14 @@ watch(props, () => {
                 :icon="faExclamationTriangle"
                 class="make-page-object-accessible-sharing-error-icon" />
         </div>
-        <BFormCheckbox
+        <GCheckbox
             v-else
             switch
-            :checked="accessible"
+            aria-label="Make accessible"
             class="make-page-object-accessible"
-            :disabled="accessible"
-            @change="
-                () => {
-                    makeAccessible();
-                }
-            ">
-        </BFormCheckbox>
+            :model-value="accessible === true"
+            :disabled="accessible === true"
+            @update:model-value="makeAccessible" />
     </div>
 </template>
 
@@ -59,15 +55,20 @@ watch(props, () => {
     color: $brand-danger;
 }
 
-.make-page-object-accessible .custom-control-label::after {
-    background-color: white;
+// Off reads as a warning and the locked on-state as success, so the table shows what still needs sharing
+label.make-page-object-accessible.g-checkbox.g-switch > .g-checkbox-input {
+    --g-switch-knob-color: white;
+
+    border-color: lighten($brand-warning, 15%);
+    background-color: lighten($brand-warning, 15%);
+
+    &:disabled {
+        border-color: lighten($brand-success, 15%);
+        background-color: lighten($brand-success, 15%);
+    }
 }
 
-.make-page-object-accessible .custom-control-label::before {
-    background-color: lighten($brand-warning, 15%) !important;
-}
-
-.make-page-object-accessible .custom-control-input[disabled] ~ .custom-control-label::before {
-    background-color: lighten($brand-success, 15%) !important;
+label.make-page-object-accessible.g-checkbox.g-disabled {
+    opacity: 1;
 }
 </style>

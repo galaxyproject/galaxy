@@ -499,8 +499,8 @@ shared_histories:
 
 history_copy_elements:
   selectors:
-    dataset_checkbox: '[data-description="copy dataset|${id}"] + label'
-    collection_checkbox: '[data-description="copy dataset_collection|${id}"] + label'
+    dataset_checkbox: '[data-description="copy dataset|${id}"]'
+    collection_checkbox: '[data-description="copy dataset_collection|${id}"]'
     new_history_name: '[data-description="copy history name"]'
     new_history_link: '[data-description="copy switch history"]'
     copy_button: '[data-description="copy button"]'
@@ -568,8 +568,8 @@ histories:
       submit_sharing_with: '.submit-sharing-with'
       share_with_multiselect: '.share_with_view > .multiselect'
       share_with_input: '.share_with_view input'
-      make_accessible: '.make-accessible label'
-      make_publishable: '.make-publishable label'
+      make_accessible: '.make-accessible input'
+      make_publishable: '.make-publishable input'
       tab_make_private: '[aria-controls="history-make-private-tab"]'
       make_private: '[data-description="history make private"]'
       permissions_change_required: '[data-description="sharing permissions change required"]'

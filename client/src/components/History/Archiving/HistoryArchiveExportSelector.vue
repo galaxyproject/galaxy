@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { HistorySummary } from "@/api";
@@ -11,6 +10,7 @@ import { useTaskMonitor } from "@/composables/taskMonitor";
 import ExportRecordCard from "./ExportRecordCard.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
@@ -194,9 +194,9 @@ function onArchiveHistoryWithExport() {
             archive it using the checkbox below. If you created an export record above, you will be able to recreate the
             history later by importing it from the export record.
         </p>
-        <BFormCheckbox id="confirm-delete-checkbox" v-model="isDeleteContentsConfirmed" class="my-3">
+        <GCheckbox id="confirm-delete-checkbox" v-model="isDeleteContentsConfirmed" class="my-3">
             <b>I am aware that the contents of the original history will be permanently deleted.</b>
-        </BFormCheckbox>
+        </GCheckbox>
         <GAlert show variant="warning">
             Remember that you cannot undo this action. Once you archive and delete the history, you can only recover it
             by importing it as a new copy from the export record.

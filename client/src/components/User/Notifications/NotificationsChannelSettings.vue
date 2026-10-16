@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";
 import { snakeCaseToTitleCase } from "@/utils/strings";
+
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 interface NotificationsChannelSettingsProps {
     preferences: UserNotificationPreferences;
@@ -32,9 +33,9 @@ watch(
 
 <template>
     <div class="category-channel">
-        <BFormCheckbox v-model="value" v-localize :disabled="!isCategoryEnabled">
-            {{ snakeCaseToTitleCase(channel) }}
-        </BFormCheckbox>
+        <GCheckbox v-model="value" :disabled="!isCategoryEnabled">
+            <span v-localize>{{ snakeCaseToTitleCase(channel) }}</span>
+        </GCheckbox>
 
         <FontAwesomeIcon
             v-if="channel === 'push'"
