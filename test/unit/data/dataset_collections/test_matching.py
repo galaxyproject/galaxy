@@ -103,6 +103,26 @@ def test_query_always_direct_match_if_no_collection_type_on_input_specified():
     assert q.direct_match(list_of_lists) is True
 
 
+def test_query_list_of_paireds_to_list_or_list_of_paireds():
+    """Regression for the "Nest collection" tool (lib/galaxy/tools/nest_collection.xml).
+
+    Its input accepts ``list`` and ``list:paired`` as whole collections. A
+    ``list:paired`` collection must therefore match directly and must *not*
+    be mapped over - with the previous ``list,paired`` parameter type the
+    collection was mapped over its pairs, so each pair was processed
+    separately and the tool wrapped the pair's datasets instead of the pair,
+    producing an extra nesting level.
+    """
+    list_of_paired_datasets = example_list_of_paired_datasets()
+    q = query.HistoryQuery.from_collection_types(["list", "list:paired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_paired_datasets) is False
+    assert q.direct_match(list_of_paired_datasets) is True
+
+    flat_list = list_instance(ids=["data1", "data2"])
+    assert q.can_map_over(flat_list) is False
+    assert q.direct_match(flat_list) is True
+
+
 def assert_can_match(*items):
     to_match = build_collections_to_match(*items)
     matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
