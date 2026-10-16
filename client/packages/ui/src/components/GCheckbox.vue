@@ -159,14 +159,12 @@ function onChange(event: Event) {
         opacity: 0.6;
     }
 
-    // Centered on the line, the 1rem box fits the line height instead of growing table rows by 2px
     &:not(.g-switch) {
         vertical-align: middle;
     }
 }
 
 .g-checkbox-input {
-    // The 13px browser default looks smaller than the 1rem custom-control checkboxes elsewhere in the app
     width: 1rem;
     height: 1rem;
     margin: 0;
