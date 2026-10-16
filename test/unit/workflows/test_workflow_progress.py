@@ -3,10 +3,12 @@ from typing import cast
 import pytest
 
 from galaxy import model
+from galaxy.schema.invocation import FailureReason
 from galaxy.util.unittest import TestCase
 from galaxy.workflow import modules
 from galaxy.workflow.run import (
     ModuleInjector,
+    STEP_OUTPUT_DELAYED,
     WorkflowProgress,
 )
 from .workflow_support import (
@@ -290,6 +292,43 @@ class TestWorkflowProgress(TestCase):
             subworkflow_cat_step,
             step_dict,
         )
+
+
+@pytest.mark.parametrize("connection_state", ["disconnected", "ready", "pending"])
+def test_disconnected_subworkflow_runtime_failure(connection_state):
+    # Persist a run directly: ordinary submission now rejects this saved graph.
+    app = MockApp()
+    workflow = yaml_to_model(TEST_SUBWORKFLOW_YAML)
+    subworkflow_step = workflow.step_by_index(1)
+    missing_input = model.WorkflowStep()
+    missing_input.id = 104
+    missing_input.order_index = 2
+    missing_input.type = "data_input"
+    missing_input.tool_inputs = {"name": "missing_input"}
+    subworkflow_step.subworkflow.steps.append(missing_input)
+    if connection_state == "disconnected":
+        subworkflow_step.inputs = []
+    invocation = model.WorkflowInvocation()
+    invocation.workflow = workflow
+    subworkflow_invocation = invocation.create_subworkflow_invocation_for_step(subworkflow_step)
+    session = app.model.session
+    session.add(invocation)
+    session.add(subworkflow_invocation)
+    session.commit()
+    injector = cast(ModuleInjector, MockModuleInjector({}))
+    progress = WorkflowProgress(invocation, {}, injector, {})
+    if connection_state == "ready":
+        progress.outputs[workflow.step_by_index(0).id] = {"output": model.HistoryDatasetAssociation()}
+    elif connection_state == "pending":
+        progress.outputs[workflow.step_by_index(0).id] = STEP_OUTPUT_DELAYED
+
+    with pytest.raises(modules.FailWorkflowEvaluation) as exc:
+        progress.subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
+    assert exc.value.why.model_dump(exclude_none=True) == {
+        "reason": FailureReason.unexpected_failure,
+        "workflow_step_id": subworkflow_step.id,
+        "details": "Subworkflow has disconnected required input.",
+    }
 
 
 class MockModuleInjector:
