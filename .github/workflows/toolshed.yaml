@@ -8,6 +8,7 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
+      - '.github/workflows/_report_scheduled_result.yaml'
   pull_request:
     paths:
       - '**'
@@ -16,11 +17,17 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
+      - '.github/workflows/_report_scheduled_result.yaml'
+  schedule:
+    # Run every supported Python version at 01:17 UTC daily
+    - cron: '17 1 * * *'
+  workflow_dispatch:
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   TOOL_SHED_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Keep pushes to dev from cancelling the scheduled run.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 permissions: {}
 jobs:
@@ -35,7 +42,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.14']
+        # Pull requests and pushes to dev run only the newest Python; ruff and mypy catch most code too new for the oldest.
+        # Release branches get no nightly run, so they keep the oldest and newest.
+        python-version: >-
+          ${{ fromJSON(
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          || startsWith(github.base_ref || github.ref_name, 'release_') && '["3.10", "3.14"]'
+          || '["3.14"]'
+          ) }}
         test-install-client: ['galaxy_api', 'standalone']
     services:
       postgres:
@@ -94,3 +108,18 @@ jobs:
         with:
           name: Toolshed test results (${{ matrix.python-version }}, ${{ matrix.test-install-client }})
           path: 'galaxy root/run_toolshed_tests.html'
+  report:
+    needs: [test]
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    permissions:
+      actions: read
+      issues: write
+    uses: $/.github/workflows/_report_scheduled_result.yaml
+    with:
+      title: Scheduled Tool Shed tests are failing
+      labels: area/toolshed, area/testing, kind/bug
+      description: |-
+        The nightly run of the Tool Shed tests across every supported Python version failed.
+
+        Pull requests to dev run the Tool Shed tests on the newest Python only; nightly runs cover every supported version. Release branches retain the oldest and newest versions.
+      needs: ${{ toJSON(needs) }}
