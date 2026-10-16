@@ -20,6 +20,7 @@ on:
       - '.github/workflows/_build_client.yaml'
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

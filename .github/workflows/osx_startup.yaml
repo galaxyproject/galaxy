@@ -18,6 +18,8 @@ on:
       - '!.github/workflows/**'
       - '.github/workflows/osx_startup.yaml'
       - '.github/workflows/_build_client.yaml'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

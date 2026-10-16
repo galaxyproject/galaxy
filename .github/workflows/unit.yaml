@@ -24,6 +24,8 @@ on:
     # Run every supported Python version at 00:17 UTC daily
     - cron: '17 0 * * *'
   workflow_dispatch:
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   # Keep pushes to dev from cancelling the scheduled run.
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

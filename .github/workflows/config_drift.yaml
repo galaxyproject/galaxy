@@ -19,6 +19,8 @@ on:
       - 'Makefile'
       - 'doc/source/admin/galaxy_options.rst'
       - '.github/workflows/config_drift.yaml'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

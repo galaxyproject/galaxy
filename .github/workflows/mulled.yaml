@@ -18,6 +18,8 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/mulled.yaml'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
