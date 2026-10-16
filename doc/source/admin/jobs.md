@@ -123,7 +123,10 @@ not exposed to tool containers by default.
 `tool_env` exports variables in the job script and explicitly forwards them into
 wrapped tool containers. It accepts only `name`/`value` entries and the optional
 `raw` flag; `file` and `execute` are rejected because Galaxy cannot know which
-names they define. Names must be valid shell variable names. For example:
+names they define. Names must be valid shell variable names. `tool_env` reaches
+every tool that runs on the destination, including user-defined tools, whose
+commands are written by users. Map user-defined tools to a separate destination
+if a `tool_env` value is meant only for specific installed tools. For example:
 
 ```yaml
 execution:
@@ -179,7 +182,8 @@ variable is omitted. Missing required declared variables produce a warning on
 the job information page and an info-level log entry, without failing the job.
 Only variable names are recorded. The check runs in the tool environment after
 dependency activation, so runtime-specific values and activation exports count
-as set. Optional variables produce no warning.
+as set. Optional variables produce no warning, and only names the tool declares
+as required are ever reported.
 
 Prefer `tool_env` for variables consumed by tools. Setting them through
 `<param id="docker_env_VARIABLE">VALUE</param>` or

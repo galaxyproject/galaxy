@@ -113,6 +113,7 @@ from galaxy.tool_util.output_checker import (
     unknown_datatype_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util.runtime_environment import required_variable_names
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
@@ -2535,7 +2536,11 @@ class MinimalJobWrapper(HasResourceParameters):
             self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
 
-        job_messages.extend(runtime_environment_job_messages(self.working_directory))
+        job_messages.extend(
+            runtime_environment_job_messages(
+                self.working_directory, required_variable_names(self.tool.runtime_environment_variables)
+            )
+        )
 
         # Store the modified stdout and stderr in the job:
         if job is not None:

@@ -26,11 +26,18 @@ def parse_runtime_environment_variables(
 RUNTIME_ENVIRONMENT_WARNING_FILE = "runtime_environment_warnings"
 
 
+def required_variable_names(variables: Iterable[RuntimeEnvironmentVariable]) -> list[str]:
+    return [variable.name for variable in variables if variable.required]
+
+
 def required_environment_checks(variables: list[RuntimeEnvironmentVariable], path: str) -> str:
-    required = [variable.name for variable in variables if variable.required]
+    required = required_variable_names(variables)
     if not required:
         return ""
     statements = [f": > {quote(path)}"]
     for name in required:
         statements.append(f"if [ \"${{{name}+x}}\" != x ]; then printf '%s\\n' {quote(name)} >> {quote(path)}; fi")
-    return "\n".join(statements)
+    # The check runs inside the tool container, where the warning path may not be
+    # writable. A failed redirection on ``:`` exits a POSIX shell, so isolate it.
+    body = "\n".join(statements)
+    return f"(\n{body}\n) 2>/dev/null || :"

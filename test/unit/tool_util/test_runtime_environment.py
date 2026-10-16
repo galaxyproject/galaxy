@@ -52,10 +52,48 @@ def test_required_check_preserves_empty_and_reports_names_only(tmp_path):
         ["sh", "-c", required_environment_checks(variables, str(warning_file))], env={"EMPTY": ""}, check=True
     )
     assert warning_file.read_text() == "MISSING\n"
-    messages = runtime_environment_job_messages(str(tmp_path))
+    messages = runtime_environment_job_messages(str(tmp_path), ["MISSING", "EMPTY"])
     assert messages[0]["type"] == "runtime_environment_warning"
     assert messages[0]["variable_names"] == ["MISSING"]
     assert messages[0]["error_level"] == StdioErrorLevel.WARNING
+
+
+
+def test_required_check_never_aborts_the_tool(tmp_path):
+    # Inside a container the warning path can be read-only, e.g. Pulsar job directories.
+    read_only = tmp_path / "read_only"
+    read_only.mkdir()
+    read_only.chmod(0o555)
+    checks = required_environment_checks(
+        [RuntimeEnvironmentVariable(name="MISSING", required=True)], str(read_only / "runtime_environment_warnings")
+    )
+    try:
+        result = subprocess.run(
+            ["sh", "-c", f"set -e\n{checks}\necho tool ran"], env={}, capture_output=True, text=True
+        )
+    finally:
+        read_only.chmod(0o755)
+    assert result.returncode == 0
+    assert result.stdout == "tool ran\n"
+    assert result.stderr == ""
+
+
+def test_warning_reader_reports_only_declared_names(tmp_path):
+    warning_file = tmp_path / "outputs" / "runtime_environment_warnings"
+    warning_file.parent.mkdir()
+    warning_file.write_text("DECLARED\nUNDECLARED\n")
+    messages = runtime_environment_job_messages(str(tmp_path), ["DECLARED"])
+    assert messages[0]["variable_names"] == ["DECLARED"]
+    # Tools without required declarations (e.g. user-defined tools) never produce a message.
+    assert runtime_environment_job_messages(str(tmp_path), []) == []
+
+
+def test_warning_reader_does_not_follow_symlinks(tmp_path):
+    host_file = tmp_path / "host_file"
+    host_file.write_text("DECLARED\n")
+    (tmp_path / "outputs").mkdir()
+    (tmp_path / "outputs" / "runtime_environment_warnings").symlink_to(host_file)
+    assert runtime_environment_job_messages(str(tmp_path), ["DECLARED"]) == []
 
 
 def test_xml_runtime_environment():
@@ -226,8 +264,9 @@ def test_merge_task_runtime_warnings(tmp_path):
         path = task / directory / "runtime_environment_warnings"
         path.parent.mkdir(parents=True)
         path.write_text(names)
-    merge_runtime_environment_warnings(str(tmp_path), [str(task) for task in task_dirs])
-    messages = runtime_environment_job_messages(str(tmp_path))
+    required = ["FIRST", "SHARED", "SECOND", "UNRELATED"]
+    merge_runtime_environment_warnings(str(tmp_path), [str(task) for task in task_dirs], required)
+    messages = runtime_environment_job_messages(str(tmp_path), required)
     assert len(messages) == 1
     assert messages[0]["variable_names"] == ["FIRST", "SHARED", "SECOND"]
     assert messages[0]["error_level"] == StdioErrorLevel.WARNING
@@ -236,8 +275,8 @@ def test_merge_task_runtime_warnings(tmp_path):
     for task in task_dirs:
         for warning_file in task.glob("*/runtime_environment_warnings"):
             warning_file.write_text("")
-    merge_runtime_environment_warnings(str(tmp_path), [str(task) for task in task_dirs])
-    assert runtime_environment_job_messages(str(tmp_path)) == []
+    merge_runtime_environment_warnings(str(tmp_path), [str(task) for task in task_dirs], required)
+    assert runtime_environment_job_messages(str(tmp_path), required) == []
 
 
 @pytest.mark.parametrize("fmt", ["xml", "yaml"])

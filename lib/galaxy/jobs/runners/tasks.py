@@ -11,6 +11,7 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.runners import BaseJobRunner
 from galaxy.tool_util.output_checker import merge_runtime_environment_warnings
+from galaxy.tool_util.runtime_environment import required_variable_names
 
 if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
@@ -125,9 +126,9 @@ class TaskedJobRunner(BaseJobRunner):
             log.debug(f"execution finished - beginning merge: {command_line}")
             tool = job_wrapper.tool
             assert tool is not None
-            if any(variable.required for variable in tool.runtime_environment_variables):
+            if required_names := required_variable_names(tool.runtime_environment_variables):
                 merge_runtime_environment_warnings(
-                    job_wrapper.working_directory, (task.working_directory for task in task_wrappers)
+                    job_wrapper.working_directory, (task.working_directory for task in task_wrappers), required_names
                 )
             stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:

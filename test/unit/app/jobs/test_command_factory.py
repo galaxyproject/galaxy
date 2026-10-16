@@ -344,6 +344,27 @@ def test_required_variable_check_follows_dependency_activation(tmp_path, externa
     assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"
 
 
+
+def test_pulsar_required_variable_warning_reaches_metadata(tmp_path):
+    # Wrapped containers mount Pulsar job directories read-only except outputs and working,
+    # so the check writes outputs and the host-side script copies it to the staged metadata.
+    for directory in ["working", "outputs", "metadata"]:
+        (tmp_path / directory).mkdir()
+    wrapper = MockJobWrapper(str(tmp_path))
+    wrapper.command_line = "echo tool ran"
+    wrapper.tool = Bunch(runtime_environment_variables=[RuntimeEnvironmentVariable(name="MISSING", required=True)])
+    command = build_command(
+        cast("BaseJobRunner", Bunch()),
+        cast("MinimalJobWrapper", wrapper),
+        include_work_dir_outputs=False,
+        remote_command_params={"pulsar_version": "0.16.0"},
+    )
+    subprocess.run(["sh", "-c", command], cwd=tmp_path / "working", env={}, check=True)
+    assert (tmp_path / "metadata" / "tool_stdout").read_text() == "tool ran\n"
+    assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"
+    assert (tmp_path / "metadata" / "runtime_environment_warnings").read_text() == "MISSING\n"
+
+
 @pytest.mark.parametrize("runtime", ["docker", "singularity"])
 def test_required_variable_check_sees_runtime_specific_values(tmp_path, runtime):
     (tmp_path / "working").mkdir()

@@ -313,7 +313,11 @@ def set_metadata_portable(
         check_output_detected_state, tool_stdout, tool_stderr, job_messages = check_output(
             stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
-        job_messages.extend(runtime_environment_job_messages(str(tool_job_working_directory)))
+        job_messages.extend(
+            runtime_environment_job_messages(
+                str(tool_job_working_directory), tool_dict.get("required_runtime_environment_variables", [])
+            )
+        )
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = Job.states.OK
         else:
