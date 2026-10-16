@@ -60,6 +60,7 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 from galaxy.workflow import curated
+from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 from galaxy.workflow.extract import (
     collect_output_label_targets,
     extract_workflow,
@@ -172,8 +173,10 @@ class WorkflowsService(ServiceBase):
         job_manager: JobManager,
         workflow_scheduling_manager: WorkflowSchedulingManager,
         config: GalaxyAppConfiguration,
+        completion_hook_registry: WorkflowCompletionHookRegistry,
     ):
         self._workflows_manager = workflows_manager
+        self._completion_hook_registry = completion_hook_registry
         self._workflow_scheduling_manager = workflow_scheduling_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
@@ -345,6 +348,7 @@ class WorkflowsService(ServiceBase):
             workflow = stored_workflow.get_internal_version_by_id(workflow_id)
         else:
             workflow = stored_workflow.get_internal_version(version)
+        self._check_on_complete(payload.on_complete)
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
@@ -649,6 +653,15 @@ class WorkflowsService(ServiceBase):
             if url in shed_url:
                 return shed_url
         return None
+
+    def _check_on_complete(self, on_complete: list[dict[str, Any]] | None) -> None:
+        available_actions = self._completion_hook_registry.get_available_hooks()
+        for action in on_complete or []:
+            for action_name in action:
+                if action_name not in available_actions:
+                    raise exceptions.RequestParameterInvalidException(
+                        f"Unknown on_complete action '{action_name}', available actions are: {', '.join(available_actions)}"
+                    )
 
     def _create_landing_request_association(
         self, trans: ProvidesUserContext, landing_uuid: UUID4 | None, invocations: list[WorkflowInvocation]
