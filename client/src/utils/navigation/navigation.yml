@@ -86,6 +86,7 @@ preferences:
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    api_key_copy_button: '[data-description="copy api key"]'
     object_store: '#select-preferred-object-store'
     delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
@@ -176,6 +177,13 @@ confirm_dialog:
     message: '[data-description="confirm dialog message"]'
     ok_button: '[data-description="confirm dialog ok"]'
     cancel_button: '[data-description="confirm dialog cancel"]'
+
+toast:
+  selectors:
+    message: '[data-description="toast message"]'
+    message_with_text:
+      type: xpath
+      selector: '//div[@data-description="toast message" and contains(normalize-space(.), "${text}")]'
 
 dataset_view:
   selectors:
