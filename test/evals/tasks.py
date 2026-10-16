@@ -31,6 +31,7 @@ from galaxy.agents.registry import build_default_registry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.agents.tools import ToolRecommendationAgent
 from .datasets import build_history
+from .tutor import run_tutor_case
 
 UsageBuffer = list[dict[str, int]] | None
 
@@ -363,6 +364,28 @@ def make_tool_recommendation_task(
         return response.content
 
     return tool_recommendation_task
+
+
+def make_tutor_socratic_task(
+    deps: GalaxyAgentDependencies,
+    context: dict | None = None,
+    usage_buffer: UsageBuffer = None,
+) -> Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]:
+    """Run the production tutor against controlled services and retain its evidence.
+
+    Tutor scenarios always use fixtures, including under the live-Galaxy runner.
+    They measure behavior against known tool responses, not live service integration.
+    """
+
+    async def tutor_socratic_task(case_input: dict[str, Any]) -> dict[str, Any]:
+        return await run_tutor_case(
+            deps,
+            case_input,
+            context=context,
+            record_usage=lambda response: _record_response_usage(usage_buffer, response),
+        )
+
+    return tutor_socratic_task
 
 
 def make_custom_tool_task(

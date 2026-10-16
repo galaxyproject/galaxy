@@ -449,6 +449,8 @@ class GalaxyAppConfigurationAttributes:
     gtn_database_url: str
     gtn_database_refresh_interval: int
     iwc_manifest_refresh_interval: int
+    enable_learning_mode: bool
+    tutor_allow_tool_execution: bool
     enable_tool_recommendations: bool
     tool_recommendation_model_path: str
     topk_recommendations: int

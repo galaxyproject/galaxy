@@ -85,7 +85,10 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
         <template v-else>
             <div class="response-body">
                 <div class="response-gutter">
-                    <span class="agent-indicator" :title="getAgentLabel(props.message.agentType)">
+                    <span
+                        class="agent-indicator"
+                        data-description="agent indicator"
+                        :title="getAgentLabel(props.message.agentType)">
                         <FontAwesomeIcon :icon="getAgentIcon(props.message.agentType)" fixed-width />
                     </span>
                 </div>
@@ -132,7 +135,9 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
                             <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
                         </div>
                         <div class="meta-right">
-                            <span class="meta-tag">{{ getAgentLabel(props.message.agentType) }}</span>
+                            <span class="meta-tag" data-description="agent label">
+                                {{ getAgentLabel(props.message.agentType) }}
+                            </span>
                             <span v-if="props.message.agentResponse?.metadata?.model" class="meta-tag">
                                 {{ formatModelName(props.message.agentResponse.metadata.model) }}
                             </span>

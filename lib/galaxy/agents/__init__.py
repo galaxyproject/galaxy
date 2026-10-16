@@ -20,6 +20,7 @@ from .registry import (
     build_default_registry,
 )
 from .router import QueryRouterAgent
+from .teaching_assistant import TeachingAssistantAgent
 from .tools import ToolRecommendationAgent
 from .workflow_report import WorkflowReportAgent
 
@@ -38,4 +39,5 @@ __all__ = [
     "HistoryAgent",
     "GTNTrainingAgent",
     "WorkflowReportAgent",
+    "TeachingAssistantAgent",
 ]

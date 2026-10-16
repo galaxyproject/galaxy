@@ -143,6 +143,7 @@ class ConfigSerializer(base.ModelSerializer):
             "lims_doc_url": _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             "default_locale": _use_config,
             "enable_tool_recommendations": _use_config,
+            "enable_learning_mode": _use_config,
             "enable_account_interface": _use_config,
             "tool_recommendation_model_path": _use_config,
             "admin_tool_recommendations_path": _use_config,

@@ -104,6 +104,29 @@ export function useActiveContext() {
         return null;
     });
 
+    /** The id of whatever entity the context points at, independent of its label text. */
+    const contextId = computed<string | null>(() => {
+        const ctx = activeContext.value;
+        if (!ctx) {
+            return null;
+        }
+        switch (ctx.contextType) {
+            case "tool":
+                return ctx.toolId;
+            case "dataset":
+                return ctx.datasetId;
+            case "workflow_editor":
+            case "workflow_run":
+                return ctx.workflowId;
+            case "job":
+                return ctx.jobId;
+            case "notebook":
+                return ctx.pageId;
+            default:
+                return null;
+        }
+    });
+
     const contextLabel = computed<string | null>(() => {
         const ctx = activeContext.value;
         if (!ctx) {
@@ -160,6 +183,7 @@ export function useActiveContext() {
     return {
         activeContext,
         contextIcon,
+        contextId,
         contextLabel,
     };
 }

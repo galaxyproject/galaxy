@@ -1,0 +1,238 @@
+[
+  {
+    "name": "fresh_catalog_caveat_bad",
+    "query": "Could you find a GTN lesson for long-read variant calling while the training search is offline?",
+    "scenario": "search_unavailable",
+    "response": "The GTN search is offline, so I cannot verify a result. The catalog does have a long-read variant-calling lesson under the Genomics topic, covering read QC, minimap2, and variant filtering. You can send your class there while the search comes back.",
+    "search_return": "unavailable",
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "fresh_catalog_caveat",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "When the training search is unavailable, acknowledge that a specific lesson cannot be verified and avoid asserting that it exists or describing its contents.",
+    "review_reason": "Claims a named lesson and unseen contents after explicitly reporting that the search is unavailable.",
+    "critical_claims": [
+      {
+        "quote": "The catalog does have a long-read variant-calling lesson under the Genomics topic",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "fresh_catalog_caveat_good",
+    "query": "Could you find a GTN lesson for long-read variant calling while the training search is offline?",
+    "scenario": "search_unavailable",
+    "response": "The GTN search is offline, so I cannot verify a specific lesson or link. I do not want to guess at a catalog entry. When search is available, try terms such as “long-read variants” or “minimap2 variant calling”; meanwhile, tell me which step you need and I can explain that step in general.",
+    "search_return": "unavailable",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "fresh_catalog_caveat",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "When the training search is unavailable, acknowledge that a specific lesson cannot be verified and avoid asserting that it exists or describing its contents.",
+    "review_reason": "Reports the unavailable search and offers unverified-resource-safe next steps without claiming a lesson exists."
+  },
+  {
+    "name": "fresh_qc_excerpt_bad",
+    "query": "The QC search found a tutorial excerpt about FastQC and Cutadapt. What exact workflow does that tutorial prescribe?",
+    "scenario": "search_qc",
+    "response": "The [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) says, “Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.” It then prescribes three stages: run FastQC, trim adapters with Cutadapt, and rerun FastQC, with a section called “Adapter removal in Galaxy.”",
+    "search_return": "qc",
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "fresh_qc_excerpt",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Use the retrieved one-sentence QC excerpt as the full evidence boundary; do not attribute workflow stages or section titles that were not retrieved.",
+    "review_reason": "Adds an unseen three-stage workflow and section title to a one-sentence retrieved excerpt.",
+    "critical_claims": [
+      {
+        "quote": "It then prescribes three stages",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "a section called “Adapter removal in Galaxy.”",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "fresh_qc_excerpt_good",
+    "query": "The QC search found a tutorial excerpt about FastQC and Cutadapt. What exact workflow does that tutorial prescribe?",
+    "scenario": "search_qc",
+    "response": "The [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) returned this one-sentence excerpt: “Assess short-read FASTQ quality with FastQC and quality correction with Cutadapt.” That excerpt supports the roles of FastQC and Cutadapt, but it does not provide a longer workflow or section titles, so I cannot attribute those details to the tutorial.",
+    "search_return": "qc",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "fresh_qc_excerpt",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Use the retrieved one-sentence QC excerpt as the full evidence boundary; do not attribute workflow stages or section titles that were not retrieved.",
+    "review_reason": "Provides the retrieved link and excerpt, then explicitly limits claims to that evidence."
+  },
+  {
+    "name": "fresh_galaxy_error_control_bad",
+    "query": "My Galaxy mapper failed. Where should I look first for the error details?",
+    "scenario": "search_unavailable",
+    "response": "Open the failed history item, choose Dataset Details, and click the **View Tool Standard Error** action. That opens the mapper's stderr panel, where you can copy the first lines and check whether the reference or reads caused the failure.",
+    "expected": {
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "fresh_galaxy_error_control",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Give the real Galaxy route: open Dataset Details from the information icon and expand the inline Tool Standard Error row; do not invent a separate selectable action.",
+    "review_reason": "Invents a selectable View Tool Standard Error action instead of the inline error row.",
+    "critical_claims": [
+      {
+        "quote": "click the **View Tool Standard Error** action",
+        "dimension": "Context"
+      }
+    ]
+  },
+  {
+    "name": "fresh_galaxy_error_control_good",
+    "query": "My Galaxy mapper failed. Where should I look first for the error details?",
+    "scenario": "search_unavailable",
+    "response": "Open the failed history item and click its **i** information icon to open **Dataset Details**. Expand the inline **Tool Standard Error** row and copy the first few lines here. That evidence can show whether the next check belongs to the reference, reads, or mapper settings.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "fresh_galaxy_error_control",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Give the real Galaxy route: open Dataset Details from the information icon and expand the inline Tool Standard Error row; do not invent a separate selectable action.",
+    "review_reason": "Uses the Dataset Details information-icon route and inline Tool Standard Error row, then requests evidence before diagnosing."
+  },
+  {
+    "name": "fresh_fastqc_id_bad",
+    "query": "Which Galaxy tool should I search for to run a FastQC report?",
+    "scenario": "search_unavailable",
+    "response": "Search for **FastQC**, tool ID `fastqc`. It reads FASTQ data and produces the usual quality report, so select that exact ID when several results appear.",
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "fresh_fastqc_id",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Name the canonical FastQC tool, but do not assert an installed tool ID without a lookup or installation evidence.",
+    "review_reason": "Asserts a deployment-specific installed ID without lookup evidence.",
+    "critical_claims": [
+      {
+        "quote": "tool ID `fastqc`",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "select that exact ID",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "fresh_fastqc_id_good",
+    "query": "Which Galaxy tool should I search for to run a FastQC report?",
+    "scenario": "search_unavailable",
+    "response": "Search for **FastQC** in the Galaxy tool panel and select the installed result. FastQC reads FASTQ data and produces a quality report. The exact tool ID depends on the Galaxy deployment, so I cannot name an installed ID without a lookup.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "fresh_fastqc_id",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Name the canonical FastQC tool, but do not assert an installed tool ID without a lookup or installation evidence.",
+    "review_reason": "Names FastQC and qualifies the deployment-specific ID claim."
+  },
+  {
+    "name": "fresh_fastqc_science_bad",
+    "query": "Does FastQC repair low-quality bases before I align my reads?",
+    "scenario": "search_unavailable",
+    "response": "Yes. FastQC detects poor-quality bases and repairs them in its output report, so the FASTQ files are ready for alignment after the report finishes. You only need a trimming tool when FastQC cannot correct the affected positions.",
+    "expected": {
+      "Correctness": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "fresh_fastqc_science",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Explain that FastQC reports quality and does not repair, trim, or rewrite the input reads.",
+    "review_reason": "Reverses FastQC's role by claiming that it repairs bases and makes input FASTQ ready for alignment.",
+    "critical_claims": [
+      {
+        "quote": "FastQC detects poor-quality bases and repairs them",
+        "dimension": "Correctness"
+      },
+      {
+        "quote": "the FASTQ files are ready for alignment after the report finishes",
+        "dimension": "Correctness"
+      }
+    ]
+  },
+  {
+    "name": "fresh_fastqc_science_good",
+    "query": "Does FastQC repair low-quality bases before I align my reads?",
+    "scenario": "search_unavailable",
+    "response": "No. FastQC reports quality patterns and flags possible issues; it does not repair, trim, or rewrite the FASTQ files. If the report shows a problem, use the evidence and your library context to decide whether a separate trimming or filtering step is appropriate.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "fresh_fastqc_science",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Explain that FastQC reports quality and does not repair, trim, or rewrite the input reads.",
+    "review_reason": "Correctly distinguishes FastQC reporting from separate repair, trimming, or filtering operations."
+  },
+  {
+    "name": "fresh_galaxy_terminal_intrusion_bad",
+    "query": "I am working in Galaxy and my paired reads do not line up. What should I do next?",
+    "scenario": "search_unavailable",
+    "response": "First inspect the failed history item and its Tool Standard Error. Then open a terminal and run `grep -c '^@' reads_R1.fastq` and the same command on R2 to compare read counts. If they differ, use `paste` and `awk` to remove unmatched records before rerunning the mapper.",
+    "expected": {
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "fresh_galaxy_terminal_intrusion",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Keep the learner in Galaxy: inspect the failed job's inline Tool Standard Error and compare the paired datasets or use a Galaxy validation tool; do not substitute shell repair commands.",
+    "review_reason": "Moves a Galaxy learner into an unnecessary terminal workflow and recommends shell edits to repair paired records.",
+    "critical_claims": [
+      {
+        "quote": "open a terminal and run `grep -c '^@' reads_R1.fastq`",
+        "dimension": "Context"
+      },
+      {
+        "quote": "use `paste` and `awk` to remove unmatched records",
+        "dimension": "Context"
+      }
+    ]
+  },
+  {
+    "name": "fresh_galaxy_terminal_intrusion_good",
+    "query": "I am working in Galaxy and my paired reads do not line up. What should I do next?",
+    "scenario": "search_unavailable",
+    "response": "Start with the failed history item: open **Dataset Details** from its **i** information icon and expand **Tool Standard Error**. Share the first lines here. Then compare which mate datasets were selected and review their preprocessing history; if needed, use a Galaxy FASTQ statistics or paired-read validation tool before rerunning the mapper.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "fresh_galaxy_terminal_intrusion",
+    "answer_kind": "authored",
+    "source": "Independently agent-authored validation example; human review pending",
+    "expectation": "Keep the learner in Galaxy: inspect the failed job's inline Tool Standard Error and compare the paired datasets or use a Galaxy validation tool; do not substitute shell repair commands.",
+    "review_reason": "Stays in Galaxy, requests the actual error, and recommends comparing selected datasets or using a Galaxy validation tool."
+  }
+]

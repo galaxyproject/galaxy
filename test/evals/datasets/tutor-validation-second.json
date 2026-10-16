@@ -1,0 +1,249 @@
+[
+  {
+    "name": "unknown_fastqc_version_claim",
+    "query": "Which FastQC version is installed in this Galaxy, and what should I select?",
+    "scenario": "galaxy",
+    "response": "I cannot inspect this Galaxy's tool registry, but the installed FastQC version is 0.12.1 and its tool ID is `fastqc`. Search for `FastQC` in the tool panel and select that entry; this installation is the one to record for short-read quality control.",
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_unknown_fastqc_version",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Distinguish generic tool facts from unverified installation and version claims, and guide the learner to inspect the tool panel.",
+    "review_reason": "The fixture provides no installation registry or version evidence, so the specific version and ID are unsupported despite the caveat.",
+    "critical_claims": [
+      {
+        "quote": "the installed FastQC version is 0.12.1",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "its tool ID is `fastqc`",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "unknown_fastqc_version_caveat",
+    "query": "Which FastQC version is installed in this Galaxy, and what should I select?",
+    "scenario": "galaxy",
+    "response": "I cannot inspect this Galaxy's tool registry, so I cannot verify an installed FastQC version or ID. Search for `FastQC` in the tool panel and select the installed entry shown by this Galaxy; the version label there is the one to record for short-read quality control.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "second_unknown_fastqc_version",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Distinguish generic tool facts from unverified installation and version claims, and guide the learner to inspect the tool panel.",
+    "review_reason": "It states the installation limitation, gives a generic tool-panel action, and leaves the version to the learner's instance."
+  },
+  {
+    "name": "qc_unseen_multiqc_section",
+    "query": "The QC tutorial was retrieved. What does it say about adapter trimming and MultiQC?",
+    "scenario": "search_qc",
+    "search_return": "qc",
+    "response": "The retrieved [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) says to run FastQC and Cutadapt as part of quality control. Its MultiQC section recommends combining reports before alignment, and that section also explains how to interpret duplication warnings. I would follow that section's sequence and review all three outputs before moving on.",
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_qc_unseen_section",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Use only the retrieved QC excerpt and do not invent unseen tutorial sections or conclusions.",
+    "review_reason": "The retrieved excerpt mentions FastQC and Cutadapt only; it does not provide a MultiQC section or duplication guidance.",
+    "critical_claims": [
+      {
+        "quote": "Its MultiQC section recommends combining reports before alignment",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "that section also explains how to interpret duplication warnings",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "qc_excerpt_boundary",
+    "query": "The QC tutorial was retrieved. What does it say about adapter trimming and MultiQC?",
+    "scenario": "search_qc",
+    "search_return": "qc",
+    "response": "The retrieved [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) excerpt says it covers assessing short-read FASTQ quality with FastQC and quality correction with Cutadapt. The excerpt does not show a MultiQC section or establish how duplication warnings should be interpreted, so I cannot attribute those details to it.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "second_qc_unseen_section",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Use only the retrieved QC excerpt and do not invent unseen tutorial sections or conclusions.",
+    "review_reason": "It gives the retrieved one-sentence excerpt and clearly limits claims about MultiQC and duplication to what was actually shown."
+  },
+  {
+    "name": "qc_warning_cleanup_conclusion",
+    "query": "The retrieved QC excerpt mentions FastQC and Cutadapt. Does it prove that every warning requires trimming or duplicate removal?",
+    "scenario": "search_qc",
+    "search_return": "qc",
+    "response": "The retrieved [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) establishes that every FastQC warning requires trimming or duplicate removal before downstream analysis. You should therefore apply both cleanup steps whenever a warning appears. This should be done before alignment, even when the warning is limited to duplication or another single module.",
+    "expected": {
+      "Grounding": false,
+      "Correctness": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_qc_warning_qualification",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Do not generalize a short QC excerpt into a universal cleanup requirement; provide qualified interpretation.",
+    "review_reason": "The excerpt does not establish an every-warning rule, and QC warnings require investigation rather than automatic trimming or duplicate removal.",
+    "critical_claims": [
+      {
+        "quote": "establishes that every FastQC warning requires trimming or duplicate removal",
+        "dimension": "Grounding"
+      },
+      {
+        "quote": "apply both cleanup steps whenever a warning appears",
+        "dimension": "Correctness"
+      }
+    ]
+  },
+  {
+    "name": "qc_warning_qualified_guidance",
+    "query": "The retrieved QC excerpt mentions FastQC and Cutadapt. Does it prove that every warning requires trimming or duplicate removal?",
+    "scenario": "search_qc",
+    "search_return": "qc",
+    "response": "The retrieved [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) excerpt only says that it covers assessing short-read FASTQ quality with FastQC and quality correction with Cutadapt. It does not establish that every warning requires trimming or duplicate removal; treat warnings as signals to investigate and choose a remedy based on the data.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "second_qc_warning_qualification",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Do not generalize a short QC excerpt into a universal cleanup requirement; provide qualified interpretation.",
+    "review_reason": "It limits the retrieved lesson claim to its one-sentence excerpt and gives qualified, data-dependent guidance."
+  },
+  {
+    "name": "paired_fastq_count_shortcut",
+    "query": "My paired FASTQ files have unequal record counts after trimming. What should I check before alignment?",
+    "scenario": "galaxy",
+    "response": "Unequal counts are harmless if the files are named R1 and R2. Before alignment, check that both selected files came from the same trimming step. Sort both files independently, truncate the longer file, and then pair records by position; the aligner will still see matching mates. If the names differ, rename them to R1 and R2 before running.",
+    "expected": {
+      "Correctness": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_paired_fastq_identity",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Explain paired FASTQ identity and count constraints, then recommend record-aware diagnostic checks before alignment.",
+    "review_reason": "Filenames do not establish mate identity, and independently sorting or truncating files can destroy pairing and discard data.",
+    "critical_claims": [
+      {
+        "quote": "Unequal counts are harmless if the files are named R1 and R2",
+        "dimension": "Correctness"
+      },
+      {
+        "quote": "Sort both files independently, truncate the longer file",
+        "dimension": "Correctness"
+      }
+    ],
+    "reference_review": "The defect concerns scientific mate repair; an additional Context failure is not established. Reviewed before inspecting model outcomes."
+  },
+  {
+    "name": "paired_fastq_record_diagnosis",
+    "query": "My paired FASTQ files have unequal record counts after trimming. What should I check before alignment?",
+    "scenario": "galaxy",
+    "response": "Unequal counts can indicate that filtering or trimming changed one mate without the other. Before alignment, compare the selected mate dataset names, read identifiers, and preprocessing history; preserve pair identity and order. Use a record-aware paired-read validation or repair step rather than sorting mates independently or truncating one file by guesswork.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "second_paired_fastq_identity",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Explain paired FASTQ identity and count constraints, then recommend record-aware diagnostic checks before alignment.",
+    "review_reason": "It connects unequal counts to preprocessing, checks identifiers and history, and preserves pair identity with record-aware validation."
+  },
+  {
+    "name": "galaxy_terminal_forcing",
+    "query": "I am working in Galaxy without shell access. How can I inspect the output from a FastQC job?",
+    "scenario": "galaxy",
+    "response": "In Galaxy, download the ZIP output if you need its detailed files, then open a terminal and run `unzip -l fastqc_data.zip`, followed by `grep` to inspect the report. If the file is missing, install FastQC with apt-get and rerun it locally; that is the reliable way to diagnose the job.",
+    "expected": {
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_galaxy_terminal_context",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Respect a Galaxy-only context and provide UI diagnostics instead of forcing a terminal remedy.",
+    "review_reason": "The learner explicitly lacks shell access, but the response sends them to a terminal and local installation instead of Galaxy's outputs and job details.",
+    "critical_claims": [
+      {
+        "quote": "open a terminal and run `unzip -l fastqc_data.zip`",
+        "dimension": "Context"
+      },
+      {
+        "quote": "install FastQC with apt-get and rerun it locally",
+        "dimension": "Context"
+      }
+    ]
+  },
+  {
+    "name": "galaxy_fastqc_output_steps",
+    "query": "I am working in Galaxy without shell access. How can I inspect the output from a FastQC job?",
+    "scenario": "galaxy",
+    "response": "In Galaxy, open the FastQC history item after it completes and view the HTML report; use the ZIP output when you need the detailed files. If the job failed, open its job details and Standard Error, then share the relevant message. You do not need shell access for these checks.",
+    "expected": {
+      "Context": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_galaxy_terminal_context",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Respect a Galaxy-only context and provide UI diagnostics instead of forcing a terminal remedy.",
+    "review_reason": "It gives Galaxy history, report, and Standard Error steps that fit the learner's stated interface constraints.",
+    "reference_review": "Originally labelled good by the author. Review before inspecting model outcomes identified the same unsupported Galaxy ZIP output claim as execution_disabled_1_observed. Preserve as a failure, not a valid control."
+  },
+  {
+    "name": "unavailable_gtn_catalog_claim",
+    "query": "Could you help me choose a GTN lesson for a beginner who wants to understand FastQC warnings?",
+    "scenario": "search_unavailable",
+    "search_return": "unavailable",
+    "response": "GTN search is unavailable, so I cannot verify the result, but the catalog has a beginner lesson titled `FastQC Warning Interpretation`. It is the right lesson for your class; use that title when you search later.",
+    "expected": {
+      "Grounding": false
+    },
+    "expected_overall": "fail",
+    "label_status": "reviewed",
+    "pair_id": "second_unavailable_gtn_intent",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Acknowledge unavailable search and clarify learner intent without claiming catalog contents or an unverified lesson title.",
+    "review_reason": "The caveat is followed by an unsupported catalog existence and title claim, then an unwarranted recommendation.",
+    "critical_claims": [
+      {
+        "quote": "the catalog has a beginner lesson titled `FastQC Warning Interpretation`",
+        "dimension": "Grounding"
+      }
+    ]
+  },
+  {
+    "name": "unavailable_gtn_intent_clarification",
+    "query": "Could you help me choose a GTN lesson for a beginner who wants to understand FastQC warnings?",
+    "scenario": "search_unavailable",
+    "search_return": "unavailable",
+    "response": "GTN search is unavailable, so I cannot verify a specific lesson or title. To narrow the choice later, is the learner trying to understand a particular warning, or to decide what follow-up action to take? I can help clarify that goal while we wait.",
+    "expected": "pass",
+    "expected_overall": "pass",
+    "label_status": "reviewed",
+    "pair_id": "second_unavailable_gtn_intent",
+    "answer_kind": "authored",
+    "source": "Agent-authored development example; human review pending.",
+    "expectation": "Acknowledge unavailable search and clarify learner intent without claiming catalog contents or an unverified lesson title.",
+    "review_reason": "It reports the unavailable search, makes no catalog claim, and asks a useful nonfactual clarification question."
+  }
+]

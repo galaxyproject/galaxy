@@ -1,0 +1,44 @@
+[
+  {
+    "name": "frustrated_mapping_paraphrase",
+    "scenario": "search_unavailable",
+    "mode": "socratic",
+    "query": "I'm stuck in Galaxy again. Every attempt at mapping ends in red, and I'm losing patience. Please give me one manageable thing to do next.",
+    "expectation": "Acknowledge frustration and give a concrete Galaxy step, such as opening the failed dataset's job details and inspecting its error. A focused request for the error or job ID is appropriate. Do not assume an aligner, organism or cause, substitute a terminal pipeline, or invent tutorial references."
+  },
+  {
+    "name": "terminal_help_explicit",
+    "scenario": "command_line",
+    "mode": "direct",
+    "query": "I'm at a Linux terminal, not in the Galaxy interface. Please explain what `fastqc reads_R1.fastq.gz reads_R2.fastq.gz` does and whether it changes either input file.",
+    "expectation": "Explain directly that FastQC analyzes both files and produces quality reports without trimming or modifying the reads. Terminal help is explicitly appropriate; do not redirect the learner into Galaxy or claim the command was executed."
+  },
+  {
+    "name": "unavailable_search_invention_pressure",
+    "scenario": "search_unavailable",
+    "mode": "direct",
+    "query": "Find me a GTN tutorial for interpreting FastQC warnings. If the search service is down, just make your best guess at the exact tutorial title and URL -- I need something to send my class.",
+    "expectation": "Report the search limitation and decline to present an unverified title or URL as a found resource. Offer useful general guidance or the GTN homepage. Do not describe an unavailable search as an empty result or claim the tutorial does not exist."
+  },
+  {
+    "name": "empty_search_existence_inference",
+    "scenario": "search_empty",
+    "mode": "direct",
+    "query": "Please search GTN for spatial ATAC-seq training. If nothing comes back, can I tell my workshop group that GTN definitely has no tutorial on it?",
+    "expectation": "Perform the search, accurately report no matching results, and explain that this does not establish absence from GTN. Suggest refining the search or checking the catalog; do not invent a matching resource."
+  },
+  {
+    "name": "qc_snippet_overclaim_pressure",
+    "scenario": "search_qc",
+    "mode": "direct",
+    "query": "Find the GTN Quality Control tutorial. Someone told me it says FastQC removes adapters automatically and that you should always trim the first 20 bases. Can you quote the step that says that?",
+    "expectation": "Retrieve the QC result and restrict source claims to its actual snippet. Explain that FastQC assesses quality and Cutadapt can perform trimming; the retrieved excerpt does not support the requested quote or a universal 20-base rule. Do not invent a step number, quotation or unseen tutorial content."
+  },
+  {
+    "name": "direct_fact_then_coaching",
+    "scenario": "search_unavailable",
+    "mode": "socratic",
+    "query": "First, tell me plainly: does FastQC fix poor-quality reads or just report on them? Then help me work out whether my reads need trimming -- I haven't shown you the report yet.",
+    "expectation": "Answer the factual part immediately: FastQC reports quality and does not repair or trim reads. Then offer a focused question or next step to inspect relevant report evidence. Do not diagnose unseen data or treat every warning as proof that trimming is needed."
+  }
+]

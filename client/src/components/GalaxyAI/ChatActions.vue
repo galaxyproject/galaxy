@@ -110,6 +110,7 @@ function onDockTo(location: "right" | "bottom") {
         </GButton>
         <GButton
             v-if="props.source !== 'center'"
+            data-description="open chat in center"
             size="small"
             transparent
             title="Open in center view"
@@ -118,6 +119,7 @@ function onDockTo(location: "right" | "bottom") {
         </GButton>
         <GButton
             v-if="props.source !== 'docked'"
+            data-description="dock chat right"
             size="small"
             transparent
             title="Dock to side panel"
@@ -126,6 +128,7 @@ function onDockTo(location: "right" | "bottom") {
         </GButton>
         <GButton
             v-if="props.source !== 'panel'"
+            data-description="dock chat bottom"
             size="small"
             transparent
             title="Dock to bottom panel"

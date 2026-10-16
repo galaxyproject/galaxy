@@ -19,8 +19,10 @@ Writes a markdown comparison table to stdout and to test/evals/results/.
 
 import argparse
 import asyncio
+import math
 import os
 import statistics
+import subprocess
 import sys
 from collections.abc import Callable
 from dataclasses import (
@@ -37,13 +39,20 @@ import yaml
 from pydantic_evals.reporting import (
     EvaluationReport,
     EvaluationReportAdapter,
+    ReportCase,
+    ReportCaseFailure,
 )
 
 from galaxy.agents.base import GalaxyAgentDependencies
+from .calibration_report import (
+    render_calibration_summary,
+    summarize_calibration,
+)
 from .judge import build_judge_model
 from .pricing import model_cost
 from .specs import SPECS
 from .tasks import make_deps
+from .tutor_claims import review_version
 
 DepsFactory = Callable[[str, str, str], GalaxyAgentDependencies]
 
@@ -60,6 +69,58 @@ class DatasetResult:
     usage: list[dict[str, int]] = field(default_factory=list)
 
 
+def case_verdict(result: DatasetResult, case) -> tuple[str, list[str]]:
+    """Use the same required checks for reports, comparisons, and process exit status."""
+    required = (case.metadata or {}).get("required_assertions")
+    reasons = [f.error_message for f in case.evaluator_failures]
+    if case.evaluator_failures:
+        return "incomplete", reasons
+    answer = case.labels.get("AnswerVerdict")
+    if answer is not None and answer.value not in {"pass", "fail"}:
+        return "incomplete", [f"Answer judgment is {answer.value}."]
+    if required is not None or result.primary_score == "RequiredChecks":
+        if not required:
+            return "incomplete", ["No required checks were declared."]
+        missing = [name for name in required if name not in case.assertions]
+        if missing:
+            return "incomplete", [f"Missing checks: {', '.join(missing)}"]
+        failed = [name for name in required if case.assertions[name].value is not True]
+        reasons = [f"{name}: {case.assertions[name].reason or 'failed'}" for name in failed]
+        if "EvidenceComplete" in failed or "JudgmentComplete" in failed:
+            return "incomplete", reasons
+        return ("fail" if failed else "pass"), reasons
+    primary = case.scores.get(result.primary_score)
+    if primary is None:
+        return "incomplete", [f"Missing score: {result.primary_score}"]
+    try:
+        value = float(primary.value)
+    except (TypeError, ValueError):
+        return "incomplete", ["Invalid primary score."]
+    if not math.isfinite(value):
+        return "incomplete", ["Invalid primary score."]
+    failed = [name for name, assertion in case.assertions.items() if assertion.value is not True]
+    threshold = 0.7 if result.primary_score == "LLMJudge" else 1.0
+    return ("pass" if value >= threshold and not failed else "fail"), failed
+
+
+def evaluation_exit_code(results: list[DatasetResult]) -> int:
+    """Return 0 for a complete pass, 1 for failed checks, or 2 for incomplete evaluation."""
+    if not results:
+        return 2
+    failed = False
+    for result in results:
+        if result.report.report_evaluator_failures or not (result.report.cases or result.report.failures):
+            return 2
+        if result.report.failures:
+            return 2
+        for case in result.report.cases:
+            status, _ = case_verdict(result, case)
+            if status == "incomplete":
+                return 2
+            failed |= status == "fail"
+    return 1 if failed else 0
+
+
 def _usage_totals(usage: list[dict[str, int]]) -> dict[str, int]:
     total_in = sum(u.get("input_tokens", 0) for u in usage)
     total_out = sum(u.get("output_tokens", 0) for u in usage)
@@ -72,10 +133,10 @@ def _usage_totals(usage: list[dict[str, int]]) -> dict[str, int]:
 
 
 def _git_sha() -> str:
-    import subprocess
-
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+        sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+        dirty = subprocess.run(["git", "diff", "--quiet", "HEAD"], check=False).returncode != 0
+        return f"{sha}-dirty" if dirty else sha
     except Exception:
         return "unknown"
 
@@ -218,17 +279,17 @@ def _case_outcomes(
 ) -> dict[str, dict[str, Any]]:
     """Reduce a DatasetResult's per-case rows to {case_name: {ok, errored, primary, judge}}."""
     out: dict[str, dict[str, Any]] = {}
-    pass_threshold = 0.7 if result.primary_score == "LLMJudge" else 1.0
     for case in result.report.cases:
         base = _base_case_name(case.name)
         if not base:
             continue
         scores = case.scores or {}
-        primary = scores.get(result.primary_score)
-        ok = primary is not None and float(primary.value) >= pass_threshold
+        status, _ = case_verdict(result, case)
         bucket = out.setdefault(base, {"ok": 0, "wrong": 0, "errored": 0, "inconclusive": 0, "judge": []})
-        if ok:
+        if status == "pass":
             bucket["ok"] += 1
+        elif status == "incomplete":
+            bucket["inconclusive"] += 1
         else:
             bucket["wrong"] += 1
         judge = scores.get("LLMJudge")
@@ -264,7 +325,13 @@ def _outcome_label(bucket: dict[str, Any]) -> str:
     parts = [f"OK {bucket['ok']}/{runs}"]
     if bucket["errored"]:
         parts.append(f"ERR {bucket['errored']}/{runs}")
+    if inconclusive:
+        parts.append(f"INCOMPLETE {inconclusive}/{runs}")
     return " ".join(parts)
+
+
+def _required_assertions(case: ReportCase | ReportCaseFailure) -> list[str]:
+    return (case.metadata or {}).get("required_assertions", [])
 
 
 def _render_dataset_section(results: list[DatasetResult]) -> str:
@@ -278,6 +345,38 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
     header = "| metric | " + " | ".join(r.model for r in results) + " |"
     sep = "| --- | " + " | ".join("---" for _ in results) + " |"
     lines += [header, sep]
+
+    overall = ["Overall pass"]
+    for r in results:
+        statuses = [case_verdict(r, c)[0] for c in r.report.cases]
+        total = len(statuses) + len(r.report.failures)
+        incomplete = statuses.count("incomplete") + len(r.report.failures)
+        value = f"{statuses.count('pass')}/{total}" if total else "INCOMPLETE (no cases)"
+        if incomplete:
+            value += f" ({incomplete} incomplete)"
+        if r.report.report_evaluator_failures:
+            value += " (report evaluation incomplete)"
+        overall.append(value)
+    lines.append("| " + " | ".join(overall) + " |")
+
+    assertion_names = sorted(
+        {name for r in results for c in r.report.cases for name in [*_required_assertions(c), *c.assertions]}
+        | {name for r in results for f in r.report.failures for name in _required_assertions(f)}
+    )
+    for name in assertion_names:
+        row = [name]
+        for r in results:
+            applicable = [
+                c
+                for c in r.report.cases
+                if name in c.assertions or name in (c.metadata or {}).get("required_assertions", [])
+            ]
+            total = len(applicable) + sum(
+                name in (f.metadata or {}).get("required_assertions", []) for f in r.report.failures
+            )
+            passed = sum(name in c.assertions and c.assertions[name].value is True for c in applicable)
+            row.append(f"{passed}/{total}" if total else "-")
+        lines.append("| " + " | ".join(row) + " |")
 
     score_names = _all_score_names([r.report for r in results])
     if primary in score_names:
@@ -339,15 +438,16 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
             ok_count = 0
             judge_values: list[float] = []
             wrong_sample: str | None = None
-            pass_threshold = 0.7 if r.primary_score == "LLMJudge" else 1.0
+            incomplete_cases = 0
             for case in cases:
                 scores = case.scores or {}
-                primary_score = scores.get(r.primary_score)
-                ok = primary_score is not None and float(primary_score.value) >= pass_threshold
-                if ok:
+                status, reasons = case_verdict(r, case)
+                if status == "pass":
                     ok_count += 1
+                elif status == "incomplete":
+                    incomplete_cases += 1
                 elif wrong_sample is None and case.output is not None:
-                    wrong_sample = " ".join(str(case.output).split())[:60]
+                    wrong_sample = " ".join(("; ".join(reasons) or str(case.output)).split())[:160].replace("|", "\\|")
                 judge = scores.get("LLMJudge")
                 if judge is not None:
                     try:
@@ -362,8 +462,8 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
                         row.append(f"OK (judge {judge_values[0]:.2f})")
                     else:
                         row.append("OK")
-                elif inconclusive and not real_failures:
-                    row.append("INCONCLUSIVE")
+                elif incomplete_cases or inconclusive:
+                    row.append("INCOMPLETE")
                 elif real_failures:
                     row.append("ERROR")
                 else:
@@ -375,10 +475,30 @@ def _render_dataset_section(results: list[DatasetResult]) -> str:
                     cell += f" (judge {avg:.2f})"
                 if real_failures:
                     cell += f" [+{len(real_failures)} ERR]"
-                if inconclusive:
-                    cell += f" [+{len(inconclusive)} INC]"
+                if inconclusive or incomplete_cases:
+                    cell += f" [+{len(inconclusive) + incomplete_cases} INCOMPLETE]"
                 row.append(cell)
         lines.append("| " + " | ".join(row) + " |")
+
+    for r in results:
+        details = []
+        for case in r.report.cases:
+            for name, assertion in case.assertions.items():
+                if assertion.reason:
+                    reason = " ".join(assertion.reason.split()).replace("|", "\\|")
+                    details.append(f"| {case.name} | {name} | {assertion.value} | {reason} |")
+            for error in case.evaluator_failures:
+                reason = " ".join(error.error_message.split()).replace("|", "\\|")[:500]
+                details.append(f"| {case.name} | evaluator error | incomplete | {reason} |")
+        if details:
+            lines += [
+                "",
+                f"### Check reasons: {r.model}",
+                "",
+                "| case | check | result | reason |",
+                "| --- | --- | --- | --- |",
+                *details,
+            ]
 
     lines.append("")
     return "\n".join(lines)
@@ -402,6 +522,9 @@ def render_markdown(
     if baseline:
         lines.append(_render_diff_section(all_results, baseline))
     for results in by_dataset.values():
+        for result in results:
+            if result.dataset == "tutor_calibration":
+                lines.append(render_calibration_summary(result.report))
         lines.append(_render_dataset_section(results))
     return "\n".join(lines)
 
@@ -421,6 +544,23 @@ def _render_diff_section(
         if key not in base_index:
             continue
         ds_name, model = key
+        if new_result.primary_score != base_index[key].primary_score:
+            lines += [f"{ds_name} | {model}: scoring changed; baseline is not comparable.", ""]
+            any_change = True
+            continue
+        old_experiment = base_index[key].report.experiment_metadata or {}
+        new_experiment = new_result.report.experiment_metadata or {}
+        if any(
+            old_experiment.get(name) != new_experiment.get(name)
+            for name in ("judge_model", "judge_version", "examples")
+        ):
+            lines += [f"{ds_name} | {model}: judge or corpus changed; baseline is not comparable.", ""]
+            any_change = True
+            continue
+        if new_result.report.report_evaluator_failures or base_index[key].report.report_evaluator_failures:
+            lines += [f"{ds_name} | {model}: report evaluation incomplete; quality comparison omitted.", ""]
+            any_change = True
+            continue
         new_outcomes = _case_outcomes(new_result)
         base_outcomes = _case_outcomes(base_index[key])
         regressions: list[tuple[str, str, str]] = []
@@ -428,8 +568,14 @@ def _render_diff_section(
         for case_name in sorted(set(new_outcomes) & set(base_outcomes)):
             new_b = new_outcomes[case_name]
             base_b = base_outcomes[case_name]
-            new_pass = new_b["ok"] >= max(1, new_b["ok"] + new_b["wrong"] + new_b["errored"])
-            base_pass = base_b["ok"] >= max(1, base_b["ok"] + base_b["wrong"] + base_b["errored"])
+            if new_b["inconclusive"] or base_b["inconclusive"] or new_b["errored"] or base_b["errored"]:
+                lines += [f"{ds_name} | {model} | {case_name}: incomplete evaluation; quality comparison omitted.", ""]
+                any_change = True
+                continue
+            new_pass = new_b["ok"] >= max(1, new_b["ok"] + new_b["wrong"] + new_b["errored"] + new_b["inconclusive"])
+            base_pass = base_b["ok"] >= max(
+                1, base_b["ok"] + base_b["wrong"] + base_b["errored"] + base_b["inconclusive"]
+            )
             if new_pass and not base_pass:
                 improvements.append((case_name, _outcome_label(base_b), _outcome_label(new_b)))
             elif base_pass and not new_pass:
@@ -475,6 +621,9 @@ def _serialize_results(all_results: list["DatasetResult"]) -> str:
                 "model": r.model,
                 "primary_score": r.primary_score,
                 "report": EvaluationReportAdapter.dump_python(r.report, mode="json"),
+                **(
+                    {"calibration_summary": summarize_calibration(r.report)} if r.dataset == "tutor_calibration" else {}
+                ),
                 "usage": {
                     "per_call": r.usage,
                     "totals": totals,
@@ -625,6 +774,8 @@ async def run_eval_suite(
                 max_concurrency=max_concurrency,
                 repeat=repeat,
             )
+            if ds_name in {"tutor_socratic", "tutor_variants"}:
+                report.experiment_metadata = {"judge_model": judge_model_name, "judge_version": review_version()}
             report.print(include_input=False, include_output=False)
             all_results.append(
                 DatasetResult(
@@ -708,11 +859,28 @@ async def amain() -> int:
         print(f"\nWrote {out_md}", file=sys.stderr)
         print(f"Wrote {out_json}", file=sys.stderr)
 
-    return 0
+    return evaluation_exit_code(results)
+
+
+def run_cli(async_main) -> None:
+    try:
+        code = asyncio.run(async_main())
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        print("Evaluation interrupted; results are incomplete.", file=sys.stderr)
+        code = 2
+    except SystemExit as exc:
+        if isinstance(exc.code, int) or exc.code is None:
+            raise
+        print(exc.code, file=sys.stderr)
+        code = 2
+    except Exception as exc:
+        print(f"Evaluation incomplete: {type(exc).__name__}: {exc}", file=sys.stderr)
+        code = 2
+    sys.exit(code)
 
 
 def main() -> None:
-    sys.exit(asyncio.run(amain()))
+    run_cli(amain)
 
 
 if __name__ == "__main__":

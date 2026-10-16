@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb, faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSkeleton } from "bootstrap-vue";
+import { BFormCheckbox, BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
 import { useToast } from "@/composables/toast";
 import { useActiveContext } from "@/composables/useActiveContext";
 import { buildEntityContext, parseMentions, resolveMentions } from "@/composables/useEntityMentions";
 import { usePageProposals } from "@/composables/usePageProposals";
+import { useTutorMode } from "@/composables/useTutorMode";
 import { useChatStore } from "@/stores/chatStore";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -52,7 +54,7 @@ const router = useRouter();
 const chatStore = useChatStore();
 const Toast = useToast();
 
-const { activeContext, contextLabel, contextIcon } = useActiveContext();
+const { activeContext, contextId, contextLabel, contextIcon } = useActiveContext();
 const pageEditorStore = usePageEditorStore();
 const contextDismissed = ref(false);
 
@@ -112,6 +114,29 @@ const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
+const { tutorModeEnabled, scaffoldingLevel, loading: tutorModeSaving, fetchTutorState, setTutorMode } = useTutorMode();
+
+async function onTutorModeChange(enabled: boolean) {
+    try {
+        await setTutorMode(enabled);
+    } catch (e) {
+        Toast.error(`Could not change Learning mode: ${errorMessageAsString(e)}`);
+    }
+}
+const { config } = useConfig(true);
+const learningModeAvailable = computed(() => Boolean(config.value?.enable_learning_mode));
+// Config may arrive after mount; the saved preference only matters once the server offers the feature.
+// Non-critical (and unavailable to anonymous users), so failures fall back to the default off state.
+watch(
+    learningModeAvailable,
+    (available) => {
+        if (available) {
+            fetchTutorState().catch(() => {});
+        }
+    },
+    { immediate: true },
+);
+// The server applies the saved learning preference after checking notebook context.
 const selectedAgentType = ref("auto");
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
@@ -625,11 +650,19 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div v-if="(docked || panel) && effectiveContext" class="context-indicator">
-            <span class="context-badge">
+            <span
+                class="context-badge"
+                data-description="chat context badge"
+                :data-context-type="effectiveContext.contextType"
+                :data-context-id="contextId">
                 <FontAwesomeIcon :icon="contextIcon" fixed-width />
                 {{ contextLabel }}
             </span>
-            <button class="context-dismiss" title="Dismiss context" @click="contextDismissed = true">
+            <button
+                class="context-dismiss"
+                data-description="chat context dismiss"
+                title="Dismiss context"
+                @click="contextDismissed = true">
                 <FontAwesomeIcon :icon="faTimes" />
             </button>
         </div>
@@ -678,6 +711,27 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div class="galaxyai-footer">
+            <div
+                v-if="learningModeAvailable"
+                data-description="learning mode toggle"
+                :data-tutor-mode="tutorModeEnabled ? 'on' : 'off'">
+                <BFormCheckbox
+                    :checked="tutorModeEnabled"
+                    :disabled="tutorModeSaving"
+                    switch
+                    size="sm"
+                    class="tutor-toggle"
+                    @change="onTutorModeChange">
+                    <FontAwesomeIcon :icon="faLightbulb" fixed-width />
+                    Learning mode
+                    <span
+                        v-if="tutorModeEnabled && scaffoldingLevel"
+                        class="tutor-scaffolding"
+                        data-description="learning mode scaffolding">
+                        · scaffolding {{ scaffoldingLevel }}/5
+                    </span>
+                </BFormCheckbox>
+            </div>
             <ChatInput :value="query" :busy="busy" @input="(v: string) => (query = v)" @submit="submitQuery" />
         </div>
     </div>
@@ -780,6 +834,15 @@ watch(currentChatId, async (newId) => {
     background: $panel-bg-color;
     border-top: $border-default;
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+
+    .tutor-toggle {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+
+        .tutor-scaffolding {
+            color: $text-light;
+        }
+    }
 }
 
 .chat-messages {
