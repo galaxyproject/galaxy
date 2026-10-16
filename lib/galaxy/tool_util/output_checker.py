@@ -305,11 +305,15 @@ MAX_RUNTIME_ENVIRONMENT_WARNING_BYTES = 64 * 1024
 def _read_runtime_environment_warning_file(path: Path) -> str:
     """Read a file the tool could have replaced: no symlinks, regular files only, bounded size."""
     try:
+        link_stat = os.lstat(path)
+        if not stat.S_ISREG(link_stat.st_mode):
+            return ""
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
     except OSError:
         return ""
     with os.fdopen(fd, "rb") as warning_file:
-        if not stat.S_ISREG(os.fstat(warning_file.fileno()).st_mode):
+        # Without O_NOFOLLOW the path could be swapped for a symlink after lstat.
+        if not os.path.samestat(link_stat, os.fstat(warning_file.fileno())):
             return ""
         return warning_file.read(MAX_RUNTIME_ENVIRONMENT_WARNING_BYTES).decode("utf-8", errors="replace")
 
@@ -321,7 +325,9 @@ def _runtime_environment_variable_names(job_directory: str, required_names: Iter
         return []
     names: list[str] = []
     for directory in ("outputs", "metadata"):
-        contents = _read_runtime_environment_warning_file(Path(job_directory) / directory / RUNTIME_ENVIRONMENT_WARNING_FILE)
+        contents = _read_runtime_environment_warning_file(
+            Path(job_directory) / directory / RUNTIME_ENVIRONMENT_WARNING_FILE
+        )
         names.extend(name for name in contents.splitlines() if name in required)
     return list(dict.fromkeys(names))
 
@@ -333,9 +339,7 @@ def merge_runtime_environment_warnings(
     required = list(required_names)
     names = list(
         dict.fromkeys(
-            name
-            for directory in task_directories
-            for name in _runtime_environment_variable_names(directory, required)
+            name for directory in task_directories for name in _runtime_environment_variable_names(directory, required)
         )
     )
     path = Path(job_directory) / "outputs" / RUNTIME_ENVIRONMENT_WARNING_FILE

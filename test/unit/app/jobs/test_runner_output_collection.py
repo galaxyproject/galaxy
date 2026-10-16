@@ -16,6 +16,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util_models.runtime_environment import RuntimeEnvironmentVariable
 
 
 class InMemoryJob(model.Job):
@@ -49,6 +50,7 @@ def finishing_job(tmp_path, request):
     wrapper.command_line = "tool command"
     wrapper.tool.stdio_regexes = []
     wrapper.tool.stdio_exit_codes = []
+    wrapper.tool.runtime_environment_variables = []
     wrapper.check_tool_output = MethodType(JobWrapper.check_tool_output, wrapper)
     wrapper.fail.side_effect = MethodType(JobWrapper.fail, wrapper)
     state = InMemoryJobState(wrapper, wrapper.job_destination)
@@ -305,3 +307,17 @@ def test_remote_tool_eval_traceback_survives_database_refresh(finishing_job, tmp
             assert job.traceback == "Traceback (most recent call last): ..."
     finally:
         engine.dispose()
+
+
+def test_finish_reports_only_declared_runtime_environment_warnings(finishing_job, tmp_path):
+    runner, state, job = finishing_job
+    wrapper = state.job_wrapper
+    wrapper.tool.runtime_environment_variables = [RuntimeEnvironmentVariable(name="MISSING", required=True)]
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    (outputs / "runtime_environment_warnings").write_text("MISSING\nPLANTED\n")
+
+    wrapper.check_tool_output("", "", 0, job)
+
+    warnings = [message for message in job.job_messages if message["type"] == "runtime_environment_warning"]
+    assert [message["variable_names"] for message in warnings] == [["MISSING"]]

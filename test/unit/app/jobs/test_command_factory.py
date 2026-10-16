@@ -344,7 +344,6 @@ def test_required_variable_check_follows_dependency_activation(tmp_path, externa
     assert (tmp_path / "outputs" / "runtime_environment_warnings").read_text() == "MISSING\n"
 
 
-
 def test_pulsar_required_variable_warning_reaches_metadata(tmp_path):
     # Wrapped containers mount Pulsar job directories read-only except outputs and working,
     # so the check writes outputs and the host-side script copies it to the staged metadata.

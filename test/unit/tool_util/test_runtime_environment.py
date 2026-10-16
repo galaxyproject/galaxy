@@ -1,4 +1,5 @@
 import json
+import os
 import shlex
 import subprocess
 import sys
@@ -16,6 +17,7 @@ from galaxy.tool_util.deps.dependencies import (
     ToolInfo,
 )
 from galaxy.tool_util.output_checker import (
+    MAX_RUNTIME_ENVIRONMENT_WARNING_BYTES,
     merge_runtime_environment_warnings,
     runtime_environment_job_messages,
 )
@@ -58,7 +60,6 @@ def test_required_check_preserves_empty_and_reports_names_only(tmp_path):
     assert messages[0]["error_level"] == StdioErrorLevel.WARNING
 
 
-
 def test_required_check_never_aborts_the_tool(tmp_path):
     # Inside a container the warning path can be read-only, e.g. Pulsar job directories.
     read_only = tmp_path / "read_only"
@@ -88,12 +89,24 @@ def test_warning_reader_reports_only_declared_names(tmp_path):
     assert runtime_environment_job_messages(str(tmp_path), []) == []
 
 
-def test_warning_reader_does_not_follow_symlinks(tmp_path):
+@pytest.mark.parametrize("nofollow", [True, False])
+def test_warning_reader_does_not_follow_symlinks(tmp_path, monkeypatch, nofollow):
+    if not nofollow:
+        # e.g. Windows, which has no O_NOFOLLOW.
+        monkeypatch.delattr(os, "O_NOFOLLOW", raising=False)
     host_file = tmp_path / "host_file"
     host_file.write_text("DECLARED\n")
     (tmp_path / "outputs").mkdir()
     (tmp_path / "outputs" / "runtime_environment_warnings").symlink_to(host_file)
     assert runtime_environment_job_messages(str(tmp_path), ["DECLARED"]) == []
+
+
+def test_warning_reader_bounds_the_read(tmp_path):
+    warning_file = tmp_path / "outputs" / "runtime_environment_warnings"
+    warning_file.parent.mkdir()
+    warning_file.write_text("FIRST\n" + "x" * MAX_RUNTIME_ENVIRONMENT_WARNING_BYTES + "\nBEYOND_LIMIT\n")
+    messages = runtime_environment_job_messages(str(tmp_path), ["FIRST", "BEYOND_LIMIT"])
+    assert messages[0]["variable_names"] == ["FIRST"]
 
 
 def test_xml_runtime_environment():
