@@ -59,6 +59,15 @@ const INPUT_JOB: WorkflowExtractionJob = {
 
 const localVue = getLocalVue();
 
+/** Full mount: the label clear button and output stars render inside GCard. */
+function mountCard(job: object) {
+    const global = withPlugins(localVue, createTestingPinia({ createSpy: vi.fn }));
+    return mount(WorkflowExtractionCard as object, {
+        props: { job },
+        global: { ...global, stubs: { ...global.stubs, GenericHistoryItem: true } },
+    });
+}
+
 describe("WorkflowExtractionCard seed_warning", () => {
     function cardBadges(job: WorkflowExtractionJob): Array<{ id: string; title?: string }> {
         const wrapper = shallowMount(WorkflowExtractionCard as object, {
@@ -83,12 +92,7 @@ describe("WorkflowExtractionCard seed_warning", () => {
 
 describe("WorkflowExtractionCard step label clear", () => {
     it("emits clear-step-label when GCard's clear-title button is clicked", async () => {
-        const job = { ...toExtractionRow(TOOL_JOB), stepLabel: "concatenate" };
-        const global = withPlugins(localVue, createTestingPinia({ createSpy: vi.fn }));
-        const wrapper = mount(WorkflowExtractionCard as object, {
-            props: { job },
-            global: { ...global, stubs: { ...global.stubs, GenericHistoryItem: true } },
-        });
+        const wrapper = mountCard({ ...toExtractionRow(TOOL_JOB), stepLabel: "concatenate" });
         await wrapper.find(".g-card-clear-title").trigger("click");
         expect(wrapper.emitted("clear-step-label")).toHaveLength(1);
     });
@@ -96,12 +100,9 @@ describe("WorkflowExtractionCard step label clear", () => {
 
 describe("WorkflowExtractionCard output star", () => {
     function mountStar(output: Partial<typeof TOOL_OUTPUT>, jobOverrides: Partial<WorkflowExtractionJob> = {}) {
-        const job = toExtractionRow({ ...TOOL_JOB, ...jobOverrides, outputs: [{ ...TOOL_OUTPUT, ...output }] });
-        const global = withPlugins(localVue, createTestingPinia({ createSpy: vi.fn }));
-        const wrapper = mount(WorkflowExtractionCard as object, {
-            props: { job },
-            global: { ...global, stubs: { ...global.stubs, GenericHistoryItem: true } },
-        });
+        const wrapper = mountCard(
+            toExtractionRow({ ...TOOL_JOB, ...jobOverrides, outputs: [{ ...TOOL_OUTPUT, ...output }] }),
+        );
         return { wrapper, star: wrapper.get("[data-output-star]") };
     }
 
