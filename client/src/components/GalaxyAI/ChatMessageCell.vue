@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import { faDatabase, faHistory, faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
+import {
+    faChevronDown,
+    faChevronUp,
+    faDatabase,
+    faExternalLinkAlt,
+    faHistory,
+    faLink,
+    faThumbsDown,
+    faThumbsUp,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
 import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
@@ -48,6 +57,11 @@ const emit = defineEmits<{
 
 const isClarification = computed(() => props.message.agentType === "clarification");
 const clarificationOptions = computed<string[]>(() => props.message.agentResponse?.metadata?.options ?? []);
+const linksExpanded = ref(false);
+
+// Only sources the agent verified against its search results, never URLs
+// scraped from model-written text.
+const sources = computed(() => props.message.agentResponse?.sources ?? []);
 </script>
 
 <template>
@@ -132,6 +146,29 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
                             <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
                         </div>
                         <div class="meta-right">
+                            <div v-if="sources.length" class="reference-links">
+                                <button
+                                    class="links-toggle"
+                                    :aria-expanded="linksExpanded ? 'true' : 'false'"
+                                    title="References"
+                                    @click="linksExpanded = !linksExpanded">
+                                    <FontAwesomeIcon :icon="faLink" fixed-width />
+                                    <span class="links-count">{{ sources.length }}</span>
+                                    <FontAwesomeIcon :icon="linksExpanded ? faChevronDown : faChevronUp" fixed-width />
+                                </button>
+                                <div v-if="linksExpanded" class="links-popover">
+                                    <a
+                                        v-for="source in sources"
+                                        :key="source.url"
+                                        class="reference-link"
+                                        :href="source.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer">
+                                        <span class="reference-link-label">{{ source.title }}</span>
+                                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                                    </a>
+                                </div>
+                            </div>
                             <span class="meta-tag">{{ getAgentLabel(props.message.agentType) }}</span>
                             <span v-if="props.message.agentResponse?.metadata?.model" class="meta-tag">
                                 {{ formatModelName(props.message.agentResponse.metadata.model) }}
@@ -329,6 +366,7 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
 }
 
 .meta-right {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -372,6 +410,79 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
     font-size: 0.675rem;
     color: $text-light;
     margin-left: 0.25rem;
+}
+
+.reference-links {
+    position: relative;
+}
+
+.links-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    min-height: 1.4rem;
+    padding: 0.125rem 0.35rem;
+    border: 1px solid rgba($border-color, 0.7);
+    border-radius: $border-radius-base;
+    background: $white;
+    color: $text-light;
+    font-size: 0.675rem;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+        color: $brand-primary;
+        border-color: rgba($brand-primary, 0.35);
+        background: rgba($brand-primary, 0.04);
+    }
+}
+
+.links-count {
+    font-weight: 600;
+}
+
+.links-popover {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.375rem);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    min-width: 14rem;
+    max-width: min(22rem, 70vw);
+    max-height: 14rem;
+    overflow-y: auto;
+    padding: 0.35rem;
+    border: $border-default;
+    border-radius: $border-radius-base;
+    background: $white;
+    box-shadow: 0 0.25rem 0.75rem rgba($brand-dark, 0.12);
+}
+
+.reference-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0.45rem;
+    border-radius: $border-radius-base;
+    color: $text-color;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    text-decoration: none;
+
+    &:hover {
+        color: $brand-primary;
+        background: rgba($brand-primary, 0.06);
+        text-decoration: none;
+    }
+}
+
+.reference-link-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 // --- Animation ---

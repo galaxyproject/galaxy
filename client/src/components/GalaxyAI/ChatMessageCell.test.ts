@@ -221,6 +221,38 @@ describe("ChatMessageCell", () => {
         });
     });
 
+    describe("references", () => {
+        const tutorialUrl =
+            "https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/ref-based/tutorial.html";
+
+        it("lists the response's verified sources, not URLs from the message text", async () => {
+            const message = makeAssistantMessage({
+                content: "Try [this](https://example.org/made-up) first.",
+                agentResponse: {
+                    content: "test",
+                    agent_type: "gtn_training",
+                    confidence: "high",
+                    suggestions: [],
+                    sources: [{ title: "Reference-based RNA-Seq", url: tutorialUrl, source_type: "gtn_tutorial" }],
+                    metadata: { docs_url: "https://example.org/metadata-link" },
+                },
+            });
+            const wrapper = mountCell(message);
+            expect(wrapper.find(".links-count").text()).toBe("1");
+
+            await wrapper.find(".links-toggle").trigger("click");
+            expect(wrapper.findAll(".reference-link").length).toBe(1);
+            const link = wrapper.find(".reference-link");
+            expect(link.attributes("href")).toBe(tutorialUrl);
+            expect(link.text()).toContain("Reference-based RNA-Seq");
+        });
+
+        it("hides the references button when there are no sources", () => {
+            const wrapper = mountCell(makeAssistantMessage({ content: "See https://example.org/page." }));
+            expect(wrapper.find(".reference-links").exists()).toBe(false);
+        });
+    });
+
     describe("action suggestions", () => {
         it("renders ActionCard when suggestions present", () => {
             const suggestions: ActionSuggestion[] = [

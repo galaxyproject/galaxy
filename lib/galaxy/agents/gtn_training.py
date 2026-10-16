@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import (
     Any,
@@ -29,10 +30,37 @@ from .base import (
     extract_usage_info,
     GalaxyAgentDependencies,
     normalize_llm_text,
+    SourceCitation,
 )
 from .gtn import GTNSearchDB
+from .gtn.search import (
+    FAQResult,
+    GTN_SITE_URL,
+    SearchResult,
+)
 
 log = logging.getLogger(__name__)
+
+# A markdown link with any target (protocol-relative ones render as links too),
+# or a bare URL. Bare URLs stop at characters that can't end one in prose so a
+# trailing ")" or "]" isn't swallowed, which also catches <...> autolinks.
+_URL_IN_TEXT_RE = re.compile(
+    r"\[([^\]]+)\]\(([^)\s]+)\)|(https?://[^\s<>()\[\]\"']+)",
+    re.IGNORECASE,
+)
+
+
+def _normalize_url(url: str) -> str:
+    return url.split("#", 1)[0].split("?", 1)[0].rstrip("/")
+
+
+def _record_key(item: dict[str, Any]) -> str | None:
+    """Identify a search record by its GTN slugs rather than its URL, which the model may rewrite."""
+    if item.get("filename"):
+        return f"faq:{item.get('category')}/{item['filename']}"
+    if item.get("tutorial"):
+        return f"tutorial:{item.get('topic')}/{item['tutorial']}"
+    return None
 
 
 class GTNSearchResponse(BaseModel):
@@ -77,6 +105,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         super().__init__(deps)
 
         self._tool_calls = 0
+        self._retrieved: dict[str, dict[str, Any]] = {}
+        self._retrieved_by_url: dict[str, dict[str, Any]] = {}
 
         db_path = getattr(deps.config, "gtn_database_path", None)
         download_url = getattr(deps.config, "gtn_database_url", None)
@@ -96,6 +126,87 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if self._tool_calls > self.MAX_TOOL_CALLS:
             return self._TOOL_BUDGET_MESSAGE
         return None
+
+    def _record_retrieved(self, results: Sequence[SearchResult | FAQResult]) -> list[dict[str, Any]]:
+        """Remember what the search tools actually returned this turn, so the
+        answer can only link to real GTN material."""
+        records = [result.to_dict() for result in results]
+        for record in records:
+            key = _record_key(record)
+            if key:
+                self._retrieved[key] = record
+            self._retrieved_by_url[_normalize_url(record["url"])] = record
+        return records
+
+    def _verify_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Swap each tutorial/FAQ the model surfaced for the record the search
+        returned, dropping any the search never returned."""
+        verified: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in items:
+            key = _record_key(item)
+            record = self._retrieved.get(key) if key else None
+            if record is None and isinstance(item.get("url"), str):
+                record = self._retrieved_by_url.get(_normalize_url(item["url"]))
+            if record is None:
+                log.info("Dropping GTN item the search never returned: %s", item.get("url") or item.get("title"))
+                continue
+            url = _normalize_url(record["url"])
+            if url not in seen:
+                seen.add(url)
+                verified.append(record)
+        return verified
+
+    def _allowed_urls(self) -> set[str]:
+        allowed = set(self._retrieved_by_url)
+        allowed.add(_normalize_url(GTN_SITE_URL))
+        if self.gtn_db:
+            allowed.update(_normalize_url(f"{GTN_SITE_URL}/topics/{topic}/") for topic in self.gtn_db.get_topics())
+        return allowed
+
+    def _strip_unverified_urls(self, text: str, allowed: set[str]) -> str:
+        """Unlink URLs in model-written prose that don't point at a retrieved
+        tutorial/FAQ or a real GTN topic page."""
+
+        def replace(match: re.Match[str]) -> str:
+            label, link_url, bare_url = match.groups()
+            if link_url is not None:
+                if _normalize_url(link_url) in allowed:
+                    return match.group(0)
+                # The label itself can hold a link, e.g. [<https://x>](https://x).
+                return _URL_IN_TEXT_RE.sub(replace, label)
+            url = bare_url.rstrip(".,;:!?")
+            trailing = bare_url[len(url) :]
+            return match.group(0) if _normalize_url(url) in allowed else trailing
+
+        return _URL_IN_TEXT_RE.sub(replace, text)
+
+    def _verify_response(self, response_data: GTNSearchResponse) -> GTNSearchResponse:
+        allowed = self._allowed_urls()
+
+        def strip(text: str | None) -> str | None:
+            return self._strip_unverified_urls(text, allowed) if text else text
+
+        return response_data.model_copy(
+            update={
+                "tutorials": self._verify_items(response_data.tutorials),
+                "faqs": self._verify_items(response_data.faqs),
+                "summary": strip(response_data.summary),
+                "learning_path": strip(response_data.learning_path),
+                "prerequisites": [strip(prerequisite) for prerequisite in response_data.prerequisites],
+                "total_time": strip(response_data.total_time),
+            }
+        )
+
+    def _build_sources(self, response_data: GTNSearchResponse) -> list[SourceCitation]:
+        return [
+            SourceCitation(
+                title=item.get("title") or item["url"],
+                url=item["url"],
+                source_type="gtn_faq" if item.get("result_type") == "faq" else "gtn_tutorial",
+            )
+            for item in [*response_data.tutorials, *response_data.faqs]
+        ]
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         if not self._supports_structured_output():
@@ -141,9 +252,10 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     hands_on_only=hands_on_only,
                     limit=limit,
                 )
+                records = self._record_retrieved(results)
                 return json.dumps(
                     {
-                        "results": [r.to_dict() for r in results],
+                        "results": records,
                         "count": len(results),
                     }
                 )
@@ -204,9 +316,10 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 return json.dumps({"error": "GTN database not available"})
             try:
                 results = self.gtn_db.search_faqs(query=query, category=category, limit=limit)
+                records = self._record_retrieved(results)
                 return json.dumps(
                     {
-                        "results": [r.to_dict() for r in results],
+                        "results": records,
                         "count": len(results),
                     }
                 )
@@ -228,9 +341,10 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 return json.dumps({"error": "GTN database not available"})
             try:
                 results = self.gtn_db.search_by_tools(tool_names, limit)
+                records = self._record_retrieved(results)
                 return json.dumps(
                     {
-                        "results": [r.to_dict() for r in results],
+                        "results": records,
                         "count": len(results),
                         "tools_searched": tool_names,
                     }
@@ -251,6 +365,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             return self._validation_error_response(validation_error)
 
         self._tool_calls = 0
+        self._retrieved = {}
+        self._retrieved_by_url = {}
 
         if not self.gtn_db:
             return self._build_response(
@@ -279,7 +395,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 response_data = extract_structured_output(result, GTNSearchResponse, log)
                 if response_data is None:
                     return self._build_response(
-                        content=extract_result_content(result),
+                        content=self._strip_unverified_urls(extract_result_content(result), self._allowed_urls()),
                         confidence=ConfidenceLevel.LOW,
                         method="text_fallback",
                         result=result,
@@ -287,6 +403,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         error="invalid_structured_output",
                     )
 
+                response_data = self._verify_response(response_data)
                 used_fallback = False
                 if not response_data.tutorials and not response_data.faqs:
                     log.info("No tutorials or FAQs in response, falling back to direct search")
@@ -309,6 +426,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     result=result,
                     query=query,
                     suggestions=self._create_suggestions(response_data),
+                    sources=self._build_sources(response_data),
                     agent_data={
                         "tutorial_count": len(response_data.tutorials),
                         "faq_count": len(response_data.faqs),
@@ -321,7 +439,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             response_text = extract_result_content(result)
             parsed_result = self._parse_simple_response(response_text)
             return self._build_response(
-                content=parsed_result.get("content", response_text),
+                content=self._strip_unverified_urls(parsed_result.get("content", response_text), self._allowed_urls()),
                 confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
                 method="simple_text",
                 result=result,
