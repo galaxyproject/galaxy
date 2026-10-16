@@ -7,11 +7,14 @@ import os
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from galaxy.datatypes.anvio import AnvioStructureDB
 from galaxy.datatypes.data import (
     Data,
     Directory,
     get_file_peek,
+    get_params_and_input_name,
     zarr_v2_store_keys,
     zarr_v3_store_keys,
     ZarrDirectory,
@@ -20,7 +23,39 @@ from galaxy.datatypes.interval import (
     Bed,
     BedStrict,
 )
+from galaxy.tools.parameters.grouping import Conditional
 from galaxy.util import galaxy_directory
+
+
+@pytest.mark.parametrize(
+    "resource_context",
+    [None, {"__job_resource__select": "no"}, {"__job_resource__select": "yes", "processors": 4}],
+)
+def test_converter_parameters_with_resource_conditional(resource_context):
+    dependency = object()
+    converter = SimpleNamespace(
+        inputs={
+            "source": SimpleNamespace(name="source", type="data"),
+            "index": SimpleNamespace(name="index", type="data"),
+            "optional": SimpleNamespace(name="optional", type="text", optional=True),
+            "required": SimpleNamespace(name="required", type="text", optional=False),
+            "__job_resource": Conditional("__job_resource"),
+        }
+    )
+    context = None
+    expected = {"index": dependency, "optional": None}
+    if resource_context is not None:
+        context = {
+            "__job_resource": resource_context,
+            "__target_datatype__": "bam",
+            "analysis_parameter": "not a converter parameter",
+        }
+        expected.update({"__job_resource": resource_context, "__target_datatype__": "bam"})
+
+    params, input_name = get_params_and_input_name(converter, {"index": dependency}, context)
+
+    assert input_name == "source"
+    assert params == expected
 
 
 def test_get_file_peek():
