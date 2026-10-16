@@ -196,6 +196,16 @@ preferences:
               required: False
               value: False
 
+    # Port of the user-side Crypt4GH recryptor service, overrides the port of crypt4gh_user_service_url
+    crypt4gh_recrypt_service:
+        description: Crypt4GH recryptor service running on your machine
+        inputs:
+            - name: port
+              label: Port number of your local recryptor service
+              type: text
+              required: False
+              value: "61357"
+
     # Used in file_sources_conf.yml
     elabftw:
         description: Your eLabFTW Integration Settings

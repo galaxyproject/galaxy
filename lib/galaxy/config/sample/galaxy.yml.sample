@@ -990,6 +990,29 @@ galaxy:
   # compressed datatypes will be unpacked before sniffing.
   #sniff_compressed_dynamic_datatypes_default: true
 
+  # Enable support for Crypt4GH-encrypted datasets. When enabled,
+  # uploads carrying the Crypt4GH magic bytes are detected and typed as
+  # ``<inner_ext>.c4gh`` wrapper datatypes (for example
+  # ``fastqsanger.c4gh``), and these wrappers can be used as inputs for
+  # tools accepting their inner datatype. When disabled (the default),
+  # no Crypt4GH datatypes are registered and uploads are handled exactly
+  # as before. Jobs decrypting these datasets only run on job
+  # destinations set up for them: such destinations need the
+  # compute-side recryptor service (``crypt4gh_recryptor_url``) and
+  # other job destination parameters, see
+  # https://docs.galaxyproject.org/en/master/admin/crypt4gh.html
+  #crypt4gh_enabled: false
+
+  # URL of the user-side Crypt4GH recryptor service
+  # (``crypt4gh-recryptor-service user``), called from the user's
+  # browser to authorize computation on Crypt4GH-encrypted datasets. The
+  # service runs on the user's own machine and holds the user's private
+  # key, so this normally points to ``localhost``. Users can override
+  # the port in their preferences when the ``crypt4gh_recrypt_service``
+  # extra user preference is configured. Only used when
+  # ``crypt4gh_enabled`` is set.
+  #crypt4gh_user_service_url: https://localhost:61357
+
   # Disable the 'Auto-detect' option for file uploads
   #datatypes_disable_auto: false
 

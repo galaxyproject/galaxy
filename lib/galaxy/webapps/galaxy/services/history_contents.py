@@ -1643,6 +1643,10 @@ class HistoryItemOperator:
     ):
         self.hda_manager.ensure_can_change_datatype(item)
         self.hda_manager.ensure_can_set_metadata(item)
+        if params.datatype != "auto":
+            datasets.ensure_datatype_change_keeps_encryption(
+                item, trans.app.datatypes_registry.get_datatype_by_extension(params.datatype)
+            )
         is_deferred = item.has_deferred_data
         assert item.dataset is not None
         item.state = item.dataset.states.SETTING_METADATA

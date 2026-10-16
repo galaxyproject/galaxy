@@ -2,6 +2,7 @@ import json
 import re
 import shlex
 import typing
+from collections.abc import Callable
 from logging import getLogger
 from os import (
     getcwd,
@@ -14,6 +15,7 @@ from os.path import (
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
+from galaxy.job_execution.protection import insecure_destination_error
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     ScriptIntegrityChecks,
@@ -31,6 +33,15 @@ if typing.TYPE_CHECKING:
 
 log = getLogger(__name__)
 
+
+def _source_or_package(galaxy_file: str, source_command: str, package_command: str) -> str:
+    """Let a remote host run Galaxy's sources if it has them (``galaxy_file``), the package otherwise."""
+    return (
+        f'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/{galaxy_file}" ]; '
+        f"then {source_command}; else {package_command}; fi"
+    )
+
+
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
@@ -39,10 +50,11 @@ REMOTE_TOOL_EVAL_SOURCE_COMMAND = (
     'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" "${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
 )
 REMOTE_TOOL_EVAL_PACKAGE_COMMAND = "galaxy-remote-tool-eval"
-REMOTE_TOOL_EVAL_PULSAR_COMMAND = (
-    'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/tools/remote_tool_eval.py" ]; '
-    f"then {REMOTE_TOOL_EVAL_SOURCE_COMMAND}; else {REMOTE_TOOL_EVAL_PACKAGE_COMMAND}; fi"
+REMOTE_TOOL_EVAL_PULSAR_COMMAND = _source_or_package(
+    "galaxy/tools/remote_tool_eval.py", REMOTE_TOOL_EVAL_SOURCE_COMMAND, REMOTE_TOOL_EVAL_PACKAGE_COMMAND
 )
+PROTECTED_STAGE_SOURCE_COMMAND = "python -m galaxy.job_execution.protection.stage"
+PROTECTED_STAGE_PACKAGE_COMMAND = "galaxy-protected-stage"
 
 
 def build_command(
@@ -133,6 +145,21 @@ def build_command(
         # but Pulsar automatically changes into the working dir, whereas Galaxy does not.
         commands_builder.prepend_command("cd working")
 
+    protected_stage_command = __protected_stage_command(job_wrapper, for_pulsar=for_pulsar)
+    if protected_stage_command:
+        if not (include_metadata and job_wrapper.requires_setting_metadata):
+            # Outputs are encrypted while collecting metadata: that must happen in the job, on the compute host,
+            # before the protected data is removed. Runners collecting metadata afterwards can't do that.
+            raise insecure_destination_error(["metadata must be collected within the job (embed_metadata_in_job)"])
+        if for_pulsar and job_wrapper.remote_command_line:
+            # The tool script runs right after evaluating it there, the inputs couldn't be decrypted in between.
+            raise insecure_destination_error(["Pulsar destinations can't use remote tool evaluation"])
+        # Decrypt protected inputs on the host, before (and outside of any container of) the tool.
+        # The tool only runs if that worked.
+        commands_builder.run_only_if(protected_stage_command("stage-in"))
+
+    # Tools are evaluated before their inputs are decrypted, as on the Galaxy server: the command line,
+    # stored by Galaxy, can't hold decrypted data.
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
     if container_monitor_command := job_wrapper.container_monitor_command(container):
@@ -140,6 +167,9 @@ def build_command(
 
     working_directory = remote_job_directory or job_wrapper.working_directory
     commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+    if protected_stage_command:
+        # Don't keep decrypted inputs around while outputs are collected.
+        commands_builder.append_command(protected_stage_command("cleanup-inputs"))
 
     if job_wrapper.is_cwl_job:
         # Minimal metadata needed by the relocate script
@@ -166,6 +196,9 @@ def build_command(
     if include_metadata and job_wrapper.requires_setting_metadata:
         commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params, metadata_container)
+
+    if protected_stage_command:
+        commands_builder.append_command(protected_stage_command("cleanup"))
 
     return commands_builder.build()
 
@@ -230,6 +263,32 @@ def __handle_remote_command_line_building(commands_builder, job_wrapper: "Minima
         else:
             command = REMOTE_TOOL_EVAL_PACKAGE_COMMAND
         commands_builder.prepend_command(command, sep=sep)
+
+
+def __protected_stage_command(job_wrapper: "MinimalJobWrapper", for_pulsar=False) -> Callable[[str], str] | None:
+    """Build commands running a protection action of protected jobs, ``None`` for other jobs."""
+    plan_path = job_wrapper.protection_plan_path
+    if not plan_path:
+        return None
+
+    def command(action: str) -> str:
+        args = f"{action} {shlex.quote(plan_path)}"
+        if for_pulsar:
+            return _source_or_package(
+                "galaxy/job_execution/protection/stage.py",
+                _in_galaxy_environment(f"{PROTECTED_STAGE_SOURCE_COMMAND} {args}"),
+                f"{PROTECTED_STAGE_PACKAGE_COMMAND} {args}",
+            )
+        if job_wrapper.galaxy_lib_dir:
+            return _in_galaxy_environment(f"{PROTECTED_STAGE_SOURCE_COMMAND} {args}")
+        return f"{PROTECTED_STAGE_PACKAGE_COMMAND} {args}"
+
+    return command
+
+
+def _in_galaxy_environment(command: str) -> str:
+    """Run ``command`` with Galaxy's Python environment, in a subshell so the tool's environment is unchanged."""
+    return f"({SETUP_GALAXY_FOR_METADATA}; {command})"
 
 
 def __handle_task_splitting(commands_builder, job_wrapper: "MinimalJobWrapper"):
@@ -377,6 +436,11 @@ tee -a '{stderr_file}' < "$__err" >&2 &""",
             sep="",
         )
         self.append_command('> "$__out" 2> "$__err"', sep="")
+
+    def run_only_if(self, condition):
+        """Run the commands built so far only if ``condition`` succeeds, fail otherwise."""
+        self.commands = f"if {condition}; then {self.commands}; else false; fi"
+        return self
 
     def capture_return_code(self, exit_code_path):
         self.append_command(CAPTURE_RETURN_CODE)

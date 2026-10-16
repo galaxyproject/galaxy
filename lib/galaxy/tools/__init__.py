@@ -48,6 +48,7 @@ from galaxy.job_execution.output_collect import (
     MetadataSourceProvider,
     PermissionProvider,
 )
+from galaxy.job_execution.protection import ProtectionError
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
@@ -276,6 +277,7 @@ if TYPE_CHECKING:
     from galaxy.model import (
         DynamicTool,
         LibraryFolder,
+        User,
         Workflow,
     )
     from galaxy.model.tool_shed_install import ToolShedRepository
@@ -2284,7 +2286,7 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 assert tool_id
                 param_dump: ToolStateDumpedToJsonInternalT = params_to_json_internal(self.inputs, param, self.app)
                 require_name_match = param.get("__when_value__") is not False
-                completed_jobs[i] = self.job_search.by_tool_input(
+                completed_job = self.job_search.by_tool_input(
                     user=trans.user,
                     tool_id=tool_id,
                     tool_version=self.version,
@@ -2292,9 +2294,22 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                     param_dump=param_dump,
                     require_name_match=require_name_match,
                 )
+                if completed_job and not self._may_reuse_job(completed_job, trans.user, param):
+                    completed_job = None
+                completed_jobs[i] = completed_job
             else:
                 completed_jobs[i] = None
         return completed_jobs
+
+    def _may_reuse_job(self, job: Job, user: "User", params: ToolStateJobInstancePopulatedT) -> bool:
+        if job.user_id == user.id:
+            return True
+        # Jobs decrypting protected inputs encrypt their outputs for their own user, others can't use them.
+        try:
+            return not self.app.dataset_protection.inputs_needing_decryption(self, params)
+        except ProtectionError:
+            # Refused when the job is requested.
+            return False
 
     def handle_input_async(
         self,
