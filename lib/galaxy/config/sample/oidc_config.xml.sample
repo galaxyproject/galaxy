@@ -24,4 +24,15 @@ Note that the values of these attributes are case-sensitive.
     <Setter Property="SECONDARY_AUTH_PROVIDER" Value="..." Type="str" />
     <Setter Property="SECONDARY_AUTH_ENDPOINT" Value="..." Type="str" />
     -->
+
+    <!--
+    Extra parameters for the authorization request sent to the IdP: ACR_VALUES, LOGIN_HINT, MAX_AGE (Type="int"),
+    UI_LOCALES and DISPLAY. Prefix the property with the provider name in upper case and an underscore for one provider, e.g.
+    KEYCLOAK_ACR_VALUES. Some providers use different prefixes; see "Authorization request parameters" in
+    doc/source/admin/authentication.md. Without a prefix, the setting is a default for all supported providers.
+    -->
+    <!--
+    <Setter Property="KEYCLOAK_ACR_VALUES" Value="https://refeds.org/profile/mfa" Type="str"/>
+    <Setter Property="OIDC_MAX_AGE" Value="3600" Type="int"/>
+    -->
 </OIDC>
