@@ -2229,12 +2229,15 @@ galaxy:
   # after they log in, e.g.
   # ``tools.example.org,portal.example.org:8443``.
   # A site can send users to Galaxy's login page with
-  # ``/login/start?redirect=<url>``, and Galaxy returns them to
-  # ``<url>`` once they have logged in, with a password or through OIDC.
-  # Paths on this Galaxy server are always accepted. An absolute URL is
-  # accepted only if it uses https and its host matches an entry here
-  # exactly; add the port to the entry if it is not 443. Wildcards are
-  # not supported. By default no external host is allowed.
+  # ``/login/start?redirect=<url>``, with ``<url>`` percent-encoded, and
+  # Galaxy returns them to ``<url>`` once they have logged in, with a
+  # password or through OIDC. Paths on this Galaxy server are always
+  # accepted. An absolute URL is accepted only if it uses https and its
+  # host matches an entry here exactly; add the port to the entry if it
+  # is not 443, and write IPv6 addresses in brackets. Wildcards are not
+  # supported; entries that are not a host or host:port are ignored with
+  # a warning. By default no external host is allowed. See the
+  # authentication documentation for what trusting a host implies.
   #allowed_login_redirect_hosts: null
 
   # Allow unregistered users to create new local (non-OIDC) accounts
