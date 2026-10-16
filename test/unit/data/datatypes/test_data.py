@@ -7,6 +7,8 @@ import os
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from galaxy.datatypes.anvio import AnvioStructureDB
 from galaxy.datatypes.data import (
     Data,
@@ -20,6 +22,7 @@ from galaxy.datatypes.interval import (
     Bed,
     BedStrict,
 )
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import galaxy_directory
 
 
@@ -198,10 +201,11 @@ def test_zarr_set_meta_leaves_a_wrapped_store_in_place_and_records_it(tmp_path):
     assert ZarrDirectory().content_path(dataset) == str(tmp_path / "wrapped.zarr")
 
 
-def test_zarr_content_path_stays_inside_the_dataset(tmp_path):
+def test_zarr_content_path_rejects_a_store_root_outside_the_dataset(tmp_path):
     dataset = _zarr_dataset(tmp_path, store_root="../elsewhere")
 
-    assert ZarrDirectory().content_path(dataset) == str(tmp_path)
+    with pytest.raises(RequestParameterInvalidException, match="'../elsewhere'"):
+        ZarrDirectory().content_path(dataset)
 
 
 def test_directory_content_path_is_the_extra_files_path(tmp_path):

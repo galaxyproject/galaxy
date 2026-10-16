@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -317,9 +318,11 @@ def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
     assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
 
 
-def test_adapt_dataset_ignores_a_store_root_outside_the_dataset():
-    result = _adapt_input("zarr", metadata={"store_root": "../elsewhere"})
-    assert result.path == "/job/inputs/dataset_1_files"
+@pytest.mark.parametrize("store_root", ["../elsewhere", "nested/store.zarr", "a';touch pwned;'.zarr", "$(id).zarr"])
+def test_adapt_dataset_rejects_an_unsafe_store_root(store_root):
+    # store_root reaches command lines through the path YAML tools get, so it must be a plain folder name.
+    with pytest.raises(RequestParameterInvalidException, match="only letters, digits"):
+        _adapt_input("zarr", metadata={"store_root": store_root})
 
 
 def test_adapt_dataset_deferred_input_has_location_and_no_path():

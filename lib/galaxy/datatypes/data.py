@@ -47,7 +47,10 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import (
     compression_utils,
@@ -55,6 +58,7 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
+    safe_filename_component,
     to_content_disposition,
     unicodify,
     UNKNOWN,
@@ -65,7 +69,6 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
-from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -1547,8 +1550,15 @@ class ZarrDirectory(Directory):
 
     def content_root(self, dataset: HasMetadata) -> str:
         store_root = dataset.metadata.store_root or ""
-        # Tools can provide metadata too; never point outside the dataset.
-        return store_root if safe_relpath(store_root) else ""
+        # This comes from a folder name or from tool-provided metadata and reaches command
+        # lines through the YAML tool runtime, so only accept a single folder name without shell syntax.
+        if store_root and safe_filename_component(store_root) != store_root:
+            raise RequestParameterInvalidException(
+                f"The Zarr store of this dataset is recorded in a folder named '{store_root}', but only letters, "
+                "digits, '.', '-' and '_' are allowed. Upload the store again from a folder with such a name, "
+                "or, if the folder name is valid, auto-detect the dataset's metadata again."
+            )
+        return store_root
 
     def sniff_directory(self, path: str) -> bool:
         return self._get_format_version(path) is not None
