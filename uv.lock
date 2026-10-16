@@ -3587,7 +3587,7 @@ dependencies = [
     { name = "axe-selenium-python", version = "2.1.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "axe-selenium-python", version = "3.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "galaxy-navigation" },
-    { name = "galaxy-util" },
+    { name = "galaxy-util", extra = ["markdown-convert"] },
     { name = "playwright" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -3603,7 +3603,7 @@ test = [
 requires-dist = [
     { name = "axe-selenium-python" },
     { name = "galaxy-navigation", editable = "packages/navigation" },
-    { name = "galaxy-util", editable = "packages/util" },
+    { name = "galaxy-util", extras = ["markdown-convert"], editable = "packages/util" },
     { name = "playwright" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pyyaml" },
@@ -3748,6 +3748,7 @@ driver = [
 ]
 test = [
     { name = "pytest" },
+    { name = "pytest-mock" },
 ]
 
 [package.metadata]
@@ -3761,6 +3762,7 @@ requires-dist = [
     { name = "gxformat2", specifier = ">=0.27.0" },
     { name = "pytest" },
     { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-mock", marker = "extra == 'test'" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "selenium", specifier = "!=4.11.0,!=4.11.1,!=4.11.2" },
@@ -4032,12 +4034,18 @@ image-util = [
 jstree = [
     { name = "dictobj" },
 ]
+markdown-convert = [
+    { name = "markdown", version = "3.10.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "markdown", version = "3.11", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
 template = [
     { name = "ct3" },
     { name = "fissix", marker = "python_full_version >= '3.13'" },
     { name = "future" },
 ]
 test = [
+    { name = "markdown", version = "3.10.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "markdown", version = "3.11", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pytest" },
     { name = "pytest-httpserver" },
     { name = "responses" },
@@ -4057,6 +4065,8 @@ requires-dist = [
     { name = "galaxy-tool-util-models", marker = "extra == 'config-template'", editable = "packages/tool_util_models" },
     { name = "importlib-resources", marker = "python_full_version < '3.12'", specifier = ">=5.10.0" },
     { name = "jinja2", marker = "extra == 'config-template'" },
+    { name = "markdown", marker = "extra == 'markdown-convert'" },
+    { name = "markdown", marker = "extra == 'test'" },
     { name = "packaging" },
     { name = "pillow", marker = "extra == 'image-util'" },
     { name = "pydantic", marker = "extra == 'config-template'", specifier = ">=2.7.4" },
@@ -4071,7 +4081,7 @@ requires-dist = [
     { name = "werkzeug", marker = "extra == 'test'" },
     { name = "zipstream-new" },
 ]
-provides-extras = ["image-util", "jstree", "template", "config-template", "test"]
+provides-extras = ["image-util", "jstree", "markdown-convert", "template", "config-template", "test"]
 
 [[package]]
 name = "galaxy-web-apps"

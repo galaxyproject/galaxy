@@ -21,6 +21,7 @@ from typing import (
 from axe_selenium_python import Axe
 from selenium.common.exceptions import (
     NoSuchElementException,
+    StaleElementReferenceException,
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.action_chains import ActionChains
@@ -741,12 +742,23 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
 
         @contextmanager
         def _highlight_context():
-            original_border = self.execute_script("return arguments[0].style.border;", element)
+            # The highlight is decoration: an element the page has re-rendered is
+            # left unhighlighted (as Playwright does for a detached handle).
+            highlighted = False
             try:
+                original_border = self.execute_script("return arguments[0].style.border;", element)
                 self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                highlighted = True
+            except StaleElementReferenceException:
+                pass
+            try:
                 yield
             finally:
-                self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+                if highlighted:
+                    try:
+                        self.execute_script("arguments[0].style.border = arguments[1];", element, original_border)
+                    except StaleElementReferenceException:
+                        pass
 
         return _highlight_context()
 
