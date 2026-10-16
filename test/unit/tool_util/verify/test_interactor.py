@@ -1,10 +1,13 @@
 """Tests for adapting test output properties onto dataset API response keys."""
 
 import http.server
+import io
+import os
 import socket
 import struct
 import threading
 import time
+import zipfile
 from typing import (
     Any,
     Literal,
@@ -213,6 +216,43 @@ def interactor():
 def mocked():
     with responses.RequestsMock() as rsps:
         yield rsps
+
+
+def _mock_test_data_download(mocked, **kwds):
+    mocked.get(f"{API}/version", json={"version_major": "26.2"})
+    mocked.get(f"{API}/tools/some_tool/test_data_download", **kwds)
+
+
+def _read_staged(staged, name):
+    with open(os.path.join(staged["path"], name)) as fh:
+        return fh.read()
+
+
+def test_directory_input_is_downloaded_under_force_path_paste(interactor, mocked):
+    """The client archives directories itself, so a server-side path is of no use."""
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as zf:
+        # The server roots the archive at the directory's basename.
+        zf.writestr("test-cache/reference.ann", "index contents")
+    # No test_data_path endpoint is registered, so asking for a server path fails the test.
+    _mock_test_data_download(mocked, body=archive.getvalue())
+    staged = interactor.remote_to_input(
+        _test_data("indexes/test-cache", **{"class": "Directory"}), "some_tool", force_path_paste=True
+    )
+    assert _read_staged(staged, "reference.ann") == "index contents"
+    assert staged["client_local"] is True
+    assert "location" not in staged
+
+
+def test_directory_input_falls_back_to_local_test_data(tmp_path, mocked):
+    (tmp_path / "indexes" / "test-cache").mkdir(parents=True)
+    (tmp_path / "indexes" / "test-cache" / "reference.ann").write_text("index contents")
+    interactor = GalaxyInteractorApi(
+        galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key", test_data=[str(tmp_path)]
+    )
+    _mock_test_data_download(mocked, status=404, json={})
+    staged = interactor.remote_to_input(_test_data("indexes/test-cache", **{"class": "Directory"}), "some_tool")
+    assert _read_staged(staged, "reference.ann") == "index contents"
 
 
 def test_session_is_available_while_resolving_user_key(mocked):
