@@ -173,9 +173,9 @@ def _trans(contents, toolbox=None, jobs=(), icjs=()):
     return cast(ProvidesHistoryContext, MockTrans(session, toolbox or MockToolbox()))
 
 
-def _closure(trans, refs, job_refs=(), icj_refs=(), local_keys=()):
+def _closure(trans, refs, job_refs=(), icj_refs=()):
     return _backward_job_closure(
-        trans, refs, list(job_refs), list(icj_refs), HistoryBoundary(TARGET_HISTORY, frozenset(local_keys))
+        trans, refs, list(job_refs), list(icj_refs), HistoryBoundary(TARGET_HISTORY, frozenset())
     )
 
 
