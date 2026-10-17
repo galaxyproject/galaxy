@@ -237,6 +237,28 @@ def test_unsafe_hidden_validator_rejected_at_save():
         )
 
 
+@pytest.mark.parametrize("validators", [[NEGATED_REGEX, REGEX], [NEGATED_RANGE, RANGE]])
+def test_validator_order_is_kept(validators):
+    parameter_type = "text" if validators[0]["type"] == "regex" else "integer"
+    step = import_input(parameter_type, validators)
+    assert normalized(step.tool_inputs["validators"]) == normalized(validators)
+    assert normalized(editor_resave(step).tool_inputs["validators"]) == normalized(validators)
+
+
+def test_first_declared_validator_reports_the_error():
+    param = runtime_input(import_input("text", [NEGATED_REGEX, REGEX]))
+    with pytest.raises(ValueError, match="^Parameter 'input': no bad$"):
+        param.validate("bad", _trans())
+
+
+@pytest.mark.parametrize("validators", [[None], ["regex"], "regex"])
+def test_malformed_validator_list_rejected_at_import(validators):
+    with pytest.raises(
+        RequestParameterInvalidException, match="^Workflow parameter validators must be a list of objects.$"
+    ):
+        import_input("text", validators)
+
+
 MALFORMED_HIDDEN_VALIDATORS = "Workflow parameter extra_validators must be a JSON list."
 
 

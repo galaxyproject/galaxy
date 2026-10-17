@@ -1625,6 +1625,9 @@ class InputParameterModule(WorkflowModule):
             when_this_type.inputs["extra_validators"] = HiddenToolParameter(
                 None, {"name": "extra_validators", "value": ""}
             )
+            when_this_type.inputs["extra_validator_positions"] = HiddenToolParameter(
+                None, {"name": "extra_validator_positions", "value": ""}
+            )
 
             cases.append(when_this_type)
 
