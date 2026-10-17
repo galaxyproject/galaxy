@@ -91,11 +91,11 @@ describe("FormCheck", () => {
         }
         /* 1 - confirm select-all option checked */
         await inputs.at(0).setValue(true);
-        expect(inputs.at(0).element.checked).toBeTruthy();
         /* ...confirm corresponding options checked */
         const values = options.map((option) => option.value);
         expect(emittedArg(wrapper, "input")).toStrictEqual(values);
-        await wrapper.setProps({ value: values });
+        await wrapper.setProps({ value: emittedArg(wrapper, "input") });
+        expect(inputs.at(0).element.checked).toBeTruthy();
         for (let i = 0; i < n; i++) {
             expect(inputs.at(i + 1).element.checked).toBe(true);
         }
