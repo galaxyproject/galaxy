@@ -1,63 +1,52 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import createClient from "openapi-fetch";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { createGalaxyApi } from "./client";
 
-// Create a mock API client for testing
-const mockApiClient = {
+const mockApiClient = vi.hoisted(() => ({
     GET: vi.fn(),
     POST: vi.fn(),
     PUT: vi.fn(),
     DELETE: vi.fn(),
     PATCH: vi.fn(),
-};
+}));
 
-// Mock createClient before importing
-vi.mock("openapi-fetch", () => {
-    return {
-        default: vi.fn().mockImplementation(() => mockApiClient),
-    };
-});
+vi.mock("openapi-fetch", () => ({
+    default: vi.fn(() => mockApiClient),
+}));
 
-import createClient from "openapi-fetch";
-
-describe("Galaxy API Client", () => {
+describe("createGalaxyApi", () => {
     beforeEach(() => {
-        // Reset mock function calls before each test
         vi.clearAllMocks();
     });
 
-    it("creates a client with the default base URL", () => {
-        // Set up window.location.origin for testing
-        const originalLocation = window.location;
-        delete (window as any).location;
-        window.location = { ...originalLocation, origin: "https://test-galaxy.org" } as any;
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
 
-        const api = createGalaxyApi();
+    it("uses the browser origin when no base URL is supplied", () => {
+        vi.stubGlobal("window", { location: { origin: "https://test-galaxy.org" } });
+
+        createGalaxyApi();
 
         expect(createClient).toHaveBeenCalledWith({ baseUrl: "https://test-galaxy.org", headers: {} });
-
-        // Restore window.location
-        window.location = originalLocation;
     });
 
-    it("creates a client with a custom base URL", () => {
-        const customUrl = "https://usegalaxy.org";
-        const api = createGalaxyApi(customUrl);
+    it("uses a custom base URL", () => {
+        createGalaxyApi("https://usegalaxy.org");
 
-        expect(createClient).toHaveBeenCalledWith({ baseUrl: customUrl, headers: {} });
+        expect(createClient).toHaveBeenCalledWith({ baseUrl: "https://usegalaxy.org", headers: {} });
     });
 
-    it("strips trailing slash from base URL", () => {
-        const customUrl = "https://usegalaxy.org/";
-        const expectedUrl = "https://usegalaxy.org";
-        const api = createGalaxyApi(customUrl);
+    it("strips the trailing slash from a custom base URL", () => {
+        createGalaxyApi("https://usegalaxy.org/");
 
-        expect(createClient).toHaveBeenCalledWith({ baseUrl: expectedUrl, headers: {} });
+        expect(createClient).toHaveBeenCalledWith({ baseUrl: "https://usegalaxy.org", headers: {} });
     });
 
-    it("returns the configured client", () => {
+    it("returns the configured client with its HTTP methods", () => {
         const api = createGalaxyApi();
 
-        // Should have all the HTTP methods
         expect(api).toEqual(mockApiClient);
         expect(api).toHaveProperty("GET");
         expect(api).toHaveProperty("POST");

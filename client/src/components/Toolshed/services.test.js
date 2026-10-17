@@ -1,3 +1,4 @@
+import { nth } from "@tests/vitest/helpers";
 import { describe, expect, it } from "vitest";
 
 import { Services } from "./services";
@@ -39,16 +40,18 @@ describe("Toolshed service helpers", () => {
     ];
     const urls = ["http://url_1.com", "http://url_2.com"];
 
-    it("test fix toolshed helper", () => {
+    it("maps Tool Shed URLs after grouping and selecting the latest uninstalled repositories", () => {
         const services = new Services();
-        const filter = (x) => x.status !== "Installed";
-        const grouped = services._groupByNameOwnerToolshed(incoming, filter, true);
+        const excludeInstalled = (repository) => repository.status !== "Installed";
+        const grouped = services._groupByNameOwnerToolshed(incoming, excludeInstalled, true);
         services._fixToolshedUrls(grouped, urls);
         expect(grouped.length).toBe(2);
-        expect(grouped[0].name).toBe("name_0");
-        expect(grouped[0].tool_shed_url).toBe("http://url_1.com");
-        expect(grouped[0].ctx_rev).toBe("3");
-        expect(grouped[1].name).toBe("name_1");
-        expect(grouped[1].tool_shed_url).toBe("http://url_2.com");
+        const latestRepository = nth(grouped, 0);
+        const otherRepository = nth(grouped, 1);
+        expect(latestRepository.name).toBe("name_0");
+        expect(latestRepository.tool_shed_url).toBe("http://url_1.com");
+        expect(latestRepository.ctx_rev).toBe("3");
+        expect(otherRepository.name).toBe("name_1");
+        expect(otherRepository.tool_shed_url).toBe("http://url_2.com");
     });
 });

@@ -1,52 +1,60 @@
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
+
+import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 
 import ObjectStoreBadge from "./ObjectStoreBadge.vue";
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
+
+const BADGE_LIST = ".object-store-badges";
 
 const TEST_MESSAGE = "a test message provided by backend";
-const BADGES = [
-    { type: "more_secure", message: TEST_MESSAGE },
-    { type: "slower", message: TEST_MESSAGE },
+const BADGES: ObjectStoreBadgeType[] = [
+    { type: "more_secure", message: TEST_MESSAGE, source: "admin" },
+    { type: "slower", message: TEST_MESSAGE, source: "admin" },
 ];
 
-describe("ObjectStoreBadges", () => {
-    let wrapper;
+function mountBadges(props: { size?: string; interactive?: boolean } = {}) {
+    return shallowMount(ObjectStoreBadges, {
+        props: { badges: BADGES, ...props },
+        global: getLocalVue(),
+    });
+}
 
-    it("should render all badges in array", async () => {
-        wrapper = shallowMount(ObjectStoreBadges as object, {
-            props: { badges: BADGES },
-            global: localVue,
-        });
-        const badgeListEl = wrapper.find(".object-store-badges");
-        expect(badgeListEl.exists()).toBeTruthy();
-        const badges = wrapper.findAllComponents(ObjectStoreBadge);
-        expect(badges.length).toBe(2);
-        expect(nth(badges, 0).attributes("size")).toBe("lg");
+function renderedBadges(wrapper: ReturnType<typeof mountBadges>) {
+    return wrapper
+        .findAllComponents(ObjectStoreBadge)
+        .map((badge) => ({ badge: badge.props("badge"), size: badge.attributes("size") }));
+}
+
+describe("ObjectStoreBadges", () => {
+    it("renders every badge at the default lg size when no size is given", () => {
+        const wrapper = mountBadges();
+
+        expect(wrapper.find(BADGE_LIST).exists()).toBe(true);
+        expect(renderedBadges(wrapper)).toEqual([
+            { badge: BADGES[0], size: "lg" },
+            { badge: BADGES[1], size: "lg" },
+        ]);
     });
 
-    it("should pass along size attributes", async () => {
-        wrapper = shallowMount(ObjectStoreBadges as object, {
-            props: { badges: BADGES, size: "2x" },
-            global: localVue,
-        });
-        const badgeListEl = wrapper.find(".object-store-badges");
-        expect(badgeListEl.exists()).toBeTruthy();
-        const badges = wrapper.findAllComponents(ObjectStoreBadge);
-        expect(badges.length).toBe(2);
-        expect(nth(badges, 0).attributes("size")).toBe("2x");
+    it("passes an explicit size to every badge", () => {
+        const wrapper = mountBadges({ size: "2x" });
+
+        expect(wrapper.find(BADGE_LIST).exists()).toBe(true);
+        expect(renderedBadges(wrapper)).toEqual([
+            { badge: BADGES[0], size: "2x" },
+            { badge: BADGES[1], size: "2x" },
+        ]);
     });
 
     it("should pass along whether badges are interactive", async () => {
-        wrapper = shallowMount(ObjectStoreBadges as object, {
-            props: { badges: BADGES, interactive: false },
-            global: localVue,
-        });
+        const wrapper = mountBadges({ interactive: false });
         const badges = wrapper.findAllComponents(ObjectStoreBadge);
-        expect(nth(badges, 0).props("interactive")).toBe(false);
-        expect(nth(badges, 1).props("interactive")).toBe(false);
+        expect(badges.at(0)!.props("interactive")).toBe(false);
+        expect(badges.at(1)!.props("interactive")).toBe(false);
     });
 });

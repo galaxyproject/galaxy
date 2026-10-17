@@ -24,6 +24,14 @@ describe("check-style-imports", () => {
         expect(findForbiddenImports(component(styleImport))).toEqual([`3: ${styleImport}`]);
     });
 
+    it("reports every forbidden import with its source line number", () => {
+        const source = component(
+            ['@import "base";', '@import "bootstrap/scss/functions";', '@use "bootstrap";'].join("\n"),
+        );
+
+        expect(findForbiddenImports(source)).toEqual(['3: @import "base";', '5: @use "bootstrap";']);
+    });
+
     it.each([
         '@import "@/style/scss/theme/blue.scss";',
         '@import "bootstrap/scss/functions";',

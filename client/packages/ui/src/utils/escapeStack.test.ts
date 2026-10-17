@@ -37,6 +37,11 @@ describe("escapeStack", () => {
         openEscapeLayer(first);
 
         expect(isTopEscapeLayer(first)).toBe(true);
+
+        closeEscapeLayer(first);
+        expect(isTopEscapeLayer(second)).toBe(true);
+        closeEscapeLayer(second);
+        expect(isTopEscapeLayer(first)).toBe(false);
     });
 
     it("skips a newer layer that cannot take the key", () => {

@@ -28,7 +28,7 @@ describe("galaxy-ui public class names", () => {
     });
 
     it("GTable: g-table-container, g-table, table, table-bordered, g-table-compact, g-table-sorted", () => {
-        const wrapper = mount(GTable as object, {
+        const wrapper = mount(GTable, {
             props: {
                 items: [{ name: "a" }],
                 fields: [{ key: "name", sortable: true }],
@@ -52,15 +52,21 @@ describe("galaxy-ui public class names", () => {
         expect(wrapper.find("input.g-form-input").exists()).toBe(true);
     });
 
-    it("GButton, GLink and GDropdownItem: g-button, g-transparent, g-link, dropdown-item", () => {
-        expect(mount(GButton as object, { props: { transparent: true } }).classes()).toEqual(
-            expect.arrayContaining(["g-button", "g-transparent"]),
-        );
-        expect(mount(GLink as object, { props: { href: "#" } }).classes()).toContain("g-link");
-        expect(
-            mount(GDropdownItem as object, { props: { href: "#" } })
-                .find(".dropdown-item")
-                .exists(),
-        ).toBe(true);
+    it("GButton: g-button, g-transparent", () => {
+        const wrapper = mount(GButton, { props: { transparent: true } });
+
+        expect(wrapper.classes()).toEqual(expect.arrayContaining(["g-button", "g-transparent"]));
+    });
+
+    it("GLink: g-link", () => {
+        const wrapper = mount(GLink, { props: { href: "#" } });
+
+        expect(wrapper.classes()).toContain("g-link");
+    });
+
+    it("GDropdownItem: dropdown-item", () => {
+        const wrapper = mount(GDropdownItem, { props: { href: "#" } });
+
+        expect(wrapper.find(".dropdown-item").exists()).toBe(true);
     });
 });

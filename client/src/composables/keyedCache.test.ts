@@ -1,49 +1,54 @@
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
 import { ApiError } from "@/utils/simple-error";
 
-import { useKeyedCache } from "./keyedCache";
+import { type FetchParams, useKeyedCache } from "./keyedCache";
 
 interface ItemData {
     id: string;
     name: string;
 }
 
-const fetchItem = vi.fn();
-const shouldFetch = vi.fn();
+let fetchItem = vi.fn<(params: FetchParams, signal?: AbortSignal) => Promise<ItemData>>();
+let shouldFetch = vi.fn<(item?: ItemData) => boolean>();
 
 describe("useKeyedCache", () => {
     beforeEach(() => {
-        fetchItem.mockClear();
-        shouldFetch.mockClear();
+        fetchItem = vi.fn<(params: FetchParams, signal?: AbortSignal) => Promise<ItemData>>();
+        shouldFetch = vi.fn<(item?: ItemData) => boolean>();
     });
 
-    it("should fetch the item if it is not already stored", async () => {
+    afterEach(() => {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+
+    it("fetches an absent item and tracks its loading state", async () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
-        const fetchParams = { id: id };
+        const item = { id, name: "Item 1" };
+        const fetchParams = { id };
 
         fetchItem.mockResolvedValue(item);
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
 
         expect(storedItems.value).toEqual({});
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeTruthy();
+        expect(isLoadingItem.value(id)).toBe(true);
         await flushPromises();
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
-    it("should not fetch the item if it is already stored", async () => {
+    it("returns a cached item without fetching it", () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
+        const item = { id, name: "Item 1" };
 
         fetchItem.mockResolvedValue(item);
 
@@ -51,108 +56,108 @@ describe("useKeyedCache", () => {
 
         storedItems.value[id] = item;
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).not.toHaveBeenCalled();
     });
 
-    it("should not fetch if the stored item is 0 (or any falsy value)", async () => {
+    it("treats cached zero as present", () => {
         const id = "1";
         const item = 0;
-
+        const fetchItem = vi.fn<(params: FetchParams, signal?: AbortSignal) => Promise<number>>();
         fetchItem.mockResolvedValue(item);
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<number>(fetchItem);
 
         storedItems.value[id] = item;
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).not.toHaveBeenCalled();
     });
 
-    it("should fetch the item regardless of whether it is already stored if shouldFetch returns true", async () => {
+    it("refreshes a cached item when shouldFetch returns true", async () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
-        const fetchParams = { id: id };
+        const item = { id, name: "Item 1" };
+        const fetchParams = { id };
 
         fetchItem.mockResolvedValue(item);
-        shouldFetch.mockReturnValue(() => true);
+        shouldFetch.mockReturnValue(true);
 
-        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetch);
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, () => shouldFetch);
 
         storedItems.value[id] = item;
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeTruthy();
+        expect(isLoadingItem.value(id)).toBe(true);
         await flushPromises();
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
-    it("should not fetch the item if it is already being fetched", async () => {
+    it("shares one in-flight request between repeated reads", async () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
-        const fetchParams = { id: id };
+        const item = { id, name: "Item 1" };
+        const fetchParams = { id };
 
         fetchItem.mockResolvedValue(item);
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeTruthy();
+        expect(isLoadingItem.value(id)).toBe(true);
         await flushPromises();
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledTimes(1);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
-    it("should not fetch the item if it is already being fetched, even if shouldFetch returns true", async () => {
+    it("shares one in-flight request even when shouldFetch returns true", async () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
-        const fetchParams = { id: id };
+        const item = { id, name: "Item 1" };
+        const fetchParams = { id };
 
         fetchItem.mockResolvedValue(item);
-        shouldFetch.mockReturnValue(() => true);
+        shouldFetch.mockReturnValue(true);
 
-        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetch);
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, () => shouldFetch);
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeTruthy();
+        expect(isLoadingItem.value(id)).toBe(true);
         await flushPromises();
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledTimes(1);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
-    it("should accept a ref for fetchItem", async () => {
+    it("accepts the fetch handler as a ref", async () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
-        const fetchParams = { id: id };
+        const item = { id, name: "Item 1" };
+        const fetchParams = { id };
 
         fetchItem.mockResolvedValue(item);
 
@@ -160,21 +165,21 @@ describe("useKeyedCache", () => {
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItemRef);
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeTruthy();
+        expect(isLoadingItem.value(id)).toBe(true);
         await flushPromises();
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
-    it("should accept a computed for shouldFetch", async () => {
+    it("accepts shouldFetch as a computed value", async () => {
         const id = "1";
-        const item = { id: id, name: "Item 1" };
-        const fetchParams = { id: id };
+        const item = { id, name: "Item 1" };
+        const fetchParams = { id };
 
         fetchItem.mockResolvedValue(item);
         shouldFetch.mockReturnValue(true);
@@ -183,19 +188,19 @@ describe("useKeyedCache", () => {
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetchComputed);
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
 
         getItemById.value(id);
 
-        expect(isLoadingItem.value(id)).toBeTruthy();
+        expect(isLoadingItem.value(id)).toBe(true);
         await flushPromises();
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
-    it("should not re-fetch after a failed request", async () => {
+    it("does not retry an ordinary request error", async () => {
         const id = "1";
 
         fetchItem.mockRejectedValue(new Error("Request failed"));
@@ -205,7 +210,7 @@ describe("useKeyedCache", () => {
         getItemById.value(id);
         await flushPromises();
 
-        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(isLoadingItem.value(id)).toBe(false);
         expect(getItemLoadError.value(id)).toBeInstanceOf(Error);
         expect(fetchItem).toHaveBeenCalledTimes(1);
 
@@ -216,7 +221,7 @@ describe("useKeyedCache", () => {
         expect(fetchItem).toHaveBeenCalledTimes(1);
     });
 
-    it("should retry on transient errors (429, 5xx) up to max retries", async () => {
+    it("retries a 429 response three times before stopping", async () => {
         const id = "1";
 
         fetchItem.mockRejectedValue(new ApiError("Too Many Requests", 429));
@@ -237,7 +242,7 @@ describe("useKeyedCache", () => {
         expect(fetchItem).toHaveBeenCalledTimes(4);
     });
 
-    it("should not retry on permanent errors (403, 404)", async () => {
+    it("does not retry a permanent 403 response", async () => {
         const id = "1";
 
         fetchItem.mockRejectedValue(new ApiError("Forbidden", 403));
@@ -254,7 +259,7 @@ describe("useKeyedCache", () => {
         expect(fetchItem).toHaveBeenCalledTimes(1);
     });
 
-    it("should recover on retry if transient error resolves", async () => {
+    it("stores the recovered item after retrying a 503 response", async () => {
         const id = "1";
         const item = { id, name: "Item 1" };
 
@@ -274,7 +279,7 @@ describe("useKeyedCache", () => {
         expect(storedItems.value[id]).toEqual(item);
     });
 
-    it("should handle fake timers without hanging when advanced manually", async () => {
+    it("settles one delayed fetch for repeated reads when timers advance", async () => {
         vi.useFakeTimers();
         const id = "1";
         const item = { id, name: "Item 1" };
@@ -283,17 +288,24 @@ describe("useKeyedCache", () => {
                 setTimeout(() => resolve(item), 10);
             });
         });
-        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
+        const { getItemById, storedItems, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
         getItemById.value(id);
         getItemById.value(id);
         getItemById.value(id);
+        expect(isLoadingItem.value(id)).toBe(true);
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(storedItems.value[id]).toBeUndefined();
+
         await flushPromises();
-        vi.runOnlyPendingTimers();
+        await vi.runOnlyPendingTimersAsync();
         await flushPromises();
-        expect(true).toBe(true);
+
+        expect(isLoadingItem.value(id)).toBe(false);
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(storedItems.value[id]).toEqual(item);
     });
 
-    it("should clear error on successful recovery after transient failure", async () => {
+    it("clears the previous error after a successful retry", async () => {
         const id = "1";
         const item = { id, name: "Item 1" };
         fetchItem.mockRejectedValueOnce(new ApiError("service unavailable", 503));
@@ -303,7 +315,7 @@ describe("useKeyedCache", () => {
 
         getItemById.value(id);
         await flushPromises();
-        expect(getItemLoadError.value(id)).toBeTruthy();
+        expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
 
         getItemById.value(id);
         await flushPromises();

@@ -1,21 +1,26 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
 import GDropdownItem from "./GDropdownItem.vue";
 
 const localVue = getLocalVue(true);
 
+type DropdownItemProps = InstanceType<typeof GDropdownItem>["$props"];
+
+enableAutoUnmount(afterEach);
+
 /** Click the item and report whether the navigation was cancelled. */
-async function clickAndCheckDefaultPrevented(props: object) {
-    const wrapper = mount(GDropdownItem as object, {
-        propsData: props,
+async function clickAndCheckDefaultPrevented(props: Partial<DropdownItemProps>) {
+    const wrapper = mount(GDropdownItem, {
+        props,
         slots: { default: "Item" },
-        localVue,
+        global: localVue,
     });
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
     wrapper.get("a").element.dispatchEvent(event);
-    await wrapper.vm.$nextTick();
+    await nextTick();
     return { wrapper, defaultPrevented: event.defaultPrevented };
 }
 

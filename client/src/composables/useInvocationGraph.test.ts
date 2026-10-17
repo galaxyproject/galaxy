@@ -1,9 +1,7 @@
-import { createTestingPinia } from "@pinia/testing";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 
 import { useInvocationGraph } from "./useInvocationGraph";
 
@@ -17,146 +15,116 @@ vi.mock("@/stores/workflowStore", () => ({
 vi.mock("@/components/Workflow/Editor/modules/model", () => ({ fromSimple: vi.fn() }));
 vi.mock("./workflowStores", () => ({ provideScopedWorkflowStores: vi.fn() }));
 
-/** Sets up the invocation graph composable for testing.
- * Initializes the composable and then loads it via its `loadInvocationGraph` function.
- */
-function setupComposable(invStep?: object, summaries: object[] = []) {
-    const invocation = ref({
+// The graph also accepts scheduling states omitted from the generated job-summary enum.
+type PopulatedState = StepJobSummary["populated_state"] | "scheduled" | "ready";
+
+function setupGraph({
+    hasInvocationStep = true,
+    states,
+    populatedState = "ok",
+}: {
+    hasInvocationStep?: boolean;
+    states?: StepJobSummary["states"];
+    populatedState?: PopulatedState;
+} = {}) {
+    const invocationStep: InvocationStep = {
+        id: "step-1",
+        job_id: "j1",
+        action: null,
+        jobs: [],
+        model_class: "WorkflowInvocationStep",
+        order_index: 0,
+        output_collections: {},
+        outputs: {},
+        update_time: null,
+        workflow_step_id: "workflow-step-1",
+    };
+    const invocation = ref<WorkflowInvocationElementView>({
         id: "inv1",
-        steps: invStep ? { 0: invStep } : {},
+        create_time: "2026-01-01T00:00:00",
+        update_time: "2026-01-01T00:00:00",
+        history_id: "history-1",
+        workflow_id: "wf1",
+        model_class: "WorkflowInvocation",
+        state: "scheduled",
+        steps: hasInvocationStep ? [invocationStep] : [],
         inputs: {},
         input_step_parameters: {},
-    } as WorkflowInvocationElementView);
-    const { steps, loadInvocationGraph } = useInvocationGraph(
-        invocation,
-        ref(summaries as StepJobSummary[]),
-        ref("wf1"),
-        ref(0),
+        messages: [],
+        output_collections: {},
+        output_values: {},
+        outputs: {},
+    });
+    const summaries = ref<StepJobSummary[]>(
+        states
+            ? [{ id: "j1", model: "Job", states, populated_state: populatedState as StepJobSummary["populated_state"] }]
+            : [],
     );
+    const { steps, loadInvocationGraph } = useInvocationGraph(invocation, summaries, ref("wf1"), ref(0));
     return { steps, load: () => loadInvocationGraph(false) };
 }
 
-/** Helper function to set up a a version of the composable with provided job states */
-function withJobStates(states: Record<string, number>, populated_state = "ok") {
-    return setupComposable({ job_id: "j1" }, [{ id: "j1", model: "Job", states, populated_state }]);
-}
-
 describe("useInvocationGraph — step state", () => {
-    beforeEach(() => {
-        setActivePinia(createTestingPinia({ createSpy: vi.fn }));
-    });
-
-    it("is queued — no invocation step for this workflow step", async () => {
-        const { steps, load } = setupComposable();
+    it("is queued when this workflow step has no invocation step", async () => {
+        const { steps, load } = setupGraph({ hasInvocationStep: false });
         await load();
         expect(steps.value[0]?.state).toBe("queued");
     });
 
-    it("is waiting — invocation step present but no matching job summary", async () => {
-        const { steps, load } = setupComposable({ job_id: "j1" });
+    it("is waiting when the invocation step has no matching job summary", async () => {
+        const { steps, load } = setupGraph();
         await load();
         expect(steps.value[0]?.state).toBe("waiting");
     });
 
-    describe("from job states (single-instance: any one job triggers it)", () => {
-        it("is error", async () => {
-            const { steps, load } = withJobStates({ error: 1 });
+    describe("when any job has a decisive state", () => {
+        it.each([
+            { jobState: "error", expectedState: "error" },
+            { jobState: "running", expectedState: "running" },
+            { jobState: "paused", expectedState: "paused" },
+            { jobState: "deleting", expectedState: "deleted" },
+        ])("maps $jobState to $expectedState", async ({ jobState, expectedState }) => {
+            const { steps, load } = setupGraph({ states: { [jobState]: 1 } });
             await load();
-            expect(steps.value[0]?.state).toBe("error");
-        });
-
-        it("is running", async () => {
-            const { steps, load } = withJobStates({ running: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("running");
-        });
-
-        it("is paused", async () => {
-            const { steps, load } = withJobStates({ paused: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("paused");
-        });
-
-        it("is deleted — from deleting job state", async () => {
-            const { steps, load } = withJobStates({ deleting: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("deleted");
+            expect(steps.value[0]?.state).toBe(expectedState);
         });
     });
 
-    describe("from job states (all-instances: all jobs must be in that state)", () => {
-        it("is deleted", async () => {
-            const { steps, load } = withJobStates({ deleted: 1 });
+    describe("when all jobs are in the same state", () => {
+        it.each(["deleted", "skipped", "new", "queued"])("preserves %s", async (jobState) => {
+            const { steps, load } = setupGraph({ states: { [jobState]: 1 } });
             await load();
-            expect(steps.value[0]?.state).toBe("deleted");
-        });
-
-        it("is skipped", async () => {
-            const { steps, load } = withJobStates({ skipped: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("skipped");
-        });
-
-        it("is new", async () => {
-            const { steps, load } = withJobStates({ new: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("new");
-        });
-
-        it("is queued", async () => {
-            const { steps, load } = withJobStates({ queued: 1 });
-            await load();
-            expect(steps.value[0]?.state).toBe("queued");
+            expect(steps.value[0]?.state).toBe(jobState);
         });
     });
 
-    describe("uninitialized state", () => {
-        it("headerClass is set on a fresh step before state is determined", async () => {
-            const { steps, load } = setupComposable();
-            await load();
-            expect(steps.value[0]?.headerClass).toBeDefined();
-        });
-
-        it("stays uninitialized when job states are inconclusive and populated_state is excluded", async () => {
-            // "ok" not in SINGLE/ALL lists → getStepStateFromJobStates returns undefined
-            // "stop" is explicitly excluded from the populated_state fallback
-            // → newState stays undefined → preserves previous "uninitialized" state
-            const { steps, load } = withJobStates({ ok: 1 }, "stop");
-            await load();
-            expect(steps.value[0]?.state).toBe("uninitialized");
-        });
+    it("assigns a header class to a fresh step", async () => {
+        const { steps, load } = setupGraph({ hasInvocationStep: false });
+        await load();
+        expect(steps.value[0]?.headerClass).toBeDefined();
     });
 
-    describe("from populated_state fallback (when job states are inconclusive)", () => {
-        // use { ok: 1 } — not in any SINGLE or ALL_INSTANCES list, so falls through to populated_state
-        it("is queued — from scheduled populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "scheduled");
-            await load();
-            expect(steps.value[0]?.state).toBe("queued");
-        });
+    it("preserves uninitialized when job states are inconclusive and populated state is excluded", async () => {
+        const { steps, load } = setupGraph({ states: { ok: 1 }, populatedState: "stop" });
+        await load();
+        expect(steps.value[0]?.state).toBe("uninitialized");
+    });
 
-        it("is queued — from ready populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "ready");
+    describe("populated state fallback when job states are inconclusive", () => {
+        it.each<{
+            populatedState: PopulatedState;
+            expectedState: string;
+        }>([
+            { populatedState: "scheduled", expectedState: "queued" },
+            { populatedState: "ready", expectedState: "queued" },
+            { populatedState: "resubmitted", expectedState: "new" },
+            { populatedState: "failed", expectedState: "error" },
+            { populatedState: "deleting", expectedState: "deleted" },
+        ])("maps $populatedState to $expectedState", async ({ populatedState, expectedState }) => {
+            // An ok job state does not resolve the graph state, so populated_state decides it.
+            const { steps, load } = setupGraph({ states: { ok: 1 }, populatedState });
             await load();
-            expect(steps.value[0]?.state).toBe("queued");
-        });
-
-        it("is new — from resubmitted populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "resubmitted");
-            await load();
-            expect(steps.value[0]?.state).toBe("new");
-        });
-
-        it("is error — from failed populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "failed");
-            await load();
-            expect(steps.value[0]?.state).toBe("error");
-        });
-
-        it("is deleted — from deleting populated_state", async () => {
-            const { steps, load } = withJobStates({ ok: 1 }, "deleting");
-            await load();
-            expect(steps.value[0]?.state).toBe("deleted");
+            expect(steps.value[0]?.state).toBe(expectedState);
         });
     });
 });

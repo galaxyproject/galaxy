@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { nth } from "@tests/vitest/helpers";
-import { mount, shallowMount } from "@vue/test-utils";
+import { enableAutoUnmount, mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { computed, type Ref, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -51,17 +52,25 @@ const SELECTORS = {
     STUBBED_JOB_DETAILS: "job-details-displayed-stub",
 };
 
+function jobStepMountOptions(jobs: JobBaseModel[] = TEST_JOBS_JSON) {
+    const pinia = createTestingPinia({ createSpy: vi.fn });
+    onTestFinished(() => disposePinia(pinia));
+    return {
+        props: { jobs, invocationId: TEST_INVOCATION_ID },
+        global: { plugins: [pinia] },
+    };
+}
+
 describe("Job Step", () => {
+    enableAutoUnmount(afterEach);
+    afterEach(async () => {
+        // Finish the mounted table's pending store/render work before disposing its resources.
+        await flushPromises();
+    });
+
     it("shows jobs grouped by state in tables when multiple jobs", async () => {
         mockJobs(TEST_JOBS_JSON as JobBaseModel[]);
-
-        const wrapper = mount(JobStep, {
-            props: {
-                jobs: TEST_JOBS_JSON,
-                invocationId: TEST_INVOCATION_ID,
-            },
-            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
-        });
+        const wrapper = mount(JobStep, jobStepMountOptions());
         await flushPromises();
 
         // verify that the job state buttons are rendered
@@ -72,12 +81,11 @@ describe("Job Step", () => {
         const buttons = nav.findAll(SELECTORS.JOB_STATE_BUTTON);
         expect(buttons.length).toBe(Object.keys(TEST_JOBS_BY_STATES).length);
 
-        const jobStates = Object.keys(TEST_JOBS_BY_STATES);
+        const jobStates = Object.entries(TEST_JOBS_BY_STATES);
 
         // test each job state
-        for (let i = 0; i < jobStates.length; i++) {
-            const jobState = jobStates[i] as string;
-            const expectedCount = TEST_JOBS_BY_STATES[jobState]?.length as number;
+        for (const [i, [jobState, stateJobs]] of jobStates.entries()) {
+            const expectedCount = stateJobs.length;
 
             // check that the button has the expected text
             expect(nth(buttons, i).text()).toBe(
@@ -92,7 +100,7 @@ describe("Job Step", () => {
             expect(nth(buttons, i).classes()).toContain("g-pressed");
 
             // renders a table with jobs for the current state
-            const tableRows = wrapper.find(SELECTORS.JOBS_TABLE).findAll(SELECTORS.JOB_ROW);
+            const tableRows = wrapper.get(SELECTORS.JOBS_TABLE).findAll(SELECTORS.JOB_ROW);
             expect(tableRows.length).toBe(expectedCount);
 
             // each row has the expected state (as the last cell in the row)
@@ -105,21 +113,14 @@ describe("Job Step", () => {
 
     it("reacts to job states changing when multiple jobs", async () => {
         mockJobs(TEST_JOBS_JSON as JobBaseModel[]);
-
-        const wrapper = mount(JobStep, {
-            props: {
-                jobs: TEST_JOBS_JSON,
-                invocationId: TEST_INVOCATION_ID,
-            },
-            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
-        });
+        const wrapper = mount(JobStep, jobStepMountOptions());
         await flushPromises();
 
         // NOTE: This test assumes that the first job in TEST_JOBS_JSON has state 'new', and there is only one job with that state.
         // That is because we will update that job to 'running' and expect the active/pressed button to change to 'running',
         // as there are no more jobs in 'new' state.
 
-        let buttons = wrapper.find(SELECTORS.JOB_STATE_BUTTON_NAV).findAll(SELECTORS.JOB_STATE_BUTTON);
+        let buttons = wrapper.get(SELECTORS.JOB_STATE_BUTTON_NAV).findAll(SELECTORS.JOB_STATE_BUTTON);
         expect(buttons.length).toBe(Object.keys(TEST_JOBS_BY_STATES).length);
         let firstButton = nth(buttons, 0);
 
@@ -129,7 +130,7 @@ describe("Job Step", () => {
 
         // the table should show one job in 'new' state
         expect(wrapper.findAll(SELECTORS.JOB_ROW).length).toBe(1);
-        expect(wrapper.find(SELECTORS.JOB_ROW).find("td:last-child").text()).toBe("new");
+        expect(wrapper.get(SELECTORS.JOB_ROW).get("td:last-child").text()).toBe("new");
 
         // we have one running job already
         expect(nth(buttons, 1).text()).toBe("1 job running");
@@ -141,7 +142,7 @@ describe("Job Step", () => {
         await flushPromises();
 
         // verify buttons have been updated
-        buttons = wrapper.find(SELECTORS.JOB_STATE_BUTTON_NAV).findAll(SELECTORS.JOB_STATE_BUTTON);
+        buttons = wrapper.get(SELECTORS.JOB_STATE_BUTTON_NAV).findAll(SELECTORS.JOB_STATE_BUTTON);
         expect(buttons.length).toBe(Object.keys(TEST_JOBS_BY_STATES).length - 1);
         firstButton = nth(buttons, 0);
 
@@ -151,19 +152,13 @@ describe("Job Step", () => {
 
         // the table should now show 2 jobs in 'running' state
         expect(wrapper.findAll(SELECTORS.JOB_ROW).length).toBe(2);
-        expect(wrapper.find(SELECTORS.JOB_ROW).find("td:last-child").text()).toBe("running");
+        expect(wrapper.get(SELECTORS.JOB_ROW).get("td:last-child").text()).toBe("running");
     });
 
     it("just renders the job when only one job", async () => {
         const singleJob = nth(TEST_JOBS_JSON, 0);
 
-        const wrapper = shallowMount(JobStep, {
-            props: {
-                jobs: [singleJob],
-                invocationId: TEST_INVOCATION_ID,
-            },
-            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
-        });
+        const wrapper = shallowMount(JobStep, jobStepMountOptions([singleJob]));
         await flushPromises();
 
         expect(wrapper.find(SELECTORS.JOBS_TABLE).exists()).toBe(false);

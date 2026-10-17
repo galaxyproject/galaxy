@@ -7,18 +7,15 @@ import {
 } from "./historyUpload";
 
 describe("historyUpload", () => {
-    it("returns archived when history is archived", () => {
-        const reason = getHistoryUploadBlockReason({ archived: true, deleted: false });
-        expect(reason).toBe("archived");
-        expect(getHistoryUploadWarningMessage(reason)).toContain("archived");
-        expect(getHistoryUploadActionErrorMessage(reason)).toContain("archived");
-    });
+    it.each([
+        { reason: "archived", history: { archived: true, deleted: false } },
+        { reason: "deleted", history: { archived: false, deleted: true } },
+    ])("blocks uploads and explains why the history is $reason", ({ reason, history }) => {
+        const blockReason = getHistoryUploadBlockReason(history);
 
-    it("returns deleted when history is deleted", () => {
-        const reason = getHistoryUploadBlockReason({ archived: false, deleted: true });
-        expect(reason).toBe("deleted");
-        expect(getHistoryUploadWarningMessage(reason)).toContain("deleted");
-        expect(getHistoryUploadActionErrorMessage(reason)).toContain("deleted");
+        expect(blockReason).toBe(reason);
+        expect(getHistoryUploadWarningMessage(blockReason)).toContain(reason);
+        expect(getHistoryUploadActionErrorMessage(blockReason)).toContain(reason);
     });
 
     it("returns null for active histories", () => {

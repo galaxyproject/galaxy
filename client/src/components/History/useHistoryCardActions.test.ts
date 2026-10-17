@@ -1,8 +1,9 @@
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
+import { runInTestScope } from "@tests/vitest/effectScope";
+import { createPinia, disposePinia, setActivePinia } from "pinia";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { ref, unref } from "vue";
 
-import type { RegisteredUser } from "@/api";
 import type { AnyHistoryEntry } from "@/api/histories";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
@@ -14,42 +15,37 @@ vi.mock("@/composables/confirmDialog", () => ({
 
 const OWNER = "owner";
 
-function findAction(actions: CardAction[], id: string) {
-    return actions.find((action) => action.id === id);
+function getAction(actions: CardAction[], id: string): CardAction {
+    const action = actions.find((action) => action.id === id);
+    if (!action) {
+        throw new Error(`Missing history card action: ${id}`);
+    }
+    return action;
 }
 
 describe("useHistoryCardActions", () => {
-    beforeEach(() => {
-        setActivePinia(createPinia());
-    });
-
     it("shows owner actions once the current user loads after setup", () => {
-        const history = ref({
-            id: "history_id",
-            name: "History",
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        onTestFinished(() => disposePinia(pinia));
+        const userStore = useUserStore(pinia);
+        const history = ref<AnyHistoryEntry>({
+            ...getFakeHistorySummary({ id: "history_id", name: "History" }),
             username: OWNER,
-            deleted: false,
-            purged: false,
-        } as unknown as AnyHistoryEntry);
+        });
 
-        const { historyCardExtraActions, historyCardSecondaryActions } = useHistoryCardActions(
-            history,
-            false,
-            () => {},
+        const { historyCardExtraActions, historyCardSecondaryActions } = runInTestScope(() =>
+            useHistoryCardActions(history, false, vi.fn()),
         );
 
-        expect(findAction(unref(historyCardSecondaryActions), "share-access-management")?.visible).toBe(false);
-        expect(findAction(unref(historyCardExtraActions), "delete")?.visible).toBe(false);
-        expect(findAction(unref(historyCardExtraActions), "purge")?.visible).toBe(false);
+        expect(getAction(unref(historyCardSecondaryActions), "share-access-management").visible).toBe(false);
+        expect(getAction(unref(historyCardExtraActions), "delete").visible).toBe(false);
+        expect(getAction(unref(historyCardExtraActions), "purge").visible).toBe(false);
 
-        useUserStore().setCurrentUser({
-            id: "user_id",
-            email: "owner@example.org",
-            username: OWNER,
-        } as RegisteredUser);
+        userStore.setCurrentUser(getFakeRegisteredUser({ id: "user_id", email: "owner@example.org", username: OWNER }));
 
-        expect(findAction(unref(historyCardSecondaryActions), "share-access-management")?.visible).toBe(true);
-        expect(findAction(unref(historyCardExtraActions), "delete")?.visible).toBe(true);
-        expect(findAction(unref(historyCardExtraActions), "purge")?.visible).toBe(true);
+        expect(getAction(unref(historyCardSecondaryActions), "share-access-management").visible).toBe(true);
+        expect(getAction(unref(historyCardExtraActions), "delete").visible).toBe(true);
+        expect(getAction(unref(historyCardExtraActions), "purge").visible).toBe(true);
     });
 });

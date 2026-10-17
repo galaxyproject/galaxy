@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -7,7 +7,6 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import type { AnonymousUser } from "@/api";
 import type { CuratedWorkflow } from "@/api/curatedWorkflows";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
@@ -47,11 +46,7 @@ const PINNED_TRS_URL = `${VELOCYTO_TRS}/v0.1`;
 const BRANCH_TRS_URL = `${VELOCYTO_TRS}/main`;
 
 const FAKE_USER = getFakeRegisteredUser();
-const ANONYMOUS_USER = {
-    isAnonymous: true,
-    total_disk_usage: 0,
-    nice_total_disk_usage: "0 bytes",
-} as AnonymousUser;
+const ANONYMOUS_USER = getFakeAnonymousUser();
 
 function iwcWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflow {
     return {

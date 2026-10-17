@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
@@ -8,27 +8,27 @@ import { describe, expect, it, vi } from "vitest";
 import type { AnyHistory } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 import WorkflowAnnotation from "./WorkflowAnnotation.vue";
 
-// Constants
+const localVue = getLocalVue();
+const { server, http } = useServerMock();
+
 const WORKFLOW_OWNER = "test-user";
 const OTHER_USER = "other-user";
 const WORKFLOW_UPDATE_TIME = "2023-01-01T00:00:00.000Z";
 const INVOCATION_TIME = "2024-01-01T00:00:00.000Z";
-const SAMPLE_WORKFLOW = {
+const OWN_WORKFLOW = {
     id: "workflow-id",
     name: "workflow-name",
     owner: WORKFLOW_OWNER,
     version: 1,
     update_time: WORKFLOW_UPDATE_TIME,
 };
-const OTHER_USER_WORKFLOW_ID = "other-user-workflow-id";
+const PUBLISHED_WORKFLOW = { ...OWN_WORKFLOW, id: "published-workflow-id", published: true };
 const SAMPLE_RUN_COUNT = 100;
-const TEST_HISTORY_ID = "test-history-id";
 const TEST_HISTORY = {
-    id: TEST_HISTORY_ID,
+    id: "test-history-id",
     genome_build: "?",
     name: "fake-history-name",
 };
@@ -37,123 +37,100 @@ const SELECTORS = {
     RUN_COUNT: ".workflow-invocations-count",
     INDICATORS_LINK: '[data-description="published owner badge"]',
     SWITCH_TO_HISTORY_LINK: "[data-description='switch to history link']",
+    CURRENT_HISTORY_INDICATOR: "[data-description='current history indicator']",
     TIME_INFO: '[data-description="workflow annotation time info"]',
     DATE: '[data-description="workflow annotation date"]',
 };
 
-// Mock the workflow store to return the sample workflow
-vi.mock("@/stores/workflowStore", async () => {
-    const originalModule = (await vi.importActual("@/stores/workflowStore")) as any;
-    return {
-        ...originalModule,
-        useWorkflowStore: () => ({
-            ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((id: string) => {
-                if (id === OTHER_USER_WORKFLOW_ID) {
-                    return { ...SAMPLE_WORKFLOW, id: OTHER_USER_WORKFLOW_ID, published: true };
-                }
-                return SAMPLE_WORKFLOW;
-            }),
-        }),
-    };
-});
-
-const localVue = getLocalVue();
-const { server, http } = useServerMock();
+type View = "run_form" | "invocation";
+const VIEWS: View[] = ["run_form", "invocation"];
 
 /**
- * Mounts the WorkflowAnnotation component with props/stores adjusted given the parameters
- * @param version The version of the component to mount (`run_form` or `invocation` view)
- * @param ownsWorkflow Whether the user owns the workflow
- * @returns The wrapper object
+ * Mounts the annotation in the run form or invocation view for a stored workflow, with
+ * `TEST_HISTORY` as the current history.
+ * By default the current user owns the workflow; otherwise another user views
+ * `PUBLISHED_WORKFLOW`, which is published by `WORKFLOW_OWNER`.
  */
-async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsWorkflow = true) {
+async function mountWorkflowAnnotation(view: View, { owned = true } = {}) {
     server.use(
-        http.get("/api/histories/{history_id}", ({ response }) => {
-            return response(200).json(TEST_HISTORY);
-        }),
+        http.get("/api/histories/{history_id}", ({ response }) => response(200).json(TEST_HISTORY)),
+        http.get("/api/workflows/{workflow_id}/counts", ({ response }) =>
+            response(200).json({ scheduled: SAMPLE_RUN_COUNT }),
+        ),
     );
-    server.use(
-        http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
-            return response(200).json({ scheduled: SAMPLE_RUN_COUNT });
-        }),
-    );
+    const workflow = owned ? OWN_WORKFLOW : PUBLISHED_WORKFLOW;
+    const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        stubActions: false,
+        initialState: {
+            workflowStore: { workflowsByInstanceId: { [workflow.id]: workflow } },
+            userStore: {
+                currentUser: getFakeRegisteredUser({ username: owned ? WORKFLOW_OWNER : OTHER_USER }),
+            },
+        },
+    });
+    const historyStore = useHistoryStore(pinia);
+    historyStore.setCurrentHistoryId(TEST_HISTORY.id);
 
-    const wrapper = mount(WorkflowAnnotation as object, {
+    const wrapper = mount(WorkflowAnnotation, {
         props: {
-            workflowId: ownsWorkflow ? SAMPLE_WORKFLOW.id : OTHER_USER_WORKFLOW_ID,
-            historyId: TEST_HISTORY_ID,
-            invocationCreateTime: version === "invocation" ? INVOCATION_TIME : undefined,
-            showDetails: version === "run_form",
+            workflowId: workflow.id,
+            historyId: TEST_HISTORY.id,
+            invocationCreateTime: view === "invocation" ? INVOCATION_TIME : undefined,
+            showDetails: view === "run_form",
         },
-        global: localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        stubs: {
-            FontAwesomeIcon: true,
-        },
+        global: { ...withPlugins(localVue, pinia), stubs: { ...localVue.stubs, FontAwesomeIcon: true } },
     });
-
-    const historyStore = useHistoryStore();
-    historyStore.storedHistories = { [TEST_HISTORY_ID]: TEST_HISTORY as AnyHistory };
-    historyStore.setCurrentHistoryId(TEST_HISTORY_ID);
-
-    const userStore = useUserStore();
-    userStore.currentUser = getFakeRegisteredUser({
-        username: ownsWorkflow ? WORKFLOW_OWNER : OTHER_USER,
-    });
-
+    // The current history reaches the store while the history link's own request for it is in flight.
+    historyStore.setHistory(TEST_HISTORY as AnyHistory);
     await flushPromises();
-
-    return { wrapper };
+    return wrapper;
 }
 
-describe("WorkflowAnnotation renders", () => {
-    it("the run count and history, not indicators if owned not published", async () => {
-        async function checkHasRunCount(version: "run_form" | "invocation") {
-            const { wrapper } = await mountWorkflowAnnotation(version);
+describe("WorkflowAnnotation", () => {
+    it.each(VIEWS)(
+        "shows the run count but no published owner badge for the user's own workflow in the %s view",
+        async (view) => {
+            const wrapper = await mountWorkflowAnnotation(view);
 
             const runCount = wrapper.find(SELECTORS.RUN_COUNT);
             expect(runCount.text()).toContain("workflow runs:");
             expect(runCount.text()).toContain(SAMPLE_RUN_COUNT.toString());
-
-            if (version === "run_form") {
-                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).exists()).toBe(false);
-            } else {
-                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toContain(TEST_HISTORY.name);
-            }
-
-            // Since this is the user's own workflow, the indicators link
-            // (to view all published workflows by the owner) should not be present
             expect(wrapper.find(SELECTORS.INDICATORS_LINK).exists()).toBe(false);
-        }
-        await checkHasRunCount("run_form");
-        await checkHasRunCount("invocation");
+        },
+    );
+
+    it("does not link the target history in the run form view", async () => {
+        const wrapper = await mountWorkflowAnnotation("run_form");
+
+        expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).exists()).toBe(false);
     });
 
-    it("workflow indicators if the user does not own the workflow", async () => {
-        // we assume it is another user's published workflow in this case
+    it("links the current target history by name in the invocation view", async () => {
+        const wrapper = await mountWorkflowAnnotation("invocation");
 
-        async function checkHasIndicators(version: "run_form" | "invocation") {
-            const { wrapper } = await mountWorkflowAnnotation(version, false);
-
-            const indicatorsLink = wrapper.find(SELECTORS.INDICATORS_LINK);
-            expect(indicatorsLink.text()).toBe(WORKFLOW_OWNER);
-            expect(indicatorsLink.attributes("title")).toContain(`Published by '${WORKFLOW_OWNER}'`);
-        }
-        await checkHasIndicators("run_form");
-        await checkHasIndicators("invocation");
+        expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toContain(TEST_HISTORY.name);
+        expect(wrapper.find(SELECTORS.CURRENT_HISTORY_INDICATOR).exists()).toBe(true);
     });
 
-    it("renders time since edit if run form view", async () => {
-        const { wrapper } = await mountWorkflowAnnotation("run_form");
+    it.each(VIEWS)("shows the published owner badge for another user's workflow in the %s view", async (view) => {
+        const wrapper = await mountWorkflowAnnotation(view, { owned: false });
+
+        const indicatorsLink = wrapper.find(SELECTORS.INDICATORS_LINK);
+        expect(indicatorsLink.text()).toBe(WORKFLOW_OWNER);
+        expect(indicatorsLink.attributes("title")).toContain(`Published by '${WORKFLOW_OWNER}'`);
+    });
+
+    it("shows the time since the workflow was edited in the run form view", async () => {
+        const wrapper = await mountWorkflowAnnotation("run_form");
 
         const timeInfo = wrapper.find(SELECTORS.TIME_INFO);
         expect(timeInfo.text()).toContain("edited");
         expect(timeInfo.find(SELECTORS.DATE).attributes("title")).toBe(WORKFLOW_UPDATE_TIME);
     });
 
-    it("renders time since invocation if invocation view", async () => {
-        const { wrapper } = await mountWorkflowAnnotation("invocation");
+    it("shows the time since the invocation in the invocation view", async () => {
+        const wrapper = await mountWorkflowAnnotation("invocation");
 
         const timeInfo = wrapper.find(SELECTORS.TIME_INFO);
         expect(timeInfo.text()).toContain("invoked");
