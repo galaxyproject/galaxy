@@ -376,8 +376,9 @@ def test_drop_instance_references_drops_dataset_cells(cell):
     [
         '  ```visualization\n{"visualization_name": "csv", "dataset_id": "f2db41e1fa331b3e"}\n  ```\n',
         '```visualization\r\n{"visualization_name": "csv", "dataset_id": "f2db41e1fa331b3e"}\r\n```\r\n',
+        "  ```galaxy\n  history_dataset_display(history_dataset_id=f2db41e1fa331b3e)\n  ```\n",
     ],
-    ids=["indented", "crlf"],
+    ids=["indented", "crlf", "indented-galaxy"],
 )
 def test_drop_instance_references_drops_cells_the_client_parses(cell):
     markdown = f"# A\n\n{cell}\nAfter.\n"
