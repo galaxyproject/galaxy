@@ -779,6 +779,11 @@ class WorkflowProgress:
                         input_connection,
                         is_data=is_data,
                     )
+                    if input_subworkflow_step.type == "parameter_input":
+                        # Read expression.json now so an unreadable file delays this step,
+                        # not just the inner input step while other inner steps run. The
+                        # value is discarded; the inner input step stores it.
+                        modules.replace_expression_json_dataset(replacement, step)
                     subworkflow_inputs[subworkflow_step_id] = replacement
                     connection_found = True
                     break
