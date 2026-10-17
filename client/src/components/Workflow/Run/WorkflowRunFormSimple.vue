@@ -96,7 +96,6 @@ const showRightPanel = ref<"help" | "graph" | null>(null);
 const checkInputMatching = ref(props.requestState !== undefined);
 const sendNotificationOnComplete = ref(false);
 const showExportWizard = ref(false);
-const exportCheckboxKey = ref(0);
 const exportOnCompleteConfig = ref<WriteStoreToPayload | null>(null);
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
@@ -421,10 +420,6 @@ function clearExportConfig() {
 
 function onExportWizardCancel() {
     showExportWizard.value = false;
-    // Force checkbox to re-render and reset to unchecked state if no config was set
-    if (exportOnCompleteConfig.value === null) {
-        exportCheckboxKey.value++;
-    }
 }
 
 const exportEnabled = computed({
@@ -651,7 +646,7 @@ onBeforeMount(() => {
 
                     <!-- Export on completion -->
                     <div v-if="hasWritableFileSources" class="settings-row">
-                        <GCheckbox :key="exportCheckboxKey" v-model="exportEnabled" switch>
+                        <GCheckbox v-model="exportEnabled" switch>
                             Export results when complete
                             <HelpText uri="galaxy.workflows.runtimeSettings.exportOnComplete" info-icon />
                         </GCheckbox>
