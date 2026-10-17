@@ -70,7 +70,9 @@ from galaxy.workflow.extract import (
     extract_workflow,
     extract_workflow_by_ids,
     ExtractionLabelIndex,
+    group_hid_inputs_by_original,
     group_inputs_by_original,
+    HidInputGroup,
     InputGroup,
     normalize_output_label_key,
 )
@@ -161,7 +163,7 @@ def _validate_parallel_names(names: list[str], names_field: str, ids: list[int],
         )
 
 
-def _input_names(groups: list[InputGroup]) -> list[str]:
+def _input_names(groups: list[InputGroup] | list[HidInputGroup]) -> list[str]:
     """One name per workflow input, as extraction assigns them."""
     return [group.name for group in groups if group.name is not None]
 
@@ -406,7 +408,16 @@ class WorkflowsService(ServiceBase):
             payload.dataset_collection_hids,
             "dataset_collection_hids",
         )
-        _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names)
+        _validate_extraction_labels(
+            _input_names(
+                group_hid_inputs_by_original(trans, history.id, "hda", payload.dataset_hids, payload.dataset_names)
+            ),
+            _input_names(
+                group_hid_inputs_by_original(
+                    trans, history.id, "hdca", payload.dataset_collection_hids, payload.dataset_collection_names
+                )
+            ),
+        )
         stored_workflow = extract_workflow(
             trans,
             user=trans.user,
