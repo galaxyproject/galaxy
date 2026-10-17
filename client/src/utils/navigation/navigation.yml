@@ -1234,6 +1234,7 @@ workflow_show:
 workflow_extract:
   selectors:
     _: '[data-description="workflow-extraction-form"]'
+    loading: '[data-description="workflow-extraction-loading"]'
     workflow_name_input: '[data-description="workflow-name-input"]'
     create_button: '[data-description="create-workflow-button"]'
     no_workflow_message: '[data-description="no-workflow-message"]'
