@@ -349,6 +349,39 @@ describe("GDropdown.vue", () => {
         });
     });
 
+    it.each(["mouse", "keyboard"])("focuses the requested search field when opened with %s", async (method) => {
+        const wrapper = mountTemplate(
+            `<GDropdown text="Search" initial-focus="input"><input aria-label="Search" />${MENU}</GDropdown>`,
+        );
+        const toggle = wrapper.get(".dropdown-toggle");
+        if (method === "mouse") {
+            await toggle.trigger("click", { detail: 1 });
+        } else {
+            await press(toggle, "ArrowDown");
+        }
+        await flushPromises();
+        expect(document.activeElement).toBe(wrapper.get("input").element);
+        await press(wrapper.get("input"), "Escape");
+        expect(document.activeElement).toBe(toggle.element);
+        await toggle.trigger("click");
+        await flushPromises();
+        expect(document.activeElement).toBe(wrapper.get("input").element);
+    });
+
+    it("moves from an autofocused search into the options with ArrowDown", async () => {
+        const wrapper = mountTemplate(
+            `<GDropdown text="Search" initial-focus="input"><input aria-label="Search" />${MENU}</GDropdown>`,
+        );
+        await wrapper.get(".dropdown-toggle").trigger("click", { detail: 1 });
+        await flushPromises();
+        const input = wrapper.get("input");
+        expect(document.activeElement).toBe(input.element);
+        await press(input, "ArrowDown");
+        expect(focusedText()).toBe("One");
+        await press(document.activeElement!, "ArrowDown");
+        expect(focusedText()).toBe("Three");
+    });
+
     describe("keyboard", () => {
         it("opens with ArrowDown on the toggle and focuses the first item", async () => {
             const wrapper = mountDropdown(MENU);
