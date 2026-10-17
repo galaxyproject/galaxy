@@ -17,6 +17,14 @@ galaxy.tools.parameters.basic module
    :undoc-members:
    :show-inheritance:
 
+galaxy.tools.parameters.data\_tables module
+------------------------------------------
+
+.. automodule:: galaxy.tools.parameters.data_tables
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.tools.parameters.dataset\_matcher module
 -----------------------------------------------
 

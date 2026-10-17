@@ -237,6 +237,36 @@ Galaxy has very sophisticated job configuration options that allow different too
 
 The two most generic and useful dynamic destination types are `python` and `dtd`. The `python` type allows arbitrary Python functions to define destinations for jobs, while the DTD method (introduced in Galaxy 16.07) defines rules for routing in a YAML file.
 
+#### Detecting reference data table usage
+
+Python destination rules can distinguish tools that declare data table parameters
+from jobs that actually select them:
+
+```python
+def reference_destination(tool, job):
+    if tool.is_using_data_table(job):
+        return "cluster_with_references"
+    return "general_cluster"
+```
+
+`tool.has_data_table` reports whether any parameter declares `options from_data_table`,
+including inactive conditional branches. `tool.is_using_data_table(job)` checks only
+the active parameter state, including repeats and sections. A history-reference
+branch, an empty selection, or a history/library dataset supplied directly to a
+table-backed select does not count as installed table usage.
+
+The relevant parameter tree is cached per tool instance and rebuilt on tool reload.
+Tools without tables do not read job parameters. Other tools decode only relevant
+top-level JSON values without deserializing datasets or evaluating dynamic options;
+loading the job's parameter relationship may still load all parameter rows. Job
+results are not cached by Galaxy, so a scheduler may cache them for one evaluation.
+
+This detects declared, populated table-backed selections, including static options
+added to those selects. It does not verify membership in a table, inspect option
+filters, detect legacy `from_file` options, or detect arbitrary access inside tool
+templates or code. Literal string keys such as `"None"` count as selections.
+Malformed relevant JSON or conditional state raises rather than returning `False`.
+
 #### Dynamic Destination Mapping (DTD method)
 
 DTD is a special dynamic job destination type that builds up rules given a YAML-based DSL - see `config/tool_destinations.yml.sample` (on [Github](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/tool_destinations.yml.sample)) for a syntax description, examples, and a description of how to validate and debug this file.
