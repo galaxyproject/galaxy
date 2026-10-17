@@ -53,6 +53,7 @@ INVALID_XML_VALIDATORS = [
     """<validator type="expression" />""",
     """<validator type="empty_dataset" message="foobar" negate="NOTABOOLVALUE" />""",
     """<validator type="regex" />""",
+    """<validator type="regex">[</validator>""",
     """<validator type="in_range" min="3.1" max="3.8" exclude_min="false" exclude_max="foobar" />""",
     """<validator type="in_range" min="notanumber" max="3.8" />""",
     """<validator type="in_range" min="3.8" max="3.1" />""",

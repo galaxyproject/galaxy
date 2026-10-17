@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
     PrivateAttr,
     TypeAdapter,
@@ -208,6 +209,15 @@ class RegexParameterValidatorModel(StaticValidatorModel):
         ValidationArgument("Regular expression to validate against.", xml_body=True),
     ]
     _safe: bool = PrivateAttr(True)
+
+    @field_validator("expression")
+    @classmethod
+    def check_expression_compiles(cls, expression: str) -> str:
+        try:
+            regex.compile(expression)
+        except regex.error as e:
+            raise ValueError(f"invalid regular expression: {e}")
+        return expression
 
     @property
     def default_message(self) -> str:

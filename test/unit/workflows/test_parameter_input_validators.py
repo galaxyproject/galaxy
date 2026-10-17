@@ -16,6 +16,7 @@ NEGATED_RANGE = {"type": "in_range", "min": 1, "max": 5, "negate": True}
 MIN_RANGE = {"type": "in_range", "min": 1, "negate": False}
 MAX_RANGE = {"type": "in_range", "max": 5, "negate": False}
 MESSAGE_RANGE = {"type": "in_range", "min": 1, "max": 5, "message": "1-5 only"}
+FRACTIONAL_RANGE = {"type": "in_range", "min": 1.5, "max": 5, "negate": False}
 EXCLUSIVE_RANGE = {"type": "in_range", "min": 1, "max": 5, "exclude_min": True, "negate": False}
 
 
@@ -109,6 +110,7 @@ def test_stored_min_greater_than_max_still_loads():
         ("integer", [NEGATED_RANGE], 7, [3]),
         ("integer", [MIN_RANGE, MAX_RANGE], 3, [0, 7]),
         ("integer", [EXCLUSIVE_RANGE], 2, [1]),
+        ("integer", [FRACTIONAL_RANGE], 2, [1]),
     ],
 )
 def test_imported_validators_are_kept(parameter_type, validators, accepted, rejected):
@@ -135,6 +137,7 @@ def test_imported_range_message_is_kept():
         ("integer", [MESSAGE_RANGE]),
         ("float", [EXCLUSIVE_RANGE]),
         ("text", [{"type": "length", "min": 2, "negate": False}]),
+        ("integer", [FRACTIONAL_RANGE]),
     ],
 )
 def test_import_stores_and_exports_declared_validators(parameter_type, validators):
@@ -180,6 +183,7 @@ def test_editor_drops_hidden_validators_when_parameter_type_changes():
         [{"type": "in_range", "min": "one"}],
         [{"type": "not_a_validator"}],
         [{"type": "length", "min": 5, "max": 1}],
+        [{"type": "regex", "expression": "["}],
     ],
 )
 def test_invalid_validators_rejected_at_import(validators):

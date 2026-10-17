@@ -109,7 +109,11 @@ def validators_to_form(parameter_type: str, validators: list[dict[str, Any]]) ->
                     "regex_negate": validator.get("negate", False),
                 }
             )
-        elif "min" not in form and parameter_type in FORM_RANGE_PARAMETER_TYPES and _is_form_range(validator):
+        elif (
+            "min" not in form
+            and parameter_type in FORM_RANGE_PARAMETER_TYPES
+            and _is_form_range(parameter_type, validator)
+        ):
             form["min"] = validator.get("min")
             form["max"] = validator.get("max")
         else:
@@ -157,9 +161,14 @@ def _is_form_regex(validator: dict[str, Any]) -> bool:
     return keys is not None and keys <= {"expression", "message", "negate"}
 
 
-def _is_form_range(validator: dict[str, Any]) -> bool:
+def _is_form_range(parameter_type: str, validator: dict[str, Any]) -> bool:
     keys = _non_default_keys(validator) if validator.get("type") == "in_range" else None
-    return keys is not None and keys <= {"min", "max"}
+    if keys is None or not keys <= {"min", "max"}:
+        return False
+    # integer inputs' min/max fields would truncate fractional bounds
+    return parameter_type != "integer" or all(
+        isinstance(validator.get(key), (int, type(None))) for key in ("min", "max")
+    )
 
 
 def _load_extra_validators(value: str | None) -> list[dict[str, Any]]:
