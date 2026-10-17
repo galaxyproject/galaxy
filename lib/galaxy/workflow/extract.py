@@ -787,14 +787,46 @@ def tool_for_job(trans: ProvidesHistoryContext, job: Job) -> "Tool | None":
         return None
 
 
+def _accessible_content(trans: ProvidesHistoryContext, kind: ContentKind, content_id: int) -> HistoryItem:
+    if kind == "hda":
+        return trans.app.hda_manager.get_accessible(content_id, getattr(trans, "user", None))
+    return trans.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", content_id)
+
+
 def normalize_output_label_key(trans: ProvidesHistoryContext, kind: ContentKind, content_id: int) -> ContentRef:
     """Normalize a visible HDA/HDCA output id to the original id used by extraction wiring."""
-    user = getattr(trans, "user", None)
-    if kind == "hda":
-        hda = trans.app.hda_manager.get_accessible(content_id, user)
-        return ("hda", get_original_hda(hda).id)
-    hdca = trans.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", content_id)
-    return ("hdca", get_original_hdca(hdca).id)
+    return original_content_ref(_accessible_content(trans, kind, content_id))
+
+
+@dataclass(frozen=True)
+class InputGroup:
+    """One workflow input: an original HDA/HDCA, the first selected copy of it, and its name (None for the default)."""
+
+    ref: ContentRef
+    content: HistoryItem
+    name: str | None
+
+
+def group_inputs_by_original(
+    trans: ProvidesHistoryContext, kind: ContentKind, content_ids: list[int], names: list[str]
+) -> list[InputGroup]:
+    """Access-check ``content_ids`` and group them by original: copies of one original become one input.
+
+    ``names`` is empty or parallel to ``content_ids``; copies of one original must share a name.
+    """
+    groups: dict[ContentRef, InputGroup] = {}
+    for i, content_id in enumerate(content_ids):
+        content = _accessible_content(trans, kind, content_id)
+        ref = original_content_ref(content)
+        name = names[i] if names else None
+        group = groups.get(ref)
+        if group is None:
+            groups[ref] = InputGroup(ref, content, name)
+        elif group.name != name:
+            raise exceptions.RequestParameterInvalidException(
+                f"copies of one {kind} were given different input names: {group.name!r} and {name!r}"
+            )
+    return list(groups.values())
 
 
 def collect_output_label_targets(
@@ -883,10 +915,7 @@ def extract_steps_by_ids(
         else:
             icj_step_labels[label_hint.id] = label_hint.label
 
-    user = getattr(trans, "user", None)
     sa_session = trans.sa_session
-    hda_manager = trans.app.hda_manager
-    dataset_collection_manager = trans.app.dataset_collection_manager
 
     steps: list[WorkflowStep] = []
     step_labels_seen: set[str] = set()
@@ -895,35 +924,25 @@ def extract_steps_by_ids(
     icj_to_step: dict[int, WorkflowStep] = {}
 
     # Tool inputs resolve to the original of a copy, so all copies of one original share one input step.
-    for i, hda_id in enumerate(hda_ids):
-        hda = hda_manager.get_accessible(hda_id, user)
-        original = get_original_hda(hda)
-        if ("hda", original.id) in id_to_output_pair:
-            continue
+    input_groups = group_inputs_by_original(trans, "hda", hda_ids, dataset_names or []) + group_inputs_by_original(
+        trans, "hdca", hdca_ids, dataset_collection_names or []
+    )
+    for group in input_groups:
         step = model.WorkflowStep()
-        step.type = "data_input"
-        name = dataset_names[i] if dataset_names else "Input Dataset"
+        if group.ref[0] == "hda":
+            step.type = "data_input"
+            name = group.name or "Input Dataset"
+            step.tool_inputs = dict(name=name)
+        else:
+            step.type = "data_collection_input"
+            name = group.name or "Input Dataset Collection"
+            hdca = cast(HistoryDatasetCollectionAssociation, group.content)
+            step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
         if name not in step_labels_seen:
             step.label = name
             step_labels_seen.add(name)
-        step.tool_inputs = dict(name=name)
         steps.append(step)
-        id_to_output_pair[("hda", original.id)] = (step, "output")
-
-    for i, hdca_id in enumerate(hdca_ids):
-        hdca = dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
-        original_hdca = get_original_hdca(hdca)
-        if ("hdca", original_hdca.id) in id_to_output_pair:
-            continue
-        step = model.WorkflowStep()
-        step.type = "data_collection_input"
-        name = dataset_collection_names[i] if dataset_collection_names else "Input Dataset Collection"
-        if name not in step_labels_seen:
-            step.label = name
-            step_labels_seen.add(name)
-        step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
-        steps.append(step)
-        id_to_output_pair[("hdca", original_hdca.id)] = (step, "output")
+        id_to_output_pair[group.ref] = (step, "output")
 
     # Build the list of work items: each tuple is (representative_job,
     # output_hdcas). For plain jobs output_hdcas is empty; for ICJs it
@@ -1125,6 +1144,8 @@ __all__ = (
     "ReportBuilder",
     "get_original_hda",
     "get_original_hdca",
+    "group_inputs_by_original",
+    "InputGroup",
     "normalize_output_label_key",
     "original_content_ref",
     "resolve_content",
