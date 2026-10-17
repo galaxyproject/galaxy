@@ -24,6 +24,7 @@ from galaxy import (
     model,
 )
 from galaxy.exceptions import (
+    RequestParameterInvalidException,
     ToolInputsNotReadyException,
     ToolMissingException,
 )
@@ -134,6 +135,8 @@ from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
+    numeric_bounds_inverted,
+    split_numeric_bounds,
 )
 
 if TYPE_CHECKING:
@@ -1302,8 +1305,11 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
+        bounds, _ = split_numeric_bounds(parameter_def)
+        if bounds and numeric_bounds_inverted(bounds):
+            bounds = None
         for param_type in POSSIBLE_PARAMETER_TYPES:
-            default_parameter = get_default_parameter(param_type)
+            default_parameter = get_default_parameter(param_type, bounds if param_type == parameter_type else None)
 
             optional_value = optional_param()
             optional_cond = Conditional("optional")
@@ -1635,14 +1641,14 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
-        validators = list(parameter_def.get("validators") or [])
-        if parameter_type in ["integer", "float"]:
-            # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
-            range_validator = next((v for v in validators if v["type"] == "in_range"), None)
-            if range_validator:
-                validators.remove(range_validator)
-                parameter_kwds["min"] = range_validator.get("min")
-                parameter_kwds["max"] = range_validator.get("max")
+        # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
+        bounds, validators = split_numeric_bounds(parameter_def)
+        if bounds:
+            if numeric_bounds_inverted(bounds):
+                raise RequestParameterInvalidException(
+                    f"Workflow input '{self.label}' has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
+                )
+            parameter_kwds.update(bounds)
         if validators:
             parameter_kwds["validators"] = validators
 

@@ -10,6 +10,7 @@ from unittest import mock
 import pytest
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.parameters.workflow_utils import (
@@ -168,6 +169,43 @@ def test_parameter_input_editor_state_with_bounds(min, max, default):
     assert __editor_default_parameter(module, "integer").name == "default"
     assert module.get_export_state()["default"] == default
     assert module.get_export_state()["validators"] == [{"min": min, "max": max, "negate": False, "type": "in_range"}]
+
+
+@pytest.mark.parametrize("parameter_type,min,max", [("integer", 1, 5), ("integer", 0, None), ("float", None, 2.5)])
+def test_parameter_input_editor_default_has_bounds(parameter_type, min, max):
+    module = __numeric_editor_module(parameter_type, min, max)
+    field = __editor_default_parameter(module, parameter_type).to_dict(module.trans)
+    assert (field["min"], field["max"]) == (min, max)
+    other_type = "float" if parameter_type == "integer" else "integer"
+    other_field = __editor_default_parameter(module, other_type).to_dict(module.trans)
+    assert (other_field["min"], other_field["max"]) == (None, None)
+
+
+def test_parameter_input_editor_default_follows_edited_bounds():
+    trans = MockTrans()
+    trans.workflow_building_mode = workflow_building_modes.ENABLED
+    tool_state = {
+        "parameter_definition": {
+            "parameter_type": "integer",
+            "optional": {"optional": "false"},
+            "min": "2",
+            "max": "4",
+            "restrictions": {"how": "none"},
+        }
+    }
+    module = modules.module_factory.from_dict(
+        trans, {"type": "parameter_input", "tool_state": tool_state}, from_tool_form=True
+    )
+    field = __editor_default_parameter(module, "integer").to_dict(trans)
+    assert (field["min"], field["max"]) == (2, 4)
+
+
+def test_parameter_input_inverted_bounds():
+    module = __numeric_editor_module("integer", 5, 1)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == (None, None)
+    with pytest.raises(RequestParameterInvalidException, match="Count"):
+        module.get_runtime_inputs(__step())
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
