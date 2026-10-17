@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { faSitemap, faTimes, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faSitemap, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -10,8 +9,9 @@ import type Filtering from "@/utils/filtering";
 
 import { types_to_icons } from "../Panels/utilities";
 
-import GButton from "../BaseComponents/GButton.vue";
+import ToolFilterChip from "./ToolFilterChip.vue";
 import ToolOntologyCard from "./ToolOntologyCard.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
 import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
@@ -46,9 +46,9 @@ const selectedOntology = computed<ToolSection | null>(() => {
     const ontologyValue = props.filterClass.getFilterValue(props.filterText, "ontology");
     const ontologyId = typeof ontologyValue === "string" ? ontologyValue.replace(/^"(.*)"$/, "$1") : undefined;
     return (
-        Object.values(edamOperations.value).find((section: ToolSection) => section.id === ontologyId) ||
-        Object.values(edamTopics.value).find((section: ToolSection) => section.id === ontologyId) ||
-        null
+        toolStore.panelSections("ontology:edam_operations").find((section: ToolSection) => section.id === ontologyId) ||
+        toolStore.panelSections("ontology:edam_topics").find((section: ToolSection) => section.id === ontologyId) ||
+        (ontologyId ? { id: ontologyId, name: ontologyId, model_class: "ToolSection" } : null)
     );
 });
 
@@ -79,95 +79,102 @@ function searchWithinSections(sections: ToolSection[], query: string) {
 
 <template>
     <div class="d-flex flex-column flex-gapy-1">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex flex-gapx-1">
-                <GDropdown
-                    block
-                    :disabled="props.disabled"
-                    variant="link"
-                    class="tool-section-dropdown"
-                    toggle-class="text-decoration-none"
-                    size="sm">
-                    <template v-slot:button-content>
-                        <span class="sr-only">Select a tool ontology to filter by</span>
-                        <FontAwesomeIcon :icon="faSitemap" />
-                        <span v-if="selectedOntology">
-                            {{ selectedOntology.name }}
-                        </span>
-                        <i v-else> Select an ontology to filter by </i>
-                    </template>
+        <div class="d-flex flex-wrap justify-content-between align-items-center flex-gapx-1 flex-gapy-1">
+            <div class="d-flex flex-wrap flex-grow-1 align-items-center flex-gapx-1 flex-gapy-1">
+                <slot name="tag-filter" />
 
-                    <GDropdownGroup
-                        id="searchable-sections"
-                        class="sections-select-list"
-                        header-classes="search-header"
-                        aria-label="Ontologies">
-                        <template v-slot:header>
-                            <GDropdownText>
-                                <BFormInput v-model="ontologiesFilter" type="text" placeholder="Filter ontologies..." />
-                            </GDropdownText>
+                <div class="d-flex align-items-center flex-gapx-1">
+                    <GDropdown
+                        block
+                        :disabled="props.disabled"
+                        variant="link"
+                        class="tool-section-dropdown"
+                        initial-focus="input"
+                        toggle-class="text-decoration-none"
+                        size="sm">
+                        <template v-slot:button-content>
+                            <span class="sr-only">Select a tool ontology to filter by</span>
+                            <FontAwesomeIcon :icon="faSitemap" />
+                            <i> Select an ontology to filter by </i>
                         </template>
 
                         <GDropdownGroup
-                            v-if="Object.keys(edamOperations).length"
-                            id="edam-operations"
-                            class="unselectable"
-                            :aria-label="panels['ontology:edam_operations']?.name">
+                            id="searchable-sections"
+                            class="sections-select-list"
+                            header-classes="search-header"
+                            aria-label="Ontologies">
                             <template v-slot:header>
-                                <FontAwesomeIcon
-                                    v-if="getPanelIcon('ontology:edam_operations')"
-                                    :icon="getPanelIcon('ontology:edam_operations')!"
-                                    fixed-width
-                                    size="sm" />
-                                <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
+                                <GDropdownText>
+                                    <GFormInput
+                                        v-model="ontologiesFilter"
+                                        class="w-100"
+                                        aria-label="Search ontologies"
+                                        type="text"
+                                        placeholder="Filter ontologies..." />
+                                </GDropdownText>
                             </template>
-                            <GDropdownItem
-                                v-for="ont in edamOperations"
-                                :key="ont.id"
-                                :title="ont.description"
-                                :active="selectedOntology?.id === ont.id"
-                                @click="applyQuotedFilter('ontology', ont.id)">
-                                <span v-localize>{{ ont.name }}</span>
-                            </GDropdownItem>
+
+                            <GDropdownGroup
+                                v-if="Object.keys(edamOperations).length"
+                                id="edam-operations"
+                                class="unselectable"
+                                :aria-label="panels['ontology:edam_operations']?.name">
+                                <template v-slot:header>
+                                    <FontAwesomeIcon
+                                        v-if="getPanelIcon('ontology:edam_operations')"
+                                        :icon="getPanelIcon('ontology:edam_operations')!"
+                                        fixed-width
+                                        size="sm" />
+                                    <small class="font-weight-bold">{{
+                                        panels["ontology:edam_operations"]?.name
+                                    }}</small>
+                                </template>
+                                <GDropdownItem
+                                    v-for="ont in edamOperations"
+                                    :key="ont.id"
+                                    :title="ont.description"
+                                    :active="selectedOntology?.id === ont.id"
+                                    @click="applyQuotedFilter('ontology', ont.id)">
+                                    <span v-localize>{{ ont.name }}</span>
+                                </GDropdownItem>
+                            </GDropdownGroup>
+
+                            <GDropdownDivider />
+
+                            <GDropdownGroup
+                                v-if="Object.keys(edamTopics).length"
+                                id="edam-topics"
+                                class="unselectable"
+                                :aria-label="panels['ontology:edam_topics']?.name">
+                                <template v-slot:header>
+                                    <FontAwesomeIcon
+                                        v-if="getPanelIcon('ontology:edam_topics')"
+                                        :icon="getPanelIcon('ontology:edam_topics')!"
+                                        fixed-width
+                                        size="sm" />
+                                    <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
+                                </template>
+                                <GDropdownItem
+                                    v-for="ont in edamTopics"
+                                    :key="ont.id"
+                                    :title="ont.description"
+                                    :active="selectedOntology?.id === ont.id"
+                                    @click="applyQuotedFilter('ontology', ont.id)">
+                                    <span v-localize>{{ ont.name }}</span>
+                                </GDropdownItem>
+                            </GDropdownGroup>
                         </GDropdownGroup>
+                    </GDropdown>
 
-                        <GDropdownDivider />
-
-                        <GDropdownGroup
-                            v-if="Object.keys(edamTopics).length"
-                            id="edam-topics"
-                            class="unselectable"
-                            :aria-label="panels['ontology:edam_topics']?.name">
-                            <template v-slot:header>
-                                <FontAwesomeIcon
-                                    v-if="getPanelIcon('ontology:edam_topics')"
-                                    :icon="getPanelIcon('ontology:edam_topics')!"
-                                    fixed-width
-                                    size="sm" />
-                                <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
-                            </template>
-                            <GDropdownItem
-                                v-for="ont in edamTopics"
-                                :key="ont.id"
-                                :title="ont.description"
-                                :active="selectedOntology?.id === ont.id"
-                                @click="applyQuotedFilter('ontology', ont.id)">
-                                <span v-localize>{{ ont.name }}</span>
-                            </GDropdownItem>
-                        </GDropdownGroup>
-                    </GDropdownGroup>
-                </GDropdown>
-
-                <GButton
-                    v-if="selectedOntology"
-                    title="Remove ontology filter"
-                    icon-only
-                    inline
-                    transparent
-                    tooltip
-                    @click="applyQuotedFilter('ontology', selectedOntology.id)">
-                    <FontAwesomeIcon :icon="faTimes" />
-                </GButton>
+                    <ToolFilterChip
+                        v-if="selectedOntology"
+                        :label="selectedOntology.name"
+                        :value="selectedOntology.id"
+                        :kind="selectedOntology.id.startsWith('operation_') ? 'edam_operations' : 'edam_topics'"
+                        :remove-title="`Remove ontology ${selectedOntology.name}`"
+                        :disabled="props.disabled"
+                        @remove="applyQuotedFilter('ontology', selectedOntology.id)" />
+                </div>
             </div>
 
             <slot name="list-view-controls" />

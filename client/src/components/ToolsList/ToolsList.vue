@@ -18,12 +18,14 @@ import {
     quoteToolTagValue,
 } from "../Panels/utilities";
 
+import GAlert from "../BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FilterMenu from "../Common/FilterMenu.vue";
 import Heading from "../Common/Heading.vue";
 import ToolsListSectionFilters from "./ToolsListSectionFilters.vue";
 import ToolsListTable from "./ToolsListTable.vue";
+import ToolsListTagFilter from "./ToolsListTagFilter.vue";
 
 interface Props {
     name?: string;
@@ -64,11 +66,7 @@ const { loading } = storeToRefs(toolStore);
 const ontologyList = computed(() =>
     toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations")),
 );
-const tagAutocompleteValues = computed(() =>
-    [...new Set(Object.values(toolStore.toolsById).flatMap((tool) => tool.tool_tags || []))].sort((left, right) =>
-        left.localeCompare(right),
-    ),
-);
+const tagAutocompleteValues = computed(() => toolStore.toolTagNames);
 
 function normalizeInlineFilterValue(value: string) {
     const normalized = value
@@ -143,7 +141,8 @@ function parseInlineFilterClauses(searchText: string) {
 }
 
 function hasExplicitBooleanQuery(searchText: string) {
-    return /\b(?:AND|OR|NOT)\b/.test(searchText);
+    const outsideQuotes = searchText.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, "");
+    return /\b(?:AND|OR|NOT)\b/.test(outsideQuotes);
 }
 
 function translateInlineStructuredSearch(searchText: string) {
@@ -291,6 +290,12 @@ const shouldPreserveRawSearchText = computed(
         structuredFilterText.value !== filterText.value.trim(),
 );
 
+// Boolean expressions and mixed free-text queries cannot be represented faithfully
+// by the structured filter editor. Keep them in the search field.
+const canUseFilterPickers = computed(
+    () => !hasExplicitBooleanQuery(filterText.value) && !shouldPreserveRawSearchText.value,
+);
+
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
 const whooshQuery = computed(
@@ -302,6 +307,12 @@ const whooshQuery = computed(
 
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
+
+const hasActiveFilters = computed(() => Boolean(filterText.value.trim()));
+
+function clearFilters() {
+    filterText.value = "";
+}
 
 /** There is currently an active `owner:` filter */
 const hasOwnerFilter = computed(() => {
@@ -324,18 +335,16 @@ watch(
             routerParams.query = { search: filterText.value.trim() };
         }
         router.push(routerParams);
-        await searchTools(newQuery);
+        await toolStore.fetchTools(newQuery);
     },
 );
 
 // The component mounts with the whooshQuery already generated; perform fetch!
-searchTools(whooshQuery.value);
-async function searchTools(query: string) {
-    await toolStore.fetchTools(query);
-    // Curated tags are fetched lazily out-of-band so tag chips on result cards
-    // and the `tag:` autocomplete work without bloating /api/tools.
-    await toolStore.fetchToolTagsMapping();
-}
+const loadingTags = ref(true);
+toolStore.fetchToolTagsMapping().finally(() => {
+    loadingTags.value = false;
+});
+toolStore.fetchTools(whooshQuery.value);
 
 function applyFilter(filter: string, value: string | string[]) {
     filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
@@ -478,9 +487,18 @@ function onToggleView(newView: ListViewMode) {
 
             <ToolsListSectionFilters
                 :filter-class="ToolFilters"
-                :filter-text="filterText"
-                :disabled="loading"
+                :filter-text="canUseFilterPickers ? filterText : ''"
+                :disabled="loading || !canUseFilterPickers"
                 @apply-filter="applyFilter">
+                <template v-slot:tag-filter>
+                    <ToolsListTagFilter
+                        :tags="tagAutocompleteValues"
+                        :loading="loadingTags"
+                        :selected-tags="canUseFilterPickers ? filterSettings.tag || [] : []"
+                        :disabled="loading || !canUseFilterPickers"
+                        @toggle-tag="applyFilter('tag', $event)" />
+                </template>
+
                 <template v-slot:list-view-controls>
                     <!-- TODO: This div here and in ListHeader.vue needs to be a reusable component -->
                     <div class="d-flex flex-gapx-1 align-items-center">
@@ -513,10 +531,32 @@ function onToggleView(newView: ListViewMode) {
                     </div>
                 </template>
             </ToolsListSectionFilters>
+
+            <div class="d-flex flex-wrap align-items-center flex-gapx-1 mt-1">
+                <small v-if="canUseFilterPickers && filterSettings.tag?.length" class="text-muted">
+                    Tools must match all selected tags.
+                </small>
+                <small v-if="!canUseFilterPickers" class="text-muted">
+                    Edit this search in the search field to preserve its conditions.
+                </small>
+                <GButton
+                    v-if="hasActiveFilters"
+                    data-description="clear-all-tool-filters"
+                    size="small"
+                    transparent
+                    @click="clearFilters">
+                    Clear all filters
+                </GButton>
+            </div>
         </div>
 
         <div class="tools-list-body">
+            <GAlert v-if="!loading && !itemsLoaded.length && hasActiveFilters" variant="info" show>
+                <p class="mb-2">No tools match your search. Try removing a filter or using a broader search term.</p>
+                <GButton size="small" outline @click="clearFilters">Clear filters and show all tools</GButton>
+            </GAlert>
             <ToolsListTable
+                v-else
                 :tools="itemsLoaded"
                 :loading="loading"
                 :has-owner-filter="hasOwnerFilter"
