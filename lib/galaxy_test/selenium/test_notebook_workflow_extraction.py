@@ -129,10 +129,9 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         )
 
         self.get(f"workflows/invocations/report?id={invocation_id}")
-        self.wait_for_selector_visible(".markdown-component")
-        self.wait_for_xpath_visible('//*[contains(@class, "markdown-component")]//*[contains(text(), "fresh-alpha")]')
+        self.components.invocations.report_section_with_text(text="fresh-alpha").wait_for_visible()
         self.screenshot("notebook_extract_report_round_trip")
-        report_text = self.find_element_by_selector(".markdown-component").text
+        report_text = "\n".join(section.text for section in self.components.invocations.report_section.all())
         assert "Analysis" in report_text, report_text
         assert "notebook-alpha" not in report_text, report_text
 
@@ -180,7 +179,9 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         self.components.workflow_extract.input_card_checkbox_checked.wait_for_present()
         self.screenshot("notebook_extract_copied_input_form")
 
-        assert len(self.components.workflow_extract.input_card_checkbox_checked.all()) == 1
+        assert (
+            len(self.components.workflow_extract.input_card_checkbox_checked.all()) == 1
+        ), "Expected the copied-in dataset pre-checked as the one input"
         assert self.count_checked_job_checkboxes() == 1, "Expected only the consuming cat1 run pre-checked"
 
         workflow_name = "Selenium Notebook Copied Input"
