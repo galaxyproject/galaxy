@@ -37,6 +37,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { debounce } from "lodash";
 import { mapState } from "pinia";
 
+import { mergeDataOptions } from "@/components/Form/Elements/FormData/types";
 import { findInputByDottedName, visitInputs } from "@/components/Form/utilities";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -207,18 +208,7 @@ export default {
             }
             const existing = (target.options && target.options[src]) || [];
             const newOptions = (incoming.options && incoming.options[src]) || [];
-            const seen = new Set(existing.map((option) => `${option.id}_${option.src}`));
-            const merged = existing.concat(
-                newOptions.filter((option) => {
-                    const key = `${option.id}_${option.src}`;
-                    if (seen.has(key)) {
-                        return false;
-                    }
-                    seen.add(key);
-                    return true;
-                }),
-            );
-            target.options = { ...target.options, [src]: merged };
+            target.options = { ...target.options, [src]: mergeDataOptions(existing, newOptions) };
             if (incoming.options_meta && incoming.options_meta[src]) {
                 target.options_meta = {
                     ...(target.options_meta || {}),

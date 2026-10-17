@@ -131,6 +131,26 @@ export function findDataOption<T>(
     });
 }
 
+/** An item listed both directly and mapped over is two options */
+function pageMergeKey(item: DataOption): string {
+    return `${itemUniqueKey(item)}-${item.map_over_type ?? ""}`;
+}
+
+/** Append a fetched page of options, skipping ones already listed */
+export function mergeDataOptions(existing: DataOption[], incoming: DataOption[]): DataOption[] {
+    const seen = new Set(existing.map(pageMergeKey));
+    return existing.concat(
+        incoming.filter((option) => {
+            const key = pageMergeKey(option);
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        }),
+    );
+}
+
 export type ExtendedCollectionType = {
     columnDefinitions?: SampleSheetColumnDefinition[] | undefined;
     fields?: FieldDict[] | undefined;
