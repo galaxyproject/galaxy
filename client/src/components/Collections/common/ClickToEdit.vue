@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { faLevelDownAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { computed, ref, useId, watch } from "vue";
+
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     value: string;
@@ -19,7 +20,7 @@ const emit = defineEmits<{
 
 const inputId = `click-to-edit-${useId()}`;
 
-const clickToEditInput = ref<HTMLInputElement | null>(null);
+const clickToEditInput = ref<InstanceType<typeof GFormInput> | null>(null);
 const editable = ref(false);
 const localValue = ref(props.value);
 
@@ -63,14 +64,13 @@ function revertToOriginal() {
 
 <template>
     <div v-if="editable" class="d-flex flex-gapx-1 input-icon-wrapper">
-        <BFormInput
+        <GFormInput
             :id="inputId"
             ref="clickToEditInput"
             v-model="localValue"
-            class="w-100 input-with-icon"
+            class="input-with-icon"
             tabindex="0"
             title="Press enter/return to save, esc to revert changes"
-            max-rows="4"
             aria-label="Press enter/return to save, esc to revert changes"
             @blur.prevent.stop="onBlur"
             @keyup.prevent.stop.enter="editable = false"
