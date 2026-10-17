@@ -53,6 +53,7 @@ from .interface import (
     StoredToolSource,
     ToolSourceStore,
 )
+from .manifest import sqlite_database_path
 
 log = logging.getLogger(__name__)
 
@@ -142,9 +143,9 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         self.read_only = read_only
         self._freshness_probe = freshness_probe
         self._cached_index: ToolIndex | None = None
-        # Read-only stores only: the persisted blob and the index decoded
-        # from it, kept across ``invalidate_index_cache`` and ``dispose``.
-        self._decoded_read_only_index: tuple[bytes, ToolIndex] | None = None
+        self._database_path = sqlite_database_path(url) if read_only else None
+        # Database file signature taken before the cached index was read.
+        self._cached_index_signature: tuple[int, int, int] | None = None
 
         self._ensure_sqlite_parent_directory(url)
 
@@ -187,6 +188,15 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def _session(self) -> Session:
         return self._Session()
+
+    def _database_signature(self) -> tuple[int, int, int] | None:
+        if self._database_path is None:
+            return None
+        try:
+            st = os.stat(self._database_path)
+        except OSError:
+            return None
+        return (st.st_ino, st.st_size, st.st_mtime_ns)
 
     def _ensure_writable(self) -> None:
         if self.read_only:
@@ -335,21 +345,11 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def load_index(self) -> ToolIndex | None:
         if self._cached_index is not None:
             return self._cached_index
+        signature = self._database_signature()
         with self._session() as session:
             row = session.execute(select(_ToolIndexRow).order_by(_ToolIndexRow.id.desc())).scalar_one_or_none()
         if row is None or not row.data:
             return None
-        # Every shed install invalidates the index cache several times, and
-        # decoding a published store's thousands of entries dominates each
-        # reload. Its blob changes only when the publisher rewrites it, so
-        # reuse the decoded index while the bytes are identical. A writable
-        # store's cached index is mutated in place by its consumers, so it
-        # is always decoded afresh.
-        if self.read_only and self._decoded_read_only_index is not None:
-            decoded_data, decoded_index = self._decoded_read_only_index
-            if decoded_data == row.data:
-                self._cached_index = decoded_index
-                return decoded_index
         try:
             payload = json.loads(gzip.decompress(row.data).decode("utf-8"))
             if payload.get("schema_hash") != INDEX_SCHEMA_HASH:
@@ -359,8 +359,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
                 log.info("Persisted tool index in %s has a stale schema; discarding", self.url)
                 return None
             self._cached_index = ToolIndex.model_validate(payload["index"])
-            if self.read_only:
-                self._decoded_read_only_index = (row.data, self._cached_index)
+            self._cached_index_signature = signature
             return self._cached_index
         except Exception as e:
             log.error(f"Failed to decode tool index from store {self.url}: {e}")
@@ -377,6 +376,20 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         self.store_index(index)
 
     def invalidate_index_cache(self) -> None:
+        """Drop the cached index so the next ``load_index`` re-reads it.
+
+        A read-only SQLite store keeps its cached index while its database
+        file is unchanged: re-reading a large published index costs seconds
+        and hundreds of MiB per process. When the file was republished, the
+        engine is disposed too, because connections opened before the publish
+        keep reading the old file on CVMFS. Read-only stores on other
+        backends are always re-read.
+        """
+        if self.read_only:
+            signature = self._database_signature()
+            if signature is not None and signature == self._cached_index_signature:
+                return
+            self._engine.dispose()
         self._cached_index = None
 
     def dispose(self) -> None:
@@ -385,7 +398,6 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def close(self) -> None:
         self.dispose()
-        self._decoded_read_only_index = None
 
     @property
     def has_freshness_probe(self) -> bool:

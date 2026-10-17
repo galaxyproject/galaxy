@@ -160,6 +160,30 @@ def test_invalidate_fans_out(two_paths):
     assert "y2" in merged.entries
 
 
+def test_invalidate_rereads_read_only_member_only_when_republished(two_paths):
+    pa, pb = two_paths
+    publisher = SqliteToolSourceStore(url=_sqlite_url(pa))
+    publisher.store_index(ToolIndex(entries={"x": ToolIndexEntry(id="x")}))
+    published = SqliteToolSourceStore(url=_sqlite_url(pa), read_only=True)
+    local = SqliteToolSourceStore(url=_sqlite_url(pb))
+    local.store_index(ToolIndex(entries={"y": ToolIndexEntry(id="y")}))
+    published_index = published.load_index()
+    local_index = local.load_index()
+    composite = CompositeToolSourceStore(members=[("published", published), ("local", local)], default="local")
+
+    composite.invalidate_index_cache()
+
+    assert published.load_index() is published_index
+    assert local.load_index() is not local_index
+
+    publisher.store_index(ToolIndex(entries={"x": ToolIndexEntry(id="x"), "x2": ToolIndexEntry(id="x2")}))
+    composite.invalidate_index_cache()
+
+    merged = composite.load_index()
+    assert merged is not None
+    assert "x2" in merged.entries
+
+
 def test_load_index_merges_entries_by_version(two_paths):
     pa, pb = two_paths
     a = SqliteToolSourceStore(url=_sqlite_url(pa))
