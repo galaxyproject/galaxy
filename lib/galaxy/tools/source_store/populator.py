@@ -541,25 +541,15 @@ def build_index_entry_from_source(
         return None
 
 
-def _build_stores(config: GalaxyAppConfiguration) -> dict[str, ToolSourceStore]:
+def _build_stores(config: GalaxyAppConfiguration, conf_to_store: dict[str, str]) -> dict[str, ToolSourceStore]:
     """Build {store_name: store_instance} for the default + every named store
-    referenced from any tool_conf."""
+    referenced from any tool_conf (``conf_to_store``, see :func:`conf_to_store_map`)."""
     stores: dict[str, ToolSourceStore] = {
         DEFAULT_STORE_NAME: _build_default_store(config),
     }
 
     catalog = config.tool_source_stores or {}
-    referenced: set[str] = set()
-    for path in config.all_tool_config_files():
-        try:
-            parser = get_toolbox_parser(path)
-        except Exception as e:
-            log.error(f"skipping tool conf {path} during store discovery: {e}")
-            continue
-        name = parser.parse_store_name()
-        if name:
-            referenced.add(name)
-
+    referenced = set(conf_to_store.values()) - {DEFAULT_STORE_NAME}
     for name in referenced:
         if name not in catalog:
             raise RuntimeError(f"tool_conf references store {name!r} but no such entry in tool_source_stores")
@@ -574,7 +564,8 @@ def conf_to_store_map(config: GalaxyAppConfiguration) -> dict[str, str]:
     for path in config.all_tool_config_files():
         try:
             parser = get_toolbox_parser(path)
-        except Exception:
+        except Exception as e:
+            log.error(f"Failed to parse tool conf {path} during store discovery, routing it to the default store: {e}")
             out[path] = DEFAULT_STORE_NAME
             continue
         out[path] = parser.parse_store_name() or DEFAULT_STORE_NAME
@@ -657,8 +648,8 @@ def _populate_store_inline_unlocked(
     which declares dynamic per-process queues for the SQLAlchemy transport.
     """
     log.info("Building tool source stores...")
-    stores = _build_stores(config)
     conf_to_store = conf_to_store_map(config)
+    stores = _build_stores(config, conf_to_store)
 
     if target is not None:
         if target not in stores:

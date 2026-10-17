@@ -24,6 +24,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -560,3 +561,21 @@ class TestFreshnessStamping:
         _populate_default(cfg, pattern="ftest_", incremental=True)
         store.invalidate_index_cache()
         assert store.index_is_fresh() is True
+
+
+def test_partial_populate_parses_conf_once_for_store_routing(tmp_path, monkeypatch):
+    tools_dir = tmp_path / "tools"
+    tool_path = _write_tool(tools_dir / "routed.xml", "routed")
+    conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="routed.xml"/>')
+    cfg = _populate_config(tmp_path, conf)
+    parsed: list[str] = []
+
+    def counting_get_toolbox_parser(path):
+        parsed.append(str(path))
+        return get_toolbox_parser(path)
+
+    monkeypatch.setattr("galaxy.tools.source_store.populator.get_toolbox_parser", counting_get_toolbox_parser)
+    result = _populate_default(cfg, paths=[str(tool_path)])
+
+    assert result["stored"] == 1
+    assert parsed == [str(conf)]
