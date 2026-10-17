@@ -4465,7 +4465,9 @@ file (use the file extension). Used only when the ``type`` attribute value is
 Restrict the kind of collection that can be consumed by this parameter. Simple
 collections are either ``list`` or ``paired``), nested collections are specified
 as colon separated list of simple collection types (the most common types are
-``list``, ``paired``, ``list:paired``, or ``list:list``). Multiple such
+``list``, ``paired``, ``list:paired``, or ``list:list``). ``sample_sheet`` may
+only be the outermost type, optionally followed by ``:paired``,
+``:paired_or_unpaired``, or ``:record``. Multiple such
 collection types can be specified here as a comma-separated list. Used only when
 the ``type`` attribute value is ``data_collection``.
               ]]></xs:documentation>
