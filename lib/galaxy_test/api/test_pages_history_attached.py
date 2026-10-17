@@ -914,6 +914,44 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         assert self._connected_step_id(cat1_step, "input1") == input_step["id"], steps
 
     @skip_without_tool("cat1")
+    def test_element_of_collection_copied_from_unshared_history_seeded_as_local_copy(self):
+        """A hidden element of a copied collection has no history row; its seeded input row
+        lists this history's copy, not the element in another user's now-private history."""
+        with self._different_user("extract_element_source@bx.psu.edu"):
+            source_history_id = self.dataset_populator.new_history()
+            source_hdca = self.dataset_collection_populator.create_list_in_history(
+                source_history_id, contents=["a\nb\n", "c\nd\n"], wait=True
+            ).json()["outputs"][0]
+            source_element_ids = {
+                e["object"]["id"]
+                for e in self.dataset_populator.get_history_collection_details(
+                    source_history_id, content_id=source_hdca["id"]
+                )["elements"]
+            }
+            self.dataset_populator.make_public(source_history_id)
+        with self.dataset_populator.test_history() as history_id:
+            hdca_copy = self._copy_content_to_history(history_id, source_hdca)
+            element_id = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_copy["id"])[
+                "elements"
+            ][0]["object"]["id"]
+            run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": element_id}}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            with self._different_user("extract_element_source@bx.psu.edu"):
+                self._assert_status_code_is(self._put(f"histories/{source_history_id}/disable_link_access"), 200)
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[run["outputs"][0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            element_rows = [r for r in self._rows_by_type(summary, "input_dataset") if r["seeded"]]
+            assert [[o["id"] for o in r["outputs"]] for r in element_rows] == [[element_id]], summary["jobs"]
+            listed_ids = {o["id"] for r in self._rows_by_type(summary, "input_dataset") for o in r["outputs"]}
+            assert not listed_ids & source_element_ids, summary["jobs"]
+            steps = self._extract_seeded_steps(summary)
+            (cat1_step,) = (s for s in steps if s["type"] == "tool")
+            (input_step,) = (s for s in steps if s["type"] == "data_input")
+            assert self._connected_step_id(cat1_step, "input1") == input_step["id"], steps
+
+    @skip_without_tool("cat1")
     def test_inaccessible_producer_output_seeded_as_input(self):
         """An output whose producing tool became inaccessible is a closure boundary; its
         invalid tool row cannot be extracted, so the output is seeded as an input instead."""
