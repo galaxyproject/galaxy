@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -27,8 +29,10 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
+import ToolInstallationRequestDialog from "@/components/Workflow/ToolInstallationRequestDialog.vue";
 
 const IWC_URL = "https://iwc.galaxyproject.org";
 
@@ -39,7 +43,7 @@ const breadcrumbItems = [{ title: "Workflows" }];
 // describes truthfully, so there's no separate default to offer.
 const RECOMMENDED_SORT = {
     label: localize("Recommended"),
-    title: localize("Workflows that can run on this Galaxy first, then most recently updated"),
+    title: localize("Workflows that can run on this Galaxy first, then those needing the fewest tools"),
 };
 
 const userStore = useUserStore();
@@ -82,6 +86,29 @@ const activeCollection = computed(() => {
         workflowFilters.value.getFilterValue(filterText.value, "c");
     return typeof value === "string" ? value.replace(/^(['"])(.*)\1$/, "$2").toLowerCase() : null;
 });
+
+const RUNNABLE_TERM = /(^|\s)is:runnable(?=\s|$)/gi;
+const runnableOnly = computed(() => new RegExp(RUNNABLE_TERM.source, "i").test(filterText.value));
+/** Nothing but the runnable filter, so an empty result says something about this Galaxy, not the query. */
+const onlyRunnableFilter = computed(() => filterText.value.trim().toLowerCase() === "is:runnable");
+
+/** Edits the text directly, like `toggleCollection`, so free text typed alongside survives. */
+function toggleRunnable() {
+    const rest = filterText.value.replace(RUNNABLE_TERM, "$1").replace(/\s+/g, " ").trim();
+    filterText.value = runnableOnly.value ? rest : `${rest} is:runnable`.trim();
+}
+
+/** The catalog workflow whose missing tools the user is asking the admins for; one dialog serves every card. */
+const toolRequestFor = ref<CuratedWorkflow | null>(null);
+// Only for this visit: the admins' answer arrives as a notification, and the card clears once they install.
+const toolsRequestedFor = ref(new Set<string>());
+
+function onToolsRequested() {
+    if (toolRequestFor.value) {
+        toolsRequestedFor.value.add(toolRequestFor.value.id);
+    }
+    Toast.success("Installation request sent. Check your notifications for updates.");
+}
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.workflows || "grid");
@@ -221,21 +248,36 @@ onMounted(() => load());
 
             <div v-if="source === 'iwc'" id="curated-workflows-source-note" class="text-muted mb-2">
                 <span v-localize>
-                    Curated by the Intergalactic Workflow Commission. Import a workflow to add it to this Galaxy.
+                    These workflows come from the Intergalactic Workflow Commission (IWC). Import one to add it to this
+                    Galaxy, or browse the full gallery at
                 </span>
-                <GLink :href="IWC_URL" target="_blank">iwc.galaxyproject.org</GLink>
+                <ExternalLink :href="IWC_URL">iwc.galaxyproject.org</ExternalLink>
             </div>
             <div v-else-if="source === 'local'" id="curated-workflows-source-note" class="text-muted mb-2">
                 <span v-localize>Workflows curated for this Galaxy.</span>
             </div>
 
-            <CuratedCollectionChips
-                v-if="source === 'iwc' && collections.length"
-                id="curated-workflow-collections"
-                class="mb-2"
-                :collections="collections"
-                :active="activeCollection ?? undefined"
-                @toggle="toggleCollection" />
+            <div v-if="source === 'iwc'" class="curated-workflow-quick-filters d-flex align-items-start mb-2">
+                <GButton
+                    id="curated-runnable-toggle"
+                    class="flex-shrink-0"
+                    size="small"
+                    color="blue"
+                    outline
+                    :pressed="runnableOnly"
+                    :title="localize('Only show workflows whose tools are all installed on this Galaxy')"
+                    @click="toggleRunnable">
+                    <FontAwesomeIcon :icon="faCheck" fixed-width />
+                    <span v-localize>Ready to run here</span>
+                </GButton>
+                <CuratedCollectionChips
+                    v-if="collections.length"
+                    id="curated-workflow-collections"
+                    class="curated-workflow-collection-chips"
+                    :collections="collections"
+                    :active="activeCollection ?? undefined"
+                    @toggle="toggleCollection" />
+            </div>
 
             <FilterMenu
                 id="curated-workflow-list-filter"
@@ -290,7 +332,7 @@ onMounted(() => load());
                 <p>{{ message }}</p>
                 <p>
                     <span v-localize>You can browse the catalog at</span>
-                    <GLink :href="IWC_URL" target="_blank">iwc.galaxyproject.org</GLink>
+                    <ExternalLink :href="IWC_URL">iwc.galaxyproject.org</ExternalLink>
                     <span v-localize>or</span>
                     <GLink to="/workflows/import">import a workflow directly</GLink>
                     <span v-localize>.</span>
@@ -309,7 +351,14 @@ onMounted(() => load());
             </GAlert>
         </div>
         <span v-else-if="!overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
-            <GAlert v-if="!hasInvalidFilters" id="no-curated-workflow-found" variant="info">
+            <GAlert v-if="!hasInvalidFilters && onlyRunnableFilter" id="no-curated-workflow-runnable" variant="info">
+                <span v-localize>
+                    None of the curated workflows can run on this Galaxy yet: each needs at least one tool that isn't
+                    installed. Each card says which.
+                </span>
+                <GLink @click="toggleRunnable">Show all curated workflows</GLink>
+            </GAlert>
+            <GAlert v-else-if="!hasInvalidFilters" id="no-curated-workflow-found" variant="info">
                 No curated workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
                 <GLink @click="filterText = ''">Reset the filter</GLink>
             </GAlert>
@@ -332,10 +381,21 @@ onMounted(() => load());
                     :key="workflow.id"
                     :workflow="workflow"
                     :grid-view="currentListViewMode === 'grid'"
+                    :installation-requested="toolsRequestedFor.has(workflow.id)"
                     @tagClick="(tag: string) => updateFilterValue('tag', `'${tag}'`)"
-                    @collectionClick="toggleCollection" />
+                    @collectionClick="toggleCollection"
+                    @request-tools="(requested: CuratedWorkflow) => (toolRequestFor = requested)" />
             </div>
         </GOverlay>
+
+        <!-- A catalog workflow isn't stored here yet, so the request names it and links its IWC page instead. -->
+        <ToolInstallationRequestDialog
+            :show="toolRequestFor !== null"
+            :missing-tool-ids="toolRequestFor?.missing_tools ?? []"
+            :workflow-name="toolRequestFor?.name"
+            :workflow-url="toolRequestFor?.external_url ?? undefined"
+            @update:show="(show: boolean) => !show && (toolRequestFor = null)"
+            @submitted="onToolsRequested" />
 
         <div v-if="totalWorkflows > limit" class="workflow-list-footer">
             <BPagination
@@ -367,6 +427,16 @@ onMounted(() => load());
 
     .workflow-list-alert {
         height: 100%;
+    }
+
+    .curated-workflow-quick-filters {
+        gap: 0.25rem;
+
+        // Lets the chips measure their own row instead of overflowing past the toggle.
+        .curated-workflow-collection-chips {
+            flex: 1 1 0;
+            min-width: 0;
+        }
     }
 
     .cards-list {

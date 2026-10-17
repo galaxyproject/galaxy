@@ -85,22 +85,9 @@ class TestCustomTools(SeleniumTestCase, UsesUploadActivity):
             custom_tools.example(section_id="quick-start").wait_for_visible()
             assert custom_tools.example_label(section_id="quick-start").wait_for_text() == "Example"
 
-            self.execute_script("""
-                window.__authoringHelpCopiedText = null;
-                Object.defineProperty(navigator, "clipboard", {
-                    configurable: true,
-                    value: {
-                        writeText: (text) => {
-                            window.__authoringHelpCopiedText = text;
-                            return Promise.resolve();
-                        },
-                    },
-                });
-                """)
-            custom_tools.example_copy_button(section_id="quick-start").wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            copied_example = self.execute_script("return window.__authoringHelpCopiedText;")
-            assert copied_example.startswith("class: GalaxyUserTool")
+            with self.capture_clipboard() as clipboard:
+                custom_tools.example_copy_button(section_id="quick-start").wait_for_and_click()
+                assert clipboard.wait_for_text().startswith("class: GalaxyUserTool")
             self.screenshot("custom_tool_documentation_example")
 
             custom_tools.help_section_toggle(section_id="tool-format").wait_for_and_click()

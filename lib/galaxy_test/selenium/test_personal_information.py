@@ -12,6 +12,24 @@ class TestManageInformation(SeleniumTestCase):
         this means the initial API key will be None, which renders as
         'Not available.'
         """
+        new_api_key = self._create_api_key()
+        api_key_input = self.components.preferences.api_key_input.wait_for_visible()
+        input_value = api_key_input.get_attribute("value")
+        assert new_api_key == input_value
+        # Hover the input to view the key
+        self.hover(api_key_input)
+        hover_value = api_key_input.get_attribute("value")
+        assert new_api_key == hover_value
+
+    @selenium_test
+    def test_copy_api_key(self):
+        new_api_key = self._create_api_key()
+        with self.capture_clipboard() as clipboard:
+            self.components.preferences.api_key_copy_button.wait_for_and_click()
+            assert clipboard.wait_for_text() == new_api_key
+        self.components.toast.message_with_text(text="Key was copied to clipboard").wait_for_visible()
+
+    def _create_api_key(self) -> str:
         self.login()
         # There is no API key defined initially
         assert not self.get_api_key()
@@ -20,14 +38,10 @@ class TestManageInformation(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # When there is no API key the create button is visible
         self.components.preferences.get_new_key.wait_for_and_click()
-        api_key_input = self.components.preferences.api_key_input.wait_for_visible()
-        new_api_key = self.get_api_key()
-        input_value = api_key_input.get_attribute("value")
-        assert new_api_key == input_value
-        # Hover the input to view the key
-        self.hover(api_key_input)
-        hover_value = api_key_input.get_attribute("value")
-        assert new_api_key == hover_value
+        self.components.preferences.api_key_input.wait_for_visible()
+        api_key = self.get_api_key()
+        assert api_key
+        return api_key
 
     @selenium_test
     def test_change_email(self):

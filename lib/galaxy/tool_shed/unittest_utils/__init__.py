@@ -142,7 +142,7 @@ class DummyDataManager(DataManagerInterface):
     GUID_TYPE: str = "data_manager"
     DEFAULT_VERSION: str = "0.0.1"
 
-    def process_result(self, out_data):
+    def process_result(self, out_data, source_extra_files_paths=None):
         return None
 
     def write_bundle(self, out, source_extra_files_paths=None) -> dict[str, OutputDataset]:

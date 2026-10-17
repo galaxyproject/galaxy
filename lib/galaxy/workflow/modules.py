@@ -33,6 +33,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.datatypes.data import Directory
 from galaxy.exceptions import (
     ToolInputsNotReadyException,
     ToolMissingException,
@@ -348,12 +349,22 @@ def to_cwl(
             return read_expression_json(value, step=step)
         else:
             hda_references.append(value)
-            properties = {
+            properties: dict[str, Any] = {
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
-                "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
+            datatype = value.datatype
+            if isinstance(datatype, Directory):
+                # As in runtimeify, a directory dataset is the folder holding its content.
+                extra_files_path = compute_environment.input_extra_files_rewrite(value) if compute_environment else None
+                properties["class"] = "Directory"
+                properties["path"] = datatype.content_path(value, extra_files_path)
+                properties["listing"] = []
+            else:
+                properties["path"] = (
+                    compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name()
+                )
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )

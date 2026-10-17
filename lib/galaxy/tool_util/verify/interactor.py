@@ -689,9 +689,10 @@ class GalaxyInteractorApi:
                 with open(local_path, mode="rb") as f:
                     result = f.read()
             elif mode == "directory":
-                # Make a copy, since we are going to clean up the returned path
+                # Make a copy, since we are going to clean up the returned path.
+                # Keep the root directory, matching the downloaded archive layout.
                 path = tempfile.mkdtemp()
-                shutil.copytree(local_path, path)
+                shutil.copytree(local_path, os.path.join(path, os.path.basename(filename)))
                 result = path
 
         if result is None:
@@ -784,7 +785,9 @@ class GalaxyInteractorApi:
         file_name = None
         file_name_exists = False
         location = self._ensure_valid_location_in(test_data)
-        if fname and force_path_paste:
+        # Directories are archived client-side, so they must be downloaded
+        # rather than path-pasted.
+        if fname and force_path_paste and mode == "file":
             file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
             file_name_exists = file_name is not None and os.path.exists(file_name)
         if not file_name_exists and location is not None:
@@ -797,9 +800,9 @@ class GalaxyInteractorApi:
             tool_id, fname, is_output=False, tool_version=tool_version, mode=mode, path_only=True
         )
         assert isinstance(path, str)
-        # Downloaded directories contain root directory
+        # Downloaded directories contain their root directory, named after its basename
         if path and mode == "directory":
-            path = os.path.join(path, fname)
+            path = os.path.join(path, os.path.basename(fname))
         return PathOrLocation(name=fname, location=None, path=path)
 
     def _ensure_valid_location_in(self, test_data: dict) -> str | None:

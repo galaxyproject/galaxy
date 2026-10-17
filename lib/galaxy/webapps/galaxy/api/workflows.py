@@ -903,12 +903,17 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
-# The curated endpoint understands only name, tag and collection; the stored-workflow tags
+# The curated endpoint understands only name, tag, collection and is; the stored-workflow tags
 # above would advertise filters it silently drops into free text.
 curated_query_tags = [
     IndexQueryTag("name", "The curated workflow's name.", "n"),
     IndexQueryTag("tag", "A tag on the curated workflow.", "t"),
     IndexQueryTag("collection", "An IWC collection the curated workflow belongs to.", "c"),
+    IndexQueryTag(
+        "is",
+        "Use 'is:runnable' for workflows whose tools are all available here (IWC catalog only; matches nothing "
+        "for a local feed).",
+    ),
 ]
 
 CuratedSearchQueryParam: str | None = search_query_param(
@@ -922,7 +927,8 @@ CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(
     title="Sort By",
     description=(
         "Sort curated workflows by this attribute. Without it, most recently updated first -- and "
-        "in IWC catalog mode, workflows whose tools are all available here come before the rest."
+        "in IWC catalog mode, ordered first by how many of their tools this Galaxy is missing, so the "
+        "ones that run here as-is lead and the ones it couldn't check come last."
     ),
 )
 

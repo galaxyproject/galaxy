@@ -13,7 +13,9 @@ from ..test_datatype_upload import (
     DatatypeUploadCase,
     TEST_CASES,
     upload_datatype_helper,
+    upload_datatypes,
     UploadTestDatatypeDataIntegrationInstance,
+    verify_datatype_upload,
 )
 
 REFRESH_TIME = 3
@@ -189,30 +191,62 @@ idle_connection_irods_instance = integration_util.integration_module_instance(
 )
 
 
+def upload_to_new_history(instance: UploadTestDatatypeDataIntegrationInstance):
+    # Not test_history(), whose cleanup runs at module teardown: by then a newer Galaxy
+    # instance has started in this process, and older ones answer API requests with 401.
+    history_id = instance.dataset_populator.new_history()
+    return history_id, upload_datatypes(instance, TEST_CASES.values(), history_id)
+
+
+@pytest.fixture(scope="module")
+def distributed_datasets(distributed_instance: UploadTestDosDiskAndDiskIntegrationInstance):
+    return upload_to_new_history(distributed_instance)
+
+
+@pytest.fixture(scope="module")
+def irods_datasets(irods_instance: IrodsUploadTestDatatypeDataIntegrationInstance):
+    return upload_to_new_history(irods_instance)
+
+
+@pytest.fixture(scope="module")
+def distributed_and_irods_datasets(distributed_and_irods_instance: UploadTestDosIrodsAndDiskIntegrationInstance):
+    return upload_to_new_history(distributed_and_irods_instance)
+
+
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_disk_and_disk(
-    distributed_instance: UploadTestDosDiskAndDiskIntegrationInstance, test_data: DatatypeUploadCase, temp_file
+    distributed_instance: UploadTestDosDiskAndDiskIntegrationInstance,
+    distributed_datasets,
+    test_data: DatatypeUploadCase,
+    temp_file,
 ) -> None:
-    with distributed_instance.dataset_populator.test_history() as history_id:
-        upload_datatype_helper(distributed_instance, test_data, temp_file, history_id)
+    history_id, datasets = distributed_datasets
+    dataset = datasets[os.path.basename(test_data.path)]
+    verify_datatype_upload(distributed_instance, test_data, temp_file, history_id, dataset)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_irods(
-    irods_instance: IrodsUploadTestDatatypeDataIntegrationInstance, test_data: DatatypeUploadCase, temp_file
+    irods_instance: IrodsUploadTestDatatypeDataIntegrationInstance,
+    irods_datasets,
+    test_data: DatatypeUploadCase,
+    temp_file,
 ) -> None:
-    with irods_instance.dataset_populator.test_history() as history_id:
-        upload_datatype_helper(irods_instance, test_data, temp_file, history_id, True)
+    history_id, datasets = irods_datasets
+    dataset = datasets[os.path.basename(test_data.path)]
+    verify_datatype_upload(irods_instance, test_data, temp_file, history_id, dataset, delete_cache_dir=True)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_irods_and_disk(
     distributed_and_irods_instance: UploadTestDosIrodsAndDiskIntegrationInstance,
+    distributed_and_irods_datasets,
     test_data: DatatypeUploadCase,
     temp_file,
 ) -> None:
-    with distributed_and_irods_instance.dataset_populator.test_history() as history_id:
-        upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file, history_id)
+    history_id, datasets = distributed_and_irods_datasets
+    dataset = datasets[os.path.basename(test_data.path)]
+    verify_datatype_upload(distributed_and_irods_instance, test_data, temp_file, history_id, dataset)
 
 
 @pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))

@@ -1237,8 +1237,7 @@ test_data:
     @summarize_instance_history_on_error
     def test_inaccessible_dataset_rejected(self, history_id):
         """Another user's private HDA in payload should be rejected."""
-        with self._different_user("other_extract_user@bx.psu.edu"):
-            other_history_id = self.dataset_populator.new_history()
+        with self._different_user_history("other_extract_user@bx.psu.edu") as other_history_id:
             other_dataset = self.dataset_populator.new_dataset(other_history_id, content="secret\n")
             self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
             self.dataset_populator.make_private(other_history_id, other_dataset["id"])
@@ -1267,8 +1266,7 @@ test_data:
     @summarize_instance_history_on_error
     def test_inaccessible_collection_rejected(self, history_id):
         """Another user's private HDCA in payload should be rejected."""
-        with self._different_user("other_extract_user_hdca@bx.psu.edu"):
-            other_history_id = self.dataset_populator.new_history()
+        with self._different_user_history("other_extract_user_hdca@bx.psu.edu") as other_history_id:
             create_response = self.dataset_collection_populator.create_pair_in_history(
                 other_history_id, contents=["a\n", "b\n"], wait=True
             ).json()

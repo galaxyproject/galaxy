@@ -9,8 +9,10 @@ from pydantic import ValidationError
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.model import (
+    Dataset,
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetSource,
     HistoryDatasetAssociation,
     ImplicitlyConvertedDatasetAssociation,
     set_datatypes_registry,
@@ -34,6 +36,7 @@ from galaxy.tools.runtime import (
     collection_to_runtime,
     setup_for_runtimeify,
 )
+from galaxy.workflow.modules import to_cwl
 
 
 @pytest.fixture
@@ -272,6 +275,96 @@ class RewritingComputeEnvironment:
 class DatatypesApp:
     def __init__(self, datatypes_registry):
         self.datatypes_registry = datatypes_registry
+
+
+def _adapt_input(extension, deferred_uri=None, metadata=None, deferred=False):
+    registry = example_datatype_registry_for_sample()
+    set_datatypes_registry(registry)
+    hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
+    hda.id = 1
+    assert hda.dataset is not None
+    hda.dataset.file_size = Decimal(4)
+    for name, value in (metadata or {}).items():
+        setattr(hda.metadata, name, value)
+    if deferred or deferred_uri:
+        hda.dataset.state = Dataset.states.DEFERRED
+    if deferred_uri:
+        hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
+    _, adapt_dataset, _ = setup_for_runtimeify(
+        cast(Any, DatatypesApp(registry)), cast(Any, RewritingComputeEnvironment()), {"input": hda}
+    )
+    return adapt_dataset(DataRequestInternalHda(src="hda", id=1), [extension])
+
+
+def test_adapt_dataset_file():
+    result = _adapt_input("txt")
+    assert result.class_ == "File"
+    assert result.path == "/job/inputs/dataset_1.dat"
+
+
+@pytest.mark.parametrize("extension", ["directory", "zarr", "ome_zarr"])
+def test_adapt_dataset_directory_datatypes(extension):
+    result = _adapt_input(extension)
+    assert result.class_ == "Directory"
+    assert result.path == "/job/inputs/dataset_1_files"
+    assert result.format == extension
+
+
+@pytest.mark.parametrize("extension", ["zarr", "ome_zarr"])
+def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
+    # Datasets created before stores were moved to the root are left as they are.
+    result = _adapt_input(extension, metadata={"store_root": "wrapped.zarr"})
+    assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
+
+
+def test_adapt_dataset_ignores_a_store_root_outside_the_dataset():
+    result = _adapt_input("zarr", metadata={"store_root": "../elsewhere"})
+    assert result.path == "/job/inputs/dataset_1_files"
+
+
+def test_adapt_dataset_deferred_input_has_location_and_no_path():
+    result = _adapt_input("directory", deferred_uri="https://example.org/data/folder")
+    assert result.class_ == "Directory"
+    assert result.location == "https://example.org/data/folder"
+    assert result.path is None
+
+
+def test_adapt_dataset_deferred_input_without_a_source_is_rejected():
+    with pytest.raises(ValueError, match="has no source"):
+        _adapt_input("directory", deferred=True)
+
+
+@pytest.mark.parametrize("extension", ["directory", "zarr"])
+def test_to_cwl_directory_datatypes(extension):
+    # Tools run through /api/tools have no validated state and fall back to to_cwl.
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, extension)
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["class"] == "Directory"
+    assert properties["path"] == "/job/inputs/dataset_1_files"
+    assert properties["format"] == extension
+
+
+def test_to_cwl_zarr_store_in_a_recorded_wrapper_folder():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    hda.metadata.store_root = "wrapped.zarr"
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["path"] == "/job/inputs/dataset_1_files/wrapped.zarr"
+
+
+def test_to_cwl_file():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "txt")
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["class"] == "File"
+    assert properties["path"] == "/job/inputs/dataset_1.dat"
 
 
 def _hda(id: int, extension: str) -> HistoryDatasetAssociation:

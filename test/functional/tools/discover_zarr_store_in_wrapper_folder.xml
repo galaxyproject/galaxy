@@ -1,0 +1,40 @@
+<tool id="discover_zarr_store_in_wrapper_folder" name="discover_zarr_store_in_wrapper_folder" version="1.0.0">
+    <!-- A discovered zarr dataset whose store sits in a wrapper folder is moved to the root. -->
+    <command><![CDATA[
+mkdir -p sample1data/wrapped.zarr/0 &&
+echo '{"zarr_format": 2}' > sample1data/wrapped.zarr/.zgroup &&
+echo '{"zarr_format": 2, "shape": [1], "chunks": [1], "dtype": "<i4", "compressor": null, "fill_value": 0, "filters": null, "order": "C"}' > sample1data/wrapped.zarr/0/.zarray &&
+touch sample1.store &&
+cp '$c1' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="c1">{"type": "new_primary_dataset", "filename": "sample1.store", "name": "store", "ext": "zarr", "extra_files": "sample1data"}
+</configfile>
+    </configfiles>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="sample">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.store" visible="true" />
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <output name="sample">
+                <discovered_dataset designation="sample1" ftype="zarr">
+                    <metadata name="zarr_format" value="2" />
+                    <extra_files type="file" name=".zgroup">
+                        <assert_contents>
+                            <has_text text="zarr_format" />
+                        </assert_contents>
+                    </extra_files>
+                    <extra_files type="file" name="0/.zarray">
+                        <assert_contents>
+                            <has_text text="zarr_format" />
+                        </assert_contents>
+                    </extra_files>
+                </discovered_dataset>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -6294,7 +6294,14 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         if old_dataset:
             old_dataset.full_delete(user=self.user)
 
-    def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
+    def copy(
+        self,
+        parent_id=None,
+        copy_tags: Iterable["ItemTagAssociation"] | None = None,
+        flush=True,
+        copy_hid=True,
+        new_name=None,
+    ):
         """
         Create a copy of this HDA.
         """
@@ -6328,10 +6335,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
             session.commit()
         return hda
 
-    def copy_tags_to(self, copy_tags=None):
+    def copy_tags_to(self, copy_tags: Iterable["ItemTagAssociation"] | None = None):
         if copy_tags is not None:
-            if isinstance(copy_tags, dict):
-                copy_tags = copy_tags.values()
             existing = {(t.tag_id, t.value) for t in self.tags}
             for tag in copy_tags:
                 if (tag.tag_id, tag.value) not in existing:
@@ -10096,12 +10101,15 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         session = object_session(self)
         priority_states = (WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED)
         if session and self.id and state not in priority_states:
-            # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
+            # generate statement that will not revert CANCELLING, CANCELLED or COMPLETED. Scheduling a
+            # parent's subworkflow step runs the child's invoker again, and a child whose completion
+            # was already recorded must stay completed for the parent to complete.
+            final_states = (*priority_states, WorkflowInvocation.states.COMPLETED)
             session.execute(
                 update(WorkflowInvocation)
                 .where(
                     WorkflowInvocation.id == self.id,
-                    or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
+                    or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
                 )
                 .values(state=state)
             )
@@ -12160,7 +12168,9 @@ class Tag(Base, RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ["id", "user_tname", "user_value"]
     dict_element_visible_keys = dict_collection_visible_keys
+    tag_id: Mapped[int | None]
     user_tname: Mapped[str | None]
+    value: Mapped[str | None]
     user_value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
 
     def __init_subclass__(cls, **kwargs):
@@ -12183,7 +12193,7 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12199,7 +12209,7 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12215,7 +12225,7 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     library_dataset_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12231,7 +12241,7 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12245,7 +12255,7 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12259,7 +12269,7 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12273,7 +12283,7 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12289,7 +12299,7 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12305,7 +12315,7 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12319,7 +12329,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tool_id: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)

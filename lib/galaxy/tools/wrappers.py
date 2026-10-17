@@ -235,7 +235,9 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
                 # If we infer this is a path, rewrite it if needed.
                 new_values = []
                 for value in values:
-                    rewrite_value = self._compute_environment.unstructured_path_rewrite(value)
+                    rewrite_value = self._bundle_path_rewrite(value, self._compute_environment)
+                    if rewrite_value is None:
+                        rewrite_value = self._compute_environment.unstructured_path_rewrite(value)
                     if rewrite_value:
                         new_values.append(rewrite_value)
                     else:
@@ -243,6 +245,18 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
                 return self._input.separator.join(new_values)
 
             return self._input.separator.join(values)
+
+        def _bundle_path_rewrite(self, value: str, compute_environment: "ComputeEnvironment") -> str | None:
+            # Data table entries from a data manager bundle point into the
+            # bundle dataset's extra files, which the compute environment
+            # rewrites like any other input's extra files.
+            if not isinstance(self._value, DatasetInstance):
+                return None
+            extra_files_path = self._value.extra_files_path
+            if value != extra_files_path and not value.startswith(extra_files_path + os.sep):
+                return None
+            compute_extra_files_path: str = compute_environment.input_extra_files_rewrite(self._value)
+            return compute_extra_files_path + value[len(extra_files_path) :]
 
     def __init__(
         self,

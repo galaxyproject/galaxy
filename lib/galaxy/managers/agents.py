@@ -1,9 +1,12 @@
 """Agent service layer for AI agent management."""
 
 import logging
+from functools import partial
 from typing import (
     Any,
 )
+
+import anyio
 
 from galaxy.agents import GalaxyAgentDependencies
 from galaxy.agents.registry import AgentRegistry
@@ -59,7 +62,9 @@ class AgentService:
 
         try:
             log.info(f"Executing {agent_type} agent for query: '{query[:100]}...'")
-            agent = self.registry.get_agent(agent_type, deps)
+            # Agent setup reads prompts/capabilities and initializes provider
+            # clients. Only inference belongs on the event loop.
+            agent = await anyio.to_thread.run_sync(partial(self.registry.get_agent, agent_type, deps))
             response = await agent.process(query, context)
 
             return AgentResponse(
@@ -73,7 +78,7 @@ class AgentService:
         except ValueError as e:
             log.warning(f"Unknown agent type {agent_type}, falling back to router: {e}")
             # Fallback to router for unknown agents - it handles general queries
-            router = QueryRouterAgent(deps)
+            router = await anyio.to_thread.run_sync(partial(QueryRouterAgent, deps))
             response = await router.process(query, context)
             metadata = response.metadata.copy()
             metadata["fallback"] = True

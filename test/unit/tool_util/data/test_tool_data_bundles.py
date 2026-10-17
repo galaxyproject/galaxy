@@ -395,6 +395,30 @@ def test_write_bundle_relativizes_split_prefix_path_from_compute_root(tdt_manage
     assert not os.path.isabs(stored_path)
 
 
+def test_process_bundle_moves_compute_side_path_from_extra_files(tdt_manager, tmp_path):
+    index, extra_files_path, compute_extra_files_path, out_data, process_description = (
+        prepare_split_prefix_output_and_description(tmp_path)
+    )
+    (extra_files_path / index).mkdir()
+    (extra_files_path / index / f"{index}.pkl").write_text("db")
+    options = BundleProcessingOptions(
+        what="data manager 'mock'",
+        data_manager_path=str(tmp_path),
+        target_config_file=str(tmp_path / "sample_data_managers_conf.xml"),
+    )
+    tdt_manager.process_bundle(
+        out_data,
+        process_description,
+        None,
+        options,
+        source_extra_files_paths={"out1": str(compute_extra_files_path)},
+    )
+
+    new_row = _last_row(tmp_path / "testalpha.loc")
+    assert new_row[-1] == str(tmp_path / "metaphlan" / "data" / index)
+    assert (tmp_path / "metaphlan" / "data" / index / f"{index}.pkl").read_text() == "db"
+
+
 def test_write_bundle_relativizes_uuid_keyed_job_path_on_id_keyed_store(tdt_manager, tmp_path):
     """A uuid-keyed compute root works even when the object store is id-keyed."""
     index, extra_files_path, compute_extra_files_path, out_data, process_description = (
@@ -520,6 +544,39 @@ def test_undeclared_tables(tdt_manager, tmp_path):
     assert new_row[0] == "newvalue"
     assert new_row[1] == "mynewname"
     assert new_row[2] == str(tmp_path / "newvalue.txt")
+
+
+def test_undeclared_tables_move_compute_side_path_from_extra_files(tdt_manager, tmp_path):
+    data_manager_path = tmp_path / "data_manager_data"
+    options = BundleProcessingOptions(
+        what="data manager 'mock'",
+        data_manager_path=str(data_manager_path),
+        target_config_file=str(tmp_path / "sample_data_managers_conf.xml"),
+    )
+    extra_files_path = tmp_path / "objectstore" / "dataset_1_files"
+    (extra_files_path / "db").mkdir(parents=True)
+    (extra_files_path / "db" / "index").write_text("Moo Cow")
+    compute_extra_files_path = tmp_path / "jobs" / "1" / "outputs" / "dataset_1_files"
+    output = {
+        "data_tables": {
+            "testalpha": [{"value": "newvalue", "name": "mynewname", "path": str(compute_extra_files_path / "db")}]
+        }
+    }
+    output_dataset_path = tmp_path / "output.dat"
+    output_dataset_path.write_text(json.dumps(output))
+    out_data = {"out1": OutputDataset(output_dataset_path, extra_files_path)}
+    process_description = DataTableBundleProcessorDescription(undeclared_tables=True, data_tables=[])
+    tdt_manager.process_bundle(
+        out_data,
+        process_description,
+        None,
+        options,
+        source_extra_files_paths={"out1": str(compute_extra_files_path)},
+    )
+
+    new_row = _last_row(tmp_path / "testalpha.loc")
+    assert new_row[2] == str(data_manager_path / "db")
+    assert (data_manager_path / "db" / "index").read_text() == "Moo Cow"
 
 
 def _last_row(loc_file):

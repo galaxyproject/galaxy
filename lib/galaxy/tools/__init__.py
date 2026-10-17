@@ -158,7 +158,10 @@ from galaxy.tools.actions import (
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.evaluation import (
+    global_tool_errors,
+    OUTPUT_PARAMETER_JSON_NAME,
+)
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
@@ -2734,6 +2737,10 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         pass
 
+    def output_parameter_json(self, out_data: OutDataDictT, param_dict) -> tuple[str, str] | None:
+        """Return the compute-side output path to seed with JSON parameters, and that JSON."""
+        return None
+
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: str | None = None):
         pass
 
@@ -3244,9 +3251,7 @@ class OutputParameterJSONTool(Tool):
                 rval[key] = str(value)
         return rval
 
-    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
-        if param_dict is None:
-            param_dict = {}
+    def output_parameter_json(self, out_data: OutDataDictT, param_dict) -> tuple[str, str]:
         json_params = {}
         json_params["param_dict"] = self._prepare_json_param_dict(
             param_dict
@@ -3277,9 +3282,8 @@ class OutputParameterJSONTool(Tool):
             if json_filename is None:
                 json_filename = file_name
         if json_filename is None:
-            raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
-        with open(json_filename, "w") as out:
-            out.write(json.dumps(json_params))
+            raise Exception("Must call 'output_parameter_json' with 'out_data' containing at least one entry.")
+        return json_filename, json.dumps(json_params)
 
 
 class UserDefinedTool(Tool):
@@ -3477,21 +3481,7 @@ class DataSourceTool(OutputParameterJSONTool):
         data_type = param_dict.get("data_type")
         name = param_dict.get("name")
 
-        json_params = {}
-        json_params["param_dict"] = self._prepare_json_param_dict(
-            param_dict
-        )  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
-        json_params["output_data"] = []
-        json_params["job_config"] = dict(
-            GALAXY_DATATYPES_CONF_FILE=param_dict.get("GALAXY_DATATYPES_CONF_FILE"),
-            GALAXY_ROOT_DIR=param_dict.get("GALAXY_ROOT_DIR"),
-            TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file,
-        )
-        json_filename = None
         for out_name, data in out_data.items():
-            # use wrapped dataset to access certain values
-            wrapped_data = param_dict.get(out_name)
-            # allow multiple files to be created
             cur_base_param_name = f"GALAXY|{out_name}|"
             cur_name = param_dict.get(f"{cur_base_param_name}name", name)
             cur_dbkey = param_dict.get(f"{cur_base_param_name}dkey", dbkey)
@@ -3505,24 +3495,6 @@ class DataSourceTool(OutputParameterJSONTool):
                 data.dbkey = cur_dbkey
             if cur_data_type:
                 data.extension = cur_data_type
-            file_name = str(wrapped_data)
-            extra_files_path = str(wrapped_data.files_path)
-            assert data.dataset is not None
-            data_dict = dict(
-                out_data_name=out_name,
-                ext=data.ext,
-                dataset_id=data.dataset.id,
-                hda_id=data.id,
-                file_name=file_name,
-                extra_files_path=extra_files_path,
-            )
-            json_params["output_data"].append(data_dict)
-            if json_filename is None:
-                json_filename = file_name
-        if json_filename is None:
-            raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
-        with open(json_filename, "w") as out:
-            out.write(json.dumps(json_params))
 
 
 class AsyncDataSourceTool(DataSourceTool):
@@ -3660,21 +3632,32 @@ class InteractiveTool(Tool):
         self.__remove_interactivetool_by_job(job)
 
 
-def _data_manager_bundle_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
-    """Return the compute-side extra-files roots for bundle outputs.
+def _data_manager_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
+    """Return the compute-side extra-files roots for data manager outputs.
 
-    Data managers running with ``outputs_to_working_directory`` receive an
-    extra-files path derived from the job working directory, not the path the
-    handler later obtains from the object store. Reconstruct that same path
-    here, using the rules in ``OutputsToWorkingDirectoryPathRewriter``.
+    Data managers running with ``outputs_to_working_directory`` or on a remote
+    compute environment receive an extra-files path that differs from the path
+    the handler later obtains from the object store. The staged output parameter
+    JSON records the paths handed to the job. Jobs prepared without it fall back
+    to the rules in ``OutputsToWorkingDirectoryPathRewriter``.
     """
+    job_working_directory = JobWorkingDirectory(job, app.object_store).resolve()
+    staged_parameters = os.path.join(job_working_directory, "configs", OUTPUT_PARAMETER_JSON_NAME)
+    if os.path.exists(staged_parameters):
+        with open(staged_parameters) as f:
+            output_data = json.load(f)["output_data"]
+        return {
+            output["out_data_name"]: output["extra_files_path"]
+            for output in output_data
+            if out_data[output["out_data_name"]].ext == "data_manager_json"
+        }
+
     outputs_to_working_directory = asbool(
         job.get_destination_configuration({}, app.config, "outputs_to_working_directory", False)
     )
     if not outputs_to_working_directory:
         return {}
 
-    job_working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
     outputs_directory = None if Version(job.galaxy_version or "19.05") < Version("20.01") else "outputs"
     if outputs_directory is not None:
         job_working_directory = os.path.join(job_working_directory, outputs_directory)
@@ -3716,11 +3699,11 @@ class DataManagerTool(OutputParameterJSONTool):
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
         data_manager_mode = param_dict.get("__data_manager_mode", "populate")
         if data_manager_mode == "populate":
-            data_manager.process_result(out_data)
+            data_manager.process_result(out_data, _data_manager_source_extra_files_paths(app, job, out_data))
         elif data_manager_mode == "dry_run":
             pass
         elif data_manager_mode == "bundle":
-            source_extra_files_paths = _data_manager_bundle_source_extra_files_paths(app, job, out_data)
+            source_extra_files_paths = _data_manager_source_extra_files_paths(app, job, out_data)
             for bundle_path, dataset in data_manager.write_bundle(out_data, source_extra_files_paths).items():
                 hda = cast(HistoryDatasetAssociation, dataset)
                 assert hda.dataset is not None

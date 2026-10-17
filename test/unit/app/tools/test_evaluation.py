@@ -376,3 +376,6 @@ class MockTool:
 
     def exec_before_job(self, *args, **kwargs):
         pass
+
+    def output_parameter_json(self, *args, **kwargs):
+        return None

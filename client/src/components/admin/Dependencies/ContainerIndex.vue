@@ -112,6 +112,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BForm, BRow } from "bootstrap-vue";
+import { reactive } from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -181,7 +182,7 @@ export default {
     },
     computed: {
         items: function () {
-            return this.resolutions
+            const items = this.resolutions
                 .filter((resolution) => {
                     if (this.filterResolution == "unresolved" && resolution.status.dependency_type != null) {
                         return false;
@@ -216,6 +217,8 @@ export default {
                         _showDetails: false,
                     };
                 });
+            // Reactive rows, so ticking a row's checkbox re-renders it and updates the selection.
+            return reactive(items);
         },
     },
     watch: {

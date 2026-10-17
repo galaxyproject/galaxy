@@ -2861,6 +2861,19 @@ class BaseWorkflowPopulator(BasePopulator):
         invocation_response = self.invoke_workflow_raw(workflow_id, request)
         return invocation_response
 
+    def invoke_single_input_workflow_raw(self, history_id: str, src: str, input_id: str) -> Response:
+        """Invoke a step-less workflow whose only input, ``input1``, is the referenced dataset or collection."""
+        input_type = "collection" if src == "hdca" else "data"
+        workflow_id = self.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  input1: {input_type}
+steps: []
+""")
+        return self.invoke_workflow(
+            workflow_id, history_id=history_id, inputs={"input1": {"src": src, "id": input_id}}, inputs_by="name"
+        )
+
     def invoke_workflow_and_assert_ok(
         self,
         workflow_id: str,

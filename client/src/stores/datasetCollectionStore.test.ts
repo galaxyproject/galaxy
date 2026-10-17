@@ -1,15 +1,20 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HDCADetailed, HDCASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { MAX_RETRIES } from "@/utils/simple-error";
 
 import { useDatasetCollectionStore } from "./datasetCollectionStore";
 
 const { server, http } = useServerMock();
 
 const fetchSpy = vi.fn();
+
+const RETRY_BACKOFF_BASE_MS = 2000;
+const RETRY_BACKOFF_CAP_MS = 30_000;
 
 describe("useDatasetCollectionStore", () => {
     beforeEach(() => {
@@ -98,6 +103,91 @@ describe("useDatasetCollectionStore", () => {
         store.getDetailedCollection("1");
         await flushPromises();
         expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("useDatasetCollectionStore load errors", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        vi.useFakeTimers();
+        // Lowest jitter: the first backoff is RETRY_BACKOFF_BASE_MS / 2.
+        vi.spyOn(Math, "random").mockReturnValue(0);
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    it("waits out a backoff before refetching a collection after a retryable error", async () => {
+        let requests = 0;
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}", ({ response }) => {
+                requests += 1;
+                return response("5XX").json({ err_msg: "Service Unavailable", err_code: 0 }, { status: 503 });
+            }),
+        );
+        const store = useDatasetCollectionStore();
+
+        store.getCollection("hdca-1");
+        await flushPromises();
+        expect(requests).toBe(1);
+
+        store.getCollection("hdca-1");
+        store.getDetailedCollection("hdca-1");
+        await flushPromises();
+        expect(requests).toBe(1);
+
+        await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_BASE_MS / 2);
+        store.getDetailedCollection("hdca-1");
+        await flushPromises();
+        expect(requests).toBe(2);
+    });
+
+    it("waits out Retry-After before refetching a collection", async () => {
+        let requests = 0;
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}", ({ response }) => {
+                requests += 1;
+                return response("5XX").json(
+                    { err_msg: "Service Unavailable", err_code: 0 },
+                    { status: 503, headers: { "Retry-After": "10" } },
+                );
+            }),
+        );
+        const store = useDatasetCollectionStore();
+
+        store.getDetailedCollection("hdca-1");
+        await flushPromises();
+        await vi.advanceTimersByTimeAsync(9_999);
+        store.getDetailedCollection("hdca-1");
+        await flushPromises();
+        expect(requests).toBe(1);
+
+        await vi.advanceTimersByTimeAsync(1);
+        store.getDetailedCollection("hdca-1");
+        await flushPromises();
+        expect(requests).toBe(2);
+    });
+
+    it("keeps a failed collection fetch out of the elements state of a collection with the same key", async () => {
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}", ({ response }) =>
+                response("5XX").json({ err_msg: "Service Unavailable", err_code: 0 }, { status: 503 }),
+            ),
+        );
+        const store = useDatasetCollectionStore();
+        const elementsStore = useCollectionElementsStore();
+        // Encoded HDCA and dataset collection ids share one id space, so they can coincide.
+        const otherCollection = { ...mockSummaryCollection("other"), collection_id: "shared-id" };
+
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            store.getDetailedCollection("shared-id");
+            await flushPromises();
+            expect(elementsStore.isLoadingCollectionElements(otherCollection)).toBe(false);
+            await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
+        }
+        expect(elementsStore.getLoadingCollectionElementsError(otherCollection)).toBe(false);
     });
 });
 
