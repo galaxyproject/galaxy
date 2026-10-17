@@ -2354,3 +2354,21 @@ class TestNotebookWorkflowExtractionReport(
             page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[out_id])
             self._assert_status_code_is(self._put(f"pages/{page['id']}/publish", json=True), 200)
             self._assert_other_user_extraction_from_page_forbidden(page["id"])
+
+    @skip_without_tool("cat1")
+    def test_failed_report_rewrite_creates_no_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, cat1_job_id = self._run_cat1(history_id)
+            # An HTML notebook skips markdown validation on save; its fence fails the report rewrite.
+            page = self.dataset_populator.new_history_page(
+                history_id, content="```python\nprint(1)\n```\n", content_format="html"
+            )
+            before = self._workflow_count()
+            response = self._post(
+                "workflows/extract",
+                {"workflow_name": "bad report", "job_ids": [cat1_job_id], "from_page_id": page["id"]},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            assert "Unsupported fenced block type" in response.json()["err_msg"], response.text
+            assert self._workflow_count() == before
