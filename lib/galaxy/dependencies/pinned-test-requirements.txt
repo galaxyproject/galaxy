@@ -77,7 +77,7 @@ markupsafe==3.0.3
 matplotlib==3.10.9
 mdurl==0.1.2
 mirakuru==3.0.2
-mistune==3.2.1
+mistune==3.3.3
 msgpack==1.1.2
 multidict==6.7.1
 mypy==2.1.0
@@ -147,7 +147,7 @@ rpds-py==0.30.0
 ruamel-yaml==0.19.1
 rucio-clients==40.1.2
 s3transfer==0.17.0
-schema-salad==8.9.20260417192335
+schema-salad==8.10.20260825112551
 scipy==1.15.3 ; python_full_version < '3.11'
 scipy==1.17.1 ; python_full_version >= '3.11'
 selenium==4.44.0

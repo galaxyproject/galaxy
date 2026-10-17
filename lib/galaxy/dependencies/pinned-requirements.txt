@@ -105,7 +105,7 @@ groq==1.2.0
 grpcio==1.80.0
 grpcio-status==1.80.0
 gunicorn==26.0.0
-gxformat2==0.27.0
+gxformat2==0.28.0
 h11==0.16.0
 h5grove==4.0.0
 h5py==3.16.0
@@ -153,7 +153,7 @@ mcp==1.27.1
 mdurl==0.1.2
 mercurial==7.2.2
 mistralai==2.4.5
-mistune==3.2.1
+mistune==3.3.3
 more-itertools==11.0.2
 mrcfile==1.5.4
 msal==1.36.0
@@ -256,7 +256,7 @@ rpds-py==0.30.0
 ruamel-yaml==0.19.1
 s3fs==2026.4.0
 s3transfer==0.17.0
-schema-salad==8.9.20260417192335
+schema-salad==8.10.20260825112551
 secretstorage==3.5.0 ; sys_platform == 'linux'
 setuptools==81.0.0
 shellingham==1.5.4
