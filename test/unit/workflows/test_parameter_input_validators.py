@@ -192,6 +192,24 @@ def test_invalid_validators_rejected_at_import(validators):
         import_input("integer", validators)
 
 
+@pytest.mark.parametrize(
+    "parameter_type,validator_type,validator",
+    [
+        ("text", "in_range", RANGE),
+        ("integer", "regex", REGEX),
+        ("directory_uri", "in_range", RANGE),
+        ("float", "length", {"type": "length", "min": 2}),
+    ],
+)
+def test_validator_incompatible_with_parameter_type_rejected_at_import(parameter_type, validator_type, validator):
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        import_input(parameter_type, [validator])
+    assert str(exc_info.value) == (
+        f"Invalid validator on workflow parameter input 'p': "
+        f"validator type '{validator_type}' cannot be used on a {parameter_type} input"
+    )
+
+
 def test_unsafe_hidden_validator_rejected_at_save():
     unsafe = [{"type": "metadata", "check": ["dbkey"]}]
     message = (

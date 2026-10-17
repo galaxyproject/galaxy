@@ -1984,7 +1984,7 @@ class InputParameterModule(WorkflowModule):
         step.type = self.type
         tool_inputs = self._parse_state_into_dict()
         try:
-            check_validators(tool_inputs.get("validators", []))
+            check_validators(tool_inputs["parameter_type"], tool_inputs.get("validators", []))
         except ValueError as e:
             label = f"'{self.label}'" if self.label else "(unlabeled)"
             raise exceptions.RequestParameterInvalidException(

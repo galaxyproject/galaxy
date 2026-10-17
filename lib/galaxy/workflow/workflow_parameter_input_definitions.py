@@ -12,7 +12,10 @@ from pydantic import ValidationError
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util.parser.parameter_validators import parse_dict_validators
-from galaxy.tool_util_models.parameter_validators import DiscriminatedAnyValidatorModel
+from galaxy.tool_util_models.parameter_validators import (
+    DiscriminatedAnyValidatorModel,
+    PARAMETER_VALIDATOR_TYPE_COMPATIBILITY,
+)
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     ColorToolParameter,
@@ -153,16 +156,30 @@ def validators_from_form(parameter_definition: dict[str, Any]) -> list[dict[str,
     return validators
 
 
-def check_validators(validators: list[dict[str, Any]]) -> None:
+# Validator types that apply to each workflow parameter type, as for the matching tool parameter.
+WORKFLOW_PARAMETER_VALIDATOR_TYPES = {
+    "text": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["text"],
+    "directory_uri": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["text"],
+    "integer": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["integer"],
+    "float": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["float"],
+}
+
+
+def check_validators(parameter_type: str, validators: list[dict[str, Any]]) -> None:
     """Build ``validators`` as a workflow run would; raise ValueError describing what could not be built."""
     try:
-        to_validators(None, parse_dict_validators(validators, trusted=False))
+        validator_models = parse_dict_validators(validators, trusted=False)
+        to_validators(None, validator_models)
     except ValidationError as e:
         # ctx["error"] is a model validator's own message, without pydantic's "Value error, " prefix
         problems = [str(error.get("ctx", {}).get("error", error["msg"])) for error in e.errors()]
         raise ValueError(", ".join(problems)) from e
     except AssertionError as e:
         raise ValueError(str(e)) from e
+    allowed_types = WORKFLOW_PARAMETER_VALIDATOR_TYPES.get(parameter_type)
+    for validator_model in validator_models:
+        if allowed_types is not None and validator_model.type not in allowed_types:
+            raise ValueError(f"validator type '{validator_model.type}' cannot be used on a {parameter_type} input")
 
 
 def _form_can_show(parameter_type: str, validator: dict[str, Any]) -> bool:
