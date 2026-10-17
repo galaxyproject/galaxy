@@ -152,7 +152,7 @@ class JobLock(BaseModel):
     active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
 
 
-def get_path_key(path_tuple: tuple):
+def get_path_key(path_tuple: tuple[str | int, ...]) -> str:
     path_key = ""
     tuple_elements = len(path_tuple)
     for i, p in enumerate(path_tuple):
@@ -167,7 +167,7 @@ def get_path_key(path_tuple: tuple):
         if path_key:
             path_key = f"{path_key}{sep}{p}"
         else:
-            path_key = p
+            path_key = str(p)
     return path_key
 
 
@@ -192,6 +192,55 @@ T = TypeVar("T")
 def safe_aliased(model_class: type[T], name: str) -> type[T]:
     """Create an aliased model class with a unique name."""
     return aliased(model_class, name=safe_label_or_none(name))
+
+
+def has_same_hash(
+    stmt: "Select[tuple[int]]",
+    a: type[model.HistoryDatasetAssociation],
+    b: type[model.HistoryDatasetAssociation],
+    b_id: int,
+) -> "Select[tuple[int]]":
+    """Join ``b`` (the single HDA identified by ``b_id``) to ``stmt``, then restrict ``a`` to
+    either that exact dataset or one sharing its ``DatasetHash.FINAL`` hash.
+
+    Only ``DatasetHash`` rows tagged ``DatasetHash.FINAL`` are considered authoritative to match
+    on (see that attribute for why); any other row (``None`` for an untagged primary-file hash,
+    or a named extra file's hash) is ignored here.
+
+    The set of datasets sharing ``b_id``'s ``FINAL`` hash is computed once from the literal
+    ``b_id``, uncorrelated with ``a``, rather than as a join chain from ``a``'s side: joining
+    historical candidates to every dataset sharing a given hash before filtering down to the one
+    requested HDA makes the join fan out on any hash shared by many datasets (e.g. empty files),
+    since the planner cannot push the single-row filter through the outer joins.
+    """
+    matching_hda = aliased(model.HistoryDatasetAssociation)
+    a_hash = aliased(model.DatasetHash)
+    b_hash = aliased(model.DatasetHash)
+    matching_dataset_ids = (
+        select(b_hash.dataset_id)
+        .select_from(matching_hda)
+        .join(
+            a_hash,
+            and_(a_hash.dataset_id == matching_hda.dataset_id, a_hash.extra_files_path == model.DatasetHash.FINAL),
+        )
+        .join(
+            b_hash,
+            and_(
+                b_hash.hash_function == a_hash.hash_function,
+                b_hash.hash_value == a_hash.hash_value,
+                b_hash.extra_files_path == model.DatasetHash.FINAL,
+            ),
+        )
+        .where(matching_hda.id == b_id)
+    )
+    stmt = stmt.join(b, b.id == b_id)
+    stmt = stmt.where(
+        or_(
+            a.dataset_id == b.dataset_id,  # Direct dataset match
+            a.dataset_id.in_(matching_dataset_ids),  # Hash match
+        )
+    )
+    return stmt
 
 
 class JobManager:
@@ -489,13 +538,13 @@ class JobSearch:
         require_name_match: bool = True,
     ) -> Job | None:
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
-        input_data: dict[Any, list[dict[str, Any]]] = defaultdict(list)
+        input_data: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
-        def populate_input_data_input_id(path: tuple, key, value) -> tuple[Any, Any]:
+        def populate_input_data_input_id(path: tuple[str | int, ...], key, value) -> tuple[Any, Any]:
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
             if key == "id":
                 path_key = get_path_key(path[:-2])
-                current_case = param_dump
+                current_case: Any = param_dump
                 for p in path:
                     current_case = current_case[p]
                 src = current_case.get("src")
@@ -504,13 +553,17 @@ class JobSearch:
                     # TODO: dispatch on tool parameter type instead of values,
                     # maybe with tool state variant
                     return key, value
-                current_case = param
+                current_param: Any = param
                 for i, p in enumerate(path):
                     if p == "values" and i == len(path) - 2:
                         continue
-                    if isinstance(current_case, (list, dict)):
-                        current_case = current_case[p]
-                identifier = getattr(current_case, "element_identifier", None)
+                    if isinstance(current_param, list):
+                        # A list level's path element is always its (int) index.
+                        assert isinstance(p, int)
+                        current_param = current_param[p]
+                    elif isinstance(current_param, dict):
+                        current_param = current_param[p]
+                identifier = getattr(current_param, "element_identifier", None)
                 input_data[path_key].append(
                     {
                         "src": src,
@@ -539,7 +592,7 @@ class JobSearch:
         tool_id: str,
         tool_version: str | None,
         user: model.User,
-        input_data: dict[Any, list[dict[str, Any]]],
+        input_data: dict[str, list[dict[str, Any]]],
         job_state: JobStatesT | None,
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
@@ -814,8 +867,8 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
         used_ids: list["Label[int] | Label[int | None]"],
-        k,
-        v,
+        k: str,
+        v: int,
         identifier,
         value_index: int,
         require_name_match: bool = True,
@@ -830,7 +883,8 @@ class JobSearch:
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
+        stmt = stmt.join(b, a.dataset_id == b.id)
+        stmt = has_same_hash(stmt, b, c, v)
         name_condition = []
         hda_history_join_conditions = [
             e.history_dataset_association_id == b.id,
@@ -881,8 +935,8 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
         used_ids: list["Label[int] | Label[int | None]"],
-        k,
-        v,
+        k: str,
+        v: int,
         value_index: int,
     ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputLibraryDatasetAssociation)
@@ -918,8 +972,8 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
         used_ids: list["Label[int] | Label[int | None]"],
-        k,
-        v,
+        k: str,
+        v: int,
         user_id: int,
         value_index: int,
     ) -> "Select[tuple[int]]":

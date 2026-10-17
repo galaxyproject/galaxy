@@ -12,6 +12,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 from starlette.datastructures import URL
@@ -284,7 +285,21 @@ class ComputeDatasetHashPayload(Model):
         default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
     )
     extra_files_path: str | None = Field(default=None, description="If set, extra files path to compute a hash for.")
+    final: bool = Field(
+        default=False,
+        description=(
+            "If set, mark the computed hash as the authoritative value to match this dataset on for "
+            "job-cache purposes. Mutually exclusive with `extra_files_path`, and currently only supported "
+            "for datasets with no extra files."
+        ),
+    )
     model_config = ConfigDict(use_enum_values=True)
+
+    @model_validator(mode="after")
+    def validate_final(self) -> "ComputeDatasetHashPayload":
+        if self.final and self.extra_files_path is not None:
+            raise ValueError("Cannot request `final` together with `extra_files_path`.")
+        return self
 
 
 class UpdateObjectStoreIdPayload(Model):
@@ -533,10 +548,26 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         payload: ComputeDatasetHashPayload,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
     ) -> AsyncTaskResultSummary:
+        if payload.final:
+            extra_files_path: str | None = model.DatasetHash.FINAL
+        else:
+            if payload.extra_files_path == model.DatasetHash.FINAL:
+                raise galaxy_exceptions.RequestParameterInvalidException(
+                    f"extra_files_path {payload.extra_files_path!r} is reserved and cannot be requested;"
+                    " use `final` instead."
+                )
+            extra_files_path = payload.extra_files_path
         dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        if payload.final and dataset_instance.extra_files_path_exists():
+            # TODO: lift this restriction once a later phase of the plan at
+            # https://github.com/galaxyproject/galaxy/issues/21676#issuecomment-5564696076 can compute a
+            # FINAL hash that actually covers a composite dataset's extra files too.
+            raise galaxy_exceptions.RequestParameterInvalidException(
+                "Cannot compute the final hash for a dataset with extra files yet."
+            )
         request = ComputeDatasetHashTaskRequest(
             dataset_id=dataset_instance.dataset.id,
-            extra_files_path=payload.extra_files_path,
+            extra_files_path=extra_files_path,
             hash_function=payload.hash_function,
             user=trans.async_request_user,
         )

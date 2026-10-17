@@ -35,6 +35,7 @@ from typing import (
     Any,
     cast,
     ClassVar,
+    Final,
     Generic,
     Literal,
     NamedTuple,
@@ -5415,6 +5416,24 @@ class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
 
 class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_hash"
+    __table_args__ = (
+        Index(
+            "ix_dataset_hash_extra_files_path_hash_function_hash_value",
+            "extra_files_path",
+            "hash_function",
+            "hash_value",
+            mysql_length={"extra_files_path": 200, "hash_function": 200, "hash_value": 200},
+        ),
+    )
+
+    #: Reserved ``extra_files_path`` value marking the single authoritative hash to match a
+    #: dataset on for job-cache purposes, as opposed to a hash of one specific file within it
+    #: (``None`` for the primary file, or a real relative path for one named extra file). Chosen
+    #: so it can never collide with a genuine relative file path: it normalizes to a parent
+    #: directory reference, which ``galaxy.util.path.safe_relpath()`` already rejects as unsafe,
+    #: so no legitimate extra file path can ever equal it. (A null byte would also work for this
+    #: purpose, but PostgreSQL's ``TEXT``/``VARCHAR`` columns cannot store one at all.)
+    FINAL: Final = "../FINAL"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
