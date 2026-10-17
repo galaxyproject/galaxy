@@ -73,7 +73,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import (
     EMBED_DIRECTIVE_REGEX,
     GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
-    is_quotable_argument_value,
     validate_galaxy_markdown,
 )
 
@@ -1272,16 +1271,22 @@ def populate_invocation_markdown(trans: ProvidesHistoryContext, invocation, work
     return galaxy_markdown
 
 
-def _invocation_section(kind: Literal["input", "output"], content_type: str, label: str | None) -> str:
-    """One expanded ``invocation_inputs``/``invocation_outputs`` section, or nothing for a label
-    that is absent or has no quoted directive form."""
-    if not label or not is_quotable_argument_value(label):
-        return ""
-    if content_type == "dataset":
-        title, directive = "Dataset", "history_dataset_display"
+def _invocation_section(kind: Literal["input", "output"], assoc: Any, label: str | None) -> str:
+    """One expanded ``invocation_inputs``/``invocation_outputs`` section displaying the invocation
+    association's dataset or collection by id, or nothing for an unlabeled or empty association."""
+    if assoc.history_content_type == "dataset":
+        title, directive, content = "Dataset", "history_dataset_display(history_dataset_id", assoc.dataset
     else:
-        title, directive = "Dataset Collection", "history_dataset_collection_display"
-    return f'#### {kind.capitalize()} {title}: {label}\n```galaxy\n{directive}({kind}="{label}")\n```\n'
+        title, directive, content = (
+            "Dataset Collection",
+            "history_dataset_collection_display(history_dataset_collection_id",
+            assoc.dataset_collection,
+        )
+    if not label or content is None:
+        return ""
+    # The label only titles the section; keep it on the heading line.
+    heading = " ".join(label.splitlines())
+    return f"#### {kind.capitalize()} {title}: {heading}\n```galaxy\n{directive}={content.id})\n```\n"
 
 
 def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
@@ -1318,16 +1323,12 @@ def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
         if container == "invocation_outputs":
             section_markdown = ""
             for output_assoc in invocation.output_associations:
-                section_markdown += _invocation_section(
-                    "output", output_assoc.history_content_type, output_assoc.workflow_output.label
-                )
+                section_markdown += _invocation_section("output", output_assoc, output_assoc.workflow_output.label)
             return section_markdown, True
         elif container == "invocation_inputs":
             section_markdown = ""
             for input_assoc in invocation.input_associations:
-                section_markdown += _invocation_section(
-                    "input", input_assoc.history_content_type, input_assoc.workflow_step.label
-                )
+                section_markdown += _invocation_section("input", input_assoc, input_assoc.workflow_step.label)
             return section_markdown, True
         elif container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)

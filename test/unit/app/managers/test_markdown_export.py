@@ -413,6 +413,38 @@ tool_stdout(implicit_collection_jobs_id=7)
                 result = self._to_basic(example)
         assert "SECRET stdout" not in result
 
+    def test_invocation_sections_render_contents(self):
+        hda = self._new_hda(contents="MooCow")
+        hda.extension = "txt"
+        hdca = model.HistoryDatasetCollectionAssociation()
+        hdca.name = "cool name"
+        hdca.collection = self._new_pair_collection()
+        hdca.id = 1
+        self.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
+        invocation = self._new_invocation()
+        input_step = model.WorkflowStep()
+        input_step.label = 'my "reads"'
+        invocation.add_input(hda, step=input_step)
+        output_step = model.WorkflowStep()
+        invocation.add_output(model.WorkflowOutput(output_step, label="pairs"), output_step, hdca)
+        self.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
+        example = """# Example
+```galaxy
+invocation_inputs(invocation_id=1)
+```
+
+```galaxy
+invocation_outputs(invocation_id=1)
+```
+"""
+        with self._expect_get_hda(hda):
+            result = self._to_basic(example)
+        assert '#### Input Dataset: my "reads"\n' in result
+        assert "**Contents:**\n\n    MooCow\n\n" in result
+        assert "#### Output Dataset Collection: pairs\n" in result
+        assert "**Dataset Collection:** cool name\n" in result
+        assert "```galaxy" not in result
+
     def _to_basic(self, example):
         return to_basic_markdown(self.trans, example)
 

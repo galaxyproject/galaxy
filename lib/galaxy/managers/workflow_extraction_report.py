@@ -96,7 +96,8 @@ def _instance_argument(directive: str) -> str | None:
 def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
     """Drop, with a warning, any directive, inline embed or visualization cell still naming a Galaxy object.
 
-    Label-form embeds and cells do not render in invocation reports yet, so they are dropped, not rewritten.
+    Invocation reports render label-form inline embeds only for images, and label-form visualization cells not at
+    all, so these are dropped, not rewritten.
     """
     warnings: list[str] = []
 
