@@ -597,6 +597,15 @@ describe("FormData", () => {
                     alert: "dataset collection has incompatible column definitions for this parameter.",
                 });
             });
+
+            it("maps a dropped list:list over it without checking column definitions, like the server", async () => {
+                const value = await dropOnCollectionInput(["sample_sheet"], droppedHdca("list:list"), props);
+                expect(value).toEqual({
+                    batch: true,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: "sample_sheet", src: "hdca" }],
+                });
+            });
         });
     });
 

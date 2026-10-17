@@ -696,8 +696,9 @@ function canAcceptSrc(
             );
             return false;
         }
-        // Check column_definitions compatibility for sample sheets
+        // like the server, only directly used sample sheets must have compatible column_definitions
         if (
+            match.mapOverType === null &&
             props.extendedCollectionType?.columnDefinitions &&
             !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
         ) {
