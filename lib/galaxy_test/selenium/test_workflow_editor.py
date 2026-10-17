@@ -171,14 +171,10 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # follow up with a bigger PR to just make this (4 <= value) right? need to set default message
-        # in parameter validators
-        assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
+        input_element.send_keys("3", Keys.TAB)
+        alert = workflow_run.simplified_input_alert(label=parameter_name).wait_for_text()
+        assert "3 is out of range! (3 < 4)" in alert, alert
+        assert input_element.get_attribute("value") == "4"
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
@@ -196,14 +192,10 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3.2")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # see message in test test_int_parameter_minimum_validation about making this a little more human
-        # friendly.
-        assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
+        input_element.send_keys("3.2", Keys.TAB)
+        alert = workflow_run.simplified_input_alert(label=parameter_name).wait_for_text()
+        assert "3.2 is out of range! (3.2 > 3.14)" in alert, alert
+        assert input_element.get_attribute("value") == "3.14"
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
