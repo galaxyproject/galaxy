@@ -36,6 +36,7 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         checkbox_a = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_a).wait_for_present()
         checkbox_b = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_b).wait_for_present()
         self.components.workflow_extract.output_star_active_for_job(job_id=job_a).wait_for_present()
+        self.extract_workflow_wait_for_output_previews()
         self.screenshot("notebook_extract_seeded_form")
 
         # Without from_page seeding the form would check both runs.
@@ -48,6 +49,11 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         star_a = self.components.workflow_extract.output_star_for_job(job_id=job_a).wait_for_present()
         assert star_a.get_attribute("aria-disabled") == "true", "Expected the report-used output's star locked"
         assert "notebook report uses this output" in (star_a.get_attribute("data-title") or "")
+        self.hover_over(star_a)
+        tooltip = self.components._.shown_tooltip.wait_for_visible()
+        self.screenshot("notebook_extract_report_lock_tooltip")
+        assert "notebook report uses this output" in tooltip.text, tooltip.text
+        self.hover_away()
 
         workflow_name = "Selenium Notebook Seeded"
         self.extract_workflow_name_and_submit(workflow_name)
@@ -72,6 +78,7 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         # The summary loads async; wait for the settled seeded state before capturing.
         mapped_card = self.components.workflow_extract.mapped_tool_card.wait_for_present()
         self.components.workflow_extract.all_active_output_stars.wait_for_present()
+        self.extract_workflow_wait_for_output_previews()
         self.screenshot("notebook_extract_seeded_mapped_form")
 
         assert self.count_job_checkboxes() == 2, "Expected mapped and cat1 tool cards to render"
