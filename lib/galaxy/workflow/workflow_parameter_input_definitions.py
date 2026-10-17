@@ -1,6 +1,7 @@
 import json
 from typing import (
     Any,
+    cast,
     Literal,
     NamedTuple,
     Optional,
@@ -15,6 +16,7 @@ from galaxy.tool_util.parser.parameter_validators import parse_dict_validators
 from galaxy.tool_util_models.parameter_validators import (
     DiscriminatedAnyValidatorModel,
     PARAMETER_VALIDATOR_TYPE_COMPATIBILITY,
+    ValidatorType,
 )
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
@@ -157,11 +159,13 @@ def validators_from_form(parameter_definition: dict[str, Any]) -> list[dict[str,
 
 
 # Validator types that apply to each workflow parameter type, as for the matching tool parameter.
-WORKFLOW_PARAMETER_VALIDATOR_TYPES = {
+WORKFLOW_PARAMETER_VALIDATOR_TYPES: dict[INPUT_PARAMETER_TYPES, list[ValidatorType]] = {
     "text": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["text"],
     "directory_uri": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["text"],
     "integer": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["integer"],
     "float": PARAMETER_VALIDATOR_TYPE_COMPATIBILITY["float"],
+    "boolean": [],
+    "color": [],
 }
 
 
@@ -176,10 +180,13 @@ def check_validators(parameter_type: str, validators: list[dict[str, Any]]) -> N
         raise ValueError(", ".join(problems)) from e
     except AssertionError as e:
         raise ValueError(str(e)) from e
-    allowed_types = WORKFLOW_PARAMETER_VALIDATOR_TYPES.get(parameter_type)
+    allowed_types = WORKFLOW_PARAMETER_VALIDATOR_TYPES[cast(INPUT_PARAMETER_TYPES, parameter_type)]
     for validator_model in validator_models:
-        if allowed_types is not None and validator_model.type not in allowed_types:
-            raise ValueError(f"validator type '{validator_model.type}' cannot be used on a {parameter_type} input")
+        if validator_model.type not in allowed_types:
+            allowed = ", ".join(allowed_types) if allowed_types else "none"
+            raise ValueError(
+                f"validator type '{validator_model.type}' cannot be used on a {parameter_type} input (allowed: {allowed})"
+            )
 
 
 def _form_can_show(parameter_type: str, validator: dict[str, Any]) -> bool:

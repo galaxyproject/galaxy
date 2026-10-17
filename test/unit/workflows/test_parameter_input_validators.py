@@ -199,15 +199,29 @@ def test_invalid_validators_rejected_at_import(validators):
         ("integer", "regex", REGEX),
         ("directory_uri", "in_range", RANGE),
         ("float", "length", {"type": "length", "min": 2}),
+        ("boolean", "length", {"type": "length", "min": 2}),
+        ("color", "regex", REGEX),
     ],
 )
 def test_validator_incompatible_with_parameter_type_rejected_at_import(parameter_type, validator_type, validator):
     with pytest.raises(RequestParameterInvalidException) as exc_info:
         import_input(parameter_type, [validator])
-    assert str(exc_info.value) == (
+    message = str(exc_info.value)
+    assert message.startswith(
         f"Invalid validator on workflow parameter input 'p': "
-        f"validator type '{validator_type}' cannot be used on a {parameter_type} input"
+        f"validator type '{validator_type}' cannot be used on a {parameter_type} input (allowed: "
     )
+
+
+def test_incompatible_validator_error_lists_allowed_types():
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        import_input("boolean", [{"type": "length", "min": 2}])
+    assert str(exc_info.value).endswith("cannot be used on a boolean input (allowed: none)")
+
+
+def test_compatible_non_form_validator_accepted_on_directory_uri():
+    length = {"type": "length", "min": 2, "negate": False}
+    assert import_input("directory_uri", [length]).tool_inputs["validators"] == [length]
 
 
 def test_unsafe_hidden_validator_rejected_at_save():
