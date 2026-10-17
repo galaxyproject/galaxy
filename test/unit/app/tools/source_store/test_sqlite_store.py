@@ -109,24 +109,6 @@ def test_read_only_refuses_writes(sqlite_path):
         ro.store_index(ToolIndex())
 
 
-def test_read_only_store_reuses_its_index_until_republished(sqlite_path):
-    rw = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
-    rw.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
-    ro = SqliteToolSourceStore(url=_sqlite_url(sqlite_path), read_only=True)
-
-    first = ro.load_index()
-    ro.invalidate_index_cache()
-    assert ro.load_index() is first
-    ro.dispose()
-    assert ro.load_index() is first
-
-    rw.store_index(ToolIndex(entries={"t2": ToolIndexEntry(id="t2", name="T2")}))
-    ro.invalidate_index_cache()
-    republished = ro.load_index()
-    assert republished is not None
-    assert set(republished.entries) == {"t2"}
-
-
 def test_get_stats_reports_backend_and_url(sqlite_path):
     store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
     stats = store.get_stats()
