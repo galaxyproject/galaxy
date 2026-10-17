@@ -175,7 +175,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         tool_state = json.loads(self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["tool_state"])
         added = {"type": "regex", "expression": "^good", "message": "must start with good", "negate": False}
-        assert tool_state["validators"] == [added, negated], tool_state["validators"]
+        assert tool_state["validators"] == [negated, added], tool_state["validators"]
 
     @selenium_test
     def test_int_parameter_minimum_validation(self):
