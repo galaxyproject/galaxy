@@ -68,7 +68,11 @@ function fetchHistories(invocations: Array<WorkflowInvocation>) {
     invocations.forEach((invocation) => {
         workflowIds.add(invocation.workflow_id);
     });
-    workflowIds.forEach((workflow_id) => workflowStore.fetchWorkflowForInstanceIdCached(workflow_id));
+    workflowIds.forEach((workflow_id) =>
+        workflowStore
+            .fetchWorkflowForInstanceIdCached(workflow_id)
+            .catch((e) => console.warn(`Failed to load workflow ${workflow_id}`, e)),
+    );
 }
 
 /**
