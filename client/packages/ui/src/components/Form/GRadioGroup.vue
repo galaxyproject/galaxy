@@ -151,12 +151,11 @@ provide(radioGroupKey, {
 .g-radio-group-options {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-1, 0.25rem) var(--spacing-4, 1rem);
+    gap: 0 var(--spacing-4, 1rem);
 
     &.g-stacked {
         flex-direction: column;
         align-items: flex-start;
-        row-gap: 0;
     }
 
     // Joined like GButtonGroup: square inner corners, no doubled borders
