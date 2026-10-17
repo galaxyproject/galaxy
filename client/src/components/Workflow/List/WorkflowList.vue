@@ -55,6 +55,7 @@ const fetching = ref(true);
 // My workflows are filtered by owner, so keep loading until the user is known
 const loading = computed(() => fetching.value || (props.activeList === "my" && !userStore.currentUser));
 const overlay = ref(false);
+let loadGeneration = 0;
 const filterText = ref("");
 const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
@@ -175,6 +176,8 @@ function onToggleDeleted() {
 }
 
 async function load(overlayLoading = false, silent = false) {
+    const thisGeneration = ++loadGeneration;
+
     if (!silent) {
         if (overlayLoading) {
             overlay.value = true;
@@ -213,14 +216,24 @@ async function load(overlayLoading = false, silent = false) {
             skipStepCounts: true,
         });
 
+        // a newer load started meanwhile, so this response is out of date
+        if (thisGeneration !== loadGeneration) {
+            return;
+        }
+
         workflowsFetched.value = data;
 
         totalWorkflows.value = totalMatches;
     } catch (e) {
+        if (thisGeneration !== loadGeneration) {
+            return;
+        }
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
-        overlay.value = false;
-        fetching.value = false;
+        if (thisGeneration === loadGeneration) {
+            overlay.value = false;
+            fetching.value = false;
+        }
     }
 }
 
