@@ -8365,6 +8365,40 @@ steps:
         option_values = {opt[1] for opt in options}
         assert option_values == {"--ex1", "ex2", "--ex3", "--ex4", "ex5"}
 
+    def test_numeric_input_bounds_reach_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(1, 5)
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        count_input = run_workflow["steps"][0]["inputs"][0]
+        assert (count_input["min"], count_input["max"]) == (1, 5)
+
+    def test_numeric_input_inverted_bounds_rejected_on_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.download_workflow_raw(workflow_id, style="run", history_id=history_id)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow input 'count' has a minimum (5) greater than its maximum (1)")
+
+    def test_numeric_input_inverted_bounds_flagged_in_editor(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
+        assert editor_steps["0"]["errors"] == "Workflow input 'count' has a minimum (5) greater than its maximum (1)."
+
+    def _upload_bounded_integer_workflow(self, minimum: int, maximum: int) -> str:
+        return self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  count:
+    type: int
+    tool_state:
+      validators:
+      - type: in_range
+        min: {minimum}
+        max: {maximum}
+        negate: false
+steps: []
+""")
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
