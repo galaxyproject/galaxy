@@ -57,7 +57,9 @@ def build_readme_files_dict(
         if use_disk_files:
             text = _read_readme_from_disk(relative_path_to_readme_file)
         else:
-            text = _read_readme_from_manifest(repository, changeset_revision, readme_file_name)
+            # Metadata paths are prefixed with the repository's location on disk.
+            path_in_repository = os.path.relpath(relative_path_to_readme_file, repository.repo_path())
+            text = _read_readme_from_manifest(repository, changeset_revision, path_in_repository)
         if text:
             readme_files_dict[readme_file_name] = _render_repository_readme(
                 app, encoded_repository_id, image_changeset_revision, readme_file_name, text
@@ -74,11 +76,11 @@ def _read_readme_from_disk(relative_path_to_readme_file: str) -> str | None:
         return None
 
 
-def _read_readme_from_manifest(repository: "Repository", changeset_revision: str, readme_file_name: str) -> str | None:
+def _read_readme_from_manifest(repository: "Repository", changeset_revision: str, readme_path: str) -> str | None:
     try:
-        data = get_file_data_from_manifest(readme_file_name, repository.hg_repo, changeset_revision)
+        data = get_file_data_from_manifest(readme_path, repository.hg_repo, changeset_revision)
     except Exception:
-        log.exception("Error reading README file '%s' from repository manifest", readme_file_name)
+        log.exception("Error reading README file '%s' from repository manifest", readme_path)
         return None
     if data is None:
         return None
