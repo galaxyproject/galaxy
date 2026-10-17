@@ -157,7 +157,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
     @selenium_test
     def test_int_parameter_minimum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "int_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -168,19 +167,19 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.components.tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("4")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3", Keys.TAB)
-        alert = workflow_run.simplified_input_alert(label=parameter_name).wait_for_text()
-        assert "3 is out of range! (3 < 4)" in alert, alert
-        assert input_element.get_attribute("value") == "4"
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3",
+            expected_alert="3 is out of range! (3 < 4)",
+            expected_value="4",
+            screenshot_name="workflow_run_int_parameter_below_minimum",
+        )
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_float_parameter_maximum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "float_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -189,13 +188,26 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.components.tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("3.14")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3.2", Keys.TAB)
-        alert = workflow_run.simplified_input_alert(label=parameter_name).wait_for_text()
-        assert "3.2 is out of range! (3.2 > 3.14)" in alert, alert
-        assert input_element.get_attribute("value") == "3.14"
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3.2",
+            expected_alert="3.2 is out of range! (3.2 > 3.14)",
+            expected_value="3.14",
+            screenshot_name="workflow_run_float_parameter_above_maximum",
+        )
+
+    def _workflow_run_assert_number_clamped(
+        self, workflow_name, label, entered, expected_alert, expected_value, screenshot_name
+    ):
+        workflow_run = self.components.workflow_run
+        self.workflow_run_with_name(workflow_name)
+        input_element = workflow_run.simplified_input(label=label).wait_for_and_click()
+        input_element.send_keys(entered, Keys.TAB)
+        alert = workflow_run.simplified_input_alert(label=label).wait_for_text()
+        self.screenshot(screenshot_name)
+        assert expected_alert in alert, alert
+        assert input_element.get_attribute("value") == expected_value
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
