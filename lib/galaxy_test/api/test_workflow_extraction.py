@@ -329,6 +329,21 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         )
         assert response.status_code == 400, response.text
 
+    @skip_without_tool("Grep1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_connects_implicitly_converted_input(self, history_id):
+        with open(self.test_data_resolver.get_filename("1.fastqsanger.gz"), "rb") as fh:
+            hda = self.dataset_populator.new_dataset(history_id, content=fh, file_type="fastqsanger.gz", wait=True)
+        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        downloaded = self._extract_and_download_workflow(
+            history_id, dataset_ids=[hda["hid"]], job_ids=[run["jobs"][0]["id"]]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        (grep_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        assert "input" in grep_step["input_connections"], grep_step
+        assert _connection_step_id(grep_step["input_connections"]["input"]) == input_step["id"], grep_step
+
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_udt_step_with_downstream_tool(self, history_id):
