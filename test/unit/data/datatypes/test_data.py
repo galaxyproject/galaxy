@@ -23,7 +23,6 @@ from galaxy.datatypes.interval import (
     Bed,
     BedStrict,
 )
-from galaxy.tools.parameters.grouping import Conditional
 from galaxy.util import galaxy_directory
 
 
@@ -39,7 +38,8 @@ def test_converter_parameters_with_resource_conditional(resource_context):
             "index": SimpleNamespace(name="index", type="data"),
             "optional": SimpleNamespace(name="optional", type="text", optional=True),
             "required": SimpleNamespace(name="required", type="text", optional=False),
-            "__job_resource": Conditional("__job_resource"),
+            # Input groups have a name and type but no optional attribute.
+            "__job_resource": SimpleNamespace(name="__job_resource", type="conditional"),
         }
     )
     context = None
