@@ -16,6 +16,7 @@ from galaxy_test.base.populators import (
 )
 from .framework import (
     managed_history,
+    playwright_only,
     retry_assertion_during_transitions,
     selenium_only,
     selenium_test,
@@ -381,6 +382,43 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
             ), f"Expected rerun form to display the pinned input '{first_hda['hid']}: ...', got '{text}'"
 
         assert_pinned_value_selected()
+
+    @playwright_only("Selenium's drag_and_drop does not dispatch dragenter, which form data drops require")
+    @selenium_test
+    def test_batch_input_labels_dropped_collection_elements(self):
+        """Every hidden collection element dragged into a batch input gets the
+        server's label, not only the first one."""
+        history_id = self.current_history_id()
+        collection_hids = []
+        forward_labels = []
+        for content in ("first\n", "second\n"):
+            response = self.dataset_collection_populator.create_pair_in_history(
+                history_id, contents=[("forward", content), ("reverse", "reverse\n")], wait=True
+            )
+            hdca = self.dataset_collection_populator.wait_for_fetched_collection(response)
+            collection_hids.append(hdca["hid"])
+            forward = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=hdca["elements"][0]["object"]["id"]
+            )
+            forward_labels.append(f"{forward['hid']}: (hidden) {forward['name']}")
+
+        self.home()
+        self.tool_open("cat1")
+        self.components.tool_form.parameter_data_input_multiple(parameter="input1").wait_for_and_click()
+        drop_target = self.components.tool_form.parameter_data_drop_target(parameter="input1")
+        for collection_hid in collection_hids:
+            collection_view = self.history_panel_expand_collection(collection_hid)
+            forward_element = collection_view.list_items.wait_for_visible()
+            self.drag_and_drop(forward_element, drop_target.wait_for_visible())
+            collection_view.back_to_history.wait_for_and_click()
+
+        @retry_assertion_during_transitions
+        def assert_server_labels():
+            tags = self.components.tool_form.parameter_data_selected_tag(parameter="input1").all()
+            assert [tag.text for tag in tags] == forward_labels
+
+        assert_server_labels()
+        self.screenshot("tool_form_batch_dropped_collection_elements")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test

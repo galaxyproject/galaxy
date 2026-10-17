@@ -16,6 +16,7 @@ def populate_model(
     other_values=None,
     options_pagination: Optional[OptionsPaginationT] = None,
     name_prefix: str = "",
+    incoming: dict[str, Any] | None = None,
 ):
     """
     Populates the tool model consumed by the client form builder.
@@ -24,8 +25,13 @@ def populate_model(
     ``|``-separated convention, e.g. ``cond|input1`` or ``rep_0|input1``) to a
     per-source pagination spec, e.g. ``{"hda": {"offset": 50, "limit": 50}}``.
     Passed through to data/data_collection parameter ``to_dict`` calls.
+
+    ``incoming`` is the flat request state keyed the same way. ``state_inputs``
+    keeps only the first value of a batch selection, so data parameters read
+    their raw value from it to label every selected dataset.
     """
     options_pagination = options_pagination or {}
+    incoming = incoming or {}
     other_values = ExpressionContext(state_inputs, other_values)
     for input_index, input in enumerate(inputs.values()):
         tool_dict = None
@@ -46,6 +52,7 @@ def populate_model(
                     other_values,
                     options_pagination=options_pagination,
                     name_prefix=f"{full_name}_{i}|",
+                    incoming=incoming,
                 )
         elif input.type == "conditional":
             tool_dict = input.to_dict(request_context)
@@ -70,6 +77,7 @@ def populate_model(
                         other_values,
                         options_pagination=options_pagination,
                         name_prefix=f"{full_name}|",
+                        incoming=incoming,
                     )
         elif input.type == "section":
             tool_dict = input.to_dict(request_context)
@@ -81,30 +89,29 @@ def populate_model(
                 other_values,
                 options_pagination=options_pagination,
                 name_prefix=f"{full_name}|",
+                incoming=incoming,
             )
         elif input.type == "upload_dataset":
             tool_dict = input.to_dict(request_context)
         else:
-            pagination_spec = options_pagination.get(full_name) if input.type in ("data", "data_collection") else None
+            to_dict_kwargs: dict[str, Any] = {}
+            if input.type in ("data", "data_collection"):
+                to_dict_kwargs["pagination"] = options_pagination.get(full_name)
+            if input.type == "data":
+                to_dict_kwargs["incoming_value"] = incoming.get(full_name)
             try:
                 initial_value = input.get_initial_value(request_context, other_values)
                 # Inactive conditional cases start from an empty state; record defaults so
                 # later siblings (e.g. ``param_value`` filters) can resolve references to them.
                 state_inputs.setdefault(input.name, initial_value)
-                if pagination_spec is not None:
-                    tool_dict = input.to_dict(request_context, other_values=other_values, pagination=pagination_spec)
-                else:
-                    tool_dict = input.to_dict(request_context, other_values=other_values)
+                tool_dict = input.to_dict(request_context, other_values=other_values, **to_dict_kwargs)
                 tool_dict["value"] = input.value_to_basic(
                     state_inputs.get(input.name, initial_value), request_context.app, use_security=True
                 )
                 tool_dict["default_value"] = input.value_to_basic(initial_value, request_context.app, use_security=True)
                 tool_dict["text_value"] = input.value_to_display_text(tool_dict["value"])
             except ImplicitConversionRequired:
-                if pagination_spec is not None:
-                    tool_dict = input.to_dict(request_context, other_values=other_values, pagination=pagination_spec)
-                else:
-                    tool_dict = input.to_dict(request_context, other_values=other_values)
+                tool_dict = input.to_dict(request_context, other_values=other_values, **to_dict_kwargs)
                 # This hack leads client to display a text field
                 tool_dict["textable"] = True
         if input_index >= len(group_inputs):

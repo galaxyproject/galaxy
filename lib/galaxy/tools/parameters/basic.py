@@ -26,6 +26,7 @@ from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
+from galaxy.exceptions import MalformedId
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
@@ -2580,7 +2581,7 @@ class DataToolParameter(BaseDataToolParameter):
             ref = ref()
         return str(ref)
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None, incoming_value=None):
         other_values = other_values or {}
         d = super().to_dict(trans)
         self._fill_to_dict_static(d)
@@ -2602,12 +2603,13 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
 
         # When rerunning a job, other_values carries the original job's input
-        # values (HDAs, HDCAs, DCEs, LDDAs). Track them as we walk pages so
-        # the survivors land in `pinned` (live HDAs outside the page) or
+        # values (HDAs, HDCAs, DCEs, LDDAs); a batch selection adds its later
+        # values. Track them as we walk pages so the survivors land in
+        # `pinned` (live HDAs outside the page) or
         # carry-over `options` entries (deleted/hidden/foreign-history items,
         # DCEs, LDDAs) — clients rely on this to pre-select the rerun input
         # regardless of pagination state.
-        job_input_values = util.listify(other_values.get(self.name))
+        job_input_values = self._selected_values(trans, other_values, incoming_value)
 
         job_input_values = self._page_hda_matches(
             trans, builder, history, dataset_matcher, dataset_matcher_factory, job_input_values
@@ -2623,6 +2625,22 @@ class DataToolParameter(BaseDataToolParameter):
 
         builder.sort_by_hid()
         return d
+
+    def _selected_values(self, trans, other_values, incoming_value) -> list:
+        """Selected values from the form state, plus the later values of a
+        batch selection (the state keeps only the first)."""
+        selected = list(util.listify(other_values.get(self.name)))
+        if not (isinstance(incoming_value, MutableMapping) and incoming_value.get("batch")):
+            return selected
+        for value in incoming_value.get("values") or []:
+            try:
+                resolved = util.listify(self.from_json(value, trans, other_values))
+            except (ValueError, MalformedId):
+                continue
+            for item in resolved:
+                if item not in selected:
+                    selected.append(item)
+        return selected
 
     def _fill_to_dict_static(self, d: dict) -> None:
         """Populate the non-history-dependent fields of the ``to_dict`` response
