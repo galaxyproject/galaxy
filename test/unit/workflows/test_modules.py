@@ -212,6 +212,12 @@ def test_parameter_input_inverted_bounds():
     assert (field["min"], field["max"]) == (None, None)
     with pytest.raises(RequestParameterInvalidException, match="Workflow input 'Count' has a minimum"):
         module.get_runtime_inputs(__step())
+    assert module.get_errors() == "Workflow input 'Count' has a minimum (5) greater than its maximum (1)."
+
+
+def test_parameter_input_ordered_bounds_have_no_errors():
+    assert __numeric_editor_module("integer", 1, 5).get_errors() is None
+    assert __numeric_editor_module("float", 2.5, 2.5).get_errors() is None
 
 
 def test_cannot_create_tool_modules_for_missing_tools():

@@ -136,6 +136,7 @@ from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
     numeric_bounds_inverted,
+    numeric_bounds_type,
     split_numeric_bounds,
 )
 
@@ -1592,6 +1593,16 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
+    def get_errors(self, **kwargs):
+        bounds, _ = split_numeric_bounds(self._parse_state_into_dict())
+        return self._inverted_bounds_error(bounds) if bounds else None
+
+    def _inverted_bounds_error(self, bounds: numeric_bounds_type) -> Optional[str]:
+        if not numeric_bounds_inverted(bounds):
+            return None
+        input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
+        return f"{input_name} has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
+
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
@@ -1644,11 +1655,8 @@ class InputParameterModule(WorkflowModule):
         # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
         bounds, validators = split_numeric_bounds(parameter_def)
         if bounds:
-            if numeric_bounds_inverted(bounds):
-                input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
-                raise RequestParameterInvalidException(
-                    f"{input_name} has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
-                )
+            if inverted_bounds_error := self._inverted_bounds_error(bounds):
+                raise RequestParameterInvalidException(inverted_bounds_error)
             parameter_kwds.update(bounds)
         if validators:
             parameter_kwds["validators"] = validators
