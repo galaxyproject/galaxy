@@ -103,45 +103,51 @@ export function isDataOption(item: object): item is DataOption {
     return !!item && "src" in item;
 }
 
-type OptionIdentity = Pick<DataOption, "id" | "src">;
+type OptionIdentity = Pick<DataOption, "id" | "src" | "map_over_type">;
 
-/** Identifies an option */
+/** Identifies an option; an item listed both directly and mapped over yields two distinct keys */
 export function itemUniqueKey(item: OptionIdentity): string {
-    return `${item.src}-${item.id}`;
+    const key = `${item.src}-${item.id}`;
+    return item.map_over_type ? `${key}-${item.map_over_type}` : key;
 }
 
 export function containsDataOption(items: DataOption[], item: DataOption | null): boolean {
     return item !== null && items.some((i) => itemUniqueKey(i) === itemUniqueKey(item));
 }
 
-/** Whether two options refer to the same history item */
+/** Whether two options refer to the same history item, however each is mapped over */
 export function isSameItem(a: OptionIdentity, b: OptionIdentity): boolean {
     return a.id === b.id && a.src === b.src;
 }
 
-/** Find the entry whose option refers to the same history item as a value */
+/**
+ * Find the option for a value: the entry mapped over the same way, else any entry for the same item.
+ * Values without a map-over type resolve to the first (direct) entry.
+ */
 export function findDataOption<T>(
     items: T[],
     value: OptionIdentity,
     toOption: (item: T) => DataOption | null | undefined,
 ): T | undefined {
-    return items.find((item) => {
-        const option = toOption(item);
-        return !!option && isSameItem(option, value);
-    });
-}
-
-/** An item listed both directly and mapped over is two options */
-function pageMergeKey(item: DataOption): string {
-    return `${itemUniqueKey(item)}-${item.map_over_type ?? ""}`;
+    const key = itemUniqueKey(value);
+    return (
+        items.find((item) => {
+            const option = toOption(item);
+            return !!option && itemUniqueKey(option) === key;
+        }) ??
+        items.find((item) => {
+            const option = toOption(item);
+            return !!option && isSameItem(option, value);
+        })
+    );
 }
 
 /** Append a fetched page of options, skipping ones already listed */
 export function mergeDataOptions(existing: DataOption[], incoming: DataOption[]): DataOption[] {
-    const seen = new Set(existing.map(pageMergeKey));
+    const seen = new Set(existing.map(itemUniqueKey));
     return existing.concat(
         incoming.filter((option) => {
-            const key = pageMergeKey(option);
+            const key = itemUniqueKey(option);
             if (seen.has(key)) {
                 return false;
             }

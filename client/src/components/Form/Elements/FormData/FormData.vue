@@ -264,7 +264,7 @@ const formattedOptions = computed(() => {
         const result: Array<SelectOption> = [];
         options.forEach((option) => {
             const newOption = {
-                label: `${option.hid}: ${option.name}`,
+                label: `${option.hid}: ${option.name}${mapOverSuffix(option)}`,
                 value: option || null,
             };
             if (option.keep) {
@@ -294,10 +294,11 @@ const formattedOptions = computed(() => {
             }
         }
         // Populate keep-options from cache
-        Object.entries(keepOptions).forEach(([key, option]) => {
+        Object.values(keepOptions).forEach((option) => {
             if (option.value && getSourceType(option.value) === currentSource.value) {
-                // check if option (with same id) is already in result, if yes replace it with keepOption
-                const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
+                // check if the same option is already in result, if yes replace it with keepOption
+                const key = itemUniqueKey(option.value);
+                const existingOptionIndex = result.findIndex((v) => v.value && itemUniqueKey(v.value) === key);
                 if (existingOptionIndex >= 0) {
                     const existingOption = result[existingOptionIndex];
                     if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, option.value)) {
@@ -443,8 +444,10 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
     if (val) {
         let values = Array.isArray(val) ? val : [val];
 
-        // Remove duplicates based on item.id
-        values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
+        // Remove duplicates
+        values = values.filter(
+            (value, index, self) => index === self.findIndex((v) => itemUniqueKey(v) === itemUniqueKey(value)),
+        );
 
         if (variant.value && values.length > 0 && values[0]) {
             const isMultiple = values.length > 1;
@@ -485,6 +488,19 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
     } else {
         return null;
     }
+}
+
+/**
+ * Tells a collection input's map-over option apart from its direct option. Collections on a
+ * dataset input all map over, so they carry no suffix.
+ */
+function mapOverSuffix(option: DataOption): string {
+    if (props.type !== "data_collection" || !option.map_over_type) {
+        return "";
+    }
+    // the server's map-over type for a plain list fed to a ``paired_or_unpaired`` input
+    const unit = option.map_over_type === "single_datasets" ? "dataset" : collectionTypeToText(option.map_over_type);
+    return ` (one job per ${unit})`;
 }
 
 /**
@@ -553,20 +569,8 @@ function handleIncoming(incoming: SingleOrMultipleHistoryItems, partial = true) 
                 if (!newValue) {
                     return false;
                 }
-                // Verify that new value has corresponding option
-                const keepKey = itemUniqueKey(newValue);
-                const existingOptions = props.options && props.options[newValue.src];
-                const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
-                if (!foundOption && !isInKeepOptions(keepKey, newValue)) {
-                    keepOptions[keepKey] = {
-                        label: `${newValue.hid || "Selected"}: ${newValue.name}`,
-                        value: newValue,
-                    };
-                    // this is used to trigger an update on formattedOptions
-                    keepOptionsUpdate.value++;
-                }
-                // Add new value to list
-                incomingValues.push(newValue);
+                // Add the server-listed option (which knows how it maps over), keeping unlisted ones
+                incomingValues.push(normalizeOption(newValue));
             });
             let hasDuplicates = false;
             if (incomingValues.length > 0 && incomingValues[0]) {
@@ -642,23 +646,27 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
     return newValue;
 }
 
+/** Server-listed option for a value built on the client, preferring one mapped over the same way */
+function findExistingOption(value: DataOption): DataOption | undefined {
+    return findDataOption(props.options?.[value.src] ?? [], value, (option) => option);
+}
+
 /**
  * Normalize an uploaded option by finding matching options in existing props.
  * Returns the canonical option if found, otherwise returns the uploaded option.
  */
 function normalizeOption(option: DataOption): DataOption {
-    const keepKey = itemUniqueKey(option);
-    const existingOptions = props.options?.[option.src];
-    const foundOption = existingOptions?.find((existing) => existing.id === option.id);
+    const foundOption = findExistingOption(option);
 
     if (foundOption) {
         return foundOption;
     }
 
     // Cache new option in keepOptions if not already present
+    const keepKey = itemUniqueKey(option);
     if (!isInKeepOptions(keepKey, option)) {
         keepOptions[keepKey] = {
-            label: `${option.hid || "Selected"}: ${option.name}`,
+            label: `${option.hid || "Selected"}: ${option.name}${mapOverSuffix(option)}`,
             value: option,
         };
         keepOptionsUpdate.value++;
@@ -1009,7 +1017,10 @@ function onDragEnter(evt: DragEvent) {
                 }
                 // Check if the item is already in the current value
                 const option = toDataOption(item);
-                const isAlreadyInValue = containsDataOption(currentValue.value ?? [], option);
+                const isAlreadyInValue = containsDataOption(
+                    currentValue.value ?? [],
+                    option && (findExistingOption(option) ?? option),
+                );
                 if (isAlreadyInValue) {
                     highlightingState = "warning";
                     $emit("alert", `${getNameForItem(item)} is already selected.`);
