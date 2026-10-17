@@ -135,7 +135,7 @@ def test_unresolved_content_dropped_with_warning():
 def test_unquotable_content_label_dropped_with_warning(label):
     step = _tool_step()
     step.create_or_update_workflow_output(output_name="out_file", label=label, uuid=None)
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     rewriter = _ReportLabelRewriter(index, PAGE_HISTORY_ID)
     line, whole_block = rewriter.handle_dataset_display(
         "history_dataset_display(history_dataset_id=abc123)\n", _content(12)
@@ -152,7 +152,7 @@ def test_unquotable_content_label_dropped_with_warning(label):
 
 def test_unquotable_input_label_dropped_with_warning():
     index = ExtractionLabelIndex(
-        content_to_step={("dataset", 11): (_input_step('my "input"'), "output")}, job_to_step={}, icj_to_step={}
+        content_to_step={("hda", 11): (_input_step('my "input"'), "output")}, job_to_step={}, icj_to_step={}
     )
     rewriter = _ReportLabelRewriter(index, PAGE_HISTORY_ID)
     line, _ = rewriter.handle_dataset_peek("history_dataset_peek(history_dataset_id=abc123)\n", _content(11))
@@ -195,27 +195,27 @@ def _tool_step(label=None):
 
 def test_index_input_resolves_to_input_label():
     step = _input_step("my_input")
-    index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 11): (step, "output")}, job_to_step={}, icj_to_step={})
     assert index.content_label(_content(11)) == ("input", "my_input")
 
 
 def test_index_tool_output_resolves_to_output_label():
     step = _tool_step()
     step.create_or_update_workflow_output(output_name="out_file", label="aligned", uuid=None)
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     assert index.content_label(_content(12)) == ("output", "aligned")
 
 
 def test_index_tool_output_without_label_is_unresolved():
     step = _tool_step()
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     assert index.content_label(_content(12)) is None
 
 
 def test_index_normalizes_copied_dataset_to_original():
     step = _tool_step()
     step.create_or_update_workflow_output(output_name="out_file", label="aligned", uuid=None)
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     copy = _content(99, copied_from=_content(12))
     assert index.content_label(copy) == ("output", "aligned")
 
@@ -243,7 +243,7 @@ def _reconcile(
 
 def test_reconcile_exposes_unstarred_output():
     step = _tool_step()
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     warnings = _reconcile(index, [_content(12)], suggested="aligned_reads")
     workflow_output = step.workflow_output_for("out_file")
     assert workflow_output is not None
@@ -253,7 +253,7 @@ def test_reconcile_exposes_unstarred_output():
 
 def test_reconcile_labels_unnamed_input():
     step = _input_step(None)
-    index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 11): (step, "output")}, job_to_step={}, icj_to_step={})
     warnings = _reconcile(index, [_content(11)], suggested="raw_input")
     assert step.label == "raw_input"
     assert warnings == []
@@ -263,7 +263,7 @@ def test_reconcile_dedupes_against_existing_label():
     starred = _input_step("aligned_reads")
     unstarred = _tool_step()
     index = ExtractionLabelIndex(
-        content_to_step={("dataset", 10): (starred, "output"), ("dataset", 12): (unstarred, "out_file")},
+        content_to_step={("hda", 10): (starred, "output"), ("hda", 12): (unstarred, "out_file")},
         job_to_step={},
         icj_to_step={},
     )
@@ -277,7 +277,7 @@ def test_reconcile_label_from_quoted_name_is_directive_safe():
     names. The generated label must always have a directive form -- the user never
     typed it here, so there is nothing for them to correct."""
     step = _tool_step()
-    index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
+    index = ExtractionLabelIndex(content_to_step={("hda", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     _reconcile(index, [_content(12)], suggested='say "hi"\nagain')
 
     assert index.content_label(_content(12)) == ("output", "say hi again")
@@ -288,7 +288,7 @@ def test_reconcile_deduped_label_stays_within_label_limit():
     starred = _input_step("a" * 255)
     unstarred = _tool_step()
     index = ExtractionLabelIndex(
-        content_to_step={("dataset", 10): (starred, "output"), ("dataset", 12): (unstarred, "out_file")},
+        content_to_step={("hda", 10): (starred, "output"), ("hda", 12): (unstarred, "out_file")},
         job_to_step={},
         icj_to_step={},
     )
