@@ -530,6 +530,38 @@ describe("FormData", () => {
         expect(selectedValues.at(0).text()).toContain("999: OldDataset");
     });
 
+    describe("collection listed directly and mapped over", () => {
+        // An input accepting list and list:list lists a list:list collection twice.
+        const nested = { id: "hdca9", hid: 9, name: "nested", src: "hdca", tags: [] };
+        const nestedOptions = { hdca: [nested, { ...nested, map_over_type: "list" }] };
+        const directValue = {
+            batch: false,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: null, src: "hdca" }],
+        };
+
+        it("resolves a value without map_over_type to the direct entry", async () => {
+            const wrapper = createTarget({
+                type: "data_collection",
+                value: { values: [{ id: "hdca9", src: "hdca" }] },
+                options: nestedOptions,
+            });
+            expect(wrapper.emitted()!.input![0]![0]).toEqual(directValue);
+            expect(wrapper.emitted()!.input!.length).toEqual(1);
+            await wrapper.vm.$nextTick();
+            expect(wrapper.find(SELECTED_VALUE).text()).toBe("9: nested");
+        });
+
+        it("leaves collections on a dataset input unlabelled", async () => {
+            const wrapper = createTarget({
+                value: { values: [{ id: "hdca9", src: "hdca", map_over_type: "list" }] },
+                options: { hdca: [{ ...nested, map_over_type: "list" }] },
+            });
+            await wrapper.vm.$nextTick();
+            expect(wrapper.find(SELECTED_VALUE).text()).toBe("9: nested");
+        });
+    });
+
     it("tagging filter", async () => {
         const wrapper_0 = createTarget({
             tag: "tag1",
