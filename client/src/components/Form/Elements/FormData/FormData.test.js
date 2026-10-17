@@ -541,8 +541,7 @@ describe("FormData batch hint", () => {
     const BATCH_INFO = ".info.text-info";
     const MAPPED_OVER = /^The supplied input will be .*mapped over this tool\.$/;
     const MAPPED_OVER_PER_DATASET = /^The supplied input will be .*mapped over this tool: one job per dataset\.$/;
-    const MAPPED_OVER_PER_PAIRED =
-        /^The supplied input will be .*mapped over this tool: one job per paired collection\.$/;
+    const MAPPED_OVER_PER_PAIR = /^The supplied input will be .*mapped over this tool: one job per dataset pair\.$/;
 
     function batchInfoText(wrapper) {
         const info = wrapper.find(BATCH_INFO);
@@ -623,7 +622,7 @@ describe("FormData batch hint", () => {
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.emitted().input[0][0].batch).toBe(true);
-        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIRED);
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
         expect(wrapper.find("input[type='checkbox']").exists()).toBeFalsy();
     });
 
@@ -637,7 +636,7 @@ describe("FormData batch hint", () => {
         await wrapper.vm.$nextTick();
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
         await wrapper.setProps({ value: { values: [{ id: "hdca7", src: "hdca" }] } });
-        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIRED);
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
         await wrapper.setProps({ value: { values: [{ id: "hdca8", src: "hdca" }] } });
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
@@ -666,7 +665,7 @@ describe("FormData batch hint", () => {
             values: [{ id: "hdca9", map_over_type: "paired", src: "hdca" }],
         });
         await wrapper.setProps({ value: emitted });
-        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIRED);
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
     });
 
     it("shows mapped over info when any of multiple selected collections maps over", async () => {
@@ -705,6 +704,31 @@ describe("FormData batch hint", () => {
         });
         await wrapper.vm.$nextTick();
         expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_DATASET);
+    });
+
+    it("names the raw type as the job unit for a collection type without a label", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired_or_unpaired"],
+            value: { values: [{ id: "hdca12", src: "hdca" }] },
+            options: {
+                hdca: [
+                    {
+                        id: "hdca12",
+                        hid: 12,
+                        name: "mixedList",
+                        src: "hdca",
+                        collection_type: "list:paired_or_unpaired",
+                        map_over_type: "paired_or_unpaired",
+                    },
+                ],
+            },
+        });
+        await wrapper.vm.$nextTick();
+        expect(batchInfoText(wrapper)).toMatch(
+            /^The supplied input will be .*mapped over this tool: one job per paired_or_unpaired collection\.$/,
+        );
+        expect(wrapper.find(`${BATCH_INFO} code`).text()).toBe("paired_or_unpaired");
     });
 
     it("names no job unit when several selected collections map over", async () => {

@@ -25,6 +25,7 @@ import {
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
@@ -184,19 +185,21 @@ const currentVariant = computed(() => {
 const selectionMapsOver = computed(() => !!currentValue.value?.some((v) => !!v.map_over_type));
 
 /**
- * What each mapped over job receives for a single selected collection: a sub-collection
- * of `type`, or a dataset (`type: null`); unknown for multiple selections
+ * What each mapped over job receives for a single selected collection, e.g. a "dataset pair",
+ * a `paired_or_unpaired` (`code`) collection or a dataset; unknown for multiple selections
  */
-const mapOverUnit = computed(() => {
+const mapOverUnit = computed((): { code?: string; text: string } | null => {
     const [single, ...rest] = currentValue.value ?? [];
     if (!single || rest.length > 0) {
         return null;
     }
-    if (single.map_over_type && single.map_over_type !== "single_datasets") {
-        return { type: single.map_over_type };
+    const type = single.map_over_type;
+    if (type && type !== "single_datasets") {
+        const label = COLLECTION_TYPE_TO_LABEL[type];
+        return label ? { text: localize(label.toLowerCase()) } : { code: type, text: localize("collection") };
     }
-    if (single.map_over_type || (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION)) {
-        return { type: null };
+    if (type || (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION)) {
+        return { text: localize("dataset") };
     }
     return null;
 });
@@ -1014,10 +1017,9 @@ const noOptionsWarningMessage = computed(() => {
                         class="ml-1">
                         The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
                         tool<template v-if="mapOverUnit"
-                            >: <span v-localize>one job per</span>
-                            <template v-if="mapOverUnit.type"
-                                ><code>{{ mapOverUnit.type }}</code> <span v-localize>collection</span></template
-                            ><span v-else v-localize>dataset</span></template
+                            >: {{ localize("one job per") }}
+                            <code v-if="mapOverUnit.code">{{ mapOverUnit.code }}</code>
+                            {{ mapOverUnit.text }}</template
                         >.
                     </span>
                     <span v-else v-localize class="ml-1">
