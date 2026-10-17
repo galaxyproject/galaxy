@@ -891,7 +891,9 @@ def resolve_element_tests(as_dict):
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, name, attrib, element_tests, element_count: Optional[int] = None):
+    def __init__(
+        self, name, attrib, element_tests, element_count: Optional[int] = None, metadata: Optional[dict] = None
+    ):
         self.name = name
         self.collection_type = attrib.get("type", None)
         if element_count is not None:
@@ -905,6 +907,7 @@ class TestCollectionOutputDef:
         self.max = int(max) if max is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
+        self.metadata = metadata or {}
 
     @staticmethod
     def from_dict(as_dict):
@@ -913,6 +916,7 @@ class TestCollectionOutputDef:
             attrib=as_dict.get("attributes", {}),
             element_tests=as_dict.get("element_tests"),
             element_count=as_dict.get("element_count"),
+            metadata=as_dict.get("metadata"),
         )
 
     @staticmethod
@@ -928,4 +932,10 @@ class TestCollectionOutputDef:
         return TestCollectionOutputDef.from_dict(as_dict)
 
     def to_dict(self):
-        return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests, element_count=self.count)
+        return dict(
+            name=self.name,
+            attributes=self.attrib,
+            element_tests=self.element_tests,
+            element_count=self.count,
+            metadata=self.metadata,
+        )
