@@ -121,4 +121,16 @@ describe("HistoryExport.vue", () => {
 
         expect(wrapper.find(selectors.fatalErrorAlert).exists()).toBe(true);
     });
+
+    it("should display a fatal error message if loading the history fails with a retryable error", async () => {
+        server.use(
+            http.get("/api/histories/{history_id}", ({ response }) =>
+                response("5XX").json({ err_code: 0, err_msg: "Service Unavailable" }, { status: 503 }),
+            ),
+        );
+
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find(selectors.fatalErrorAlert).exists()).toBe(true);
+    });
 });

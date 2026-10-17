@@ -22,11 +22,18 @@ export function useWorkflowCardBadges(
     const userStore = useUserStore();
     const { isAnonymous } = storeToRefs(userStore);
 
-    const invocationCount = computed(() => invocationStore.getInvocationCountByWorkflowId(workflow.value.id));
-
     const shared = computed(() => {
         return !userStore.matchesCurrentUsername(workflow.value.owner);
     });
+
+    const showInvocationCount = computed(
+        () => !hideRuns && !isAnonymous.value && !shared.value && !workflow.value.number_of_steps,
+    );
+
+    // only fetch counts for cards that can display them
+    const invocationCount = computed(() =>
+        showInvocationCount.value ? invocationStore.getInvocationCountByWorkflowId(workflow.value.id) : null,
+    );
 
     const publishedTitle = computed(() => {
         if (workflow.value.published && !publishedView) {
@@ -68,12 +75,7 @@ export function useWorkflowCardBadges(
             title: "Loading workflow invocation count",
             icon: faSpinner,
             spin: true,
-            visible:
-                !hideRuns &&
-                !isAnonymous.value &&
-                !shared.value &&
-                !workflow.value.number_of_steps &&
-                invocationCount.value === null,
+            visible: showInvocationCount.value && invocationCount.value === null,
             loading: true,
         },
         {
@@ -81,13 +83,7 @@ export function useWorkflowCardBadges(
             label: invocationText.value,
             title: "This workflow has never been run",
             icon: faList,
-            visible:
-                !hideRuns &&
-                !isAnonymous.value &&
-                !shared.value &&
-                !workflow.value.number_of_steps &&
-                invocationCount.value !== null &&
-                invocationCount.value === 0,
+            visible: showInvocationCount.value && invocationCount.value !== null && invocationCount.value === 0,
         },
         {
             id: "invocations-count",
@@ -96,13 +92,7 @@ export function useWorkflowCardBadges(
             variant: "outline-primary",
             icon: faList,
             to: `/workflows/${workflow.value.id}/invocations`,
-            visible:
-                !hideRuns &&
-                !isAnonymous.value &&
-                !shared.value &&
-                !workflow.value.number_of_steps &&
-                invocationCount.value !== null &&
-                invocationCount.value > 0,
+            visible: showInvocationCount.value && invocationCount.value !== null && invocationCount.value > 0,
         },
         {
             id: "step-count",

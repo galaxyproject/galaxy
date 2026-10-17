@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { BPopover } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
@@ -14,11 +13,15 @@ const props = defineProps<{
 }>();
 
 const datasetStore = useDatasetStore();
-const historyStore = useHistoryStore();
 
 const targetId = computed(() => `storage-run-item-dataset-${props.datasetId}`);
 
-const details = computed(() => datasetStore.storedDatasets[props.datasetId]);
+const popoverShown = ref(false);
+
+// The getter fetches when read, and refetches after a retry backoff; use it only while the popover is shown.
+const details = computed(() =>
+    popoverShown.value ? datasetStore.getDataset(props.datasetId) : datasetStore.storedDatasets[props.datasetId],
+);
 const loading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
 const loadError = computed(() => datasetStore.getDatasetError(props.datasetId)?.message);
 
@@ -28,12 +31,6 @@ async function ensureDatasetDetails() {
     }
 
     await datasetStore.fetchDataset({ id: props.datasetId });
-
-    // If dataset has a history_id, ensure the history is loaded
-    const datasetDetails = datasetStore.storedDatasets[props.datasetId];
-    if (datasetDetails?.history_id && !historyStore.getHistoryById(datasetDetails.history_id)) {
-        await historyStore.loadHistoryById(datasetDetails.history_id);
-    }
 }
 </script>
 
@@ -48,7 +45,13 @@ async function ensureDatasetDetails() {
             {{ datasetId }}
         </router-link>
 
-        <BPopover :target="targetId" triggers="hover focus" boundary="window" placement="right">
+        <BPopover
+            :target="targetId"
+            triggers="hover focus"
+            boundary="window"
+            placement="right"
+            @show="popoverShown = true"
+            @hidden="popoverShown = false">
             <div class="dataset-details-popover">
                 <div v-if="loading">
                     <LoadingSpan :message="localize('Loading dataset details')" />

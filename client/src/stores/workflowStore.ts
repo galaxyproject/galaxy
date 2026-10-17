@@ -4,6 +4,7 @@ import { computed, ref, set } from "vue";
 import { GalaxyApi } from "@/api";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
+import { dedupeInFlight } from "@/utils/sharedPromise";
 
 export const useWorkflowStore = defineStore("workflowStore", () => {
     const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
@@ -74,35 +75,24 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         }
     }
 
-    // stores in progress promises to avoid overlapping requests
-    const workflowDetailPromises = new Map<string, Promise<unknown>>();
-
     /**
-     * Fetches workflow details, avoiding multiple fetches occurring simultaneously
+     * Fetches workflow details, avoiding multiple fetches occurring simultaneously.
+     * Concurrent callers share the outcome; a failed fetch can be retried by a later call.
      * @param workflowId instance id of workflow to fetch
      */
-    async function fetchWorkflowForInstanceId(workflowId: string) {
-        const promise = workflowDetailPromises.get(workflowId);
-        if (promise) {
-            console.debug("Workflow details fetching already requested for", workflowId);
-            await promise;
-        } else {
-            console.debug("Fetching workflow details for", workflowId);
-            const promise = GalaxyApi().GET("/api/workflows/{workflow_id}", {
-                params: {
-                    path: { workflow_id: workflowId },
-                    query: { instance: true },
-                },
-            });
-            workflowDetailPromises.set(workflowId, promise);
-            const { data, error } = await promise;
-            if (error) {
-                throw Error(`Failed to retrieve workflow. ${error.err_msg}`);
-            }
-            set(workflowsByInstanceId.value, workflowId, data);
+    const fetchWorkflowForInstanceId = dedupeInFlight(async (workflowId: string): Promise<void> => {
+        console.debug("Fetching workflow details for", workflowId);
+        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
+            params: {
+                path: { workflow_id: workflowId },
+                query: { instance: true },
+            },
+        });
+        if (error) {
+            throw Error(`Failed to retrieve workflow. ${error.err_msg}`);
         }
-        workflowDetailPromises.delete(workflowId);
-    }
+        set(workflowsByInstanceId.value, workflowId, data);
+    });
 
     /**
      * Fetches workflow details only if they are not already in the store

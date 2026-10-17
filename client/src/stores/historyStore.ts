@@ -15,6 +15,7 @@ import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
+import { useRetryGate } from "@/composables/retryGate";
 import { useSSE } from "@/composables/useNotificationSSE";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -28,7 +29,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
-import { ApiError, isRetryableApiError, MAX_RETRIES, rethrowSimple } from "@/utils/simple-error";
+import { ApiError, isRetryableApiError, rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
@@ -39,7 +40,6 @@ import {
 
 const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set<string>();
-const retryCounts: { [key: string]: number } = {};
 const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
 
 export const useHistoryStore = defineStore("historyStore", () => {
@@ -51,6 +51,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedFilterTexts = ref<{ [key: string]: string }>({});
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
     const historyLoadErrors = ref<{ [key: string]: Error }>({});
+    // Errors that are not an ``ApiError`` come from requests that got no response at all,
+    // which are retried like a 5xx response.
+    const historyRetryGate = useRetryGate((error) => isRetryableApiError(error) || !(error instanceof ApiError));
     const changingCurrentHistory = ref(false);
     const knownHistorySizes = new Map<string, number>();
 
@@ -87,10 +90,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     });
 
+    /** The final load error for a history; null while a retry is pending or in flight. */
     const getHistoryLoadError = computed(() => {
-        return (historyId: string) => {
-            return historyLoadErrors.value[historyId] ?? null;
-        };
+        return (historyId: string) => historyRetryGate.finalError(historyId, historyLoadErrors.value[historyId]);
     });
 
     /** Returns history from storedHistories, will load history if not in store by default.
@@ -100,13 +102,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return (historyId: string, shouldFetchIfMissing = true) => {
             if (!storedHistories.value[historyId] && shouldFetchIfMissing) {
                 const existingError = historyLoadErrors.value[historyId];
-                // Errors that are not an ``ApiError`` come from requests that got no response at all,
-                // which are retried like a 5xx response.
-                const canRetry =
-                    existingError &&
-                    (isRetryableApiError(existingError) || !(existingError instanceof ApiError)) &&
-                    (retryCounts[historyId] ?? 0) <= MAX_RETRIES;
-                if (!existingError || canRetry) {
+                if (!existingError || historyRetryGate.canRetry(historyId, existingError)) {
                     // The failure is recorded in ``historyLoadErrors`` and shown by views reading ``getHistoryLoadError``.
                     loadHistoryById(historyId).catch((e) => console.warn(`Failed to load history ${historyId}`, e));
                 }
@@ -518,21 +514,23 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    async function loadHistoryById(historyId: string) {
+    /** Loads a history into the store; resolves to the load error, if any, even one that will be retried. */
+    async function loadHistoryById(historyId: string): Promise<Error | undefined> {
         if (!isLoadingHistory.has(historyId)) {
             isLoadingHistory.add(historyId);
             try {
                 const result = await getHistoryByIdFromServer(historyId);
                 if (result.error) {
-                    retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
+                    historyRetryGate.recordFailure(historyId, result.error);
                     set(historyLoadErrors.value, historyId, result.error);
+                    return result.error;
                 } else {
                     setHistory(result.data);
                     del(historyLoadErrors.value, historyId);
-                    delete retryCounts[historyId];
+                    historyRetryGate.recordSuccess(historyId);
                 }
             } catch (error) {
-                retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
+                historyRetryGate.recordFailure(historyId, error as Error);
                 set(historyLoadErrors.value, historyId, error as Error);
                 throw error;
             } finally {

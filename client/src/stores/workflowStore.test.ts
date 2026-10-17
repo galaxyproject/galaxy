@@ -2,6 +2,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -9,6 +10,8 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 vi.mock("@/components/Workflow/workflows.services", () => ({
     getWorkflowFull: vi.fn(),
 }));
+
+const { server, http } = useServerMock();
 
 const mockWorkflow = {
     id: "workflow-123",
@@ -156,6 +159,64 @@ describe("useWorkflowStore", () => {
 
             // Still only one API call total
             expect(getWorkflowFull).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe("fetchWorkflowForInstanceId", () => {
+        const workflowRequests = vi.fn();
+
+        function mockWorkflowResponse(fail: boolean) {
+            server.use(
+                http.get("/api/workflows/{workflow_id}", ({ params, response }) => {
+                    workflowRequests(params.workflow_id);
+                    if (fail) {
+                        return response("5XX").json({ err_msg: "Request failed", err_code: 500 }, { status: 500 });
+                    }
+                    return response.untyped(HttpResponse.json({ ...mockWorkflow, id: `stored-${params.workflow_id}` }));
+                }),
+            );
+        }
+
+        beforeEach(() => {
+            workflowRequests.mockReset();
+        });
+
+        it("should send one request for concurrent and later cached calls", async () => {
+            mockWorkflowResponse(false);
+
+            await Promise.all([
+                workflowStore.fetchWorkflowForInstanceIdCached("instance-1"),
+                workflowStore.fetchWorkflowForInstanceIdCached("instance-1"),
+                workflowStore.fetchWorkflowForInstanceId("instance-1"),
+            ]);
+            await workflowStore.fetchWorkflowForInstanceIdCached("instance-1");
+
+            expect(workflowRequests).toHaveBeenCalledTimes(1);
+            expect(workflowStore.getStoredWorkflowIdByInstanceId("instance-1")).toBe("stored-instance-1");
+        });
+
+        it("should reject concurrent callers when the fetch fails", async () => {
+            mockWorkflowResponse(true);
+
+            const results = await Promise.allSettled([
+                workflowStore.fetchWorkflowForInstanceIdCached("instance-1"),
+                workflowStore.fetchWorkflowForInstanceIdCached("instance-1"),
+            ]);
+
+            expect(workflowRequests).toHaveBeenCalledTimes(1);
+            expect(results.map((result) => result.status)).toEqual(["rejected", "rejected"]);
+        });
+
+        it("should fetch again on the next call after a failed fetch", async () => {
+            mockWorkflowResponse(true);
+            await expect(workflowStore.fetchWorkflowForInstanceIdCached("instance-1")).rejects.toThrow();
+            await expect(workflowStore.fetchWorkflowForInstanceIdCached("instance-1")).rejects.toThrow();
+            expect(workflowRequests).toHaveBeenCalledTimes(2);
+
+            mockWorkflowResponse(false);
+            await workflowStore.fetchWorkflowForInstanceIdCached("instance-1");
+            expect(workflowRequests).toHaveBeenCalledTimes(3);
+            expect(workflowStore.getStoredWorkflowNameByInstanceId("instance-1")).toBe(mockWorkflow.name);
         });
     });
 });

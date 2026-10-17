@@ -236,7 +236,7 @@ watch(historyIds, async () => {
 
 async function initWorkflowData() {
     for (const workflowId of referencedWorkflowIds.value) {
-        fetchWorkflowForInstanceId(workflowId);
+        fetchWorkflowForInstanceId(workflowId).catch((e) => console.warn(`Failed to load workflow ${workflowId}`, e));
         if (workflowId && !(workflowId in workflowAccessible.value)) {
             Vue.set(workflowAccessible.value, workflowId, null);
 

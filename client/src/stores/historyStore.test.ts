@@ -4,12 +4,15 @@ import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import { MAX_RETRIES } from "@/utils/simple-error";
+import { ApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 import { emitSse, sseMockFactory, useVisibilityPatch } from "./_testing/sseStoreSupport";
 import { useHistoryStore } from "./historyStore";
 import * as userQueries from "./users/queries";
 import { useUserStore } from "./userStore";
+
+const RETRY_BACKOFF_BASE_MS = 2000;
+const RETRY_BACKOFF_CAP_MS = 30_000;
 
 // ``vi.mock`` is hoisted above module-level ``const`` declarations, so the
 // capture-state has to be built via ``vi.hoisted`` to be visible to the factory.
@@ -257,9 +260,11 @@ describe("loading a single history", () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+        vi.useRealTimers();
     });
 
     it("loads the history on a later lookup after a request fails to reach the server", async () => {
+        vi.useFakeTimers();
         const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
         server.use(mswHttp.get("/api/histories/:history_id", () => HttpResponse.error()));
         const historyStore = useHistoryStore();
@@ -267,20 +272,23 @@ describe("loading a single history", () => {
         expect(historyStore.getHistoryById("history-1")).toBeNull();
         await vi.waitFor(() => expect(warn).toHaveBeenCalled());
         await flushPromises();
-        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
+        // Hidden while a retry is pending.
+        expect(historyStore.getHistoryLoadError("history-1")).toBeNull();
 
         server.use(
             mswHttp.get("/api/histories/:history_id", () =>
                 HttpResponse.json({ id: "history-1", name: "Test history" }),
             ),
         );
+        await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
         historyStore.getHistoryById("history-1");
         await vi.waitFor(() => expect(historyStore.getHistoryById("history-1")?.name).toBe("Test history"));
         expect(historyStore.getHistoryLoadError("history-1")).toBeNull();
     });
 
     it("stops retrying a history that keeps failing to reach the server", async () => {
-        vi.spyOn(console, "warn").mockImplementation(() => {});
+        vi.useFakeTimers();
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
         let requests = 0;
         server.use(
             mswHttp.get("/api/histories/:history_id", () => {
@@ -293,16 +301,100 @@ describe("loading a single history", () => {
         for (let i = 0; i < 10; i++) {
             historyStore.getHistoryById("history-1");
             await flushPromises();
-            await vi.waitFor(() => expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error));
+            await vi.waitFor(() => expect(warn).toHaveBeenCalledTimes(Math.min(i + 1, MAX_RETRIES + 1)));
+            if (i < MAX_RETRIES) {
+                expect(historyStore.getHistoryLoadError("history-1")).toBeNull();
+            }
+            await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_CAP_MS);
         }
         expect(requests).toBe(MAX_RETRIES + 1);
+        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
     });
 
-    it("rejects and records an awaited load that fails to reach the server", async () => {
-        server.use(mswHttp.get("/api/histories/:history_id", () => HttpResponse.error()));
+    it("rejects an awaited load that fails to reach the server and backs off", async () => {
+        vi.useFakeTimers();
+        let requests = 0;
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () => {
+                requests += 1;
+                return HttpResponse.error();
+            }),
+        );
         const historyStore = useHistoryStore();
 
         await expect(historyStore.loadHistoryById("history-1")).rejects.toThrow();
-        expect(historyStore.getHistoryLoadError("history-1")).toBeInstanceOf(Error);
+        expect(historyStore.getHistoryLoadError("history-1")).toBeNull();
+        historyStore.getHistoryById("history-1");
+        await flushPromises();
+        expect(requests).toBe(1);
+    });
+
+    it("surfaces a non-retryable error immediately", async () => {
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () =>
+                HttpResponse.json({ err_msg: "History not found" }, { status: 404 }),
+            ),
+        );
+        const historyStore = useHistoryStore();
+
+        historyStore.getHistoryById("history-404");
+        await vi.waitFor(() => expect(historyStore.getHistoryLoadError("history-404")).toBeInstanceOf(Error));
+    });
+
+    it("returns the error of an awaited load, even while a retry is pending", async () => {
+        vi.useFakeTimers();
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () =>
+                HttpResponse.json({ err_msg: "Service Unavailable" }, { status: 503 }),
+            ),
+        );
+        const historyStore = useHistoryStore();
+
+        const error = await historyStore.loadHistoryById("history-503");
+        expect(error?.message).toBe("Service Unavailable");
+        expect(historyStore.getHistoryLoadError("history-503")).toBeNull();
+    });
+
+    it("keeps Retry-After on a failed history load", async () => {
+        vi.useFakeTimers();
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () =>
+                HttpResponse.json({ err_msg: "Service Unavailable" }, { status: 503, headers: { "Retry-After": "9" } }),
+            ),
+        );
+        const historyStore = useHistoryStore();
+
+        const error = await historyStore.loadHistoryById("history-retry-after");
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).retryAfterMs).toBe(9000);
+    });
+
+    it("waits out a backoff before refetching a history after a retryable error", async () => {
+        vi.useFakeTimers();
+        // Lowest jitter: the first backoff is RETRY_BACKOFF_BASE_MS / 2.
+        vi.spyOn(Math, "random").mockReturnValue(0);
+        let requests = 0;
+        server.use(
+            mswHttp.get("/api/histories/:history_id", () => {
+                requests += 1;
+                return HttpResponse.json({ err_msg: "Service Unavailable" }, { status: 503 });
+            }),
+        );
+        const historyStore = useHistoryStore();
+
+        historyStore.getHistoryById("history-backoff");
+        await flushPromises();
+        expect(requests).toBe(1);
+        expect(historyStore.getHistoryLoadError("history-backoff")).toBeNull();
+
+        historyStore.getHistoryById("history-backoff");
+        historyStore.getHistoryNameById("history-backoff");
+        await flushPromises();
+        expect(requests).toBe(1);
+
+        await vi.advanceTimersByTimeAsync(RETRY_BACKOFF_BASE_MS / 2);
+        historyStore.getHistoryById("history-backoff");
+        await flushPromises();
+        expect(requests).toBe(2);
     });
 });
