@@ -1,40 +1,28 @@
-"""Build the workflow-extraction summary for a history or a page/notebook.
-
-The summary is the flat, whole-history list of jobs that
-:func:`galaxy.workflow.extract.summarize` produces, serialized into the
-``WorkflowExtractionSummary`` schema. This module owns that serialization so
-both the history endpoint (plain summary) and the page endpoint (summary with a
-seeded producing subgraph) share one builder.
-
-For a page, the datasets/collections the page's markdown references are walked
-backward through job provenance (:func:`_backward_job_closure`) to mark the
-producing jobs as ``seeded`` and the referenced outputs as ``exposed``.
-"""
+"""Serialize the workflow-extraction summary of a history, optionally seeded from a notebook page's references."""
 
 import logging
 from collections import deque
-from collections.abc import Iterable
+from collections.abc import (
+    Iterable,
+    Mapping,
+    MutableSequence,
+)
 from dataclasses import (
     dataclass,
     field,
 )
+from types import MappingProxyType
 from typing import (
-    Any,
     cast,
     Literal,
-    Optional,
     TYPE_CHECKING,
 )
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.markdown_util import (
-    ContentRef,
-    referenced_content_ids,
-)
+from galaxy.managers.markdown_util import referenced_content_ids
 from galaxy.managers.workflow_extraction_naming import suggested_output_name
 from galaxy.model import (
     History,
@@ -47,16 +35,22 @@ from galaxy.model import (
     Page,
 )
 from galaxy.schema.workflows import (
+    ContentRef,
     InvalidWorkflowExtractionJobReason,
     WorkflowExtractionJob,
     WorkflowExtractionOutput,
     WorkflowExtractionSummary,
 )
 from galaxy.workflow.extract import (
-    _original_hda,
-    _original_hdca,
-    _skip_output_assoc_name,
+    DatasetCollectionCreationJob,
+    FakeJob,
+    get_original_hda,
+    get_original_hdca,
+    original_content_ref,
+    resolve_content,
+    skip_output_assoc_name,
     summarize,
+    tool_for_job,
 )
 
 if TYPE_CHECKING:
@@ -65,24 +59,51 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 # The job-like keys and dataset lists of :func:`galaxy.workflow.extract.summarize`.
-# Keys are Jobs or the FakeJob / DatasetCollectionCreationJob stand-ins for inputs.
-SummaryJob = Any
+SummaryJob = Job | FakeJob | DatasetCollectionCreationJob
 SummaryDatasets = list[tuple[str | None, HistoryItem]]
 
 SEED_AS_INPUT_WARNING = (
-    "Referenced by a notebook job directive, but its tool is not a workflow step "
-    "(e.g. an upload or data fetch). It was seeded as a workflow input instead."
+    "Referenced by a notebook job directive, but that job is not a workflow step here "
+    "(an upload or data fetch, an unavailable tool, or a job from another history whose "
+    "inputs are not in this one). It was seeded as a workflow input instead."
 )
+
+
+@dataclass(frozen=True)
+class HistoryBoundary:
+    """A notebook history and its contents keyed by original-id ref, which decide what counts as produced here."""
+
+    history_id: int
+    local_copies: Mapping[ContentRef, HistoryItem]
+
+    @classmethod
+    def of(cls, history: History) -> "HistoryBoundary":
+        """Keys every content, including the hidden collection elements and non-ready
+        datasets the extraction summary leaves out; an undeleted copy is preferred."""
+        local_copies: dict[ContentRef, HistoryItem] = {}
+        for content in history.all_contents:
+            ref = original_content_ref(content)
+            if ref not in local_copies or (local_copies[ref].deleted and not content.deleted):
+                local_copies[ref] = content
+        return cls(history.id, MappingProxyType(local_copies))
+
+    def produced_elsewhere(self, job: Job) -> bool:
+        """Whether ``job`` ran in another history and its inputs were not all copied here.
+
+        Such a job is a boundary: its outputs here are workflow inputs. A copied (e.g.
+        imported) history keeps its producers as steps because their inputs came along.
+        """
+        if job.history_id == self.history_id:
+            return False
+        input_keys = {original_content_ref(content) for content in _job_input_contents(job)}
+        return not input_keys or not input_keys <= self.local_copies.keys()
 
 
 @dataclass
 class ClosureResult:
-    """Result of walking backward from a page's referenced outputs.
+    """Producing jobs/ICJs and original-id content refs reached from a page's references."""
 
-    Identity-space-neutral content refs plus the producing job/ICJ ids the
-    summary uses to flag ``seeded`` rows.
-    """
-
+    boundary: HistoryBoundary
     job_ids: set[int] = field(default_factory=set)
     icj_ids: set[int] = field(default_factory=set)
     referenced_output_refs: set[ContentRef] = field(default_factory=set)
@@ -92,36 +113,8 @@ class ClosureResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def _content_key(content: HistoryItem) -> ContentRef:
-    """Normalize a history item to ``(kind, original_id)`` after following copies."""
-    if content.history_content_type == "dataset_collection":
-        return ("hdca", _original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
-    return ("hda", _original_hda(cast(HistoryDatasetAssociation, content)).id)
-
-
-def _resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryItem | None:
-    kind, id_ = ref
-    content: HistoryItem | None
-    if kind == "hdca":
-        content = trans.sa_session.get(HistoryDatasetCollectionAssociation, id_)
-    else:
-        content = trans.sa_session.get(HistoryDatasetAssociation, id_)
-    return content
-
-
-def _tool_for_job(trans: ProvidesHistoryContext, job: Job) -> Optional["Tool"]:
-    try:
-        return trans.app.toolbox.tool_for_job(job, user=trans.user)
-    except InsufficientPermissionsException:
-        return None
-
-
 def _job_output_contents(job: Job) -> list[HistoryItem]:
-    """All of a job's output HDAs/HDCAs (visible or not).
-
-    Seeding re-derives the producing job from any one output's
-    ``creating_job_associations``, so visibility does not affect correctness.
-    """
+    """All of a job's output HDAs/HDCAs, visible or not."""
     contents: list[HistoryItem] = []
     for out_dataset in job.output_datasets:
         if out_dataset.dataset is not None:
@@ -133,7 +126,7 @@ def _job_output_contents(job: Job) -> list[HistoryItem]:
 
 
 def _enqueue_mapped_input_collections(
-    output_collection: HistoryDatasetCollectionAssociation, queue: "deque[HistoryItem]"
+    output_collection: HistoryDatasetCollectionAssociation, queue: MutableSequence[HistoryItem]
 ) -> set[str]:
     """Enqueue the input collection(s) a map-over output was mapped over.
 
@@ -152,33 +145,46 @@ def _enqueue_mapped_input_collections(
     return names
 
 
+def _job_input_contents(job: Job, mapped_input_names: Iterable[str] = ()) -> list[HistoryItem]:
+    """A job's input HDAs/HDCAs; a map step's per-element inputs are folded into the
+    collection(s) it was mapped over (as are any inputs named in ``mapped_input_names``)."""
+    contents: list[HistoryItem] = []
+    names = set(mapped_input_names)
+    icj_assoc = job.implicit_collection_jobs_association
+    icj = icj_assoc.implicit_collection_jobs if icj_assoc is not None else None
+    if icj is not None:
+        for output_hdca in icj.output_dataset_collection_instances:
+            names |= _enqueue_mapped_input_collections(output_hdca, contents)
+    for in_dataset in job.input_datasets:
+        if in_dataset.name not in names and in_dataset.dataset is not None:
+            contents.append(in_dataset.dataset)
+    for in_collection in job.input_dataset_collections:
+        if in_collection.dataset_collection is not None:
+            contents.append(in_collection.dataset_collection)
+    return contents
+
+
 def _backward_job_closure(
     trans: ProvidesHistoryContext,
     refs: list[ContentRef],
     job_refs: list[int],
     icj_refs: list[int],
-    history_id: int,
+    boundary: HistoryBoundary,
 ) -> ClosureResult:
-    """Walk backward from each referenced output to its producing subgraph.
+    """Walk backward from referenced outputs and jobs to their producing subgraph.
 
-    Content ``refs`` are the page's displayed outputs: walked and marked exposed.
-    ``job_refs`` / ``icj_refs`` are jobs a notebook references via a job directive
-    (stdout/stderr/metrics/parameters); they seed their producing subgraph but
-    their outputs are *not* exposed. They are folded into the same backward walk
-    by enqueueing the referenced job's outputs unexposed.
-
-    Stops at boundary inputs: datasets with no creating job, jobs whose tool is
-    not workflow-compatible (upload, data fetch, ...), and cross-history
-    producers. Within-history copies are followed via the original HDA/HDCA.
+    Content ``refs`` are exposed; ``job_refs``/``icj_refs`` seed their subgraph without exposing outputs.
+    Stops at boundary inputs: content with no creating job, jobs whose tool is not workflow-compatible,
+    and producers ``boundary`` places in another history.
     """
-    result = ClosureResult()
+    result = ClosureResult(boundary)
     queue: deque[HistoryItem] = deque()
     for ref in refs:
-        content = _resolve_content(trans, ref)
+        content = resolve_content(trans, ref)
         if content is None:
             result.warnings.append(f"A referenced output ({ref[0]} {ref[1]}) is no longer available and was skipped.")
             continue
-        result.referenced_output_refs.add(_content_key(content))
+        result.referenced_output_refs.add(original_content_ref(content))
         queue.append(content)
 
     for job_id in job_refs:
@@ -186,14 +192,14 @@ def _backward_job_closure(
         if job is None:
             result.warnings.append(f"A referenced job ({job_id}) is no longer available and was skipped.")
             continue
-        tool = _tool_for_job(trans, job)
+        tool = tool_for_job(trans, job)
         # A directly job-referenced non-step (upload, data fetch, cross-history) becomes a
         # seeded input row; flag its outputs so the form can explain why. An upstream upload
         # reached only by an ordinary walk below is not flagged.
-        not_a_step = tool is None or not tool.is_workflow_compatible or job.history_id != history_id
+        not_a_step = tool is None or not tool.is_workflow_compatible or boundary.produced_elsewhere(job)
         for content in _job_output_contents(job):
             if not_a_step:
-                result.seed_warning_refs.add(_content_key(content))
+                result.seed_warning_refs.add(original_content_ref(content))
             queue.append(content)
 
     for icj_id in icj_refs:
@@ -211,7 +217,7 @@ def _backward_job_closure(
     seen_jobs: set[int] = set()
     while queue:
         content = queue.popleft()
-        key = _content_key(content)
+        key = original_content_ref(content)
         if key in seen_content:
             continue
         seen_content.add(key)
@@ -219,63 +225,50 @@ def _backward_job_closure(
 
         is_collection = key[0] == "hdca"
         original = (
-            _original_hdca(cast(HistoryDatasetCollectionAssociation, content))
+            get_original_hdca(cast(HistoryDatasetCollectionAssociation, content))
             if is_collection
-            else _original_hda(cast(HistoryDatasetAssociation, content))
+            else get_original_hda(cast(HistoryDatasetAssociation, content))
         )
-
-        # Map-over recovery: when the walk reaches an implicit output collection,
-        # seed the collection it was mapped over (recorded on the output, not on
-        # the per-element jobs). The loose-element case is handled in the job loop
-        # below via the same helper.
-        mapped_input_names: set[str] = set()
-        if is_collection:
-            mapped_input_names |= _enqueue_mapped_input_collections(
-                cast(HistoryDatasetCollectionAssociation, original), queue
-            )
 
         creating = original.creating_job_associations
         if not creating:
             result.boundary_input_refs.add(key)
             continue
+        if is_collection:
+            # A map output has one association per element job; the first represents them all.
+            creating = creating[:1]
 
         produced_in_history = False
         for assoc in creating:
             job = assoc.job
-            if job.history_id != history_id:
-                # Cross-history producer: treat the content as a boundary input.
+            if boundary.produced_elsewhere(job):
                 continue
             produced_in_history = True
             if job.id in seen_jobs:
                 continue
             seen_jobs.add(job.id)
-            tool = _tool_for_job(trans, job)
+            icj_assoc = job.implicit_collection_jobs_association
+            if icj_assoc is not None and icj_assoc.implicit_collection_jobs_id in result.icj_ids:
+                # Another element job of an already-walked map step.
+                continue
+            tool = tool_for_job(trans, job)
             if tool is None or not tool.is_workflow_compatible:
                 # Upload / data-fetch / missing tool: an input, not a workflow step.
                 result.boundary_input_refs.add(key)
                 continue
             result.job_ids.add(job.id)
-            icj_assoc = job.implicit_collection_jobs_association
             if icj_assoc is not None:
                 result.icj_ids.add(icj_assoc.implicit_collection_jobs_id)
-                # This content is a loose element of a map output (a downstream
-                # tool consumed a single element instead of the whole collection).
-                # The is_collection branch above only fires when the output
-                # collection itself is queued, so recover the map's input
-                # collection here from the ICJ's output collection(s).
-                icj = icj_assoc.implicit_collection_jobs
-                if icj is not None:
-                    for output_hdca in icj.output_dataset_collection_instances:
-                        mapped_input_names |= _enqueue_mapped_input_collections(output_hdca, queue)
-            for in_dataset in job.input_datasets:
-                if in_dataset.name in mapped_input_names:
-                    # Folded into a mapped input collection already queued above.
-                    continue
-                if in_dataset.dataset is not None:
-                    queue.append(in_dataset.dataset)
-            for in_collection in job.input_dataset_collections:
-                if in_collection.dataset_collection is not None:
-                    queue.append(in_collection.dataset_collection)
+            # Map-over recovery, only for a producer walked as a step: when the walk reaches an
+            # implicit output collection, seed the collection it was mapped over (recorded on the
+            # output, not on the per-element jobs). _job_input_contents does the same for a walk
+            # that arrived via a loose element of the output.
+            mapped_input_names: set[str] = set()
+            if is_collection:
+                mapped_input_names = _enqueue_mapped_input_collections(
+                    cast(HistoryDatasetCollectionAssociation, original), queue
+                )
+            queue.extend(_job_input_contents(job, mapped_input_names))
         if not produced_in_history:
             result.boundary_input_refs.add(key)
 
@@ -306,11 +299,9 @@ def _serialize_output(
     output_name: str | None = None,
     *,
     exposed: bool = False,
+    referenced_by_report: bool = False,
 ) -> WorkflowExtractionOutput:
-    suggested = None
-    if output_name is not None:
-        content_kind: Literal["hda", "hdca"] = "hdca" if content.history_content_type == "dataset_collection" else "hda"
-        suggested = suggested_output_name(trans, content.id, content_kind)
+    suggested = suggested_output_name(trans, content) if output_name is not None else None
     return WorkflowExtractionOutput.model_validate(
         {
             "id": content.id,
@@ -323,6 +314,7 @@ def _serialize_output(
             "suggested_name": suggested.name if suggested else None,
             "suggested_name_source": suggested.source if suggested else None,
             "exposed": exposed,
+            "referenced_by_report": referenced_by_report,
         }
     )
 
@@ -334,7 +326,7 @@ def _input_step_type(outputs: list[WorkflowExtractionOutput]) -> Literal["input_
 
 
 def _workflow_output_name(content: HistoryItem, output_name: str | None) -> str | None:
-    if output_name and _skip_output_assoc_name(output_name):
+    if output_name and skip_output_assoc_name(output_name):
         return None
     if content.history_content_type == "dataset_collection":
         return getattr(content, "implicit_output_name", None) or output_name
@@ -343,15 +335,15 @@ def _workflow_output_name(content: HistoryItem, output_name: str | None) -> str 
 
 def _input_extraction_row(
     trans: ProvidesHistoryContext,
-    job: SummaryJob,
     datasets: SummaryDatasets,
     *,
     seeded: bool,
     tool_name: str | None,
     seed_warning: str | None = None,
 ) -> WorkflowExtractionJob:
-    """A non-step input row: a FakeJob/DatasetCollectionCreationJob, or a job
-    whose tool is not workflow-compatible (upload, data fetch)."""
+    """A non-step input row: a FakeJob/DatasetCollectionCreationJob, a job whose
+    tool is not workflow-compatible (upload, data fetch), a boundary cross-history
+    producer, or a synthesized boundary input."""
     outputs = [_serialize_output(trans, data) for _, data in datasets]
     checked = any(not data.deleted for _, data in datasets)
     return WorkflowExtractionJob(
@@ -369,47 +361,50 @@ def _input_extraction_row(
     )
 
 
-def _extraction_row(
+def _input_seeding(datasets: SummaryDatasets, closure: ClosureResult | None) -> tuple[bool, str | None]:
+    """``(seeded, seed_warning)`` for an input row holding ``datasets``."""
+    if closure is None:
+        return False, None
+    content_keys = {original_content_ref(data) for _, data in datasets}
+    seed_warning = SEED_AS_INPUT_WARNING if content_keys & closure.seed_warning_refs else None
+    return bool(content_keys & closure.content_refs), seed_warning
+
+
+def _report_referenced_outputs(datasets: SummaryDatasets, referenced: set[ContentRef]) -> set[int]:
+    """Indices of ``datasets`` the report uses: one per referenced original, preferring it over in-history copies."""
+    chosen: dict[ContentRef, int] = {}
+    for index, (_, data) in enumerate(datasets):
+        ref = original_content_ref(data)
+        if ref in referenced and (ref not in chosen or data.id == ref[1]):
+            chosen[ref] = index
+    return set(chosen.values())
+
+
+def _tool_row(
     trans: ProvidesHistoryContext,
-    job: SummaryJob,
+    job: Job,
+    tool: "Tool | None",
     datasets: SummaryDatasets,
     icj_assoc_by_job_id: dict[int, ImplicitCollectionJobsJobAssociation],
     closure: ClosureResult | None,
 ) -> WorkflowExtractionJob:
-    referenced = closure.referenced_output_refs if closure else set()
-    content_keys = {_content_key(data) for _, data in datasets}
-    input_seeded = bool(closure and (content_keys & closure.content_refs))
-    seed_warning = SEED_AS_INPUT_WARNING if closure and (content_keys & closure.seed_warning_refs) else None
-
-    if getattr(job, "is_fake", False):
-        # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
-        return _input_extraction_row(
-            trans,
-            job,
-            datasets,
-            seeded=input_seeded,
-            tool_name=getattr(job, "name", None),
-            seed_warning=seed_warning,
-        )
-
-    custom_tools_inaccessible = False
-    try:
-        tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
-    except InsufficientPermissionsException:
-        tool = None
-        custom_tools_inaccessible = True
-
+    """A workflow step row, or an invalid one when ``tool`` is missing or inaccessible."""
+    referenced = _report_referenced_outputs(datasets, closure.referenced_output_refs if closure else set())
     tool_outputs = [
         _serialize_output(
-            trans, data, _workflow_output_name(data, output_name), exposed=_content_key(data) in referenced
+            trans,
+            data,
+            _workflow_output_name(data, output_name),
+            exposed=index in referenced,
+            referenced_by_report=index in referenced,
         )
-        for output_name, data in datasets
+        for index, (output_name, data) in enumerate(datasets)
     ]
 
     if tool is None:
         invalid_reason = (
             InvalidWorkflowExtractionJobReason.CUSTOM_TOOL_INACCESSIBLE
-            if custom_tools_inaccessible
+            if job.dynamic_tool is not None
             else InvalidWorkflowExtractionJobReason.TOOL_MISSING_OR_INACCESSIBLE
         )
         return WorkflowExtractionJob(
@@ -425,12 +420,6 @@ def _extraction_row(
             tool_version_warning=None,
             outputs=tool_outputs,
             invalid=invalid_reason,
-        )
-
-    if not tool.is_workflow_compatible:
-        # Not a workflow step (e.g. upload, data fetch) — treat as input.
-        return _input_extraction_row(
-            trans, job, datasets, seeded=input_seeded, tool_name=tool.name, seed_warning=seed_warning
         )
 
     tool_version_warning = (
@@ -464,50 +453,123 @@ def _extraction_row(
     )
 
 
-def _synthesize_cross_history_inputs(
+def _synthesize_boundary_inputs(
     trans: ProvidesHistoryContext,
     represented_keys: set[ContentRef],
     closure: ClosureResult,
 ) -> list[WorkflowExtractionJob]:
-    """Boundary inputs the whole-history summary did not already surface as rows
-    (e.g. cross-history datasets) become synthetic input rows so they are not
-    silently dropped from the seeded set.
+    """Seeded input rows for boundary inputs not already in ``represented_keys`` (both original-id refs).
 
-    ``represented_keys`` is in the same original-id space as
-    ``closure.boundary_input_refs`` (both via :func:`_content_key`)."""
+    A row lists the history's own copy when there is one: the original may sit in a history
+    the user can no longer access.
+    """
     synthesized: list[WorkflowExtractionJob] = []
     for ref in sorted(closure.boundary_input_refs):
         if ref in represented_keys:
             continue
-        content = _resolve_content(trans, ref)
+        content = closure.boundary.local_copies.get(ref)
+        if content is None:
+            content = resolve_content(trans, ref)
         if content is None:
             continue
         seed_warning = SEED_AS_INPUT_WARNING if ref in closure.seed_warning_refs else None
         synthesized.append(
-            _input_extraction_row(
-                trans, content, [(None, content)], seeded=True, tool_name=None, seed_warning=seed_warning
-            )
+            _input_extraction_row(trans, [(None, content)], seeded=True, tool_name=None, seed_warning=seed_warning)
         )
     return synthesized
 
 
-def build_extraction_summary(
-    trans: ProvidesHistoryContext, history: History, *, closure: ClosureResult | None = None
-) -> WorkflowExtractionSummary:
-    """Serialize the whole-history extraction summary.
+def _input_producer_name(
+    job: SummaryJob, tool: "Tool | None", closure: ClosureResult | None
+) -> tuple[bool, str | None]:
+    """Whether ``job``'s outputs here are workflow inputs rather than step outputs, and the
+    producer name their input row shows: a FakeJob/DatasetCollectionCreationJob, a tool that is
+    not workflow-compatible (upload, data fetch), or a producer in another history."""
+    if not isinstance(job, Job):
+        return True, getattr(job, "name", None)
+    if closure is not None and closure.boundary.produced_elsewhere(job):
+        return True, tool.name if tool else None
+    if tool is not None and not tool.is_workflow_compatible:
+        return True, tool.name
+    return False, None
 
-    With ``closure`` (page path), rows in the producing subgraph are flagged
-    ``seeded`` and referenced outputs ``exposed``; cross-history boundary inputs
-    not already present are synthesized as input rows.
+
+def _collections_by_original(history: History) -> dict[ContentRef, SummaryDatasets]:
+    """``history``'s collections keyed by their original's ref.
+
+    ``summarize`` records a copied collection as its original, which may sit in a history
+    the user can no longer access; input rows list these in-history collections instead.
     """
-    jobs, warnings = summarize(trans, history)
-    icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
+    collections: dict[ContentRef, SummaryDatasets] = {}
+    for hdca in history.contents_iter(types=["dataset_collection"]):
+        collections.setdefault(original_content_ref(hdca), []).append((None, hdca))
+    return collections
 
-    jobs_list = [_extraction_row(trans, job, datasets, icj_assoc_by_job_id, closure) for job, datasets in jobs.items()]
+
+def _summary_rows(
+    trans: ProvidesHistoryContext,
+    history: History,
+    jobs: dict[SummaryJob, SummaryDatasets],
+    closure: ClosureResult | None,
+) -> list[tuple[WorkflowExtractionJob, SummaryDatasets]]:
+    """One row per step job, and one input row per original that non-step jobs left here,
+    listing its in-history copies: extraction makes all copies of one original a single input.
+    Each row is paired with the datasets it holds."""
+    icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
+    collections_here = _collections_by_original(history)
+    # Input rows are filled in once all their copies are known; None marks their place.
+    pending: list[tuple[WorkflowExtractionJob | None, SummaryDatasets, str | None]] = []
+    inputs: dict[ContentRef, SummaryDatasets] = {}
+    for job, datasets in jobs.items():
+        tool = tool_for_job(trans, job) if isinstance(job, Job) else None
+        is_input, producer_name = _input_producer_name(job, tool, closure)
+        if not is_input:
+            pending.append(
+                (_tool_row(trans, cast(Job, job), tool, datasets, icj_assoc_by_job_id, closure), datasets, None)
+            )
+            continue
+        for item in datasets:
+            ref = original_content_ref(item[1])
+            copies = inputs.get(ref)
+            if copies is None:
+                copies = inputs[ref] = []
+                pending.append((None, copies, producer_name))
+            for copy in collections_here.get(ref, [item]):
+                if all(data.id != copy[1].id for _, data in copies):
+                    copies.append(copy)
+    rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
+    for row, datasets, producer_name in pending:
+        if row is None:
+            seeded, seed_warning = _input_seeding(datasets, closure)
+            row = _input_extraction_row(
+                trans, datasets, seeded=seeded, tool_name=producer_name, seed_warning=seed_warning
+            )
+        rows.append((row, datasets))
+    return rows
+
+
+def _serialize_summary(
+    trans: ProvidesHistoryContext,
+    history: History,
+    jobs: dict[SummaryJob, SummaryDatasets],
+    warnings: Iterable[str],
+    closure: ClosureResult | None = None,
+) -> WorkflowExtractionSummary:
+    """With ``closure`` (page path), rows in the producing subgraph are flagged
+    ``seeded`` and referenced outputs ``exposed``; boundary inputs not already
+    present as input or seeded rows are synthesized as input rows."""
+    rows = _summary_rows(trans, history, jobs, closure)
+    jobs_list = [row for row, _ in rows]
     all_warnings = list(warnings)
     if closure is not None:
-        represented_keys = {_content_key(data) for datasets in jobs.values() for _, data in datasets}
-        jobs_list.extend(_synthesize_cross_history_inputs(trans, represented_keys, closure))
+        # An unseeded tool row (e.g. an invalid one) does not feed the seeded subgraph.
+        represented_keys = {
+            original_content_ref(data)
+            for row, datasets in rows
+            if row.seeded or row.step_type != "tool"
+            for _, data in datasets
+        }
+        jobs_list.extend(_synthesize_boundary_inputs(trans, represented_keys, closure))
         all_warnings.extend(closure.warnings)
 
     return WorkflowExtractionSummary.model_validate(
@@ -519,13 +581,20 @@ def build_extraction_summary(
     )
 
 
-def summary_from_page(trans: ProvidesHistoryContext, page: Page) -> WorkflowExtractionSummary:
-    """Extraction summary for a notebook page, seeded from the outputs it references."""
-    history = page.history
-    assert history is not None, "summary_from_page requires a history-attached page"
+def build_extraction_summary(trans: ProvidesHistoryContext, history: History) -> WorkflowExtractionSummary:
+    """Serialize the whole-history extraction summary."""
+    jobs, warnings = summarize(trans, history)
+    return _serialize_summary(trans, history, jobs, warnings)
+
+
+def summary_from_page(trans: ProvidesHistoryContext, page: Page, history: History) -> WorkflowExtractionSummary:
+    """Extraction summary for a notebook page's ``history``, seeded from the outputs the page references."""
     revision = page.latest_revision
     content = revision.content if revision is not None else None
     referenced = referenced_content_ids(trans, content or "")
-    closure = _backward_job_closure(trans, referenced.refs, referenced.job_refs, referenced.icj_refs, history.id)
+    jobs, warnings = summarize(trans, history)
+    closure = _backward_job_closure(
+        trans, referenced.refs, referenced.job_refs, referenced.icj_refs, HistoryBoundary.of(history)
+    )
     closure.warnings = referenced.warnings + closure.warnings
-    return build_extraction_summary(trans, history, closure=closure)
+    return _serialize_summary(trans, history, jobs, warnings, closure)

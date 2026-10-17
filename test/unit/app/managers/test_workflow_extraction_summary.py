@@ -5,6 +5,7 @@ exercised here with lightweight mocks rather than a live app. The full
 serialization (build_extraction_summary) is covered by the API tests.
 """
 
+from types import SimpleNamespace
 from typing import (
     cast,
 )
@@ -12,9 +13,13 @@ from typing import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.workflow_extraction_summary import (
     _backward_job_closure,
-    _content_key,
+    HistoryBoundary,
 )
-from galaxy.model import HistoryItem
+from galaxy.model import (
+    History,
+    HistoryItem,
+)
+from galaxy.workflow.extract import original_content_ref
 
 TARGET_HISTORY = 1
 
@@ -28,8 +33,10 @@ class MockToolbox:
     def __init__(self, by_job_id: dict | None = None, default_compatible: bool = True):
         self._by_job_id = by_job_id or {}
         self._default = default_compatible
+        self.calls: list[int] = []
 
     def tool_for_job(self, job, user=None):
+        self.calls.append(job.id)
         if job.id in self._by_job_id:
             return self._by_job_id[job.id]
         return MockTool(self._default)
@@ -143,10 +150,11 @@ class MockImplicitCollectionJobs:
 class MockHda:
     history_content_type = "dataset"
 
-    def __init__(self, id, creating_jobs=(), copied_from=None):
+    def __init__(self, id, creating_jobs=(), copied_from=None, deleted=False):
         self.id = id
         self.creating_job_associations = [MockOutputAssoc(j) for j in creating_jobs]
         self.copied_from_history_dataset_association = copied_from
+        self.deleted = deleted
 
 
 class MockHdca:
@@ -171,7 +179,7 @@ def _trans(contents, toolbox=None, jobs=(), icjs=()):
 
 
 def _closure(trans, refs, job_refs=(), icj_refs=()):
-    return _backward_job_closure(trans, refs, list(job_refs), list(icj_refs), TARGET_HISTORY)
+    return _backward_job_closure(trans, refs, list(job_refs), list(icj_refs), HistoryBoundary(TARGET_HISTORY, {}))
 
 
 def test_linear_chain_collects_all_upstream_jobs():
@@ -246,6 +254,32 @@ def test_implicit_collection_job_records_icj_id():
     assert result.referenced_output_refs == {("hdca", 1)}
 
 
+def test_map_output_walks_one_job_per_icj():
+    input_collection = MockHdca(20)
+    icj = MockImplicitCollectionJobs(7)
+    element_jobs = [MockJob(i, icj=icj, inputs=[MockHda(100 + i)]) for i in (2, 3, 4)]
+    for job in element_jobs:
+        job.input_datasets[0].name = "input"
+    impl_out = MockHdca(
+        10,
+        creating_jobs=element_jobs,
+        implicit_input_collections=[MockImplicitInputCollection(input_collection, name="input")],
+    )
+    icj.output_dataset_collection_instances = [impl_out]
+    # Loose elements of the same map reached separately must not re-walk the ICJ.
+    loose_elements = [MockHda(30 + job.id, creating_jobs=[job]) for job in element_jobs]
+    downstream_job = MockJob(1, inputs=loose_elements)
+    out = MockHda(1, creating_jobs=[downstream_job])
+    toolbox = MockToolbox()
+    trans = _trans([out, impl_out], toolbox=toolbox)
+
+    result = _closure(trans, [("hda", 1), ("hdca", 10)])
+
+    assert result.icj_ids == {7}
+    assert ("hdca", 20) in result.content_refs
+    assert toolbox.calls == [1, 2]  # downstream job + one representative element job
+
+
 def test_missing_seed_skipped_with_warning():
     trans = _trans([])  # nothing registered -> session.get returns None
 
@@ -271,7 +305,16 @@ def test_cycle_guard_terminates():
 def test_copied_dataset_normalized_to_original():
     original = MockHda(10)
     copy = MockHda(11, copied_from=original)
-    assert _content_key(cast(HistoryItem, copy)) == ("hda", 10)
+    assert original_content_ref(cast(HistoryItem, copy)) == ("hda", 10)
+
+
+def test_boundary_prefers_undeleted_local_copy():
+    original = MockHda(10)
+    deleted_copy = MockHda(11, copied_from=original, deleted=True)
+    live_copy = MockHda(12, copied_from=original)
+    history = SimpleNamespace(id=TARGET_HISTORY, all_contents=[deleted_copy, live_copy])
+    boundary = HistoryBoundary.of(cast(History, history))
+    assert boundary.local_copies == {("hda", 10): live_copy}
 
 
 def test_plain_job_ref_seeds_producing_subgraph():

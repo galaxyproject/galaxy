@@ -208,6 +208,27 @@ describe("PageEditorView", () => {
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/extract_workflow?from_page=${PAGE_ID}`);
         });
 
+        it("ignores repeat Extract Workflow clicks while the pre-extract save is pending", async () => {
+            const store = usePageEditorStore();
+            vi.spyOn(store, "isDirty", "get").mockReturnValue(true);
+            let completeSave!: () => void;
+            vi.mocked(store.savePage).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        completeSave = resolve;
+                    }),
+            );
+
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            await wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).trigger("click");
+            expect(wrapper.get(SELECTORS.EXTRACT_WORKFLOW_BUTTON).attributes("aria-busy")).toBe("true");
+            expect(store.savePage).toHaveBeenCalledOnce();
+
+            completeSave();
+            await flushPromises();
+            expect(mockPush).toHaveBeenCalledOnce();
+        });
+
         it("keeps the editor open and displays an error when saving for extraction fails", async () => {
             const store = usePageEditorStore();
             vi.spyOn(store, "isDirty", "get").mockReturnValue(true);

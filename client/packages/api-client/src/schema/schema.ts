@@ -4565,6 +4565,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{id}/extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
+         * @description Summarize the jobs in the page's history, preselecting the subgraph that
+         *     produced the datasets/collections the page references.
+         */
+        get: operations["extraction_summary_api_pages__id__extraction_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pages/{id}/prepare_download": {
         parameters: {
             query?: never;
@@ -4760,27 +4781,6 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_pages__id__unpublish_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/pages/{id}/workflow_extraction_summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
-         * @description Summarize the jobs in the page's history, preselecting the subgraph that
-         *     produced the datasets/collections the page references.
-         */
-        get: operations["workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -28456,11 +28456,6 @@ export interface components {
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
             /**
-             * Report Title
-             * @description Title for the workflow report built from from_page_id; defaults to the workflow name.
-             */
-            report_title?: string | null;
-            /**
              * Step Labels
              * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
              */
@@ -28580,6 +28575,12 @@ export interface components {
              * @description Workflow/tool output port name for this concrete output, when known.
              */
             output_name?: string | null;
+            /**
+             * Referenced By Report
+             * @description Whether the notebook report uses this output, which keeps it a workflow output.
+             * @default false
+             */
+            referenced_by_report: boolean;
             /**
              * State
              * @description The state of the dataset or collection.
@@ -48332,6 +48333,50 @@ export interface operations {
             };
         };
     };
+    extraction_summary_api_pages__id__extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history's extraction summary with seeded rows and exposed outputs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     prepare_pdf_api_pages__id__prepare_download_post: {
         parameters: {
             query?: never;
@@ -48766,50 +48811,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The ID of the Page. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The history's extraction summary with seeded rows and exposed outputs. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
                 };
             };
             /** @description Request Error */
