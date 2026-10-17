@@ -91,7 +91,7 @@ class ConfigWatchers:
         for job_rules_directory in self.job_rules_paths:
             self.job_rule_watcher.watch_directory(
                 job_rules_directory,
-                callback=lambda: self.app.queue_worker.send_control_task("reload_job_rules"),
+                callback=lambda path: self.app.queue_worker.send_control_task("reload_job_rules"),
                 recursive=True,
                 ignore_extensions=(".pyc", ".pyo", ".pyd"),
             )

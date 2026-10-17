@@ -537,7 +537,10 @@ async function onCancel() {
     <GAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </GAlert>
-    <GAlert v-else-if="!invocationLoaded" variant="info" show>
+    <GAlert
+        v-else-if="!invocationLoaded || invocationStore.isLoadingInvocation(props.invocationId)"
+        variant="info"
+        show>
         <LoadingSpan message="Loading invocation" />
     </GAlert>
     <GAlert v-else-if="invocationStore.getInvocationLoadError(props.invocationId)" variant="danger" show>

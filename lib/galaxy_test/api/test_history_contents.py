@@ -897,8 +897,7 @@ class TestHistoryContentsApi(ApiTestCase):
             element_identifiers=element_identifiers,
             collection_type="list",
         )
-        with self._different_user():
-            second_history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as second_history_id:
             create_response = self._post(
                 f"histories/{second_history_id}/contents/dataset_collections", create_data, json=True
             )

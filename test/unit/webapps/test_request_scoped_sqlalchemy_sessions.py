@@ -35,12 +35,15 @@ class UnexpectedException(Exception):
     pass
 
 
-async def _get_app():
+def get_gx_app():
     global GX_APP
     if not GX_APP:
         GX_APP = MockApp()
-        GX_APP.stop = False
-    app = GX_APP
+    return GX_APP
+
+
+async def _get_app():
+    app = get_gx_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
     try:
@@ -148,18 +151,21 @@ async def test_request_scoped_sa_session_concurrent_requests_async():
 @pytest.mark.asyncio
 async def test_request_scoped_sa_session_concurrent_requests_and_background_thread():
     loop = asyncio.get_running_loop()
-    target = functools.partial(assert_scoped_session_is_thread_local, GX_APP)
+    gx_app = get_gx_app()
+    gx_app.stop = False
+    target = functools.partial(assert_scoped_session_is_thread_local, gx_app)
     with concurrent.futures.ThreadPoolExecutor() as pool:
         background_pool = loop.run_in_executor(pool, target)
-        async with AsyncClient(base_url="http://test", transport=transport) as client:
-            awaitables = (client.get("/async_wait") for _ in range(10))
-            result = await asyncio.gather(*awaitables)
-            uuids = []
-            for r in result:
-                assert r.status_code == 200
-                uuids.append(r.json())
-            assert len(set(uuids)) == 10
-            assert GX_APP
-            assert GX_APP.model.scoped_registry.registry == {}
-        GX_APP.stop = True
+        try:
+            async with AsyncClient(base_url="http://test", transport=transport) as client:
+                awaitables = (client.get("/async_wait") for _ in range(10))
+                result = await asyncio.gather(*awaitables)
+                uuids = []
+                for r in result:
+                    assert r.status_code == 200
+                    uuids.append(r.json())
+                assert len(set(uuids)) == 10
+                assert gx_app.model.scoped_registry.registry == {}
+        finally:
+            gx_app.stop = True
         await background_pool
