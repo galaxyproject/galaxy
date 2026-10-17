@@ -1425,8 +1425,8 @@ def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bo
         return False
     # Compare the authority as written, so IPv6 entries keep their brackets.
     host = url.netloc.lower()
-    if port == 443:
-        host = host.removesuffix(":443")
+    if port == 443 and host.endswith(":443"):
+        host = host[: -len(":443")]
     return host in {allowed.lower() for allowed in allowed_hosts}
 
 
