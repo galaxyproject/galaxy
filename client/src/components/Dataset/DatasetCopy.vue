@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
@@ -9,6 +8,7 @@ import Multiselect from "vue-multiselect";
 import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
@@ -259,10 +259,10 @@ defineExpose({
                     </div>
                 </div>
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
-                <BFormInput
+                <GFormInput
                     v-model="newHistoryName"
                     data-description="copy history name"
-                    @input="
+                    @update:model-value="
                         targetMultiSelections = {};
                         targetSingleHistory = null;
                     " />

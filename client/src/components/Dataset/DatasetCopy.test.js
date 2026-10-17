@@ -239,6 +239,19 @@ it("shows success for new history creation", async () => {
     expect(wrapper.text()).toContain("New History");
 });
 
+it("clears the target history selections when a new history name is typed", async () => {
+    const wrapper = await setupBase(
+        [{ id: "h1", name: "H1" }],
+        [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
+    );
+    const targetCheckbox = wrapper.findAll("input[type='checkbox']").at(-1);
+    await targetCheckbox.setValue(true);
+    const nameInput = wrapper.get("input[data-description='copy history name']");
+    expect(nameInput.classes()).toContain("g-form-input");
+    await nameInput.setValue("New History");
+    expect(targetCheckbox.element.checked).toBe(false);
+});
+
 it("labels the history search inputs with their visible captions", async () => {
     const wrapper = await setupBase([{ id: "h1", name: "H1" }], []);
     const labels = wrapper.findAll("input.multiselect__input").map((input) => {
