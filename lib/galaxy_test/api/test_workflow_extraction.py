@@ -398,6 +398,69 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
+    def test_hid_extract_connects_whichever_copy_is_sent(self, history_id):
+        """The hid path (bioblend's extract_workflow_from_history) treats in-history copies as one input."""
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        for hids in ([hda["hid"]], [hda_copy["hid"]], [hda["hid"], hda_copy["hid"]]):
+            downloaded = self._extract_and_download_workflow(
+                history_id, dataset_ids=hids, job_ids=[run["jobs"][0]["id"]]
+            )
+            (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+            (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+            assert "input1" in cat1_step["input_connections"], (hids, cat1_step)
+            assert connection_step_id(cat1_step["input_connections"]["input1"]) == input_step["id"], (hids, cat1_step)
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_connects_tool_output_with_an_in_history_copy(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        first = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        intermediate = first["outputs"][0]
+        self._copy_hda_to_history(history_id, intermediate)
+        second = self.dataset_populator.run_tool(
+            "cat1", {"input1": {"src": "hda", "id": intermediate["id"]}}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        downloaded = self._extract_and_download_workflow(
+            history_id, dataset_ids=[hda["hid"]], job_ids=[first["jobs"][0]["id"], second["jobs"][0]["id"]]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
+        sources = {
+            s["id"]: (
+                connection_step_id(s["input_connections"]["input1"]) if "input1" in s["input_connections"] else None
+            )
+            for s in tool_steps
+        }
+        first_id = next((step_id for step_id, source in sources.items() if source == input_step["id"]), None)
+        assert first_id is not None, tool_steps
+        second_id = next(step_id for step_id in sources if step_id != first_id)
+        assert sources[second_id] == first_id, tool_steps
+
+    @summarize_instance_history_on_error
+    def test_hid_extract_copies_with_different_names_rejected(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        response = self._extract_from_history_raw(
+            history_id,
+            {
+                "workflow_name": "copies named twice",
+                "dataset_hids": [hda["hid"], hda_copy["hid"]],
+                "dataset_names": ["numbers", "digits"],
+            },
+        )
+        self._assert_status_code_is(response, 400)
+        assert (
+            response.json()["err_msg"]
+            == "dataset_hids includes copies of one dataset with different dataset_names: 'numbers' and 'digits'"
+        ), response.json()
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
     def test_extract_udt_step_with_downstream_tool(self, history_id):
         with self.dataset_populator.user_tool_execute_permissions():
             dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
