@@ -160,6 +160,23 @@ describe("JobsList", () => {
         expect(wrapper.text()).toContain("Showing all unfinished jobs");
     });
 
+    it("stops the ticked jobs through the Submit button", async () => {
+        // Attached, so clicking the submit button submits its form
+        const wrapper = await mountJobsList(document.body);
+        vi.mocked(deleteJob).mockClear();
+        await rowBoxes(wrapper)[0]!.setValue(true);
+        await wrapper.find("#stop-message").setValue("maintenance");
+
+        const submit = wrapper.find("#stop-message").element.closest("form")!.querySelector(".g-button")!;
+        expect(submit.getAttribute("type")).toBe("submit");
+        (submit as HTMLButtonElement).click();
+        await flushPromises();
+
+        expect(deleteJob).toHaveBeenCalledTimes(1);
+        expect(deleteJob).toHaveBeenCalledWith("job1", "maintenance");
+        wrapper.unmount();
+    });
+
     it("ticks a job without opening its details", async () => {
         // Attached, so the click runs the checkbox activation and fires change
         const wrapper = await mountJobsList(document.body);

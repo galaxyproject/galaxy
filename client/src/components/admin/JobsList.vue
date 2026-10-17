@@ -108,7 +108,7 @@
                         <BFormInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
                         </BFormInput>
                         <BInputGroupAppend>
-                            <BButton type="submit">Submit</BButton>
+                            <GButton type="submit">Submit</GButton>
                         </BInputGroupAppend>
                     </BInputGroup>
                 </BFormGroup>
@@ -168,7 +168,7 @@
 </template>
 
 <script>
-import { BButton, BCol, BForm, BFormGroup, BFormInput, BInputGroup, BInputGroupAppend, BRow } from "bootstrap-vue";
+import { BCol, BForm, BFormGroup, BFormInput, BInputGroup, BInputGroupAppend, BRow } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -183,13 +183,13 @@ import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock.vue";
 import JobsTable from "@/components/admin/JobsTable.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 export default {
     components: {
-        BButton,
         BCol,
         BForm,
         BFormGroup,
@@ -198,6 +198,7 @@ export default {
         BInputGroupAppend,
         BRow,
         GAlert,
+        GButton,
         GCheckbox,
         FilterMenu,
         JobLock,
