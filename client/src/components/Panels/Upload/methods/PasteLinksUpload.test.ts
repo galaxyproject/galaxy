@@ -65,8 +65,11 @@ describe("PasteLinksUpload", () => {
 
         await pasteUrlsAndAdd(wrapper, ["not-a-valid-url", "https://example.org/data.txt"]);
 
-        expect(wrapper.find(SELECTORS.rowUrl(1)).classes()).toContain("is-invalid");
-        expect(wrapper.find(SELECTORS.rowUrl(2)).classes()).not.toContain("is-invalid");
+        expect(wrapper.find(SELECTORS.rowUrl(1)).classes()).toContain("g-form-input");
+        expect(wrapper.find(SELECTORS.rowUrl(1)).attributes("aria-invalid")).toBe("true");
+        expect(wrapper.find(SELECTORS.rowUrl(2)).attributes("aria-invalid")).toBeUndefined();
+        // The row tint in the stylesheet keys on this selector.
+        expect(wrapper.findAll('tbody tr:has(.url-input[aria-invalid="true"])')).toHaveLength(1);
 
         // A banner explains why Start stays disabled.
         expect(wrapper.find(SELECTORS.invalidWarning).exists()).toBe(true);
@@ -80,7 +83,8 @@ describe("PasteLinksUpload", () => {
 
         await pasteUrlsAndAdd(wrapper, ["https://example.org/data1.txt", "https://example.org/data2.txt"]);
 
-        expect(wrapper.findAll(".is-invalid")).toHaveLength(0);
+        expect(wrapper.findAll(".g-form-input")).toHaveLength(4);
+        expect(wrapper.findAll("[aria-invalid='true']")).toHaveLength(0);
         expect(wrapper.find(SELECTORS.invalidWarning).exists()).toBe(false);
         expect(lastReadyState(wrapper)).toBe(true);
     });

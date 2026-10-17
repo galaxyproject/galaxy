@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faLink, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -30,6 +29,7 @@ import UploadTableExtensionCell from "../shared/UploadTableExtensionCell.vue";
 import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
 import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 
@@ -296,10 +296,10 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- URL column -->
                     <template v-slot:cell(url)="{ item, index }">
                         <div class="d-flex align-items-center">
-                            <BFormInput
+                            <GFormInput
                                 v-model="item.url"
                                 v-g-tooltip.hover
-                                size="sm"
+                                size="small"
                                 :data-test-id="`upload-row-${index + 1}-url`"
                                 :state="isValidUrl(item.url)"
                                 :title="getUrlValidationMessage(item.url)"
@@ -447,7 +447,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
     // Highlight rows with an invalid URL so the problem is visible at a
     // glance, even on narrow screens where the URL column itself is
     // scrolled out of view.
-    :deep(.url-table tbody tr:has(.url-input.is-invalid)) {
+    :deep(.url-table tbody tr:has(.url-input[aria-invalid="true"])) {
         background-color: rgba($brand-danger, 0.08);
     }
 
