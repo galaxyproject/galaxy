@@ -1718,6 +1718,9 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
+            if isinstance(default_value, list):
+                # YAML can load numeric text defaults as numbers, while connected option values are strings.
+                default_value = [str(value) for value in default_value]
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
