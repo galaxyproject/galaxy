@@ -431,7 +431,7 @@ class WorkflowsService(ServiceBase):
         build_report = None
         if payload.from_page_id is not None:
             page, _ = self._page_manager.get_accessible_notebook(trans, payload.from_page_id)
-            build_report = partial(_build_report_config, trans, page, payload.report_title or payload.workflow_name)
+            build_report = partial(_build_report_config, trans, page, payload.workflow_name)
         stored_workflow, report_warnings = extract_workflow_by_ids(
             trans,
             user=trans.user,
