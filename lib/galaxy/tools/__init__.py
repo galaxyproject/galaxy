@@ -15,6 +15,7 @@ from collections.abc import (
     Sequence,
 )
 from datetime import datetime
+from functools import cached_property
 from typing import (
     Any,
     cast,
@@ -190,6 +191,7 @@ from galaxy.tools.parameters.basic import (
     SelectToolParameter,
     ToolParameter,
 )
+from galaxy.tools.parameters.data_tables import DataTableParameters
 from galaxy.tools.parameters.dataset_matcher import (
     set_dataset_matcher_factory,
     unset_dataset_matcher_factory,
@@ -2478,6 +2480,29 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             else:
                 message = f"Failure executing tool with id '{self.id}' (invalid data returned from tool execution)"
             return False, message
+
+    @cached_property
+    def _data_table_parameters(self) -> DataTableParameters:
+        return DataTableParameters(self.inputs)
+
+    @property
+    def has_data_table(self) -> bool:
+        """Whether any input, including inactive branches, declares ``from_data_table``.
+
+        The relevant parameter tree is cached for this tool instance. Tool reloads
+        create a new instance and therefore a fresh tree.
+        """
+        return self._data_table_parameters.has_data_table
+
+    def is_using_data_table(self, job: Job) -> bool:
+        """Whether the job has a populated installed-table select in its active state.
+
+        Dataset-backed selections are excluded. Only relevant parameter groups
+        are JSON-decoded; dataset objects and dynamic options are not loaded.
+        Invalid relevant state raises. Callers may cache the result for one
+        scheduling evaluation, but it is not cached on the persistent job.
+        """
+        return self.has_data_table and self._data_table_parameters.is_using_data_table(job.raw_param_dict())
 
     @property
     def params_with_missing_data_table_entry(self):
