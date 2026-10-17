@@ -139,6 +139,19 @@ class TestToolsUpload(ApiTestCase):
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
         assert result_content == ONE_TO_SIX_ON_WINDOWS
 
+    @pytest.mark.parametrize("api", ["upload1", "fetch"])
+    @pytest.mark.parametrize("suffix", ["", ".gz", ".bz2"])
+    def test_upload_explicit_generic_fastq(self, api, suffix):
+        extension = f"fastq{suffix}"
+        upload_datatypes = self._get("datatypes").json()
+        assert extension not in upload_datatypes
+        path = TestDataResolver().get_filename(f"1.fastqsanger{suffix}")
+        upload_kwds = {"file_type" if api == "upload1" else "ext": extension}
+        with open(path, "rb") as fh:
+            details = self._upload_and_get_details(fh, api=api, **upload_kwds)
+        assert details["state"] == "ok"
+        assert details["file_ext"] == extension
+
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
         with open(fastqgz_path, "rb") as fh:
