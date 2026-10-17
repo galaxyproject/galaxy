@@ -1,8 +1,6 @@
 import json
-import sys
 from typing import (
     Any,
-    cast,
     Literal,
     NamedTuple,
     Optional,
@@ -100,13 +98,15 @@ def get_default_parameter(param_type: INPUT_PARAMETER_TYPES, bounds: Optional[Nu
 class _FormValidatorShape(NamedTuple):
     validator_type: str
     fields: set[str]
+    # values the form fields hold without loss (integer inputs' min/max would truncate fractional bounds)
+    field_value_type: type = object
 
 
 # Validators the editor form shows as fields, by parameter type: regex rows or a min/max pair.
 FORM_VALIDATOR_SHAPES = {
     "text": _FormValidatorShape("regex", {"expression", "message", "negate"}),
     "directory_uri": _FormValidatorShape("regex", {"expression", "message", "negate"}),
-    "integer": _FormValidatorShape("in_range", {"min", "max"}),
+    "integer": _FormValidatorShape("in_range", {"min", "max"}, int),
     "float": _FormValidatorShape("in_range", {"min", "max"}),
 }
 
@@ -114,18 +114,16 @@ FORM_VALIDATOR_SHAPES = {
 def validators_to_form(parameter_type: str, validators: list[dict[str, Any]]) -> dict[str, Any]:
     """Persisted validators as editor form values.
 
-    Regex rows, the first min/max pair, and the rest unchanged in the hidden ``extra_validators`` field,
-    with their places in the declared order in ``extra_validator_positions``.
+    Regex rows, the first min/max pair, and the rest unchanged in the hidden ``extra_validators`` field
+    as ``[position, validator]`` pairs, ``position`` being the place in the declared order.
     """
     if not isinstance(validators, list) or not all(isinstance(v, dict) for v in validators):
         raise RequestParameterInvalidException("Workflow parameter validators must be a list of objects.")
     form: dict[str, Any] = {"validators": []}
-    extra: list[dict[str, Any]] = []
-    positions: list[int] = []
+    extra: list[tuple[int, dict[str, Any]]] = []
     for position, validator in enumerate(validators):
         if not _form_can_show(parameter_type, validator):
-            extra.append(validator)
-            positions.append(position)
+            extra.append((position, validator))
         elif validator["type"] == "regex":
             form["validators"].append(
                 {
@@ -138,11 +136,9 @@ def validators_to_form(parameter_type: str, validators: list[dict[str, Any]]) ->
             form["min"] = validator.get("min")
             form["max"] = validator.get("max")
         else:
-            extra.append(validator)
-            positions.append(position)
+            extra.append((position, validator))
     if extra:
         form["extra_validators"] = json.dumps(extra)
-        form["extra_validator_positions"] = json.dumps(positions)
     return form
 
 
@@ -163,8 +159,7 @@ def validators_from_form(parameter_definition: dict[str, Any]) -> list[dict[str,
             }
         )
     extra = _load_extra_validators(parameter_definition.get("extra_validators"))
-    positions = _load_positions(parameter_definition.get("extra_validator_positions"), len(extra))
-    for position, validator in sorted(zip(positions, extra), key=lambda item: item[0]):
+    for position, validator in sorted(extra, key=lambda pair: pair[0]):
         validators.insert(min(position, len(validators)), validator)
     return validators
 
@@ -180,7 +175,7 @@ WORKFLOW_PARAMETER_VALIDATOR_TYPES: dict[INPUT_PARAMETER_TYPES, list[ValidatorTy
 }
 
 
-def check_validators(parameter_type: str, validators: list[dict[str, Any]]) -> None:
+def check_validators(parameter_type: INPUT_PARAMETER_TYPES, validators: list[dict[str, Any]]) -> None:
     """Build ``validators`` as a workflow run would; raise ValueError describing what could not be built."""
     try:
         validator_models = parse_dict_validators(validators, trusted=False)
@@ -191,7 +186,7 @@ def check_validators(parameter_type: str, validators: list[dict[str, Any]]) -> N
         raise ValueError(", ".join(problems)) from e
     except AssertionError as e:
         raise ValueError(str(e)) from e
-    allowed_types = WORKFLOW_PARAMETER_VALIDATOR_TYPES[cast(INPUT_PARAMETER_TYPES, parameter_type)]
+    allowed_types = WORKFLOW_PARAMETER_VALIDATOR_TYPES[parameter_type]
     for validator_model in validator_models:
         if validator_model.type not in allowed_types:
             allowed = ", ".join(allowed_types) if allowed_types else "none"
@@ -207,10 +202,7 @@ def _form_can_show(parameter_type: str, validator: dict[str, Any]) -> bool:
     keys = _non_default_keys(validator)
     if keys is None or not keys <= shape.fields:
         return False
-    # integer inputs' min/max fields would truncate fractional bounds
-    return parameter_type != "integer" or all(
-        isinstance(validator.get(key), (int, type(None))) for key in ("min", "max")
-    )
+    return all(isinstance(validator.get(key), (shape.field_value_type, type(None))) for key in shape.fields)
 
 
 def _non_default_keys(validator: dict[str, Any]) -> set[str] | None:
@@ -226,24 +218,19 @@ def _non_default_keys(validator: dict[str, Any]) -> set[str] | None:
     }
 
 
-def _load_positions(value: str | None, count: int) -> list[int]:
-    """Declared positions of the hidden validators; without usable positions they go last."""
-    try:
-        positions = json.loads(value) if value else None
-    except ValueError:
-        positions = None
-    if isinstance(positions, list) and len(positions) == count and all(type(p) is int for p in positions):
-        return positions
-    return [sys.maxsize] * count
-
-
-def _load_extra_validators(value: str | None) -> list[dict[str, Any]]:
+def _load_extra_validators(value: str | None) -> list[tuple[int, dict[str, Any]]]:
     if not value:
         return []
     try:
-        validators = json.loads(value)
+        pairs = json.loads(value)
     except ValueError:
-        validators = None
-    if not isinstance(validators, list) or not all(isinstance(v, dict) for v in validators):
-        raise RequestParameterInvalidException("Workflow parameter extra_validators must be a JSON list.")
-    return validators
+        pairs = None
+    if not isinstance(pairs, list) or not all(_is_position_validator_pair(pair) for pair in pairs):
+        raise RequestParameterInvalidException(
+            "Workflow parameter extra_validators must be a JSON list of [position, validator] pairs."
+        )
+    return [(position, validator) for position, validator in pairs]
+
+
+def _is_position_validator_pair(pair: Any) -> bool:
+    return isinstance(pair, list) and len(pair) == 2 and type(pair[0]) is int and isinstance(pair[1], dict)

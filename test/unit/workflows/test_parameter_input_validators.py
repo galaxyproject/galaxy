@@ -232,7 +232,7 @@ def test_unsafe_hidden_validator_rejected_at_save():
             {
                 "parameter_definition|parameter_type": "text",
                 "parameter_definition|optional|optional": "false",
-                "parameter_definition|extra_validators": json.dumps(unsafe),
+                "parameter_definition|extra_validators": json.dumps([[0, validator] for validator in unsafe]),
             }
         )
 
@@ -259,10 +259,22 @@ def test_malformed_validator_list_rejected_at_import(validators):
         import_input("text", validators)
 
 
-MALFORMED_HIDDEN_VALIDATORS = "Workflow parameter extra_validators must be a JSON list."
+MALFORMED_HIDDEN_VALIDATORS = "Workflow parameter extra_validators must be a JSON list of [position, validator] pairs."
 
 
-@pytest.mark.parametrize("extra_validators", ["not json", json.dumps({"type": "regex"}), json.dumps(["regex"])])
+@pytest.mark.parametrize(
+    "extra_validators",
+    [
+        "not json",
+        json.dumps({"type": "regex"}),
+        json.dumps(["regex"]),
+        json.dumps([REGEX]),
+        json.dumps([[0]]),
+        json.dumps([["0", REGEX]]),
+        json.dumps([[0, "regex"]]),
+        json.dumps([[0, REGEX, 1]]),
+    ],
+)
 def test_malformed_hidden_validators_rejected_at_save(extra_validators):
     with pytest.raises(RequestParameterInvalidException, match=f"^{re.escape(MALFORMED_HIDDEN_VALIDATORS)}$"):
         _save_form(
