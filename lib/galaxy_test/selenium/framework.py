@@ -1552,8 +1552,13 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         """Star/un-star the first output of the given job's card; fails fast if the card is unchecked."""
         star = self.components.workflow_extract.output_star_for_job(job_id=job_id).wait_for_present()
         assert star.get_attribute("aria-disabled") != "true", f"star for job {job_id} is disabled"
+        active_star = self.components.workflow_extract.output_star_active_for_job(job_id=job_id)
+        was_active = not active_star.is_absent
         self.execute_script_click(star)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        if was_active:
+            active_star.wait_for_absent()
+        else:
+            active_star.wait_for_present()
 
     def extract_workflow_rename_output(self, job_id: str, new_label: str):
         """Click the output label button, type a new label in the modal, and

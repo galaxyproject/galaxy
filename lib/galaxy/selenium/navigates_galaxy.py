@@ -2560,8 +2560,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def notebook_click_extract_workflow(self):
         """Click the notebook editor's Extract Workflow toolbar action, wait for the form."""
         self.components.pages.history.extract_workflow_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.components.workflow_extract._.wait_for_visible()
+        self.extract_workflow_wait_for_form()
 
     @retry_during_transitions
     def click_history_options(self):
@@ -2584,17 +2583,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def navigate_to_workflow_extraction(self):
         """Navigate to workflow extraction UI via history options menu."""
         self.click_history_option_extract_workflow()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.extract_workflow_wait_for_form()
+
+    def extract_workflow_wait_for_form(self):
+        """Wait for the extraction form to render and finish loading its history summary."""
         self.components.workflow_extract._.wait_for_visible()
+        self.components.workflow_extract.loading.wait_for_absent(wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
     def extract_workflow_set_name(self, name: str):
         """Set the workflow name in the extraction form."""
         self.components.workflow_extract.workflow_name_input.wait_for_and_clear_and_send_keys(name)
 
     def extract_workflow_submit(self):
-        """Submit the extraction form."""
+        """Submit the extraction form; returns once the form navigates away to the created workflow."""
         self.components.workflow_extract.create_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.components.workflow_extract._.wait_for_absent(wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
     def extract_workflow_name_and_submit(self, name: str):
         """Set the workflow name and submit the extraction form."""
