@@ -10,7 +10,6 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -701,10 +700,8 @@ def extract_workflow_by_ids(
     return _finalize_workflow(trans, user, workflow_name, steps, reports_config), report_warnings
 
 
-# Extraction wires steps by ``IdKey`` (original HDA/HDCA id); callers name content by
-# ``ContentRef`` ("hda"/"hdca"). ``output_label_to_id_key`` maps one to the other.
-IdKey = tuple[Literal["dataset", "collection"], int]
-IdAssociations = list[tuple[IdKey, str]]
+# Extraction wires steps by the ``ContentRef`` of each input's original HDA/HDCA.
+IdAssociations = list[tuple[ContentRef, str]]
 OutputStepKey = tuple[Literal["job", "icj"], int, str]
 
 
@@ -713,12 +710,6 @@ class OutputLabelTarget:
     key: ContentRef
     step_key: OutputStepKey
     output_name: str
-
-
-def output_label_to_id_key(kind: ContentKind, content_id: int) -> IdKey:
-    if kind == "hda":
-        return ("dataset", content_id)
-    return ("collection", content_id)
 
 
 # Turns the label index into a workflow ``reports_config`` plus warnings.
@@ -736,7 +727,7 @@ class ExtractionLabelIndex:
     Holds live ``WorkflowStep`` objects so labels assigned after construction are read back.
     """
 
-    content_to_step: dict[IdKey, tuple[WorkflowStep, str]]
+    content_to_step: dict[ContentRef, tuple[WorkflowStep, str]]
     job_to_step: dict[int, WorkflowStep]
     icj_to_step: dict[int, WorkflowStep]
 
@@ -767,7 +758,7 @@ class ExtractionLabelIndex:
         return ("step", step.label)
 
     def step_for_content(self, content: HistoryItem) -> tuple[WorkflowStep, str] | None:
-        return self.content_to_step.get(output_label_to_id_key(*original_content_ref(content)))
+        return self.content_to_step.get(original_content_ref(content))
 
 
 def original_content_ref(content: HistoryItem) -> ContentRef:
@@ -787,7 +778,7 @@ def resolve_content(trans: ProvidesHistoryContext, ref: ContentRef) -> HistoryIt
     return content
 
 
-def tool_for_job(trans: ProvidesHistoryContext, job: Job) -> Optional["Tool"]:
+def tool_for_job(trans: ProvidesHistoryContext, job: Job) -> "Tool | None":
     """The job's tool, or None when it is not installed or the user may not use it."""
     try:
         return trans.app.toolbox.tool_for_job(job, user=trans.user)
@@ -899,7 +890,7 @@ def extract_steps_by_ids(
 
     steps: list[WorkflowStep] = []
     step_labels_seen: set[str] = set()
-    id_to_output_pair: dict[IdKey, tuple[WorkflowStep, str]] = {}
+    id_to_output_pair: dict[ContentRef, tuple[WorkflowStep, str]] = {}
     job_to_step: dict[int, WorkflowStep] = {}
     icj_to_step: dict[int, WorkflowStep] = {}
 
@@ -907,7 +898,7 @@ def extract_steps_by_ids(
     for i, hda_id in enumerate(hda_ids):
         hda = hda_manager.get_accessible(hda_id, user)
         original = get_original_hda(hda)
-        if ("dataset", original.id) in id_to_output_pair:
+        if ("hda", original.id) in id_to_output_pair:
             continue
         step = model.WorkflowStep()
         step.type = "data_input"
@@ -917,12 +908,12 @@ def extract_steps_by_ids(
             step_labels_seen.add(name)
         step.tool_inputs = dict(name=name)
         steps.append(step)
-        id_to_output_pair[("dataset", original.id)] = (step, "output")
+        id_to_output_pair[("hda", original.id)] = (step, "output")
 
     for i, hdca_id in enumerate(hdca_ids):
         hdca = dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
         original_hdca = get_original_hdca(hdca)
-        if ("collection", original_hdca.id) in id_to_output_pair:
+        if ("hdca", original_hdca.id) in id_to_output_pair:
             continue
         step = model.WorkflowStep()
         step.type = "data_collection_input"
@@ -932,7 +923,7 @@ def extract_steps_by_ids(
             step_labels_seen.add(name)
         step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
         steps.append(step)
-        id_to_output_pair[("collection", original_hdca.id)] = (step, "output")
+        id_to_output_pair[("hdca", original_hdca.id)] = (step, "output")
 
     # Build the list of work items: each tuple is (representative_job,
     # output_hdcas). For plain jobs output_hdcas is empty; for ICJs it
@@ -999,7 +990,7 @@ def extract_steps_by_ids(
 
         for key, input_name in associations:
             if input_name in mapped_inputs:
-                key = ("collection", mapped_inputs[input_name].id)
+                key = ("hdca", mapped_inputs[input_name].id)
             if key in id_to_output_pair:
                 _connect(step, input_name, id_to_output_pair[key])
         steps.append(step)
@@ -1013,17 +1004,17 @@ def extract_steps_by_ids(
                     seen_names[output_name] = output_hdca
             for output_name, output_hdca in seen_names.items():
                 original_output = get_original_hdca(output_hdca)
-                id_to_output_pair[("collection", original_output.id)] = (step, output_name)
+                id_to_output_pair[("hdca", original_output.id)] = (step, output_name)
         else:
             for hda_assoc in job.output_datasets:
                 hda_assoc_name = hda_assoc.name
                 if skip_output_assoc_name(hda_assoc_name):
                     continue
                 original_hda = get_original_hda(hda_assoc.dataset)
-                id_to_output_pair[("dataset", original_hda.id)] = (step, hda_assoc_name)
+                id_to_output_pair[("hda", original_hda.id)] = (step, hda_assoc_name)
             for hdca_assoc in job.output_dataset_collection_instances:
                 original_hdca = get_original_hdca(hdca_assoc.dataset_collection_instance)
-                id_to_output_pair[("collection", original_hdca.id)] = (step, hdca_assoc.name)
+                id_to_output_pair[("hdca", original_hdca.id)] = (step, hdca_assoc.name)
 
     _connect_parameter_inputs(trans, job_steps)
 
@@ -1031,9 +1022,7 @@ def extract_steps_by_ids(
         kind = output_label.kind
         content_id = output_label.id
         label = output_label.label
-        normalized_kind, normalized_content_id = normalize_output_label_key(trans, kind, content_id)
-        id_key = output_label_to_id_key(normalized_kind, normalized_content_id)
-        output_pair = id_to_output_pair.get(id_key)
+        output_pair = id_to_output_pair.get(normalize_output_label_key(trans, kind, content_id))
         if output_pair is None:
             raise exceptions.RequestParameterInvalidException(
                 f"output_labels includes {kind} id {content_id} that was not produced by a selected extraction step"
@@ -1065,14 +1054,14 @@ def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInpu
     associations: IdAssociations = __cleanup_param_values_by_id(tool.inputs, param_values)
     for assoc in job.input_dataset_collections:
         original_hdca = get_original_hdca(assoc.dataset_collection)
-        associations.append((("collection", original_hdca.id), assoc.name))
+        associations.append((("hdca", original_hdca.id), assoc.name))
     for elem_assoc in job.input_dataset_collection_elements:
         dce = elem_assoc.dataset_collection_element
         leaf = dce.hda or dce.first_dataset_instance()
         if not isinstance(leaf, HistoryDatasetAssociation):
             continue
         original_hda = get_original_hda(leaf)
-        associations.append((("dataset", original_hda.id), elem_assoc.name))
+        associations.append((("hda", original_hda.id), elem_assoc.name))
     tool_inputs = tool.params_to_strings(param_values, trans.app)
     return tool_inputs, associations
 
@@ -1100,7 +1089,7 @@ def get_original_hdca(hdca: HistoryDatasetCollectionAssociation) -> HistoryDatas
 def __cleanup_param_values_by_id(inputs: ToolInputs, values: ToolInputs) -> IdAssociations:
     """ID-keyed Data-leaf scrub.
 
-    HDA leaves emit ``("dataset", get_original_hda(hda).id)``. DCE values and
+    HDA leaves emit ``("hda", get_original_hda(hda).id)``. DCE values and
     ``DataCollectionToolParameter`` leaves are scrubbed but emit nothing —
     collection / DCE inputs are appended in :func:`step_inputs_by_id` from
     typed DB rows so HDCAs aren't lost to ``first_dataset_instance()``
@@ -1119,7 +1108,7 @@ def __cleanup_param_values_by_id(inputs: ToolInputs, values: ToolInputs) -> IdAs
                 continue
             if isinstance(item, HistoryDatasetAssociation):
                 original = get_original_hda(item)
-                associations.append((("dataset", original.id), key))
+                associations.append((("hda", original.id), key))
 
     _walk_data_param_tree(inputs, values, emit)
     return associations
@@ -1138,7 +1127,6 @@ __all__ = (
     "get_original_hdca",
     "normalize_output_label_key",
     "original_content_ref",
-    "output_label_to_id_key",
     "resolve_content",
     "skip_output_assoc_name",
     "tool_for_job",
