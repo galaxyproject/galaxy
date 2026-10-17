@@ -72,6 +72,14 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         expect(wrapper.findAll("td > a").length).toBe(2);
     });
 
+    it("filters the table with the search GFormInput", async () => {
+        const firstTool = testInteractiveToolsResponse[0];
+        const search = wrapper.get("#interactivetool-search");
+        expect(search.classes()).toContain("g-form-input");
+        await search.setValue("no tool has this name");
+        expect(wrapper.find(`#link-${firstTool.id}`).exists()).toBeFalsy();
+    });
+
     it("displays interactive tool information correctly", async () => {
         const firstTool = testInteractiveToolsResponse[0];
         const toolName = wrapper.find(`#link-${firstTool.id}`);
