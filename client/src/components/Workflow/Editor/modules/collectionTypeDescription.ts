@@ -145,7 +145,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
             const higherRanks = normalizedThis.endsWith(":paired")
                 ? normalizedThis.substring(0, normalizedThis.lastIndexOf(":"))
                 : normalizedThis;
-            return this._endsWith(higherRanks, higherRanksRequired) && higherRanks != higherRanksRequired;
+            return this._endsWith(higherRanks, `:${higherRanksRequired}`);
         }
         return false;
     }

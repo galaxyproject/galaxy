@@ -132,7 +132,7 @@ class CollectionTypeDescription:
                 higher_ranks = collection_type[: collection_type.rfind(":")]
             else:
                 higher_ranks = collection_type
-            return higher_ranks.endswith(higher_ranks_required) and higher_ranks != higher_ranks_required
+            return higher_ranks.endswith(f":{higher_ranks_required}")
         if other_collection_type == "single_datasets":
             # effectively any collection has unpaired subcollections
             return True
