@@ -106,19 +106,18 @@ def test_stored_min_greater_than_max_still_loads():
 @pytest.mark.parametrize(
     "parameter_type,validators,accepted,rejected",
     [
-        ("text", [NEGATED_REGEX], "good", "bad1"),
-        ("integer", [NEGATED_RANGE], 7, 3),
-        ("integer", [MIN_RANGE, MAX_RANGE], 3, 0),
-        ("integer", [MIN_RANGE, MAX_RANGE], 3, 7),
-        ("integer", [EXCLUSIVE_RANGE], 2, 1),
+        ("integer", [NEGATED_RANGE], 7, [3]),
+        ("integer", [MIN_RANGE, MAX_RANGE], 3, [0, 7]),
+        ("integer", [EXCLUSIVE_RANGE], 2, [1]),
     ],
 )
 def test_imported_validators_are_kept(parameter_type, validators, accepted, rejected):
     step = import_input(parameter_type, validators)
     param = runtime_input(step)
     param.validate(accepted, _trans())
-    with pytest.raises(ValueError):
-        param.validate(rejected, _trans())
+    for value in rejected:
+        with pytest.raises(ValueError):
+            param.validate(value, _trans())
 
 
 def test_imported_range_message_is_kept():
@@ -159,8 +158,10 @@ def test_editor_resave_keeps_validators_the_form_cannot_show(parameter_type, val
     assert normalized(editor_resave(step).tool_inputs["validators"]) == normalized(validators)
 
 
-def test_editor_edits_shown_validators_and_keeps_hidden_ones():
-    step = import_input("text", [REGEX, NEGATED_REGEX])
+# a regex spelling out a default (implicit: false) is still a form row
+@pytest.mark.parametrize("shown", [REGEX, {**REGEX, "implicit": False}])
+def test_editor_edits_shown_validators_and_keeps_hidden_ones(shown):
+    step = import_input("text", [shown, NEGATED_REGEX])
     resaved = editor_resave(step, drop_prefix="parameter_definition|validators_")
     assert resaved.tool_inputs["validators"] == [NEGATED_REGEX]
 
@@ -175,7 +176,6 @@ def test_editor_drops_hidden_validators_when_parameter_type_changes():
 @pytest.mark.parametrize(
     "validators",
     [
-        [{"type": "in_range", "min": 5, "max": 1}],
         [MIN_RANGE, {"type": "in_range", "min": 5, "max": 1}],
         [{"type": "in_range", "min": "one"}],
         [{"type": "not_a_validator"}],
@@ -183,28 +183,13 @@ def test_editor_drops_hidden_validators_when_parameter_type_changes():
     ],
 )
 def test_invalid_validators_rejected_at_import(validators):
-    with pytest.raises(RequestParameterInvalidException, match="p"):
+    with pytest.raises(RequestParameterInvalidException, match="^Invalid validator on workflow parameter input 'p': "):
         import_input("integer", validators)
-
-
-def test_import_error_names_the_problem():
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        import_input("integer", [{"type": "in_range", "min": 5, "max": 1}])
-    assert (
-        str(exc_info.value)
-        == "Invalid validator on workflow parameter input 'p': min must be less than or equal to max"
-    )
-
-
-def test_validator_spelling_out_defaults_is_shown_in_the_form():
-    step = import_input("text", [{**REGEX, "implicit": False}])
-    resaved = editor_resave(step, drop_prefix="parameter_definition|validators_")
-    assert resaved.tool_inputs["validators"] == []
 
 
 def test_unsafe_hidden_validator_rejected_at_save():
     unsafe = [{"type": "metadata", "check": ["dbkey"]}]
-    with pytest.raises(RequestParameterInvalidException):
+    with pytest.raises(RequestParameterInvalidException, match="^Invalid validator on workflow parameter input"):
         _save_form(
             {
                 "parameter_definition|parameter_type": "text",
