@@ -904,6 +904,11 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         assert cat1_row is not None and cat1_row["step_type"] == "tool", summary["jobs"]
         assert cat1_row["tool_id"] == "cat1" and cat1_row["seeded"] is True, cat1_row
 
+        steps = self._extract_seeded_steps(summary)
+        (cat1_step,) = (s for s in steps if s["type"] == "tool")
+        (input_step,) = (s for s in steps if s["type"] == "data_input")
+        assert self._connected_step_id(cat1_step, "input1") == input_step["id"], steps
+
     @skip_without_tool("cat1")
     def test_inaccessible_producer_output_seeded_as_input(self):
         """An output whose producing tool became inaccessible is a closure boundary; its
