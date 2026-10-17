@@ -4398,9 +4398,11 @@ For a directory output, write the content directly into ``$output.path``.
 Galaxy does not create this folder, so the tool has to create it first, e.g.
 with ``mkdir -p '$output.path'``.
 
-With ``allow_uri_if_protocol``, a deferred dataset may reach the tool as its
-source URI instead of being downloaded first. ``$input.path`` is then empty and
-``$input`` renders the URI, so check ``$input.is_deferred`` to choose:
+``$input.path`` is an error, rather than an empty value, for an optional input
+that is not set, so check ``#if $input`` first. With ``allow_uri_if_protocol``,
+a deferred dataset may reach the tool as its source URI instead of being
+downloaded first. ``$input.path`` is an error for it too and ``$input`` renders
+the URI, so check ``$input.is_deferred`` to choose:
 
 ```bash
 #if $input.is_deferred
@@ -4413,7 +4415,9 @@ source URI instead of being downloaded first. ``$input.path`` is then empty and
 Existing Zarr tools use ``$input.extra_files_path/$input.metadata.store_root``.
 That keeps pointing at the store, since ``store_root`` is empty for a store at
 the root and names the subfolder otherwise, but new tools should use
-``$input.path``.
+``$input.path``. For an older dataset whose subfolder name holds a quote,
+``$``, a backtick, a backslash or a line break, ``$input.path`` is an error,
+since that name could not be quoted safely on the command line.
 
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.

@@ -32,6 +32,7 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper,
 )
 from galaxy.util import XML
+from galaxy.util.template import fill_template
 
 
 def with_mock_tool(func):
@@ -368,16 +369,53 @@ def test_dataset_path_of_a_directory_output_ignores_a_copied_store_root():
     assert wrapper.path == "/job/outputs/dataset_123_files"
 
 
-def test_dataset_path_of_a_deferred_dataset_is_empty():
+def test_dataset_path_of_a_zarr_store_in_a_folder_named_with_spaces():
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="my store (1).zarr")
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    assert wrapper.path == "/job/inputs/dataset_123_files/my store (1).zarr"
+
+
+def test_dataset_path_rejects_a_store_root_with_shell_syntax():
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="a';touch pwned;'.zarr")
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    with pytest.raises(ValueError, match="cannot be passed to a tool"):
+        _ = wrapper.path
+
+
+def test_dataset_path_of_a_deferred_dataset_is_an_error():
     wrapper = DatasetFilenameWrapper(_dataset_of_type(Directory(), has_deferred_data=True))
-    assert wrapper.path == ""
+    with pytest.raises(ValueError, match="is_deferred"):
+        _ = wrapper.path
 
 
-def test_dataset_path_of_a_missing_optional_input_is_empty():
+def test_dataset_path_of_a_missing_optional_input_is_an_error():
+    # An empty value would turn '$input.path'/sub into an absolute path.
     registry = Mock()
     registry.get_datatype_by_extension.return_value = Text()
     wrapper = DatasetFilenameWrapper(None, datatypes_registry=registry)
-    assert wrapper.path == ""
+    with pytest.raises(ValueError, match="not set"):
+        _ = wrapper.path
+
+
+def test_dataset_path_store_root_error_reaches_the_command_line_template():
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="a';touch pwned;'.zarr")
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    with pytest.raises(ValueError, match="cannot be passed to a tool"):
+        fill_template("ls '$input.path'", context={"input": wrapper})
+
+
+def test_dataset_path_error_reaches_the_command_line_template():
+    dataset = _dataset_of_type(Directory(), has_deferred_data=True)
+    cast(MockDataset, dataset).deferred_source_uri = "https://example.org/store.zarr"
+    wrapper = DatasetFilenameWrapper(dataset)
+    with pytest.raises(ValueError, match="is_deferred"):
+        fill_template("cat '$input.path'", context={"input": wrapper})
+    # The documented guard keeps the template working.
+    template = "#if $input.is_deferred\n$input\n#else\n$input.path\n#end if"
+    assert fill_template(template, context={"input": wrapper}).strip() == "https://example.org/store.zarr"
 
 
 def _drilldown_parameter(tool):
@@ -425,6 +463,8 @@ class MockDataset:
         self.datatype = Mock(file_ext_export_alias=MOCK_DATASET_EXT)
         self.tags = []
         self.has_deferred_data = False
+        self.deferred_source_uri: str | None = None
+        self.id = 123
 
     def get_file_name(self, sync_cache=True, auth=None):
         return MOCK_DATASET_PATH

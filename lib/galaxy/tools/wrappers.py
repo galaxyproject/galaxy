@@ -494,13 +494,21 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         """Where the tool finds this dataset's data on disk.
 
         The dataset's file, or for directory datatypes the folder holding their
-        content. Empty for a deferred dataset passed on as
-        its source URI, which ``$input`` itself renders (see ``is_deferred``).
+        content. Raises for an unset optional input, and for a deferred dataset
+        passed on as its source URI, which ``$input`` itself renders (see ``is_deferred``).
+        An empty value would turn ``'$input.path'/sub`` into an absolute path.
         """
+        # Not AttributeError, which Python would hand to __getattr__ and turn into a dataset attribute lookup.
         if not self:
-            return ""
+            raise ValueError("The dataset input is not set, so it has no path; check '#if $input' first")
+        if self.is_deferred:
+            raise ValueError(
+                "The dataset input is deferred and passed on as its source URI, which '$input' renders; "
+                "check '$input.is_deferred' first"
+            )
         io_type: Literal["input", "output"] = "output" if self.__io_type == "output" else "input"
-        return dataset_path(self.unsanitized, self.compute_environment, io_type) or ""
+        # Cheetah pastes this into the command line unescaped.
+        return dataset_path(self.unsanitized, self.compute_environment, io_type, shell_quotable=True)
 
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
