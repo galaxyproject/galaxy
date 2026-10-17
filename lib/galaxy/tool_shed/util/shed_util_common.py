@@ -183,8 +183,15 @@ def set_image_paths(
         # settings like .. images:: http_files/images/help.png
         for match in re.findall(".. image:: (?!http)/?(.+)", text):
             text = text.replace(match, match.replace("/", "%2F"))
-        query = f"?changeset_revision={changeset_revision}" if changeset_revision else ""
-        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", rf".. image:: {route_to_images}/\1{query}", text)
+
+        def route_image(match: re.Match[str]) -> str:
+            image_path = match.group(1)
+            if changeset_revision:
+                separator = "&" if "?" in image_path else "?"
+                image_path = f"{image_path}{separator}changeset_revision={changeset_revision}"
+            return f".. image:: {route_to_images}/{image_path}"
+
+        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", route_image, text)
     return text
 
 

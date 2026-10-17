@@ -61,3 +61,18 @@ def test_set_image_paths_does_not_modify_http_urls():
     )
     assert ".. image:: https://example.com/image.png" in result
     assert "shed_tool_static" not in result
+
+
+def test_set_image_paths_pins_tool_shed_images_to_changeset_revision():
+    text = ".. image:: images/logo.png\n.. image:: images/badge.svg?raw=true\n"
+    result = set_image_paths(
+        app=cast("BasicSharedApp", None),
+        text=text,
+        encoded_repository_id="abc",
+        changeset_revision="0123456789ab",
+    )
+    assert ".. image:: /repository/static/images/abc/images%2Flogo.png?changeset_revision=0123456789ab\n" in result
+    assert (
+        ".. image:: /repository/static/images/abc/images%2Fbadge.svg?raw=true&changeset_revision=0123456789ab\n"
+        in result
+    )
