@@ -2219,6 +2219,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             input_element.clear()
             input_element.send_keys(value)
 
+    def tool_form_select_collection(self, expanded_parameter_id, name):
+        tool_form = self.components.tool_form
+        tool_form.parameter_data_input_collection(parameter=expanded_parameter_id).wait_for_and_click()
+        tool_form.parameter_data_input_collection_pressed(parameter=expanded_parameter_id).wait_for_visible()
+        # multiple=True sends escape so the select's dropdown closes rather than lingering open
+        self.tool_set_value(expanded_parameter_id, name, expected_type="data_collection", multiple=True)
+        tool_form.parameter_data_select_dropdown(parameter=expanded_parameter_id).wait_for_absent_or_hidden()
+
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
         self.components.tool_form.generate_tour.wait_for_and_click()
