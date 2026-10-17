@@ -63,10 +63,30 @@ SEED_AS_INPUT_WARNING = (
 )
 
 
+@dataclass(frozen=True)
+class HistoryBoundary:
+    """A notebook history and the original-id refs of its contents, which decide what counts as produced here."""
+
+    history_id: int
+    local_keys: frozenset[ContentRef]
+
+    def produced_elsewhere(self, job: Job) -> bool:
+        """Whether ``job`` ran in another history and its inputs were not all copied here.
+
+        Such a job is a boundary: its outputs here are workflow inputs. A copied (e.g.
+        imported) history keeps its producers as steps because their inputs came along.
+        """
+        if job.history_id == self.history_id:
+            return False
+        input_keys = {original_content_ref(content) for content in _job_input_contents(job)}
+        return not input_keys or not input_keys <= self.local_keys
+
+
 @dataclass
 class ClosureResult:
     """Producing jobs/ICJs and original-id content refs reached from a page's references."""
 
+    boundary: HistoryBoundary
     job_ids: set[int] = field(default_factory=set)
     icj_ids: set[int] = field(default_factory=set)
     referenced_output_refs: set[ContentRef] = field(default_factory=set)
@@ -74,18 +94,6 @@ class ClosureResult:
     content_refs: set[ContentRef] = field(default_factory=set)
     seed_warning_refs: set[ContentRef] = field(default_factory=set)
     warnings: list[str] = field(default_factory=list)
-
-
-def _produced_elsewhere(job: Job, history_id: int, local_keys: set[ContentRef]) -> bool:
-    """Whether ``job`` ran in another history and its inputs were not all copied here.
-
-    Such a job is a boundary: its outputs here are workflow inputs. A copied (e.g.
-    imported) history keeps its producers as steps because their inputs came along.
-    """
-    if job.history_id == history_id:
-        return False
-    input_keys = {original_content_ref(content) for content in _job_input_contents(job)}
-    return not input_keys or not input_keys <= local_keys
 
 
 def _job_output_contents(job: Job) -> list[HistoryItem]:
@@ -144,17 +152,15 @@ def _backward_job_closure(
     refs: list[ContentRef],
     job_refs: list[int],
     icj_refs: list[int],
-    history_id: int,
-    *,
-    local_keys: set[ContentRef],
+    boundary: HistoryBoundary,
 ) -> ClosureResult:
     """Walk backward from referenced outputs and jobs to their producing subgraph.
 
     Content ``refs`` are exposed; ``job_refs``/``icj_refs`` seed their subgraph without exposing outputs.
     Stops at boundary inputs: content with no creating job, jobs whose tool is not workflow-compatible,
-    and cross-history producers whose inputs are not all in ``local_keys``.
+    and producers ``boundary`` places in another history.
     """
-    result = ClosureResult()
+    result = ClosureResult(boundary)
     queue: deque[HistoryItem] = deque()
     for ref in refs:
         content = resolve_content(trans, ref)
@@ -173,7 +179,7 @@ def _backward_job_closure(
         # A directly job-referenced non-step (upload, data fetch, cross-history) becomes a
         # seeded input row; flag its outputs so the form can explain why. An upstream upload
         # reached only by an ordinary walk below is not flagged.
-        not_a_step = tool is None or not tool.is_workflow_compatible or _produced_elsewhere(job, history_id, local_keys)
+        not_a_step = tool is None or not tool.is_workflow_compatible or boundary.produced_elsewhere(job)
         for content in _job_output_contents(job):
             if not_a_step:
                 result.seed_warning_refs.add(original_content_ref(content))
@@ -218,7 +224,7 @@ def _backward_job_closure(
         produced_in_history = False
         for assoc in creating:
             job = assoc.job
-            if _produced_elsewhere(job, history_id, local_keys):
+            if boundary.produced_elsewhere(job):
                 continue
             produced_in_history = True
             if job.id in seen_jobs:
@@ -468,32 +474,45 @@ def _synthesize_boundary_inputs(
     return synthesized
 
 
+def _boundary_producer_rows(
+    trans: ProvidesHistoryContext,
+    job: Job,
+    datasets: SummaryDatasets,
+    closure: ClosureResult,
+    seeded_copies: set[ContentRef],
+) -> list[tuple[WorkflowExtractionJob, SummaryDatasets]]:
+    """One input row per output a cross-history producer left here.
+
+    Extraction wires all copies of one original to a single input, so only the first copy
+    (tracked in ``seeded_copies`` across producers) is seeded.
+    """
+    tool = tool_for_job(trans, job)
+    rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
+    for item in datasets:
+        seeded, seed_warning = _input_seeding([item], closure)
+        ref = original_content_ref(item[1])
+        seeded = seeded and ref not in seeded_copies
+        if seeded:
+            seeded_copies.add(ref)
+        row = _input_extraction_row(
+            trans, [item], seeded=seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
+        )
+        rows.append((row, [item]))
+    return rows
+
+
 def _summary_rows(
     trans: ProvidesHistoryContext,
     jobs: dict[SummaryJob, SummaryDatasets],
-    history_id: int,
     closure: ClosureResult | None,
-    local_keys: set[ContentRef],
 ) -> list[tuple[WorkflowExtractionJob, SummaryDatasets]]:
-    """One row per summary job, paired with the datasets it holds."""
+    """One row per summary job (per output for a cross-history producer), paired with the datasets it holds."""
     icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
     rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
     seeded_copies: set[ContentRef] = set()
     for job, datasets in jobs.items():
-        if closure is not None and isinstance(job, Job) and _produced_elsewhere(job, history_id, local_keys):
-            # Same boundary as the closure walk: each copy here is its own workflow input row, but
-            # extraction wires all copies of one original to a single input, so only one is seeded.
-            tool = tool_for_job(trans, job)
-            for item in datasets:
-                seeded, seed_warning = _input_seeding([item], closure)
-                ref = original_content_ref(item[1])
-                seeded = seeded and ref not in seeded_copies
-                if seeded:
-                    seeded_copies.add(ref)
-                row = _input_extraction_row(
-                    trans, [item], seeded=seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
-                )
-                rows.append((row, [item]))
+        if closure is not None and isinstance(job, Job) and closure.boundary.produced_elsewhere(job):
+            rows.extend(_boundary_producer_rows(trans, job, datasets, closure, seeded_copies))
         else:
             rows.append((_extraction_row(trans, job, datasets, icj_assoc_by_job_id, closure), datasets))
     return rows
@@ -504,14 +523,12 @@ def _serialize_summary(
     history: History,
     jobs: dict[SummaryJob, SummaryDatasets],
     warnings: Iterable[str],
-    *,
     closure: ClosureResult | None = None,
-    local_keys: set[ContentRef] | None = None,
 ) -> WorkflowExtractionSummary:
     """With ``closure`` (page path), rows in the producing subgraph are flagged
     ``seeded`` and referenced outputs ``exposed``; boundary inputs not already
     present as input or seeded rows are synthesized as input rows."""
-    rows = _summary_rows(trans, jobs, history.id, closure, local_keys or set())
+    rows = _summary_rows(trans, jobs, closure)
     jobs_list = [row for row, _ in rows]
     all_warnings = list(warnings)
     if closure is not None:
@@ -546,9 +563,9 @@ def summary_from_page(trans: ProvidesHistoryContext, page: Page, history: Histor
     content = revision.content if revision is not None else None
     referenced = referenced_content_ids(trans, content or "")
     jobs, warnings = summarize(trans, history)
-    local_keys = {original_content_ref(data) for datasets in jobs.values() for _, data in datasets}
-    closure = _backward_job_closure(
-        trans, referenced.refs, referenced.job_refs, referenced.icj_refs, history.id, local_keys=local_keys
+    boundary = HistoryBoundary(
+        history.id, frozenset(original_content_ref(data) for datasets in jobs.values() for _, data in datasets)
     )
+    closure = _backward_job_closure(trans, referenced.refs, referenced.job_refs, referenced.icj_refs, boundary)
     closure.warnings = referenced.warnings + closure.warnings
-    return _serialize_summary(trans, history, jobs, warnings, closure=closure, local_keys=local_keys)
+    return _serialize_summary(trans, history, jobs, warnings, closure)
