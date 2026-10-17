@@ -605,6 +605,11 @@ class InputSource(metaclass=ABCMeta):
     def parse_drill_down_static_options(
         self, tool_data_path: Optional[str] = None
     ) -> Optional[List["DrillDownOptionsDict"]]:
+        """Return the static options of a drill_down parameter.
+
+        Options in a ``from_file`` are read only if ``tool_data_path`` is given, otherwise
+        this returns None (options unknown).
+        """
         return None
 
     def parse_conversion_tuples(self):

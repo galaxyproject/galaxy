@@ -34,8 +34,10 @@ from galaxy.tools.parameters.workflow_utils import (
     is_runtime_value,
     workflow_building_modes,
 )
+from galaxy.tools.repositories import ValidationContext
 from galaxy.util import (
     Element,
+    in_directory,
     string_as_bool,
 )
 from galaxy.util.template import fill_template
@@ -674,8 +676,12 @@ class DynamicOptions:
             if data_file is not None:
                 data_file = data_file.strip()
                 if not os.path.isabs(data_file):
-                    full_path = os.path.join(self.tool_param.tool.app.config.tool_data_path, data_file)
-                    if os.path.exists(full_path):
+                    app = self.tool_param.tool.app
+                    full_path = os.path.join(app.config.tool_data_path, data_file)
+                    # validation loads untrusted Tool Shed tools, keep their index files inside its work dir
+                    if isinstance(app, ValidationContext) and not in_directory(full_path, app.config.tool_data_path):
+                        self.missing_index_file = data_file
+                    elif os.path.exists(full_path):
                         self.index_file = data_file
                         with open(full_path) as fh:
                             self.file_fields = self.parse_file_fields(fh)

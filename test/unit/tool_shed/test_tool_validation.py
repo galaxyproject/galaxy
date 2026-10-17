@@ -82,6 +82,69 @@ def test_validate_wrong_data_ref():
         assert valid is False
 
 
+DRILL_DOWN_FROM_FILE_TOOL = """<tool id="drill_down_from_file" name="drill_down_from_file" version="1.0.0">
+    <command>echo '$parameter'</command>
+    <inputs>
+        <param name="parameter" type="drill_down" from_file="{from_file}" />
+    </inputs>
+    <outputs/>
+</tool>
+"""
+
+
+def test_validation_does_not_read_drill_down_from_file(tmp_path):
+    options_file = tmp_path / "options.xml"
+    options_file.write_text('<options><option name="Option 1" value="option1"/></options>')
+    with get_tool_validator() as tv:
+        for from_file in [str(options_file), str(tmp_path / "missing.xml"), f"../../../../../../..{options_file}"]:
+            full_path = tmp_path / "tool.xml"
+            full_path.write_text(DRILL_DOWN_FROM_FILE_TOOL.format(from_file=from_file))
+            tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=str(full_path))
+            assert valid is True, message
+            assert tool.inputs["parameter"].options == []
+
+
+SELECT_FROM_FILE_TOOL = """<tool id="select_from_file" name="select_from_file" version="1.0.0">
+    <command>echo '$parameter'</command>
+    <inputs>
+        <param name="parameter" type="select">
+            <options from_file="{from_file}">
+                <column name="value" index="0"/>
+                <column name="name" index="0"/>
+            </options>
+        </param>
+    </inputs>
+    <outputs/>
+</tool>
+"""
+
+
+def test_validation_keeps_select_from_file_in_work_dir(tmp_path):
+    outside_file = tmp_path / "outside.loc"
+    outside_file.write_text("secret\n")
+    with get_tool_validator() as tv:
+        work_dir = tv.app.config.tool_data_path
+        with open(os.path.join(work_dir, "inside.loc"), "w") as fh:
+            fh.write("value\n")
+        os.symlink(outside_file, os.path.join(work_dir, "link.loc"))
+        full_path = tmp_path / "tool.xml"
+
+        def load_options(from_file):
+            full_path.write_text(SELECT_FROM_FILE_TOOL.format(from_file=from_file))
+            tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=str(full_path))
+            assert valid is True, message
+            return tool.inputs["parameter"].options
+
+        options = load_options("inside.loc")
+        assert options.index_file == "inside.loc"
+        assert options.file_fields == [["value"]]
+        for from_file in [os.path.relpath(outside_file, os.path.realpath(work_dir)), "link.loc"]:
+            options = load_options(from_file)
+            assert options.index_file is None
+            assert options.missing_index_file == from_file
+            assert options.file_fields is None
+
+
 @contextmanager
 def get_tool_validator():
     app = MockApp()
