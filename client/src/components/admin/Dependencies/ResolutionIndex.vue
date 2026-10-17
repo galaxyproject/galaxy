@@ -8,10 +8,10 @@
                 <BForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
-                    <BFormSelect
+                    <GSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
-                        class="mb-2 mr-sm-2 mb-sm-0"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
                 </BForm>
             </BRow>
@@ -20,11 +20,14 @@
                 <BForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <BFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
+                    <GSelect
+                        id="manage-filter-resolution"
+                        v-model="filterResolution"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </BFormSelect>
+                    </GSelect>
                 </BForm>
             </BRow>
         </template>
@@ -38,11 +41,18 @@
                 :items="items"
                 @row-click="showRowDetails($event)">
                 <template v-slot:cell(selected)="data">
-                    <BFormCheckbox v-model="data.item.selected" @change="changeToggleCheckboxState($event)" />
+                    <GCheckbox
+                        v-model="data.item.selected"
+                        :aria-label="rowLabel(data.item)"
+                        @click.stop
+                        @update:model-value="changeToggleCheckboxState" />
                 </template>
 
                 <template v-slot:head(selected)="">
-                    <BFormCheckbox v-model="toggleState" @change="toggleSelectAll" />
+                    <GCheckbox
+                        v-model="toggleState"
+                        aria-label="Select all requirements"
+                        @update:model-value="toggleSelectAll" />
                 </template>
 
                 <template v-slot:cell(requirement)="row">
@@ -96,7 +106,7 @@
 <script>
 import { faChevronDown, faChevronUp, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BForm, BFormCheckbox, BFormSelect, BRow } from "bootstrap-vue";
+import { BForm, BRow } from "bootstrap-vue";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -108,6 +118,8 @@ import Statuses from "@/components/admin/Dependencies/Statuses.vue";
 import ToolDisplay from "@/components/admin/Dependencies/ToolDisplay.vue";
 import Tools from "@/components/admin/Dependencies/Tools.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export const RESOLVER_DESCRIPTIONS = {
@@ -126,12 +138,12 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 export default {
     components: {
         BForm,
-        BFormCheckbox,
-        BFormSelect,
         BRow,
         FontAwesomeIcon,
         DependencyIndexWrapper,
         GButton,
+        GCheckbox,
+        GSelect,
         GTable,
         ResolutionDetails,
         Requirements,
@@ -231,12 +243,13 @@ export default {
         unchecked: function () {
             return this.items.filter((item) => item.selected === false);
         },
-        changeToggleCheckboxState(event) {
-            if (event && this.unchecked().length === 1) {
-                this.toggleState = true;
-            } else {
-                this.toggleState = false;
-            }
+        rowLabel(item) {
+            const names = item.requirements.map((requirement) => requirement.name).join(", ");
+            const tool = names && item.tool ? ` (${item.tool})` : "";
+            return `Select ${names || item.tool || item.tool_ids.join(", ")}${tool}`;
+        },
+        changeToggleCheckboxState() {
+            this.toggleState = this.items.length > 0 && this.unchecked().length === 0;
         },
         toggleSelectAll: function (event) {
             this.items.forEach((item) => (item.selected = event));

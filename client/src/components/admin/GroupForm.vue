@@ -3,7 +3,6 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
 import { useRouter } from "vue-router";
@@ -13,6 +12,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
@@ -239,9 +239,9 @@ loadGroupData();
                         </FormElementLabel>
 
                         <FormElementLabel v-if="!isEditMode" title="Auto-create role">
-                            <BFormCheckbox v-model="autoCreateRole">
+                            <GCheckbox v-model="autoCreateRole">
                                 Create a new role with the same name as this group
-                            </BFormCheckbox>
+                            </GCheckbox>
                         </FormElementLabel>
                     </template>
                 </FormCard>
