@@ -177,6 +177,7 @@ def discover_tools_from_config(
     default_tool_path: str | None = None,
     enable_beta_formats: bool = False,
     parallel: int = 1,
+    only_paths: Collection[str] | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from a single tool configuration file.
@@ -190,6 +191,9 @@ def discover_tools_from_config(
             filesystems (CVMFS) each stat costs tens of ms, so a shed conf
             listing thousands of tools takes minutes checked serially; the
             populator threads its ``--parallel`` value through here.
+        only_paths: When set, yield only tools at these absolute paths. Other
+            ``<tool>`` items skip their existence check, and ``tool_dir``
+            items are walked only when one of these paths lies under them.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -230,7 +234,10 @@ def discover_tools_from_config(
         tool_file = string.Template(tool_file).safe_substitute(file_template_kwds)
         if not os.path.isabs(tool_file):
             tool_file = os.path.join(resolved_tool_path, tool_file)
-        file_paths[i] = os.path.normpath(tool_file)
+        tool_file = os.path.normpath(tool_file)
+        if only_paths is not None and tool_file not in only_paths:
+            continue
+        file_paths[i] = tool_file
     unique_paths = list(set(file_paths.values()))
     if parallel > 1 and unique_paths:
         with ThreadPoolExecutor(max_workers=parallel) as executor:
@@ -245,8 +252,12 @@ def discover_tools_from_config(
             directory = _resolve_tool_dir(item, resolved_tool_path)
             if directory is None:
                 continue
+            if only_paths is not None and not any(p.startswith(directory + os.sep) for p in only_paths):
+                continue
             recursive = _tool_dir_recursive(item)
             for candidate in _walk_tool_dir(directory, recursive):
+                if only_paths is not None and candidate not in only_paths:
+                    continue
                 if not looks_like_a_tool(candidate, enable_beta_formats=enable_beta_formats):
                     continue
                 yield DiscoveredTool(
@@ -370,6 +381,7 @@ def discover_tools(
     include_converters: bool = True,
     parallel: int = 1,
     only_confs: Collection[str] | None = None,
+    only_paths: Collection[str] | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from Galaxy configuration.
@@ -390,6 +402,9 @@ def discover_tools(
             filesystems, so callers that would drop a conf's tools anyway
             (routed to a read-only or untargeted store) skip its walk
             entirely rather than filter afterwards.
+        only_paths: When set, discover only tools at these absolute paths
+            (see :func:`discover_tools_from_config`). A partial populate of a
+            few files then costs a conf parse, not a stat of every tool.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -408,7 +423,7 @@ def discover_tools(
         if only_confs is not None and config_filename not in only_confs:
             continue
         for tool in discover_tools_from_config(
-            config_filename, config.tool_path, config.enable_beta_tool_formats, parallel=parallel
+            config_filename, config.tool_path, config.enable_beta_tool_formats, parallel=parallel, only_paths=only_paths
         ):
             seen_paths.add(tool.path)
             yield tool
@@ -419,6 +434,8 @@ def discover_tools(
         if bundled_dir.exists():
             for xml_file in bundled_dir.rglob("*.xml"):
                 path_str = str(xml_file)
+                if only_paths is not None and path_str not in only_paths:
+                    continue
                 relative_path = xml_file.relative_to(bundled_dir)
                 configured_aliases = {
                     os.path.normpath(os.path.join(config.tool_path, relative_path)),
@@ -440,7 +457,7 @@ def discover_tools(
     # boot via ``toolbox.load_hidden_lib_tool`` rather than from any
     # tool_conf, so the conf walk above misses them; index them too.
     for path in hidden_lib_tool_paths():
-        if path in seen_paths or not os.path.exists(path):
+        if path in seen_paths or (only_paths is not None and path not in only_paths) or not os.path.exists(path):
             continue
         seen_paths.add(path)
         yield DiscoveredTool(
@@ -454,7 +471,11 @@ def discover_tools(
     # Data manager tools are loaded after boot and are not referenced from
     # ordinary tool_conf files.
     for dm_tool in _iter_data_manager_tools(config):
-        if dm_tool.path in seen_paths or not os.path.exists(dm_tool.path):
+        if (
+            dm_tool.path in seen_paths
+            or (only_paths is not None and dm_tool.path not in only_paths)
+            or not os.path.exists(dm_tool.path)
+        ):
             continue
         seen_paths.add(dm_tool.path)
         yield dm_tool
@@ -472,7 +493,11 @@ def discover_tools(
             if registry.converters_path:
                 for tool_config, _src_dt, _tgt_dt in registry.converters:
                     path = os.path.normpath(os.path.join(registry.converters_path, tool_config))
-                    if path in seen_paths or not os.path.exists(path):
+                    if (
+                        path in seen_paths
+                        or (only_paths is not None and path not in only_paths)
+                        or not os.path.exists(path)
+                    ):
                         continue
                     seen_paths.add(path)
                     yield DiscoveredTool(

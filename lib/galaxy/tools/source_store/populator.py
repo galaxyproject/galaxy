@@ -686,6 +686,7 @@ def _populate_store_inline_unlocked(
     # route to the default store, so their walk follows the same gate.
     writable_confs = {conf for conf, name in conf_to_store.items() if name in writable_names}
     default_writable = DEFAULT_STORE_NAME in writable_names
+    paths_set = {str(p) for p in paths} if paths is not None else None
     # ``parallel`` governs both pools: the discovery existence checks here and
     # the parse/store workers below.
     discovered_tools = list(
@@ -695,6 +696,7 @@ def _populate_store_inline_unlocked(
             include_converters=include_converters,
             parallel=parallel,
             only_confs=writable_confs,
+            only_paths=paths_set,
         )
     )
 
@@ -710,8 +712,7 @@ def _populate_store_inline_unlocked(
 
     log.info(f"Found {len(discovered_tools)} tool files; routing {len(tool_specs)} to writable stores")
 
-    if paths is not None:
-        paths_set = {str(p) for p in paths}
+    if paths_set is not None:
         tool_specs = [(d, n) for d, n in tool_specs if d.path in paths_set]
         # Requested paths the conf walk can't reach — a freshly cloned shed
         # repository whose conf entry isn't persisted yet (metadata

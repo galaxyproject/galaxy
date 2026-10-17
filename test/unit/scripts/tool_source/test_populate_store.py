@@ -414,6 +414,38 @@ class TestIncrementalFastPath:
         assert entry.panel_section_id == "test_section_multi"
         assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
 
+    def test_partial_populate_discovers_only_requested_paths(self, tmp_path, monkeypatch):
+        tools_dir = tmp_path / "shed_tools"
+        items = []
+        for i in range(30):
+            _write_tool(tools_dir / f"shed_{i}.xml", f"shed_{i}")
+            items.append(f'<tool file="shed_{i}.xml" guid="toolshed.example.org/repos/iuc/shed_{i}/shed_{i}/1.0"/>')
+        conf = _write_tool_conf(
+            tmp_path / "shed_tool_conf.xml",
+            tools_dir,
+            f'<section id="shed_section" name="Shed Section">{"".join(items)}</section>',
+        )
+        cfg = _populate_config(tmp_path, conf)
+        requested = str(tools_dir / "shed_7.xml")
+
+        from galaxy.tools.source_store import populator
+
+        discovered_paths: list[str] = []
+
+        def recording_discover_tools(*args, **kwargs):
+            for discovered in actual_discover_tools(*args, **kwargs):
+                discovered_paths.append(discovered.path)
+                yield discovered
+
+        monkeypatch.setattr(populator, "discover_tools", recording_discover_tools)
+
+        _populate_default(cfg, paths=[requested])
+
+        assert discovered_paths == [requested]
+        _, index = _load_default_index(cfg)
+        entry = index.entries["toolshed.example.org/repos/iuc/shed_7/shed_7/1.0"]
+        assert entry.panel_section_id == "shed_section"
+
     def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
         """A stale scan must commit before a concurrent uninstall can prune it."""
         tools_dir = tmp_path / "tools"
