@@ -152,7 +152,7 @@ class JobLock(BaseModel):
     active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
 
 
-def get_path_key(path_tuple: tuple):
+def get_path_key(path_tuple: tuple[str | int, ...]) -> str:
     path_key = ""
     tuple_elements = len(path_tuple)
     for i, p in enumerate(path_tuple):
@@ -167,7 +167,7 @@ def get_path_key(path_tuple: tuple):
         if path_key:
             path_key = f"{path_key}{sep}{p}"
         else:
-            path_key = p
+            path_key = str(p)
     return path_key
 
 
@@ -489,13 +489,13 @@ class JobSearch:
         require_name_match: bool = True,
     ) -> Job | None:
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
-        input_data: dict[Any, list[dict[str, Any]]] = defaultdict(list)
+        input_data: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
-        def populate_input_data_input_id(path: tuple, key, value) -> tuple[Any, Any]:
+        def populate_input_data_input_id(path: tuple[str | int, ...], key, value) -> tuple[Any, Any]:
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
             if key == "id":
                 path_key = get_path_key(path[:-2])
-                current_case = param_dump
+                current_case: Any = param_dump
                 for p in path:
                     current_case = current_case[p]
                 src = current_case.get("src")
@@ -504,13 +504,17 @@ class JobSearch:
                     # TODO: dispatch on tool parameter type instead of values,
                     # maybe with tool state variant
                     return key, value
-                current_case = param
+                current_param: Any = param
                 for i, p in enumerate(path):
                     if p == "values" and i == len(path) - 2:
                         continue
-                    if isinstance(current_case, (list, dict)):
-                        current_case = current_case[p]
-                identifier = getattr(current_case, "element_identifier", None)
+                    if isinstance(current_param, list):
+                        # A list level's path element is always its (int) index.
+                        assert isinstance(p, int)
+                        current_param = current_param[p]
+                    elif isinstance(current_param, dict):
+                        current_param = current_param[p]
+                identifier = getattr(current_param, "element_identifier", None)
                 input_data[path_key].append(
                     {
                         "src": src,
@@ -539,7 +543,7 @@ class JobSearch:
         tool_id: str,
         tool_version: str | None,
         user: model.User,
-        input_data: dict[Any, list[dict[str, Any]]],
+        input_data: dict[str, list[dict[str, Any]]],
         job_state: JobStatesT | None,
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
@@ -814,8 +818,8 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
         used_ids: list["Label[int] | Label[int | None]"],
-        k,
-        v,
+        k: str,
+        v: int,
         identifier,
         value_index: int,
         require_name_match: bool = True,
@@ -881,8 +885,8 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
         used_ids: list["Label[int] | Label[int | None]"],
-        k,
-        v,
+        k: str,
+        v: int,
         value_index: int,
     ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputLibraryDatasetAssociation)
@@ -918,8 +922,8 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
         used_ids: list["Label[int] | Label[int | None]"],
-        k,
-        v,
+        k: str,
+        v: int,
         user_id: int,
         value_index: int,
     ) -> "Select[tuple[int]]":
