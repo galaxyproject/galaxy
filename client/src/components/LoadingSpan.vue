@@ -4,9 +4,10 @@
     UI use Common/ButtonSpinner. Do not use bootstrap-vue's BSpinner -- migrate to this.
 -->
 <template>
-    <span>
+    <span role="status">
         <span :class="spinnerClasses" title="loading"></span>
         <span v-if="!spinnerOnly" class="loading-message" data-description="loading message"> {{ message }}... </span>
+        <span v-else class="sr-only">{{ message }}...</span>
     </span>
 </template>
 <script>
