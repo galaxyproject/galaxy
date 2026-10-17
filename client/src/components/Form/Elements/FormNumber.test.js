@@ -96,6 +96,16 @@ describe("FormNumber", () => {
         await checkSingleBound({ min: 5, max: null }, 3, "3 is out of range! (3 < 5)", 5);
     });
 
+    it("lets an optional bounded field be cleared", async () => {
+        const wrapper = await mountFormNumber({ value: 3, type: "integer", optional: true, min: 1, max: 5 });
+        const input = await getInput(wrapper);
+        await input.setValue("");
+        await input.trigger("change");
+        expect((await getAlert(wrapper)).exists()).toBe(false);
+        expect(wrapper.emitted().input.at(-1)).toEqual([""]);
+        wrapper.destroy();
+    });
+
     it("shows a validation alert when entering a decimal for integer type", async () => {
         const checkFractionsAlert = async (key) => {
             const wrapper = await mountFormNumber(props);

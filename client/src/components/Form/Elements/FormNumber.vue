@@ -188,8 +188,8 @@ export default {
             return typeof this.min == "number" && value < this.min;
         },
         isOutOfRange(value) {
-            /* If value=null, then value is within range. */
-            return this.isAboveMax(value) || this.isBelowMin(value);
+            // An empty field is unset, not 0.
+            return value !== "" && isDefined(value) && (this.isAboveMax(value) || this.isBelowMin(value));
         },
         showOutOfRangeWarning(value) {
             const rangeDetail = this.isAboveMax(value) ? `${value} > ${this.max}` : `${value} < ${this.min}`;
