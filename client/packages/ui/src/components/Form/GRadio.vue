@@ -158,7 +158,7 @@ function onChange(event: Event) {
         margin-right: 3px;
     }
 
-    .g-disabled & {
+    .g-radio.g-disabled > & {
         cursor: not-allowed;
     }
 
@@ -172,19 +172,19 @@ function onChange(event: Event) {
     margin-left: var(--spacing-2, 0.5rem);
 }
 
-.g-small {
+.g-radio.g-small {
     font-size: var(--font-size-small, 0.75rem);
 
-    .g-radio-input {
+    &:not(.g-radio-button) > .g-radio-input {
         width: 0.75rem;
         height: 0.75rem;
     }
 }
 
-.g-large {
+.g-radio.g-large {
     font-size: var(--font-size-large, 1rem);
 
-    .g-radio-input {
+    &:not(.g-radio-button) > .g-radio-input {
         width: 1.25rem;
         height: 1.25rem;
     }
@@ -207,7 +207,7 @@ function onChange(event: Event) {
         font-size: var(--font-size-large, 1rem);
     }
 
-    .g-radio-input {
+    > .g-radio-input {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -216,7 +216,7 @@ function onChange(event: Event) {
         white-space: nowrap;
     }
 
-    .g-radio-label {
+    > .g-radio-label {
         margin-left: 0;
     }
 
