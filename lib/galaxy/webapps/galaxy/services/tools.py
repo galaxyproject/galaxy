@@ -290,6 +290,14 @@ class ToolsService(ServiceBase):
         )
         tool = validate_tool_for_running(trans, tool_run_reference)
 
+        preferred_object_store_id = payload.get("preferred_object_store_id")
+        if preferred_object_store_id:
+            validation_error = trans.app.object_store.validate_selected_object_store_id(
+                trans.user, preferred_object_store_id
+            )
+            if validation_error:
+                raise exceptions.RequestParameterInvalidException(validation_error)
+
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
@@ -323,7 +331,6 @@ class ToolsService(ServiceBase):
         use_cached_job = payload.get("use_cached_job", False) or util.string_as_bool(
             inputs.get("use_cached_job", "false")
         )
-        preferred_object_store_id = payload.get("preferred_object_store_id")
         credentials_context = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
         if input_format not in ("legacy", "21.01"):
