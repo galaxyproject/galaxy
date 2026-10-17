@@ -17,6 +17,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from galaxy.selenium.navigates_galaxy import ColumnDefinition
 from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
+    parameter_input_workflow,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
@@ -152,6 +153,30 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_run_submit()
         element = workflow_run.run_error.wait_for_present()
         assert "input must start with moocow" in element.text
+
+    @selenium_test
+    def test_parameter_editor_save_keeps_validators_the_form_cannot_show(self):
+        negated = {"type": "regex", "expression": "^bad", "message": "no bad", "negate": True}
+        workflow = parameter_input_workflow("text_param", "text", [negated])
+        name = workflow["name"] = self._get_random_name()
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        self.workflow_editor_dismiss_state_upgrade_modal()
+
+        self.components.workflow_editor.node._(label="text_param").wait_for_and_click()
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_match"
+        ).wait_for_and_send_keys("^good")
+        self.components.tool_form.parameter_input(
+            parameter="parameter_definition|validators_0|regex_doc"
+        ).wait_for_and_send_keys("must start with good")
+        self.save_after_node_form_changes()
+
+        tool_state = json.loads(self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["tool_state"])
+        added = {"type": "regex", "expression": "^good", "message": "must start with good", "negate": False}
+        assert tool_state["validators"] == [added, negated], tool_state["validators"]
 
     @selenium_test
     def test_int_parameter_minimum_validation(self):
