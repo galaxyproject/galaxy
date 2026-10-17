@@ -61,6 +61,39 @@ invocation_outputs()
     assert len(galaxy_markdown.split("```")) == 5
 
 
+def test_inputs_section_expansion_quotes_or_skips_labels():
+    trans = MockTrans()
+    invocation = example_invocation(trans)
+    workflow = invocation.workflow
+    workflow.steps[0].label = 'my "reads"'
+    workflow.steps[1].type = "data_collection_input"
+    workflow.steps[1].label = "my reads"
+    hdca = model.HistoryDatasetCollectionAssociation()
+    hdca.id = 568
+    invocation.add_input(hdca, step=workflow.steps[1])
+
+    galaxy_markdown = resolve_markdown("```galaxy\ninvocation_inputs(invocation_id=44)\n```\n", invocation)
+
+    validate_galaxy_markdown(galaxy_markdown)
+    assert '```galaxy\nhistory_dataset_collection_display(input="my reads")\n```' in galaxy_markdown
+    assert 'my "reads"' not in galaxy_markdown
+
+
+def test_outputs_section_expansion_skips_unquotable_label():
+    trans = MockTrans()
+    invocation = example_invocation(trans)
+    out_hda = model.HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session)
+    out_hda.id = 564
+    workflow = invocation.workflow
+    invocation.add_output(model.WorkflowOutput(workflow.steps[3], label='a "b"'), workflow.steps[3], out_hda)
+
+    galaxy_markdown = resolve_markdown("```galaxy\ninvocation_outputs(invocation_id=44)\n```\n", invocation)
+
+    validate_galaxy_markdown(galaxy_markdown)
+    assert '```galaxy\nhistory_dataset_display(output="output_label")\n```' in galaxy_markdown
+    assert '"b"' not in galaxy_markdown
+
+
 def test_input_reference_mapping():
     workflow_markdown = """
 And outputs...
@@ -166,13 +199,13 @@ def populate_markdown(workflow_markdown):
     return galaxy_markdown
 
 
-def resolve_markdown(workflow_markdown):
+def resolve_markdown(workflow_markdown, invocation=None):
     # Convert internal Galaxy markdown with invocation ids and labels
     # to object id references and expanded sections.
     trans = MockTrans()
     validate_galaxy_markdown(workflow_markdown)
     trans.app.workflow_manager = mock.MagicMock()
-    invocation = example_invocation(trans)
+    invocation = invocation or example_invocation(trans)
     trans.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
     galaxy_markdown = resolve_invocation_markdown(cast(ProvidesHistoryContext, trans), workflow_markdown)
     return galaxy_markdown
