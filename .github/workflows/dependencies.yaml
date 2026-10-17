@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: '0 3 * * 6'  # Run every saturday at 3 am.
   workflow_dispatch:
+env:
+  UV_HTTP_RETRIES: '6'
 permissions: {}
 jobs:
   update_dependencies:

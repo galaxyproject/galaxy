@@ -49,6 +49,7 @@ env:
   GALAXY_TEST_SELENIUM_HEADLESS: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

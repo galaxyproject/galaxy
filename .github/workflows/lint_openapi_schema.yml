@@ -34,6 +34,8 @@ on:
       - 'client/pnpm-lock.yaml'
       - 'client/pnpm-workspace.yaml'
       - 'client/packages/api-client/src/schema/schema.ts'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

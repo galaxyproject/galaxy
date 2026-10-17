@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: '0 4 * * 1'  # Run every monday at 4 am.
   workflow_dispatch:
+env:
+  UV_HTTP_RETRIES: '6'
 permissions: {}
 jobs:
   prune_red_list:

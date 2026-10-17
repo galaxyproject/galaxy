@@ -29,6 +29,7 @@ on:
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  UV_HTTP_RETRIES: '6'
 concurrency:
   # Keep pushes to dev, and the two schedules, from cancelling each other.
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.schedule }}-${{ github.ref }}

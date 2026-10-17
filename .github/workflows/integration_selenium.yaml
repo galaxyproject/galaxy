@@ -30,6 +30,7 @@ env:
   GALAXY_CONFIG_OVERRIDE_ENABLE_NOTIFICATION_SYSTEM: '1'
   GALAXY_CONFIG_OVERRIDE_ENABLE_SSE_HISTORY_UPDATES: '1'
   GALAXY_CONFIG_OVERRIDE_ENABLE_SSE_ENTRY_POINT_UPDATES: '1'
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
