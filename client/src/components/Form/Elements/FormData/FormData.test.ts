@@ -7,9 +7,10 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
+import type { SampleSheetColumnDefinition } from "@/api";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
-import { useEventStore } from "@/stores/eventStore";
+import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
 
@@ -53,6 +54,54 @@ const defaultOptions = {
         { id: "hdca6", hid: 6, name: "hdcaName6", src: "hdca" },
     ],
 };
+
+function droppedHdca(collectionType: string, columnDefinitions?: SampleSheetColumnDefinition[]): EventData {
+    return {
+        id: "dropped",
+        hid: 9,
+        name: "dropped",
+        history_content_type: "dataset_collection",
+        collection_type: collectionType,
+        column_definitions: columnDefinitions,
+    };
+}
+
+function droppedCollectionElement(collectionType: string): EventData {
+    return {
+        id: "dropped",
+        element_identifier: "inner",
+        element_type: "dataset_collection",
+        object: { id: "child", collection_type: collectionType },
+    };
+}
+
+/** Drops an item on an empty collection input; returns the emitted value, or the alert if refused. */
+async function dropOnCollectionInput(
+    collectionTypes: string[] | null,
+    item: EventData,
+    props: Record<string, unknown> = {},
+) {
+    const wrapper = createTarget({
+        value: null,
+        options: { hdca: [] },
+        type: "data_collection",
+        collectionTypes,
+        ...props,
+    });
+    await wrapper.vm.$nextTick();
+    const before = wrapper.emitted().input?.length ?? 0;
+    eventStore.setDragData(item);
+    dispatchEvent(wrapper, "dragenter");
+    dispatchEvent(wrapper, "drop");
+    const inputs = wrapper.emitted().input?.slice(before) ?? [];
+    const alerts = wrapper.emitted().alert ?? [];
+    if (alerts.length) {
+        expect(inputs).toHaveLength(0);
+        return { alert: alerts[0]![0] };
+    }
+    expect(inputs).toHaveLength(1);
+    return inputs[0]![0];
+}
 
 const SELECT_OPTIONS = ".multiselect__element";
 const SELECTED_VALUE = ".multiselect__option--selected";
@@ -427,6 +476,94 @@ describe("FormData", () => {
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
         expect(wrapper.emitted()!.alert).toBeUndefined();
+    });
+
+    describe("dropped collections are matched to collection inputs like the server lists them", () => {
+        it.each([
+            ["list:list", ["list"], "list"],
+            ["list", null, null],
+            ["list:list", ["list", "list:list"], null],
+            ["sample_sheet:paired", ["paired"], "paired"],
+        ])(
+            "uses a dropped %s on a %j input with map_over_type %s",
+            async (collectionType, collectionTypes, mapOverType) => {
+                const value = await dropOnCollectionInput(collectionTypes, droppedHdca(collectionType));
+                expect(value).toEqual({
+                    batch: mapOverType !== null,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: mapOverType, src: "hdca" }],
+                });
+            },
+        );
+
+        it.each([["paired", ["list:paired_or_unpaired"]]])(
+            "refuses a dropped %s on a %j input",
+            async (collectionType, collectionTypes) => {
+                const value = await dropOnCollectionInput(collectionTypes, droppedHdca(collectionType));
+                expect(value).toEqual({
+                    alert: expect.stringContaining("dataset collection is not a valid input for"),
+                });
+            },
+        );
+
+        it.each([
+            ["list", ["list"], null],
+            ["list:list", ["list", "list:list"], null],
+        ])(
+            "uses a dropped element holding a %s on a %j input with map_over_type %s",
+            async (collectionType, collectionTypes, mapOverType) => {
+                const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
+                expect(value).toEqual({
+                    batch: mapOverType !== null,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: mapOverType, src: "dce" }],
+                });
+            },
+        );
+
+        it.each([["paired", ["list"]]])(
+            "refuses a dropped element holding a %s on a %j input",
+            async (collectionType, collectionTypes) => {
+                const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
+                expect(value).toEqual({
+                    alert: expect.stringContaining("dataset collection is not a valid input for"),
+                });
+            },
+        );
+
+        describe("on a sample_sheet input with column definitions", () => {
+            const columnDefinitions: SampleSheetColumnDefinition[] = [
+                { name: "condition", type: "string", optional: false },
+            ];
+            const props = { extendedCollectionType: { columnDefinitions } };
+
+            it("uses a dropped sample_sheet with the same column definitions", async () => {
+                const value = await dropOnCollectionInput(
+                    ["sample_sheet"],
+                    droppedHdca("sample_sheet", columnDefinitions),
+                    props,
+                );
+                expect(value).toEqual({
+                    batch: false,
+                    product: false,
+                    values: [{ id: "dropped", map_over_type: null, src: "hdca" }],
+                });
+            });
+
+            it("refuses a dropped sample_sheet with other column definitions", async () => {
+                const otherColumns: SampleSheetColumnDefinition[] = [
+                    { name: "other", type: "string", optional: false },
+                ];
+                const value = await dropOnCollectionInput(
+                    ["sample_sheet"],
+                    droppedHdca("sample_sheet", otherColumns),
+                    props,
+                );
+                expect(value).toEqual({
+                    alert: "dataset collection has incompatible column definitions for this parameter.",
+                });
+            });
+        });
     });
 
     it("linked and unlinked batch mode handling", async () => {
