@@ -109,6 +109,34 @@ def test_read_only_refuses_writes(sqlite_path):
         ro.store_index(ToolIndex())
 
 
+def test_read_only_index_decoded_once_while_blob_unchanged(sqlite_path, monkeypatch):
+    rw = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    rw.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
+    ro = SqliteToolSourceStore(url=_sqlite_url(sqlite_path), read_only=True)
+    decodes = []
+    real_model_validate = ToolIndex.model_validate
+
+    def counting_model_validate(*args, **kwargs):
+        decodes.append(1)
+        return real_model_validate(*args, **kwargs)
+
+    monkeypatch.setattr(ToolIndex, "model_validate", counting_model_validate)
+
+    first = ro.load_index()
+    ro.invalidate_index_cache()
+    assert ro.load_index() is first
+    ro.dispose()
+    assert ro.load_index() is first
+    assert len(decodes) == 1
+
+    rw.store_index(ToolIndex(entries={"t2": ToolIndexEntry(id="t2", name="T2")}))
+    ro.invalidate_index_cache()
+    republished = ro.load_index()
+    assert republished is not None
+    assert set(republished.entries) == {"t2"}
+    assert len(decodes) == 2
+
+
 def test_get_stats_reports_backend_and_url(sqlite_path):
     store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
     stats = store.get_stats()
