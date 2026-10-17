@@ -68,10 +68,13 @@ function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
         historyIds.add(invocation.history_id);
         workflowIds.add(invocation.workflow_id);
     });
-    historyIds.forEach(
-        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id),
+    // Loads on a miss, with retry backoff; failures are recorded in the store.
+    historyIds.forEach((history_id) => historyStore.getHistoryById(history_id));
+    workflowIds.forEach((workflow_id) =>
+        workflowStore
+            .fetchWorkflowForInstanceIdCached(workflow_id)
+            .catch((e) => console.warn(`Failed to load workflow ${workflow_id}`, e)),
     );
-    workflowIds.forEach((workflow_id) => workflowStore.fetchWorkflowForInstanceIdCached(workflow_id));
 }
 
 /**

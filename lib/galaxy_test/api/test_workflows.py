@@ -32,9 +32,14 @@ from galaxy.util.unittest_utils import (
 )
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import assert_error_message_contains
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_library,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     RunJobsSummary,
     skip_without_tool,
     TOOL_WITH_SHELL_COMMAND,
@@ -8088,6 +8093,40 @@ input:
             )
             assert "col 1,2" in content, content
 
+    @requires_admin
+    @pytest.mark.parametrize("src", ["hda", "ldda", "ld", "hdca"])
+    def test_run_with_nonexistent_input(self, history_id, src):
+        nonexistent_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        response = self.workflow_populator.invoke_single_input_workflow_raw(history_id, src, nonexistent_id)
+        self._assert_status_code_is(response, 404)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_OBJECT_NOT_FOUND"])
+        assert_error_message_contains(response, f"input1: workflow input '{nonexistent_id}' ({src}) not found")
+
+    @requires_new_library
+    @pytest.mark.parametrize("src", ["ldda", "ld"])
+    def test_run_with_library_input(self, history_id, src):
+        library_dataset = LibraryPopulator(self.galaxy_interactor).new_library_dataset(f"workflow_input_{src}")
+        input_id = library_dataset["ldda_id"] if src == "ldda" else library_dataset["id"]
+        response = self.workflow_populator.invoke_single_input_workflow_raw(history_id, src, input_id)
+        self._assert_status_code_is(response, 200)
+        invocation = self.workflow_populator.get_invocation(response.json()["id"])
+        hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=invocation["inputs"]["0"]["id"])
+        assert hda["copied_from_ldda_id"] == library_dataset["ldda_id"]
+        assert hda["history_id"] == history_id
+
+    @pytest.mark.parametrize("src", ["hda", "hdca"])
+    def test_run_with_inaccessible_input(self, history_id, src):
+        if src == "hda":
+            input_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
+            self.dataset_populator.make_private(history_id, input_id)
+        else:
+            input_id = self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()[
+                "output_collections"
+            ][0]["id"]
+        with self._different_user_history() as other_history_id:
+            response = self.workflow_populator.invoke_single_input_workflow_raw(other_history_id, src, input_id)
+            self._assert_status_code_is(response, 403)
+
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:
             workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
@@ -10615,8 +10654,7 @@ input:
         self._assert_has_keys(pja, "action_type", "output_name", "action_arguments")
 
     def test_invocation_filtering(self):
-        with self._different_user(email=f"{uuid4()}@test.com"):
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history(email=f"{uuid4()}@test.com") as history_id:
             # new user, start with no invocations
             assert not self._assert_invocation_for_url_is("invocations")
             self._run_jobs(

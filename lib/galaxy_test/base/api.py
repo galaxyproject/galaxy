@@ -1,5 +1,6 @@
 import os
 import re
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -191,6 +192,14 @@ class UsesApiTestCaseMixin:
             data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
         )
         assert_status_code_is(login_response, 200)
+
+    @contextmanager
+    def _different_user_history(self, email: str | None = None) -> Iterator[str]:
+        """Act as a different user (see ``_different_user``) and yield a new history they own."""
+        with self._different_user(email=email):
+            create_response = self._post("histories", data={"name": "API Test History"})
+            assert_status_code_is_ok(create_response)
+            yield create_response.json()["id"]
 
     def _get_current_history_id(self) -> str:
         """Return the current session's history ID (works for anonymous users)."""
