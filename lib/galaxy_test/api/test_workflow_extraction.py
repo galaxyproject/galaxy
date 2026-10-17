@@ -2654,6 +2654,31 @@ class TestNotebookWorkflowExtractionReport(
             ]
 
     @skip_without_tool("cat1")
+    def test_report_drops_indented_galaxy_cell_naming_a_dataset(self):
+        """The client renders an indented fence as a galaxy cell; page import leaves its id encoded."""
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_history_page(
+                history_id,
+                content=(
+                    f"# Analysis\n\n  ```galaxy\n  history_dataset_display(history_dataset_id={out_id})\n  ```\n\nAfter.\n"
+                ),
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"], output_labels=self._starred(out_id))
+            markdown = self._report_markdown(result["id"])
+
+            assert "history_dataset_id" not in markdown, markdown
+            assert out_id not in markdown, markdown
+            assert "After." in markdown, markdown
+            assert result["report_warnings"] == [
+                (
+                    "Dropped a [galaxy] cell from the report: it names a specific Galaxy object "
+                    "(history_dataset_id), which has no workflow-relative form."
+                )
+            ]
+
+    @skip_without_tool("cat1")
     def test_report_drops_invocation_scoped_directive(self):
         """A notebook seeded from an invocation report carries invocation_id-scoped
         label lines; the walk passes them through, so they must not leak the id."""

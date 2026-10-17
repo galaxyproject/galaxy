@@ -122,6 +122,17 @@ def _drop_instance_references(markdown: str) -> tuple[str, list[str]]:
         return ""
 
     def _cell(cell_type: str, cell: str) -> str:
+        if cell_type == "galaxy":
+            # Left only where the client parses a cell that remap_galaxy_markdown_calls's
+            # column-0 fence regex does not, e.g. an indented fence.
+            argument = _instance_argument(cell)
+            if argument is None:
+                return cell
+            warnings.append(
+                f"Dropped a [galaxy] cell from the report: it names a specific Galaxy object ({argument}), "
+                "which has no workflow-relative form."
+            )
+            return ""
         if cell_type not in _DATASET_CELL_TYPES or not _CELL_INSTANCE_REFERENCE.search(cell):
             return cell
         warnings.append(
