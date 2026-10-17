@@ -442,6 +442,42 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         assert sources[second_id] == first_id, tool_steps
 
     @summarize_instance_history_on_error
+    def test_hid_extract_collection_copied_from_another_history(self, history_id):
+        other_history_id = self.dataset_populator.new_history()
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            other_history_id, contents=["a\n", "b\n"], wait=True
+        ).json()["outputs"][0]
+        self.dataset_populator.new_dataset(history_id, content="shift hids\n", wait=True)
+        hdca_copy = self._copy_content_to_history(history_id, hdca)
+        assert hdca_copy["hid"] != hdca["hid"], (hdca_copy, hdca)
+        downloaded = self._extract_and_download_workflow(history_id, dataset_collection_ids=[hdca_copy["hid"]])
+        (collection_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        assert loads(collection_step["tool_state"])["collection_type"] == "list"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_hid_extract_copies_sent_with_one_name_make_one_input(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda_copy["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        response = self._extract_from_history_raw(
+            history_id,
+            {
+                "workflow_name": "copies named once",
+                "dataset_hids": [hda["hid"], hda_copy["hid"]],
+                "dataset_names": ["numbers", "numbers"],
+                "job_ids": [run["jobs"][0]["id"]],
+            },
+        )
+        self._assert_status_code_is(response, 200)
+        downloaded = self._get(f"workflows/{response.json()['id']}/download").json()
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        assert input_step["label"] == "numbers", input_step
+        (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        assert connection_step_id(cat1_step["input_connections"]["input1"]) == input_step["id"], cat1_step
+
+    @summarize_instance_history_on_error
     def test_hid_extract_copies_with_different_names_rejected(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
         hda_copy = self._copy_hda_to_history(history_id, hda)
@@ -1385,6 +1421,19 @@ test_data:
         )
         (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
         assert input_step["label"] == "imported", input_step
+
+    @skip_without_tool("Grep1")
+    @summarize_instance_history_on_error
+    def test_extract_by_ids_connects_implicitly_converted_input(self, history_id):
+        with open(self.test_data_resolver.get_filename("1.fastqsanger.gz"), "rb") as fh:
+            hda = self.dataset_populator.new_dataset(history_id, content=fh, file_type="fastqsanger.gz", wait=True)
+        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        downloaded = self._extract_and_download_workflow_by_ids(hda_ids=[hda["id"]], job_ids=[run["jobs"][0]["id"]])
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        (grep_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        assert "input" in grep_step["input_connections"], grep_step
+        assert connection_step_id(grep_step["input_connections"]["input"]) == input_step["id"], grep_step
 
     @summarize_instance_history_on_error
     def test_extract_copies_of_one_input_with_different_names_rejected(self, history_id):
