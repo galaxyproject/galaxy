@@ -640,7 +640,7 @@ class TestOIDCLoginUnderURLPrefixIntegration(AbstractTestCases.BaseKeycloakInteg
         )
         response = session.get(response.headers["Location"], allow_redirects=False)
         self._assert_status_code_is(response, 302)
-        assert response.headers["Location"] == "/galaxypf/workflows/list"
+        assert parse.urljoin(self.url, response.headers["Location"]) == f"{self.url}workflows/list"
 
 
 class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
