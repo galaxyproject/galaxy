@@ -13,6 +13,7 @@ _:  # global stuff
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip, .g-tooltip-d'
     tooltip_inner: '.tooltip-inner, .g-tooltip-d-inner'
+    shown_tooltip: '.g-tooltip[data-show="true"]'
     left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
@@ -1254,6 +1255,8 @@ workflow_extract:
     output_star_active_for_job: '[data-job-id="${job_id}"] [data-output-star].active'
     output_label_for_job: '[data-job-id="${job_id}"] [data-output-label]'
     all_active_output_stars: '[data-description="workflow-extraction-form"] [data-output-star].active'
+    output_preview: '[data-description="workflow-extraction-form"] .workflow-output-item .content-item'
+    output_preview_loading: '[data-description="workflow-extraction-form"] .workflow-output-item [data-description="loading message"]'
     output_rename_input: '#output-name-input'
     output_rename_confirm: '#rename-modal-output .g-modal-confirm-buttons button:last-of-type'
     output_rename_cancel: '#rename-modal-output .g-modal-confirm-buttons button:first-of-type'
@@ -1263,7 +1266,8 @@ workflow_extract:
     step_rename_confirm: '#rename-modal-step .g-modal-confirm-buttons button:last-of-type'
     report_notes_toast:
       type: xpath
-      selector: '//div[@data-description="toast message" and contains(normalize-space(.), "Notebook report notes")]'
+      # Settled: not still sliding in or moving to make room.
+      selector: '//div[@data-description="toast message" and contains(normalize-space(.), "Notebook report notes") and not(contains(@class, "g-toast-enter-active")) and not(contains(@class, "g-toast-move"))]'
 
 invocations:
   selectors:
