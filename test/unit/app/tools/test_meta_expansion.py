@@ -121,6 +121,16 @@ class TestMetaExpansion(TestCase, tools_support.UsesTools):
         with pytest.raises(exceptions.MessageException):
             self._expand(incoming)
 
+    def test_unknown_collection_id(self):
+        incoming = {"input1": {"batch": True, "values": [{"src": "hdca", "id": self._encode(987654)}]}}
+        with pytest.raises(exceptions.ObjectNotFound):
+            self._expand(incoming)
+
+    def test_unknown_collection_element_id(self):
+        incoming = {"input1": {"batch": True, "values": [{"src": "dce", "id": self._encode(987654)}]}}
+        with pytest.raises(exceptions.ObjectNotFound):
+            self._expand(incoming)
+
     def test_async_hda_batch(self):
         hda_ids = [self._hda().id for _ in range(3)]
         state = {"input1": {"__class__": "Batch", "values": [{"src": "hda", "id": i} for i in hda_ids]}}
@@ -168,6 +178,12 @@ class TestMetaExpansion(TestCase, tools_support.UsesTools):
         }
         with pytest.raises(InputMatchedException):
             self._expand_async(state)
+
+    def test_async_unknown_collection_id(self):
+        for src in ("hdca", "dce"):
+            state = {"input1": {"__class__": "Batch", "values": [{"src": src, "id": 987654}]}}
+            with pytest.raises(exceptions.ObjectNotFound):
+                self._expand_async(state)
 
     def test_validate_matched_batch_lengths_mismatch(self):
         state = {
