@@ -317,8 +317,10 @@ def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
     assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
 
 
-def test_adapt_dataset_ignores_a_store_root_outside_the_dataset():
-    result = _adapt_input("zarr", metadata={"store_root": "../elsewhere"})
+@pytest.mark.parametrize("store_root", ["../elsewhere", "nested/store.zarr", "a';touch pwned;'.zarr", "$(id).zarr"])
+def test_adapt_dataset_ignores_an_unsafe_store_root(store_root):
+    # store_root reaches command lines through $input.path, so it must be a plain folder name.
+    result = _adapt_input("zarr", metadata={"store_root": store_root})
     assert result.path == "/job/inputs/dataset_1_files"
 
 
@@ -355,6 +357,19 @@ def test_to_cwl_zarr_store_in_a_recorded_wrapper_folder():
     properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
 
     assert properties["path"] == "/job/inputs/dataset_1_files/wrapped.zarr"
+
+
+def test_to_cwl_deferred_dataset_has_location_and_no_path():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    assert hda.dataset is not None
+    hda.dataset.state = Dataset.states.DEFERRED
+    hda.dataset.sources = [DatasetSource(source_uri="https://example.org/data/store.zarr")]
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["location"] == "https://example.org/data/store.zarr"
+    assert "path" not in properties
 
 
 def test_to_cwl_file():
