@@ -69,13 +69,14 @@ def _upload_revision(
     tmp_path: Path,
     column_maker_version: str,
     label: str,
+    newline: str = "\n",
 ):
     revision_dir = tmp_path / f"{column_maker_version}_{label}"
     revision_dir.mkdir()
     tool_xml = COLUMN_MAKER_REVISIONS / column_maker_version / "column_maker.xml"
     (revision_dir / "column_maker.xml").write_text(tool_xml.read_text())
     readme = f"{label} **bold** text.\n\n.. image:: images/logo.png\n\n.. raw:: html\n\n   <script>alert(1)</script>\n"
-    (revision_dir / "README.rst").write_text(readme)
+    (revision_dir / "README.rst").write_bytes(readme.replace("\n", newline).encode())
     upload(provides_repositories, repository, revision_dir, arcname="readme_repo")
 
 
@@ -126,3 +127,22 @@ def test_readmes_renders_readme_unchanged_in_old_revision(
     assert "Mid <strong>bold</strong> text." in html
     assert "Old" not in html
     assert "New" not in html
+
+
+def test_readmes_keeps_crlf_readme_images_on_old_revision(
+    provides_repositories: ProvidesRepositoriesContext,
+    new_repository: Repository,
+    tmp_path: Path,
+):
+    app = provides_repositories.app
+    _upload_revision(provides_repositories, new_repository, tmp_path, "1", "Old", newline="\r\n")
+    _upload_revision(provides_repositories, new_repository, tmp_path, "2", "New")
+    latest = get_latest_downloadable_changeset_revision(app, new_repository)
+    (old,) = [m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    assert old
+
+    html = readmes(app, new_repository, old)["README.rst"]
+
+    encoded_id = app.security.encode_id(new_repository.id)
+    assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png?changeset_revision={old}"' in html
+    assert "<p>?changeset_revision" not in html

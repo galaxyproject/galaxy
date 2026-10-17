@@ -80,7 +80,10 @@ def _read_readme_from_manifest(repository: "Repository", changeset_revision: str
     except Exception:
         log.exception("Error reading README file '%s' from repository manifest", readme_file_name)
         return None
-    return unicodify(data)
+    if data is None:
+        return None
+    # Translate newlines as reading the file from disk in text mode does.
+    return unicodify(data).replace("\r\n", "\n").replace("\r", "\n")
 
 
 def _render_repository_readme(
