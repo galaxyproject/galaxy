@@ -312,3 +312,13 @@ def test_verify_collection_nested_elements_alias_still_checked():
     calls = []
     verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
     assert calls == ["dnacomp"]
+
+
+def test_verify_collection_name():
+    output_def = TestCollectionOutputDef.from_yaml_test_format(
+        {"name": "out", "class": "Collection", "metadata": {"name": "renamed"}}
+    )
+    verify_collection(output_def, {"name": "renamed", "elements": []}, lambda *a, **k: None)
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, {"name": "other", "elements": []}, lambda *a, **k: None)
+    assert "expected to have name [renamed], but it had name [other]" in str(exc_info.value)
