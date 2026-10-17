@@ -1317,6 +1317,10 @@ invocations:
     step_job_details_state_counter: '[data-description="invocation step state counter"][data-step-state="${state}"]'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
+    report_section: '.markdown-component'
+    report_section_with_text:
+      type: xpath
+      selector: '//*[contains(@class, "markdown-component")]//*[contains(text(), "${text}")]'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
     # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
