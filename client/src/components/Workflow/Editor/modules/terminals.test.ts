@@ -399,6 +399,18 @@ describe("canAccept", () => {
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe("Incompatible collection type(s) for attachment.");
     });
+    it("rejects paired -> list:paired,list,list:paired_or_unpaired connection", () => {
+        const step = stepStore.getStep(terminals["filter_failed"]!["input"]!.stepId) as Step;
+        (step.inputs[0] as DataCollectionStepInput).collection_types = [
+            "list:paired",
+            "list",
+            "list:paired_or_unpaired",
+        ];
+        const dataIn = rebuildTerminal(terminals["filter_failed"]!["input"] as InputCollectionTerminal);
+        const collectionOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe("Incompatible collection type(s) for attachment.");
+    });
     it("rejects paired_or_unpaired -> paired connection", () => {
         const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
