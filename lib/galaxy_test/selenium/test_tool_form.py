@@ -294,10 +294,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
             wait=True,
         ).json()["id"]
         self.tool_open("identifier_multiple")
-        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        # input1 is a multi-select; multiple=True closes its dropdown so it does not cover the hint
-        self.tool_form_select_data("input1", "list:list", multiple=True)
+        self.tool_form_select_collection("input1", "list:list")
         hint = self.tool_form_wait_for_batch_info("input1", "one job per list")
         assert hint == "The supplied input will be mapped over this tool: one job per list."
         self.screenshot("tool_form_map_over_nested_collection_hint")
