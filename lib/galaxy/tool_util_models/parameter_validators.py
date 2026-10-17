@@ -269,6 +269,12 @@ class InRangeParameterValidatorModel(StaticValidatorModel):
     ] = NEGATE_DEFAULT
     _safe: bool = PrivateAttr(True)
 
+    @model_validator(mode="after")
+    def check_min_le_max(self) -> Self:
+        if self.min is not None and self.max is not None and self.min > self.max:
+            raise ValueError("min must be less than or equal to max")
+        return self
+
     def statically_validate(self, value: Any):
         if isinstance(value, (int, float)):
             validates = True

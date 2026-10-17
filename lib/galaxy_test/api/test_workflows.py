@@ -85,6 +85,29 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 from .sharable import SharingApiTests
 
+
+def _parameter_input_workflow(parameter_type: str, validators: list[dict[str, Any]]) -> dict[str, Any]:
+    """Native workflow with one parameter input, ``text_input``, declaring ``validators``."""
+    tool_state = {"parameter_type": parameter_type, "optional": False, "validators": validators}
+    return {
+        "a_galaxy_workflow": "true",
+        "format-version": "0.1",
+        "name": "parameter input validators",
+        "annotation": "",
+        "steps": {
+            "0": {
+                "id": 0,
+                "type": "parameter_input",
+                "label": "text_input",
+                "tool_state": json.dumps(tool_state),
+                "input_connections": {},
+                "position": {"left": 0, "top": 0},
+                "workflow_outputs": [],
+            }
+        },
+    }
+
+
 WORKFLOW_SIMPLE = """
 class: GalaxyWorkflow
 name: Simple Workflow
@@ -7957,6 +7980,28 @@ text_input:
                 wait=True,
                 assert_ok=False,
             )
+
+    def test_imported_negated_parameter_validator_is_kept(self):
+        negated = {"type": "regex", "expression": "^bad", "message": "no bad", "negate": True}
+        workflow_id = self.workflow_populator.create_workflow(_parameter_input_workflow("text", [negated]))
+        downloaded = self.workflow_populator.download_workflow(workflow_id)
+        assert json.loads(downloaded["steps"]["0"]["tool_state"])["validators"] == [negated]
+        with self.dataset_populator.test_history() as history_id:
+            rejected = self.workflow_populator.invoke_workflow(
+                workflow_id, history_id=history_id, inputs={"text_input": "bad1"}, inputs_by="name"
+            )
+            self._assert_status_code_is(rejected, 400)
+            assert rejected.json()["err_msg"] == "text_input: no bad"
+            accepted = self.workflow_populator.invoke_workflow(
+                workflow_id, history_id=history_id, inputs={"text_input": "good"}, inputs_by="name"
+            )
+            self._assert_status_code_is(accepted, 200)
+
+    def test_import_rejects_parameter_range_with_min_greater_than_max(self):
+        inverted = {"type": "in_range", "min": 5, "max": 1}
+        response = self.workflow_populator.create_workflow_response(_parameter_input_workflow("integer", [inverted]))
+        self._assert_status_code_is(response, 400)
+        assert "min must be less than or equal to max" in response.json()["err_msg"]
 
     def test_run_with_text_input_connection(self):
         with self.dataset_populator.test_history() as history_id:

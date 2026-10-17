@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+from pydantic import ValidationError
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -75,6 +76,10 @@ from galaxy.tool_util.parser.output_objects import (
     ToolExpressionOutput,
     ToolOutput,
     ToolOutputCollection,
+)
+from galaxy.tool_util.parser.parameter_validators import (
+    parse_dict_validators,
+    UnsafeValidatorConfiguredInUntrustedContext,
 )
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolCreatePayload,
@@ -1621,6 +1626,9 @@ class InputParameterModule(WorkflowModule):
                 )
             if param_type == "directory_uri":
                 when_this_type.inputs["validators"] = regex_validator_definition()
+            when_this_type.inputs["extra_validators"] = HiddenToolParameter(
+                None, {"name": "extra_validators", "value": ""}
+            )
 
             cases.append(when_this_type)
 
@@ -1868,6 +1876,7 @@ class InputParameterModule(WorkflowModule):
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
+        parameter_type = state["parameter_type"]
         default_set, default_value = False, None
         if "default" in state:
             default_set = True
@@ -1887,7 +1896,7 @@ class InputParameterModule(WorkflowModule):
 
         state = {
             "parameter_definition": {
-                "parameter_type": state["parameter_type"],
+                "parameter_type": parameter_type,
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
@@ -1896,7 +1905,7 @@ class InputParameterModule(WorkflowModule):
         if source_validators is not None:
             # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
             # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
-            state["parameter_definition"].update(validators_to_form(source_validators))
+            state["parameter_definition"].update(validators_to_form(parameter_type, source_validators))
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1977,7 +1986,23 @@ class InputParameterModule(WorkflowModule):
 
     def save_to_step(self, step, detached=False):
         step.type = self.type
-        step.tool_inputs = self._parse_state_into_dict()
+        tool_inputs = self._parse_state_into_dict()
+        self._check_validators(tool_inputs.get("validators", []))
+        step.tool_inputs = tool_inputs
+
+    def _check_validators(self, validators: list[dict[str, Any]]) -> None:
+        # Stored as declared; parse only to reject what get_runtime_inputs could not build.
+        try:
+            parse_dict_validators(validators, trusted=False)
+        except ValidationError as e:
+            problems = "; ".join(error["msg"] for error in e.errors())
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid validator on workflow parameter input '{self.label}': {problems}"
+            )
+        except UnsafeValidatorConfiguredInUntrustedContext as e:
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid validator on workflow parameter input '{self.label}': {e}"
+            )
 
 
 class PauseModule(WorkflowModule):
