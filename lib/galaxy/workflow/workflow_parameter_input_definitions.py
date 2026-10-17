@@ -81,3 +81,42 @@ def get_default_parameter(param_type: INPUT_PARAMETER_TYPES, bounds: Optional[Nu
     elif param_type == "directory_uri":
         input_default_value = DirectoryUriToolParameter(None, default_source)
     return input_default_value
+
+
+def validators_to_form(validators: list[dict[str, Any]]) -> dict[str, Any]:
+    """Persisted validators as editor form values: regex rows and a min/max pair."""
+    form: dict[str, Any] = {"validators": []}
+    for validator in validators:
+        validator_type = validator["type"]
+        if validator_type == "regex":
+            form["validators"].append(
+                {
+                    "regex_doc": validator.get("message"),
+                    "regex_match": validator.get("expression"),
+                    "regex_negate": validator.get("negate", False),
+                }
+            )
+        elif validator_type == "in_range":
+            form["min"] = validator.get("min")
+            form["max"] = validator.get("max")
+    return form
+
+
+def validators_from_form(parameter_definition: dict[str, Any]) -> list[dict[str, Any]]:
+    """Inverse of :func:`validators_to_form`: editor form values as persisted validators."""
+    validators: list[dict[str, Any]] = []
+    if "min" in parameter_definition or "max" in parameter_definition:
+        min = parameter_definition.get("min")
+        max = parameter_definition.get("max")
+        validators.append({"min": min, "max": max, "negate": False, "type": "in_range"})
+    if "validators" in parameter_definition:
+        for row in parameter_definition["validators"]:
+            validators.append(
+                {
+                    "message": row["regex_doc"],
+                    "expression": row["regex_match"],
+                    "negate": row.get("regex_negate", False),
+                    "type": "regex",
+                }
+            )
+    return validators

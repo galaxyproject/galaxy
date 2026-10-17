@@ -146,6 +146,8 @@ from galaxy.workflow.workflow_parameter_input_definitions import (
     numeric_bounds_inverted,
     NumericBounds,
     split_numeric_bounds,
+    validators_from_form,
+    validators_to_form,
 )
 
 if TYPE_CHECKING:
@@ -1892,23 +1894,9 @@ class InputParameterModule(WorkflowModule):
         if multiple is not None:
             state["parameter_definition"]["multiple"] = multiple
         if source_validators is not None:
-            form_validators = []
             # the form definition can change from Galaxy to Galaxy fairly freely, but the source validators are persisted
             # and need to be consistent - here we convert the persisted/YAML tool definition version to the "tool form" version.
-            for source_validator in source_validators:
-                source_type = source_validator["type"]
-                if source_type == "regex":
-                    form_validators.append(
-                        {
-                            "regex_doc": source_validator.get("message"),
-                            "regex_match": source_validator.get("expression"),
-                            "regex_negate": source_validator.get("negate", False),
-                        }
-                    )
-                elif source_type == "in_range":
-                    state["parameter_definition"]["min"] = source_validator.get("min")
-                    state["parameter_definition"]["max"] = source_validator.get("max")
-            state["parameter_definition"]["validators"] = form_validators
+            state["parameter_definition"].update(validators_to_form(source_validators))
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1952,32 +1940,7 @@ class InputParameterModule(WorkflowModule):
                 optional = False
             if "multiple" in parameters_def:
                 rval["multiple"] = parameters_def["multiple"]
-            source_validators = []
-            if "min" in parameters_def or "max" in parameters_def:
-                min = parameters_def.get("min")
-                max = parameters_def.get("max")
-                source_validators.append(
-                    {
-                        "min": min,
-                        "max": max,
-                        "negate": False,
-                        "type": "in_range",
-                    }
-                )
-
-            if "validators" in parameters_def:
-                form_validators = parameters_def["validators"]
-                # convert the current tool form structure to the persisted YAML-definition style
-                for form_validator in form_validators:
-                    source_validators.append(
-                        {
-                            "message": form_validator["regex_doc"],
-                            "expression": form_validator["regex_match"],
-                            "negate": form_validator.get("regex_negate", False),
-                            "type": "regex",
-                        }
-                    )
-            rval["validators"] = source_validators
+            rval["validators"] = validators_from_form(parameters_def)
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
