@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Sequence
 from operator import itemgetter
 from typing import (
     TYPE_CHECKING,
@@ -18,6 +19,8 @@ from tool_shed.webapp.model import (
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
+
     from tool_shed.structured_app import ToolShedApp
     from tool_shed.webapp.model.mapping import ToolShedModelMapping
 
@@ -323,7 +326,12 @@ def is_downloadable(metadata_dict):
     return False
 
 
-def get_metadata_by_changeset(session, repository_id, changeset_revision, repository_metadata_model):
+def get_metadata_by_changeset(
+    session: "scoped_session",
+    repository_id: int | None,
+    changeset_revision: str,
+    repository_metadata_model: type[RepositoryMetadata],
+) -> Sequence[RepositoryMetadata]:
     stmt = (
         select(repository_metadata_model)
         .where(repository_metadata_model.repository_id == repository_id)

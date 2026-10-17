@@ -482,6 +482,8 @@ class FrameworkRouter(APIRouter):
                 if allow_cors:
                     dependencies = kwd.pop("dependencies", [])
                     dependencies.append(CORSPreflightRequired)
+                    # The preflight endpoint returns nothing, so it can't share the route's response model
+                    preflight_kwd = {key: value for key, value in kwd.items() if key != "response_model"}
 
                     self.add_api_route(
                         route,
@@ -489,7 +491,7 @@ class FrameworkRouter(APIRouter):
                         methods=[RestVerb.options],
                         include_in_schema=False,
                         dependencies=dependencies,
-                        **kwd,
+                        **preflight_kwd,
                     )
 
                 return func
@@ -611,6 +613,8 @@ class APICorsRoute(APIRoute):
                 # Call the handler - it's already a callable that takes (request, exc)
                 response = await handler(request, exc)
             response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+            # The allowed origin is copied from the request, so caches must not share responses across origins
+            response.headers.add_vary_header("Origin")
             response.headers["Access-Control-Max-Age"] = "600"
             return response
 

@@ -494,6 +494,46 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/files": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /**
+         * Get Files
+         * @description List the files in a downloadable repository revision.
+         */
+        get: operations["repositories__files"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/files/{path}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /**
+         * Get File Contents
+         * @description Fetch the contents of a file in a downloadable repository revision, wrapped in JSON.
+         */
+        get: operations["repositories__file_contents"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious": {
         parameters: {
             query?: never
@@ -2962,6 +3002,50 @@ export interface components {
             /** Repository Owner */
             repository_owner: string
         }
+        /** RepositoryFileContents */
+        RepositoryFileContents: {
+            /**
+             * Binary
+             * @description The file was read and looks binary, so content is omitted.
+             */
+            binary: boolean
+            /**
+             * Content
+             * @description UTF-8 text of the file, undecodable bytes replaced. Null for symlinks, binary and truncated files.
+             */
+            content?: string | null
+            /** Path */
+            path: string
+            /** Size */
+            size: number
+            /**
+             * Truncated
+             * @description The file is over the size limit, so it was not read and content is omitted.
+             */
+            truncated: boolean
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "file" | "symlink"
+        }
+        /** RepositoryFileEntry */
+        RepositoryFileEntry: {
+            /** Executable */
+            executable: boolean
+            /** Path */
+            path: string
+            /**
+             * Size
+             * @description Size in bytes from the revlog index. For copied or renamed files this may include hg's copy metadata header, so it can be slightly larger than the size the contents endpoint reports.
+             */
+            size: number
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "file" | "symlink"
+        }
         /** RepositoryMetadata */
         RepositoryMetadata: {
             [key: string]: components["schemas"]["RepositoryRevisionMetadata"]
@@ -3004,6 +3088,13 @@ export interface components {
             can_manage: boolean
             /** Can Push */
             can_push: boolean
+        }
+        /** RepositoryRevisionFiles */
+        RepositoryRevisionFiles: {
+            /** Changeset Revision */
+            changeset_revision: string
+            /** Files */
+            files: components["schemas"]["RepositoryFileEntry"][]
         }
         /** RepositoryRevisionMetadata */
         RepositoryRevisionMetadata: {
@@ -5652,6 +5743,94 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__files: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
+                changeset_revision: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["RepositoryRevisionFiles"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__file_contents: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
+                changeset_revision: string
+                /** @description Path of the file relative to the repository root, as listed for the revision. */
+                path: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["RepositoryFileContents"]
                 }
             }
             /** @description Request Error */

@@ -5,6 +5,7 @@ import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
+import { hasBrowsableFiles, newestRevision } from "@/api"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import PageHeader from "@/components/PageHeader.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -80,27 +81,6 @@ function trsToolId(tool: RepositoryToolModel) {
     }
 }
 
-const repositoryRevisionKeys = computed(() => {
-    const keys = []
-    if (repositoryMetadata.value) {
-        for (const key of Object.keys(repositoryMetadata?.value || {})) {
-            keys.push(key)
-        }
-    }
-    return keys
-})
-
-const repositoryChangesetRevisions = computed(() => {
-    const changesets = []
-    if (repositoryRevisionKeys.value) {
-        for (const key of repositoryRevisionKeys.value) {
-            const [, changeset] = key.split(":", 2)
-            changesets.push(changeset)
-        }
-    }
-    return changesets
-})
-
 const metadataByRevision = computed(() => {
     const byRevision: { [revision: string]: RevisionMetadata } = {}
     if (repositoryMetadata.value) {
@@ -126,12 +106,15 @@ const currentMetadata = computed(() => {
 repositoryStore.setId(props.repositoryId)
 
 const currentRevision = ref<string>(props.changesetRevision || "")
-watch(repositoryChangesetRevisions, () => {
-    const changesets = repositoryChangesetRevisions.value
-    if (changesets && changesets.length > 0 && currentRevision.value == "") {
-        currentRevision.value = changesets[changesets.length - 1]
-    }
-})
+watch(
+    () => newestRevision(repositoryMetadata.value),
+    (newest) => {
+        if (newest && currentRevision.value == "") {
+            currentRevision.value = newest
+        }
+    },
+    { immediate: true },
+)
 
 const readmes = ref<{ [key: string]: string | undefined }>({})
 watch(
@@ -143,29 +126,33 @@ watch(
     },
 )
 
-watch(currentRevision, () => {
-    if (currentRevision.value) {
-        ToolShedApi()
-            .GET("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes", {
-                params: {
-                    path: {
-                        encoded_repository_id: props.repositoryId,
-                        changeset_revision: currentRevision.value,
+watch(
+    currentRevision,
+    () => {
+        if (currentRevision.value) {
+            ToolShedApi()
+                .GET("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes", {
+                    params: {
+                        path: {
+                            encoded_repository_id: props.repositoryId,
+                            changeset_revision: currentRevision.value,
+                        },
                     },
-                },
-            })
-            .then((response) => {
-                if (response.data) {
-                    readmes.value = response.data
-                } else {
-                    readmes.value = {}
-                }
-            })
-            .catch(notifyOnCatch)
-    } else {
-        readmes.value = {}
-    }
-})
+                })
+                .then((response) => {
+                    if (response.data) {
+                        readmes.value = response.data
+                    } else {
+                        readmes.value = {}
+                    }
+                })
+                .catch(notifyOnCatch)
+        } else {
+            readmes.value = {}
+        }
+    },
+    { immediate: true },
+)
 
 // The header carries the one-line description; the about card only repeats it when there is more to say
 const longDescription = computed(() => {
@@ -180,6 +167,9 @@ const latestRevisionDownloadable = computed(() => repositoryInstallInfo.value?.m
 const tools = computed(() => currentMetadata.value?.tools || [])
 const invalidTools = computed(() => currentMetadata.value?.invalid_tools || [])
 const malicious = computed(() => currentMetadata.value?.malicious || false)
+const browsableRevision = computed(() =>
+    currentMetadata.value && hasBrowsableFiles(currentMetadata.value) ? currentRevision.value : null,
+)
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
 const canPush = computed(() => repositoryPermissions.value?.can_push || false)
 </script>
@@ -205,7 +195,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                 </template>
                 <template #actions>
                     <div class="repository-header-actions">
-                        <repository-explore :repository="repository" :current-revision="currentRevision" />
+                        <repository-explore :repository="repository" :browsable-revision="browsableRevision" />
                         <repository-actions
                             :repository-id="repository.id"
                             :deprecated="deprecated"
