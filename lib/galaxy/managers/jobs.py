@@ -2368,6 +2368,7 @@ class JobSubmitter:
             user,
             history=target_history,
             galaxy_session=galaxy_session,
+            origin_job_handler=request.handler,
         )
         return trans
 
