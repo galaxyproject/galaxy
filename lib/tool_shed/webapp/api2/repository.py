@@ -50,6 +50,10 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["legacy_install"])
 
+# Revision-pinned images are read into memory from hg rather than streamed from disk.
+MAX_REVISION_IMAGE_SIZE = 10 * 1024 * 1024
+IMMUTABLE_CACHE_HEADERS = {"Cache-Control": "public, max-age=31536000, immutable"}
+
 
 @router.cbv
 class FastAPILegacyInstall:
@@ -210,10 +214,13 @@ class FastAPILegacyInstall:
         repository = get_repository_in_tool_shed(self.app, repository_id)
         media_type = self._image_media_type(image_file)
         if changeset_revision:
-            data = get_file_data_from_manifest(image_file, repository.hg_repo, changeset_revision)
+            data = get_file_data_from_manifest(
+                image_file, repository.hg_repo, changeset_revision, max_size=MAX_REVISION_IMAGE_SIZE
+            )
             if data is None:
                 raise ObjectNotFound("Image file not found.")
-            return Response(content=data, media_type=media_type)
+            # The bytes of a file at a given changeset never change.
+            return Response(content=data, media_type=media_type, headers=IMMUTABLE_CACHE_HEADERS)
         repo_files_dir = repository.repo_path(self.app)
         path_to_file = get_absolute_path_to_file_in_repository(repo_files_dir, image_file)
         if not path_to_file or not os.path.exists(path_to_file):

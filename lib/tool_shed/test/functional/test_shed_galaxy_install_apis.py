@@ -631,6 +631,7 @@ class TestGalaxyInstallApis(ShedApiTestCase):
             response = requests.get(url, params={"changeset_revision": revision.changeset_revision})
             api_asserts.assert_status_code_is_ok(response)
             assert response.headers["content-type"] == "image/png"
+            assert "immutable" in response.headers["cache-control"]
             assert response.content == revision_dirs.joinpath(revision_dir, "images", "logo.png").read_bytes()
 
     def test_display_image_at_changeset_revision_not_found(self):

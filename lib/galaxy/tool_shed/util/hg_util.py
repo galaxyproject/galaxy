@@ -108,11 +108,13 @@ def get_ctx_file_path_from_manifest(filename: str, repo: "IRepo", changeset_revi
     return None, None
 
 
-def get_file_data_from_manifest(filename: str, repo: "IRepo", changeset_revision: str) -> bytes | None:
+def get_file_data_from_manifest(
+    filename: str, repo: "IRepo", changeset_revision: str, max_size: int | None = None
+) -> bytes | None:
     """
     Return the contents of filename in the repository manifest as of changeset_revision, or None
-    if that revision is unknown or has no such file.  filename is matched as a path within the
-    repository first and then by file name alone.
+    if that revision is unknown, has no such file, or the file is larger than max_size bytes.
+    filename is matched as a path within the repository first and then by file name alone.
     """
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx is None:
@@ -124,7 +126,12 @@ def get_file_data_from_manifest(filename: str, repo: "IRepo", changeset_revision
         path = next(matches, None)
     if path is None:
         return None
-    data: bytes = ctx[path].data()
+    fctx = ctx[path]
+    # filectx.size() reads a newly added file whole to look for copy metadata, while the revlog
+    # index records the stored size (an upper bound of the file size) without reading the file.
+    if max_size is not None and fctx.filelog()._revlog.rawsize(fctx.filerev()) > max_size:
+        return None
+    data: bytes = fctx.data()
     return data
 
 

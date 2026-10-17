@@ -3,8 +3,10 @@ from typing import TYPE_CHECKING
 import pytest
 from mercurial import (
     hg,
+    revlog,
     ui,
 )
+from mercurial.revlogutils import constants as revlog_constants
 
 from galaxy.tool_shed.util.hg_util import (
     get_changectx_for_changeset,
@@ -110,6 +112,9 @@ def test_get_file_data_from_manifest(tmp_path):
     assert get_file_data_from_manifest("images/logo.png", repo, third) == b"images v1"
     assert get_file_data_from_manifest("images/logo.png", repo, fourth) is None
     assert get_file_data_from_manifest("images/logo.png", repo, "garbage") is None
+    # Files larger than max_size are not read.
+    assert get_file_data_from_manifest("images/logo.png", repo, first, max_size=9) == b"images v1"
+    assert get_file_data_from_manifest("images/logo.png", repo, first, max_size=8) is None
 
 
 def test_get_changectx_for_changeset_matches_only_exact_short_hash(tmp_path):
@@ -125,3 +130,24 @@ def test_get_changectx_for_changeset_matches_only_exact_short_hash(tmp_path):
     not_changesets = [second[:6], full_hash, "0", "tip", ".", "null", "", "000000000000", "ffffffffffff"]
     for changeset_revision in not_changesets + ["000000000bad"]:
         assert get_changectx_for_changeset(repo, changeset_revision) is None, changeset_revision
+
+
+def test_get_file_data_from_manifest_does_not_read_files_over_max_size(tmp_path, monkeypatch):
+    hg_util.init_repository(tmp_path)
+    changeset_revision = _commit_file(tmp_path, "images/big.png", "x" * 1000)
+    repo = hg.repository(ui.ui(), str(tmp_path).encode("utf-8"))
+    file_reads = []
+    for method_name in ("revision", "rawdata"):
+        original = getattr(revlog.revlog, method_name)
+
+        def record_file_read(self, *args, _original=original, **kwargs):
+            if self.target[0] == revlog_constants.KIND_FILELOG:
+                file_reads.append(self.target[1])
+            return _original(self, *args, **kwargs)
+
+        monkeypatch.setattr(revlog.revlog, method_name, record_file_read)
+
+    assert get_file_data_from_manifest("images/big.png", repo, changeset_revision, max_size=999) is None
+    assert file_reads == []
+    assert get_file_data_from_manifest("images/big.png", repo, changeset_revision, max_size=1000) == b"x" * 1000
+    assert file_reads
