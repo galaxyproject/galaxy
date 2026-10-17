@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from whoosh import (
     analysis,
     index,
-    writing,
 )
 from whoosh.fields import (
     ID,
@@ -50,6 +49,9 @@ log = logging.getLogger(__name__)
 
 # Matching sidecar signatures let ``build`` skip an unchanged corpus.
 _CORPUS_SIGNATURE_FILE = "corpus.md5"
+# Stored per-document fingerprint; a changed corpus rewrites only the
+# documents whose fingerprint differs.
+_DOC_HASH_FIELD = "doc_hash"
 
 # Tool help can contain embedded tables and tutorials large enough to dominate
 # both the persisted metadata index and Whoosh. Eager and cached search must
@@ -288,6 +290,7 @@ class ToolWhooshIndex:
             tuning,
             help_boost=tuning.help_boost if tuning.index_tool_help else None,
         )
+        self.schema.add(_DOC_HASH_FIELD, ID(stored=True))
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
@@ -303,12 +306,10 @@ class ToolWhooshIndex:
             os.makedirs(self.index_dir, exist_ok=True)
         return index.create_in(self.index_dir, schema=self.schema)
 
-    def _corpus_signature(self, docs: list[SearchDocument]) -> str:
+    def _corpus_signature(self, doc_hashes: dict[str, str]) -> str:
         """Fingerprint document content, schema, and tuning."""
         return md5_hash_str(
-            repr(self.tuning)
-            + json.dumps(sorted(self.schema.names()))
-            + json.dumps(sorted(docs, key=lambda d: d["id"]), sort_keys=True)
+            repr(self.tuning) + json.dumps(sorted(self.schema.names())) + json.dumps(sorted(doc_hashes.items()))
         )
 
     def build(self, tool_index: ToolIndex, tool_ids: Collection[str] | None = None) -> int:
@@ -327,8 +328,9 @@ class ToolWhooshIndex:
                 continue
             docs.append(doc)
 
+        doc_hashes = {str(doc["id"]): md5_hash_str(json.dumps(doc, sort_keys=True)) for doc in docs}
         # Avoid re-tokenising an unchanged corpus.
-        signature = self._corpus_signature(docs)
+        signature = self._corpus_signature(doc_hashes)
         signature_path = os.path.join(self.index_dir, _CORPUS_SIGNATURE_FILE)
         if os.path.isdir(self.index_dir) and index.exists_in(self.index_dir):
             try:
@@ -339,15 +341,24 @@ class ToolWhooshIndex:
             except OSError:
                 pass
 
-        # Replace the complete corpus atomically.
+        # Tokenising is the expensive part of a build, and a shed install
+        # changes a handful of documents in a corpus of thousands: rewrite
+        # only the documents that differ from what the index holds.
         ix = self._open()
-        writer = ix.writer(limitmb=256)
-        for doc in docs:
-            writer.add_document(**doc)
-        writer.commit(mergetype=writing.CLEAR)
+        with ix.reader() as reader:
+            indexed = {fields["id"]: fields.get(_DOC_HASH_FIELD) for fields in reader.all_stored_fields() if fields}
+        written = 0
+        with ix.writer(limitmb=256) as writer:
+            for tool_id in indexed.keys() - doc_hashes.keys():
+                writer.delete_by_term("id", tool_id)
+            for doc in docs:
+                doc_hash = doc_hashes[str(doc["id"])]
+                if indexed.get(str(doc["id"])) != doc_hash:
+                    writer.update_document(**doc, **{_DOC_HASH_FIELD: doc_hash})
+                    written += 1
         with open(signature_path, "w") as f:
             f.write(signature)
-        return len(docs)
+        return written
 
     def search(self, query: str, limit: int | None = None) -> list[str]:
         """Return tool ids ranked for ``query`` (most-relevant first).
