@@ -1,7 +1,9 @@
 import string
 from typing import (
+    Any,
     cast,
 )
+from unittest.mock import patch
 
 import pytest
 
@@ -150,6 +152,45 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
         self.app.object_store = cast(BaseObjectStore, MockObjectStore())
+
+    @pytest.mark.parametrize("group_type", ["conditional", "repeat", "section"])
+    def test_nested_conversion_receives_root_resource_context(self, group_type: str) -> None:
+        source = self.__add_dataset()
+        converted = self.__add_dataset()
+        dataset_input = '<param name="source" type="data" format="bed"/>'
+        resource_context = {"__current_case__": 1, "__job_resource__select": "yes", "processors": 4}
+        incoming: dict[str, Any]
+        if group_type == "conditional":
+            group = (
+                '<conditional name="group"><param name="mode" type="select">'
+                '<option value="selected">Selected</option></param>'
+                f'<when value="selected">{dataset_input}</when></conditional>'
+            )
+            incoming = {"group": {"__current_case__": 0, "mode": "selected", "source": source}}
+        elif group_type == "repeat":
+            group = f'<repeat name="group" title="Group">{dataset_input}</repeat>'
+            incoming = {"group": [{"__index__": 0, "source": source}]}
+        else:
+            group = f'<section name="group" title="Group">{dataset_input}</section>'
+            incoming = {"group": {"source": source}}
+        incoming["__job_resource"] = resource_context
+        incoming["__use_cached_job__"] = True
+        self._init_tool(
+            f'<tool id="nested_conversion" name="Nested conversion" version="1.0">'
+            f"<command>echo</command><inputs>{group}</inputs></tool>"
+        )
+        with (
+            patch.object(source, "find_conversion_destination", return_value=(False, "bed", None)),
+            patch.object(source, "get_converted_dataset", return_value=converted) as convert,
+        ):
+            self.action._collect_input_datasets(
+                self.tool, incoming, cast(ProvidesHistoryContext, self.trans), self.history, current_user_roles=[]
+            )
+        context = convert.call_args.kwargs["target_context"]
+        assert context["__job_resource"] == resource_context
+        assert "__current_case__" not in context
+        assert "__index__" not in context
+        assert convert.call_args.kwargs["use_cached_job"] is True
 
     def test_output_created(self):
         _, output = self._simple_execute()
