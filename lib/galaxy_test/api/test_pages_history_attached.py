@@ -876,6 +876,35 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         assert len(input_step_ids) == 2 and connected == input_step_ids, steps
 
     @skip_without_tool("cat1")
+    def test_copied_history_seeds_producer_of_collection_element_as_step(self):
+        """A producer that consumed one (hidden) collection element is still a step in a
+        copied history: the element came along with its collection."""
+        source_history_id = self.dataset_populator.new_history()
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            source_history_id, contents=["a\nb\n", "c\nd\n"], wait=True
+        ).json()["outputs"][0]
+        element_id = self.dataset_populator.get_history_collection_details(source_history_id, content_id=hdca["id"])[
+            "elements"
+        ][0]["object"]["id"]
+        run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": element_id}}, source_history_id)
+        self.dataset_populator.wait_for_history(source_history_id, assert_ok=True)
+        output_hid = run["outputs"][0]["hid"]
+        copy_response = self.dataset_populator.copy_history(source_history_id)
+        self._assert_status_code_is(copy_response, 200)
+        history_id = copy_response.json()["id"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        copied_output = next(
+            c for c in self._history_contents(history_id) if c["hid"] == output_hid and not c["deleted"]
+        )
+        page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[copied_output["id"]])
+
+        summary = self._extraction_summary(page["id"])
+
+        cat1_row = self._row_with_output_id(summary, copied_output["id"])
+        assert cat1_row is not None and cat1_row["step_type"] == "tool", summary["jobs"]
+        assert cat1_row["tool_id"] == "cat1" and cat1_row["seeded"] is True, cat1_row
+
+    @skip_without_tool("cat1")
     def test_inaccessible_producer_output_seeded_as_input(self):
         """An output whose producing tool became inaccessible is a closure boundary; its
         invalid tool row cannot be extracted, so the output is seeded as an input instead."""

@@ -70,6 +70,12 @@ class HistoryBoundary:
     history_id: int
     local_keys: frozenset[ContentRef]
 
+    @classmethod
+    def of(cls, history: History) -> "HistoryBoundary":
+        """Keys every content, including the hidden collection elements and non-ready
+        datasets the extraction summary leaves out."""
+        return cls(history.id, frozenset(original_content_ref(content) for content in history.all_contents))
+
     def produced_elsewhere(self, job: Job) -> bool:
         """Whether ``job`` ran in another history and its inputs were not all copied here.
 
@@ -563,9 +569,8 @@ def summary_from_page(trans: ProvidesHistoryContext, page: Page, history: Histor
     content = revision.content if revision is not None else None
     referenced = referenced_content_ids(trans, content or "")
     jobs, warnings = summarize(trans, history)
-    boundary = HistoryBoundary(
-        history.id, frozenset(original_content_ref(data) for datasets in jobs.values() for _, data in datasets)
+    closure = _backward_job_closure(
+        trans, referenced.refs, referenced.job_refs, referenced.icj_refs, HistoryBoundary.of(history)
     )
-    closure = _backward_job_closure(trans, referenced.refs, referenced.job_refs, referenced.icj_refs, boundary)
     closure.warnings = referenced.warnings + closure.warnings
     return _serialize_summary(trans, history, jobs, warnings, closure)
