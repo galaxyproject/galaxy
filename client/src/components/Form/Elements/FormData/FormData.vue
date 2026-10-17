@@ -28,6 +28,7 @@ import { type EventData, useEventStore } from "@/stores/eventStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
+import { matchCollectionType } from "./collectionMatch";
 import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption } from "./types";
 import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
@@ -502,16 +503,13 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         tags: [],
     };
     if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
-        const itemCollectionType = v.collection_type;
-        if (!props.collectionTypes.includes(itemCollectionType as CollectionType)) {
-            const mapOverType = props.collectionTypes.find((collectionType) =>
-                itemCollectionType.endsWith(collectionType),
-            );
-            if (!mapOverType) {
-                return null;
-            }
+        const match = matchCollectionType(v.collection_type, props.collectionTypes);
+        if (!match) {
+            return null;
+        }
+        if (match.mapOverType) {
             newValue["batch"] = true;
-            newValue["map_over_type"] = mapOverType;
+            newValue["map_over_type"] = match.mapOverType;
         }
     }
     return newValue;
@@ -682,41 +680,30 @@ function canAcceptSrc(
         if (!collectionType) {
             // Should always be set if item is dataset collection
             throw Error("Item is a dataset collection of unknown type.");
-        } else if (!props.collectionTypes) {
+        }
+        if (!props.collectionTypes) {
             // if no collection_type is set all collections are valid
             return true;
-        } else {
-            if (props.collectionTypes.includes(collectionType as CollectionType)) {
-                // Check column_definitions compatibility for sample sheets
-                if (
-                    props.extendedCollectionType?.columnDefinitions &&
-                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
-                ) {
-                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
-                    return false;
-                }
-                return true;
-            }
-            if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
-                // Check column_definitions compatibility for sample sheets
-                if (
-                    props.extendedCollectionType?.columnDefinitions &&
-                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
-                ) {
-                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
-                    return false;
-                }
-                return true;
-            } else {
-                $emit(
-                    "alert",
-                    `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
-                        props.collectionTypes,
-                    )} type dataset collection parameter.`,
-                );
-                return false;
-            }
         }
+        const match = matchCollectionType(collectionType, props.collectionTypes);
+        if (!match) {
+            $emit(
+                "alert",
+                `${collectionTypeToText(collectionType)} dataset collection is not a valid input for ${orList(
+                    props.collectionTypes,
+                )} type dataset collection parameter.`,
+            );
+            return false;
+        }
+        // Check column_definitions compatibility for sample sheets
+        if (
+            props.extendedCollectionType?.columnDefinitions &&
+            !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
+        ) {
+            $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
+            return false;
+        }
+        return true;
     } else {
         throw Error("Unknown history content type.");
     }
