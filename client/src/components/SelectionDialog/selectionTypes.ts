@@ -14,6 +14,9 @@ export interface SelectionItem {
     url: string;
     entry: Record<string, unknown>;
     selectionState?: SelectionState;
+    updateTime?: Date;
+    tags?: readonly string[];
+    size?: number;
 }
 
 export interface ItemsProviderContext {
