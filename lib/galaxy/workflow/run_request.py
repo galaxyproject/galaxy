@@ -27,6 +27,7 @@ from galaxy.model import (
     WorkflowRequestStepState,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.tool_util_models.parameters import (
     DataOrCollectionRequestAdapter,
     DataRequestCollectionUri,
@@ -333,6 +334,31 @@ def build_workflow_run_configs(
     if "inputs" in payload and "ds_map" in payload:
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
 
+    if payload.get("effective_outputs"):
+        raise exceptions.RequestParameterInvalidException(
+            "Cannot declare effective outputs on invocation in this fashion."
+        )
+
+    preferred_object_store_id = payload.get("preferred_object_store_id")
+    preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
+    preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
+    split_object_store_config = bool(
+        preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+    )
+    if split_object_store_config and preferred_object_store_id:
+        raise exceptions.RequestParameterInvalidException(
+            "May specify either 'preferred_object_store_id' or one/both of 'preferred_outputs_object_store_id' and 'preferred_intermediate_object_store_id' but not both"
+        )
+    for object_store_id in (
+        preferred_object_store_id,
+        preferred_outputs_object_store_id,
+        preferred_intermediate_object_store_id,
+    ):
+        if object_store_id:
+            validation_error = validate_preferred_object_store_id(trans.user, trans.app.object_store, object_store_id)
+            if validation_error:
+                raise exceptions.RequestParameterInvalidException(validation_error)
+
     add_to_history = "no_add_to_history" not in payload
     legacy = payload.get("legacy", False)
     already_normalized = payload.get("parameters_normalized", False)
@@ -513,20 +539,6 @@ def build_workflow_run_configs(
                                 f"Invalid value for parameter '{name}' found."
                             )
         history.add_pending_items()
-        preferred_object_store_id = payload.get("preferred_object_store_id")
-        preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
-        preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
-        if payload.get("effective_outputs"):
-            raise exceptions.RequestParameterInvalidException(
-                "Cannot declare effective outputs on invocation in this fashion."
-            )
-        split_object_store_config = bool(
-            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
-        )
-        if split_object_store_config and preferred_object_store_id:
-            raise exceptions.RequestParameterInvalidException(
-                "May specified either 'preferred_object_store_id' or one/both of 'preferred_outputs_object_store_id' and 'preferred_intermediate_object_store_id' but not both"
-            )
         run_configs.append(
             WorkflowRunConfig(
                 target_history=history,
