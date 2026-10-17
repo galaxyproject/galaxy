@@ -716,23 +716,31 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert multirun[0]["map_over_type"] == "list", multirun[0]
 
     @skip_without_tool("collection_list_or_nested_list_input")
-    def test_build_collection_options_pagination_splits_direct_and_multirun_entries(self):
-        """The direct and multirun entries of one HDCA can land on different
-        pages, so clients must merge pages by (src, id, map_over_type)."""
+    def test_build_collection_options_pagination_keeps_direct_and_multirun_entries_together(self):
+        """The direct and multirun entries of one HDCA share a page, even past
+        the limit, so ``has_more`` (which counts HDCAs) never hides the second
+        one. An offset landing between them resumes at the multirun entry, so
+        clients must still merge pages by (src, id, map_over_type)."""
         with self.dataset_populator.test_history() as history_id:
             ll = self._create_hdca(history_id, "list_of_list")
-            pages = [
-                self._build_tool_param(
+            flat = self._create_hdca(history_id, "list")
+
+            def page(offset, limit, search=None):
+                spec = {"offset": offset, "limit": limit, "search": search}
+                f1 = self._build_tool_param(
                     "collection_list_or_nested_list_input",
                     history_id,
-                    options_pagination={"f1": {"hdca": {"offset": offset, "limit": 1}}},
-                )["options"]["hdca"]
-                for offset in (0, 1)
-            ]
-            assert [[(e["id"], e.get("map_over_type")) for e in page] for page in pages] == [
-                [(ll["id"], None)],
-                [(ll["id"], "list")],
-            ], pages
+                    options_pagination={"f1": {"hdca": spec}},
+                )
+                entries = [(e["id"], e.get("map_over_type")) for e in f1["options"]["hdca"]]
+                return entries, f1["options_meta"]["hdca"]["has_more"]
+
+            both = [(ll["id"], None), (ll["id"], "list")]
+            # the nested list is the last listed HDCA: its multirun entry would be unreachable if split off
+            assert page(0, 1, search=ll["name"]) == (both, False)
+            assert page(0, 2)[0] == [(flat["id"], None), *both]
+            assert page(1, 1)[0] == both
+            assert page(2, 1)[0] == [(ll["id"], "list")]
 
     @skip_without_tool("collection_paired_test")
     def test_build_collection_options_unmappable_excluded(self):
