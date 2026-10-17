@@ -179,10 +179,14 @@ const currentVariant = computed(() => {
 });
 
 /**
- * Whether the selection is mapped over this input, e.g. a `list:paired` collection
- * selected for a `paired` collection input runs one job per pair
+ * Whether the input is mapped over this tool: a collection on a `data` input, or a selection
+ * flagged for map over, e.g. a `list:paired` collection selected for a `paired` collection input
  */
-const selectionMapsOver = computed(() => !!currentValue.value?.some((v) => !!v.map_over_type));
+const mapsOver = computed(
+    () =>
+        (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION) ||
+        !!currentValue.value?.some((v) => !!v.map_over_type),
+);
 
 /**
  * What each mapped over job receives for a single selected collection, e.g. a "dataset pair",
@@ -190,18 +194,15 @@ const selectionMapsOver = computed(() => !!currentValue.value?.some((v) => !!v.m
  */
 const mapOverUnit = computed((): { code?: string; text: string } | null => {
     const [single, ...rest] = currentValue.value ?? [];
-    if (!single || rest.length > 0) {
+    if (!mapsOver.value || !single || rest.length > 0) {
         return null;
     }
     const type = single.map_over_type;
-    if (type && type !== "single_datasets") {
-        const label = COLLECTION_TYPE_TO_LABEL[type];
-        return label ? { text: localize(label.toLowerCase()) } : { code: type, text: localize("collection") };
-    }
-    if (type || (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION)) {
+    if (!type || type === "single_datasets") {
         return { text: localize("dataset") };
     }
-    return null;
+    const label = COLLECTION_TYPE_TO_LABEL[type];
+    return label ? { text: localize(label.toLowerCase()) } : { code: type, text: localize("collection") };
 });
 
 /**
@@ -1012,9 +1013,7 @@ const noOptionsWarningMessage = computed(() => {
                 </BFormCheckbox>
                 <div class="info text-info">
                     <FontAwesomeIcon :icon="faExclamation" />
-                    <span
-                        v-if="selectionMapsOver || (props.type == 'data' && currentVariant?.src == SOURCE.COLLECTION)"
-                        class="ml-1">
+                    <span v-if="mapsOver" class="ml-1">
                         The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
                         tool<template v-if="mapOverUnit"
                             >: {{ localize("one job per") }}
