@@ -834,21 +834,22 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                     // we need to find which of the possible input collection types is connected
                     if ("collectionTypes" in inputTerminal) {
                         // collection_type_source must point at input collection terminal
-                        const connectedCollectionType = inputTerminal.collectionTypes.find(
-                            (collectionType) =>
-                                otherCollectionType.canMatch(collectionType) ||
-                                otherCollectionType.canMapOver(collectionType),
+                        const mappedOverCollectionType = inputTerminal.collectionTypes.find((collectionType) =>
+                            otherCollectionType.canMapOver(collectionType),
                         );
-                        if (connectedCollectionType) {
-                            if (connectedCollectionType.collectionType === "any") {
-                                // if the input collection type is "any" this output's collection type
-                                // is exactly the same as the connected output
-                                return otherCollectionType;
-                            } else {
-                                // else we pick the matching input collection type
-                                // so that the map over logic applies correctly
-                                return connectedCollectionType;
-                            }
+                        if (mappedOverCollectionType) {
+                            // pick the input collection type mapped over
+                            // so that the map over logic applies correctly
+                            return mappedOverCollectionType;
+                        }
+                        if (
+                            inputTerminal.collectionTypes.some((collectionType) =>
+                                collectionType.canMatch(otherCollectionType),
+                            )
+                        ) {
+                            // without map over, this output's collection type
+                            // is exactly the same as the connected output
+                            return otherCollectionType;
                         }
                     }
                 }

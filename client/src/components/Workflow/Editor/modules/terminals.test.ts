@@ -9,6 +9,7 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import {
+    type DataCollectionStepInput,
     type DataOutput,
     type Step,
     type Steps,
@@ -921,6 +922,29 @@ describe("canAccept", () => {
         filterFailedInput.connect(listPairedOutput);
         expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
             new CollectionTypeDescription("list:paired"),
+        );
+    });
+    it("resolves collection type source for a list:paired_or_unpaired input", () => {
+        const filterFailedStep = stepStore.getStep(terminals["filter_failed"]!["input"]!.stepId) as Step;
+        (filterFailedStep.inputs[0] as DataCollectionStepInput).collection_types = ["list:paired_or_unpaired"];
+        const filterFailedInput = rebuildTerminal(terminals["filter_failed"]!["input"] as InputCollectionTerminal);
+        const filterFailedOutput = terminals["filter_failed"]!["output"] as OutputCollectionTerminal;
+        // direct matches keep the connected collection's type
+        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(collectionOut);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(new CollectionTypeDescription("list"));
+        filterFailedInput.disconnect(collectionOut);
+        const listPairedOutput = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(listPairedOutput);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
+            new CollectionTypeDescription("list:paired"),
+        );
+        filterFailedInput.disconnect(listPairedOutput);
+        // map-overs take the input's type
+        const listListOutput = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(listListOutput);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
+            new CollectionTypeDescription("list:paired_or_unpaired"),
         );
     });
 });
