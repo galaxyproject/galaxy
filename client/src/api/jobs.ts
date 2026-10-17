@@ -23,7 +23,8 @@ export type JobMessage =
     | components["schemas"]["OutputCollectionSecurityJobMessage"]
     | components["schemas"]["OutputDiscoveryJobMessage"]
     | components["schemas"]["StdioReadErrorJobMessage"]
-    | components["schemas"]["UnknownDatatypeJobMessage"];
+    | components["schemas"]["UnknownDatatypeJobMessage"]
+    | components["schemas"]["RuntimeEnvironmentWarningJobMessage"];
 
 export const NON_TERMINAL_STATES = [
     "new",
