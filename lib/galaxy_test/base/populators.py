@@ -1307,6 +1307,16 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
+    def copy_library_dataset(self, history_id: str, library_dataset_id: str) -> dict[str, Any]:
+        """Import a library dataset into a history."""
+        response = self._post(
+            f"histories/{history_id}/contents",
+            {"source": "library", "content": library_dataset_id, "type": "dataset"},
+            json=True,
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def tools_post(self, payload: dict, url="tools") -> Response:
         tool_response = self._post(url, data=payload)
         return tool_response

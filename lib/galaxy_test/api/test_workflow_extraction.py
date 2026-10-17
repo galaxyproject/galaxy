@@ -271,6 +271,12 @@ test_data:
     def _extract_from_history_raw(self, history_id: str, payload: dict[str, Any]) -> "Response":
         return self._post(f"histories/{history_id}/extract_workflow", data=payload, json=True)
 
+    def _only_row_listing(self, summary, content_ids):
+        """The one summary row listing any of ``content_ids`` (e.g. copies of one original)."""
+        rows = [job for job in summary["jobs"] if any(o["id"] in content_ids for o in job["outputs"])]
+        assert len(rows) == 1, rows
+        return rows[0]
+
     def _row_with_output_id(self, summary, content_id):
         for job in summary["jobs"]:
             if any(o["id"] == content_id for o in job["outputs"]):
@@ -370,7 +376,8 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
             },
         )
         self._assert_status_code_is(response, 400)
-        assert "dataset_names" in response.json()["err_msg"], response.text
+        err_msg = response.json()["err_msg"]
+        assert "dataset_names" in err_msg and "dataset_hids" in err_msg, response.text
 
     @skip_without_tool("Grep1")
     @summarize_instance_history_on_error
@@ -1255,7 +1262,7 @@ test_data:
         ).json()["outputs"][0]
         hdca_copy = self._copy_content_to_history(history_id, hdca)
         summary = self._get_extraction_summary(history_id)
-        (input_row,) = (row for row in summary["jobs"] if any(o["id"] == hdca["id"] for o in row["outputs"]))
+        input_row = self._only_row_listing(summary, {hdca["id"], hdca_copy["id"]})
         assert [o["id"] for o in input_row["outputs"]] == [hdca["id"]], input_row
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"], hdca_copy["id"]], dataset_collection_names=["letters", "letters"]
@@ -1268,17 +1275,11 @@ test_data:
     def test_copies_of_job_less_dataset_list_one_input(self, history_id):
         """A library import has no creating job; it and its in-history copy share one input card."""
         library_dataset = LibraryPopulator(self.galaxy_interactor).new_library_dataset("extraction_job_less")
-        response = self._post(
-            f"histories/{history_id}/contents",
-            data={"content": library_dataset["id"], "source": "library", "type": "dataset"},
-            json=True,
-        )
-        self._assert_status_code_is(response, 200)
-        imported = response.json()
+        imported = self.dataset_populator.copy_library_dataset(history_id, library_dataset["id"])
         imported_copy = self._copy_hda_to_history(history_id, imported)
         copy_ids = {imported["id"], imported_copy["id"]}
         summary = self._get_extraction_summary(history_id)
-        (row,) = (r for r in summary["jobs"] if any(o["id"] in copy_ids for o in r["outputs"]))
+        row = self._only_row_listing(summary, copy_ids)
         assert row["step_type"] == "input_dataset", row
         assert {o["id"] for o in row["outputs"]} == copy_ids, row
         downloaded = self._extract_and_download_workflow_by_ids(
@@ -1907,18 +1908,20 @@ test_data:
         )
 
     @summarize_instance_history_on_error
-    def test_extract_fewer_names_than_ids_rejected(self, history_id):
+    def test_extract_names_not_parallel_to_ids_rejected(self, history_id):
         d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
         d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
-        response = self._extract_by_ids_raw(
-            {
-                "workflow_name": "short names",
-                "hda_ids": [d1["id"], d2["id"]],
-                "dataset_names": ["only one"],
-            }
-        )
-        self._assert_status_code_is(response, 400)
-        assert "dataset_names" in response.json()["err_msg"], response.text
+        for names in (["only one"], ["one", "two", "three"]):
+            response = self._extract_by_ids_raw(
+                {
+                    "workflow_name": "names not parallel",
+                    "hda_ids": [d1["id"], d2["id"]],
+                    "dataset_names": names,
+                }
+            )
+            self._assert_status_code_is(response, 400)
+            err_msg = response.json()["err_msg"]
+            assert "dataset_names" in err_msg and "hda_ids" in err_msg, response.text
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error

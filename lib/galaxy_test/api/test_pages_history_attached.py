@@ -833,7 +833,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
             summary = self._extraction_summary(page["id"])
 
-            (row,) = (r for r in summary["jobs"] if any(o["id"] in (copy_a["id"], copy_b["id"]) for o in r["outputs"]))
+            row = self._only_row_listing(summary, {copy_a["id"], copy_b["id"]})
             assert row["step_type"] == "input_dataset" and row["seeded"] is True, row
             assert sorted(o["id"] for o in row["outputs"]) == sorted([copy_a["id"], copy_b["id"]]), row
             steps = self._extract_seeded_steps(summary)
