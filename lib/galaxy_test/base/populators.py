@@ -2587,13 +2587,13 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is(response, 200)
         return response
 
-    def download_workflow(
+    def download_workflow_raw(
         self,
         workflow_id: str,
         style: Optional[str] = None,
         history_id: Optional[str] = None,
         instance: Optional[bool] = None,
-    ) -> dict:
+    ) -> Response:
         params: dict[str, Any] = {}
         if style is not None:
             params["style"] = style
@@ -2601,7 +2601,16 @@ class BaseWorkflowPopulator(BasePopulator):
             params["history_id"] = history_id
         if instance is not None:
             params["instance"] = instance
-        response = self._get(f"workflows/{workflow_id}/download", data=params)
+        return self._get(f"workflows/{workflow_id}/download", data=params)
+
+    def download_workflow(
+        self,
+        workflow_id: str,
+        style: Optional[str] = None,
+        history_id: Optional[str] = None,
+        instance: Optional[bool] = None,
+    ) -> dict:
+        response = self.download_workflow_raw(workflow_id, style=style, history_id=history_id, instance=instance)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
             return response.json()
