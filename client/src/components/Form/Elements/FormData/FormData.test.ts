@@ -484,6 +484,7 @@ describe("FormData", () => {
             ["list", null, null],
             ["list:list", ["list", "list:list"], null],
             ["sample_sheet:paired", ["paired"], "paired"],
+            ["list", [], null],
             ["paired", ["paired_or_unpaired"], null],
             ["list", ["list:paired_or_unpaired"], null],
             ["list:paired", ["list:paired_or_unpaired"], null],
