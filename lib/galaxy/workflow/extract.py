@@ -807,6 +807,13 @@ class InputGroup:
     name: str | None
 
 
+# Per kind: the extraction payload's id and name fields and the noun used in errors.
+_INPUT_FIELDS: dict[ContentKind, tuple[str, str, str]] = {
+    "hda": ("hda_ids", "dataset_names", "dataset"),
+    "hdca": ("hdca_ids", "dataset_collection_names", "dataset collection"),
+}
+
+
 def group_inputs_by_original(
     trans: ProvidesHistoryContext, kind: ContentKind, content_ids: list[int], names: list[str]
 ) -> list[InputGroup]:
@@ -823,8 +830,9 @@ def group_inputs_by_original(
         if group is None:
             groups[ref] = InputGroup(ref, content, name)
         elif group.name != name:
+            ids_field, names_field, noun = _INPUT_FIELDS[kind]
             raise exceptions.RequestParameterInvalidException(
-                f"copies of one {kind} were given different input names: {group.name!r} and {name!r}"
+                f"{ids_field} includes copies of one {noun} with different {names_field}: {group.name!r} and {name!r}"
             )
     return list(groups.values())
 
