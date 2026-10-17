@@ -183,6 +183,22 @@ describe("JobsList", () => {
         expect(wrapper.text()).toContain("Showing all unfinished jobs");
     });
 
+    it("stops the ticked jobs through the Submit button", async () => {
+        // Attached, so clicking the submit button submits its form
+        const wrapper = await mountJobsList(document.body);
+        await rowBoxes(wrapper)[0]!.setValue(true);
+        await wrapper.find("#stop-message").setValue("maintenance");
+
+        const submit = wrapper.find("#stop-message").element.closest("form")!.querySelector(".g-button")!;
+        expect(submit.getAttribute("type")).toBe("submit");
+        (submit as HTMLButtonElement).click();
+        await flushPromises();
+
+        expect(stopJobs).toHaveBeenCalledTimes(1);
+        expect(stopCall()).toEqual([["job1"], "maintenance"]);
+        wrapper.unmount();
+    });
+
     it("ticks a job without opening its details", async () => {
         // Attached, so the click runs the checkbox activation and fires change
         const wrapper = await mountJobsList(document.body);
@@ -206,20 +222,25 @@ describe("JobsList", () => {
 
     it("disables Submit and selection while a stop is in flight", async () => {
         let finish: (result: Awaited<ReturnType<typeof stopJobs>>) => void = () => {};
-        const wrapper = await mountJobsList();
+        // Attached, so clicking the submit button would submit its form
+        const wrapper = await mountJobsList(document.body);
         vi.mocked(stopJobs).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
         await headerBox(wrapper).setValue(true);
 
         await stopSelected(wrapper, "maintenance");
         const submit = stopFormOf(wrapper)!.find("button[type='submit']");
-        expect(submit.attributes("disabled")).toBeDefined();
+        expect(submit.attributes("aria-disabled")).toBe("true");
+        (submit.element as HTMLButtonElement).click();
+        await flushPromises();
+        expect(stopJobs).toHaveBeenCalledTimes(1);
         expect([headerBox(wrapper), ...rowBoxes(wrapper)].map(isDisabled)).toEqual([true, true, true]);
 
         finish({ stopped: ["job1"], failed: [{ jobId: "job2", error: new Error("Too Many Requests") }] });
         await flushPromises();
 
-        expect(stopFormOf(wrapper)!.find("button[type='submit']").attributes("disabled")).toBeUndefined();
+        expect(stopFormOf(wrapper)!.find("button[type='submit']").attributes("aria-disabled")).toBeUndefined();
         expect(rowBoxes(wrapper).map(isDisabled)).toEqual([false, false]);
+        wrapper.unmount();
     });
 
     it("reports jobs that could not be stopped and keeps them selected", async () => {
