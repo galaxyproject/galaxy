@@ -37,7 +37,7 @@
 
         <GCollapse v-model="isNewLibFormVisible">
             <BCard>
-                <BForm @submit.prevent="newLibrary">
+                <form @submit.prevent="newLibrary">
                     <BInputGroup class="mb-2 new-row">
                         <BFormInput v-model="newLibraryForm.name" required :placeholder="titleName" />
 
@@ -52,7 +52,7 @@
                             </GButton>
                         </template>
                     </BInputGroup>
-                </BForm>
+                </form>
             </BCard>
         </GCollapse>
 
@@ -217,7 +217,7 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BCol, BContainer, BForm, BFormInput, BInputGroup, BPagination, BRow } from "bootstrap-vue";
+import { BCard, BCol, BContainer, BFormInput, BInputGroup, BPagination, BRow } from "bootstrap-vue";
 import { mapState } from "pinia";
 
 import { DEFAULT_PER_PAGE, onError } from "@/components/Libraries/library-utils";
@@ -242,7 +242,6 @@ export default {
         BCard,
         BCol,
         BContainer,
-        BForm,
         BFormInput,
         BInputGroup,
         BPagination,
