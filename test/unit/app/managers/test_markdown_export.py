@@ -439,11 +439,11 @@ invocation_outputs(invocation_id=1)
 """
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
-        assert '#### Input Dataset: my "reads"\n' in result
-        assert "**Contents:**\n\n    MooCow\n\n" in result
-        assert "#### Output Dataset Collection: pairs\n" in result
-        assert "**Dataset Collection:** cool name\n" in result
-        assert "```galaxy" not in result
+            assert '#### Input Dataset: my "reads"\n' in result
+            assert "**Contents:**\n\n    MooCow\n\n" in result
+            assert "#### Output Dataset Collection: pairs\n" in result
+            assert "**Dataset Collection:** cool name\n" in result
+            assert "```galaxy" not in result
 
     def _to_basic(self, example):
         return to_basic_markdown(self.trans, example)
