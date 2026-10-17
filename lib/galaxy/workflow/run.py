@@ -630,7 +630,7 @@ class WorkflowProgress:
         if step.label and step.type == "parameter_input" and "output" in outputs:
             output_value = outputs["output"]
             if output_value is not NO_REPLACEMENT:
-                self.runtime_replacements[step.label] = str(output_value)
+                self.runtime_replacements[step.label] = str(modules.replace_expression_json_dataset(output_value, step))
         invocation = invocation_step.workflow_invocation
         if not invocation.has_input_for_step(step.id):
             content = outputs.get("output", NO_REPLACEMENT)
