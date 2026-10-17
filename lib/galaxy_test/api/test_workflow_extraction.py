@@ -1254,11 +1254,60 @@ test_data:
             history_id, contents=["a\n", "b\n"], wait=True
         ).json()["outputs"][0]
         hdca_copy = self._copy_content_to_history(history_id, hdca)
+        summary = self._get_extraction_summary(history_id)
+        (input_row,) = (row for row in summary["jobs"] if any(o["id"] == hdca["id"] for o in row["outputs"]))
+        assert [o["id"] for o in input_row["outputs"]] == [hdca["id"]], input_row
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"], hdca_copy["id"]], dataset_collection_names=["letters", "letters"]
         )
         (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
         assert input_step["label"] == "letters", input_step
+
+    @summarize_instance_history_on_error
+    def test_extract_copies_of_one_input_with_different_names_rejected(self, history_id):
+        hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
+        hda_copy = self._copy_hda_to_history(history_id, hda)
+        response = self._extract_by_ids_raw(
+            {
+                "workflow_name": "copies named twice",
+                "hda_ids": [hda["id"], hda_copy["id"]],
+                "dataset_names": ["numbers", "digits"],
+            }
+        )
+        self._assert_status_code_is(response, 400)
+        assert "copies of one" in response.json()["err_msg"], response.json()
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_multi_file_upload_lists_one_input_per_file(self, history_id):
+        """One fetch job uploading two files gives two input cards, each extractable under its own name."""
+        first, second = self.dataset_populator.fetch_hdas(
+            history_id,
+            [{"src": "pasted", "paste_content": "1 2 3\n"}, {"src": "pasted", "paste_content": "4 5 6\n"}],
+        )
+        run = self.dataset_populator.run_tool(
+            "cat1",
+            {"input1": {"src": "hda", "id": first["id"]}, "queries_0|input2": {"src": "hda", "id": second["id"]}},
+            history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        summary = self._get_extraction_summary(history_id)
+        rows = [self._row_with_output_id(summary, hda["id"]) for hda in (first, second)]
+        for row, hda in zip(rows, (first, second)):
+            assert row is not None and row["step_type"] == "input_dataset", summary["jobs"]
+            assert [o["id"] for o in row["outputs"]] == [hda["id"]], row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[first["id"], second["id"]],
+            dataset_names=["first", "second"],
+            job_ids=[run["jobs"][0]["id"]],
+        )
+        input_steps = self.assert_steps_of_type(downloaded, "data_input", expected_len=2)
+        step_id_by_label = {step["label"]: step["id"] for step in input_steps}
+        (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
+        assert connection_step_id(cat1_step["input_connections"]["input1"]) == step_id_by_label["first"], cat1_step
+        assert (
+            connection_step_id(cat1_step["input_connections"]["queries_0|input2"]) == step_id_by_label["second"]
+        ), cat1_step
 
     @summarize_instance_history_on_error
     def test_empty_payload_rejected(self, history_id):

@@ -52,8 +52,6 @@ from galaxy.schema.schema import (
     WorkflowIndexPayload,
 )
 from galaxy.schema.workflows import (
-    ContentKind,
-    ContentRef,
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
     WorkflowExtractionByIdsPayload,
@@ -72,6 +70,8 @@ from galaxy.workflow.extract import (
     extract_workflow,
     extract_workflow_by_ids,
     ExtractionLabelIndex,
+    group_inputs_by_original,
+    InputGroup,
     normalize_output_label_key,
 )
 from galaxy.workflow.run import queue_invoke
@@ -161,18 +161,9 @@ def _validate_parallel_names(names: list[str], names_field: str, ids: list[int],
         )
 
 
-def _distinct_input_names(
-    trans: ProvidesHistoryContext, kind: ContentKind, content_ids: list[int], names: list[str]
-) -> list[str]:
-    """``names`` without a copy's repeat of its original's name: copies of one original become one input step."""
-    seen: set[tuple[ContentRef, str]] = set()
-    distinct: list[str] = []
-    for content_id, name in zip(content_ids, names):
-        key = (normalize_output_label_key(trans, kind, content_id), name)
-        if key not in seen:
-            seen.add(key)
-            distinct.append(name)
-    return distinct
+def _input_names(groups: list[InputGroup]) -> list[str]:
+    """One name per workflow input, as extraction assigns them."""
+    return [group.name for group in groups if group.name is not None]
 
 
 class WorkflowsService(ServiceBase):
@@ -516,8 +507,7 @@ class WorkflowsService(ServiceBase):
             selected = selected_job_ids if step_label.kind == "job" else selected_icj_ids
             if step_label.id not in selected:
                 raise exceptions.RequestParameterInvalidException(
-                    f"step_labels includes {step_label.kind} id {step_label.id} "
-                    "that is not a selected extraction step"
+                    f"step_labels includes {step_label.kind} id {step_label.id} that is not a selected extraction step"
                 )
             step_label_strings.append(step_label.label)
 
@@ -526,8 +516,8 @@ class WorkflowsService(ServiceBase):
             payload.dataset_collection_names, "dataset_collection_names", payload.hdca_ids, "hdca_ids"
         )
         _validate_extraction_labels(
-            _distinct_input_names(trans, "hda", payload.hda_ids, payload.dataset_names),
-            _distinct_input_names(trans, "hdca", payload.hdca_ids, payload.dataset_collection_names),
+            _input_names(group_inputs_by_original(trans, "hda", payload.hda_ids, payload.dataset_names)),
+            _input_names(group_inputs_by_original(trans, "hdca", payload.hdca_ids, payload.dataset_collection_names)),
             step_label_strings,
         )
 

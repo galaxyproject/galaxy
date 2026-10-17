@@ -274,7 +274,7 @@ const hasDuplicateOutputLabels = computed(() => {
 
 /** Step labels share one namespace with input names. Compared as submitted (step labels
  *  trimmed, input names as-is, no whitespace collapse) as the backend does. One name per
- *  input card: the backend counts copies of one original once. */
+ *  input card: the summary gives each original (with its copies) one card. */
 const hasDuplicateStepLabels = computed(() => {
     const stepLabels = selectedStepLabels.value.map((hint) => hint.label);
     const inputNames = selectedInputSteps.value.map((job) => job.newName);
