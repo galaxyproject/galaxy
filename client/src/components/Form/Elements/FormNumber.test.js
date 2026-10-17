@@ -79,6 +79,25 @@ describe("FormNumber", () => {
         }
     });
 
+    it("warns about and corrects values beyond a single defined bound", async () => {
+        const checkSingleBound = async (props, number, expectedAlert, expectedValue) => {
+            const wrapper = await mountFormNumber({ value: "", type: "integer", ...props });
+            const input = await getInput(wrapper);
+            await input.setValue(number);
+            await input.trigger("change");
+            const alert = await getAlert(wrapper);
+            expect(alert.text()).toContain(expectedAlert);
+            if (expectedValue !== undefined) {
+                expect(wrapper.emitted().input.at(-1)).toEqual([expectedValue]);
+            }
+            expect((await getInputRange(wrapper)).exists()).toBe(false);
+            wrapper.destroy();
+        };
+
+        await checkSingleBound({ min: null, max: 5 }, 7, "7 is out of range! (7 > 5)", 5);
+        await checkSingleBound({ min: 5, max: null }, 3, "3 is out of range! (3 < 5)");
+    });
+
     it("shows a validation alert when entering a decimal for integer type", async () => {
         const checkFractionsAlert = async (key) => {
             const wrapper = await mountFormNumber(props);
