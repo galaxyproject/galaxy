@@ -355,6 +355,21 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         )
         assert response.status_code == 400, response.text
 
+    @summarize_instance_history_on_error
+    def test_extract_from_history_fewer_names_than_hids_rejected(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
+        response = self._extract_from_history_raw(
+            history_id,
+            {
+                "workflow_name": "short names from history",
+                "dataset_hids": [d1["hid"], d2["hid"]],
+                "dataset_names": ["only one"],
+            },
+        )
+        self._assert_status_code_is(response, 400)
+        assert "dataset_names" in response.json()["err_msg"], response.text
+
     @skip_without_tool("Grep1")
     @summarize_instance_history_on_error
     def test_hid_extract_connects_implicitly_converted_input(self, history_id):
@@ -1812,6 +1827,20 @@ test_data:
             },
             (400,),
         )
+
+    @summarize_instance_history_on_error
+    def test_extract_fewer_names_than_ids_rejected(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
+        response = self._extract_by_ids_raw(
+            {
+                "workflow_name": "short names",
+                "hda_ids": [d1["id"], d2["id"]],
+                "dataset_names": ["only one"],
+            }
+        )
+        self._assert_status_code_is(response, 400)
+        assert "dataset_names" in response.json()["err_msg"], response.text
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
