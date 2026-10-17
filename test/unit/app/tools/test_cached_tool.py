@@ -27,6 +27,7 @@ from galaxy.tools.cached_toolbox import (
     ToolMaterializationError,
 )
 from galaxy.tools.source_store import StoredToolSource
+from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -621,6 +622,37 @@ def test_invalidate_index_cache_keeps_unindexed_tools():
     box._store.load_index.return_value = ToolIndex()
     box.invalidate_index_cache()
     assert box._tools_by_id["__SET_METADATA__"] is internal
+
+
+def test_invalidate_index_cache_rereads_read_only_member_only_when_republished(tmp_path):
+    published_url = f"sqlite:///{tmp_path / 'published.sqlite'}"
+    publisher = SqlAlchemyToolSourceStore(published_url)
+    published_index = ToolIndex()
+    published_index.add_entry(_entry(id="published_tool"))
+    publisher.store_index(published_index)
+    published = SqlAlchemyToolSourceStore(published_url, read_only=True)
+    local = SqlAlchemyToolSourceStore(f"sqlite:///{tmp_path / 'local.sqlite'}")
+    local.store_index(ToolIndex())
+    store = CompositeToolSourceStore(members=[("published", published), ("local", local)], default="local")
+    box = _registry_box()
+    box._store = store
+    box._tool_index = store.load_index()
+    loaded_published = published.load_index()
+
+    peer_index = ToolIndex()
+    peer_index.add_entry(_entry(id="peer_tool"))
+    SqlAlchemyToolSourceStore(f"sqlite:///{tmp_path / 'local.sqlite'}").store_index(peer_index)
+    box.invalidate_index_cache()
+
+    assert published.load_index() is loaded_published
+    assert {"published_tool", "peer_tool"} <= set(box._tool_index.entries)
+
+    published_index.add_entry(_entry(id="republished_tool"))
+    publisher.store_index(published_index)
+    box.invalidate_index_cache()
+
+    assert "republished_tool" in box._tool_index.entries
+    assert "republished_tool" in box._tools_by_id
 
 
 def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):

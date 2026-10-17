@@ -289,6 +289,10 @@ When a tool XML file changes, watch mode will:
 3. Send a ``reload_tool_source_cache`` control message via Kombu
 4. All Galaxy processes will invalidate their local caches
 
+A read-only SQLite store is re-read on this reload only when its database
+file changed since Galaxy last read it, so a republished bundle is picked up
+without re-reading unchanged ones.
+
 This is useful for:
 
 - Installations using shared storage where tools may be updated externally
