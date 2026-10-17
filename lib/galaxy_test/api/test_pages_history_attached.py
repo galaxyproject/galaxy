@@ -733,6 +733,24 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert row["seeded"] is True, row
             assert self._rows_by_type(summary, "tool") == [], summary["jobs"]
 
+    @skip_without_tool("random_lines1")
+    def test_copied_map_over_output_seeds_only_itself(self):
+        """A map-over output copied in from another history is a boundary input; the
+        collection it was mapped over there is not seeded as a second, disconnected input."""
+        source_history_id = self.dataset_populator.new_history()
+        source_input, source_output, _ = self._run_random_lines_mapped_over_pair(source_history_id)
+        with self.dataset_populator.test_history() as history_id:
+            copied = self._copy_content_to_history(history_id, source_output)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[copied["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            assert self._row_with_output_id(summary, source_input["id"]) is None, summary["jobs"]
+            (seeded,) = (r for r in summary["jobs"] if r["seeded"])
+            assert seeded["step_type"] == "input_collection", seeded
+            assert {o["id"] for o in seeded["outputs"]} & {copied["id"], source_output["id"]}, seeded
+
     @skip_without_tool("cat1")
     def test_copied_tool_output_seeded_as_connected_input(self):
         """A tool output copied in from another history and consumed here is seeded
