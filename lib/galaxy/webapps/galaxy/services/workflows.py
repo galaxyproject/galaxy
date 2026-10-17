@@ -142,6 +142,14 @@ def _validate_extraction_labels(
         seen.add(label)
 
 
+def _validate_parallel_names(names: list[str], names_field: str, ids: list[int], ids_field: str) -> None:
+    """Input names, when given, must name each of their parallel ids exactly once."""
+    if names and len(names) != len(ids):
+        raise exceptions.RequestParameterInvalidException(
+            f"{names_field} has {len(names)} entries but {ids_field} has {len(ids)}; they must be parallel"
+        )
+
+
 def _distinct_input_names(
     trans: ProvidesHistoryContext, kind: ContentKind, content_ids: list[int], names: list[str]
 ) -> list[str]:
@@ -153,7 +161,7 @@ def _distinct_input_names(
         if key not in seen:
             seen.add(key)
             distinct.append(name)
-    return distinct + names[len(content_ids) :]
+    return distinct
 
 
 class WorkflowsService(ServiceBase):
@@ -404,6 +412,13 @@ class WorkflowsService(ServiceBase):
     ) -> WorkflowExtractionResult:
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
+        _validate_parallel_names(payload.dataset_names, "dataset_names", payload.dataset_hids, "dataset_hids")
+        _validate_parallel_names(
+            payload.dataset_collection_names,
+            "dataset_collection_names",
+            payload.dataset_collection_hids,
+            "dataset_collection_hids",
+        )
         _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names)
         stored_workflow = extract_workflow(
             trans,
@@ -510,6 +525,10 @@ class WorkflowsService(ServiceBase):
                 )
             step_label_strings.append(step_label.label)
 
+        _validate_parallel_names(payload.dataset_names, "dataset_names", payload.hda_ids, "hda_ids")
+        _validate_parallel_names(
+            payload.dataset_collection_names, "dataset_collection_names", payload.hdca_ids, "hdca_ids"
+        )
         _validate_extraction_labels(
             _distinct_input_names(trans, "hda", payload.hda_ids, payload.dataset_names),
             _distinct_input_names(trans, "hdca", payload.hdca_ids, payload.dataset_collection_names),
