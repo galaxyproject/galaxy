@@ -17,6 +17,7 @@ from typing import (
 
 import pytest
 
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
@@ -44,6 +45,7 @@ class _ExtractionHelpersMixin:
     dataset_populator: DatasetPopulator
     dataset_collection_populator: DatasetCollectionPopulator
     workflow_populator: WorkflowPopulator
+    test_data_resolver: TestDataResolver
 
     if TYPE_CHECKING:
 
@@ -313,6 +315,31 @@ test_data:
         self.dataset_populator.make_public(history_id)
         return output_id
 
+    def _run_grep1_on_converted_input(self, history_id: str) -> tuple[dict[str, Any], str]:
+        """Run Grep1 on a fastqsanger.gz upload, which Galaxy implicitly converts first; return (upload, job id)."""
+        hda = self.dataset_populator.new_dataset_from_test_data(
+            history_id, self.test_data_resolver, "1.fastqsanger.gz", "fastqsanger.gz"
+        )
+        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return hda, run["jobs"][0]["id"]
+
+    def _source_step_id(self, step: dict[str, Any], input_name: str) -> int | None:
+        """Id of the step wired into ``step``'s ``input_name``, or None if it is unconnected."""
+        connection = step["input_connections"].get(input_name)
+        return None if connection is None else connection_step_id(connection)
+
+    def _assert_single_input_single_tool(self, workflow, input_name="input1", expected_tool_id=None):
+        """Assert ``workflow`` is one data input wired into one tool's ``input_name``; return the input step."""
+        steps = workflow["steps"]
+        assert len(steps) == 2, steps
+        (input_step,) = self.assert_steps_of_type(workflow, "data_input", expected_len=1)
+        (tool_step,) = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        if expected_tool_id is not None:
+            assert tool_step["tool_id"] == expected_tool_id
+        assert self._source_step_id(tool_step, input_name) == input_step["id"], tool_step
+        return input_step
+
 
 class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
     @skip_without_tool("param_value_from_file")
@@ -382,18 +409,10 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
     @skip_without_tool("Grep1")
     @summarize_instance_history_on_error
     def test_hid_extract_connects_implicitly_converted_input(self, history_id):
-        with open(self.test_data_resolver.get_filename("1.fastqsanger.gz"), "rb") as fh:
-            hda = self.dataset_populator.new_dataset(history_id, content=fh, file_type="fastqsanger.gz", wait=True)
-        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        downloaded = self._extract_and_download_workflow(
-            history_id, dataset_ids=[hda["hid"]], job_ids=[run["jobs"][0]["id"]]
-        )
-        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
-        (grep_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
-        assert "input" in grep_step["input_connections"], grep_step
-        assert connection_step_id(grep_step["input_connections"]["input"]) == input_step["id"], grep_step
-        grep_job = self.dataset_populator.get_job_details(run["jobs"][0]["id"]).json()
+        hda, job_id = self._run_grep1_on_converted_input(history_id)
+        downloaded = self._extract_and_download_workflow(history_id, dataset_ids=[hda["hid"]], job_ids=[job_id])
+        self._assert_single_input_single_tool(downloaded, input_name="input")
+        grep_job = self.dataset_populator.get_job_details(job_id).json()
         assert grep_job["inputs"]["input"]["id"] != hda["id"], grep_job["inputs"]
 
     @skip_without_tool("cat1")
@@ -410,8 +429,7 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
             )
             (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
             (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
-            assert "input1" in cat1_step["input_connections"], (hids, cat1_step)
-            assert connection_step_id(cat1_step["input_connections"]["input1"]) == input_step["id"], (hids, cat1_step)
+            assert self._source_step_id(cat1_step, "input1") == input_step["id"], (hids, cat1_step)
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -430,16 +448,10 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         )
         (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
         tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
-        sources = {
-            s["id"]: (
-                connection_step_id(s["input_connections"]["input1"]) if "input1" in s["input_connections"] else None
-            )
-            for s in tool_steps
-        }
-        first_id = next((step_id for step_id, source in sources.items() if source == input_step["id"]), None)
-        assert first_id is not None, tool_steps
-        second_id = next(step_id for step_id in sources if step_id != first_id)
-        assert sources[second_id] == first_id, tool_steps
+        # input -> first cat1 -> second cat1, whichever order the steps come in
+        sources = {s["id"]: self._source_step_id(s, "input1") for s in tool_steps}
+        first_id, second_id = sorted(sources, key=lambda step_id: sources[step_id] != input_step["id"])
+        assert sources == {first_id: input_step["id"], second_id: first_id}, tool_steps
 
     @summarize_instance_history_on_error
     def test_hid_extract_collection_copied_from_another_history(self, history_id):
@@ -471,11 +483,9 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
             },
         )
         self._assert_status_code_is(response, 200)
-        downloaded = self._get(f"workflows/{response.json()['id']}/download").json()
-        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        downloaded = self.workflow_populator.download_workflow(response.json()["id"])
+        input_step = self._assert_single_input_single_tool(downloaded)
         assert input_step["label"] == "numbers", input_step
-        (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
-        assert connection_step_id(cat1_step["input_connections"]["input1"]) == input_step["id"], cat1_step
 
     @summarize_instance_history_on_error
     def test_hid_extract_copies_with_different_names_rejected(self, history_id):
@@ -1142,16 +1152,6 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
         run = self.dataset_populator.run_cat1(history_id, (c1, c2), **run_kwargs)
         return *run.inputs, run.job_id
 
-    def _assert_single_input_single_tool(self, workflow, expected_tool_id=None):
-        steps = workflow["steps"]
-        assert len(steps) == 2, steps
-        input_steps = [s for s in steps.values() if s["type"] == "data_input"]
-        tool_steps = [s for s in steps.values() if s["type"] == "tool"]
-        assert len(input_steps) == 1 and len(tool_steps) == 1
-        if expected_tool_id is not None:
-            assert tool_steps[0]["tool_id"] == expected_tool_id
-        assert connection_step_id(tool_steps[0]["input_connections"]["input1"]) == input_steps[0]["id"]
-
     def _assert_extract_rejected(self, payload, allowed_codes):
         response = self._extract_by_ids_raw(payload)
         assert response.status_code in allowed_codes, response.text
@@ -1425,15 +1425,9 @@ test_data:
     @skip_without_tool("Grep1")
     @summarize_instance_history_on_error
     def test_extract_by_ids_connects_implicitly_converted_input(self, history_id):
-        with open(self.test_data_resolver.get_filename("1.fastqsanger.gz"), "rb") as fh:
-            hda = self.dataset_populator.new_dataset(history_id, content=fh, file_type="fastqsanger.gz", wait=True)
-        run = self.dataset_populator.run_tool("Grep1", {"input": {"src": "hda", "id": hda["id"]}}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        downloaded = self._extract_and_download_workflow_by_ids(hda_ids=[hda["id"]], job_ids=[run["jobs"][0]["id"]])
-        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
-        (grep_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
-        assert "input" in grep_step["input_connections"], grep_step
-        assert connection_step_id(grep_step["input_connections"]["input"]) == input_step["id"], grep_step
+        hda, job_id = self._run_grep1_on_converted_input(history_id)
+        downloaded = self._extract_and_download_workflow_by_ids(hda_ids=[hda["id"]], job_ids=[job_id])
+        self._assert_single_input_single_tool(downloaded, input_name="input")
 
     @summarize_instance_history_on_error
     def test_extract_copies_of_one_input_with_different_names_rejected(self, history_id):

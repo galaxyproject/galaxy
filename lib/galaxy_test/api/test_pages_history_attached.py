@@ -1,5 +1,7 @@
 """API tests for history-attached pages (pages created with history_id)."""
 
+from requests import Response
+
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -420,8 +422,11 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         super().setUp()
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
+    def _extraction_summary_raw(self, page_id: str) -> Response:
+        return self._get(f"pages/{page_id}/extraction_summary")
+
     def _extraction_summary(self, page_id: str) -> dict:
-        response = self._get(f"pages/{page_id}/extraction_summary")
+        response = self._extraction_summary_raw(page_id)
         self._assert_status_code_is(response, 200)
         return response.json()
 
@@ -969,7 +974,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
     def test_400_on_page_without_history(self):
         page = self.dataset_populator.new_page(slug="extraction-no-history")
-        response = self._get(f"pages/{page['id']}/extraction_summary")
+        response = self._extraction_summary_raw(page["id"])
         self._assert_status_code_is(response, 400)
 
     @skip_without_tool("cat1")
@@ -981,5 +986,5 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             self._put(f"pages/{page['id']}/publish", json=True)
             with self._different_user():
                 # ...but without history access the full-history summary must not leak.
-                response = self._get(f"pages/{page['id']}/extraction_summary")
+                response = self._extraction_summary_raw(page["id"])
                 self._assert_status_code_is(response, 403)
