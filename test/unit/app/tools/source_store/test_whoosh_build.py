@@ -97,6 +97,23 @@ def test_index_without_doc_hashes_is_upgraded_by_a_commit(tmp_path):
     assert searcher.search("mapper") == ["mapper"]
 
 
+def test_build_skips_when_another_writer_holds_the_lock(tmp_path, monkeypatch):
+    monkeypatch.setattr("galaxy.tools.source_store.search.INDEX_WRITE_LOCK_TIMEOUT", 0.1)
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper"))
+
+    other_writer = index.open_dir(index_dir).writer()
+    try:
+        assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("trimmer")) == 0
+    finally:
+        other_writer.cancel()
+
+    searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    assert searcher.search("mapper") == ["mapper"]
+    # The skipped build wrote nothing, so the next build still runs.
+    assert searcher.build(_index("trimmer")) == 1
+
+
 def test_build_scopes_corpus_to_panel_membership(tmp_path):
     searcher = ToolWhooshIndex(index_dir=str(tmp_path / "ix"), tuning=_TUNING)
 
