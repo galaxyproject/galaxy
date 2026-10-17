@@ -184,6 +184,24 @@ const currentVariant = computed(() => {
 const selectionMapsOver = computed(() => !!currentValue.value?.some((v) => !!v.map_over_type));
 
 /**
+ * What each mapped over job receives for a single selected collection: a sub-collection
+ * of `type`, or a dataset (`type: null`); unknown for multiple selections
+ */
+const mapOverUnit = computed(() => {
+    const [single, ...rest] = currentValue.value ?? [];
+    if (!single || rest.length > 0) {
+        return null;
+    }
+    if (single.map_over_type && single.map_over_type !== "single_datasets") {
+        return { type: single.map_over_type };
+    }
+    if (single.map_over_type || (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION)) {
+        return { type: null };
+    }
+    return null;
+});
+
+/**
  * Show batch info whenever the selection is submitted as a batch
  */
 const showBatchInfo = computed(
@@ -995,7 +1013,12 @@ const noOptionsWarningMessage = computed(() => {
                         v-if="selectionMapsOver || (props.type == 'data' && currentVariant?.src == SOURCE.COLLECTION)"
                         class="ml-1">
                         The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
-                        tool.
+                        tool<template v-if="mapOverUnit"
+                            >: <span v-localize>one job per</span>
+                            <template v-if="mapOverUnit.type"
+                                ><code>{{ mapOverUnit.type }}</code> <span v-localize>collection</span></template
+                            ><span v-else v-localize>dataset</span></template
+                        >.
                     </span>
                     <span v-else v-localize class="ml-1">
                         This is a batch mode input field. Individual jobs will be triggered for each dataset.
