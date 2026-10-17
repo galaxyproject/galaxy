@@ -139,12 +139,24 @@ function onChange(event: Event) {
         cursor: not-allowed;
         opacity: 0.6;
     }
+
+    // Centered on the line, the 1rem radio fits the line height instead of growing each row by 3px
+    &:not(.g-radio-button) {
+        vertical-align: middle;
+    }
 }
 
 .g-radio-input {
-    margin: 0 3px 0 0;
+    // 1rem instead of the 13px browser default, the size of the other form controls
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
     accent-color: var(--color-blue-600, #25537b);
     cursor: pointer;
+
+    &:not(:last-child) {
+        margin-right: 3px;
+    }
 
     .g-disabled & {
         cursor: not-allowed;
