@@ -2,9 +2,9 @@
 
 cd "$(dirname "$0")"/.. || exit
 
-xsd_path="lib/galaxy/tools/xsd/galaxy.xsd"
-# Lint the XSD
-xmllint --noout "$xsd_path"
+xsd_path="lib/galaxy/tool_util/xsd/galaxy.xsd"
+# Lint the XSD, failing fast on a bad path or malformed schema
+xmllint --noout "$xsd_path" || exit 1
 
 test_tools_path='test/functional/tools'
 # test all test tools except upload.xml which uses a non-standard conditional
