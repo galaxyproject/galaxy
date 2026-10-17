@@ -4,6 +4,7 @@ import toolModel from "./test-data/tool";
 import {
     buildNestedState,
     findInputByDottedName,
+    findInputPathByDottedName,
     matchCase,
     matchInputs,
     validateInputs,
@@ -131,6 +132,46 @@ describe("form component utilities", () => {
         expect(findInputByDottedName(inputs, "t")).toBeNull();
         expect(findInputByDottedName(inputs, "cond|mode")).toBeNull();
         expect(findInputByDottedName(inputs, "missing")).toBeNull();
+    });
+
+    it("passes enclosing sections, conditionals and repeat blocks to visitInputs callbacks", () => {
+        const inputs = [
+            {
+                name: "sec",
+                type: "section",
+                inputs: [
+                    {
+                        name: "rep",
+                        type: "repeat",
+                        cache: [[], [{ name: "x", type: "data" }]],
+                    },
+                ],
+            },
+            {
+                name: "cond",
+                type: "conditional",
+                test_param: { name: "mode", type: "select", value: "a" },
+                cases: [{ value: "a", inputs: [{ name: "y", type: "text" }] }],
+            },
+        ];
+        const visits = {};
+        visitInputs(inputs, (node, name, _context, parents) => {
+            visits[name] = parents?.map(({ node, index }) =>
+                index === undefined ? node.name : `${node.name}[${index}]`,
+            );
+        });
+        expect(visits).toEqual({ "sec|rep_1|x": ["sec", "rep[1]"], "cond|mode": [], "cond|y": ["cond"] });
+    });
+
+    it("returns a dotted-name input with its enclosing containers", () => {
+        const x = { name: "x", type: "data" };
+        const rep = { name: "rep", type: "repeat", cache: [[], [x]] };
+        const sec = { name: "sec", type: "section", inputs: [rep] };
+        expect(findInputPathByDottedName([sec], "sec|rep_1|x")).toEqual({
+            node: x,
+            parents: [{ node: sec }, { node: rep, index: 1 }],
+        });
+        expect(findInputPathByDottedName([sec], "sec|rep_0|x")).toBeNull();
     });
 
     it("test basic value validation", () => {
