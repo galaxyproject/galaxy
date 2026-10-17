@@ -49,7 +49,7 @@ onMounted(async () => {
 
 <template>
     <div class="interactive-tool-frame">
-        <div v-if="loading" class="d-flex justify-content-center align-items-center h-100" role="status">
+        <div v-if="loading" class="d-flex justify-content-center align-items-center h-100">
             <LoadingSpan message="Loading interactive tool" />
         </div>
         <div v-else-if="error" class="alert alert-danger m-3">
