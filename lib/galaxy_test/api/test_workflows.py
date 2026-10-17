@@ -50,6 +50,7 @@ from galaxy_test.base.populators import (
 )
 from galaxy_test.base.workflow_fixtures import (
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
+    parameter_input_workflow,
     WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
     WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
@@ -84,29 +85,6 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from ._framework import ApiTestCase
 from .sharable import SharingApiTests
-
-
-def _parameter_input_workflow(parameter_type: str, validators: list[dict[str, Any]]) -> dict[str, Any]:
-    """Native workflow with one parameter input, ``text_input``, declaring ``validators``."""
-    tool_state = {"parameter_type": parameter_type, "optional": False, "validators": validators}
-    return {
-        "a_galaxy_workflow": "true",
-        "format-version": "0.1",
-        "name": "parameter input validators",
-        "annotation": "",
-        "steps": {
-            "0": {
-                "id": 0,
-                "type": "parameter_input",
-                "label": "text_input",
-                "tool_state": json.dumps(tool_state),
-                "input_connections": {},
-                "position": {"left": 0, "top": 0},
-                "workflow_outputs": [],
-            }
-        },
-    }
-
 
 WORKFLOW_SIMPLE = """
 class: GalaxyWorkflow
@@ -7983,7 +7961,7 @@ text_input:
 
     def test_imported_negated_parameter_validator_is_kept(self):
         negated = {"type": "regex", "expression": "^bad", "message": "no bad", "negate": True}
-        workflow_id = self.workflow_populator.create_workflow(_parameter_input_workflow("text", [negated]))
+        workflow_id = self.workflow_populator.create_workflow(parameter_input_workflow("text_input", "text", [negated]))
         downloaded = self.workflow_populator.download_workflow(workflow_id)
         assert json.loads(downloaded["steps"]["0"]["tool_state"])["validators"] == [negated]
         with self.dataset_populator.test_history() as history_id:
@@ -7999,9 +7977,14 @@ text_input:
 
     def test_import_rejects_parameter_range_with_min_greater_than_max(self):
         inverted = {"type": "in_range", "min": 5, "max": 1}
-        response = self.workflow_populator.create_workflow_response(_parameter_input_workflow("integer", [inverted]))
+        response = self.workflow_populator.create_workflow_response(
+            parameter_input_workflow("int_input", "integer", [inverted])
+        )
         self._assert_status_code_is(response, 400)
-        assert "min must be less than or equal to max" in response.json()["err_msg"]
+        assert (
+            response.json()["err_msg"]
+            == "Invalid validator on workflow parameter input 'int_input': min must be less than or equal to max"
+        )
 
     def test_run_with_text_input_connection(self):
         with self.dataset_populator.test_history() as history_id:
