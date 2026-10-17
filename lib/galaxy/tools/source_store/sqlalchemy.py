@@ -142,6 +142,9 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         self.read_only = read_only
         self._freshness_probe = freshness_probe
         self._cached_index: ToolIndex | None = None
+        # Read-only stores only: the persisted blob and the index decoded
+        # from it, kept across ``invalidate_index_cache`` and ``dispose``.
+        self._decoded_read_only_index: tuple[bytes, ToolIndex] | None = None
 
         self._ensure_sqlite_parent_directory(url)
 
@@ -336,6 +339,17 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             row = session.execute(select(_ToolIndexRow).order_by(_ToolIndexRow.id.desc())).scalar_one_or_none()
         if row is None or not row.data:
             return None
+        # Every shed install invalidates the index cache several times, and
+        # decoding a published store's thousands of entries dominates each
+        # reload. Its blob changes only when the publisher rewrites it, so
+        # reuse the decoded index while the bytes are identical. A writable
+        # store's cached index is mutated in place by its consumers, so it
+        # is always decoded afresh.
+        if self.read_only and self._decoded_read_only_index is not None:
+            decoded_data, decoded_index = self._decoded_read_only_index
+            if decoded_data == row.data:
+                self._cached_index = decoded_index
+                return decoded_index
         try:
             payload = json.loads(gzip.decompress(row.data).decode("utf-8"))
             if payload.get("schema_hash") != INDEX_SCHEMA_HASH:
@@ -345,6 +359,8 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
                 log.info("Persisted tool index in %s has a stale schema; discarding", self.url)
                 return None
             self._cached_index = ToolIndex.model_validate(payload["index"])
+            if self.read_only:
+                self._decoded_read_only_index = (row.data, self._cached_index)
             return self._cached_index
         except Exception as e:
             log.error(f"Failed to decode tool index from store {self.url}: {e}")
@@ -369,6 +385,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def close(self) -> None:
         self.dispose()
+        self._decoded_read_only_index = None
 
     @property
     def has_freshness_probe(self) -> bool:
