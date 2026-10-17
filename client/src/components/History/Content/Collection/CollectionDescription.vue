@@ -5,6 +5,7 @@ import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { HDCASummary } from "@/api";
+import { findKnownCollectionType } from "@/components/Collections/common/knownCollectionTypes";
 
 import { DatasetStateSummary } from "./DatasetStateSummary";
 import { JobStateSummary } from "./JobStateSummary";
@@ -18,16 +19,12 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const labels = new Map([
-    ["list", "list"],
-    ["list:paired", "list"],
-    ["list:paired_or_unpaired", "list"],
-    ["list:list", "list"],
-    ["paired", "pair"],
-    ["sample_sheet", "sample sheet"],
-    ["sample_sheet:paired", "sample sheet"],
-    ["sample_sheet:paired_or_unpaired", "sample sheet"],
-]);
+const knownCollectionType = computed(() => findKnownCollectionType(props.hdca.collection_type));
+
+const typeTitle = computed(() => {
+    const known = knownCollectionType.value;
+    return known ? `${known.label} (${known.collectionType})` : props.hdca.collection_type;
+});
 
 const jobStateSummary = computed(() => {
     return new JobStateSummary(props.hdca);
@@ -40,10 +37,10 @@ const datasetStateSummary = computed(() => {
 const collectionLabel = computed(() => {
     const collectionType = props.hdca.collection_type;
     const isList = collectionType.startsWith("list");
-    if (labels.get(collectionType)) {
-        return labels.get(collectionType);
+    if (knownCollectionType.value) {
+        return knownCollectionType.value.summary.container;
     } else if (isList) {
-        // call everything like list:list:paired or list:list:list a nested list
+        // call everything like list:list:list a nested list
         return "nested list";
     } else if (collectionType.indexOf(":") > -1) {
         // e.g. paired:paired or paired:list:list
@@ -62,22 +59,6 @@ const homogeneousDatatype = computed(() => {
     return isHomogeneous.value ? ` ${props.hdca.elements_datatypes[0]}` : "";
 });
 const pluralizedItem = computed(() => {
-    if (props.hdca.collection_type === "list:list") {
-        return pluralize("list");
-    }
-    if (props.hdca.collection_type === "list:paired" || props.hdca.collection_type === "sample_sheet:paired") {
-        return pluralize("pair");
-    }
-    if (
-        props.hdca.collection_type === "list:paired_or_unpaired" ||
-        props.hdca.collection_type === "sample_sheet:paired_or_unpaired"
-    ) {
-        if (!hasSingleElement.value) {
-            return "paired and unpaired datasets";
-        } else {
-            return "dataset pair or unpaired dataset";
-        }
-    }
     if (props.hdca.collection_type === "paired_or_unpaired") {
         if (!hasSingleElement.value) {
             return "dataset pair";
@@ -85,10 +66,11 @@ const pluralizedItem = computed(() => {
             return "unpaired dataset";
         }
     }
-    if (!labels.has(props.hdca.collection_type)) {
-        return pluralize("dataset collection");
+    if (knownCollectionType.value) {
+        const { element, elementPlural } = knownCollectionType.value.summary;
+        return hasSingleElement.value ? element : elementPlural;
     }
-    return pluralize("dataset");
+    return pluralize("dataset collection");
 });
 
 function pluralize(word: string) {
@@ -100,12 +82,14 @@ function pluralize(word: string) {
     <div>
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <span v-if="hdca.collection_type == 'paired_or_unpaired'" class="description mt-1 mb-1">
-                    a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-                </span>
-                <span v-else class="description mt-1 mb-1">
-                    a {{ collectionLabel }} with {{ hdca.element_count || 0
-                    }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                <span v-g-tooltip.hover class="description mt-1 mb-1" :title="typeTitle">
+                    <template v-if="hdca.collection_type == 'paired_or_unpaired'">
+                        a <b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                    </template>
+                    <template v-else>
+                        a {{ collectionLabel }} with {{ hdca.element_count || 0
+                        }}<b v-if="isHomogeneous">{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+                    </template>
                 </span>
             </div>
 

@@ -289,7 +289,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("chipseq example input")
         self.sleep_for(self.wait_types.UX_RENDER)
-        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+        self.workflow_editor_set_collection_type("sample_sheet:paired")
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_type_selected")
 
         self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
 
@@ -317,6 +318,103 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert control["name"] == "Control"
         assert control["type"] == "element_identifier"
         assert control["optional"] is True
+
+    @selenium_test
+    def test_collection_input_custom_and_any_collection_type_round_trip(self):
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+        self.workflow_editor_set_collection_type("list:list:list", custom=True)
+        self.screenshot("workflow_editor_collection_type_custom")
+        # each change rebuilds the step through an async server call with no UI marker - let it land before saving
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() == "list:list:list"
+
+        self.refresh()
+        input_node.title.wait_for_and_click()
+        assert editor.collection_type_selected.wait_for_text() == "Custom collection type..."
+        assert editor.collection_type_custom_input.wait_for_value() == "list:list:list"
+
+        self.workflow_editor_set_collection_type(None)
+        editor.collection_type_custom_input.wait_for_absent()
+        # see above - the step rebuild is async with no UI marker
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() is None
+
+        self.refresh()
+        input_node.title.wait_for_and_click()
+        assert editor.collection_type_selected.wait_for_text() == "Any collection type"
+        editor.collection_type_custom_input.assert_absent()
+
+    @selenium_test
+    def test_collection_input_bare_collection_types(self):
+        # "paired" and "list" also match "list:paired" - each must still save as itself
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+
+        for collection_type in ["paired", "list"]:
+            self.workflow_editor_set_collection_type(collection_type)
+            # the step rebuild is async with no UI marker - let it land before saving
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.assert_workflow_has_changes_and_save()
+            assert self._current_collection_type() == collection_type
+
+    @selenium_test
+    def test_collection_input_collection_type_help_modal(self):
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+
+        editor.collection_type_select_toggle.wait_for_and_click()
+        editor.collection_type_select_options.wait_for_visible()
+        self.screenshot("workflow_editor_collection_type_select_open")
+        editor.collection_type_select_toggle.wait_for_and_click()
+        editor.collection_type_select_options.wait_for_absent_or_hidden()
+
+        # new collection inputs default to list, so pick something else
+        self.workflow_editor_set_collection_type("list:list")
+        assert editor.collection_type_selected.wait_for_text() == "Nested List of Datasets (list:list)"
+        assert editor.collection_type_selected_help.wait_for_text().startswith(
+            "A list where each element is in turn a list of datasets"
+        )
+        self.screenshot("workflow_editor_collection_type_described")
+
+        editor.collection_type_help_link.wait_for_and_click()
+        editor.collection_type_help_modal.wait_for_visible()
+        current_card = editor.collection_type_card(collection_type="list:list")
+        other_card = editor.collection_type_card(collection_type="list:paired")
+        current_card.wait_for_visible()
+        assert current_card.has_class("border-primary")
+        assert not editor.collection_type_card(collection_type="list").has_class("border-primary")
+        assert not other_card.has_class("border-primary")
+        self.screenshot("workflow_editor_collection_type_help_modal")
+        self.scroll_into_view(editor.collection_type_card(collection_type="sample_sheet:record").wait_for_present())
+        self.screenshot("workflow_editor_collection_type_help_modal_sample_sheets")
+
+        other_card.wait_for_and_click()
+        editor.collection_type_help_modal.wait_for_absent()
+        self.workflow_editor_wait_for_collection_type_selected("list:paired")
+        assert editor.collection_type_selected.wait_for_text() == "List of Paired Datasets (list:paired)"
+        self.screenshot("workflow_editor_collection_type_chosen_from_help")
+        # the step rebuild is async with no UI marker - let it land before saving
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() == "list:paired"
 
     @selenium_test
     def test_data_column_input_editing(self):
@@ -1164,6 +1262,10 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
+
+    def _current_collection_type(self):
+        workflow = self._download_current_workflow()
+        return json.loads(workflow["steps"]["0"]["tool_state"])["collection_type"]
 
     def _download_current_workflow(self):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)

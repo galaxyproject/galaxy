@@ -135,6 +135,18 @@ describe("FormData", () => {
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
+    it("names the collection type in the no-options alert", () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            value: null,
+            options: {},
+            collectionTypes: ["sample_sheet:paired"],
+        });
+        expect(wrapper.find(".form-data-no-options-alert").text()).toBe(
+            "No sample sheet of pairs dataset collections available",
+        );
+    });
+
     it("styles the no-options alert to match the control height in both run and tool forms", async () => {
         const wrapper = createTarget({
             type: "data",

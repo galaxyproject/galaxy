@@ -523,7 +523,8 @@ collection_builders:
   list_wizard:
     selectors:
       create: ".wizard-actions .btn-primary"
-      which_builder: '[data-which-builder="${builder}"]'
+      which_builder: '.wizard-container [data-collection-type="${builder}"]'
+      which_builder_rules: '.wizard-container [data-which-builder="rules"]'
       wizard_next_button: '.wizard-actions .go-next-btn'
       auto_pairing: '[data-description="auto pairing"]'
       dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
@@ -1167,10 +1168,18 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
-    collection_type_input:
-      type: xpath
-      selector: >
-        //div[@id='form-element-collection_type']//input
+    collection_type_select: '#form-element-collection_type'
+    collection_type_select_toggle: '#form-element-collection_type .multiselect__select'
+    # excludes the 0.4s fade-in, which Playwright counts as visible
+    collection_type_select_options: '#form-element-collection_type .multiselect__content-wrapper:not([class*="multiselect-enter"])'
+    collection_type_selected: '#form-element-collection_type .multiselect__single'
+    collection_type_selected_help: '#form-element-collection_type .form-select-or-text > small.form-text'
+    collection_type_custom_input: '#collection_type-other'
+    collection_type_help_link:
+      type: data-description
+      selector: 'collection type help'
+    collection_type_help_modal: '.form-collection-type dialog[open]'
+    collection_type_card: '.form-collection-type dialog[open] .collection-type-card[data-collection-type="${collection_type}"]'
     step_when:
       type: xpath
       selector: >
@@ -1887,7 +1896,7 @@ file_set_wizard:
     workbook_download_link: '[data-description="workbook download link"]'
     workbook_shortcut_file_input: '[data-description="workbook shortcut file input"]'
     workbook_card_file_input: '[data-description="workbook card file input"]'
-    which_builder: '[data-which-builder="${builder}"]'
+    which_builder: '[data-collection-type="${builder}"]'
     paste_textarea: '.paste-data textarea'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_submit_button: '.wizard-actions .go-next-btn.btn-primary'

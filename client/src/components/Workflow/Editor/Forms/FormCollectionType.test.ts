@@ -1,0 +1,144 @@
+import "@/composables/__mocks__/filter";
+
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
+
+import FormCollectionType from "./FormCollectionType.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+
+const localVue = getLocalVue();
+
+function mountWithValue(value?: string): VueWrapper {
+    return mount(FormCollectionType as object, {
+        propsData: { value },
+        localVue,
+        pinia: createTestingPinia({ createSpy: vi.fn }),
+    });
+}
+
+function element(wrapper: VueWrapper) {
+    return wrapper.findComponent(FormElement);
+}
+
+function selectedLabel(wrapper: VueWrapper) {
+    return wrapper.find("#form-element-collection_type .multiselect__single").text();
+}
+
+async function pick(wrapper: VueWrapper, label: string) {
+    // vue-multiselect only renders its options while open
+    await wrapper.find("#form-element-collection_type .multiselect__select").trigger("mousedown");
+    const option = wrapper.findAll(".multiselect__option").find((element) => element.text() === label);
+    await option!.trigger("click");
+}
+
+function customField(wrapper: VueWrapper) {
+    return wrapper.find("#collection_type-other");
+}
+
+function emittedTypes(wrapper: VueWrapper) {
+    return (wrapper.emitted("onChange") ?? []).map((args) => args[0]);
+}
+
+describe("FormCollectionType", () => {
+    it("selects a known collection type and describes it", () => {
+        const wrapper = mountWithValue("list:paired");
+        expect(selectedLabel(wrapper)).toBe("List of Paired Datasets (list:paired)");
+        expect(wrapper.find("#form-element-collection_type").text()).toContain("forward and reverse pair");
+        expect(customField(wrapper).exists()).toBe(false);
+    });
+
+    it("says what else connects to a collection input of the selected type", () => {
+        const wrapper = mountWithValue("list:paired_or_unpaired");
+        expect(wrapper.find("#form-element-collection_type").text()).toContain(
+            "A flat list or a list of paired datasets can also be connected to this input.",
+        );
+    });
+
+    it("warns when no collection type is set", () => {
+        const wrapper = mountWithValue(undefined);
+        expect(selectedLabel(wrapper)).toBe("Any collection type");
+        expect(element(wrapper).props("warning")).toBeTruthy();
+    });
+
+    it("treats an empty collection type as any collection type", () => {
+        const wrapper = mountWithValue("");
+        expect(selectedLabel(wrapper)).toBe("Any collection type");
+    });
+
+    it("shows a collection type the select doesn't know as a custom type", () => {
+        const wrapper = mountWithValue("list:list:list");
+        expect(selectedLabel(wrapper)).toBe("Custom collection type...");
+        expect((customField(wrapper).element as HTMLInputElement).value).toBe("list:list:list");
+    });
+
+    it("doesn't describe the saved type under an unsaved custom one", async () => {
+        const wrapper = mountWithValue("list:paired");
+        await pick(wrapper, "Custom collection type...");
+        await customField(wrapper).setValue("list:lsit");
+        expect(wrapper.find("#form-element-collection_type").text()).not.toContain("forward and reverse pair");
+    });
+
+    it("emits a collection type picked from the select", async () => {
+        const wrapper = mountWithValue("list");
+        await pick(wrapper, "Sample Sheet of Paired Datasets (sample_sheet:paired)");
+        expect(emittedTypes(wrapper)).toEqual(["sample_sheet:paired"]);
+    });
+
+    it("emits null when any collection type is picked", async () => {
+        // null keeps the key in the saved tool state; without it the server defaults to "list"
+        const wrapper = mountWithValue("list");
+        await pick(wrapper, "Any collection type");
+        expect(emittedTypes(wrapper)).toEqual([null]);
+    });
+
+    it("emits a valid custom collection type", async () => {
+        const wrapper = mountWithValue("list:list:list");
+        await customField(wrapper).setValue("list:list:paired");
+        expect(emittedTypes(wrapper)).toEqual(["list:list:paired"]);
+    });
+
+    it("flags an invalid custom collection type without emitting it", async () => {
+        const wrapper = mountWithValue("list:list:list");
+        await customField(wrapper).setValue("list:lsit");
+        expect(emittedTypes(wrapper)).toEqual([]);
+        expect(wrapper.find("#form-element-collection_type").text()).toContain("Invalid collection type");
+    });
+
+    it("asks for a collection type when the custom field is cleared", async () => {
+        const wrapper = mountWithValue("list:list:list");
+        await customField(wrapper).setValue("");
+        expect(emittedTypes(wrapper)).toEqual([]);
+        expect(wrapper.find("#form-element-collection_type").text()).toContain(
+            "Enter a collection type such as list:list:paired.",
+        );
+    });
+
+    it("picks a collection type from the help dialog", async () => {
+        const wrapper = mountWithValue("list:list:list");
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+        await wrapper.find("[data-description='collection type help']").trigger("click");
+        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+
+        await wrapper.find("[data-collection-type='list:paired_or_unpaired']").trigger("click");
+        expect(emittedTypes(wrapper)).toEqual(["list:paired_or_unpaired"]);
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+
+        await wrapper.setProps({ value: "list:paired_or_unpaired" });
+        expect(selectedLabel(wrapper)).toBe("Mixed List of Paired and Unpaired Datasets (list:paired_or_unpaired)");
+        expect(customField(wrapper).exists()).toBe(false);
+    });
+
+    it("drops custom text being typed when the saved type is picked from the help dialog", async () => {
+        const wrapper = mountWithValue("list");
+        await pick(wrapper, "Custom collection type...");
+        await customField(wrapper).setValue("list:lsit");
+        await wrapper.find("[data-description='collection type help']").trigger("click");
+        await wrapper.find("[data-collection-type='list']").trigger("click");
+        expect(customField(wrapper).exists()).toBe(false);
+        expect(selectedLabel(wrapper)).toBe("Flat List (list)");
+        expect(wrapper.find("#form-element-collection_type").text()).not.toContain("Invalid collection type");
+    });
+});
