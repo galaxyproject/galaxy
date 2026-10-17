@@ -52,6 +52,8 @@ from galaxy.schema.schema import (
     WorkflowIndexPayload,
 )
 from galaxy.schema.workflows import (
+    ContentKind,
+    ContentRef,
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
     WorkflowExtractionByIdsPayload,
@@ -148,6 +150,20 @@ def _describe_tool_references(tools: list[dict[str, Any]], require_exact_tool_ve
     else:
         descriptions = [tool["tool_id"] for tool in tools]
     return ", ".join(dict.fromkeys(descriptions))
+
+
+def _distinct_input_names(
+    trans: ProvidesHistoryContext, kind: ContentKind, content_ids: list[int], names: list[str]
+) -> list[str]:
+    """``names`` without a copy's repeat of its original's name: copies of one original become one input step."""
+    seen: set[tuple[ContentRef, str]] = set()
+    distinct: list[str] = []
+    for content_id, name in zip(content_ids, names):
+        key = (normalize_output_label_key(trans, kind, content_id), name)
+        if key not in seen:
+            seen.add(key)
+            distinct.append(name)
+    return distinct + names[len(content_ids) :]
 
 
 class WorkflowsService(ServiceBase):
@@ -486,7 +502,11 @@ class WorkflowsService(ServiceBase):
                 )
             step_label_strings.append(step_label.label)
 
-        _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names, step_label_strings)
+        _validate_extraction_labels(
+            _distinct_input_names(trans, "hda", payload.hda_ids, payload.dataset_names),
+            _distinct_input_names(trans, "hdca", payload.hdca_ids, payload.dataset_collection_names),
+            step_label_strings,
+        )
 
         output_targets = collect_output_label_targets(
             trans,

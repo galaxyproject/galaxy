@@ -1208,7 +1208,7 @@ test_data:
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_with_two_copies_of_one_input_makes_one_input(self, history_id):
-        """The history card for an upload lists its in-history copies, and checking it sends every copy."""
+        """The history card for an upload lists its in-history copies; checking it sends every copy under the card's one name."""
         hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
         hda_copy = self._copy_hda_to_history(history_id, hda)
         run = self.dataset_populator.run_tool(
@@ -1222,9 +1222,11 @@ test_data:
         assert {o["id"] for o in input_row["outputs"]} == {hda["id"], hda_copy["id"]}, input_row
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[hda["id"], hda_copy["id"]],
+            dataset_names=["numbers", "numbers"],
             job_ids=[run["jobs"][0]["id"]],
         )
         (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        assert input_step["label"] == "numbers", input_step
         (cat1_step,) = self.assert_steps_of_type(downloaded, "tool", expected_len=1)
         for name in ("input1", "queries_0|input2"):
             assert connection_step_id(cat1_step["input_connections"][name]) == input_step["id"], cat1_step
@@ -1235,8 +1237,11 @@ test_data:
             history_id, contents=["a\n", "b\n"], wait=True
         ).json()["outputs"][0]
         hdca_copy = self._copy_content_to_history(history_id, hdca)
-        downloaded = self._extract_and_download_workflow_by_ids(hdca_ids=[hdca["id"], hdca_copy["id"]])
-        self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hdca_ids=[hdca["id"], hdca_copy["id"]], dataset_collection_names=["letters", "letters"]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        assert input_step["label"] == "letters", input_step
 
     @summarize_instance_history_on_error
     def test_empty_payload_rejected(self, history_id):

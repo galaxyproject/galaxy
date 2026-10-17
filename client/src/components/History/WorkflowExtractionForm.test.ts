@@ -530,6 +530,26 @@ describe("WorkflowExtractionForm", () => {
             expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
         });
 
+        it("submits an input card holding an upload and its copy under the card's one name", async () => {
+            const withCopy = {
+                ...INPUT_JOB,
+                outputs: [...INPUT_JOB.outputs!, { ...INPUT_JOB.outputs![0], id: "ds-2-copy", hid: 3 }],
+            } as WorkflowExtractionJob;
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([withCopy]));
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "new-workflow-id" });
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+
+            expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    hda_ids: ["ds-2", "ds-2-copy"],
+                    dataset_names: ["myfile.txt", "myfile.txt"],
+                }),
+            );
+        });
+
         it("re-uniquifies when an input is renamed into a collision", async () => {
             vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_DUPLICATE_INPUT_NAMES);
             const wrapper = await mountForm();
