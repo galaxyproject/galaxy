@@ -292,12 +292,25 @@ def discover_tools_from_config(
         )
 
 
+def _parse_shed_tool_path(shed_conf_file: str) -> str | None:
+    try:
+        tool_path: str | None = get_toolbox_parser(shed_conf_file).parse_tool_path()
+        return tool_path
+    except Exception as e:
+        log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
+        return None
+
+
 def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[DiscoveredTool]:
     """Yield tool files referenced by data manager configs.
 
     Data manager tools are loaded via ``DataManagers`` -> ``toolbox.load_hidden_tool``
     rather than from a tool_conf, so the normal conf walk misses them.
     """
+    # Every shed data manager names the shed conf it was installed into, and
+    # reading that conf's tool_path parses the whole file — thousands of
+    # entries on a large instance — so parse each conf once.
+    shed_tool_paths: dict[str, str | None] = {}
     conf_files = [f for f in listify(config.data_manager_config_file or "") if f]
     if config.shed_data_manager_config_file:
         conf_files.append(config.shed_data_manager_config_file)
@@ -325,12 +338,11 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
                 guid = tool_elem.get("guid")
                 shed_conf_file = dm_elem.get("shed_conf_file")
                 if shed_conf_file and os.path.exists(shed_conf_file):
-                    try:
-                        shed_tool_path = get_toolbox_parser(shed_conf_file).parse_tool_path()
-                        if shed_tool_path:
-                            tool_path = shed_tool_path
-                    except Exception as e:
-                        log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
+                    if shed_conf_file not in shed_tool_paths:
+                        shed_tool_paths[shed_conf_file] = _parse_shed_tool_path(shed_conf_file)
+                    shed_tool_path = shed_tool_paths[shed_conf_file]
+                    if shed_tool_path:
+                        tool_path = shed_tool_path
             if not path:
                 continue
             resolved = os.path.abspath(os.path.join(tool_path, path))
