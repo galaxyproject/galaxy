@@ -11,20 +11,39 @@ import { isDefined, isValidNumber } from "@/utils/validation";
  * @returns the matching parameter node, or ``null`` if not found.
  */
 export function findInputByDottedName(inputs, targetName) {
+    return findInputPathByDottedName(inputs, targetName)?.node ?? null;
+}
+
+/** @typedef {import("./composables/useFormState").FormInputNode} FormInputNode */
+/** A section, conditional or repeat block (``index`` set) enclosing an input, as ``visitInputs`` passes it.
+ * @typedef {{ node: FormInputNode, index?: number }} EnclosingInput
+ */
+
+/** Like ``findInputByDottedName``, but also returns the enclosing containers
+ * as ``visitInputs`` passes them.
+ * @returns {{ node: FormInputNode, parents: EnclosingInput[] } | null}
+ */
+export function findInputPathByDottedName(inputs, targetName) {
     let found = null;
-    visitInputs(inputs, (node, name) => {
+    visitInputs(inputs, (node, name, _context, parents) => {
         if (!found && name === targetName && (node.type === "data" || node.type === "data_collection")) {
-            found = node;
+            found = { node, parents };
         }
     });
     return found;
 }
 
+/** Title of a repeat block, as shown in the form, for a 0-based index. */
+export function repeatTitle(index, title) {
+    return `${index + 1}: ${title}`;
+}
+
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
- * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
+ * @param{dict}   callback  - Called with the model node, its full name, sibling context and enclosing
+ *                            containers (outermost first; ``{ node, index }`` with ``index`` set for repeat blocks)
  */
-export function visitInputs(inputs, callback, prefix = "", context = undefined) {
+export function visitInputs(inputs, callback, prefix = "", context = undefined, parents = []) {
     context = Object.assign({}, context);
     for (const key in inputs) {
         const input = inputs[key];
@@ -40,16 +59,16 @@ export function visitInputs(inputs, callback, prefix = "", context = undefined) 
             case "repeat":
                 if (node.cache) {
                     for (const [j, cache] of Object.entries(node.cache)) {
-                        visitInputs(cache, callback, `${name}_${j}`, context);
+                        visitInputs(cache, callback, `${name}_${j}`, context, [...parents, { node, index: Number(j) }]);
                     }
                 }
                 break;
             case "conditional":
                 if (node.test_param) {
-                    callback(node.test_param, `${name}|${node.test_param.name}`, context);
+                    callback(node.test_param, `${name}|${node.test_param.name}`, context, parents);
                     var selectedCase = matchCase(node, node.test_param.value);
                     if (selectedCase != -1) {
-                        visitInputs(node.cases[selectedCase].inputs, callback, name, context);
+                        visitInputs(node.cases[selectedCase].inputs, callback, name, context, [...parents, { node }]);
                     } else {
                         console.debug(`Form.utilities::visitInputs() - Invalid case for ${name}.`);
                     }
@@ -58,10 +77,10 @@ export function visitInputs(inputs, callback, prefix = "", context = undefined) 
                 }
                 break;
             case "section":
-                visitInputs(node.inputs, callback, name, context);
+                visitInputs(node.inputs, callback, name, context, [...parents, { node }]);
                 break;
             default:
-                callback(node, name, context);
+                callback(node, name, context, parents);
         }
     }
 }
