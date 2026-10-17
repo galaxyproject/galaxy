@@ -10089,6 +10089,44 @@ steps:
         option_values = {opt[1] for opt in options}
         assert option_values == {"--ex1", "ex2", "--ex3", "--ex4", "ex5"}
 
+    def test_value_restriction_static_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  single_text:
+    type: text
+    restrictions: [a, b, c]
+    default: b
+  multiple_text:
+    type: [text]
+    restrictions: [a, b, c]
+    default: [b, c]
+  labeled_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: b, label: B}
+    default: b
+  empty_text:
+    type: text
+    restrictions:
+      - {value: a, label: A}
+      - {value: "", label: Empty}
+    default: ""
+steps: {}
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        single_input, multiple_input, labeled_input, empty_input = (step["inputs"][0] for step in run_workflow["steps"])
+        assert single_input["value"] == "b"
+        assert single_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", False]]
+        assert multiple_input["value"] == ["b", "c"]
+        assert multiple_input["options"] == [["a", "a", False], ["b", "b", True], ["c", "c", True]]
+        assert labeled_input["value"] == "b"
+        assert labeled_input["options"] == [["A", "a", False], ["B", "b", True]]
+        assert empty_input["value"] == ""
+        assert empty_input["options"] == [["A", "a", False], ["Empty", "", True]]
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
