@@ -275,51 +275,35 @@ def extract_steps(
     # associated with a job in the current history.
     summary = WorkflowSummary(trans, history)
     jobs = summary.jobs
-    contents = trans.app[HistoryContentsManager]
     steps = []
     step_labels = set()
     # Keyed by original, so copies of one dataset or collection are one input and a tool reading any copy connects.
     ref_to_output_pair: dict[ContentRef, tuple[WorkflowStep, str]] = {}
-    input_names: dict[ContentRef, str] = {}
-
-    def input_ref(kind: ContentKind, content: HistoryItem, name: str) -> ContentRef:
-        ref = original_content_ref(content)
-        first_name = input_names.setdefault(ref, name)
-        if first_name != name:
-            raise _copies_named_differently(_HID_INPUT_FIELDS[kind], first_name, name)
-        return ref
-
     # Input dataset steps
-    for i, input_hid in enumerate(dataset_ids):
-        name = dataset_names[i] if dataset_names else "Input Dataset"
-        hda = contents.get_hda_by_hid(summary.history.id, input_hid)
-        dataset_ref = input_ref("hda", hda, name) if hda is not None else None
-        if dataset_ref in ref_to_output_pair:
-            continue
+    for group in group_hid_inputs_by_original(trans, summary.history.id, "hda", dataset_ids, dataset_names):
+        name = group.name if group.name is not None else "Input Dataset"
         step = model.WorkflowStep()
         step.type = "data_input"
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
         step.tool_inputs = dict(name=name)
-        if dataset_ref is not None:
-            ref_to_output_pair[dataset_ref] = (step, "output")
+        if group.ref is not None:
+            ref_to_output_pair[group.ref] = (step, "output")
         steps.append(step)
-    for i, input_hid in enumerate(dataset_collection_ids):
-        hdca = contents.get_hdca_by_hid(summary.history.id, input_hid)
-        if hdca is None:
-            raise exceptions.RequestParameterInvalidException(f"hid {input_hid} does not appear to be a collection")
-        name = dataset_collection_names[i] if dataset_collection_names else "Input Dataset Collection"
-        collection_ref = input_ref("hdca", hdca, name)
-        if collection_ref in ref_to_output_pair:
-            continue
+    for group in group_hid_inputs_by_original(
+        trans, summary.history.id, "hdca", dataset_collection_ids, dataset_collection_names
+    ):
+        assert group.ref is not None
+        hdca = cast(HistoryDatasetCollectionAssociation, group.content)
+        name = group.name if group.name is not None else "Input Dataset Collection"
         step = model.WorkflowStep()
         step.type = "data_collection_input"
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
         step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
-        ref_to_output_pair[collection_ref] = (step, "output")
+        ref_to_output_pair[group.ref] = (step, "output")
         steps.append(step)
     # Tool steps
     job_steps = []
@@ -621,6 +605,15 @@ def _walk_data_param_tree(
     walk("", inputs, values)
 
 
+def _unconverted(hda: HistoryDatasetAssociation) -> HistoryDatasetAssociation:
+    """The dataset an implicit datatype conversion was made from, or ``hda``: a job records the converted
+    dataset, which shares its source's hid but is not a copy of it."""
+    for assoc in hda.implicitly_converted_parent_datasets:
+        if assoc.parent_hda is not None:
+            return assoc.parent_hda
+    return hda
+
+
 def __cleanup_param_values(inputs: ToolInputs, values: ToolInputs) -> IdAssociations:
     """Data-leaf scrub for the hid path: emit ``(original ref, key)`` associations."""
     associations: IdAssociations = []
@@ -629,6 +622,8 @@ def __cleanup_param_values(inputs: ToolInputs, values: ToolInputs) -> IdAssociat
         for item in listify(value):
             if isinstance(item, model.DatasetCollectionElement):
                 item = item.first_dataset_instance()
+            if isinstance(item, HistoryDatasetAssociation):
+                item = _unconverted(item)
             if item:  # false for a non-set optional dataset
                 associations.append((original_content_ref(item), key))
 
@@ -818,6 +813,42 @@ def group_inputs_by_original(
         elif group.name != name:
             raise _copies_named_differently(_INPUT_FIELDS[kind], group.name, name)
     return list(groups.values())
+
+
+@dataclass(frozen=True)
+class HidInputGroup:
+    """One hid-path workflow input: its original (None for a dataset hid with no content in the history),
+    the first sent copy of it, and its name (None for the default)."""
+
+    ref: ContentRef | None
+    content: HistoryItem | None
+    name: str | None
+
+
+def group_hid_inputs_by_original(
+    trans: ProvidesHistoryContext, history_id: int, kind: ContentKind, hids: list[int], names: list[str] | None
+) -> list[HidInputGroup]:
+    """Resolve ``hids`` in the history and group them by original, like :func:`group_inputs_by_original`."""
+    contents = trans.app[HistoryContentsManager]
+    groups: list[HidInputGroup] = []
+    by_ref: dict[ContentRef, HidInputGroup] = {}
+    for i, hid in enumerate(hids):
+        name = names[i] if names else None
+        if kind == "hda":
+            content = contents.get_hda_by_hid(history_id, hid)
+        elif (content := contents.get_hdca_by_hid(history_id, hid)) is None:
+            raise exceptions.RequestParameterInvalidException(f"hid {hid} does not appear to be a collection")
+        if content is None:
+            groups.append(HidInputGroup(None, None, name))
+            continue
+        ref = original_content_ref(content)
+        group = by_ref.get(ref)
+        if group is None:
+            group = by_ref[ref] = HidInputGroup(ref, content, name)
+            groups.append(group)
+        elif group.name != name:
+            raise _copies_named_differently(_HID_INPUT_FIELDS[kind], group.name, name)
+    return groups
 
 
 def collect_output_label_targets(
@@ -1117,7 +1148,7 @@ def __cleanup_param_values_by_id(inputs: ToolInputs, values: ToolInputs) -> IdAs
                 # avoid duplicate connections.
                 continue
             if isinstance(item, HistoryDatasetAssociation):
-                original = get_original_hda(item)
+                original = get_original_hda(_unconverted(item))
                 associations.append((("hda", original.id), key))
 
     _walk_data_param_tree(inputs, values, emit)
