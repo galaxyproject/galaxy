@@ -6,7 +6,10 @@ from mercurial import (
     ui,
 )
 
-from galaxy.tool_shed.util.hg_util import get_file_data_from_manifest
+from galaxy.tool_shed.util.hg_util import (
+    get_changectx_for_changeset,
+    get_file_data_from_manifest,
+)
 from tool_shed.util import hg_util
 
 if TYPE_CHECKING:
@@ -107,3 +110,18 @@ def test_get_file_data_from_manifest(tmp_path):
     assert get_file_data_from_manifest("images/logo.png", repo, third) == b"images v1"
     assert get_file_data_from_manifest("images/logo.png", repo, fourth) is None
     assert get_file_data_from_manifest("images/logo.png", repo, "garbage") is None
+
+
+def test_get_changectx_for_changeset_matches_only_exact_short_hash(tmp_path):
+    hg_util.init_repository(tmp_path)
+    first = _commit_file(tmp_path, "a.txt", "a")
+    second = _commit_file(tmp_path, "b.txt", "b")
+    repo = hg.repository(ui.ui(), str(tmp_path).encode("utf-8"))
+
+    assert str(get_changectx_for_changeset(repo, first)) == first
+    assert str(get_changectx_for_changeset(repo, second)) == second
+    full_hash = get_changectx_for_changeset(repo, second).hex().decode()
+    # Prefixes, full hashes, revision numbers, symbolic names, and the null and working directory hashes.
+    not_changesets = [second[:6], full_hash, "0", "tip", ".", "null", "", "000000000000", "ffffffffffff"]
+    for changeset_revision in not_changesets + ["000000000bad"]:
+        assert get_changectx_for_changeset(repo, changeset_revision) is None, changeset_revision

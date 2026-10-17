@@ -65,11 +65,23 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
 
 def get_changectx_for_changeset(repo: "IRepo", changeset_revision: str) -> Any:
     """Retrieve a specified changectx from a repository."""
-    for changeset in repo.changelog:
-        ctx = repo[changeset]
-        if str(ctx) == changeset_revision:
-            return ctx
-    return None
+    from mercurial import (
+        error,
+        scmutil,
+    )
+    from mercurial.node import nullrev
+
+    try:
+        node = scmutil.resolvehexnodeidprefix(repo, smart_str(changeset_revision))
+    except (error.LookupError, error.WdirUnsupported):
+        return None
+    if node is None:
+        return None
+    ctx = repo[node]
+    # Only the exact short hash of a committed changeset names it, not a prefix or the null revision.
+    if ctx.rev() == nullrev or str(ctx) != changeset_revision:
+        return None
+    return ctx
 
 
 def get_config_from_disk(config_file: str, relative_install_dir: str) -> str | None:
