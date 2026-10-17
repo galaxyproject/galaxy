@@ -712,9 +712,9 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
     def test_referenced_copied_collection_normalizes_to_original(self):
         """A collection copied in from another history is followed to its
-        original for identity (the summary row carries the original id), and is
-        surfaced as a seeded input collection row; the cross-history producer is
-        not leaked as an extractable step."""
+        original for identity (seeding matches the original), but its row lists
+        the in-history copy; the cross-history producer is not leaked as an
+        extractable step."""
         source_history_id = self.dataset_populator.new_history()
         source_hdca = self.dataset_collection_populator.create_pair_in_history(
             source_history_id, contents=["a\n", "b\n"], wait=True
@@ -726,10 +726,9 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
             summary = self._extraction_summary(page["id"])
 
-            # Rows are keyed by the original (source) id even though the copy lives here.
-            row = self._row_with_output_id(summary, source_hdca["id"])
-            assert row is not None, summary["jobs"]
-            assert row["step_type"] == "input_collection", row
+            # The row lists the copy that lives here, never the source collection.
+            (row,) = self._rows_by_type(summary, "input_collection")
+            assert [o["id"] for o in row["outputs"]] == [copied["id"]], row
             assert row["seeded"] is True, row
             assert self._rows_by_type(summary, "tool") == [], summary["jobs"]
 
