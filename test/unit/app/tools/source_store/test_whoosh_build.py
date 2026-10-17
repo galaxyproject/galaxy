@@ -43,16 +43,29 @@ def test_unchanged_corpus_skips_rebuild(tmp_path):
     assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("mapper") == ["mapper"]
 
 
-def test_changed_corpus_rebuilds_and_drops_stale_docs(tmp_path):
+def test_changed_corpus_writes_only_new_docs_and_drops_stale_docs(tmp_path):
     index_dir = str(tmp_path / "ix")
     ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller"))
 
     written = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "trimmer"))
-    assert written == 2
+    assert written == 1
     searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
     assert searcher.search("trimmer") == ["trimmer"]
-    # "caller" left the corpus; the CLEAR rebuild must not serve it anymore.
+    assert searcher.search("mapper") == ["mapper"]
     assert searcher.search("caller") == []
+
+
+def test_changed_doc_is_rewritten(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_help_index("mytool", "Wraps the quaxifier."))
+
+    written = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(
+        _help_index("mytool", "Wraps the blorbinator.")
+    )
+    assert written == 1
+    searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    assert searcher.search("blorbinator") == ["mytool"]
+    assert searcher.search("quaxifier") == []
 
 
 def test_build_scopes_corpus_to_panel_membership(tmp_path):
