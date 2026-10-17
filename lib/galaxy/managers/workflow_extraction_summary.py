@@ -207,16 +207,6 @@ def _backward_job_closure(
             else get_original_hda(cast(HistoryDatasetAssociation, content))
         )
 
-        # Map-over recovery: when the walk reaches an implicit output collection,
-        # seed the collection it was mapped over (recorded on the output, not on
-        # the per-element jobs). The loose-element case is handled in the job loop
-        # below via the same helper.
-        mapped_input_names: set[str] = set()
-        if is_collection:
-            mapped_input_names |= _enqueue_mapped_input_collections(
-                cast(HistoryDatasetCollectionAssociation, original), queue
-            )
-
         creating = original.creating_job_associations
         if not creating:
             result.boundary_input_refs.add(key)
@@ -246,8 +236,15 @@ def _backward_job_closure(
             result.job_ids.add(job.id)
             if icj_assoc is not None:
                 result.icj_ids.add(icj_assoc.implicit_collection_jobs_id)
-            # Also recovers a map's input collection when the walk arrived via a
-            # loose element of its output (not the output collection itself).
+            # Map-over recovery, only for a producer walked as a step: when the walk reaches an
+            # implicit output collection, seed the collection it was mapped over (recorded on the
+            # output, not on the per-element jobs). _job_input_contents does the same for a walk
+            # that arrived via a loose element of the output.
+            mapped_input_names: set[str] = set()
+            if is_collection:
+                mapped_input_names = _enqueue_mapped_input_collections(
+                    cast(HistoryDatasetCollectionAssociation, original), queue
+                )
             queue.extend(_job_input_contents(job, mapped_input_names))
         if not produced_in_history:
             result.boundary_input_refs.add(key)
