@@ -107,6 +107,7 @@
 import { faChevronDown, faChevronUp, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BForm, BRow } from "bootstrap-vue";
+import { reactive } from "vue";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -219,7 +220,8 @@ export default {
                 }
                 items = toolItems;
             }
-            return items;
+            // Reactive rows, so ticking a row's checkbox re-renders it and updates `selectedToolIds`.
+            return reactive(items);
         },
         selectedToolIds: function () {
             const toolIds = [];
