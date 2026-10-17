@@ -166,6 +166,8 @@ def test_readmes_reads_old_revision_readme_at_its_own_path(
         upload(provides_repositories, new_repository, revision_dir, arcname="readme_repo")
     latest = get_latest_downloadable_changeset_revision(app, new_repository)
     (old_metadata,) = [m for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    assert old_metadata.metadata is not None
+    assert old_metadata.changeset_revision
     readme_paths = old_metadata.metadata["readme_files"]
     assert len(readme_paths) == 2
     # Both READMEs share a file name and key, so the one listed last is the one returned.
