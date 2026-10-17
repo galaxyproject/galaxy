@@ -294,10 +294,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
             wait=True,
         ).json()["id"]
         self.tool_open("identifier_multiple")
-        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        select_field = self.components.tool_form.parameter_data_select(parameter="input1")
-        self.select_set_value(select_field, "list:list")
+        self.tool_form_select_collection("input1", "list:list")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(7)

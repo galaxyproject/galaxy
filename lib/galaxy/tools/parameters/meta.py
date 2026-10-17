@@ -2,6 +2,10 @@ import copy
 import itertools
 import logging
 from collections import namedtuple
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from typing import (
     Any,
 )
@@ -11,6 +15,7 @@ from galaxy import (
     util,
 )
 from galaxy.model import (
+    DatasetCollection,
     DatasetCollectionElement,
     DatasetInstance,
     HistoryDatasetAssociation,
@@ -25,6 +30,7 @@ from galaxy.model.dataset_collections.adapters import (
     CollectionAdapter,
     PromoteCollectionElementToCollectionAdapter,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
@@ -225,64 +231,91 @@ def expand_meta_parameters(
         if key.endswith("|__identifier__"):
             incoming.pop(key)
 
-    # If we're going to multiply input dataset combinations
-    # order matters, so the following reorders incoming
-    # according to tool.inputs (which is ordered).
-    incoming_copy = incoming.copy()
-    if input_format == "legacy":
-        nested_dict = expand_flat_parameters_to_nested(incoming_copy)
-    else:
-        nested_dict = incoming_copy
-
     collections_to_match = matching.CollectionsToMatch()
 
-    def classifier_from_value(value, input_key):
-        if isinstance(value, dict) and "values" in value:
-            # Explicit meta wrapper for inputs...
-            is_batch = value.get("batch", False)
-            is_linked = value.get("linked", True)
-            if is_batch and is_linked:
-                classification = input_classification.MATCHED
-            elif is_batch:
-                classification = input_classification.MULTIPLIED
-            else:
-                classification = input_classification.SINGLE
-            if __collection_multirun_parameter(value):
-                collection_value = value["values"][0]
-                values = __expand_collection_parameter(
-                    trans, input_key, collection_value, collections_to_match, linked=is_linked
-                )
-            else:
-                values = value["values"]
-        else:
-            classification = input_classification.SINGLE
-            values = value
-        return classification, values
+    def expand_collection(input_key, collection_value, linked):
+        return __expand_collection_parameter(trans, input_key, collection_value, collections_to_match, linked=linked)
 
+    classifier = _meta_value_classifier(_is_legacy_batch, expand_collection)
     nested = input_format != "legacy"
-    if not nested:
-        reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
-        incoming_template = reordered_incoming
-
-        def classifier_flat(input_key):
-            return classifier_from_value(incoming[input_key], input_key)
-
-        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_flat(
-            incoming_template, classifier_flat
-        )
-    else:
-        reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
-        incoming_template = reordered_incoming
-        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
-            tool.inputs, incoming_template, classifier_from_value
-        )
-
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = _split_meta_inputs(
+        tool, incoming, nested, classifier
+    )
     expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=nested)
     if collections_to_match.has_collections():
         collection_info = trans.app.dataset_collection_manager.match_collections(collections_to_match)
     else:
         collection_info = None
     return expanded_incomings, collection_info
+
+
+def _is_legacy_batch(value: dict[str, Any]) -> bool:
+    return bool(value.get("batch", False))
+
+
+def _is_async_batch(value: dict[str, Any]) -> bool:
+    return bool(value.get("__class__", "Batch") == "Batch")
+
+
+def _is_meta_wrapper(value: Any) -> bool:
+    """Whether a request value is an explicit ``{"values": [...]}`` meta wrapper (batch or not)."""
+    return isinstance(value, dict) and "values" in value
+
+
+ExpandCollectionT = Callable[[str, Any, bool], Sequence[Any]]
+ClassifierT = Callable[[Any, str], tuple[str, Any]]
+
+
+def _meta_value_classifier(
+    is_batch: Callable[[dict[str, Any]], bool], expand_collection: ExpandCollectionT | None
+) -> ClassifierT:
+    """Build a classifier mapping a request value to (MATCHED/MULTIPLIED/SINGLE, values).
+
+    Without ``expand_collection``, collection map-overs stay SINGLE (left to collection matching).
+    """
+
+    def classifier_from_value(value: Any, input_key: str) -> tuple[str, Any]:
+        if _is_meta_wrapper(value):
+            # Explicit meta wrapper for inputs...
+            batch = is_batch(value)
+            is_linked = value.get("linked", True)
+            if batch and is_linked:
+                classification = input_classification.MATCHED
+            elif batch:
+                classification = input_classification.MULTIPLIED
+            else:
+                classification = input_classification.SINGLE
+            if not __collection_multirun_parameter(value):
+                values = value["values"]
+            elif expand_collection:
+                values = expand_collection(input_key, value["values"][0], is_linked)
+            else:
+                classification, values = input_classification.SINGLE, value
+        else:
+            classification = input_classification.SINGLE
+            values = value
+        return classification, values
+
+    return classifier_from_value
+
+
+def _split_meta_inputs(tool, incoming: ToolRequestT, nested: bool, classifier: ClassifierT):
+    # If we're going to multiply input dataset combinations
+    # order matters, so the following reorders incoming
+    # according to tool.inputs (which is ordered).
+    incoming_copy = incoming.copy()
+    if nested:
+        nested_dict = incoming_copy
+    else:
+        nested_dict = expand_flat_parameters_to_nested(incoming_copy)
+    reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
+    if nested:
+        return split_inputs_nested(tool.inputs, reordered_incoming, classifier)
+
+    def classifier_flat(input_key):
+        return classifier(incoming_copy[input_key], input_key)
+
+    return split_inputs_flat(reordered_incoming, classifier_flat)
 
 
 def reorder_parameters(tool, incoming, nested_dict, nested):
@@ -371,16 +404,7 @@ def validate_matched_batch_lengths(tool, incoming: RequestInternalToolState) -> 
     Collection map-overs are left to collection matching at expansion time.
     """
 
-    def classifier(value, input_key):
-        if (
-            isinstance(value, dict)
-            and value.get("__class__") == "Batch"
-            and value.get("linked", True)
-            and not __collection_multirun_parameter(value)
-        ):
-            return input_classification.MATCHED, value["values"]
-        return input_classification.SINGLE, value
-
+    classifier = _meta_value_classifier(_is_async_batch, None)
     _, matched_multi_inputs, _ = split_inputs_nested(tool.inputs, copy.deepcopy(incoming.input_state), classifier)
     assert_matched_lengths({key: len(values) for key, values in matched_multi_inputs.items()})
 
@@ -388,35 +412,15 @@ def validate_matched_batch_lengths(tool, incoming: RequestInternalToolState) -> 
 def expand_meta_parameters_async(app, tool, incoming: RequestInternalDereferencedToolState) -> ExpandedAsyncT:
     collections_to_match = matching.CollectionsToMatch()
 
-    def classifier_from_value(value, input_key):
-        if isinstance(value, dict) and "values" in value:
-            # Explicit meta wrapper for inputs...
-            is_batch = value.get("__class__", "Batch") == "Batch"
-            is_linked = value.get("linked", True)
-            if is_batch and is_linked:
-                classification = input_classification.MATCHED
-            elif is_batch:
-                classification = input_classification.MULTIPLIED
-            else:
-                classification = input_classification.SINGLE
-            if __collection_multirun_parameter(value):
-                collection_value = value["values"][0]
-                values = __expand_collection_parameter_async(
-                    app, input_key, collection_value, collections_to_match, linked=is_linked
-                )
-            else:
-                values = value["values"]
-        else:
-            classification = input_classification.SINGLE
-            values = value
-        return classification, values
+    def expand_collection(input_key, collection_value, linked):
+        return __expand_collection_parameter_async(
+            app, input_key, collection_value, collections_to_match, linked=linked
+        )
 
+    classifier = _meta_value_classifier(_is_async_batch, expand_collection)
     # is there a way to make Pydantic ensure reordering isn't needed - model and serialize out the parameters maybe?
-    reordered_incoming = reorder_parameters(tool, incoming.input_state, incoming.input_state, True)
-    incoming_template = reordered_incoming
-
-    single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
-        tool.inputs, incoming_template, classifier_from_value
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = _split_meta_inputs(
+        tool, incoming.input_state, True, classifier
     )
     expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=True)
     # those all have sa model objects from expansion to be used within for additional logic (maybe?)
@@ -466,84 +470,71 @@ CollectionExpansionListT = (
 def __expand_collection_parameter(
     trans: WorkRequestContext,
     input_key,
-    incoming_val,
+    incoming_val: dict[str, Any],
     collections_to_match: "matching.CollectionsToMatch",
     linked=False,
 ) -> CollectionExpansionListT:
-    # If subcollectin multirun of data_collection param - value will
-    # be "hdca_id|subcollection_type" else it will just be hdca_id
-    if "|" in incoming_val:
-        encoded_hdc_id, subcollection_type = incoming_val.split("|", 1)
-    else:
-        try:
-            src = incoming_val["src"]
-            if src not in ("hdca", "dce"):
-                raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
-            encoded_id = incoming_val["id"]
-            subcollection_type = incoming_val.get("map_over_type", None)
-        except TypeError:
-            encoded_id = incoming_val
-            subcollection_type = None
-    decoded_id = trans.app.security.decode_id(encoded_id)
-    if src == "dce":
-        item = trans.sa_session.get_one(DatasetCollectionElement, decoded_id)
-        collection = item.child_collection
-        if not collection:
-            raise exceptions.ToolMetaParameterException(f"DCE {decoded_id} does not contain a child collection")
-    else:
-        item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
-        collection = item.collection
+    item, collection, subcollection_type = _batch_collection(trans, incoming_val)
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
+    return _collection_batch_values(collection, subcollection_type)
+
+
+def _batch_collection(
+    trans: WorkRequestContext, incoming_val: dict[str, Any]
+) -> tuple[HistoryDatasetCollectionAssociation | DatasetCollectionElement, DatasetCollection, str | None]:
+    """Load the populated collection a batch value maps over, with its ``map_over_type``."""
+    decoded_id = trans.app.security.decode_id(incoming_val["id"])
+    item, collection = _load_batch_collection(trans.sa_session, incoming_val["src"], decoded_id)
     if not collection.populated_optimized:
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
-    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
+    return item, collection, incoming_val.get("map_over_type")
+
+
+def _load_batch_collection(
+    session: galaxy_scoped_session, src: str, item_id: int
+) -> tuple[HistoryDatasetCollectionAssociation | DatasetCollectionElement, DatasetCollection]:
+    """Load a batch's ``hdca``/``dce`` item and the collection it maps over."""
+    if src == "dce":
+        dce = session.get(DatasetCollectionElement, item_id)
+        if dce is None:
+            raise exceptions.ObjectNotFound("No dataset collection element found for batch input")
+        if not dce.child_collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {item_id} does not contain a child collection")
+        return dce, dce.child_collection
+    elif src == "hdca":
+        hdca = session.get(HistoryDatasetCollectionAssociation, item_id)
+        if hdca is None:
+            raise exceptions.ObjectNotFound("No dataset collection found for batch input")
+        return hdca, hdca.collection
+    raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+
+
+def _collection_batch_values(collection: DatasetCollection, subcollection_type: str | None) -> CollectionExpansionListT:
+    """What a batch over ``collection`` yields: its datasets, or its ``subcollection_type`` sub-collections."""
     if subcollection_type is not None:
         subcollection_elements: list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] = (
             subcollections._split_dataset_collection(collection, subcollection_type)
         )
         return subcollection_elements
-    else:
-        hdas: list[DatasetInstance] = []
-        for element in collection.dataset_elements:
-            hda = element.dataset_instance
-            hda.element_identifier = element.element_identifier
-            hdas.append(hda)
-        return hdas
+    hdas: list[DatasetInstance] = []
+    for element in collection.dataset_elements:
+        hda = element.dataset_instance
+        hda.element_identifier = element.element_identifier
+        hdas.append(hda)
+    return hdas
 
 
 def __expand_collection_parameter_async(
-    app, input_key, incoming_val, collections_to_match: "matching.CollectionsToMatch", linked=False
+    app,
+    input_key,
+    incoming_val: dict[str, Any],
+    collections_to_match: "matching.CollectionsToMatch",
+    linked=False,
 ) -> CollectionExpansionListT:
-    # If subcollection multirun of data_collection param - value will
-    # be "hdca_id|subcollection_type" else it will just be hdca_id
-    try:
-        src = incoming_val["src"]
-        if src not in ("hdca", "dce"):
-            raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
-        item_id = incoming_val["id"]
-        subcollection_type = incoming_val.get("map_over_type", None)
-    except TypeError:
-        item_id = incoming_val
-        src = "hdca"
-        subcollection_type = None
-    if src == "dce":
-        item = app.model.context.get(DatasetCollectionElement, item_id)
-        collection = item.child_collection
-        if not collection:
-            raise exceptions.ToolMetaParameterException(f"DCE {item_id} does not contain a child collection")
-    else:
-        item = app.model.context.get(HistoryDatasetCollectionAssociation, item_id)
-        collection = item.collection
+    subcollection_type = incoming_val.get("map_over_type")
+    item, collection = _load_batch_collection(app.model.context, incoming_val["src"], incoming_val["id"])
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
-    if subcollection_type is not None:
-        subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
-        return subcollection_elements
-    else:
-        hdas: list[DatasetInstance] = []
-        for element in collection.dataset_elements:
-            hda = element.dataset_instance
-            hda.element_identifier = element.element_identifier
-            hdas.append(hda)
-        return hdas
+    return _collection_batch_values(collection, subcollection_type)
 
 
 def __collection_multirun_parameter(value: dict[str, Any]) -> bool:
