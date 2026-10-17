@@ -162,4 +162,20 @@ describe("ToolInstallationRequestForm", () => {
         await flushPromises();
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
     });
+
+    it("announces a failure as an alert and the submitted request as a status", async () => {
+        mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Network error"));
+        const wrapper = await mountForm();
+        await fillRequiredFields(wrapper);
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(wrapper.find(".alert-danger").attributes("role")).toBe("alert");
+
+        await wrapper.find(".alert-danger button[aria-label='Close']").trigger("click");
+        expect(wrapper.find(".alert-danger").exists()).toBe(false);
+
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(wrapper.find(".alert-success").attributes("role")).toBe("status");
+    });
 });
