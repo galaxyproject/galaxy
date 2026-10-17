@@ -681,9 +681,10 @@ export class InputCollectionTerminal extends BaseInputTerminal {
             } else {
                 let reason = "Incompatible collection type(s) for attachment.";
                 if (this.collectionTypes.length == 1) {
+                    const inputCollectionType = this.collectionTypes[0]?.collectionType;
                     if (
                         otherCollectionType.collectionType?.endsWith("paired_or_unpaired") &&
-                        this.collectionTypes[0]?.collectionType?.endsWith("paired")
+                        (inputCollectionType == "paired" || inputCollectionType?.endsWith(":paired"))
                     ) {
                         reason =
                             "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.";

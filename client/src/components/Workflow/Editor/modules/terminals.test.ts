@@ -390,12 +390,14 @@ describe("canAccept", () => {
         const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputCollectionTerminal;
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe("Incompatible collection type(s) for attachment.");
     });
     it("rejects paired_or_unpaired -> list:paired_or_unpaired connection", () => {
         const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputCollectionTerminal;
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe("Incompatible collection type(s) for attachment.");
     });
     it("rejects paired_or_unpaired -> paired connection", () => {
         const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
