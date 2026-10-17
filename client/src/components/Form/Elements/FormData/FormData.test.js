@@ -610,4 +610,48 @@ describe("FormData batch hint", () => {
         expect(wrapper.find(".btn-group .active").attributes("title")).toBe("Dataset collection");
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
+
+    it("shows mapped over info for a nested collection mapped over a collection input", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired"],
+            value: { values: [{ id: "hdca7", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.emitted().input[0][0].batch).toBe(true);
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+        expect(wrapper.find("input[type='checkbox']").exists()).toBeFalsy();
+    });
+
+    it("toggles mapped over info when switching collection input selection", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired"],
+            value: { values: [{ id: "hdca8", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+        await wrapper.setProps({ value: { values: [{ id: "hdca7", src: "hdca" }] } });
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+        await wrapper.setProps({ value: { values: [{ id: "hdca8", src: "hdca" }] } });
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    it("shows mapped over info when any of multiple selected collections maps over", async () => {
+        const wrapper = createTarget({
+            multiple: true,
+            value: {
+                values: [
+                    { id: "hdca8", src: "hdca" },
+                    { id: "hdca7", src: "hdca" },
+                ],
+            },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".btn-group .active").attributes("title")).toBe("Dataset collection");
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+    });
 });

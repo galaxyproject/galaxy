@@ -178,6 +178,19 @@ const currentVariant = computed(() => {
 });
 
 /**
+ * Whether the selection is mapped over this input, e.g. a `list:paired` collection
+ * selected for a `paired` collection input runs one job per pair
+ */
+const selectionMapsOver = computed(() => !!currentValue.value?.some((v) => !!v.map_over_type));
+
+/**
+ * Show batch info whenever the selection is submitted as a batch
+ */
+const showBatchInfo = computed(
+    () => !!currentVariant.value && isBatchSelection(currentVariant.value.batch, currentValue.value ?? []),
+);
+
+/**
  * Converts and populates options for the shown select field
  */
 const formattedOptions = computed(() => {
@@ -959,9 +972,9 @@ const noOptionsWarningMessage = computed(() => {
         </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
-            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
+            <div v-if="showBatchInfo">
                 <BFormCheckbox
-                    v-if="currentVariant.batch === BATCH.ENABLED"
+                    v-if="currentVariant?.batch === BATCH.ENABLED"
                     v-model="currentLinked"
                     class="checkbox no-highlight"
                     switch>
@@ -978,7 +991,9 @@ const noOptionsWarningMessage = computed(() => {
                 </BFormCheckbox>
                 <div class="info text-info">
                     <FontAwesomeIcon :icon="faExclamation" />
-                    <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                    <span
+                        v-if="selectionMapsOver || (props.type == 'data' && currentVariant?.src == SOURCE.COLLECTION)"
+                        class="ml-1">
                         The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
                         tool.
                     </span>
