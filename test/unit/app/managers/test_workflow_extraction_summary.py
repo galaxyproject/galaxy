@@ -10,7 +10,10 @@ from typing import (
 )
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.workflow_extraction_summary import _backward_job_closure
+from galaxy.managers.workflow_extraction_summary import (
+    _backward_job_closure,
+    HistoryBoundary,
+)
 from galaxy.model import HistoryItem
 from galaxy.workflow.extract import original_content_ref
 
@@ -172,7 +175,7 @@ def _trans(contents, toolbox=None, jobs=(), icjs=()):
 
 def _closure(trans, refs, job_refs=(), icj_refs=(), local_keys=()):
     return _backward_job_closure(
-        trans, refs, list(job_refs), list(icj_refs), TARGET_HISTORY, local_keys=set(local_keys)
+        trans, refs, list(job_refs), list(icj_refs), HistoryBoundary(TARGET_HISTORY, frozenset(local_keys))
     )
 
 
