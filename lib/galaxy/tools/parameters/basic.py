@@ -26,6 +26,7 @@ from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
+from galaxy.exceptions import MalformedId
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
@@ -2634,7 +2635,7 @@ class DataToolParameter(BaseDataToolParameter):
         for value in incoming_value.get("values") or []:
             try:
                 resolved = util.listify(self.from_json(value, trans, other_values))
-            except ValueError:
+            except (ValueError, MalformedId):
                 continue
             for item in resolved:
                 if item not in selected:

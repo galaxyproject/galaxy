@@ -81,6 +81,25 @@ class TestDataToolParameter(BaseParameterTestCase):
         assert len(field["options"]["hda"]) == 1  # hda1 not an option, not visible or selected
         assert field["options"]["hda"][0]["name"] == "(hidden) hda2"
 
+    def test_field_display_every_batch_value(self):
+        hda1 = self._new_hda(name="hda1")
+        hda2 = self._new_hda(name="hda2")
+        hda1.visible = False
+        hda2.visible = False
+        self.stub_active_datasets(hda1, hda2)
+        # from_json resolves ids through trans, so it must share the test's app.
+        self.trans = galaxy_mock.MockTrans(app=self.app, history=self.test_history)
+        batch = {
+            "batch": True,
+            "values": [
+                {"src": "hda", "id": hda1.id},
+                {"src": "hda", "id": "notanencodedid!!"},
+                {"src": "hda", "id": hda2.id},
+            ],
+        }
+        field = self._simple_field(other_values={"data2": hda1}, incoming_value=batch)
+        assert sorted(o["name"] for o in field["options"]["hda"]) == ["(hidden) hda1", "(hidden) hda2"]
+
     def test_field_display_deleted_hdas_only_if_selected(self):
         hda1 = self._new_hda(name="hda1")
         hda2 = self._new_hda(name="hda2")
