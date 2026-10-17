@@ -18,9 +18,11 @@ from typing import (
 import pytest
 
 from galaxy.tool_util_models import UserToolSource
+from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_tool,
     summarize_instance_history_on_error,
     TOOL_WITH_SHELL_COMMAND,
@@ -1263,6 +1265,30 @@ test_data:
         (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
         assert input_step["label"] == "letters", input_step
 
+    @requires_new_library
+    @summarize_instance_history_on_error
+    def test_copies_of_job_less_dataset_list_one_input(self, history_id):
+        """A library import has no creating job; it and its in-history copy share one input card."""
+        library_dataset = LibraryPopulator(self.galaxy_interactor).new_library_dataset("extraction_job_less")
+        response = self._post(
+            f"histories/{history_id}/contents",
+            data={"content": library_dataset["id"], "source": "library", "type": "dataset"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        imported = response.json()
+        imported_copy = self._copy_hda_to_history(history_id, imported)
+        copy_ids = {imported["id"], imported_copy["id"]}
+        summary = self._get_extraction_summary(history_id)
+        (row,) = (r for r in summary["jobs"] if any(o["id"] in copy_ids for o in r["outputs"]))
+        assert row["step_type"] == "input_dataset", row
+        assert {o["id"] for o in row["outputs"]} == copy_ids, row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[imported["id"], imported_copy["id"]], dataset_names=["imported", "imported"]
+        )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
+        assert input_step["label"] == "imported", input_step
+
     @summarize_instance_history_on_error
     def test_extract_copies_of_one_input_with_different_names_rejected(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, content="1 2 3\n", wait=True)
@@ -1275,7 +1301,10 @@ test_data:
             }
         )
         self._assert_status_code_is(response, 400)
-        assert "copies of one" in response.json()["err_msg"], response.json()
+        assert (
+            response.json()["err_msg"]
+            == "hda_ids includes copies of one dataset with different dataset_names: 'numbers' and 'digits'"
+        ), response.json()
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
