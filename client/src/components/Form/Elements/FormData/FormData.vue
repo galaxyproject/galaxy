@@ -29,7 +29,7 @@ import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption } from "./types";
-import { BATCH, SOURCE, VARIANTS } from "./variants";
+import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
 import FormDataContextButtons from "./FormDataContextButtons.vue";
@@ -290,7 +290,6 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
         values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
 
         if (variant.value && values.length > 0 && values[0]) {
-            const hasMapOverType = values.find((v) => !!v.map_over_type);
             const isMultiple = values.length > 1;
 
             // Determine source representation (uses only the initial value)
@@ -317,7 +316,7 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
             }
             // Emit new value
             return {
-                batch: batch !== BATCH.DISABLED || !!hasMapOverType,
+                batch: isBatchSelection(batch, values),
                 product: batch === BATCH.ENABLED && !currentLinked.value,
                 values: values.map((entry) => ({
                     id: entry.id,
