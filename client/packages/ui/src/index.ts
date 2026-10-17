@@ -58,6 +58,7 @@ export { default as GTip } from "./components/GTip.vue";
 export { default as GToast } from "./components/GToast.vue";
 export { default as GTooltip } from "./components/GTooltip.vue";
 export { type CustomIconDefinition, type IconLike } from "./components/iconTypes";
+export { liveRegionKey } from "./components/liveRegionContext";
 export { useAccessibleHover } from "./composables/accessibleHover";
 export { type ClickableProps, useClickableElement } from "./composables/clickableElement";
 export { type HasTitleProps, useCurrentTitle } from "./composables/currentTitle";
