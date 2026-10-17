@@ -2360,6 +2360,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflow_extract._.wait_for_visible()
         self.components.workflow_extract.loading.wait_for_absent(wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
+    def extract_workflow_wait_for_output_previews(self):
+        """Wait for the cards' history item previews, which load after the form, to finish loading."""
+        self.components.workflow_extract.output_preview.wait_for_present()
+        self.components.workflow_extract.output_preview_loading.wait_for_absent()
+
     def extract_workflow_set_name(self, name: str):
         """Set the workflow name in the extraction form."""
         self.components.workflow_extract.workflow_name_input.wait_for_and_clear_and_send_keys(name)
