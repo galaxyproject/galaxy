@@ -4,12 +4,14 @@ import logging
 from collections import deque
 from collections.abc import (
     Iterable,
+    Mapping,
     MutableSequence,
 )
 from dataclasses import (
     dataclass,
     field,
 )
+from types import MappingProxyType
 from typing import (
     cast,
     Literal,
@@ -69,16 +71,21 @@ SEED_AS_INPUT_WARNING = (
 
 @dataclass(frozen=True)
 class HistoryBoundary:
-    """A notebook history and the original-id refs of its contents, which decide what counts as produced here."""
+    """A notebook history and its contents keyed by original-id ref, which decide what counts as produced here."""
 
     history_id: int
-    local_keys: frozenset[ContentRef]
+    local_copies: Mapping[ContentRef, HistoryItem]
 
     @classmethod
     def of(cls, history: History) -> "HistoryBoundary":
         """Keys every content, including the hidden collection elements and non-ready
-        datasets the extraction summary leaves out."""
-        return cls(history.id, frozenset(original_content_ref(content) for content in history.all_contents))
+        datasets the extraction summary leaves out; an undeleted copy is preferred."""
+        local_copies: dict[ContentRef, HistoryItem] = {}
+        for content in history.all_contents:
+            ref = original_content_ref(content)
+            if ref not in local_copies or (local_copies[ref].deleted and not content.deleted):
+                local_copies[ref] = content
+        return cls(history.id, MappingProxyType(local_copies))
 
     def produced_elsewhere(self, job: Job) -> bool:
         """Whether ``job`` ran in another history and its inputs were not all copied here.
@@ -89,7 +96,7 @@ class HistoryBoundary:
         if job.history_id == self.history_id:
             return False
         input_keys = {original_content_ref(content) for content in _job_input_contents(job)}
-        return not input_keys or not input_keys <= self.local_keys
+        return not input_keys or not input_keys <= self.local_copies.keys()
 
 
 @dataclass
@@ -451,12 +458,18 @@ def _synthesize_boundary_inputs(
     represented_keys: set[ContentRef],
     closure: ClosureResult,
 ) -> list[WorkflowExtractionJob]:
-    """Seeded input rows for boundary inputs not already in ``represented_keys`` (both original-id refs)."""
+    """Seeded input rows for boundary inputs not already in ``represented_keys`` (both original-id refs).
+
+    A row lists the history's own copy when there is one: the original may sit in a history
+    the user can no longer access.
+    """
     synthesized: list[WorkflowExtractionJob] = []
     for ref in sorted(closure.boundary_input_refs):
         if ref in represented_keys:
             continue
-        content = resolve_content(trans, ref)
+        content = closure.boundary.local_copies.get(ref)
+        if content is None:
+            content = resolve_content(trans, ref)
         if content is None:
             continue
         seed_warning = SEED_AS_INPUT_WARNING if ref in closure.seed_warning_refs else None
