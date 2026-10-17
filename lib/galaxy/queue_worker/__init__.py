@@ -407,8 +407,9 @@ def reload_tool_source_cache(app, **kwargs):
     """
     Reload the tool source cache/index.
 
-    This is typically triggered by an external process (like populate_store.py --watch)
-    when tool files change on disk.
+    Sent after a populate, shed install or tool removal writes a store, from
+    this Galaxy or from an external ``populate_store.py --watch``. Read-only
+    SQLite stores are re-read only when their database file changed.
     """
     log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
 

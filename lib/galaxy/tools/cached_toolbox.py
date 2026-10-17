@@ -1459,16 +1459,6 @@ class CachedToolBox(ToolBox):
         # tool right after the install's own broadcast).
         with self.app._toolbox_lock:
             try:
-                # Read-only members are published externally (CVMFS); a
-                # descriptor opened before the publish keeps serving the old
-                # snapshot forever, so dropping pooled connections — not just
-                # the cached index — is what makes the re-read below actually
-                # see the new file. Writable stores were updated through this
-                # process group's own connections and only need the cache drop.
-                if isinstance(self._store, CompositeToolSourceStore):
-                    for _name, member in self._store.members:
-                        if member.read_only:
-                            member.dispose()
                 self._store.invalidate_index_cache()
             except Exception as e:
                 log.debug(f"Store invalidate_index_cache raised: {e}")
