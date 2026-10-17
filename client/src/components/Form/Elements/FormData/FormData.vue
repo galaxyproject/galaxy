@@ -11,7 +11,6 @@ import {
     isCollectionElement,
     isDatasetElement,
     isDCE,
-    isHDCA,
     isHistoryItem,
     type SampleSheetColumnDefinition,
 } from "@/api";
@@ -252,9 +251,11 @@ const formattedOptions = computed(() => {
                 otherOptions.forEach((option) => {
                     const keepKey = `${option.id}_${option.src}`;
                     const sourceLabel = getSourceLabel(getSourceType(option));
+                    // the server lists a selected element without the map-over type it was dropped with
+                    const mapOverType = option.map_over_type || keepOptions[keepKey]?.value?.map_over_type;
                     const newOption = {
                         label: `${option.name} (as ${sourceLabel})`,
-                        value: option || null,
+                        value: mapOverType ? { ...option, map_over_type: mapOverType } : option,
                     };
                     keepOptions[keepKey] = newOption;
                 });
@@ -479,7 +480,7 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
 }
 
 function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
-    const { newSrc, datasetCollectionDataset } = getElementAttributes(item);
+    const { newSrc, datasetCollectionDataset, collectionType } = getElementAttributes(item);
 
     // for name, somehow even though schema says otherwise, DCESummary can return a name
     const newName = "name" in item && typeof item.name === "string" ? item.name : null;
@@ -502,8 +503,8 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
         keep: true,
         tags: [],
     };
-    if (isHistoryItem(v) && isHDCA(v) && props.collectionTypes?.length > 0) {
-        const match = matchCollectionType(v.collection_type, props.collectionTypes);
+    if (collectionType && props.collectionTypes?.length > 0) {
+        const match = matchCollectionType(collectionType, props.collectionTypes);
         if (!match) {
             return null;
         }

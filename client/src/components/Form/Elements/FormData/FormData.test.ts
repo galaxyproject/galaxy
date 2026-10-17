@@ -517,6 +517,8 @@ describe("FormData", () => {
         it.each([
             ["list", ["list"], null],
             ["list:list", ["list", "list:list"], null],
+            ["list:list", ["list"], "list"],
+            ["list", ["paired_or_unpaired"], "single_datasets"],
         ])(
             "uses a dropped element holding a %s on a %j input with map_over_type %s",
             async (collectionType, collectionTypes, mapOverType) => {
@@ -536,6 +538,30 @@ describe("FormData", () => {
             const value = await dropOnCollectionInput(collectionTypes, droppedCollectionElement(collectionType));
             expect(value).toEqual({
                 alert: expect.stringContaining("dataset collection is not a valid input for"),
+            });
+        });
+
+        it("keeps a dropped element mapped over after the form refreshes its options", async () => {
+            const wrapper = createTarget({
+                value: null,
+                options: { hdca: [] },
+                type: "data_collection",
+                collectionTypes: ["list"],
+            });
+            await wrapper.vm.$nextTick();
+            eventStore.setDragData(droppedCollectionElement("list:list"));
+            dispatchEvent(wrapper, "dragenter");
+            dispatchEvent(wrapper, "drop");
+            const dropped = wrapper.emitted().input!.at(-1)![0];
+            // the server lists the selected element without its map-over type
+            await wrapper.setProps({
+                value: dropped,
+                options: { hdca: [], dce: [{ id: "dropped", hid: -1, name: "inner", src: "dce", tags: [] }] },
+            });
+            expect(wrapper.emitted().input!.at(-1)![0]).toEqual({
+                batch: true,
+                product: false,
+                values: [{ id: "dropped", map_over_type: "list", src: "dce" }],
             });
         });
 
