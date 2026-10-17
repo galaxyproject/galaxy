@@ -411,7 +411,7 @@ steps:
 
 
 class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesApiTestCase):
-    """GET /api/pages/{id}/workflow_extraction_summary — seeded from referenced outputs."""
+    """GET /api/pages/{id}/extraction_summary — seeded from referenced outputs."""
 
     dataset_populator: DatasetPopulator
     dataset_collection_populator: DatasetCollectionPopulator
@@ -421,7 +421,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def _extraction_summary(self, page_id: str) -> dict:
-        response = self._get(f"pages/{page_id}/workflow_extraction_summary")
+        response = self._get(f"pages/{page_id}/extraction_summary")
         self._assert_status_code_is(response, 200)
         return response.json()
 
@@ -969,7 +969,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
     def test_400_on_page_without_history(self):
         page = self.dataset_populator.new_page(slug="extraction-no-history")
-        response = self._get(f"pages/{page['id']}/workflow_extraction_summary")
+        response = self._get(f"pages/{page['id']}/extraction_summary")
         self._assert_status_code_is(response, 400)
 
     @skip_without_tool("cat1")
@@ -981,5 +981,5 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             self._put(f"pages/{page['id']}/publish", json=True)
             with self._different_user():
                 # ...but without history access the full-history summary must not leak.
-                response = self._get(f"pages/{page['id']}/workflow_extraction_summary")
+                response = self._get(f"pages/{page['id']}/extraction_summary")
                 self._assert_status_code_is(response, 403)
