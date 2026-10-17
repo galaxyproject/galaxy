@@ -818,7 +818,7 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
     @skip_without_tool("cat1")
     def test_twice_copied_output_seeds_one_input(self):
-        """Extraction wires every copy of one original to the same input, so only one copy is seeded."""
+        """Extraction wires every copy of one original to the same input, so the copies share one seeded row."""
         source_history_id = self.dataset_populator.new_history()
         source_output_id, _ = self._cat1_history(source_history_id)
         with self.dataset_populator.test_history() as history_id:
@@ -833,9 +833,9 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
 
             summary = self._extraction_summary(page["id"])
 
-            rows = [self._row_with_output_id(summary, copied["id"]) for copied in (copy_a, copy_b)]
-            assert all(row is not None and row["step_type"] == "input_dataset" for row in rows), summary["jobs"]
-            assert sorted(row["seeded"] for row in rows) == [False, True], rows
+            (row,) = (r for r in summary["jobs"] if any(o["id"] in (copy_a["id"], copy_b["id"]) for o in r["outputs"]))
+            assert row["step_type"] == "input_dataset" and row["seeded"] is True, row
+            assert sorted(o["id"] for o in row["outputs"]) == sorted([copy_a["id"], copy_b["id"]]), row
             steps = self._extract_seeded_steps(summary)
             (input_step,) = (s for s in steps if s["type"] == "data_input")
             (cat1_step,) = (s for s in steps if s["type"] == "tool")

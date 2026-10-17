@@ -13,6 +13,7 @@ from dataclasses import (
 from typing import (
     cast,
     Literal,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
@@ -49,6 +50,9 @@ from galaxy.workflow.extract import (
     summarize,
     tool_for_job,
 )
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
@@ -369,27 +373,15 @@ def _report_referenced_outputs(datasets: SummaryDatasets, referenced: set[Conten
     return set(chosen.values())
 
 
-def _extraction_row(
+def _tool_row(
     trans: ProvidesHistoryContext,
-    job: SummaryJob,
+    job: Job,
+    tool: "Tool | None",
     datasets: SummaryDatasets,
     icj_assoc_by_job_id: dict[int, ImplicitCollectionJobsJobAssociation],
     closure: ClosureResult | None,
 ) -> WorkflowExtractionJob:
-    input_seeded, seed_warning = _input_seeding(datasets, closure)
-
-    if not isinstance(job, Job):
-        # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
-        return _input_extraction_row(
-            trans,
-            datasets,
-            seeded=input_seeded,
-            tool_name=getattr(job, "name", None),
-            seed_warning=seed_warning,
-        )
-
-    tool = tool_for_job(trans, job)
-
+    """A workflow step row, or an invalid one when ``tool`` is missing or inaccessible."""
     referenced = _report_referenced_outputs(datasets, closure.referenced_output_refs if closure else set())
     tool_outputs = [
         _serialize_output(
@@ -421,12 +413,6 @@ def _extraction_row(
             tool_version_warning=None,
             outputs=tool_outputs,
             invalid=invalid_reason,
-        )
-
-    if not tool.is_workflow_compatible:
-        # Not a workflow step (e.g. upload, data fetch) — treat as input.
-        return _input_extraction_row(
-            trans, datasets, seeded=input_seeded, tool_name=tool.name, seed_warning=seed_warning
         )
 
     tool_version_warning = (
@@ -480,31 +466,19 @@ def _synthesize_boundary_inputs(
     return synthesized
 
 
-def _boundary_producer_rows(
-    trans: ProvidesHistoryContext,
-    job: Job,
-    datasets: SummaryDatasets,
-    closure: ClosureResult,
-    seeded_copies: set[ContentRef],
-) -> list[tuple[WorkflowExtractionJob, SummaryDatasets]]:
-    """One input row per output a cross-history producer left here.
-
-    Extraction wires all copies of one original to a single input, so only the first copy
-    (tracked in ``seeded_copies`` across producers) is seeded.
-    """
-    tool = tool_for_job(trans, job)
-    rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
-    for item in datasets:
-        seeded, seed_warning = _input_seeding([item], closure)
-        ref = original_content_ref(item[1])
-        seeded = seeded and ref not in seeded_copies
-        if seeded:
-            seeded_copies.add(ref)
-        row = _input_extraction_row(
-            trans, [item], seeded=seeded, tool_name=tool.name if tool else None, seed_warning=seed_warning
-        )
-        rows.append((row, [item]))
-    return rows
+def _input_producer_name(
+    job: SummaryJob, tool: "Tool | None", closure: ClosureResult | None
+) -> tuple[bool, str | None]:
+    """Whether ``job``'s outputs here are workflow inputs rather than step outputs, and the
+    producer name their input row shows: a FakeJob/DatasetCollectionCreationJob, a tool that is
+    not workflow-compatible (upload, data fetch), or a producer in another history."""
+    if not isinstance(job, Job):
+        return True, getattr(job, "name", None)
+    if closure is not None and closure.boundary.produced_elsewhere(job):
+        return True, tool.name if tool else None
+    if tool is not None and not tool.is_workflow_compatible:
+        return True, tool.name
+    return False, None
 
 
 def _summary_rows(
@@ -512,15 +486,37 @@ def _summary_rows(
     jobs: dict[SummaryJob, SummaryDatasets],
     closure: ClosureResult | None,
 ) -> list[tuple[WorkflowExtractionJob, SummaryDatasets]]:
-    """One row per summary job (per output for a cross-history producer), paired with the datasets it holds."""
+    """One row per step job, and one input row per original that non-step jobs left here,
+    listing its in-history copies: extraction makes all copies of one original a single input.
+    Each row is paired with the datasets it holds."""
     icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
-    rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
-    seeded_copies: set[ContentRef] = set()
+    # Input rows are filled in once all their copies are known; None marks their place.
+    pending: list[tuple[WorkflowExtractionJob | None, SummaryDatasets, str | None]] = []
+    inputs: dict[ContentRef, SummaryDatasets] = {}
     for job, datasets in jobs.items():
-        if closure is not None and isinstance(job, Job) and closure.boundary.produced_elsewhere(job):
-            rows.extend(_boundary_producer_rows(trans, job, datasets, closure, seeded_copies))
-        else:
-            rows.append((_extraction_row(trans, job, datasets, icj_assoc_by_job_id, closure), datasets))
+        tool = tool_for_job(trans, job) if isinstance(job, Job) else None
+        is_input, producer_name = _input_producer_name(job, tool, closure)
+        if not is_input:
+            pending.append(
+                (_tool_row(trans, cast(Job, job), tool, datasets, icj_assoc_by_job_id, closure), datasets, None)
+            )
+            continue
+        for item in datasets:
+            ref = original_content_ref(item[1])
+            copies = inputs.get(ref)
+            if copies is None:
+                copies = inputs[ref] = []
+                pending.append((None, copies, producer_name))
+            if all(data.id != item[1].id for _, data in copies):
+                copies.append(item)
+    rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
+    for row, datasets, producer_name in pending:
+        if row is None:
+            seeded, seed_warning = _input_seeding(datasets, closure)
+            row = _input_extraction_row(
+                trans, datasets, seeded=seeded, tool_name=producer_name, seed_warning=seed_warning
+            )
+        rows.append((row, datasets))
     return rows
 
 
