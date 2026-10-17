@@ -23,9 +23,9 @@
         <BRow>
             <BCol class="col-sm-4">
                 <BFormGroup>
-                    <BFormCheckbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
+                    <GCheckbox id="show-all-running" v-model="showAllRunning" switch size="large" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
-                    </BFormCheckbox>
+                    </GCheckbox>
                 </BFormGroup>
                 <BForm name="jobs" @submit.prevent="onRefresh">
                     <BFormGroup
@@ -114,9 +114,9 @@
                 </BFormGroup>
                 <BFormGroup
                     description="Only one notification will be sent for each user containing the reason and the list of affected jobs.">
-                    <BFormCheckbox id="send-notification" v-model="sendNotification" switch>
+                    <GCheckbox id="send-notification" v-model="sendNotification" switch>
                         Send a warning notification to users
-                    </BFormCheckbox>
+                    </GCheckbox>
                 </BFormGroup>
             </BForm>
         </transition>
@@ -133,14 +133,19 @@
             @handler-clicked="(handler) => appendTagFilter('handler', handler)"
             @user-clicked="(user) => appendTagFilter('user', user)">
             <template v-slot:head(selected)>
-                <BFormCheckbox v-model="allSelected" :indeterminate="indeterminate" @change="toggleAll"></BFormCheckbox>
+                <GCheckbox
+                    :model-value="allSelected"
+                    aria-label="Select all jobs"
+                    :disabled="!unfinishedJobs.length"
+                    :indeterminate="indeterminate"
+                    @update:model-value="toggleAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <BFormCheckbox
-                    :key="data.index"
-                    v-model="selectedStopJobIds"
-                    :checked="allSelected"
-                    :value="data.item['id']"></BFormCheckbox>
+                <GCheckbox
+                    :aria-label="`Select job ${data.item.id}`"
+                    :model-value="selectedStopJobIds.includes(data.item.id)"
+                    @click.stop
+                    @update:model-value="(checked) => setJobSelected(data.item.id, checked)" />
             </template>
         </JobsTable>
 
@@ -163,17 +168,7 @@
 </template>
 
 <script>
-import {
-    BButton,
-    BCol,
-    BForm,
-    BFormCheckbox,
-    BFormGroup,
-    BFormInput,
-    BInputGroup,
-    BInputGroupAppend,
-    BRow,
-} from "bootstrap-vue";
+import { BButton, BCol, BForm, BFormGroup, BFormInput, BInputGroup, BInputGroupAppend, BRow } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -188,6 +183,7 @@ import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock.vue";
 import JobsTable from "@/components/admin/JobsTable.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 
@@ -196,13 +192,13 @@ export default {
         BButton,
         BCol,
         BForm,
-        BFormCheckbox,
         BFormGroup,
         BFormInput,
         BInputGroup,
         BInputGroupAppend,
         BRow,
         GAlert,
+        GCheckbox,
         FilterMenu,
         JobLock,
         JobsTable,
@@ -251,8 +247,6 @@ export default {
             ],
             selectedStopJobIds: [],
             selectedJobId: null,
-            allSelected: false,
-            indeterminate: false,
             stopMessage: "",
             message: "",
             status: "info",
@@ -265,6 +259,12 @@ export default {
         };
     },
     computed: {
+        allSelected() {
+            return this.unfinishedJobs.length > 0 && this.selectedStopJobIds.length === this.unfinishedJobs.length;
+        },
+        indeterminate() {
+            return this.selectedStopJobIds.length > 0 && !this.allSelected;
+        },
         finishedTableCaption() {
             return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
         },
@@ -294,18 +294,6 @@ export default {
         },
         cutoffMin(newVal) {
             this.update();
-        },
-        selectedStopJobIds(newVal) {
-            if (newVal.length === 0) {
-                this.indeterminate = false;
-                this.allSelected = false;
-            } else if (newVal.length === this.unfinishedJobs.length) {
-                this.indeterminate = false;
-                this.allSelected = true;
-            } else {
-                this.indeterminate = true;
-                this.allSelected = false;
-            }
         },
         jobs(newVal) {
             const unfinishedJobs = [];
@@ -425,6 +413,11 @@ export default {
             this.update();
             this.selectedStopJobIds = [];
             this.stopMessage = "";
+        },
+        setJobSelected(jobId, checked) {
+            this.selectedStopJobIds = checked
+                ? [...this.selectedStopJobIds, jobId]
+                : this.selectedStopJobIds.filter((id) => id !== jobId);
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.unfinishedJobs.map((job) => job.id) : [];

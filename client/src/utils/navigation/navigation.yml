@@ -1429,9 +1429,7 @@ admin:
   manage_jobs:
     selectors:
       job_lock: '#prevent-job-dispatching'
-      job_lock_label:
-        type: xpath
-        selector: "//label[@for='prevent-job-dispatching']/strong"
+      job_lock_label: '[data-test-id="prevent-job-dispatching-label"] strong'
       cutoff: '#cutoff'
       table: '.jobs-table'
       filter_link_user: '.job-filter-link-user'
