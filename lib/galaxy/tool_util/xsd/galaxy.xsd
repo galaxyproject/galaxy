@@ -825,7 +825,7 @@ machine that is executing the job. Additionally, users could supply characters t
 In modern versions of the ``aws`` interface credentials can only be supplied via a file.
 
 In the postgres example we deliberately used environment variables that are picked up automatically by ``psql``,
-i.e. we do not need to set it on the command line (which would expose them on the process list). 
+i.e. we do not need to set it on the command line (which would expose them on the process list).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -8546,7 +8546,8 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:](list|paired|paired_or_unpaired|record))*"/>
+      <!-- sample_sheet must precede the open-ended alternative; libxml2 otherwise accepts e.g. sample_sheet:list -->
+      <xs:pattern value="sample_sheet(:(paired|paired_or_unpaired|record))?|(list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="CollectionTypeList">
@@ -8554,7 +8555,8 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:,](list|paired|paired_or_unpaired|record))*"/>
+      <!-- sample_sheet must precede the open-ended alternative; libxml2 otherwise accepts e.g. sample_sheet:list -->
+      <xs:pattern value="(sample_sheet(:(paired|paired_or_unpaired|record))?|(list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*)(,(sample_sheet(:(paired|paired_or_unpaired|record))?|(list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="InputsConfigfileDatastyleType">

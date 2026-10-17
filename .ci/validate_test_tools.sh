@@ -16,4 +16,12 @@ for tool_file in "$test_tools_path"/*.xml; do
         *) set -- "$@" "$tool_file" ;;
     esac
 done
+# also test core tools, except those implemented by an internal <type class="..."/>
+# which the XSD does not describe
+for tool_file in lib/galaxy/tools/*.xml; do
+    case "$tool_file" in
+        *_macros.xml) ;;
+        *) grep -q '<type class=' "$tool_file" || set -- "$@" "$tool_file" ;;
+    esac
+done
 sh scripts/validate_tools.sh "$@"
