@@ -167,6 +167,11 @@ const selectedJobBuckets = computed<{ job_ids: string[]; implicit_collection_job
     return { job_ids, implicit_collection_jobs_ids: icj_ids };
 });
 
+/** Checked input cards; a card lists an input and its in-history copies, which become one input step. */
+const selectedInputSteps = computed<InputStep[]>(() =>
+    (jobsList.value ?? []).filter((job): job is InputStep => job.checked && isInputStep(job) && job.outputs.length > 0),
+);
+
 /**
  * A parallel mapping for `checked` input step type encoded ids and their `newNames`.
  */
@@ -176,20 +181,15 @@ const selectedInputs = computed<
         newName: string;
         history_content_type: "dataset" | "dataset_collection";
     }[]
->(() => {
-    if (!jobsList.value?.length) {
-        return [];
-    }
-    return jobsList.value
-        .filter((job): job is InputStep => job.checked && isInputStep(job) && job.outputs.length > 0)
-        .flatMap((job) =>
-            job.outputs.map((output) => ({
-                id: output.id,
-                newName: job.newName,
-                history_content_type: output.history_content_type,
-            })),
-        );
-});
+>(() =>
+    selectedInputSteps.value.flatMap((job) =>
+        job.outputs.map((output) => ({
+            id: output.id,
+            newName: job.newName,
+            history_content_type: output.history_content_type,
+        })),
+    ),
+);
 
 const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
     if (!jobsList.value?.length) {
@@ -273,10 +273,11 @@ const hasDuplicateOutputLabels = computed(() => {
 });
 
 /** Step labels share one namespace with input names. Compared as submitted (step labels
- *  trimmed, input names as-is, no whitespace collapse) to match the backend's exact check. */
+ *  trimmed, input names as-is, no whitespace collapse) as the backend does. One name per
+ *  input card: the backend counts copies of one original once. */
 const hasDuplicateStepLabels = computed(() => {
     const stepLabels = selectedStepLabels.value.map((hint) => hint.label);
-    const inputNames = selectedInputs.value.map((input) => input.newName);
+    const inputNames = selectedInputSteps.value.map((job) => job.newName);
     return hasDuplicates([...stepLabels, ...inputNames]);
 });
 
