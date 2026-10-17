@@ -179,11 +179,27 @@ def test_editor_drops_hidden_validators_when_parameter_type_changes():
         [MIN_RANGE, {"type": "in_range", "min": 5, "max": 1}],
         [{"type": "in_range", "min": "one"}],
         [{"type": "not_a_validator"}],
+        [{"type": "length", "min": 5, "max": 1}],
     ],
 )
 def test_invalid_validators_rejected_at_import(validators):
     with pytest.raises(RequestParameterInvalidException, match="p"):
         import_input("integer", validators)
+
+
+def test_import_error_names_the_problem():
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        import_input("integer", [{"type": "in_range", "min": 5, "max": 1}])
+    assert (
+        str(exc_info.value)
+        == "Invalid validator on workflow parameter input 'p': min must be less than or equal to max"
+    )
+
+
+def test_validator_spelling_out_defaults_is_shown_in_the_form():
+    step = import_input("text", [{**REGEX, "implicit": False}])
+    resaved = editor_resave(step, drop_prefix="parameter_definition|validators_")
+    assert resaved.tool_inputs["validators"] == []
 
 
 def test_unsafe_hidden_validator_rejected_at_save():

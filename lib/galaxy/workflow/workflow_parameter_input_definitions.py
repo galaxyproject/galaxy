@@ -7,7 +7,10 @@ from typing import (
     Union,
 )
 
+from pydantic import ValidationError
+
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tool_util_models.parameter_validators import DiscriminatedAnyValidatorModel
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     ColorToolParameter,
@@ -136,23 +139,27 @@ def validators_from_form(parameter_definition: dict[str, Any]) -> list[dict[str,
     return validators
 
 
-def _validator_keys(validator: dict[str, Any]) -> set[str]:
-    return {key for key, value in validator.items() if value is not None}
+def _non_default_keys(validator: dict[str, Any]) -> set[str] | None:
+    """Keys of ``validator`` set to something other than its model's default; None if it does not parse."""
+    try:
+        model_fields = type(DiscriminatedAnyValidatorModel.validate_python(validator)).model_fields
+    except ValidationError:
+        return None
+    return {
+        key
+        for key, value in validator.items()
+        if value is not None and (key not in model_fields or value != model_fields[key].default)
+    }
 
 
 def _is_form_regex(validator: dict[str, Any]) -> bool:
-    return (
-        validator.get("type") == "regex"
-        and _validator_keys(validator) <= {"type", "expression", "message", "negate"}
-    )
+    keys = _non_default_keys(validator) if validator.get("type") == "regex" else None
+    return keys is not None and keys <= {"expression", "message", "negate"}
 
 
 def _is_form_range(validator: dict[str, Any]) -> bool:
-    return (
-        validator.get("type") == "in_range"
-        and not any(validator.get(key) for key in ("negate", "exclude_min", "exclude_max"))
-        and _validator_keys(validator) <= {"type", "min", "max", "negate", "exclude_min", "exclude_max"}
-    )
+    keys = _non_default_keys(validator) if validator.get("type") == "in_range" else None
+    return keys is not None and keys <= {"min", "max"}
 
 
 def _load_extra_validators(value: str | None) -> list[dict[str, Any]]:
