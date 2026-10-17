@@ -2019,6 +2019,20 @@ class NavigatesGalaxy(HasDriver):
     def tool_form_execute(self):
         self.components.tool_form.execute.wait_for_and_click()
 
+    def tool_form_select_data(self, parameter: str, value: str, multiple: bool = False):
+        select_field = self.components.tool_form.parameter_data_select(parameter=parameter)
+        self.select_set_value(select_field, value, multiple=multiple)
+        self.components.tool_form.parameter_data_select_dropdown(parameter=parameter).wait_for_absent_or_hidden()
+
+    def tool_form_wait_for_batch_info(self, parameter: str, text: str) -> str:
+        batch_info = self.components.tool_form.parameter_batch_info(parameter=parameter)
+        self._wait_on(
+            ec.text_to_be_present_in_element(batch_info.element_locator, text),
+            f"batch info of parameter [{parameter}] to contain [{text}]",
+        )
+        # the inline help link can render on its own line, collapse whitespace
+        return " ".join(batch_info.wait_for_text().split())
+
     def click_activity_workflow(self):
         self.components.workflows.activity.wait_for_and_click()
 
