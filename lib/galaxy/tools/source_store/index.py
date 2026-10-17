@@ -9,6 +9,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    model_validator,
     PrivateAttr,
 )
 
@@ -122,7 +123,8 @@ class ToolIndex(BaseModel):
     """In-memory metadata index for batch tool APIs."""
 
     entries: dict[str, ToolIndexEntry] = Field(default_factory=dict)
-    # Every indexed version; ``entries`` stores the default per id.
+    # Every indexed version; ``entries`` stores the default per id. Both maps
+    # hold the same default entry object.
     entries_by_version: dict[str, dict[str, ToolIndexEntry]] = Field(default_factory=dict)
     by_section: dict[str, list[str]] = Field(default_factory=dict)
     # Configuration-order placements, including repeated tool ids.
@@ -136,6 +138,18 @@ class ToolIndex(BaseModel):
     _requirements_cache: list[dict[str, Any]] | None = PrivateAttr(default=None)
     _tests_summary_cache: dict[str, dict[str, dict]] | None = PrivateAttr(default=None)
     _panel_item_by_key: dict[tuple[str, str | None], "ToolPanelItem"] | None = PrivateAttr(default=None)
+
+    @model_validator(mode="after")
+    def _share_default_entries_by_version(self) -> "ToolIndex":
+        """Put the ``entries`` object in its version slot when that slot holds an equal copy."""
+        for tool_id, default in self.entries.items():
+            versions = self.entries_by_version.get(tool_id)
+            if versions is None:
+                continue
+            version = default.version or ""
+            if versions.get(version) == default:
+                versions[version] = default
+        return self
 
     def invalidate_caches(self) -> None:
         """Invalidate all cached computations."""

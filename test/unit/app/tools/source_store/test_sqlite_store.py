@@ -79,6 +79,23 @@ def test_index_round_trip(sqlite_path):
     assert loaded.entries["t1"].name == "T1"
 
 
+def test_load_index_shares_default_entry_with_version_map(sqlite_path):
+    index = ToolIndex()
+    index.add_entry(ToolIndexEntry(id="solo", version="1.0", name="Solo"))
+    index.add_entry(ToolIndexEntry(id="multi", version="0.1", name="Old"))
+    index.add_entry(ToolIndexEntry(id="multi", version="0.2", name="New"))
+    SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).store_index(index)
+
+    loaded = SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).load_index()
+
+    assert loaded is not None
+    assert loaded.entries_by_version["solo"]["1.0"] is loaded.entries["solo"]
+    assert loaded.entries_by_version["multi"]["0.2"] is loaded.entries["multi"]
+    old = loaded.get("multi", tool_version="0.1")
+    assert old is not None and old is not loaded.entries["multi"]
+    assert old.version == "0.1" and old.name == "Old"
+
+
 def test_load_index_discards_stale_schema(sqlite_path, monkeypatch):
     store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
     store.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
