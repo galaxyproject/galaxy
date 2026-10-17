@@ -2,6 +2,7 @@ import json
 from typing import (
     Any,
     Literal,
+    NamedTuple,
     Optional,
     TypedDict,
     Union,
@@ -10,6 +11,7 @@ from typing import (
 from pydantic import ValidationError
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tool_util.parser.parameter_validators import parse_dict_validators
 from galaxy.tool_util_models.parameter_validators import DiscriminatedAnyValidatorModel
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
@@ -19,6 +21,7 @@ from galaxy.tools.parameters.basic import (
     IntegerToolParameter,
     TextToolParameter,
 )
+from galaxy.tools.parameters.validation import to_validators
 
 INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
 default_source_type = dict[str, Union[int, float, bool, str]]
@@ -88,9 +91,18 @@ def get_default_parameter(param_type: INPUT_PARAMETER_TYPES, bounds: Optional[Nu
     return input_default_value
 
 
-# Parameter types whose editor form has regex rows or a min/max pair.
-FORM_REGEX_PARAMETER_TYPES = ("text", "directory_uri")
-FORM_RANGE_PARAMETER_TYPES = ("integer", "float")
+class _FormValidatorShape(NamedTuple):
+    validator_type: str
+    fields: set[str]
+
+
+# Validators the editor form shows as fields, by parameter type: regex rows or a min/max pair.
+FORM_VALIDATOR_SHAPES = {
+    "text": _FormValidatorShape("regex", {"expression", "message", "negate"}),
+    "directory_uri": _FormValidatorShape("regex", {"expression", "message", "negate"}),
+    "integer": _FormValidatorShape("in_range", {"min", "max"}),
+    "float": _FormValidatorShape("in_range", {"min", "max"}),
+}
 
 
 def validators_to_form(parameter_type: str, validators: list[dict[str, Any]]) -> dict[str, Any]:
@@ -101,7 +113,9 @@ def validators_to_form(parameter_type: str, validators: list[dict[str, Any]]) ->
     form: dict[str, Any] = {"validators": []}
     extra: list[dict[str, Any]] = []
     for validator in validators:
-        if parameter_type in FORM_REGEX_PARAMETER_TYPES and _is_form_regex(validator):
+        if not _form_can_show(parameter_type, validator):
+            extra.append(validator)
+        elif validator["type"] == "regex":
             form["validators"].append(
                 {
                     "regex_doc": validator.get("message"),
@@ -109,11 +123,7 @@ def validators_to_form(parameter_type: str, validators: list[dict[str, Any]]) ->
                     "regex_negate": validator.get("negate", False),
                 }
             )
-        elif (
-            "min" not in form
-            and parameter_type in FORM_RANGE_PARAMETER_TYPES
-            and _is_form_range(parameter_type, validator)
-        ):
+        elif "min" not in form:
             form["min"] = validator.get("min")
             form["max"] = validator.get("max")
         else:
@@ -143,6 +153,31 @@ def validators_from_form(parameter_definition: dict[str, Any]) -> list[dict[str,
     return validators
 
 
+def check_validators(validators: list[dict[str, Any]]) -> None:
+    """Build ``validators`` as a workflow run would; raise ValueError describing what could not be built."""
+    try:
+        to_validators(None, parse_dict_validators(validators, trusted=False))
+    except ValidationError as e:
+        # ctx["error"] is a model validator's own message, without pydantic's "Value error, " prefix
+        problems = [str(error.get("ctx", {}).get("error", error["msg"])) for error in e.errors()]
+        raise ValueError(", ".join(problems)) from e
+    except AssertionError as e:
+        raise ValueError(str(e)) from e
+
+
+def _form_can_show(parameter_type: str, validator: dict[str, Any]) -> bool:
+    shape = FORM_VALIDATOR_SHAPES.get(parameter_type)
+    if shape is None or validator.get("type") != shape.validator_type:
+        return False
+    keys = _non_default_keys(validator)
+    if keys is None or not keys <= shape.fields:
+        return False
+    # integer inputs' min/max fields would truncate fractional bounds
+    return parameter_type != "integer" or all(
+        isinstance(validator.get(key), (int, type(None))) for key in ("min", "max")
+    )
+
+
 def _non_default_keys(validator: dict[str, Any]) -> set[str] | None:
     """Keys of ``validator`` set to something other than its model's default; None if it does not parse."""
     try:
@@ -154,21 +189,6 @@ def _non_default_keys(validator: dict[str, Any]) -> set[str] | None:
         for key, value in validator.items()
         if value is not None and (key not in model_fields or value != model_fields[key].default)
     }
-
-
-def _is_form_regex(validator: dict[str, Any]) -> bool:
-    keys = _non_default_keys(validator) if validator.get("type") == "regex" else None
-    return keys is not None and keys <= {"expression", "message", "negate"}
-
-
-def _is_form_range(parameter_type: str, validator: dict[str, Any]) -> bool:
-    keys = _non_default_keys(validator) if validator.get("type") == "in_range" else None
-    if keys is None or not keys <= {"min", "max"}:
-        return False
-    # integer inputs' min/max fields would truncate fractional bounds
-    return parameter_type != "integer" or all(
-        isinstance(validator.get(key), (int, type(None))) for key in ("min", "max")
-    )
 
 
 def _load_extra_validators(value: str | None) -> list[dict[str, Any]]:

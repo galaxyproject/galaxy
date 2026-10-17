@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any
 
 import pytest
@@ -193,7 +194,11 @@ def test_invalid_validators_rejected_at_import(validators):
 
 def test_unsafe_hidden_validator_rejected_at_save():
     unsafe = [{"type": "metadata", "check": ["dbkey"]}]
-    with pytest.raises(RequestParameterInvalidException, match="^Invalid validator on workflow parameter input"):
+    message = (
+        "Invalid validator on workflow parameter input 'p': "
+        "Validators of type 'metadata' are not allowed in user-defined tools or workflow parameters."
+    )
+    with pytest.raises(RequestParameterInvalidException, match=f"^{re.escape(message)}$"):
         _save_form(
             {
                 "parameter_definition|parameter_type": "text",
