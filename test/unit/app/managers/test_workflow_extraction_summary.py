@@ -5,6 +5,7 @@ exercised here with lightweight mocks rather than a live app. The full
 serialization (build_extraction_summary) is covered by the API tests.
 """
 
+from types import SimpleNamespace
 from typing import (
     cast,
 )
@@ -14,7 +15,10 @@ from galaxy.managers.workflow_extraction_summary import (
     _backward_job_closure,
     HistoryBoundary,
 )
-from galaxy.model import HistoryItem
+from galaxy.model import (
+    History,
+    HistoryItem,
+)
 from galaxy.workflow.extract import original_content_ref
 
 TARGET_HISTORY = 1
@@ -146,10 +150,11 @@ class MockImplicitCollectionJobs:
 class MockHda:
     history_content_type = "dataset"
 
-    def __init__(self, id, creating_jobs=(), copied_from=None):
+    def __init__(self, id, creating_jobs=(), copied_from=None, deleted=False):
         self.id = id
         self.creating_job_associations = [MockOutputAssoc(j) for j in creating_jobs]
         self.copied_from_history_dataset_association = copied_from
+        self.deleted = deleted
 
 
 class MockHdca:
@@ -174,9 +179,7 @@ def _trans(contents, toolbox=None, jobs=(), icjs=()):
 
 
 def _closure(trans, refs, job_refs=(), icj_refs=()):
-    return _backward_job_closure(
-        trans, refs, list(job_refs), list(icj_refs), HistoryBoundary(TARGET_HISTORY, frozenset())
-    )
+    return _backward_job_closure(trans, refs, list(job_refs), list(icj_refs), HistoryBoundary(TARGET_HISTORY, {}))
 
 
 def test_linear_chain_collects_all_upstream_jobs():
@@ -303,6 +306,15 @@ def test_copied_dataset_normalized_to_original():
     original = MockHda(10)
     copy = MockHda(11, copied_from=original)
     assert original_content_ref(cast(HistoryItem, copy)) == ("hda", 10)
+
+
+def test_boundary_prefers_undeleted_local_copy():
+    original = MockHda(10)
+    deleted_copy = MockHda(11, copied_from=original, deleted=True)
+    live_copy = MockHda(12, copied_from=original)
+    history = SimpleNamespace(id=TARGET_HISTORY, all_contents=[deleted_copy, live_copy])
+    boundary = HistoryBoundary.of(cast(History, history))
+    assert boundary.local_copies == {("hda", 10): live_copy}
 
 
 def test_plain_job_ref_seeds_producing_subgraph():
