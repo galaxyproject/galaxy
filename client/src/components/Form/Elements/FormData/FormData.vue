@@ -30,7 +30,7 @@ import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
-import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, isDataOption } from "./types";
+import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, findDataOption, isDataOption, itemUniqueKey } from "./types";
 import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -171,9 +171,7 @@ const currentValue = computed({
         const value: Array<DataOption> = [];
         if (props.value) {
             for (const v of props.value.values) {
-                const foundEntry = formattedOptions.value.find(
-                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src,
-                );
+                const foundEntry = findDataOption(formattedOptions.value, v, (entry) => entry.value);
                 if (foundEntry && foundEntry.value) {
                     value.push(foundEntry.value);
                     if (!currentVariant.value?.multiple) {
@@ -270,8 +268,7 @@ const formattedOptions = computed(() => {
                 value: option || null,
             };
             if (option.keep) {
-                const keepKey = `${option.id}_${option.src}`;
-                keepOptions[keepKey] = newOption;
+                keepOptions[itemUniqueKey(option)] = newOption;
             } else {
                 const accepted = !props.tag || option.tags?.includes(props.tag);
                 if (accepted) {
@@ -286,7 +283,7 @@ const formattedOptions = computed(() => {
             const otherOptions = [...pinnedForOther, ...(props.options[otherSource] || [])];
             if (Array.isArray(otherOptions)) {
                 otherOptions.forEach((option) => {
-                    const keepKey = `${option.id}_${option.src}`;
+                    const keepKey = itemUniqueKey(option);
                     const sourceLabel = getSourceLabel(getSourceType(option));
                     const newOption = {
                         label: `${option.name} (as ${sourceLabel})`,
@@ -557,7 +554,7 @@ function handleIncoming(incoming: SingleOrMultipleHistoryItems, partial = true) 
                     return false;
                 }
                 // Verify that new value has corresponding option
-                const keepKey = `${newValue.id}_${newValue.src}`;
+                const keepKey = itemUniqueKey(newValue);
                 const existingOptions = props.options && props.options[newValue.src];
                 const foundOption = existingOptions && existingOptions.find((option) => option.id === newValue.id);
                 if (!foundOption && !isInKeepOptions(keepKey, newValue)) {
@@ -650,7 +647,7 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
  * Returns the canonical option if found, otherwise returns the uploaded option.
  */
 function normalizeOption(option: DataOption): DataOption {
-    const keepKey = `${option.id}_${option.src}`;
+    const keepKey = itemUniqueKey(option);
     const existingOptions = props.options?.[option.src];
     const foundOption = existingOptions?.find((existing) => existing.id === option.id);
 
@@ -1080,9 +1077,7 @@ const matchedValues = computed(() => {
             if ("src" in entry && entry.src) {
                 const pageOptions = props.options[entry.src] || [];
                 const pinnedOptions = (props.pinned && props.pinned[entry.src]) || [];
-                const option =
-                    pageOptions.find((v) => v.id === entry.id && v.src === entry.src) ||
-                    pinnedOptions.find((v) => v.id === entry.id && v.src === entry.src);
+                const option = findDataOption([...pageOptions, ...pinnedOptions], entry, (v) => v);
                 if (option) {
                     const accepted = !props.tag || option.tags?.includes(props.tag);
                     if (accepted) {

@@ -103,12 +103,32 @@ export function isDataOption(item: object): item is DataOption {
     return !!item && "src" in item;
 }
 
-export function itemUniqueKey(item: DataOption): string {
+type OptionIdentity = Pick<DataOption, "id" | "src">;
+
+/** Identifies an option */
+export function itemUniqueKey(item: OptionIdentity): string {
     return `${item.src}-${item.id}`;
 }
 
 export function containsDataOption(items: DataOption[], item: DataOption | null): boolean {
     return item !== null && items.some((i) => itemUniqueKey(i) === itemUniqueKey(item));
+}
+
+/** Whether two options refer to the same history item */
+export function isSameItem(a: OptionIdentity, b: OptionIdentity): boolean {
+    return a.id === b.id && a.src === b.src;
+}
+
+/** Find the entry whose option refers to the same history item as a value */
+export function findDataOption<T>(
+    items: T[],
+    value: OptionIdentity,
+    toOption: (item: T) => DataOption | null | undefined,
+): T | undefined {
+    return items.find((item) => {
+        const option = toOption(item);
+        return !!option && isSameItem(option, value);
+    });
 }
 
 export type ExtendedCollectionType = {
