@@ -458,10 +458,9 @@ class WorkflowsService(ServiceBase):
         trans: ProvidesHistoryContext,
         payload: WorkflowExtractionByIdsPayload,
     ) -> None:
-        """Cross-payload checks that need DB access. Pydantic handles per-field
-        shape; this enforces semantic rules across job_ids /
-        implicit_collection_jobs_ids that depend on the loaded Job / ICJ rows
-        so extract_workflow_by_ids can trust its input.
+        """Cross-payload checks that need DB access (Pydantic handles per-field shape):
+        selected jobs/ICJs, step labels, input names grouped by original, and output
+        labels, so extract_workflow_by_ids can trust its input.
         """
         for field in ("job_ids", "implicit_collection_jobs_ids", "hda_ids", "hdca_ids"):
             ids = getattr(payload, field)
