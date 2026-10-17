@@ -1,4 +1,4 @@
-"""Tests for ``is_safe_local_redirect``, which guards post-login redirect targets.
+"""Tests for ``is_safe_local_redirect`` and ``is_safe_login_redirect``, which guard post-login redirect targets.
 
 These values reach Galaxy from a query string or a cookie, so the interesting cases are
 all the spellings of "another origin" that a browser will happily resolve.
@@ -6,7 +6,10 @@ all the spellings of "another origin" that a browser will happily resolve.
 
 import pytest
 
-from galaxy.util import is_safe_local_redirect
+from galaxy.util import (
+    is_safe_local_redirect,
+    is_safe_login_redirect,
+)
 
 
 @pytest.mark.parametrize(
@@ -57,3 +60,50 @@ def test_control_characters_are_refused_outright(path):
 @pytest.mark.parametrize("path", [None, "", "histories/list", 42, ["/histories/list"], b"/histories/list"])
 def test_empty_and_non_string_values_are_refused(path):
     assert is_safe_local_redirect(path) is False
+
+
+ALLOWED_HOSTS = ["tools.example.org", "data.example.org:8443", "[2001:db8::1]"]
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "https://tools.example.org/landing",
+        "https://TOOLS.example.org/landing",
+        "https://tools.example.org:443/landing",
+        "https://data.example.org:8443/back",
+        "https://[2001:db8::1]/back",
+    ],
+)
+def test_allowlisted_hosts_are_safe_login_redirects(target):
+    assert is_safe_login_redirect(target, ALLOWED_HOSTS) is True
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "https://evil.example.com/",
+        "https://tools.example.org.evil.com/",
+        "https://eviltools.example.org/",
+        "https://tools.example.org:8443/",
+        "https://data.example.org/",
+        "http://tools.example.org/",
+        "https:tools.example.org",
+        "https:///tools.example.org",
+        # userinfo and backslashes make parsers disagree about the host
+        "https://tools.example.org@evil.com/",
+        "https://user:pass@tools.example.org/",
+        "https://evil.com\\@tools.example.org/",
+        "https://tools.example.org\\.evil.com/",
+        "https://evil.com#@tools.example.org",
+        "https://tools.example.org:notaport/",
+        "https://tools.example.org/\tpath",
+        " https://tools.example.org/",
+    ],
+)
+def test_other_hosts_are_refused_as_login_redirects(target):
+    assert is_safe_login_redirect(target, ALLOWED_HOSTS) is False
+
+
+def test_no_external_login_redirects_without_allowlist():
+    assert is_safe_login_redirect("https://tools.example.org/") is False

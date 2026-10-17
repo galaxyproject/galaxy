@@ -8,10 +8,7 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from urllib.parse import (
-    quote,
-    urlencode,
-)
+from urllib.parse import quote
 
 import jwt
 from jwt import InvalidTokenError
@@ -371,8 +368,9 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token: str, authz_code: str, trans: "GalaxyWebTransaction", login_redirect_url: str):
         on_the_fly_config(trans.sa_session)
-        # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
-        # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
+        # login_redirect_url is where the user was headed, not the app root; pipeline
+        # steps build their own URLs with trans.url_builder. The final redirect is
+        # adjusted for new associations after do_complete.
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
         # Make Galaxy app/trans available to downstream pipeline steps that need to apply Galaxy-specific invariants.
         self.config["GALAXY_TRANS"] = trans
@@ -405,24 +403,26 @@ class PSAAuthnz(IdentityProvider):
         email_exists = self.config.get("EMAIL_EXISTS")  # Set by pipeline if email matches different user
 
         if redirect_url and isinstance(redirect_url, str) and not redirect_url.startswith("?"):
-            # Check if PSA returned a redirect to login/start or confirmation page
-            # If so, keep it as-is (don't modify for these special cases)
-            if "login/start" not in redirect_url and "?confirm" not in redirect_url:
-                # This is a successful authentication redirect
-                if is_new_association:
-                    # New association - redirect based on fixed_delegated_auth
-                    if not fixed_delegated_auth:
-                        # Redirect to user/external_ids
-                        redirect_url = f"{login_redirect_url}user/external_ids"
-                    else:
-                        # Redirect to root for fixed_delegated_auth
-                        redirect_url = login_redirect_url
+            # A pipeline step that stops the login (account confirmation, linking to an
+            # existing account) returns its login/start URL as a plain string, which
+            # do_complete hands back instead of a Redirect; keep it as-is.
+            stopped = not isinstance(redirect, Redirect)
+            if not stopped:
+                # This is a successful authentication redirect. Users go where they were
+                # headed; a new association without a destination lands on the page
+                # listing linked identities, unless fixed_delegated_auth is set.
+                if is_new_association and not fixed_delegated_auth and login_redirect_url == trans.url_builder("/"):
+                    redirect_url = trans.url_builder("/user/external_ids")
                 else:
-                    # Repeat login - redirect to root
                     redirect_url = login_redirect_url
 
-            # Add notification and email_exists parameters only for new associations
-            if "?confirm" not in redirect_url and "login/start" not in redirect_url and is_new_association:
+            # Add notification and email_exists parameters only for new associations that
+            # land on the root or the linked identities page, which display them.
+            if (
+                not stopped
+                and is_new_association
+                and redirect_url in (trans.url_builder("/"), trans.url_builder("/user/external_ids"))
+            ):
                 provider_label = self.config.get("LABEL", self.config["provider"].capitalize())
                 separator = "&" if "?" in redirect_url else "?"
                 notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
@@ -1096,13 +1096,11 @@ def associate_by_email_if_logged_in(
         # An account exists but user is not logged in and fixed_delegated_auth is False
         # Redirect to page prompting user to log in and link accounts
         provider = strategy.config.get("provider", "unknown")
-        login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
-
-        redirect_url = (
-            f"{login_redirect_url}login/start"
-            f"?connect_external_provider={provider}"
-            f"&connect_external_email={quote(email)}"
-            f"&connect_external_label={strategy.config.get('LABEL', provider.capitalize())}"
+        redirect_url = strategy.config["GALAXY_TRANS"].url_builder(
+            "/login/start",
+            connect_external_provider=provider,
+            connect_external_email=email,
+            connect_external_label=strategy.config.get("LABEL", provider.capitalize()),
         )
 
         # Return the redirect URL - PSA will use this to redirect and stop the pipeline
@@ -1167,6 +1165,6 @@ def check_user_creation_confirmation(
     data = {"email": email, "username": username, "uid": uid, "response": response}
     _confirmation_identity(data)
     confirmation_id = strategy.flow_state.save("confirmation", data, expires_at=expires_at)
-    query = urlencode({"confirm": "true", "provider": strategy.config["provider"], "confirmation_id": confirmation_id})
-    login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
-    return f"{login_redirect_url}login/start?{query}"
+    return strategy.config["GALAXY_TRANS"].url_builder(
+        "/login/start", confirm="true", provider=strategy.config["provider"], confirmation_id=confirmation_id
+    )

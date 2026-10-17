@@ -26,7 +26,10 @@ class StubTrans:
         self.user = None
         self._cookies = {LOGIN_NEXT_COOKIE_NAME: login_next_cookie}
         self.login_redirect_url: Optional[str] = None
-        self.app = Bunch(authnz_manager=Bunch(callback=self._callback))
+        self.app = Bunch(
+            config=Bunch(allowed_login_redirect_hosts=[]),
+            authnz_manager=Bunch(callback=self._callback),
+        )
 
     def get_cookie(self, name):
         return self._cookies.get(name)

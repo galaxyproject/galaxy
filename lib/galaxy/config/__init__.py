@@ -738,6 +738,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
 
     allow_local_account_creation: bool
+    allowed_login_redirect_hosts: list[str]
     allowed_origin_hostnames: list[str]
     builds_file_path: str
     container_resolvers_config_file: str
@@ -1003,6 +1004,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.sanitize_allowlist_file = _sanitize_allowlist_path
 
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(self.allowed_origin_hostnames)
+        self.allowed_login_redirect_hosts = self._parse_allowed_login_redirect_hosts(self.allowed_login_redirect_hosts)
         if "trust_jupyter_notebook_conversion" not in kwargs:
             # if option not set, check IPython-named alternative, falling back to schema default if not set either
             _default = self.trust_jupyter_notebook_conversion
@@ -1491,6 +1493,18 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         ):  # celery_conf is None or sub-dictionary is none or either key is not present
             fetch_disabled = False
         return celery_enabled and not fetch_disabled
+
+    @staticmethod
+    def _parse_allowed_login_redirect_hosts(allowed_login_redirect_hosts) -> list[str]:
+        hosts = []
+        for host in listify(allowed_login_redirect_hosts, do_strip=True):
+            if not host:
+                continue
+            if any(char in host for char in "/@\\*") or any(char.isspace() for char in host):
+                log.warning("Ignoring allowed_login_redirect_hosts entry %r, expected host or host:port", host)
+                continue
+            hosts.append(host.lower().removesuffix(":443"))
+        return hosts
 
     @staticmethod
     def _parse_allowed_origin_hostnames(allowed_origin_hostnames):

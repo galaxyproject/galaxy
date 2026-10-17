@@ -7,7 +7,10 @@ from datetime import (
     datetime,
     timedelta,
 )
-from urllib.parse import unquote
+from urllib.parse import (
+    unquote,
+    urlsplit,
+)
 
 from markupsafe import escape
 from sqlalchemy.exc import NoResultFound
@@ -37,6 +40,18 @@ from galaxy.webapps.base.controller import (
 from ..api import depends
 
 log = logging.getLogger(__name__)
+
+
+def _is_absolute_url_to(base_url: str, url: str) -> bool:
+    """Is ``url`` an absolute URL with the same scheme and authority as ``base_url``?"""
+    # A backslash or control character would let a browser read the authority differently.
+    if not isinstance(url, str) or "\\" in url or util.CONTROL_CHARACTERS.search(url):
+        return False
+    try:
+        target, base = urlsplit(url), urlsplit(base_url)
+    except ValueError:
+        return False
+    return bool(target.netloc) and (target.scheme, target.netloc) == (base.scheme, base.netloc)
 
 
 def _filtered_registration_params_dict(payload):
@@ -208,7 +223,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
                 return {"message": f"Your password will expire in {expiredate.days} day(s).", "status": "warning"}
-        return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
+        return {"message": "Success.", "redirect": self.__get_redirect_url(trans, redirect)}
 
     @web.expose
     def resend_verification(self, trans, **kwargs):
@@ -359,17 +374,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             return self.message_exception(trans, message)
         return {"message": "If an account exists for this email address a confirmation email will be dispatched."}
 
-    def __get_redirect_url(self, redirect):
+    def __get_redirect_url(self, trans, redirect):
         if not redirect or redirect == "None":
             return None
         root_url = url_for("/", qualified=True)
-        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
-        # or to enter a logout/login loop
-        if not util.compare_urls(root_url, redirect, compare_path=False) or util.compare_urls(
-            url_for(controller="user", action="logout", qualified=True), redirect
-        ):
-            log.warning("Redirect URL is outside of Galaxy, will redirect to Galaxy root instead: %s", redirect)
-            redirect = root_url
-        elif util.compare_urls(url_for(controller="user", action="logout", qualified=True), redirect):
-            redirect = root_url
+        logout_url = url_for(controller="user", action="logout", qualified=True)
+        # Accept paths on this server, absolute URLs back to it, and the hosts admins allow
+        # in allowed_login_redirect_hosts. Never send the user into a logout/login loop.
+        allowed_hosts = trans.app.config.allowed_login_redirect_hosts
+        if not (_is_absolute_url_to(root_url, redirect) or util.is_safe_login_redirect(redirect, allowed_hosts)):
+            log.warning("Ignoring post-login redirect target that is not allowed: %s", redirect)
+            return root_url
+        if util.compare_urls(logout_url, redirect):
+            return root_url
         return redirect

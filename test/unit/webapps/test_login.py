@@ -3,6 +3,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from unittest.mock import patch
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
@@ -84,6 +85,29 @@ class TestLoginController(TestCase):
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
         assert response["message"] == "Success."
+
+    def test_login_redirect(self):
+        def url_for(path=None, controller=None, action=None, qualified=False):
+            path = path or f"/{controller}/{action}"
+            return f"https://galaxy.example/galaxy{path}" if qualified else f"/galaxy{path}"
+
+        self.user_manager.create(**user2_data)
+        self.trans.app.config.allowed_login_redirect_hosts = ["tools.example.org"]
+        root = "https://galaxy.example/galaxy/"
+        for redirect, expected in [
+            ("https://tools.example.org/back", "https://tools.example.org/back"),
+            ("/\\evil.example.com/", root),
+            ("https://evil.example.com\\@galaxy.example/", root),
+            ("https://[galaxy.example/", root),
+        ]:
+            with patch("galaxy.webapps.galaxy.controllers.user.url_for", url_for):
+                response = json.loads(
+                    User(self.app).login(
+                        self.trans,
+                        payload={"login": user2_data["email"], "password": default_password, "redirect": redirect},
+                    )
+                )
+            assert response["redirect"] == expected, redirect
 
     def test_get_reset_token(self):
         def _check_reset_token(email):

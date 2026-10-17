@@ -2,7 +2,7 @@ import { describe, expect, it, test, vi } from "vitest";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
-import { safeRedirectPath, withPrefix } from "./redirect";
+import { safeLoginRedirect, safeRedirectPath, withPrefix } from "./redirect";
 
 vi.mock("@/onload/loadConfig");
 
@@ -59,5 +59,45 @@ describe("safeRedirectPath", () => {
         expect(safeRedirectPath("histories/list")).toBeUndefined();
         // vue-router hands back an array when a param is repeated
         expect(safeRedirectPath(["/histories/list"])).toBeUndefined();
+    });
+});
+
+describe("safeLoginRedirect", () => {
+    const allowedHosts = ["tools.example.org", "data.example.org:8443"];
+
+    it("accepts https URLs on allowed hosts", () => {
+        for (const target of [
+            "https://tools.example.org/landing",
+            "https://TOOLS.example.org/landing",
+            "https://tools.example.org:443/landing",
+            "https://data.example.org:8443/back",
+        ]) {
+            expect(safeLoginRedirect(target, allowedHosts)).toEqual(target);
+        }
+    });
+
+    it("refuses other hosts and URLs parsers disagree about", () => {
+        for (const target of [
+            "https://evil.example.com/",
+            "https://tools.example.org.evil.com/",
+            "https://tools\uFF0Eexample\uFF0Eorg/",
+            "https://tools%2eexample.org/",
+            "https://tools.example.org:8443/",
+            "https://data.example.org/",
+            "http://tools.example.org/",
+            "https:tools.example.org",
+            "https://tools.example.org@evil.com/",
+            "https://user:pass@tools.example.org/",
+            "https://evil.com\\@tools.example.org/",
+            "https://evil.com#@tools.example.org",
+            "https://tools.example.org/\tpath",
+            " https://tools.example.org/",
+        ]) {
+            expect(safeLoginRedirect(target, allowedHosts)).toBeUndefined();
+        }
+    });
+
+    it("refuses external URLs without allowed hosts", () => {
+        expect(safeLoginRedirect("https://tools.example.org/", [])).toBeUndefined();
     });
 });

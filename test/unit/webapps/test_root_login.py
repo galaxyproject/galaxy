@@ -21,11 +21,15 @@ LANDING_PATH = "/tool_landings/1234-5678?public=true"
 class StubTrans:
     """The slice of the transaction interface ``RootController.login`` actually touches."""
 
-    def __init__(self, authenticators=(), oidc_providers=("tapis",)):
+    def __init__(self, authenticators=(), oidc_providers=("tapis",), allowed_login_redirect_hosts=()):
         self.cookies: dict[str, str] = {}
         self.redirected_to: Optional[str] = None
         self.app = Bunch(
-            config=Bunch(enable_oidc=True, oidc={name: {} for name in oidc_providers}),
+            config=Bunch(
+                enable_oidc=True,
+                oidc={name: {} for name in oidc_providers},
+                allowed_login_redirect_hosts=list(allowed_login_redirect_hosts),
+            ),
             auth_manager=Bunch(authenticators=list(authenticators)),
             authnz_manager=Bunch(authenticate=lambda provider, trans: (True, "", IDP_URL)),
         )
@@ -72,6 +76,12 @@ def test_single_provider_login_refuses_offsite_destination(hostile):
     trans = StubTrans()
     login(trans, redirect=hostile)
     assert trans.cookies[LOGIN_NEXT_COOKIE_NAME] == "/"
+
+
+def test_single_provider_login_stashes_allowlisted_external_destination():
+    trans = StubTrans(allowed_login_redirect_hosts=["tools.example.org"])
+    login(trans, redirect="https://tools.example.org/back")
+    assert trans.cookies[LOGIN_NEXT_COOKIE_NAME] == "https://tools.example.org/back"
 
 
 def test_multiple_providers_fall_through_to_the_login_page(monkeypatch):
