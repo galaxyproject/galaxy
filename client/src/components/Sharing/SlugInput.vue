@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
+// Under @vue/compat: let undeclared listeners (@keyup.enter) fall through to the input
+defineOptions({ compatConfig: { INSTANCE_LISTENERS: false } });
+
 const props = defineProps<{
     slug: string;
 }>();
