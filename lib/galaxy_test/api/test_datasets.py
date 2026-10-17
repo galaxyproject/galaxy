@@ -809,8 +809,7 @@ class TestDatasetsApi(ApiTestCase):
         num_datasets = 4
         dataset_map: dict[int, str] = {}
 
-        with self._different_user():
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as history_id:
             for index in range(num_datasets):
                 hda = self.dataset_populator.new_dataset(history_id)
                 dataset_map[index] = hda["id"]

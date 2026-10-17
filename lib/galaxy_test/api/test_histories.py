@@ -1301,8 +1301,7 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
             self._assert_status_code_is(restore_response, 403)
 
     def test_archived_histories_index(self):
-        with self._different_user("archived_histories_index_user@bx.psu.edu"):
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history("archived_histories_index_user@bx.psu.edu") as history_id:
 
             archive_response = self.dataset_populator.archive_history(history_id)
             self._assert_status_code_is(archive_response, 200)

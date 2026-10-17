@@ -764,8 +764,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             element_identifiers = self.dataset_collection_populator.pair_identifiers(history_id, wait=True)
             self.dataset_populator.make_private(history_id, element_identifiers[0]["id"])
-            with self._different_user():
-                history_id = self.dataset_populator.new_history()
+            with self._different_user_history() as history_id:
                 payload = dict(
                     instance_type="history",
                     history_id=history_id,
