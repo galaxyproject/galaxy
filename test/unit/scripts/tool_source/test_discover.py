@@ -5,6 +5,7 @@ from pathlib import Path
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools.source_store.discover import (
     discover_tools,
     discover_tools_from_config,
@@ -200,3 +201,45 @@ def test_bundled_compatibility_alias_is_not_a_second_panel_placement(tmp_path):
 
     assert len(discoveries) == 1
     assert discoveries[0].section_id == "section"
+
+
+def test_shed_data_managers_parse_their_shed_conf_once(tmp_path, monkeypatch):
+    shed_tools = tmp_path / "shed_tools"
+    shed_tools.mkdir()
+    shed_conf = tmp_path / "shed_tool_conf.xml"
+    shed_conf.write_text(f'<toolbox tool_path="{shed_tools}"></toolbox>')
+    dm_elems = []
+    for name in ("a", "b", "c"):
+        (shed_tools / f"dm_{name}.xml").write_text(f'<tool id="dm_{name}" tool_type="manage_data" version="1.0"/>')
+        dm_elems.append(
+            f'<data_manager id="{name}" shed_conf_file="{shed_conf}">'
+            f'<tool file="dm_{name}.xml" guid="shed/repos/o/r/dm_{name}/1.0"/></data_manager>'
+        )
+    dm_conf = tmp_path / "shed_data_manager_conf.xml"
+    dm_conf.write_text(f"<data_managers>{''.join(dm_elems)}</data_managers>")
+
+    class _Cfg:
+        root = None
+        tool_path = str(tmp_path)
+        enable_beta_tool_formats = False
+        data_manager_config_file = None
+        shed_data_manager_config_file = str(dm_conf)
+
+        def all_tool_config_files(self):
+            return [str(shed_conf)]
+
+    parsed: list[str] = []
+
+    def counting_get_toolbox_parser(path):
+        parsed.append(str(path))
+        return get_toolbox_parser(path)
+
+    monkeypatch.setattr("galaxy.tools.source_store.discover.get_toolbox_parser", counting_get_toolbox_parser)
+    discovered = [
+        d
+        for d in discover_tools(_Cfg(), include_bundled=False, include_converters=False, only_confs=set())  # type: ignore[arg-type]
+        if d.tool_conf == str(dm_conf)
+    ]
+
+    assert sorted(d.path for d in discovered) == [str(shed_tools / f"dm_{name}.xml") for name in ("a", "b", "c")]
+    assert parsed == [str(shed_conf)]
