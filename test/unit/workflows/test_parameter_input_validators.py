@@ -192,31 +192,28 @@ def test_invalid_validators_rejected_at_import(validators):
         import_input("integer", validators)
 
 
+TEXT_VALIDATOR_TYPES = "regex, length, empty_field, value_in_data_table, value_not_in_data_table, expression"
+NUMERIC_VALIDATOR_TYPES = "in_range, expression"
+
+
 @pytest.mark.parametrize(
-    "parameter_type,validator_type,validator",
+    "parameter_type,validator,allowed",
     [
-        ("text", "in_range", RANGE),
-        ("integer", "regex", REGEX),
-        ("directory_uri", "in_range", RANGE),
-        ("float", "length", {"type": "length", "min": 2}),
-        ("boolean", "length", {"type": "length", "min": 2}),
-        ("color", "regex", REGEX),
+        ("text", RANGE, TEXT_VALIDATOR_TYPES),
+        ("integer", REGEX, NUMERIC_VALIDATOR_TYPES),
+        ("directory_uri", RANGE, TEXT_VALIDATOR_TYPES),
+        ("float", {"type": "length", "min": 2}, NUMERIC_VALIDATOR_TYPES),
+        ("boolean", {"type": "length", "min": 2}, "none"),
+        ("color", REGEX, "none"),
     ],
 )
-def test_validator_incompatible_with_parameter_type_rejected_at_import(parameter_type, validator_type, validator):
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        import_input(parameter_type, [validator])
-    message = str(exc_info.value)
-    assert message.startswith(
+def test_validator_incompatible_with_parameter_type_rejected_at_import(parameter_type, validator, allowed):
+    message = (
         f"Invalid validator on workflow parameter input 'p': "
-        f"validator type '{validator_type}' cannot be used on a {parameter_type} input (allowed: "
+        f"validator type '{validator['type']}' cannot be used on a {parameter_type} input (allowed: {allowed})"
     )
-
-
-def test_incompatible_validator_error_lists_allowed_types():
-    with pytest.raises(RequestParameterInvalidException) as exc_info:
-        import_input("boolean", [{"type": "length", "min": 2}])
-    assert str(exc_info.value).endswith("cannot be used on a boolean input (allowed: none)")
+    with pytest.raises(RequestParameterInvalidException, match=f"^{re.escape(message)}$"):
+        import_input(parameter_type, [validator])
 
 
 def test_compatible_non_form_validator_accepted_on_directory_uri():
@@ -236,6 +233,21 @@ def test_unsafe_hidden_validator_rejected_at_save():
                 "parameter_definition|parameter_type": "text",
                 "parameter_definition|optional|optional": "false",
                 "parameter_definition|extra_validators": json.dumps(unsafe),
+            }
+        )
+
+
+MALFORMED_HIDDEN_VALIDATORS = "Workflow parameter extra_validators must be a JSON list."
+
+
+@pytest.mark.parametrize("extra_validators", ["not json", json.dumps({"type": "regex"}), json.dumps(["regex"])])
+def test_malformed_hidden_validators_rejected_at_save(extra_validators):
+    with pytest.raises(RequestParameterInvalidException, match=f"^{re.escape(MALFORMED_HIDDEN_VALIDATORS)}$"):
+        _save_form(
+            {
+                "parameter_definition|parameter_type": "text",
+                "parameter_definition|optional|optional": "false",
+                "parameter_definition|extra_validators": extra_validators,
             }
         )
 
