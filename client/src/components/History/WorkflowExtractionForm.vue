@@ -526,7 +526,7 @@ function stepKind(job: ExtractionRow): string {
             <BreadcrumbHeading :items="breadcrumbItems" />
 
             <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
-            <GAlert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" data-description="workflow-extraction-loading" variant="info" show>
                 <LoadingSpan message="Extracting workflow from history" />
             </GAlert>
             <GAlert v-if="!loading && nothingSeeded" data-description="no-seed-message" variant="info" show>
