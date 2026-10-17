@@ -789,7 +789,7 @@ def tool_for_job(trans: ProvidesHistoryContext, job: Job) -> "Tool | None":
 
 def _accessible_content(trans: ProvidesHistoryContext, kind: ContentKind, content_id: int) -> HistoryItem:
     if kind == "hda":
-        return trans.app.hda_manager.get_accessible(content_id, getattr(trans, "user", None))
+        return trans.app.hda_manager.get_accessible(content_id, trans.user)
     return trans.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", content_id)
 
 
