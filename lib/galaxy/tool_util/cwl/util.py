@@ -292,6 +292,8 @@ def galactic_job_json(
             tmp_index.close()
             tf.add(tmp_index.name, SECONDARY_FILES_INDEX_PATH)
             tf.close()
+            # tarfile does not close a passed-in fileobj; flush it before it is read by path.
+            tmp.close()
             secondary_files_tar_path = tmp.name
 
         return upload_file(
@@ -314,6 +316,8 @@ def galactic_job_json(
         tf = tarfile.open(fileobj=tmp, mode="w:")
         tf.add(file_path, ".")
         tf.close()
+        # tarfile does not close a passed-in fileobj; flush it before it is read by path.
+        tmp.close()
 
         return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
 

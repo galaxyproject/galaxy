@@ -675,7 +675,7 @@ def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTest
     if value is None and attributes.get("location") is None:
         return None
     as_dict: JsonTestDatasetDefDict = {
-        "class": "File",
+        "class": "Directory" if attributes.get("class") == "Directory" else "File",
     }
     if value:
         as_dict["path"] = value
@@ -808,7 +808,13 @@ class TestCollectionDef:
                     dataset_element_dict = cast(JsonTestCollectionDefDatasetElementDict, element_dict)
                     value = dataset_element_dict["path"]  # todo handle location
                     name = dataset_element_dict.get("name") or "Unnamed Collection"
-                    element_def = {"name": name, "value": value, "attributes": {}}
+                    # Pass class and filetype on, as XML elements do through their attributes.
+                    attributes: ToolSourceTestInputAttributes = {}
+                    if element_class:
+                        attributes["class"] = element_class
+                    if filetype := dataset_element_dict.get("filetype"):
+                        attributes["ftype"] = filetype
+                    element_def = {"name": name, "value": value, "attributes": attributes}
                 return TestCollectionDefElementInternal(element_identifier=identifier, element_definition=element_def)
 
             elements = list(map(element_from_dict_json, json_as_dict.get("elements") or []))

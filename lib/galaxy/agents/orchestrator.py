@@ -5,11 +5,13 @@ Workflow orchestration agent for coordinating multiple agents on complex tasks.
 import asyncio
 import logging
 import re
+from functools import partial
 from pathlib import Path
 from typing import (
     Any,
 )
 
+import anyio
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
@@ -203,7 +205,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         for agent_name in agents:
             try:
                 log.info(f"Orchestrator: Starting agent '{agent_name}' with query length {len(query)}")
-                agent = self.deps.get_agent(agent_name, self.deps)
+                agent = await anyio.to_thread.run_sync(partial(self.deps.get_agent, agent_name, self.deps))
                 response = await asyncio.wait_for(agent.process(query, ctx), timeout=timeout)
                 responses[agent_name] = response
                 run_state.record(agent_name, response)
@@ -233,7 +235,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
 
         async def call_agent(agent_name: str):
             try:
-                agent = self.deps.get_agent(agent_name, self.deps)
+                agent = await anyio.to_thread.run_sync(partial(self.deps.get_agent, agent_name, self.deps))
                 response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
                 return agent_name, response
             except asyncio.TimeoutError:

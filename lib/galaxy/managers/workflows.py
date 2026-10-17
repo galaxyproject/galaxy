@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import uuid
+from collections.abc import Collection
 from typing import (
     Annotated,
     Any,
@@ -38,6 +39,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import (
     joinedload,
+    scoped_session,
     selectinload,
     subqueryload,
 )
@@ -393,8 +395,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                         stmt = stmt.where(text_column_filter(StoredWorkflow.name, term))
                     elif term.filter == "tag":
                         stmt = stmt.where(w_tag_exists(term.text, term.quoted))
-                    elif term.filter == "collection":
-                        # Collections are an IWC grouping; nothing curated here belongs to one.
+                    elif term.filter in ("collection", "is"):
+                        # Collections are an IWC grouping, and is:runnable rests on the
+                        # catalog's tool check, which local rows don't get; neither matches here.
                         stmt = stmt.where(false())
                 elif isinstance(term, RawTextTerm):
                     owner_annotation_exists = owner_annotation_exists_filter(
@@ -437,6 +440,37 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
 
         stmt = stmt.limit(payload.limit).offset(payload.offset)
         return list(trans.sa_session.scalars(stmt).unique().all()), total_matches
+
+    def trs_imports(
+        self, sa_session: scoped_session, user_id: int, trs_tool_ids: Collection[str]
+    ) -> dict[str, tuple[int, str | None]]:
+        """Map each of ``trs_tool_ids`` the user has imported to (stored workflow id, imported version).
+
+        Only the user's own live, visible workflows count, and only while their latest
+        revision is the import: an editor save drops source_metadata, as it does for
+        get_workflow_by_trs_id_and_version. When the same TRS tool was imported more
+        than once, the most recent import wins.
+        """
+        if not trs_tool_ids:
+            return {}
+        stmt = (
+            select(StoredWorkflow.id, Workflow.source_metadata)
+            .join(Workflow, Workflow.id == StoredWorkflow.latest_workflow_id)
+            .where(StoredWorkflow.user_id == user_id)
+            .where(StoredWorkflow.deleted == false())
+            # Subworkflows pulled in by TRS are hidden copies that carry the same metadata.
+            .where(StoredWorkflow.hidden == false())
+            # Only the rows the caller asked about, so the cost doesn't grow with every
+            # URL or TRS import the user has ever made.
+            .where(to_json(sa_session, Workflow.source_metadata, ["trs_tool_id"]).in_(list(trs_tool_ids)))
+            .order_by(StoredWorkflow.id.desc())
+        )
+        imports: dict[str, tuple[int, str | None]] = {}
+        for stored_workflow_id, source_metadata in sa_session.execute(stmt):
+            trs_tool_id = source_metadata["trs_tool_id"]
+            if trs_tool_id not in imports:
+                imports[trs_tool_id] = (stored_workflow_id, source_metadata.get("trs_version_id"))
+        return imports
 
     def get_stored_workflow(self, trans: ProvidesUserContext, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find

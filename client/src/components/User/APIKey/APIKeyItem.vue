@@ -69,6 +69,7 @@ async function attemptKeyDeletion() {
 
                         <BInputGroupAppend>
                             <CopyToClipboard
+                                data-description="copy api key"
                                 message="Key was copied to clipboard"
                                 :text="props.item.key"
                                 size="large"

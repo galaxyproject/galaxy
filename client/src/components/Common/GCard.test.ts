@@ -417,4 +417,40 @@ describe("GCard", () => {
             expect(wrapper.find("#g-card-title-tooltip-card").attributes("data-show")).toBe("true");
         });
     });
+
+    it.each(["titleBadges", "badges"])("makes clickable %s reachable and usable from the keyboard", async (prop) => {
+        const handler = vi.fn();
+        const wrapper = mountCard({
+            [prop]: [
+                { id: "clickable", label: "Clickable", title: "Clickable", handler },
+                { id: "static", label: "Static", title: "Static" },
+            ],
+        });
+
+        const clickable = wrapper.find("#g-card-badge-clickable-card");
+        expect(clickable.attributes("role")).toBe("button");
+        expect(clickable.attributes("tabindex")).toBe("0");
+        await clickable.trigger("keydown.enter");
+        await clickable.trigger("keydown.space");
+        expect(handler).toHaveBeenCalledTimes(2);
+        // Otherwise Space also scrolls the page.
+        const space = new KeyboardEvent("keydown", { key: " ", cancelable: true, bubbles: true });
+        clickable.element.dispatchEvent(space);
+        expect(space.defaultPrevented).toBe(true);
+
+        const inert = wrapper.find("#g-card-badge-static-card");
+        expect(inert.attributes("role")).toBeUndefined();
+        expect(inert.attributes("tabindex")).toBeUndefined();
+    });
+
+    it.each(["titleBadges", "badges"])("leaves Enter alone on link %s so they still navigate", (prop) => {
+        const wrapper = mountCard({
+            [prop]: [{ id: "link", label: "Link", title: "Link", href: "https://example.org" }],
+        });
+
+        const event = new KeyboardEvent("keydown", { key: "Enter", cancelable: true, bubbles: true });
+        wrapper.find("#g-card-badge-link-card").element.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
+    });
 });

@@ -227,6 +227,17 @@ describe("test helpers in tool searching utilities", () => {
         });
     });
 
+    it.each(["id", "tool_id"])("finds a full Tool Shed GUID with the %s filter", (filter) => {
+        const guid = "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2";
+        const { results } = searchToolsByKeys(
+            Object.values(tempToolsList.tools),
+            { description: 1, name: 2 },
+            `${filter}:${guid}`,
+            tempToolPanel.default,
+        );
+        expect(results).toEqual([guid]);
+    });
+
     it("test tool fuzzy search", async () => {
         const expectedResults = ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"];
         const keys = { description: 1, name: 2, combined: 0 };

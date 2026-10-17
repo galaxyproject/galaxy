@@ -10,7 +10,10 @@ import random
 import string
 import time
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Iterator,
+)
 from dataclasses import (
     dataclass,
     field,
@@ -58,6 +61,10 @@ from galaxy.util import (
 from galaxy.util.wait import (
     TimeoutAssertionError,
     wait_on,
+)
+from .clipboard import (
+    ClipboardCapture,
+    RecordedClipboard,
 )
 from .has_driver import (
     exception_indicates_click_intercepted,
@@ -470,6 +477,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             yield
         finally:
             self.remove_local_storage(key)
+
+    @contextlib.contextmanager
+    def capture_clipboard(self) -> Iterator[ClipboardCapture]:
+        """Record text the page copies to the clipboard for the scope of the context.
+
+        Usage:
+            with self.capture_clipboard() as clipboard:
+                copy_button.wait_for_and_click()
+                assert clipboard.wait_for_text() == expected_text
+        """
+        timeout = self.wait_length(WAIT_TYPES.UX_TRANSITION)
+        with RecordedClipboard(self.execute_script, timeout) as clipboard:
+            yield clipboard
 
     @contextlib.contextmanager
     def in_frame(self, frame_reference: str | int | Any = "frame"):

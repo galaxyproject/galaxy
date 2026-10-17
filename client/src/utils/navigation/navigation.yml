@@ -86,6 +86,7 @@ preferences:
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    api_key_copy_button: '[data-description="copy api key"]'
     object_store: '#select-preferred-object-store'
     delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
@@ -176,6 +177,13 @@ confirm_dialog:
     message: '[data-description="confirm dialog message"]'
     ok_button: '[data-description="confirm dialog ok"]'
     cancel_button: '[data-description="confirm dialog cancel"]'
+
+toast:
+  selectors:
+    message: '[data-description="toast message"]'
+    message_with_text:
+      type: xpath
+      selector: '//div[@data-description="toast message" and contains(normalize-space(.), "${text}")]'
 
 dataset_view:
   selectors:
@@ -437,9 +445,9 @@ tool_panel:
   selectors:
     edam_link: 'a[href^="https://edamontology.github.io/edam-browser"]'
     tool_box: '[data-description="panel toolbox"]'
-    tool_link: 'a[href$$="/?tool_id=${tool_id}&version=latest"]'
-    outer_tool_link: '.toolTitle a[href$$="/?tool_id=${tool_id}&version=latest"]'
-    data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
+    tool_link: 'a.tool-link[data-tool-id="${tool_id}"][href$$="&version=latest"]'
+    outer_tool_link: '.toolTitle a.tool-link[data-tool-id="${tool_id}"][href$$="&version=latest"]'
+    data_source_tool_link: 'a.tool-link[data-tool-id="${tool_id}"][href*="tool_runner/data_source_redirect?"]'
     search: '.search-query'
     toolbox: '[data-description="panel toolbox"]'
     workflow_names: '#internal-workflows .toolTitle'
@@ -452,12 +460,12 @@ tools_list:
   selectors:
     _: '.tools-list'
     search_input: '.tools-list [data-description="filter text input"]'
-    tool_card: '#g-card-content-${tool_id}'
-    version_button: '#tools-list-${tool_id}'
-    favorite_tool_button: '#g-card-action-favorite-tool-${tool_id}'
-    toggle_help: '#g-card-content-${tool_id} [data-description="tools list toggle tool help"]'
-    tool_help: '#g-card-content-${tool_id} [data-description="tools list tool help"]'
-    open_tool_button: '#g-card-action-open-tool-${tool_id}'
+    tool_card: '[id="g-card-content-${tool_id}"]'
+    version_button: '[id="tools-list-${tool_id}"]'
+    favorite_tool_button: '[id="g-card-action-favorite-tool-${tool_id}"]'
+    toggle_help: '[id="g-card-content-${tool_id}"] [data-description="tools list toggle tool help"]'
+    tool_help: '[id="g-card-content-${tool_id}"] [data-description="tools list tool help"]'
+    open_tool_button: '[id="g-card-action-open-tool-${tool_id}"]'
 
 multi_history_panel:
   selectors:
@@ -1115,6 +1123,8 @@ workflow_editor:
     selectors:
       section_input_metadata: '[data-description="linting input metadata"]'
       item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
+      section_conditional_gates: '[data-description="linting conditional gates"]'
+      item_conditional_gate: '[data-description="linting conditional gates"] [data-item-index="${index}"]'
 
   comment:
     selectors:

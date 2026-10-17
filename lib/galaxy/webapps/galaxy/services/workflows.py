@@ -279,13 +279,31 @@ class WorkflowsService(ServiceBase):
             is_admin=trans.user_is_admin,
         )
         source = CuratedWorkflowSourceEnum(page.source)
+        imports: dict[str, tuple[int, str | None]] = {}
+        if trans.user is not None:
+            # Lets the card offer the user's copy, or a newer release, instead of another import.
+            page_trs_tool_ids = [trs_id for entry in page.entries if (trs_id := curated.entry_trs_tool_id(entry))]
+            imports = curated.find_imports(
+                page.entries, self._workflows_manager.trs_imports(trans.sa_session, trans.user.id, page_trs_tool_ids)
+            )
         return CuratedWorkflowsIndexResponse(
             source=source,
             total_matches=page.total_matches,
-            workflows=[CuratedWorkflow(**entry) for entry in page.entries],
+            workflows=[
+                self._catalog_to_curated(trans, entry, imports.get(entry.get("id") or "")) for entry in page.entries
+            ],
             message=CATALOG_MESSAGES.get(source),
             collections=[CuratedWorkflowCollection(name=name, count=count) for name, count in page.collections],
         )
+
+    def _catalog_to_curated(
+        self, trans: ProvidesUserContext, entry: dict[str, Any], imported: tuple[int, str | None] | None
+    ) -> CuratedWorkflow:
+        workflow = CuratedWorkflow(**entry)
+        if imported is not None:
+            workflow.imported_workflow_id = trans.security.encode_id(imported[0])
+            workflow.imported_version = imported[1]
+        return workflow
 
     def _local_to_curated(self, trans: ProvidesUserContext, wf: StoredWorkflow) -> CuratedWorkflow:
         encoded = trans.security.encode_id(wf.id)

@@ -5,6 +5,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes.data import Directory
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -115,16 +116,33 @@ def setup_for_runtimeify(
             )
         hda_entry, index = find_input(value.id, extensions)
         assert hda_entry.dataset is not None
+        datatype = hda_entry.datatype
+        is_directory = isinstance(datatype, Directory)
         properties: dict[str, Any] = {
-            "class": "File",
+            "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
             "format": hda_entry.extension,
-            "path": (
-                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
-            ),
-            "size": hda_entry.dataset.get_size(),
+            # A deferred dataset has no local file to measure.
+            "size": hda_entry.dataset.get_size(calculate_size=not hda_entry.has_deferred_data),
             "listing": [],
         }
+        if hda_entry.has_deferred_data:
+            # Not materialized: the tool consumes the source URI and there is no local path.
+            if not (source_uri := hda_entry.deferred_source_uri):
+                raise ValueError(f"Deferred dataset {hda_entry.id} has no source to read it from")
+            properties["location"] = source_uri
+        elif isinstance(datatype, Directory):
+            # The content sits at the root of the extra files, or in the folder an older dataset recorded.
+            extra_files_path = (
+                compute_environment.input_extra_files_rewrite(hda_entry)
+                if compute_environment
+                else hda_entry.extra_files_path
+            )
+            properties["path"] = datatype.content_path(hda_entry, extra_files_path)
+        else:
+            properties["path"] = (
+                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
+            )
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         return DataInternalJson(**properties)
 

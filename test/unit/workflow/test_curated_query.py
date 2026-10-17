@@ -265,6 +265,15 @@ def test_raw_text_search_ignores_annotations_by_other_users(manager: WorkflowsMa
     assert total_matches == 0
 
 
+def test_is_runnable_matches_nothing_in_local_mode(manager: WorkflowsManager, trans: MockTrans) -> None:
+    """Local rows get no tool check, so the catalog-only flag can't vouch for any of them."""
+    make_workflow(trans, make_user(trans, CURATED_OWNER), "Hosted here")
+
+    names, total_matches = query(manager, trans, [CURATED_OWNER], search="is:runnable")
+    assert names == []
+    assert total_matches == 0
+
+
 def test_search_never_leaks_workflows_from_other_owners(manager: WorkflowsManager, trans: MockTrans) -> None:
     make_workflow(trans, make_user(trans, CURATED_OWNER), "Shared name")
     make_workflow(trans, make_user(trans, f"{CURATED_OWNER}-mirror"), "Shared name")
@@ -281,3 +290,76 @@ def test_search_with_thousands_of_keyed_terms_is_bounded(manager: WorkflowsManag
     names, total_matches = query(manager, trans, [CURATED_OWNER], search=" ".join("name:x" for _ in range(1100)))
     assert names == ["x marks the spot"]
     assert total_matches == 1
+
+
+VELOCYTO_TRS_ID = "#workflow/github.com/iwc-workflows/velocyto/main"
+
+
+def make_import(
+    trans: MockTrans,
+    user: model.User,
+    name: str,
+    source_metadata: dict[str, Any] | None,
+    deleted: bool = False,
+    update_time: datetime | None = None,
+    hidden: bool = False,
+) -> model.StoredWorkflow:
+    stored_workflow = make_workflow(trans, user, name, published=False, deleted=deleted, update_time=update_time)
+    stored_workflow.latest_workflow.source_metadata = source_metadata
+    stored_workflow.hidden = hidden
+    trans.sa_session.commit()
+    return stored_workflow
+
+
+def test_trs_imports_maps_the_users_live_imports(manager: WorkflowsManager, trans: MockTrans) -> None:
+    user = make_user(trans, "importer")
+    make_import(
+        trans,
+        user,
+        "Velocyto v0.1, renamed since",
+        {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.1"},
+        update_time=datetime(2026, 1, 1),
+    )
+    newer = make_import(
+        trans,
+        user,
+        "Velocyto v0.2",
+        {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.2"},
+        update_time=datetime(2025, 1, 1),
+    )
+    make_import(trans, user, "Deleted copy", {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v9"}, deleted=True)
+    make_import(trans, make_user(trans, "someone-else"), "Not mine", {"trs_tool_id": VELOCYTO_TRS_ID})
+    make_import(trans, user, "Uploaded by hand", None)
+    make_import(trans, user, "From a URL", {"url": "https://example.org/workflow.ga"})
+    make_import(trans, user, "Not on this page", {"trs_tool_id": "#workflow/elsewhere", "trs_version_id": "v1"})
+
+    # The most recent import wins, even when an older copy was touched more recently;
+    # deleted, hand-made, URL and other users' workflows don't count, nor ids not asked about.
+    assert manager.trs_imports(trans.sa_session, user.id, [VELOCYTO_TRS_ID, "#workflow/never-imported"]) == {
+        VELOCYTO_TRS_ID: (newer.id, "v0.2")
+    }
+
+
+def test_trs_imports_drops_an_import_once_it_is_edited(manager: WorkflowsManager, trans: MockTrans) -> None:
+    """An editor save adds a revision with no source_metadata; like the rest of Galaxy, the
+    catalog stops treating the copy as the import from then on."""
+    user = make_user(trans, "editor")
+    stored_workflow = make_import(trans, user, "Velocyto", {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.1"})
+    edited = model.Workflow()
+    edited.stored_workflow = stored_workflow
+    edited.source_metadata = {}
+    stored_workflow.latest_workflow = edited
+    trans.sa_session.commit()
+
+    assert manager.trs_imports(trans.sa_session, user.id, [VELOCYTO_TRS_ID]) == {}
+
+
+def test_trs_imports_ignores_hidden_subworkflow_copies(manager: WorkflowsManager, trans: MockTrans) -> None:
+    """Importing a workflow that pulls in a subworkflow by TRS makes a hidden copy of it
+    with the same source metadata; that copy isn't something the user imported."""
+    user = make_user(trans, "parent-importer")
+    make_import(
+        trans, user, "Velocyto (subworkflow)", {"trs_tool_id": VELOCYTO_TRS_ID, "trs_version_id": "v0.1"}, hidden=True
+    )
+
+    assert manager.trs_imports(trans.sa_session, user.id, [VELOCYTO_TRS_ID]) == {}

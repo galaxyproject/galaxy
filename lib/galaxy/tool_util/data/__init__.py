@@ -1354,8 +1354,16 @@ class ToolDataTableManager(Dictifiable):
         bundle_description: DataTableBundleProcessorDescription,
         repo_info: RepoInfo | None,
         options: "BundleProcessingOptions",
+        source_extra_files_paths: Mapping[str, str] | None = None,
     ) -> list[str]:
         data_manager_dict: dict[str, Any] = _data_manager_dict(out_data)
+        for output_name, source_extra_files_path in (source_extra_files_paths or {}).items():
+            _rebase_bundle_data_table_paths(
+                data_manager_dict.get("data_tables", {}),
+                source_extra_files_path,
+                bundle_description,
+                target_extra_files_path=out_data[output_name].extra_files_path,
+            )
         bundle = DataTableBundle(
             processor_description=bundle_description,
             data_tables=data_manager_dict.get("data_tables", {}),
@@ -1396,7 +1404,7 @@ class ToolDataTableManager(Dictifiable):
 
             extra_files_path = dataset.extra_files_path
             source_extra_files_path = (source_extra_files_paths or {}).get(output_name, extra_files_path)
-            _relativize_bundle_data_table_paths(
+            _rebase_bundle_data_table_paths(
                 data_manager_dict.get("data_tables", {}), source_extra_files_path, bundle_description
             )
             bundle = DataTableBundle(
@@ -1439,10 +1447,11 @@ def _iter_bundle_rows(data_table_values: Any) -> Iterator[dict[str, Any]]:
         yield from (row for row in data_table_values if isinstance(row, dict))
 
 
-def _relativize_bundle_data_table_paths(
+def _rebase_bundle_data_table_paths(
     data_tables: dict[str, Any],
     extra_files_path: str,
     bundle_description: DataTableBundleProcessorDescription,
+    target_extra_files_path: str | None = None,
 ) -> None:
     """Rewrite absolute path values under the compute-side extra-files dir.
 
@@ -1450,16 +1459,23 @@ def _relativize_bundle_data_table_paths(
     directory (e.g. MetaPhlAn's ``$out_file.extra_files_path/$index``) rather
     than the expected relative path; that absolute path no longer resolves once
     the bundle is staged elsewhere, so imports and chained data managers fail.
-    Paths already relative, or outside that directory, are left untouched.
+    Such paths become relative to the extra-files dir. For declared tables they
+    are joined onto ``target_extra_files_path`` when given, which is where their
+    ``<move>`` and value translations look. Undeclared tables keep relative
+    paths because their files move into the data manager path wholesale. Paths
+    already relative, or outside that directory, are left untouched.
     """
     for data_table_name, data_table_values in data_tables.items():
         path_headers = get_path_headers(bundle_description, data_table_name)
+        target = target_extra_files_path if data_table_name in bundle_description.data_table_names else None
         for row in _iter_bundle_rows(data_table_values):
             for header in path_headers:
                 path = row.get(header)
                 if path and os.path.isabs(path):
                     rel = os.path.relpath(path, extra_files_path)
                     if rel != os.pardir and not rel.startswith(os.pardir + os.sep):
+                        if target is not None:
+                            rel = os.path.normpath(os.path.join(target, rel))
                         row[header] = rel
 
 
