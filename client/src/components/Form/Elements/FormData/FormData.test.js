@@ -639,6 +639,33 @@ describe("FormData batch hint", () => {
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
 
+    it("shows mapped over info for a dropped nested collection on a collection input", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired"],
+            value: null,
+            optional: true,
+            options: pairedOptions,
+        });
+        eventStore.setDragData({
+            id: "hdca9",
+            hid: 9,
+            name: "droppedListPaired",
+            history_content_type: "dataset_collection",
+            collection_type: "list:paired",
+        });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        const emitted = wrapper.emitted().input.at(-1)[0];
+        expect(emitted).toEqual({
+            batch: true,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: "paired", src: "hdca" }],
+        });
+        await wrapper.setProps({ value: emitted });
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+    });
+
     it("shows mapped over info when any of multiple selected collections maps over", async () => {
         const wrapper = createTarget({
             multiple: true,
