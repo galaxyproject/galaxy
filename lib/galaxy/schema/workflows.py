@@ -597,11 +597,6 @@ class WorkflowExtractionByIdsPayload(Model):
             "inputs/outputs/steps by label."
         ),
     )
-    report_title: str | None = Field(
-        None,
-        title="Report Title",
-        description="Title for the workflow report built from from_page_id; defaults to the workflow name.",
-    )
 
     @model_validator(mode="after")
     def _at_least_one_input(self):
