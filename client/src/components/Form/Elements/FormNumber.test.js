@@ -87,15 +87,13 @@ describe("FormNumber", () => {
             await input.trigger("change");
             const alert = await getAlert(wrapper);
             expect(alert.text()).toContain(expectedAlert);
-            if (expectedValue !== undefined) {
-                expect(wrapper.emitted().input.at(-1)).toEqual([expectedValue]);
-            }
+            expect(wrapper.emitted().input.at(-1)).toEqual([expectedValue]);
             expect((await getInputRange(wrapper)).exists()).toBe(false);
             wrapper.destroy();
         };
 
         await checkSingleBound({ min: null, max: 5 }, 7, "7 is out of range! (7 > 5)", 5);
-        await checkSingleBound({ min: 5, max: null }, 3, "3 is out of range! (3 < 5)");
+        await checkSingleBound({ min: 5, max: null }, 3, "3 is out of range! (3 < 5)", 5);
     });
 
     it("shows a validation alert when entering a decimal for integer type", async () => {

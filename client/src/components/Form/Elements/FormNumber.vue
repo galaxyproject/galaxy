@@ -136,7 +136,7 @@ export default {
             this.resetAlert();
             if (this.isOutOfRange(value)) {
                 this.showOutOfRangeWarning(value);
-                this.currentValue = value > this.max ? this.max : this.min;
+                this.currentValue = this.isAboveMax(value) ? this.max : this.min;
             }
             if (this.isFloat) {
                 this.decimalPlaces = this.getNumberOfDecimals(this.currentValue);

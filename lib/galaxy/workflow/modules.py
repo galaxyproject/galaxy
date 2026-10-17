@@ -1596,7 +1596,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: dict[str, Union[str, list[dict[str, Any]]]] = {}
+        parameter_kwds: dict[str, Any] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1635,8 +1635,16 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
-        if parameter_def.get("validators"):
-            parameter_kwds["validators"] = parameter_def["validators"]
+        validators = list(parameter_def.get("validators") or [])
+        if parameter_type in ["integer", "float"]:
+            # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
+            range_validator = next((v for v in validators if v["type"] == "in_range"), None)
+            if range_validator:
+                validators.remove(range_validator)
+                parameter_kwds["min"] = range_validator.get("min")
+                parameter_kwds["max"] = range_validator.get("max")
+        if validators:
+            parameter_kwds["validators"] = validators
 
         client_parameter_type = parameter_type
         if restricted_inputs:
