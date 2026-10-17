@@ -439,7 +439,7 @@ describe("FormData", () => {
         });
         const noCheckLinked = wrapper.find("input[type='checkbox']");
         expect(noCheckLinked.exists()).toBeFalsy();
-        await wrapper.find("[title='Multiple datasets'").trigger("click");
+        await wrapper.find("[title='Multiple datasets']").trigger("click");
         expect(wrapper.emitted().input[1][0]).toEqual(null);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
@@ -505,7 +505,7 @@ describe("FormData", () => {
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
         expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
-        await wrapper.find("[title='Multiple datasets'").trigger("click");
+        await wrapper.find("[title='Multiple datasets']").trigger("click");
         expect(options.at(0).classes()).toContain("active");
         expect(wrapper.emitted().input[2][0]).toEqual(null);
     });
@@ -534,5 +534,80 @@ describe("FormData", () => {
         const select_2 = wrapper_2.findAll(SELECT_OPTIONS);
         expect(select_2.length).toBe(3);
         expect(select_2.at(2).text()).toContain("3: hdaName3");
+    });
+});
+
+describe("FormData batch hint", () => {
+    const BATCH_INFO = ".info.text-info";
+    const MAPPED_OVER = /^The supplied input will be .*mapped over this tool\.$/;
+
+    function batchInfoText(wrapper) {
+        const info = wrapper.find(BATCH_INFO);
+        expect(info.exists()).toBe(true);
+        return info.text().replace(/\s+/g, " ");
+    }
+
+    it("shows mapped over info for a collection selected on a data input", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+    });
+
+    it("shows no batch info for a single dataset on a data input", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "hda1", src: "hda" }] },
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    it("shows batch mode info for multiple datasets on a data input", async () => {
+        const wrapper = createTarget({
+            value: null,
+            options: defaultOptions,
+        });
+        await wrapper.find("[title='Multiple datasets']").trigger("click");
+        expect(wrapper.find(BATCH_INFO).text()).toBe(
+            "This is a batch mode input field. Individual jobs will be triggered for each dataset.",
+        );
+    });
+
+    it("shows no batch info for a collection directly selected on a collection input", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    const pairedOptions = {
+        hdca: [
+            {
+                id: "hdca7",
+                hid: 7,
+                name: "listPaired",
+                src: "hdca",
+                collection_type: "list:paired",
+                map_over_type: "paired",
+            },
+            { id: "hdca8", hid: 8, name: "pair", src: "hdca", collection_type: "paired" },
+        ],
+    };
+
+    it("shows no batch info for multiple directly selected collections", async () => {
+        const wrapper = createTarget({
+            multiple: true,
+            value: { values: [{ id: "hdca8", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".btn-group .active").attributes("title")).toBe("Dataset collection");
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
 });
