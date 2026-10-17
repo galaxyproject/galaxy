@@ -73,6 +73,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import (
     EMBED_DIRECTIVE_REGEX,
     GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
+    is_quotable_argument_value,
     validate_galaxy_markdown,
 )
 
@@ -1271,6 +1272,18 @@ def populate_invocation_markdown(trans: ProvidesHistoryContext, invocation, work
     return galaxy_markdown
 
 
+def _invocation_section(kind: Literal["input", "output"], content_type: str, label: str | None) -> str:
+    """One expanded ``invocation_inputs``/``invocation_outputs`` section, or nothing for a label
+    that is absent or has no quoted directive form."""
+    if not label or not is_quotable_argument_value(label):
+        return ""
+    if content_type == "dataset":
+        title, directive = "Dataset", "history_dataset_display"
+    else:
+        title, directive = "Dataset Collection", "history_dataset_collection_display"
+    return f'#### {kind.capitalize()} {title}: {label}\n```galaxy\n{directive}({kind}="{label}")\n```\n'
+
+
 def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
     """Resolve invocation objects to convert markdown to 'internal' representation.
 
@@ -1305,40 +1318,16 @@ def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
         if container == "invocation_outputs":
             section_markdown = ""
             for output_assoc in invocation.output_associations:
-                if output_assoc.workflow_output.label:
-                    if output_assoc.history_content_type == "dataset":
-                        section_markdown += (
-                            f"#### Output Dataset: {output_assoc.workflow_output.label}\n"
-                            "```galaxy\n"
-                            f'history_dataset_display(output="{output_assoc.workflow_output.label}")\n'
-                            "```\n"
-                        )
-                    else:
-                        section_markdown += (
-                            f"#### Output Dataset Collection: {output_assoc.workflow_output.label}\n"
-                            "```galaxy\n"
-                            f'history_dataset_collection_display(output="{output_assoc.workflow_output.label}")\n'
-                            "```\n"
-                        )
+                section_markdown += _invocation_section(
+                    "output", output_assoc.history_content_type, output_assoc.workflow_output.label
+                )
             return section_markdown, True
         elif container == "invocation_inputs":
             section_markdown = ""
             for input_assoc in invocation.input_associations:
-                if input_assoc.workflow_step.label:
-                    if input_assoc.history_content_type == "dataset":
-                        section_markdown += (
-                            f"#### Input Dataset: {input_assoc.workflow_step.label}\n"
-                            "```galaxy\n"
-                            f'history_dataset_display(input="{input_assoc.workflow_step.label}")\n'
-                            "```\n"
-                        )
-                    else:
-                        section_markdown += (
-                            f"#### Input Dataset Collection: {input_assoc.workflow_step.label}\n"
-                            "```galaxy\n"
-                            f"history_dataset_collection_display(input={input_assoc.workflow_step.label})\n"
-                            "```\n"
-                        )
+                section_markdown += _invocation_section(
+                    "input", input_assoc.history_content_type, input_assoc.workflow_step.label
+                )
             return section_markdown, True
         elif container == "invocation_time":
             return (f"invocation_time(invocation_id={invocation.id})\n", False)
