@@ -92,13 +92,15 @@ describe("ToolsList", () => {
         vi.useRealTimers();
     });
 
-    it.each([RAW_TAG_SEARCH, "tag:alpha OR tag:beta", MIXED_TAG_SEARCH])(
-        "keeps complex search %s out of the structured pickers",
+    it.each(["fastqc", "#favorites", "unknown:term", RAW_TAG_SEARCH, "tag:alpha OR tag:beta", MIXED_TAG_SEARCH])(
+        "keeps unrepresentable search %s out of the structured pickers",
         async (search) => {
             const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search } });
             await flushPromises();
             expect(wrapper.findComponent(ToolsListTagFilter).props("selectedTags")).toEqual([]);
             expect(wrapper.findComponent(ToolsListTagFilter).props("disabled")).toBe(true);
+            expect(wrapper.get(".tool-tags-dropdown button.dropdown-toggle").attributes("disabled")).toBeDefined();
+            expect(wrapper.get(".tool-section-dropdown button.dropdown-toggle").attributes("disabled")).toBeDefined();
             expect(wrapper.find('button[title^="Remove tag"]').exists()).toBe(false);
             expect(wrapper.text()).not.toContain("Tools must match all selected tags.");
             expect(wrapper.text()).toContain("Edit this search in the search field to preserve its conditions.");

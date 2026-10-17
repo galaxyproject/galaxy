@@ -290,11 +290,18 @@ const shouldPreserveRawSearchText = computed(
         structuredFilterText.value !== filterText.value.trim(),
 );
 
-// Boolean expressions and mixed free-text queries cannot be represented faithfully
-// by the structured filter editor. Keep them in the search field.
-const canUseFilterPickers = computed(
-    () => !hasExplicitBooleanQuery(filterText.value) && !shouldPreserveRawSearchText.value,
-);
+// Only searches made entirely of structured filters can be edited without losing conditions.
+const canUseFilterPickers = computed(() => {
+    const searchText = filterText.value.trim();
+    if (!searchText) {
+        return true;
+    }
+    if (hasExplicitBooleanQuery(searchText)) {
+        return false;
+    }
+    const parsed = parseInlineFilterClauses(searchText);
+    return parsed !== null && !parsed.remainder;
+});
 
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
