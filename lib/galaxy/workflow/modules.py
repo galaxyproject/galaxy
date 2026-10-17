@@ -1645,8 +1645,9 @@ class InputParameterModule(WorkflowModule):
         bounds, validators = split_numeric_bounds(parameter_def)
         if bounds:
             if numeric_bounds_inverted(bounds):
+                input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
                 raise RequestParameterInvalidException(
-                    f"Workflow input '{self.label}' has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
+                    f"{input_name} has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
                 )
             parameter_kwds.update(bounds)
         if validators:

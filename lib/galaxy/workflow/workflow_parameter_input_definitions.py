@@ -42,8 +42,8 @@ def split_numeric_bounds(
 
 
 def numeric_bounds_inverted(bounds: numeric_bounds_type) -> bool:
-    min, max = bounds["min"], bounds["max"]
-    return min is not None and max is not None and min > max
+    lower, upper = bounds["min"], bounds["max"]
+    return lower is not None and upper is not None and lower > upper
 
 
 def get_default_parameter(

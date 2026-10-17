@@ -13,6 +13,7 @@ from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import (
     NO_REPLACEMENT,
     workflow_building_modes,
@@ -182,20 +183,25 @@ def test_parameter_input_editor_default_has_bounds(parameter_type, min, max):
 
 
 def test_parameter_input_editor_default_follows_edited_bounds():
+    # Mirrors the editor's build_module: form values arrive without the previous tool state.
     trans = MockTrans()
     trans.workflow_building_mode = workflow_building_modes.ENABLED
-    tool_state = {
-        "parameter_definition": {
-            "parameter_type": "integer",
-            "optional": {"optional": "false"},
-            "min": "2",
-            "max": "4",
-            "restrictions": {"how": "none"},
-        }
+    module = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
+    incoming = {
+        "parameter_definition|parameter_type": "integer",
+        "parameter_definition|optional|optional": "false",
+        "parameter_definition|optional|specify_default|specify_default": "true",
+        "parameter_definition|optional|specify_default|default": "20",
+        "parameter_definition|min": "2",
+        "parameter_definition|max": "4",
+        "parameter_definition|restrictions|how": "none",
     }
-    module = modules.module_factory.from_dict(
-        trans, {"type": "parameter_input", "tool_state": tool_state}, from_tool_form=True
-    )
+    state: dict[str, Any] = {}
+    errors: dict[str, Any] = {}
+    populate_state(trans, module.get_inputs(), incoming, state, errors=errors, check=True)
+    module.recover_state(state, from_tool_form=True)
+    assert not errors
+    assert module.get_export_state()["default"] == 20
     field = __editor_default_parameter(module, "integer").to_dict(trans)
     assert (field["min"], field["max"]) == (2, 4)
 
@@ -204,7 +210,7 @@ def test_parameter_input_inverted_bounds():
     module = __numeric_editor_module("integer", 5, 1)
     field = __editor_default_parameter(module, "integer").to_dict(module.trans)
     assert (field["min"], field["max"]) == (None, None)
-    with pytest.raises(RequestParameterInvalidException, match="Count"):
+    with pytest.raises(RequestParameterInvalidException, match="Workflow input 'Count' has a minimum"):
         module.get_runtime_inputs(__step())
 
 
