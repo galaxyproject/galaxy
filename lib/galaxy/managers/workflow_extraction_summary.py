@@ -481,8 +481,21 @@ def _input_producer_name(
     return False, None
 
 
+def _collections_by_original(history: History) -> dict[ContentRef, SummaryDatasets]:
+    """``history``'s collections keyed by their original's ref.
+
+    ``summarize`` records a copied collection as its original, which may sit in a history
+    the user can no longer access; input rows list these in-history collections instead.
+    """
+    collections: dict[ContentRef, SummaryDatasets] = {}
+    for hdca in history.contents_iter(types=["dataset_collection"]):
+        collections.setdefault(original_content_ref(hdca), []).append((None, hdca))
+    return collections
+
+
 def _summary_rows(
     trans: ProvidesHistoryContext,
+    history: History,
     jobs: dict[SummaryJob, SummaryDatasets],
     closure: ClosureResult | None,
 ) -> list[tuple[WorkflowExtractionJob, SummaryDatasets]]:
@@ -490,6 +503,7 @@ def _summary_rows(
     listing its in-history copies: extraction makes all copies of one original a single input.
     Each row is paired with the datasets it holds."""
     icj_assoc_by_job_id = _icj_assoc_by_job_id(trans, jobs)
+    collections_here = _collections_by_original(history)
     # Input rows are filled in once all their copies are known; None marks their place.
     pending: list[tuple[WorkflowExtractionJob | None, SummaryDatasets, str | None]] = []
     inputs: dict[ContentRef, SummaryDatasets] = {}
@@ -507,8 +521,9 @@ def _summary_rows(
             if copies is None:
                 copies = inputs[ref] = []
                 pending.append((None, copies, producer_name))
-            if all(data.id != item[1].id for _, data in copies):
-                copies.append(item)
+            for copy in collections_here.get(ref, [item]):
+                if all(data.id != copy[1].id for _, data in copies):
+                    copies.append(copy)
     rows: list[tuple[WorkflowExtractionJob, SummaryDatasets]] = []
     for row, datasets, producer_name in pending:
         if row is None:
@@ -530,7 +545,7 @@ def _serialize_summary(
     """With ``closure`` (page path), rows in the producing subgraph are flagged
     ``seeded`` and referenced outputs ``exposed``; boundary inputs not already
     present as input or seeded rows are synthesized as input rows."""
-    rows = _summary_rows(trans, jobs, closure)
+    rows = _summary_rows(trans, history, jobs, closure)
     jobs_list = [row for row, _ in rows]
     all_warnings = list(warnings)
     if closure is not None:

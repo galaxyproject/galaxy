@@ -1263,10 +1263,43 @@ test_data:
         hdca_copy = self._copy_content_to_history(history_id, hdca)
         summary = self._get_extraction_summary(history_id)
         input_row = self._only_row_listing(summary, {hdca["id"], hdca_copy["id"]})
-        assert [o["id"] for o in input_row["outputs"]] == [hdca["id"]], input_row
+        assert [o["id"] for o in input_row["outputs"]] == [hdca["id"], hdca_copy["id"]], input_row
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"], hdca_copy["id"]], dataset_collection_names=["letters", "letters"]
         )
+        (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
+        assert input_step["label"] == "letters", input_step
+
+    @summarize_instance_history_on_error
+    def test_copies_from_a_history_no_longer_shared_extract_by_local_ids(self, history_id):
+        """Input cards list this history's copies, not their source in another user's now-private history."""
+        with self._different_user("extract_copy_source@bx.psu.edu"):
+            source_history_id = self.dataset_populator.new_history()
+            source_hda = self.dataset_populator.new_dataset(source_history_id, content="1 2 3\n", wait=True)
+            source_hdca = self.dataset_collection_populator.create_list_in_history(
+                source_history_id, contents=["a\n", "b\n"], wait=True
+            ).json()["outputs"][0]
+            self.dataset_populator.make_public(source_history_id)
+        hda_copy = self._copy_content_to_history(history_id, source_hda)
+        hdca_copies = [self._copy_content_to_history(history_id, source_hdca) for _ in range(2)]
+        hdca_copy_ids = [hdca_copy["id"] for hdca_copy in hdca_copies]
+        with self._different_user("extract_copy_source@bx.psu.edu"):
+            self._assert_status_code_is(self._put(f"histories/{source_history_id}/disable_link_access"), 200)
+        self._assert_extract_rejected({"workflow_name": "source", "hdca_ids": [source_hdca["id"]]}, (400, 403))
+        summary = self._get_extraction_summary(history_id)
+        # Encoded HDA and HDCA ids can coincide, so rows are told apart by step type.
+        (hda_row,) = self._rows_by_type(summary, "input_dataset")
+        assert [o["id"] for o in hda_row["outputs"]] == [hda_copy["id"]], hda_row
+        (hdca_row,) = self._rows_by_type(summary, "input_collection")
+        assert [o["id"] for o in hdca_row["outputs"]] == hdca_copy_ids, hdca_row
+        assert [o["hid"] for o in hdca_row["outputs"]] == [c["hid"] for c in hdca_copies], hdca_row
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[hda_copy["id"]],
+            dataset_names=["numbers"],
+            hdca_ids=hdca_copy_ids,
+            dataset_collection_names=["letters", "letters"],
+        )
+        self.assert_steps_of_type(downloaded, "data_input", expected_len=1)
         (input_step,) = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)
         assert input_step["label"] == "letters", input_step
 
