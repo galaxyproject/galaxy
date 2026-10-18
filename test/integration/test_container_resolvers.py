@@ -952,7 +952,7 @@ class ExplicitTestCase:
 
 class ExplicitSingularityTestCase:
     tool_id = "explicit_singularity_container"
-    mulled_hash = "shub://GodloveD/lolcow-installer:latest"
+    mulled_hash = "docker://quay.io/biocontainers/bwa:0.7.17--h7132678_9"
 
 
 class TestExplicitContainerResolver(DockerContainerResolverTestCase, ContainerResolverTestCases, ExplicitTestCase):
@@ -1153,9 +1153,9 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
     """
     test cached_explict_singularity container resolver for a tool with singularity container requirement
 
-    same as for tools with docker requirement, but the shub:// will be
-    represented by `shub:/` in the cached path therefore we need to call replace
-    here
+    same as for tools with docker requirement, but the identifier is used as is,
+    i.e. the docker:// is represented by `docker:/` in the cached path therefore
+    we need to call replace here
     """
 
     container_resolvers_config: list[dict[str, Any]] = [
@@ -1164,11 +1164,12 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
     assumptions: dict[str, Any] = {
         "run": {
             "output": [
-                "cowsay works LOL",
+                "Program: bwa (alignment via Burrows-Wheeler transformation)",
+                "Version: 0.7.17-r1188",
             ],
-            "cached": False,
+            "cached": True,
             "resolver_type": "cached_explicit_singularity",
-            "cache_name": f"quay.io/biocontainers/{ExplicitSingularityTestCase.mulled_hash}",
+            "cache_name": ExplicitSingularityTestCase.mulled_hash,
             "cache_namespace": "biocontainers",
         },
         "list": [
@@ -1178,7 +1179,7 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
                     "//", "/"
                 ),
                 "cached": False,
-                "cache_name": f"quay.io/biocontainers/{ExplicitSingularityTestCase.mulled_hash}",
+                "cache_name": ExplicitSingularityTestCase.mulled_hash,
                 "cache_namespace": "biocontainers",
             },
             {
@@ -1187,7 +1188,7 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
                     "//", "/"
                 ),
                 "cached": False,
-                "cache_name": f"quay.io/biocontainers/{ExplicitSingularityTestCase.mulled_hash}",
+                "cache_name": ExplicitSingularityTestCase.mulled_hash,
                 "cache_namespace": "biocontainers",
             },
         ],
