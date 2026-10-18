@@ -10,6 +10,7 @@ from typing import (
 
 from packaging.version import Version
 
+from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
 from galaxy.util import (
     in_directory,
     string_as_bool,
@@ -23,22 +24,13 @@ if TYPE_CHECKING:
     )
 
 
-def restricts_tool_data_files(config) -> bool:
-    """True if files a tool names must stay inside ``config.tool_data_path``.
-
-    Tool Shed validation loads untrusted tools with a work dir as ``tool_data_path``,
-    these must not read other files on the host.
-    """
-    return getattr(config, "restrict_tool_data_files", False)
-
-
 def resolve_tool_data_file(config, filename: str) -> Optional[str]:
     """Resolve a file a tool names against ``config.tool_data_path``, an absolute filename is kept.
 
-    Returns None if the file must stay inside ``tool_data_path`` but doesn't.
+    Returns None for an untrusted tool's file outside of ``tool_data_path``.
     """
     path = os.path.join(config.tool_data_path, filename)
-    if restricts_tool_data_files(config) and not in_directory(path, config.tool_data_path):
+    if is_loading_untrusted_tools() and not in_directory(path, config.tool_data_path):
         return None
     return path
 
@@ -123,7 +115,11 @@ def text_input_is_optional(input_source: "InputSource") -> Tuple[bool, bool]:
     else:
         # A text parameter that doesn't raise a validation error on empty string
         # is considered to be optional
-        if statically_validates(input_source.parse_validators(), ""):
+        validators = input_source.parse_validators()
+        if is_loading_untrusted_tools() and any(validator.type == "expression" for validator in validators):
+            # expression validators are Python, which untrusted tools must not run
+            optional = False
+        elif statically_validates(validators, ""):
             optional = True
             optionality_inferred = True
         else:

@@ -19,8 +19,6 @@ class ValidationContextConfig:
     interactivetools_enable: bool
     len_file_path: str
     builds_file_path: Optional[str]
-    # validated tools come from Tool Shed repositories, keep files they name inside tool_data_path
-    restrict_tool_data_files = True
 
 
 class ValidationContext:

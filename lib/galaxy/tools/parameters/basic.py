@@ -59,10 +59,10 @@ from galaxy.tool_util.parser.util import (
     boolean_true_and_false_values,
     multiple_select_value_split,
     ParameterParseException,
-    restricts_tool_data_files,
     text_input_is_optional,
 )
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
+from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.pagination import (
     DataOptionsBuilder,
@@ -1686,7 +1686,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         self.separator = input_source.get("separator", ",")
         tool_data_path = None
         # deprecated from_file isn't read for untrusted tools at all
-        if self.tool and not restricts_tool_data_files(self.tool.app.config):
+        if self.tool and not is_loading_untrusted_tools():
             tool_data_path = self.tool.app.config.tool_data_path
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:

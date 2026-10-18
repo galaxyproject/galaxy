@@ -4,7 +4,9 @@ from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util_models.parameters import (
     DataCollectionParameterModel,
     DrillDownParameterModel,
+    TextParameterModel,
 )
+from galaxy.tool_util_models.untrusted import loading_untrusted_tools
 
 
 def test_input_collection_type():
@@ -34,3 +36,31 @@ def test_drill_down_from_file_is_not_read(tmp_path):
         tool_input = parse_tool(get_tool_source(str(tool_path))).inputs[0]
         assert isinstance(tool_input, DrillDownParameterModel)
         assert tool_input.options is None
+
+
+EXPRESSION_VALIDATOR_TOOL = """<tool id="expression_validator" name="expression_validator" version="1.0.0">
+    <command>echo '$parameter'</command>
+    <inputs>
+        <param name="parameter" type="text">
+            <validator type="expression">__import__('pathlib').Path('{marker}').touch() is None</validator>
+        </param>
+    </inputs>
+    <outputs/>
+</tool>
+"""
+
+
+def test_untrusted_expression_validator_is_not_evaluated(tmp_path):
+    marker = tmp_path / "marker"
+    tool_path = tmp_path / "tool.xml"
+    tool_path.write_text(EXPRESSION_VALIDATOR_TOOL.format(marker=marker))
+    with loading_untrusted_tools():
+        untrusted_input = parse_tool(get_tool_source(str(tool_path))).inputs[0]
+    assert not marker.exists()
+    assert isinstance(untrusted_input, TextParameterModel)
+    assert untrusted_input.optional is False
+    # trusted tools still infer optionality from their validators
+    trusted_input = parse_tool(get_tool_source(str(tool_path))).inputs[0]
+    assert marker.exists()
+    assert isinstance(trusted_input, TextParameterModel)
+    assert trusted_input.optional is True

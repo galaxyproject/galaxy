@@ -1,5 +1,6 @@
 import os
 import shutil
+import string
 from contextlib import contextmanager
 
 import pytest
@@ -196,6 +197,78 @@ def test_validation_keeps_tool_data_files_in_work_dir(tmp_path, tool_template):
         assert valid is False
         # an existing file outside the work dir is reported like a missing one
         assert load(missing) == (False, message.replace(outside, missing))
+
+
+UNTRUSTED_PYTHON_TOOL = """<tool id="untrusted_python" name="untrusted_python" version="1.0.0">
+    <command>echo '$expression' '$sanitized' '$from_parameter'</command>
+    <inputs>
+        <param name="expression" type="text">
+            <validator type="expression">__import__('pathlib').Path('{marker}').touch() is None</validator>
+        </param>
+        <param name="sanitized" type="text">
+            <sanitizer>
+                <valid initial="string.digits if __import__('pathlib').Path('{marker}').touch() is None else ''"/>
+            </sanitizer>
+        </param>
+        <param name="from_parameter" type="select">
+            <options from_parameter="tool.app.config.tool_data_path" transform_lines="__import__('pathlib').Path('{marker}').touch() or []">
+                <column name="value" index="0"/>
+                <column name="name" index="0"/>
+            </options>
+        </param>
+        <param name="digits" type="text">
+            <sanitizer>
+                <valid initial="string.digits"/>
+            </sanitizer>
+        </param>
+    </inputs>
+    <outputs/>
+</tool>
+"""
+
+
+def test_validation_does_not_run_tool_python(tmp_path):
+    marker = tmp_path / "marker"
+    full_path = tmp_path / "tool.xml"
+    full_path.write_text(UNTRUSTED_PYTHON_TOOL.format(marker=marker))
+    with get_tool_validator() as tv:
+        tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=str(full_path))
+    assert valid is True, message
+    assert not marker.exists()
+    assert tool.inputs["expression"].optional is False
+    assert tool.inputs["digits"].sanitizer.get_valid_by_name("string.digits") == list(string.digits)
+
+
+TOOL_TEST_EXPRESSION_TOOL = """<tool id="tool_test_expression" name="tool_test_expression" version="1.0.0" profile="24.2">
+    <command>echo '$expression' > '$output'</command>
+    <inputs>
+        <param name="expression" type="text" optional="true">
+            <validator type="expression">__import__('pathlib').Path('{marker}').touch() is None</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="expression" value="a"/>
+            <output name="output" value="a.txt"/>
+        </test>
+    </tests>
+</tool>
+"""
+
+
+def test_validation_does_not_run_tool_python_validating_tool_tests(tmp_path):
+    marker = tmp_path / "marker"
+    full_path = tmp_path / "tool.xml"
+    full_path.write_text(TOOL_TEST_EXPRESSION_TOOL.format(marker=marker))
+    with get_tool_validator() as tv:
+        tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=str(full_path))
+        assert valid is True, message
+        tests = tool.tests
+    assert not marker.exists()
+    assert tests and not tests[0].exception
 
 
 @contextmanager

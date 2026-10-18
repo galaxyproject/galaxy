@@ -29,6 +29,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.adapters import CollectionAdapter
 from galaxy.tool_util.parser.util import resolve_tool_data_file
+from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
@@ -631,6 +632,9 @@ class DynamicOptions:
 
     def __init__(self, elem: Element, tool_param):
         def load_from_parameter(from_parameter, transform_lines=None):
+            if is_loading_untrusted_tools():
+                # from_parameter walks Galaxy objects and transform_lines is Python
+                return []
             obj = self.tool_param
             for field in from_parameter.split("."):
                 obj = getattr(obj, field)
