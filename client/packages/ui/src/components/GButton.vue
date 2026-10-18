@@ -7,7 +7,7 @@
 import type { Placement } from "@floating-ui/dom";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref } from "vue";
+import { computed, ref, useAttrs } from "vue";
 import type { RouterLink } from "vue-router";
 
 import { useClickableElement } from "../composables/clickableElement";
@@ -17,40 +17,46 @@ import { type ComponentColor, type ComponentSize, type ComponentVariantClassList
 
 import GTooltip from "./GTooltip.vue";
 
-const props = defineProps<{
-    /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
-    href?: string;
-    /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
-    to?: string;
-    /** Which color scheme to use for the component. Not setting this will make the button appear grey */
-    color?: ComponentColor;
-    /** Outline variant of the button. Can be used together with the `pressed` state */
-    outline?: boolean;
-    /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
-    disabled?: boolean;
-    /** Title attribute, or tooltip text */
-    title?: string;
-    /** Alternative title to be displayed in a disabled state */
-    disabledTitle?: string;
-    /** Displayed size of the component */
-    size?: ComponentSize;
-    /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
-    tooltip?: boolean;
-    /** Controls the positioning of the tooltip, if a tooltip is active */
-    tooltipPlacement?: Placement;
-    /** Inline variant of the button. Affects buttons size, and positioning */
-    inline?: boolean;
-    /** Small, icon-only variant of the button */
-    iconOnly?: boolean;
-    /** Variant of the button without background or outline. Can be used together with the `pressed` state */
-    transparent?: boolean;
-    /** Variant of the button with more rounded corners */
-    pill?: boolean;
-    /** Pressed state allows for a toggle-like behavior of the button. For use with the outline and transparent variants */
-    pressed?: boolean;
-    /** Busy state. Shows a spinner and ignores clicks while keeping the button's color, so it reads as working rather than unavailable */
-    loading?: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        /** Href to set on the underlying 'a' element. Using this will turn the element into an anchor, not affecting the styling */
+        href?: string;
+        /** Router link "to" prop. Using this will turn the element into a router-link, not affecting the styling  */
+        to?: string;
+        /** Which color scheme to use for the component. Not setting this will make the button appear grey */
+        color?: ComponentColor;
+        /** Outline variant of the button. Can be used together with the `pressed` state */
+        outline?: boolean;
+        /** Disabled state. Changes appearance, and will no longer accept or forward clicks */
+        disabled?: boolean;
+        /** Title attribute, or tooltip text */
+        title?: string;
+        /** Alternative title to be displayed in a disabled state */
+        disabledTitle?: string;
+        /** Displayed size of the component */
+        size?: ComponentSize;
+        /** When set, uses a tooltip for the "title" prop, instead of the native title attribute */
+        tooltip?: boolean;
+        /** Controls the positioning of the tooltip, if a tooltip is active */
+        tooltipPlacement?: Placement;
+        /** Inline variant of the button. Affects buttons size, and positioning */
+        inline?: boolean;
+        /** Small, icon-only variant of the button */
+        iconOnly?: boolean;
+        /** Variant of the button without background or outline. Can be used together with the `pressed` state */
+        transparent?: boolean;
+        /** Variant of the button with more rounded corners */
+        pill?: boolean;
+        /** Pressed state of a toggle button, exposed as aria-pressed. Omit it on a button that is not a toggle: no aria-pressed is set. For use with the outline and transparent variants */
+        pressed?: boolean;
+        /** Busy state. Shows a spinner and ignores clicks while keeping the button's color, so it reads as working rather than unavailable */
+        loading?: boolean;
+    }>(),
+    {
+        // An absent Boolean prop would cast to false; undefined marks a button that is not a toggle.
+        pressed: undefined,
+    },
+);
 
 const emit = defineEmits<{
     (e: "click", event: PointerEvent): void;
@@ -110,6 +116,17 @@ const baseComponent = useClickableElement({
 const anchorAttributes = computed(() => (baseComponent.value === "a" ? { href: props.href } : {}));
 const currentTitle = useCurrentTitle(props);
 
+const attrs = useAttrs();
+
+// String: compat drops a `false` attribute. Skipped on links (not allowed) and on disclosures, whose state is aria-expanded.
+const ariaPressed = computed(() => {
+    const isDisclosure = attrs["aria-expanded"] !== undefined || attrs["aria-haspopup"] !== undefined;
+    if (baseComponent.value !== "button" || props.pressed === undefined || isDisclosure) {
+        return undefined;
+    }
+    return String(props.pressed);
+});
+
 const showTooltip = computed(() => props.tooltip && currentTitle.value);
 
 const buttonRef = ref<HTMLElement | InstanceType<typeof RouterLink> | null>(null);
@@ -128,6 +145,7 @@ const buttonElementRef = useResolveElement(buttonRef);
         :title="props.tooltip ? undefined : currentTitle"
         :aria-disabled="props.disabled || undefined"
         :aria-busy="props.loading || undefined"
+        :aria-pressed="ariaPressed"
         v-bind="{ ...anchorAttributes, ...$attrs }"
         @click="onClick">
         <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin aria-hidden="true" />
