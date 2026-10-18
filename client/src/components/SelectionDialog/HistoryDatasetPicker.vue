@@ -2,22 +2,13 @@
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
-import { GalaxyApi, type HDASummary, type HistorySortByLiteral } from "@/api";
+import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
 import { getMyHistories } from "@/api/histories";
 import type { TableField } from "@/components/Common/GTable.types";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
-import {
-    datasetToItem,
-    type HistorySelectionItem,
-    historyToItem,
-} from "@/components/SelectionDialog/selectionAdapters";
-import {
-    type ItemsProvider,
-    type ItemsProviderContext,
-    SELECTION_STATES,
-    type SelectionItem,
-} from "@/components/SelectionDialog/selectionTypes";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { datasetToItem, historyToItem } from "@/components/SelectionDialog/selectionAdapters";
+import type { SelectionItem, SelectItemsProvider, SelectItemsQuery } from "@/components/SelectionDialog/selectionTypes";
+import { useSelectItems } from "@/composables/useSelectItems";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
@@ -37,20 +28,18 @@ const emit = defineEmits<{
     (e: "onSelect", datasets: SelectionItem[]): void;
 }>();
 
-const selectionDialog = ref();
-
-const totalItems = ref(0);
-const loading = ref(false);
-const hasValue = ref(false);
 const modalShow = ref(true);
-const errorMessage = ref("");
-const submitting = ref(false);
-const datasetsVisible = ref(false);
 
-const items = ref<SelectionItem[]>([]);
-const selected = ref<SelectionItem[]>([]);
+/** Histories at the root level, the datasets of the opened history one level down. */
+const provider: SelectItemsProvider<HistorySummary | HDASummary> = {
+    load: (query) => (query.path[0] ? loadDatasets(query, query.path[0].id) : loadHistories(query)),
+    map: (raw, query) => (query.path.length ? datasetToItem(raw as HDASummary) : historyToItem(raw as HistorySummary)),
+};
 
-const itemsProvider = ref<ItemsProvider>(historiesProvider);
+const state = useSelectItems(provider);
+const { selected } = state;
+
+const datasetsVisible = computed(() => state.path.value.length > 0);
 
 const searchTitle = computed(() => {
     if (datasetsVisible.value) {
@@ -82,144 +71,44 @@ const fields = computed<TableField[]>(() => {
     }
 });
 
-function formatRows() {
-    hasValue.value = selected.value.length > 0;
+async function loadHistories(query: SelectItemsQuery) {
+    const sortBy: HistorySortByLiteral =
+        query.sortBy === "label" ? "name" : (query.sortBy as HistorySortByLiteral) || "update_time";
 
-    for (const item of items.value) {
-        if (item.isLeaf) {
-            const selectionState =
-                selected.value.findIndex((i) => i.id === item.id) !== -1
-                    ? SELECTION_STATES.SELECTED
-                    : SELECTION_STATES.UNSELECTED;
+    const { data, total } = await getMyHistories({
+        limit: query.perPage,
+        offset: (query.page - 1) * query.perPage,
+        search: query.filter,
+        sortBy,
+        sortDesc: query.sortDesc ?? true,
+    });
 
-            item.selectionState = selectionState;
-        }
-    }
+    return { items: data, total };
 }
 
-async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promise<SelectionItem[]> {
-    loading.value = true;
+async function loadDatasets(query: SelectItemsQuery, historyId: string) {
+    const querySortBy = query.sortBy === "time" ? "update_time" : "name";
+    const sortPrefix = query.sortDesc ? "-dsc" : "-asc";
 
-    try {
-        const filter = ctx.filter;
-
-        if (filter) {
-            selectionDialog.value?.resetPagination();
-        }
-
-        const limit = ctx.perPage;
-        const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
-        const sortBy: HistorySortByLiteral =
-            ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
-
-        const { data, total } = await getMyHistories({
-            limit,
-            offset,
-            search: filter,
-            sortBy,
-            sortDesc: ctx.sortDesc ?? true,
-        });
-
-        totalItems.value = total;
-
-        items.value = data.map(historyToItem);
-
-        formatRows();
-
-        return items.value;
-    } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
-        return [];
-    } finally {
-        loading.value = false;
-    }
-}
-
-async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: HistorySelectionItem) {
-    loading.value = true;
-
-    try {
-        const limit = ctx.perPage;
-        const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
-        const query = ctx.filter || "";
-        const querySortBy = ctx.sortBy === "time" ? "update_time" : "name";
-        const sortPrefix = ctx.sortDesc ? "-dsc" : "-asc";
-
-        const { response, data, error } = await GalaxyApi().GET("/api/datasets", {
-            params: {
-                query: {
-                    history_id: selectedHistory.id,
-                    q: ["name-contains"],
-                    qv: [query],
-                    order: `${querySortBy}${sortPrefix}`,
-                    offset: offset,
-                    limit: limit,
-                },
+    const { response, data, error } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                history_id: historyId,
+                q: ["name-contains"],
+                qv: [query.filter],
+                order: `${querySortBy}${sortPrefix}`,
+                offset: (query.page - 1) * query.perPage,
+                limit: query.perPage,
             },
-        });
+        },
+        signal: query.signal,
+    });
 
-        if (error) {
-            errorMessage.value = errorMessageAsString(error);
-            return [];
-        }
-
-        totalItems.value = parseInt(response.headers.get("total_matches") ?? "0");
-
-        items.value = (data as HDASummary[]).map(datasetToItem);
-
-        formatRows();
-
-        return items.value;
-    } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
-
-        return [];
-    } finally {
-        loading.value = false;
-    }
-}
-
-function onHistoryClick(item: SelectionItem) {
-    if (!item.isLeaf) {
-        selectionDialog.value?.resetFilter();
-        selectionDialog.value?.resetPagination();
-        datasetsVisible.value = true;
-        itemsProvider.value = (ctx: ItemsProviderContext) => datasetsProvider(ctx, item as HistorySelectionItem);
-    }
-}
-
-async function onDatasetClick(item: SelectionItem) {
-    if (item.isLeaf) {
-        if (selected.value.findIndex((i) => i.id === item.id) !== -1) {
-            selected.value = selected.value.filter((i) => i.id !== item.id);
-        } else {
-            selected.value.push(item);
-        }
-
-        formatRows();
-    }
-}
-
-function selectAll(checked: boolean) {
-    if (!checked) {
-        selected.value = [];
-    } else {
-        for (const item of items.value) {
-            if (selected.value.findIndex((i) => i.id === item.id) === -1) {
-                selected.value.push(item);
-            }
-        }
+    if (error) {
+        throw error;
     }
 
-    formatRows();
-}
-
-async function onUndo() {
-    selectionDialog.value?.resetFilter();
-    selectionDialog.value?.resetPagination();
-    selected.value = [];
-    datasetsVisible.value = false;
-    itemsProvider.value = historiesProvider;
+    return { items: data as HDASummary[], total: parseInt(response.headers.get("total_matches") ?? "0") };
 }
 
 function onOk() {
@@ -236,28 +125,19 @@ function onCancel() {
 
 <template>
     <SelectionDialog
-        ref="selectionDialog"
-        options-show
-        :disable-ok="!hasValue || submitting"
+        :disable-ok="selected.length === 0"
         :fields="fields"
         :ok-button-text="okButtonText"
         :modal-show="modalShow"
         :file-mode="false"
         :multiple="true"
         :selectable="datasetsVisible"
-        :items="items"
-        :undo-show="datasetsVisible"
-        :total-items="totalItems"
-        :items-provider="itemsProvider"
+        :state="state"
         :folder-icon="faHdd"
-        :is-busy="loading"
         :search-title="searchTitle"
         :title="title"
         :filter-class="datasetsVisible ? undefined : HistoriesFilters"
         @onOk="onOk"
-        @onUndo="onUndo"
-        @onCancel="onCancel"
-        @onSelectAll="selectAll"
-        @onOpen="onHistoryClick"
-        @onClick="onDatasetClick" />
+        @onUndo="state.clearSelection()"
+        @onCancel="onCancel" />
 </template>
