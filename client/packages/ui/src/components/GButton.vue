@@ -192,9 +192,11 @@ const buttonElementRef = useResolveElement(buttonRef);
         z-index: 999;
     }
 
+    // Page-background gap keeps the ring clear of the fill and of grouped neighbours; outline survives forced colors.
     &:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
+        outline: 2px solid var(--color-blue-600);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color);
         z-index: 999;
     }
 
