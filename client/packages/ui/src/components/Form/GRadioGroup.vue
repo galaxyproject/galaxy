@@ -44,6 +44,11 @@ interface Props {
      */
     label?: string;
     /**
+     * Extra classes for the legend, e.g. to tighten its spacing
+     * @default undefined
+     */
+    legendClass?: string | string[] | Record<string, boolean>;
+    /**
      * The v-model value: the value of the selected radio
      * @default undefined
      */
@@ -75,6 +80,7 @@ const props = withDefaults(defineProps<Props>(), {
     buttonVariant: "grey",
     disabled: false,
     label: undefined,
+    legendClass: undefined,
     modelValue: undefined,
     name: undefined,
     options: () => [],
@@ -119,7 +125,7 @@ provide(radioGroupKey, {
         role="radiogroup"
         :aria-labelledby="label || $slots.label ? legendId : undefined"
         :disabled="disabled">
-        <legend v-if="label || $slots.label" :id="legendId" class="g-radio-group-legend">
+        <legend v-if="label || $slots.label" :id="legendId" class="g-radio-group-legend" :class="legendClass">
             <slot name="label">{{ label }}</slot>
         </legend>
 
