@@ -96,6 +96,9 @@ class PermissionProvider(AbstractPermissionProvider):
         return self._permissions
 
     def set_default_hda_permissions(self, primary_data):
+        # Datasets precreated at job creation (e.g. fetch upload targets) already carry their permissions.
+        if primary_data.dataset.actions:
+            return
         if (permissions := self.permissions) is not UNSET:
             self._security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
 
