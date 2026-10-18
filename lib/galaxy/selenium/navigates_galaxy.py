@@ -1774,7 +1774,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
-        self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
+        self.components.toast.message.wait_for_absent_or_hidden(wait_type=WAIT_TYPES.UX_POPUP)
 
     def clear_tooltips(self, selector_to_move="#center"):
         self.hover(self.find_element_by_selector(selector_to_move))
