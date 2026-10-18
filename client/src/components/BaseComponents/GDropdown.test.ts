@@ -382,6 +382,19 @@ describe("GDropdown.vue", () => {
         expect(focusedText()).toBe("Three");
     });
 
+    it("returns from the first option to the autofocused search with ArrowUp", async () => {
+        const wrapper = mountTemplate(
+            `<GDropdown text="Search" initial-focus="input"><input aria-label="Search" />${MENU}</GDropdown>`,
+        );
+        await wrapper.get(".dropdown-toggle").trigger("click", { detail: 1 });
+        await flushPromises();
+        const input = wrapper.get("input");
+        await press(input, "ArrowDown");
+        expect(focusedText()).toBe("One");
+        await press(document.activeElement!, "ArrowUp");
+        expect(document.activeElement).toBe(input.element);
+    });
+
     describe("keyboard", () => {
         it("opens with ArrowDown on the toggle and focuses the first item", async () => {
             const wrapper = mountDropdown(MENU);

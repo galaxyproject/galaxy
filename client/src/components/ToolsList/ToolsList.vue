@@ -103,6 +103,8 @@ function buildInlineWhooshClause(key: string, value: string) {
 type InlineFilterClause = {
     key: string;
     value: string;
+    /** The clause as written, e.g. `tag:"data cleanup"` */
+    text: string;
 };
 
 function parseInlineFilterClauses(searchText: string) {
@@ -113,13 +115,14 @@ function parseInlineFilterClauses(searchText: string) {
     let match;
 
     while ((match = filterClause.exec(searchText)) !== null) {
-        const [fullMatch, leadingWhitespace = "", , key = "", quotedDouble, quotedSingle, unquotedValue] = match;
+        const [fullMatch, leadingWhitespace = "", text = "", key = "", quotedDouble, quotedSingle, unquotedValue] =
+            match;
         const clauseStart = match.index + leadingWhitespace.length;
         const clauseLength = fullMatch.length - leadingWhitespace.length;
         const value = quotedDouble ?? quotedSingle ?? unquotedValue;
 
         if (value) {
-            clauses.push({ key, value });
+            clauses.push({ key, value, text });
         }
 
         consumedText += searchText.slice(cursor, clauseStart);
@@ -290,18 +293,29 @@ const shouldPreserveRawSearchText = computed(
         structuredFilterText.value !== filterText.value.trim(),
 );
 
-// Only searches made entirely of structured filters can be edited without losing conditions.
-const canUseFilterPickers = computed(() => {
+/** The search split into its free text and its structured filters, which the pickers edit
+ * while the free text is kept as written. `null` if a picker would change what the search means:
+ * boolean expressions and favorites searches only work as a whole. */
+const pickerSearch = computed(() => {
     const searchText = filterText.value.trim();
-    if (!searchText) {
-        return true;
-    }
     if (hasExplicitBooleanQuery(searchText)) {
-        return false;
+        return null;
     }
     const parsed = parseInlineFilterClauses(searchText);
-    return parsed !== null && !parsed.remainder;
+    const remainder = parsed ? parsed.remainder : searchText;
+    if (remainder.split(/\s+/).some((word) => FAVORITES_KEYS.includes(word))) {
+        return null;
+    }
+    return { remainder, filterText: parsed ? parsed.clauses.map(({ text }) => text).join(" ") : "" };
 });
+const canUseFilterPickers = computed(() => pickerSearch.value !== null);
+const pickerFilterSettings = computed<FilterSettings>(() =>
+    pickerSearch.value
+        ? normalizeFilterSettings(
+              Object.fromEntries(ToolFilters.value.getFiltersForText(pickerSearch.value.filterText)) as FilterSettings,
+          )
+        : {},
+);
 
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
@@ -316,6 +330,9 @@ const whooshQuery = computed(
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
 
 const hasActiveFilters = computed(() => Boolean(filterText.value.trim()));
+const clearFiltersLabel = computed(() =>
+    pickerSearch.value && !pickerSearch.value.filterText ? "Clear search" : "Clear all filters",
+);
 
 function clearFilters() {
     filterText.value = "";
@@ -348,13 +365,27 @@ watch(
 
 // The component mounts with the whooshQuery already generated; perform fetch!
 const loadingTags = ref(true);
-toolStore.fetchToolTagsMapping().finally(() => {
-    loadingTags.value = false;
-});
+const tagsError = ref(false);
+toolStore
+    .fetchToolTagsMapping()
+    .catch(() => {
+        tagsError.value = true;
+    })
+    .finally(() => {
+        loadingTags.value = false;
+    });
 toolStore.fetchTools(whooshQuery.value);
 
 function applyFilter(filter: string, value: string | string[]) {
-    filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+    const search = pickerSearch.value;
+    if (!search) {
+        filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+        return;
+    }
+    // `Filtering` drops free text and folds words that follow a filter into its value,
+    // so it only edits the filters and the free text is put back in front.
+    const updatedFilters = ToolFilters.value.setFilterValue(search.filterText, filter, value);
+    filterText.value = [search.remainder, updatedFilters].filter(Boolean).join(" ");
 }
 
 function onToggleView(newView: ListViewMode) {
@@ -494,14 +525,15 @@ function onToggleView(newView: ListViewMode) {
 
             <ToolsListSectionFilters
                 :filter-class="ToolFilters"
-                :filter-text="canUseFilterPickers ? filterText : ''"
+                :filter-text="pickerSearch?.filterText ?? ''"
                 :disabled="loading || !canUseFilterPickers"
                 @apply-filter="applyFilter">
                 <template v-slot:tag-filter>
                     <ToolsListTagFilter
                         :tags="tagAutocompleteValues"
                         :loading="loadingTags"
-                        :selected-tags="canUseFilterPickers ? filterSettings.tag || [] : []"
+                        :error="tagsError"
+                        :selected-tags="pickerFilterSettings.tag || []"
                         :disabled="loading || !canUseFilterPickers"
                         @toggle-tag="applyFilter('tag', $event)" />
                 </template>
@@ -540,7 +572,7 @@ function onToggleView(newView: ListViewMode) {
             </ToolsListSectionFilters>
 
             <div class="d-flex flex-wrap align-items-center flex-gapx-1 mt-1">
-                <small v-if="canUseFilterPickers && filterSettings.tag?.length" class="text-muted">
+                <small v-if="pickerFilterSettings.tag?.length" class="text-muted">
                     Tools must match all selected tags.
                 </small>
                 <small v-if="!canUseFilterPickers" class="text-muted">
@@ -552,7 +584,7 @@ function onToggleView(newView: ListViewMode) {
                     size="small"
                     transparent
                     @click="clearFilters">
-                    Clear all filters
+                    {{ clearFiltersLabel }}
                 </GButton>
             </div>
         </div>

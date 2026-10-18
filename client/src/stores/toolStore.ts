@@ -116,6 +116,8 @@ const MY_PANEL_VIEW: Panel = {
 
 const DEFAULT_PANEL_VIEW_ID = "default";
 
+const NO_TOOL_TAGS: string[] = [];
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
@@ -126,20 +128,26 @@ export const useToolStore = defineStore("toolStore", () => {
     const toolTagsLoaded = computed(() => toolTagsById.value !== null);
     const rawToolsById = shallowRef<Record<string, Tool>>({});
     // Tool definitions and curated tags are independent resources. Decorate on read,
-    // so replacing the mapping also removes tags that no longer exist.
-    const toolsById = computed({
-        get(): Record<string, Tool> {
-            const mapping = toolTagsById.value;
-            if (mapping === null) {
-                return rawToolsById.value;
+    // so replacing the mapping also removes tags that no longer exist. Decorated tools
+    // are reused while their definition and tags are unchanged, so saving one tool
+    // doesn't hand every consumer a new object for every other tool.
+    const decoratedTools = new WeakMap<Tool, Tool>();
+    const toolsById = computed((): Record<string, Tool> => {
+        const mapping = toolTagsById.value;
+        if (mapping === null) {
+            return rawToolsById.value;
+        }
+        const decorated: Record<string, Tool> = {};
+        for (const [id, tool] of Object.entries(rawToolsById.value)) {
+            const tags = mapping[id] ?? NO_TOOL_TAGS;
+            let decoratedTool = decoratedTools.get(tool);
+            if (decoratedTool?.tool_tags !== tags) {
+                decoratedTool = { ...tool, tool_tags: tags };
+                decoratedTools.set(tool, decoratedTool);
             }
-            return Object.fromEntries(
-                Object.entries(rawToolsById.value).map(([id, tool]) => [id, { ...tool, tool_tags: mapping[id] ?? [] }]),
-            );
-        },
-        set(tools: Record<string, Tool>) {
-            rawToolsById.value = tools;
-        },
+            decorated[id] = decoratedTool;
+        }
+        return decorated;
     });
     const toolTagNames = computed(() => {
         const tagLists =

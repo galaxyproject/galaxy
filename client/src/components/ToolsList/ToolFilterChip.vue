@@ -12,14 +12,15 @@ import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 const props = defineProps<{
     label: string;
     value: string;
-    kind: FavoriteObjectKind;
+    /** What the value is favorited as; without it, the chip only offers removal */
+    kind?: FavoriteObjectKind;
     removeTitle: string;
     disabled?: boolean;
 }>();
 const emit = defineEmits<{ (e: "remove"): void }>();
 const { canFavorite, isFavorite, isSaving, toggleFavorite } = useFavoriteObjects();
-const favorited = computed(() => isFavorite(props.kind, props.value));
-const saving = computed(() => isSaving(props.kind, props.value));
+const favorited = computed(() => Boolean(props.kind && isFavorite(props.kind, props.value)));
+const saving = computed(() => Boolean(props.kind && isSaving(props.kind, props.value)));
 const favoriteTitle = computed(() =>
     !canFavorite.value
         ? "Sign in to manage favorites"
@@ -30,6 +31,7 @@ const favoriteTitle = computed(() =>
 <template>
     <GButtonGroup>
         <GButton
+            v-if="kind"
             :title="favoriteTitle"
             :disabled="disabled || saving || !canFavorite"
             :disabled-title="favoriteTitle"

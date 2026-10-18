@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import type { FavoriteObjectKind } from "@/composables/useFavoriteObjects";
 import { type ToolSection, useToolStore } from "@/stores/toolStore";
 import type Filtering from "@/utils/filtering";
 
@@ -74,6 +75,17 @@ function searchWithinSections(sections: ToolSection[], query: string) {
         return sections.filter((section) => section.name?.toLowerCase().includes(filterLower));
     }
     return sections;
+}
+
+/** Only EDAM ids can be favorited; other ontology filter values are just removable */
+function ontologyFavoriteKind(ontologyId: string): FavoriteObjectKind | undefined {
+    if (/^operation_\d+$/.test(ontologyId)) {
+        return "edam_operations";
+    }
+    if (/^topic_\d+$/.test(ontologyId)) {
+        return "edam_topics";
+    }
+    return undefined;
 }
 </script>
 
@@ -170,7 +182,7 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                         v-if="selectedOntology"
                         :label="selectedOntology.name"
                         :value="selectedOntology.id"
-                        :kind="selectedOntology.id.startsWith('operation_') ? 'edam_operations' : 'edam_topics'"
+                        :kind="ontologyFavoriteKind(selectedOntology.id)"
                         :remove-title="`Remove ontology ${selectedOntology.name}`"
                         :disabled="props.disabled"
                         @remove="applyQuotedFilter('ontology', selectedOntology.id)" />

@@ -231,13 +231,13 @@ function onKeydown(event: KeyboardEvent) {
     const inMenuNavigation = onMenuItem || target === menuEl.value;
     let handled = true;
 
-    if (
-        event.key === "ArrowDown" &&
-        target.tagName === "INPUT" &&
-        props.initialFocus &&
-        menuEl.value?.querySelector(props.initialFocus) === target
-    ) {
+    const initialFocusEl = props.initialFocus ? menuEl.value?.querySelector<HTMLElement>(props.initialFocus) : null;
+
+    if (event.key === "ArrowDown" && initialFocusEl && target === initialFocusEl) {
         focusMenuItem(0);
+    } else if (event.key === "ArrowUp" && initialFocusEl && onMenuItem && getMenuItems().indexOf(target) === 0) {
+        // Back up from the first item to the search field it was reached from
+        initialFocusEl.focus();
     } else if (event.key === "ArrowDown" && onToggle) {
         openAndFocusMenuItem(0);
     } else if (event.key === "ArrowUp" && onToggle) {
