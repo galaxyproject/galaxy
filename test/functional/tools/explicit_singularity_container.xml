@@ -1,12 +1,12 @@
 <tool id="explicit_singularity_container" name="explicit_singularity_container" version="0.1.0">
     <requirements>
-        <container type="singularity">docker://quay.io/biocontainers/bwa:0.7.17--h7132678_9</container>
+        <container type="singularity">oras://ghcr.io/apptainer/alpine:3.15.0</container>
     </requirements>
     <stdio>
         <exit_code range="2:" />
     </stdio>
     <command><![CDATA[
-bwa > '$output_1' 2>&1 &&
+cat /etc/alpine-release > '$output_1' 2>&1 &&
 
 touch "\${TMP:-/tmp}/job_tmp" &&
 touch "\${TEMP:-/tmp}/job_temp" &&

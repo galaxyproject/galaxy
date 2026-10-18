@@ -952,7 +952,7 @@ class ExplicitTestCase:
 
 class ExplicitSingularityTestCase:
     tool_id = "explicit_singularity_container"
-    mulled_hash = "docker://quay.io/biocontainers/bwa:0.7.17--h7132678_9"
+    mulled_hash = "oras://ghcr.io/apptainer/alpine:3.15.0"
 
 
 class TestExplicitContainerResolver(DockerContainerResolverTestCase, ContainerResolverTestCases, ExplicitTestCase):
@@ -1153,8 +1153,8 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
     """
     test cached_explict_singularity container resolver for a tool with singularity container requirement
 
-    same as for tools with docker requirement, but the identifier is used as is,
-    i.e. the docker:// is represented by `docker:/` in the cached path therefore
+    same as for tools with docker requirement, but the image is a native SIF pulled
+    via oras:// which will be represented by `oras:/` in the cached path therefore
     we need to call replace here
     """
 
@@ -1164,8 +1164,7 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
     assumptions: dict[str, Any] = {
         "run": {
             "output": [
-                "Program: bwa (alignment via Burrows-Wheeler transformation)",
-                "Version: 0.7.17-r1188",
+                "3.15.0",
             ],
             "cached": True,
             "resolver_type": "cached_explicit_singularity",
