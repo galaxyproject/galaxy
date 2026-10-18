@@ -1,6 +1,7 @@
 """Unit tests for CompositeToolSourceStore + merged ToolIndex."""
 
 import os
+import sqlite3
 import tempfile
 
 import pytest
@@ -182,6 +183,24 @@ def test_invalidate_rereads_read_only_member_only_when_republished(two_paths):
     merged = composite.load_index()
     assert merged is not None
     assert "x2" in merged.entries
+
+
+def test_invalidate_rereads_read_only_store_published_in_wal_mode(two_paths):
+    pa, _ = two_paths
+    publisher = SqliteToolSourceStore(url=_sqlite_url(pa))
+    publisher.store_index(ToolIndex(entries={"x": ToolIndexEntry(id="x")}))
+    with sqlite3.connect(pa) as connection:
+        assert connection.execute("PRAGMA journal_mode=WAL").fetchone() == ("wal",)
+    publisher.dispose()
+    published = SqliteToolSourceStore(url=_sqlite_url(pa), read_only=True)
+    assert published.load_index() is not None
+
+    publisher.store_index(ToolIndex(entries={"x": ToolIndexEntry(id="x"), "x2": ToolIndexEntry(id="x2")}))
+    published.invalidate_index_cache()
+
+    republished = published.load_index()
+    assert republished is not None
+    assert "x2" in republished.entries
 
 
 def test_load_index_merges_entries_by_version(two_paths):
