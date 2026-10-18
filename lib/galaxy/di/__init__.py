@@ -1,14 +1,10 @@
 """Dependency injection framework for Galaxy-type apps."""
 
-from collections.abc import Callable
 from typing import (
     TypeVar,
 )
 
-from lagom import (
-    Container as LagomContainer,
-    Singleton,
-)
+from lagom import Container as LagomContainer
 from lagom.exceptions import UnresolvableType
 
 T = TypeVar("T")
@@ -29,10 +25,6 @@ class Container(LagomContainer):
             instance = self[dep_type]
         self[dep_type] = instance
         return self[dep_type]
-
-    def _register_lazy_singleton(self, dep_type: type[T], factory: Callable[[], T]) -> None:
-        """Register a singleton that is only built when first resolved."""
-        self[dep_type] = Singleton(factory)
 
     def _register_abstract_singleton(
         self, abstract_type: type[T], concrete_type: type[T], instance: T | None = None

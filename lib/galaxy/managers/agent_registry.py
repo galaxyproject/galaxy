@@ -5,13 +5,12 @@ Agent registry for managing available AI agents.
 import logging
 from typing import TYPE_CHECKING
 
-# galaxy.agents imports pydantic-ai. This module is imported at app startup, so
-# agent modules are only imported once a registry is built or used.
+from galaxy.agents.base import (
+    BaseGalaxyAgent,
+    GalaxyAgentDependencies,
+)
+
 if TYPE_CHECKING:
-    from galaxy.agents.base import (
-        BaseGalaxyAgent,
-        GalaxyAgentDependencies,
-    )
     from galaxy.config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
@@ -27,11 +26,9 @@ class AgentRegistry:
     def register(
         self,
         agent_type: str,
-        agent_class: "type[BaseGalaxyAgent]",
+        agent_class: type[BaseGalaxyAgent],
         metadata: dict | None = None,
     ):
-        from galaxy.agents.base import BaseGalaxyAgent
-
         if not issubclass(agent_class, BaseGalaxyAgent):
             raise ValueError(f"Agent class must inherit from BaseGalaxyAgent: {agent_class}")
 
@@ -47,7 +44,7 @@ class AgentRegistry:
                 del self._agent_metadata[agent_type]
             log.debug(f"Unregistered agent: {agent_type}")
 
-    def get_agent(self, agent_type: str, deps: "GalaxyAgentDependencies") -> "BaseGalaxyAgent":
+    def get_agent(self, agent_type: str, deps: GalaxyAgentDependencies) -> BaseGalaxyAgent:
         if agent_type not in self._agents:
             available = list(self._agents.keys())
             raise ValueError(f"Unknown agent type: {agent_type}. Available: {available}")
@@ -129,7 +126,7 @@ def build_default_registry(config=None) -> AgentRegistry:
             return agent_cfg.get("enabled", True)
         return True
 
-    def _register_if_enabled(registry: AgentRegistry, agent_type: str, agent_class: "type[BaseGalaxyAgent]"):
+    def _register_if_enabled(registry: AgentRegistry, agent_type: str, agent_class: type[BaseGalaxyAgent]):
         if _is_enabled(agent_type):
             registry.register(agent_type, agent_class)
         else:

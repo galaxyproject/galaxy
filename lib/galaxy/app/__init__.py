@@ -50,11 +50,6 @@ from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.admin_extensions import AdminExtensionsManager
-from galaxy.managers.agent_registry import (
-    AgentRegistry,
-    build_registry as build_agent_registry,
-)
-from galaxy.managers.agents import AgentService
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
@@ -69,10 +64,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
 from galaxy.managers.interactivetool import InteractiveToolManager
-from galaxy.managers.jobs import (
-    JobManager as JobQueryManager,
-    JobSearch,
-)
+from galaxy.managers.jobs import JobSearch
 from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
@@ -1013,18 +1005,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
-
-        # AI agent registry and service. Building the registry imports every agent
-        # class and with them pydantic-ai, so only web processes build it at startup:
-        # they load pydantic-ai with the agent API routes anyway, and those routes
-        # resolve the service on the event loop. Other processes build it on first use.
-        self._register_lazy_singleton(AgentRegistry, lambda: build_agent_registry(self.config))
-        self._register_lazy_singleton(
-            AgentService,
-            lambda: AgentService(self.config, JobQueryManager(self, self.history_manager), self[AgentRegistry]),
-        )
-        if self.is_webapp:
-            self[AgentService]
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)
