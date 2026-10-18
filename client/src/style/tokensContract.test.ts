@@ -25,6 +25,18 @@ const COLOR_FAMILIES = ["blue", "green", "grey", "orange", "red", "yellow"];
 const COLOR_SHADES = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 const NON_PALETTE_TOKENS = [
     "--background-color",
+    "--field-height-medium",
+    "--field-height-small",
+    "--field-height-large",
+    "--field-padding-y-medium",
+    "--field-padding-x-medium",
+    "--field-padding-y-small",
+    "--field-padding-x-small",
+    "--field-padding-y-large",
+    "--field-padding-x-large",
+    "--field-radius-medium",
+    "--field-radius-small",
+    "--field-radius-large",
     "--font-size-large",
     "--font-size-medium",
     "--font-size-small",

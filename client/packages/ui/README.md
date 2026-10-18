@@ -18,8 +18,8 @@ So a change has to work in both. In particular:
 - Bootstrap styles the client's markup for free. Anything a component needs to look right has to be
   in its own styles; baselines that only restate Bootstrap go in `:where()` so they stay at zero
   specificity and the client keeps Bootstrap's look.
-- Read colours, spacing and fonts from the tokens in `src/styles/tokens.css` (`var(--color-blue-600)`
-  and so on) rather than literal values, so both consumers can theme them.
+- Read colours, spacing, fonts and field sizes from the tokens in `src/styles/tokens.css`
+  (`var(--color-blue-600)` and so on) rather than literal values, so both consumers can theme them.
 
 ## Public class names
 
