@@ -19,7 +19,6 @@ from whoosh.fields import (
     Schema,
     TEXT,
 )
-from whoosh.index import LockError
 from whoosh.qparser import (
     MultifieldParser,
     OrGroup,
@@ -323,7 +322,9 @@ class ToolWhooshIndex:
     def build(self, tool_index: ToolIndex, tool_ids: Collection[str] | None = None) -> int:
         """Bring one panel-view corpus, or all entries when unscoped, up to date.
 
-        Returns the number of documents written.
+        Returns the number of documents written. Raises ``LockError`` when
+        another writer holds the index for longer than
+        ``INDEX_WRITE_LOCK_TIMEOUT``; nothing is written then.
         """
         docs = []
         entries = (
@@ -351,13 +352,8 @@ class ToolWhooshIndex:
             if _stored_doc_hashes(reader) == doc_hashes:
                 log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
                 return 0
-        try:
-            writer = ix.writer(limitmb=256, timeout=INDEX_WRITE_LOCK_TIMEOUT)
-        except LockError:
-            log.warning("Whoosh index at %s is locked by another writer, skipping this rebuild", self.index_dir)
-            return 0
         written = 0
-        with writer:
+        with ix.writer(limitmb=256, timeout=INDEX_WRITE_LOCK_TIMEOUT) as writer:
             if _DOC_HASH_FIELD not in writer.schema:
                 writer.add_field(_DOC_HASH_FIELD, ID(stored=True))
             # Another process may have committed between the check above and
