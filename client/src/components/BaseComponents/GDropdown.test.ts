@@ -382,6 +382,31 @@ describe("GDropdown.vue", () => {
         expect(focusedText()).toBe("Three");
     });
 
+    it("keeps arrow navigation through the items when the initial focus is an item", async () => {
+        const wrapper = mountTemplate(`<GDropdown text="Menu" initial-focus="[role='menuitem']">${MENU}</GDropdown>`);
+        await wrapper.get(".dropdown-toggle").trigger("click", { detail: 1 });
+        await flushPromises();
+        expect(focusedText()).toBe("One");
+        await press(document.activeElement!, "ArrowDown");
+        expect(focusedText()).toBe("Three");
+        await press(document.activeElement!, "ArrowUp");
+        await press(document.activeElement!, "ArrowUp");
+        expect(focusedText()).toBe("Five");
+    });
+
+    it("returns from the first option to the autofocused search with ArrowUp", async () => {
+        const wrapper = mountTemplate(
+            `<GDropdown text="Search" initial-focus="input"><input aria-label="Search" />${MENU}</GDropdown>`,
+        );
+        await wrapper.get(".dropdown-toggle").trigger("click", { detail: 1 });
+        await flushPromises();
+        const input = wrapper.get("input");
+        await press(input, "ArrowDown");
+        expect(focusedText()).toBe("One");
+        await press(document.activeElement!, "ArrowUp");
+        expect(document.activeElement).toBe(input.element);
+    });
+
     describe("keyboard", () => {
         it("opens with ArrowDown on the toggle and focuses the first item", async () => {
             const wrapper = mountDropdown(MENU);

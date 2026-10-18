@@ -57,6 +57,20 @@ describe("toolStore", () => {
         expect(store.toolsById.fastqc?.name).toBe("Updated FastQC");
     });
 
+    it("keeps decorated tools stable when an unrelated tool is saved", async () => {
+        vi.mocked(axios.get).mockResolvedValue({ data: { fastqc: ["Quality Control"] } });
+        const store = useToolStore();
+        store.saveAllTools([{ id: "fastqc", name: "FastQC" } as Tool, { id: "cat1", name: "Concatenate" } as Tool]);
+        await store.fetchToolTagsMapping();
+        const fastqc = store.toolsById.fastqc;
+        const cat1 = store.toolsById.cat1;
+        store.saveToolForId("cat1", { id: "cat1", name: "Concatenate datasets" } as Tool);
+        expect(store.toolsById.fastqc).toBe(fastqc);
+        expect(store.toolsById.cat1).not.toBe(cat1);
+        expect(store.toolsById.cat1?.name).toBe("Concatenate datasets");
+        expect(store.toolsById.cat1?.tool_tags).toEqual([]);
+    });
+
     it("caches tool help format from the build response", async () => {
         vi.mocked(axios.get).mockResolvedValue({
             data: {

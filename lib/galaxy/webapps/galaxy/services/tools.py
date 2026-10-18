@@ -225,10 +225,7 @@ class ToolsService(ServiceBase):
         Sidecar for the My Tools panel; keeps `tool_tags` out of the bulk /api/tools
         payload (and out of its cache key).
         """
-        mapping: dict[str, list[str]] = {}
-        for _, tool in trans.app.toolbox.tools():
-            if tool.tool_tags:
-                mapping[tool.id] = list(tool.tool_tags)
+        mapping: dict[str, list[str]] = trans.app.toolbox.curated_tool_tags_by_id(trans)
         return mapping
 
     def file_landing_to_tool_landing(

@@ -15,6 +15,7 @@ const props = defineProps<{
     selectedTags: string[];
     disabled?: boolean;
     loading?: boolean;
+    error?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -24,8 +25,9 @@ const emit = defineEmits<{
 const search = ref("");
 const matches = computed(() => {
     const query = search.value.trim().toLowerCase();
-    const selected = new Set(props.selectedTags);
-    return props.tags.filter((tag) => !selected.has(tag) && tag.toLowerCase().includes(query));
+    // Tag search is case-insensitive, so a selected tag hides the option in any case
+    const selected = new Set(props.selectedTags.map((tag) => tag.toLowerCase()));
+    return props.tags.filter((tag) => !selected.has(tag.toLowerCase()) && tag.toLowerCase().includes(query));
 });
 const visibleTags = computed(() => matches.value.slice(0, 100));
 </script>
@@ -61,6 +63,7 @@ const visibleTags = computed(() => matches.value.slice(0, 100));
                     </GDropdownItem>
                 </GDropdownGroup>
                 <GDropdownText v-if="loading">Loading tags/categories...</GDropdownText>
+                <GDropdownText v-else-if="error" class="text-danger">Could not load tags/categories.</GDropdownText>
                 <GDropdownText v-else-if="!matches.length">
                     {{ tags.length ? "No matching tags found." : "No tags available." }}
                 </GDropdownText>

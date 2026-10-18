@@ -48,6 +48,16 @@ describe("ToolsListTagFilter", () => {
         expect(wrapper.findAll("a.dropdown-item").filter((item) => item.text() === "Category 500")).toHaveLength(0);
     });
 
+    it("treats selected tags case-insensitively, as the tag search does", async () => {
+        const wrapper = mount(ToolsListTagFilter, {
+            localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            props: { tags: ["Quality Control", "Get Data"], selectedTags: ["quality control"] },
+        });
+        await wrapper.get("button.dropdown-toggle").trigger("click");
+        expect(wrapper.findAll("a.dropdown-item").map((item) => item.text())).toEqual(["Get Data"]);
+    });
+
     it("removes a selected tag with its visible remove button without opening the menu", async () => {
         const wrapper = mountFilter(["data cleanup", "Category 500"]);
         const remove = wrapper.get('button[title="Remove tag data cleanup"]');
