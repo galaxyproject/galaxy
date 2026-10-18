@@ -260,7 +260,11 @@ class SentryClientMixin:
             ], f"Invalid sentry event level '{self.config.sentry.event_level}'"
 
             import sentry_sdk
+            from sentry_sdk.integrations.celery import CeleryIntegration
+            from sentry_sdk.integrations.fastapi import FastApiIntegration
             from sentry_sdk.integrations.logging import LoggingIntegration
+            from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+            from sentry_sdk.integrations.starlette import StarletteIntegration
 
             sentry_logging = LoggingIntegration(
                 level=logging.INFO,  # Capture info and above as breadcrumbs
@@ -294,7 +298,16 @@ class SentryClientMixin:
             self.sentry_client = sentry_sdk.init(
                 self.config.sentry_dsn,
                 release=f"{self.config.version_major}.{self.config.version_minor}",
-                integrations=[sentry_logging],
+                # Auto-enabling integrations import every installed library Sentry
+                # supports, including the AI SDKs Galaxy only loads when an agent runs.
+                auto_enabling_integrations=False,
+                integrations=[
+                    sentry_logging,
+                    StarletteIntegration(),
+                    FastApiIntegration(),
+                    CeleryIntegration(),
+                    SqlalchemyIntegration(),
+                ],
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
                 ca_certs=self.config.sentry_ca_certs,
                 before_send=before_send,
