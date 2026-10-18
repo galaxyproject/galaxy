@@ -57,6 +57,9 @@ from .manifest import sqlite_database_path
 
 log = logging.getLogger(__name__)
 
+# (inode, size, mtime_ns) of a database file.
+_FileSignature = tuple[int, int, int]
+
 # pysqlite's 5s default is too short for slow commits (network/FUSE
 # filesystems) when several processes write one store.
 SQLITE_BUSY_TIMEOUT_SECONDS = 60
@@ -145,7 +148,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         self._cached_index: ToolIndex | None = None
         self._database_path = sqlite_database_path(url) if read_only else None
         # Database file signature taken before the cached index was read.
-        self._cached_index_signature: tuple[int, int, int] | None = None
+        self._cached_index_signature: tuple[_FileSignature, _FileSignature | None] | None = None
 
         self._ensure_sqlite_parent_directory(url)
 
@@ -189,14 +192,21 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def _session(self) -> Session:
         return self._Session()
 
-    def _database_signature(self) -> tuple[int, int, int] | None:
+    def _database_signature(self) -> tuple[_FileSignature, _FileSignature | None] | None:
         if self._database_path is None:
             return None
         try:
             st = os.stat(self._database_path)
         except OSError:
             return None
-        return (st.st_ino, st.st_size, st.st_mtime_ns)
+        # A database in WAL mode commits into the -wal file and leaves the
+        # main file untouched until a checkpoint.
+        try:
+            wal = os.stat(f"{self._database_path}-wal")
+            wal_signature: _FileSignature | None = (wal.st_ino, wal.st_size, wal.st_mtime_ns)
+        except OSError:
+            wal_signature = None
+        return ((st.st_ino, st.st_size, st.st_mtime_ns), wal_signature)
 
     def _ensure_writable(self) -> None:
         if self.read_only:
