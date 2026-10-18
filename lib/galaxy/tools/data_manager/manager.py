@@ -2,7 +2,6 @@ import errno
 import logging
 import os
 from collections.abc import Mapping
-from contextlib import nullcontext
 from typing import (
     Optional,
 )
@@ -76,8 +75,7 @@ class DataManagers(DataManagersInterface):
                 tool_path = "."
             self.tool_path = tool_path
         # The cached toolbox persists index entries it corrects while data managers load; write them once.
-        batch_index_writes = getattr(self.app.toolbox, "batch_index_writes", None)
-        with batch_index_writes() if batch_index_writes else nullcontext():
+        with self.app.toolbox.batch_index_writes():
             for data_manager_elem in root.findall("data_manager"):
                 if not self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path):
                     # Wasn't able to load manager, could happen when galaxy is managed by planemo.
