@@ -204,10 +204,23 @@ class CachedToolboxSearch(ToolBoxSearch):
         with self._build_lock:
             self._sync_panel_searches(cached_toolbox)
             tool_index = cached_toolbox.tool_index
+            complete = True
             if tool_index is not None:
                 for panel_view_id, searcher in self.cached_panel_searches.items():
-                    searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
-            self._mark_built(cached_toolbox)
+                    try:
+                        searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
+                    except LockError:
+                        log.warning(
+                            "Tool search index of panel %s is locked by another writer, skipping this rebuild",
+                            panel_view_id,
+                        )
+                        complete = False
+            if complete:
+                self._mark_built(cached_toolbox)
+            else:
+                # The other writer may hold an older corpus: leave the index
+                # stale so the next rebuild_toolbox_search_index retries.
+                self.indexed_reload_count = None
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self._panel_view_ids:
