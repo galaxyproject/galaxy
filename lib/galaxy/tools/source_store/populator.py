@@ -74,6 +74,7 @@ from galaxy.tools.source_store.discover import (
     ADHOC_TOOL_CONF,
     CONVERTER_TOOL_CONF,
     discover_tools,
+    discover_tools_from_config,
     DiscoveredTool,
 )
 from galaxy.tools.source_store.factory import (
@@ -96,6 +97,7 @@ from galaxy.tools.source_store.manifest import (
     write_manifest,
 )
 from galaxy.tools.source_store.search import MAX_TOOL_SEARCH_HELP_CHARS
+from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
 from galaxy.util import listify
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.properties import load_app_properties
@@ -541,25 +543,15 @@ def build_index_entry_from_source(
         return None
 
 
-def _build_stores(config: GalaxyAppConfiguration) -> dict[str, ToolSourceStore]:
+def _build_stores(config: GalaxyAppConfiguration, conf_to_store: dict[str, str]) -> dict[str, ToolSourceStore]:
     """Build {store_name: store_instance} for the default + every named store
-    referenced from any tool_conf."""
+    referenced from any tool_conf (``conf_to_store``, see :func:`conf_to_store_map`)."""
     stores: dict[str, ToolSourceStore] = {
         DEFAULT_STORE_NAME: _build_default_store(config),
     }
 
     catalog = config.tool_source_stores or {}
-    referenced: set[str] = set()
-    for path in config.all_tool_config_files():
-        try:
-            parser = get_toolbox_parser(path)
-        except Exception as e:
-            log.error(f"skipping tool conf {path} during store discovery: {e}")
-            continue
-        name = parser.parse_store_name()
-        if name:
-            referenced.add(name)
-
+    referenced = set(conf_to_store.values()) - {DEFAULT_STORE_NAME}
     for name in referenced:
         if name not in catalog:
             raise RuntimeError(f"tool_conf references store {name!r} but no such entry in tool_source_stores")
@@ -574,7 +566,8 @@ def conf_to_store_map(config: GalaxyAppConfiguration) -> dict[str, str]:
     for path in config.all_tool_config_files():
         try:
             parser = get_toolbox_parser(path)
-        except Exception:
+        except Exception as e:
+            log.error(f"Failed to parse tool conf {path} during store discovery, routing it to the default store: {e}")
             out[path] = DEFAULT_STORE_NAME
             continue
         out[path] = parser.parse_store_name() or DEFAULT_STORE_NAME
@@ -657,8 +650,8 @@ def _populate_store_inline_unlocked(
     which declares dynamic per-process queues for the SQLAlchemy transport.
     """
     log.info("Building tool source stores...")
-    stores = _build_stores(config)
     conf_to_store = conf_to_store_map(config)
+    stores = _build_stores(config, conf_to_store)
 
     if target is not None:
         if target not in stores:
@@ -695,6 +688,7 @@ def _populate_store_inline_unlocked(
     # route to the default store, so their walk follows the same gate.
     writable_confs = {conf for conf, name in conf_to_store.items() if name in writable_names}
     default_writable = DEFAULT_STORE_NAME in writable_names
+    paths_set = {str(p) for p in paths} if paths is not None else None
     # ``parallel`` governs both pools: the discovery existence checks here and
     # the parse/store workers below.
     discovered_tools = list(
@@ -704,6 +698,7 @@ def _populate_store_inline_unlocked(
             include_converters=include_converters,
             parallel=parallel,
             only_confs=writable_confs,
+            only_paths=paths_set,
         )
     )
 
@@ -717,10 +712,37 @@ def _populate_store_inline_unlocked(
             continue
         tool_specs.append((d, store_name))
 
+    # A conf routed to a read-only store can list tools that store does not
+    # hold: shed installs since it was published. The default store takes
+    # them, with their conf context, because the cached toolbox builds its
+    # panel from index placements: an ad-hoc entry keeps a tool out of the
+    # panel, and a full populate that skipped them would drop them from the
+    # index. Confs whose store is unavailable are walked eagerly by the
+    # toolbox instead.
+    if default_writable:
+        for conf, store_name in conf_to_store.items():
+            store = stores.get(store_name)
+            if store is None or not store.read_only or isinstance(store, UnavailableToolSourceStore):
+                continue
+            try:
+                published_paths = store.list_source_paths()
+            except Exception as e:
+                log.warning("Skipping tools of %s missing from read-only store %s: %s", conf, store_name, e)
+                continue
+            for d in discover_tools_from_config(
+                conf,
+                config.tool_path,
+                config.enable_beta_tool_formats,
+                parallel=parallel,
+                only_paths=paths_set,
+                exclude_paths=published_paths,
+            ):
+                discovered_tools.append(d)
+                tool_specs.append((d, DEFAULT_STORE_NAME))
+
     log.info(f"Found {len(discovered_tools)} tool files; routing {len(tool_specs)} to writable stores")
 
-    if paths is not None:
-        paths_set = {str(p) for p in paths}
+    if paths_set is not None:
         tool_specs = [(d, n) for d, n in tool_specs if d.path in paths_set]
         # Requested paths the conf walk can't reach — a freshly cloned shed
         # repository whose conf entry isn't persisted yet (metadata

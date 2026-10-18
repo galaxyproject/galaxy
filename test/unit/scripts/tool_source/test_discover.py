@@ -5,6 +5,8 @@ from pathlib import Path
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools.source_store.discover import (
     discover_tools,
     discover_tools_from_config,
@@ -200,3 +202,71 @@ def test_bundled_compatibility_alias_is_not_a_second_panel_placement(tmp_path):
 
     assert len(discoveries) == 1
     assert discoveries[0].section_id == "section"
+
+
+def test_shed_data_managers_parse_their_shed_conf_once(tmp_path, monkeypatch):
+    shed_tools = tmp_path / "shed_tools"
+    shed_tools.mkdir()
+    shed_conf = tmp_path / "shed_tool_conf.xml"
+    shed_conf.write_text(f'<toolbox tool_path="{shed_tools}"></toolbox>')
+    dm_elems = []
+    for name in ("a", "b", "c"):
+        (shed_tools / f"dm_{name}.xml").write_text(f'<tool id="dm_{name}" tool_type="manage_data" version="1.0"/>')
+        dm_elems.append(
+            f'<data_manager id="{name}" shed_conf_file="{shed_conf}">'
+            f'<tool file="dm_{name}.xml" guid="shed/repos/o/r/dm_{name}/1.0"/></data_manager>'
+        )
+    dm_conf = tmp_path / "shed_data_manager_conf.xml"
+    dm_conf.write_text(f"<data_managers>{''.join(dm_elems)}</data_managers>")
+
+    config = GalaxyAppConfiguration(
+        root=str(galaxy_root),
+        data_dir=str(tmp_path / "data"),
+        override_tempdir=False,
+        tool_config_file=str(shed_conf),
+        shed_data_manager_config_file=str(dm_conf),
+    )
+    parsed: list[str] = []
+
+    def counting_get_toolbox_parser(path):
+        parsed.append(str(path))
+        return get_toolbox_parser(path)
+
+    monkeypatch.setattr("galaxy.tools.source_store.discover.get_toolbox_parser", counting_get_toolbox_parser)
+    discovered = [
+        d
+        for d in discover_tools(config, include_bundled=False, include_converters=False, only_confs=set())
+        if d.tool_conf == str(dm_conf)
+    ]
+
+    assert sorted(d.path for d in discovered) == [str(shed_tools / f"dm_{name}.xml") for name in ("a", "b", "c")]
+    assert parsed == [str(shed_conf)]
+
+
+def test_data_manager_id_is_the_registry_id(tmp_path):
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    for name in ("shed_dm", "local_dm"):
+        (tools / f"{name}.xml").write_text(f'<tool id="{name}" tool_type="manage_data" version="1.0"/>')
+    dm_conf = tmp_path / "data_manager_conf.xml"
+    dm_conf.write_text(
+        f'<data_managers tool_path="{tools}">'
+        '<data_manager id="shed_dm" guid="shed/repos/o/r/data_manager/shed_dm/1.0">'
+        '<tool file="shed_dm.xml" guid="shed/repos/o/r/shed_dm/1.0"/></data_manager>'
+        '<data_manager id="local_dm" tool_file="local_dm.xml"/>'
+        "</data_managers>"
+    )
+    config = GalaxyAppConfiguration(
+        root=str(galaxy_root),
+        data_dir=str(tmp_path / "data"),
+        override_tempdir=False,
+        data_manager_config_file=str(dm_conf),
+    )
+
+    ids = {
+        Path(d.path).stem: d.data_manager_id
+        for d in discover_tools(config, include_bundled=False, include_converters=False, only_confs=set())
+        if d.tool_conf == str(dm_conf)
+    }
+
+    assert ids == {"shed_dm": "shed/repos/o/r/data_manager/shed_dm/1.0", "local_dm": "local_dm"}

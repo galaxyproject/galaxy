@@ -369,8 +369,14 @@ def reload_tool_data_tables(app, **kwargs):
     log.debug("Finished data table reload for %s", table_names)
 
 
+def _writes_tool_search_index(app) -> bool:
+    # Every process searches the shared tool_search_index_dir and reopens it
+    # per query, so the elected config watcher is its only writer.
+    return bool(app.is_webapp and app.database_heartbeat.is_config_watcher)
+
+
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.is_webapp and app.database_heartbeat.is_config_watcher:
+    if _writes_tool_search_index(app):
         app.ensure_tool_search_index()
     else:
         log.debug("App is not a webapp, not building a search index")
@@ -401,8 +407,9 @@ def reload_tool_source_cache(app, **kwargs):
     """
     Reload the tool source cache/index.
 
-    This is typically triggered by an external process (like populate_store.py --watch)
-    when tool files change on disk.
+    Sent after a populate, shed install or tool removal writes a store, from
+    this Galaxy or from an external ``populate_store.py --watch``. Read-only
+    SQLite stores are re-read only when their database file changed.
     """
     log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
 
@@ -410,7 +417,8 @@ def reload_tool_source_cache(app, **kwargs):
     toolbox = app.toolbox
     if isinstance(toolbox, CachedToolBox):
         toolbox.invalidate_index_cache()
-        app.reindex_tool_search()
+        if _writes_tool_search_index(app):
+            app.reindex_tool_search()
         log.info("Tool source index cache invalidated")
 
     # Invalidate the tool source store cache if it exists

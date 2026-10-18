@@ -1068,7 +1068,7 @@ class CachedToolBox(ToolBox):
     # === create_tool seam: return CachedTool stub when the index already has the source ===
 
     def load_hidden_tool(self, config_file, **kwds):
-        """Stamp the ``<data_manager id>`` conf id before the load resolves.
+        """Stamp the data manager's registry id before the load resolves.
 
         ``DataManager._load_tool`` is the only caller passing
         ``data_manager_id``, and it loads with ``use_cached=True`` — a
@@ -1084,12 +1084,13 @@ class CachedToolBox(ToolBox):
         return super().load_hidden_tool(config_file, **kwds)
 
     def _stamp_data_manager_id(self, entry: ToolIndexEntry, data_manager_id: str) -> None:
-        """Record the conf id on the entry (and its per-version twin) and persist.
+        """Record the data manager's registry id on the entry (and its per-version twin) and persist.
 
-        Without it a materialised ``DataManagerTool`` falls back to the tool
-        id and ``exec_after_process`` misses the data-manager registry.
+        ``DataManager._load_tool`` passes ``DataManager.id``, the key
+        ``exec_after_process`` looks the manager up by, so it replaces
+        whatever id the entry was indexed with.
         """
-        if entry.data_manager_id:
+        if entry.data_manager_id == data_manager_id:
             return
         entry.data_manager_id = data_manager_id
         if self._tool_index is not None:
@@ -1104,7 +1105,7 @@ class CachedToolBox(ToolBox):
                 self._store.update_index_entry(entry)
             except Exception as e:
                 log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
-        # A Tool materialised before the conf id was known (the install-time
+        # A Tool materialised before the registry id was known (the install-time
         # parse in ``get_repository_tools_tups``) carries the fallback id;
         # drop it so the next materialise rebuilds from the stamped entry.
         self._purge_tool_object_cache(entry.id)
@@ -1148,10 +1149,10 @@ class CachedToolBox(ToolBox):
                 "galaxy.tools.special_tools.hidden_lib_tool_paths()."
             )
         if data_manager_id := kwds.get("data_manager_id"):
-            # ``DataManager._load_tool`` hands the ``<data_manager id>`` conf
-            # id through ``load_hidden_tool``. Entries minted before any data
-            # manager conf covered this tool (install-time self-heal) don't
-            # carry it, and the materialise path must restore it or
+            # ``DataManager._load_tool`` hands ``DataManager.id`` through
+            # ``load_hidden_tool``. Entries minted before any data manager
+            # conf covered this tool (install-time self-heal) don't carry
+            # it, and the materialise path must restore it or
             # ``DataManagerTool.exec_after_process`` falls back to the tool
             # id and misses the registry. Persist so job-handler processes
             # materialising from the shared index see it too.
@@ -1202,20 +1203,31 @@ class CachedToolBox(ToolBox):
         path = os.path.abspath(config_file)
         log.info("CachedToolBox: index miss for existing file %s — populating ad hoc (guid=%s)", path, guid)
         try:
-            populate_for_paths(
-                self.app.config,
-                [path],
-                path_guids={path: guid},
-                app=self.app,
-            )
+            self.index_tool_files({path: guid})
         except Exception as e:
             log.warning("Ad-hoc populate for %s raised: %s", path, e)
             return None
+        return self._resolve_index_entry(config_file, guid)
+
+    def index_tool_files(self, path_guids: dict[str, str | None]) -> None:
+        """Index on-disk tool files that no conf covers yet, in one populate.
+
+        ``path_guids`` maps absolute tool file paths to their shed guid (or
+        ``None``). A shed install loads all of a repository's tools before
+        their conf entries exist; indexing them together costs one populate,
+        one ``reload_tool_source_cache`` broadcast and one index reload, where
+        a per-tool index miss pays each of those once per tool.
+        """
+        populate_for_paths(
+            self.app.config,
+            list(path_guids),
+            path_guids=path_guids,
+            app=self.app,
+        )
         if self._store is not None:
             self._store.invalidate_index_cache()
             self._tool_index = self._store.load_index() or ToolIndex()
             self._rebuild_shed_short_id_map()
-        return self._resolve_index_entry(config_file, guid)
 
     def _index_source_paths(self) -> set[str]:
         """Every ``source_path`` the current in-memory index covers.
@@ -1390,8 +1402,8 @@ class CachedToolBox(ToolBox):
         # / ``get_tool`` and the ``_tools_by_id`` registry.
         kwds: dict[str, Any] = {"tool_dir": stored.tool_dir}
         if entry and entry.data_manager_id:
-            # The registry is keyed by the ``<data_manager id>`` conf id,
-            # which may differ from the tool XML id.
+            # The registry is keyed by ``DataManager.id`` (the conf guid,
+            # else its id), which may differ from the tool XML id.
             # ``DataManagerTool.__init__`` falls back to the tool id when
             # the kwd is missing and ``exec_after_process`` then can't find
             # the manager — eager threads this through ``load_hidden_tool``.
@@ -1442,16 +1454,6 @@ class CachedToolBox(ToolBox):
         # tool right after the install's own broadcast).
         with self.app._toolbox_lock:
             try:
-                # Read-only members are published externally (CVMFS); a
-                # descriptor opened before the publish keeps serving the old
-                # snapshot forever, so dropping pooled connections — not just
-                # the cached index — is what makes the re-read below actually
-                # see the new file. Writable stores were updated through this
-                # process group's own connections and only need the cache drop.
-                if isinstance(self._store, CompositeToolSourceStore):
-                    for _name, member in self._store.members:
-                        if member.read_only:
-                            member.dispose()
                 self._store.invalidate_index_cache()
             except Exception as e:
                 log.debug(f"Store invalidate_index_cache raised: {e}")
