@@ -24,6 +24,7 @@ import sys
 
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -592,3 +593,57 @@ class TestFreshnessStamping:
         _populate_default(cfg, pattern="ftest_", incremental=True)
         store.invalidate_index_cache()
         assert store.index_is_fresh() is True
+
+
+class TestToolsMissingFromReadOnlyStore:
+    """A conf routed to a read-only store can list tools installed after it was published."""
+
+    def _config(self, tmp_path, shed_conf, read_only):
+        return GalaxyAppConfiguration(
+            root=str(galaxy_root),
+            data_dir=str(tmp_path / "data"),
+            override_tempdir=False,
+            tool_config_file=str(shed_conf),
+            tool_source_database_connection=f"sqlite:///{tmp_path}/default.sqlite",
+            tool_source_stores={"published": {"url": f"sqlite:///{tmp_path}/published.sqlite", "read_only": read_only}},
+        )
+
+    def _published_conf(self, tmp_path):
+        tools_dir = tmp_path / "shed_tools"
+        _write_tool(tools_dir / "published.xml", "published")
+        installed = _write_tool(tools_dir / "installed.xml", "installed")
+        shed_conf = tmp_path / "shed_tool_conf.xml"
+        shed_conf.write_text(
+            f'<toolbox tool_path="{tools_dir}" store="published">'
+            '<section id="shed" name="Shed"><tool file="published.xml"/></section></toolbox>'
+        )
+        populate_store_inline(self._config(tmp_path, shed_conf, read_only=False), target="published")
+        # The install appends the new tool to the conf after the store was published.
+        shed_conf.write_text(
+            f'<toolbox tool_path="{tools_dir}" store="published"><section id="shed" name="Shed">'
+            '<tool file="published.xml"/><tool file="installed.xml"/></section></toolbox>'
+        )
+        return shed_conf, installed
+
+    def test_partial_populate_indexes_installed_tool_with_its_panel_placement(self, tmp_path):
+        shed_conf, installed = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+
+        populate_store_inline(config, paths=[str(installed)])
+
+        _, index = _load_default_index(config)
+        entry = index.entries["installed"]
+        assert (entry.in_panel, entry.panel_section_id) == (True, "shed")
+        assert ("installed", "shed") in [(item.tool_id, item.section_id) for item in index.panel_items]
+        assert "published" not in index.entries
+
+    def test_full_populate_keeps_installed_tool(self, tmp_path):
+        shed_conf, installed = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+        populate_store_inline(config, paths=[str(installed)])
+
+        populate_store_inline(config, prune=True)
+
+        _, index = _load_default_index(config)
+        assert index.entries["installed"].in_panel is True
+        assert "published" not in index.entries
