@@ -22,7 +22,7 @@ const styleClasses = computed(() => {
 .g-button-group {
     display: inline-flex;
     gap: 0;
-    // Match Bootstrap's `.btn-group` so groups line up with standalone buttons.
+    // Lines groups up with standalone buttons on the same text line
     vertical-align: middle;
 
     // A focused GButton inside a wrapper is not a flex item, so lift the wrapper to keep its ring above the next button.
@@ -30,8 +30,7 @@ const styleClasses = computed(() => {
         z-index: 1;
     }
 
-    // Matches Bootstrap's `.btn-group > .btn`, so a group given a width (`w-100`)
-    // stretches its buttons instead of collapsing them to content width.
+    // A group given a width (`w-100`) stretches its buttons instead of collapsing them to content width
     &:not(.g-vertical) {
         &:deep(> .g-button) {
             flex: 1 1 auto;

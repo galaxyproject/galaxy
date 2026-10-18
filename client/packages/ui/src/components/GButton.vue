@@ -165,9 +165,7 @@ const buttonElementRef = useResolveElement(buttonRef);
     display: inline-flex;
     gap: var(--spacing-1);
     align-items: center;
-    // Bootstrap's `.btn` centred its content with `text-align: center`; an inline-flex
-    // box needs `justify-content` for the same effect, otherwise a full-width or
-    // fixed-size button leaves its label or glyph at flex-start.
+    // Centres the label or glyph when the button is wider than its content (full width or fixed size)
     justify-content: center;
     margin: 0;
     border: 1px solid;
@@ -401,16 +399,14 @@ const buttonElementRef = useResolveElement(buttonRef);
 </style>
 
 <style lang="scss">
-// Fixes for GButton inside a Bootstrap input group. These must be unscoped to target
-// Bootstrap's `.input-group-append` / `.input-group-prepend` wrappers, whose own rules
-// only ever matched `.btn`.
+// Layout for a GButton inside an input group's append or prepend wrapper
 .input-group-append .g-button,
 .input-group-prepend .g-button {
     // Prevents horizontal scrolling issues caused by flex layout conflicts
     flex-shrink: 0;
     overflow: hidden;
 
-    // Lifts the focus ring above the adjacent input, like Bootstrap's `.input-group > .btn`
+    // Lifts the focus ring above the adjacent input
     position: relative;
     z-index: 2;
 }
