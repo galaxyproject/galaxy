@@ -9,9 +9,9 @@ from typing import (
 import anyio
 
 from galaxy.agents import GalaxyAgentDependencies
-from galaxy.agents.registry import AgentRegistry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.managers.agent_registry import AgentRegistry
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse

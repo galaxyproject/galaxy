@@ -6051,7 +6051,7 @@
     call. Only registered when ``inference_services`` is configured
     (i.e. GalaxyAI is in use). Set to 0 to disable automatic refresh
     -- admins can still refresh on demand via ``python -m
-    galaxy.agents.gtn --refresh``. Requires celery.
+    galaxy.gtn --refresh``. Requires celery.
 :Default: ``86400``
 :Type: int
 

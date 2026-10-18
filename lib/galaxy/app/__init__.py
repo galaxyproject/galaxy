@@ -24,8 +24,6 @@ from galaxy import (
     jobs,
     tools,
 )
-from galaxy.agents.factory import build_registry as build_agent_registry
-from galaxy.agents.registry import AgentRegistry
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskAfterReturn,
@@ -52,6 +50,10 @@ from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.admin_extensions import AdminExtensionsManager
+from galaxy.managers.agent_registry import (
+    AgentRegistry,
+    build_registry as build_agent_registry,
+)
 from galaxy.managers.agents import AgentService
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager

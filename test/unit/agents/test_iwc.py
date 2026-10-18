@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from galaxy.agents import iwc
+from galaxy.workflow import iwc
 
 SAMPLE_MANIFEST: list[dict[str, Any]] = [
     {
