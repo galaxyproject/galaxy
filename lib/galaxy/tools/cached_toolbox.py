@@ -64,6 +64,7 @@ from galaxy.util.tool_version import (
     remove_version_from_guid,
     short_tool_id,
 )
+from galaxy.web import url_for
 from . import (
     create_tool_from_source,
     DataManagerTool,
@@ -453,6 +454,10 @@ class CachedTool:
             versions = list(self._lineage.tool_versions)
         else:
             versions = [entry.version] if entry.version else []
+        if entry.is_data_source:
+            link = url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
+        else:
+            link = url_for(controller="tool_runner", tool_id=self.id)
         payload: dict[str, Any] = {
             "model_class": entry.model_class,
             "id": self.id,
@@ -468,7 +473,7 @@ class CachedTool:
             "xrefs": entry.xrefs or [],
             "versions": versions,
             "hidden_versions": [],
-            "link": f"/tool_runner?tool_id={self.id}",
+            "link": link,
             "panel_section_id": entry.panel_section_id,
             "panel_section_name": entry.panel_section_name,
             "form_style": entry.form_style,
