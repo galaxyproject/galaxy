@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 from typing import (
     List,
@@ -9,7 +10,11 @@ from typing import (
 
 from packaging.version import Version
 
-from galaxy.util import string_as_bool
+from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
+from galaxy.util import (
+    in_directory,
+    string_as_bool,
+)
 from .parameter_validators import statically_validates
 
 if TYPE_CHECKING:
@@ -17,6 +22,18 @@ if TYPE_CHECKING:
         InputSource,
         ToolSource,
     )
+
+
+def resolve_tool_data_file(config, filename: str) -> Optional[str]:
+    """Resolve a file a tool names against ``config.tool_data_path``, an absolute filename is kept.
+
+    Returns None for an untrusted tool's file outside of ``tool_data_path``.
+    """
+    path = os.path.join(config.tool_data_path, filename)
+    if is_loading_untrusted_tools() and not in_directory(path, config.tool_data_path):
+        return None
+    return path
+
 
 DEFAULT_DELTA = 10000
 DEFAULT_DELTA_FRAC = None
@@ -98,7 +115,11 @@ def text_input_is_optional(input_source: "InputSource") -> Tuple[bool, bool]:
     else:
         # A text parameter that doesn't raise a validation error on empty string
         # is considered to be optional
-        if statically_validates(input_source.parse_validators(), ""):
+        validators = input_source.parse_validators()
+        if is_loading_untrusted_tools() and any(validator.type == "expression" for validator in validators):
+            # expression validators are Python, which untrusted tools must not run
+            optional = False
+        elif statically_validates(validators, ""):
             optional = True
             optionality_inferred = True
         else:

@@ -1,6 +1,7 @@
 import os
 import tempfile
 from collections import namedtuple
+from contextlib import nullcontext
 from typing import (
     Optional,
 )
@@ -24,6 +25,7 @@ from galaxy.tool_util.parser import (
     ToolSource,
 )
 from galaxy.tool_util.version_updates import is_workflow_safe_version
+from galaxy.tool_util_models.untrusted import loading_untrusted_tools
 from galaxy.tools.stock import stock_tool_sources_by_id
 from galaxy.util import relpath
 from tool_shed.context import (
@@ -115,7 +117,9 @@ def parsed_tool_model_for(
     tool_source, repository_metadata = tool_source_for(
         trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url
     )
-    parsed_tool = parse_tool_custom(tool_source, ShedParsedTool)
+    # tools uploaded to the Tool Shed are untrusted, stock Galaxy tools aren't
+    with loading_untrusted_tools() if repository_metadata else nullcontext():
+        parsed_tool = parse_tool_custom(tool_source, ShedParsedTool)
     if repository_metadata:
         revision_model = get_repository_revision_metadata_model(
             trans.app, repository_metadata.repository, repository_metadata, recursive=False

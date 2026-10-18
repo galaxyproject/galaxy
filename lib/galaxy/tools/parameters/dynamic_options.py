@@ -28,6 +28,8 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.dataset_collections.adapters import CollectionAdapter
+from galaxy.tool_util.parser.util import resolve_tool_data_file
+from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
@@ -630,6 +632,9 @@ class DynamicOptions:
 
     def __init__(self, elem: Element, tool_param):
         def load_from_parameter(from_parameter, transform_lines=None):
+            if is_loading_untrusted_tools():
+                # from_parameter walks Galaxy objects and transform_lines is Python
+                return []
             obj = self.tool_param
             for field in from_parameter.split("."):
                 obj = getattr(obj, field)
@@ -674,8 +679,8 @@ class DynamicOptions:
             if data_file is not None:
                 data_file = data_file.strip()
                 if not os.path.isabs(data_file):
-                    full_path = os.path.join(self.tool_param.tool.app.config.tool_data_path, data_file)
-                    if os.path.exists(full_path):
+                    full_path = resolve_tool_data_file(self.tool_param.tool.app.config, data_file)
+                    if full_path and os.path.exists(full_path):
                         self.index_file = data_file
                         with open(full_path) as fh:
                             self.file_fields = self.parse_file_fields(fh)
