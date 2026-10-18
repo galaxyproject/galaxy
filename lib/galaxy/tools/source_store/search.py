@@ -57,6 +57,12 @@ _DOC_HASH_FIELD = "doc_hash"
 # skipped: the process holding the lock is writing the same documents.
 INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
+# Whoosh's estimate of its in-memory posting pool before spilling to disk. The
+# real pool is several times larger, and pymalloc keeps the arenas it filled,
+# so this bounds the memory a full build leaves the building process with.
+# Building a 9000-tool corpus takes as long at 32 as at 256.
+INDEX_WRITER_LIMITMB = 32
+
 # Tool help can contain embedded tables and tutorials large enough to dominate
 # both the persisted metadata index and Whoosh. Eager and cached search must
 # apply the same bound so their corpora and ranking remain equivalent.
@@ -353,7 +359,7 @@ class ToolWhooshIndex:
                 log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
                 return 0
         written = 0
-        with ix.writer(limitmb=256, timeout=INDEX_WRITE_LOCK_TIMEOUT) as writer:
+        with ix.writer(limitmb=INDEX_WRITER_LIMITMB, timeout=INDEX_WRITE_LOCK_TIMEOUT) as writer:
             if _DOC_HASH_FIELD not in writer.schema:
                 writer.add_field(_DOC_HASH_FIELD, ID(stored=True))
             # Another process may have committed between the check above and
