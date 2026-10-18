@@ -1,5 +1,6 @@
 import json
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -43,6 +44,7 @@ class ToolApp(GalaxyDataTestApp):
     biotools_metadata_source = None
     job_search = None
     is_webapp = True
+    tool_data_tables: dict[str, Any]
 
 
 def load_tool(xml):
@@ -78,7 +80,7 @@ def test_nested_repeats_and_sections():
         ([history], False),
         ([history, indexed], True),
     ]:
-        job = SimpleNamespace(raw_param_dict=lambda: {"references": json.dumps(values)})
+        job = SimpleNamespace(raw_param_dict=Mock(return_value={"references": json.dumps(values)}))
         assert tool.has_data_table
         assert tool.is_using_data_table(job) is expected
 
@@ -123,7 +125,7 @@ def test_tree_is_cached_for_tool_instance(tool):
 def test_tool_without_tables_does_not_load_parameters():
     tool = object.__new__(Tool)
     tool.inputs = {}
-    job = SimpleNamespace(raw_param_dict=Mock(side_effect=AssertionError("parameters loaded")))
+    job = Mock(spec=Job, raw_param_dict=Mock(side_effect=AssertionError("parameters loaded")))
     assert not tool.has_data_table
     assert not tool.is_using_data_table(job)
 
