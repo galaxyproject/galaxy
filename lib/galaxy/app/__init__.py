@@ -1001,13 +1001,17 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ),
         )
 
-        # AI agent registry and service
-        agent_registry = build_agent_registry(self.config)
-        self._register_singleton(AgentRegistry, agent_registry)
-        self._register_singleton(
+        # AI agent registry and service. Building the registry imports every agent
+        # class and with them pydantic-ai, so only web processes build it at startup:
+        # they load pydantic-ai with the agent API routes anyway, and those routes
+        # resolve the service on the event loop. Other processes build it on first use.
+        self._register_lazy_singleton(AgentRegistry, lambda: build_agent_registry(self.config))
+        self._register_lazy_singleton(
             AgentService,
-            AgentService(self.config, JobQueryManager(self, self.history_manager), agent_registry),
+            lambda: AgentService(self.config, JobQueryManager(self, self.history_manager), self[AgentRegistry]),
         )
+        if self.is_webapp:
+            self[AgentService]
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)

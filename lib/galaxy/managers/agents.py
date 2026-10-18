@@ -4,18 +4,20 @@ import logging
 from functools import partial
 from typing import (
     Any,
+    TYPE_CHECKING,
 )
 
 import anyio
 
-from galaxy.agents import GalaxyAgentDependencies
-from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.managers.agent_registry import AgentRegistry
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
 from galaxy.work.context import SessionRequestContext
+
+if TYPE_CHECKING:
+    from galaxy.agents.base import GalaxyAgentDependencies
 
 log = logging.getLogger(__name__)
 
@@ -33,8 +35,11 @@ class AgentService:
         self.job_manager = job_manager
         self.registry = registry
 
-    def create_dependencies(self, trans: SessionRequestContext, user: User) -> GalaxyAgentDependencies:
+    def create_dependencies(self, trans: SessionRequestContext, user: User) -> "GalaxyAgentDependencies":
         """Create agent dependencies for dependency injection."""
+        # Agent modules import pydantic-ai; load them only when an agent runs.
+        from galaxy.agents.base import GalaxyAgentDependencies
+
         toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
         return GalaxyAgentDependencies(
             trans=trans,
@@ -78,6 +83,8 @@ class AgentService:
         except ValueError as e:
             log.warning(f"Unknown agent type {agent_type}, falling back to router: {e}")
             # Fallback to router for unknown agents - it handles general queries
+            from galaxy.agents.router import QueryRouterAgent
+
             router = await anyio.to_thread.run_sync(partial(QueryRouterAgent, deps))
             response = await router.process(query, context)
             metadata = response.metadata.copy()
