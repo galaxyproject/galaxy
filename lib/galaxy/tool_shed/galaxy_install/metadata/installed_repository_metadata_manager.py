@@ -17,6 +17,7 @@ from galaxy.tool_shed.util.repository_util import (
     get_repository_owner,
 )
 from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.util import inflector
 from galaxy.util.tool_shed import (
     common_util,
@@ -88,6 +89,22 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
         """
         repository_tools_tups = []
         shed_conf_dict = self.tpm.get_shed_tool_conf_dict(self.metadata_dict.get("shed_config_filename"))
+        toolbox = self.app.toolbox
+        if isinstance(toolbox, CachedToolBox):
+            # None of these tools is in a conf yet, so each load below would
+            # miss the index and populate on its own; index them together.
+            path_guids = {}
+            for tool_dict in self.metadata_dict.get("tools", []):
+                relative_path = tool_dict.get("tool_config", None)
+                guid = tool_dict.get("guid", None)
+                if relative_path and guid:
+                    load_path = os.path.join(shed_conf_dict.get("tool_path") or "", relative_path)
+                    path_guids[os.path.abspath(load_path)] = guid
+            if path_guids:
+                try:
+                    toolbox.index_tool_files(path_guids)
+                except Exception:
+                    log.exception("Error while indexing the tools of repository %s", self.repository)
         if "tools" in self.metadata_dict:
             for tool_dict in self.metadata_dict["tools"]:
                 load_relative_path = relative_path = tool_dict.get("tool_config", None)

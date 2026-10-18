@@ -1202,20 +1202,31 @@ class CachedToolBox(ToolBox):
         path = os.path.abspath(config_file)
         log.info("CachedToolBox: index miss for existing file %s — populating ad hoc (guid=%s)", path, guid)
         try:
-            populate_for_paths(
-                self.app.config,
-                [path],
-                path_guids={path: guid},
-                app=self.app,
-            )
+            self.index_tool_files({path: guid})
         except Exception as e:
             log.warning("Ad-hoc populate for %s raised: %s", path, e)
             return None
+        return self._resolve_index_entry(config_file, guid)
+
+    def index_tool_files(self, path_guids: dict[str, str | None]) -> None:
+        """Index on-disk tool files that no conf covers yet, in one populate.
+
+        ``path_guids`` maps absolute tool file paths to their shed guid (or
+        ``None``). A shed install loads all of a repository's tools before
+        their conf entries exist; indexing them together costs one populate,
+        one ``reload_tool_source_cache`` broadcast and one index reload, where
+        a per-tool index miss pays each of those once per tool.
+        """
+        populate_for_paths(
+            self.app.config,
+            list(path_guids),
+            path_guids=path_guids,
+            app=self.app,
+        )
         if self._store is not None:
             self._store.invalidate_index_cache()
             self._tool_index = self._store.load_index() or ToolIndex()
             self._rebuild_shed_short_id_map()
-        return self._resolve_index_entry(config_file, guid)
 
     def _index_source_paths(self) -> set[str]:
         """Every ``source_path`` the current in-memory index covers.
