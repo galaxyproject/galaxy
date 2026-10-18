@@ -74,6 +74,7 @@ from galaxy.tools.source_store.discover import (
     ADHOC_TOOL_CONF,
     CONVERTER_TOOL_CONF,
     discover_tools,
+    discover_tools_from_config,
     DiscoveredTool,
 )
 from galaxy.tools.source_store.factory import (
@@ -96,6 +97,7 @@ from galaxy.tools.source_store.manifest import (
     write_manifest,
 )
 from galaxy.tools.source_store.search import MAX_TOOL_SEARCH_HELP_CHARS
+from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
 from galaxy.util import listify
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.properties import load_app_properties
@@ -709,6 +711,34 @@ def _populate_store_inline_unlocked(
             # outside --target — small local families discovery still walks.
             continue
         tool_specs.append((d, store_name))
+
+    # A conf routed to a read-only store can list tools that store does not
+    # hold: shed installs since it was published. The default store takes
+    # them, with their conf context, because the cached toolbox builds its
+    # panel from index placements: an ad-hoc entry keeps a tool out of the
+    # panel, and a full populate that skipped them would drop them from the
+    # index. Confs whose store is unavailable are walked eagerly by the
+    # toolbox instead.
+    if default_writable:
+        for conf, store_name in conf_to_store.items():
+            store = stores.get(store_name)
+            if store is None or not store.read_only or isinstance(store, UnavailableToolSourceStore):
+                continue
+            try:
+                published_paths = store.list_source_paths()
+            except Exception as e:
+                log.warning("Skipping tools of %s missing from read-only store %s: %s", conf, store_name, e)
+                continue
+            for d in discover_tools_from_config(
+                conf,
+                config.tool_path,
+                config.enable_beta_tool_formats,
+                parallel=parallel,
+                only_paths=paths_set,
+                exclude_paths=published_paths,
+            ):
+                discovered_tools.append(d)
+                tool_specs.append((d, DEFAULT_STORE_NAME))
 
     log.info(f"Found {len(discovered_tools)} tool files; routing {len(tool_specs)} to writable stores")
 

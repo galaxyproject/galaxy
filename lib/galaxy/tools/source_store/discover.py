@@ -178,6 +178,7 @@ def discover_tools_from_config(
     enable_beta_formats: bool = False,
     parallel: int = 1,
     only_paths: Collection[str] | None = None,
+    exclude_paths: Collection[str] | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from a single tool configuration file.
@@ -194,6 +195,8 @@ def discover_tools_from_config(
         only_paths: When set, yield only tools at these absolute paths. Other
             ``<tool>`` items skip their existence check, and ``tool_dir``
             items are walked only when one of these paths lies under them.
+        exclude_paths: Tools at these absolute paths are skipped, before their
+            existence check.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -237,6 +240,8 @@ def discover_tools_from_config(
         tool_file = os.path.normpath(tool_file)
         if only_paths is not None and tool_file not in only_paths:
             continue
+        if exclude_paths is not None and tool_file in exclude_paths:
+            continue
         file_paths[i] = tool_file
     unique_paths = list(set(file_paths.values()))
     if parallel > 1 and unique_paths:
@@ -257,6 +262,8 @@ def discover_tools_from_config(
             recursive = _tool_dir_recursive(item)
             for candidate in _walk_tool_dir(directory, recursive):
                 if only_paths is not None and candidate not in only_paths:
+                    continue
+                if exclude_paths is not None and candidate in exclude_paths:
                     continue
                 if not looks_like_a_tool(candidate, enable_beta_formats=enable_beta_formats):
                     continue
