@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import { type ComponentSize, prefix } from "../componentVariants";
+
 defineOptions({
     // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
     compatConfig: { COMPONENT_V_MODEL: false },
@@ -8,6 +10,8 @@ defineOptions({
 
 const props = defineProps<{
     modelValue?: string | null;
+    /** Field size; unset renders the medium size */
+    size?: ComponentSize;
 }>();
 
 const emit = defineEmits<{
@@ -15,6 +19,8 @@ const emit = defineEmits<{
     (e: "keydown", event: KeyboardEvent): void;
     (e: "blur", event: FocusEvent): void;
 }>();
+
+const sizeClass = computed(() => (props.size ? prefix(props.size) : undefined));
 
 const inputElement = ref<HTMLInputElement | null>(null);
 
@@ -43,6 +49,7 @@ defineExpose({
         v-model="inputValue"
         type="text"
         class="g-form-input"
+        :class="sizeClass"
         @keydown="(event: KeyboardEvent) => emit('keydown', event)"
         @blur="(event: FocusEvent) => emit('blur', event)" />
 </template>
@@ -66,6 +73,18 @@ defineExpose({
 
     &[type="range"] {
         background-color: transparent;
+    }
+
+    &.g-small {
+        height: var(--field-height-small);
+        padding: var(--field-padding-y-small) var(--field-padding-x-small);
+        font-size: var(--font-size-small);
+    }
+
+    &.g-large {
+        height: var(--field-height-large);
+        padding: var(--field-padding-y-large) var(--field-padding-x-large);
+        font-size: var(--font-size-large);
     }
 
     // Keep the token colours on focus when a consumer's field class sets its own
@@ -119,6 +138,14 @@ defineExpose({
     height: auto;
     padding: 0;
     border: 0;
+}
+
+:where(.g-form-input.g-small) {
+    border-radius: var(--field-radius-small);
+}
+
+:where(.g-form-input.g-large) {
+    border-radius: var(--field-radius-large);
 }
 
 // Inside an input group the field flexes to fill the row and takes the group's size

@@ -59,4 +59,14 @@ describe("GFormInput", () => {
         const password = mount(GFormInput, { attrs: { type: "password" } }).find("input");
         expect(password.attributes("type")).toBe("password");
     });
+
+    it("maps size to a size class instead of the native size attribute", () => {
+        const small = mount(GFormInput, { props: { size: "small" } }).find("input");
+        expect(small.classes()).toContain("g-small");
+        expect(small.attributes("size")).toBeUndefined();
+
+        const large = mount(GFormInput, { props: { size: "large" } }).find("input");
+        expect(large.classes()).toContain("g-large");
+        expect(mount(GFormInput).find("input").classes()).toEqual(["g-form-input"]);
+    });
 });
