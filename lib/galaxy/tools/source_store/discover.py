@@ -345,7 +345,9 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
         conf_tool_path = root.get("tool_path") or config.tool_path or "."
         for dm_elem in root.findall("data_manager"):
             tool_path = conf_tool_path
-            data_manager_id = dm_elem.get("id")
+            # ``DataManagers`` registers a manager under ``DataManager.id``:
+            # its guid when the conf has one (every shed install), else its id.
+            data_manager_id = dm_elem.get("guid") or dm_elem.get("id")
             path = dm_elem.get("tool_file")
             guid = None
             if path is None:
