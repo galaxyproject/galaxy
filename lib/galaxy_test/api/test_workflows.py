@@ -10160,6 +10160,19 @@ steps:
         self.__assert_lines_hid_line_count_is(history_id, 2, 4)
         self.__assert_lines_hid_line_count_is(history_id, 3, 3)
 
+    @pytest.mark.parametrize("scheduler", [None, "", "default", "not_a_scheduler"])
+    def test_run_with_scheduler(self, history_id, scheduler):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        workflow_request = {"history_id": history_id}
+        if scheduler is not None:
+            workflow_request["scheduler"] = scheduler
+        response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
+        if scheduler == "not_a_scheduler":
+            self._assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "Unknown workflow scheduler 'not_a_scheduler'")
+        else:
+            self._assert_status_code_is(response, 200)
+
     @skip_without_tool("cat1")
     @skip_without_tool("addValue")
     def test_run_batch(self):
