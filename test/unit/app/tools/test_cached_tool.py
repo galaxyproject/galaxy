@@ -391,6 +391,7 @@ def _seam_box():
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None
     box._shed_short_id_to_guids = {}
+    box._deferred_index_entries = None
     box.app = MagicMock()
     box.app.config.is_admin_user = lambda u: False
     box.app.config.preserve_python_environment = "legacy_only"
@@ -533,6 +534,20 @@ def test_create_tool_replaces_indexed_data_manager_id_with_registry_id():
     box.create_tool(config_file=None, guid="dm_tool", data_manager_id=guid)
     assert e.data_manager_id == guid
     box._store.update_index_entry.assert_called_once_with(e)
+
+
+def test_batch_index_writes_persists_stamped_entries_once():
+    box = _seam_box()
+    first = _entry(id="dm_one", tool_type="manage_data")
+    second = _entry(id="dm_two", tool_type="manage_data")
+    box._tool_index.entries.update({"dm_one": first, "dm_two": second})
+    with box.batch_index_writes():
+        box.create_tool(config_file=None, guid="dm_one", data_manager_id="registry/dm_one")
+        box.create_tool(config_file=None, guid="dm_two", data_manager_id="registry/dm_two")
+        assert first.data_manager_id == "registry/dm_one"
+        box._store.update_index_entries.assert_not_called()
+    box._store.update_index_entry.assert_not_called()
+    box._store.update_index_entries.assert_called_once_with([first, second])
 
 
 def test_index_reload_refreshes_existing_stub_entries():

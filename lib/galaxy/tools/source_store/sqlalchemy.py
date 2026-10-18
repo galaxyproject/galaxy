@@ -375,14 +375,18 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
             log.error(f"Failed to decode tool index from store {self.url}: {e}")
             return None
 
-    @_serialized_write
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
+        self.update_index_entries([entry])
+
+    @_serialized_write
+    def update_index_entries(self, entries: list[ToolIndexEntry]) -> None:
         self._ensure_writable()
         index = self.load_index() or ToolIndex()
-        # add_entry keeps every index projection in step. Single-entry writes are runtime
+        # add_entry keeps every index projection in step. Entry writes are runtime
         # additions (a shed install, a self-heal), so a new placement goes
         # to the head of its section like the eager runtime insert does.
-        index.add_entry(entry, new_placements_first=True)
+        for entry in entries:
+            index.add_entry(entry, new_placements_first=True)
         self.store_index(index)
 
     def invalidate_index_cache(self) -> None:

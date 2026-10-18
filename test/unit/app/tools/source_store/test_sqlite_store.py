@@ -79,6 +79,23 @@ def test_index_round_trip(sqlite_path):
     assert loaded.entries["t1"].name == "T1"
 
 
+def test_update_index_entries_persists_every_entry(sqlite_path):
+    store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
+    store.store_index(ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")}))
+
+    store.update_index_entries(
+        [
+            ToolIndexEntry(id="t1", name="T1", data_manager_id="registry/t1"),
+            ToolIndexEntry(id="t2", name="T2"),
+        ]
+    )
+
+    loaded = SqliteToolSourceStore(url=_sqlite_url(sqlite_path)).load_index()
+    assert loaded is not None
+    assert loaded.entries["t1"].data_manager_id == "registry/t1"
+    assert loaded.entries["t2"].name == "T2"
+
+
 def test_load_index_shares_default_entry_with_version_map(sqlite_path):
     index = ToolIndex()
     index.add_entry(ToolIndexEntry(id="solo", version="1.0", name="Solo"))

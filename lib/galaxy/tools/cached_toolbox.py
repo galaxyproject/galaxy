@@ -9,7 +9,11 @@ LRU eviction.
 import logging
 import os
 import threading
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Iterator,
+)
+from contextlib import contextmanager
 from enum import Enum
 from typing import (
     Any,
@@ -547,6 +551,8 @@ class CachedToolBox(ToolBox):
         self._index_source_paths_cache: tuple[ToolIndex, set[str]] | None = None
         self._guid_sibling_versions_cache: tuple[ToolIndex, int, dict[str, list[tuple[str, str]]]] | None = None
         self._indexed_panel_positioned_keys: set[str] | None = None
+        # Entries stamped inside ``batch_index_writes``, persisted when it exits.
+        self._deferred_index_entries: dict[tuple[str, str], ToolIndexEntry] | None = None
 
         super().__init__(
             config_filenames=config_filenames,
@@ -1088,6 +1094,27 @@ class CachedToolBox(ToolBox):
                 self._stamp_data_manager_id(entry, data_manager_id)
         return super().load_hidden_tool(config_file, **kwds)
 
+    @contextmanager
+    def batch_index_writes(self) -> Iterator[None]:
+        """Persist the entries stamped inside the block in one store write.
+
+        Each persisted entry rewrites the whole index, so stamping every data
+        manager one by one after an upgrade took minutes at startup.
+        """
+        if self._deferred_index_entries is not None:
+            yield
+            return
+        self._deferred_index_entries = {}
+        try:
+            yield
+        finally:
+            entries, self._deferred_index_entries = list(self._deferred_index_entries.values()), None
+            if entries and self._store is not None:
+                try:
+                    self._store.update_index_entries(entries)
+                except Exception as e:
+                    log.warning("Persisting data_manager_id for %d index entries raised: %s", len(entries), e)
+
     def _stamp_data_manager_id(self, entry: ToolIndexEntry, data_manager_id: str) -> None:
         """Record the data manager's registry id on the entry (and its per-version twin) and persist.
 
@@ -1105,7 +1132,9 @@ class CachedToolBox(ToolBox):
             twin = self._tool_index.entries_by_version.get(entry.id, {}).get(entry.version or "")
             if twin is not None and twin is not entry:
                 twin.data_manager_id = data_manager_id
-        if self._store is not None:
+        if self._deferred_index_entries is not None:
+            self._deferred_index_entries[(entry.id, entry.version or "")] = entry
+        elif self._store is not None:
             try:
                 self._store.update_index_entry(entry)
             except Exception as e:
