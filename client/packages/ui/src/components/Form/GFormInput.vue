@@ -4,8 +4,8 @@ import { computed, ref } from "vue";
 import { type ComponentSize, prefix } from "../componentVariants";
 
 defineOptions({
-    // Under @vue/compat, keep v-model on modelValue instead of Vue 2's value/input
-    compatConfig: { COMPONENT_V_MODEL: false },
+    // Under @vue/compat: keep v-model on modelValue, and let undeclared listeners (@click, @keyup) fall through to the input
+    compatConfig: { COMPONENT_V_MODEL: false, INSTANCE_LISTENERS: false },
 });
 
 // state defaults to null: Vue would cast an absent boolean prop to false, i.e. invalid

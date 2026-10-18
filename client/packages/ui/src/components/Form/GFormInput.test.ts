@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { defineComponent, h, ref } from "vue";
 
 import GFormInput from "./GFormInput.vue";
@@ -50,6 +50,28 @@ describe("GFormInput", () => {
 
         await input.trigger("blur");
         expect(component.emitted("blur")).toHaveLength(1);
+        wrapper.unmount();
+    });
+
+    it("passes undeclared listeners through to the input", async () => {
+        const listeners = { onClick: vi.fn(), onKeyup: vi.fn(), onFocus: vi.fn(), onChange: vi.fn() };
+        const Parent = defineComponent({
+            setup() {
+                return () => h(GFormInput, { modelValue: "", ...listeners });
+            },
+        });
+        const wrapper = mount(Parent, { attachTo: document.body });
+        const input = wrapper.find("input");
+
+        await input.trigger("click");
+        await input.trigger("keyup", { key: "Enter" });
+        await input.trigger("focus");
+        await input.trigger("change");
+
+        expect(listeners.onClick).toHaveBeenCalledTimes(1);
+        expect(listeners.onKeyup.mock.calls[0]![0]).toBeInstanceOf(KeyboardEvent);
+        expect(listeners.onFocus).toHaveBeenCalledTimes(1);
+        expect(listeners.onChange).toHaveBeenCalledTimes(1);
         wrapper.unmount();
     });
 
