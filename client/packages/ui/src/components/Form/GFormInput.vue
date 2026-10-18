@@ -106,13 +106,11 @@ defineExpose({
         border-color: var(--color-grey-400);
         outline: none;
         box-shadow: 0 0 0 0.2rem rgb(from var(--color-blue-400) r g b / 0.33);
-        z-index: 999;
     }
 
     &:focus-visible {
         outline: none;
         box-shadow: 0 0 0 0.2rem var(--color-blue-400);
-        z-index: 999;
     }
 
     // Same shades as GSelect's state borders, which keep 3:1 contrast against the background
@@ -214,6 +212,11 @@ defineExpose({
 
 .input-group-lg > .g-form-input {
     font-size: calc(var(--font-size-medium) * 1.25);
+}
+
+// Lift the focus ring over joined neighbours, only inside an input group
+.input-group > .g-form-input:focus {
+    z-index: 3;
 }
 
 // Joined fields overlap borders by 1px; page-level margin rules on input elements would beat :where()
