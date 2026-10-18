@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, type Ref, ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
-import { basicEntryToItem } from "@/components/SelectionDialog/selectionAdapters";
-import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { basicEntryToItem, type TimedSelectionItem } from "@/components/SelectionDialog/selectionAdapters";
+import type { SelectionItem, SelectItemsProvider } from "@/components/SelectionDialog/selectionTypes";
+import { useSelectItems } from "@/composables/useSelectItems";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
@@ -32,11 +32,16 @@ const emit = defineEmits<{
     (e: "onUpload"): void;
 }>();
 
-const errorMessage = ref("");
-const items: Ref<Array<SelectionItem>> = ref([]);
 const modalShow = ref(true);
-const optionsShow = ref(false);
-const showTime = ref(false);
+
+// getData() returns every entry, so paging and search run locally
+const provider: SelectItemsProvider<Record<string, any>> = {
+    load: async () => ({ items: (await props.getData()) ?? [] }),
+    map: (entry) => basicEntryToItem(entry, props),
+};
+const state = useSelectItems(provider);
+
+const showTime = computed(() => state.items.value.some((item) => (item as TimedSelectionItem).time));
 
 const fields = computed<TableField[]>(() => {
     const fields = [{ key: "label", label: "Name" }];
@@ -48,38 +53,15 @@ const fields = computed<TableField[]>(() => {
     }
     return fields;
 });
-
-async function load() {
-    optionsShow.value = false;
-    try {
-        // TODO: Consider supporting pagination here
-        // this could potentially load quite a lot of items
-        const incoming = await props.getData();
-        if (incoming) {
-            items.value = incoming.map((entry) => {
-                const item = basicEntryToItem(entry, props);
-                showTime.value = !!item.time;
-                return item;
-            });
-        }
-        optionsShow.value = true;
-    } catch (err) {
-        errorMessage.value = errorMessageAsString(err);
-    }
-}
-
-onMounted(() => load());
 </script>
 
 <template>
     <SelectionDialog
-        :error-message="errorMessage"
         :fields="fields"
-        :options-show="optionsShow"
         :modal-show="modalShow"
         :is-encoded="isEncoded"
         :leaf-icon="leafIcon"
-        :items="items"
+        :state="state"
         :title="title"
         @onCancel="emit('onCancel')"
         @onClick="emit('onOk', $event)" />
