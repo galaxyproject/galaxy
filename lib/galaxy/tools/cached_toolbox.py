@@ -64,11 +64,11 @@ from galaxy.util.tool_version import (
     remove_version_from_guid,
     short_tool_id,
 )
-from galaxy.web import url_for
 from . import (
     create_tool_from_source,
     DataManagerTool,
     tool_requires_galaxy_python_environment,
+    tool_runner_link,
     ToolBox,
 )
 
@@ -140,6 +140,7 @@ class CachedTool:
         "_overrides",
         "_preserve_python_environment",
         "_requirements",
+        "_url_prefix",
         "dependencies",
     )
 
@@ -267,11 +268,13 @@ class CachedTool:
         is_admin_user: Callable[["User"], bool],
         *,
         preserve_python_environment: str = "legacy_only",
+        url_prefix: str = "/",
     ) -> None:
         self._entry = entry
         self._materialize_cb = materialize_callback
         self._is_admin_user = is_admin_user
         self._preserve_python_environment = preserve_python_environment
+        self._url_prefix = url_prefix
         self._overrides: CachedToolOverrides = {}
         self._requirements: ToolRequirements | None = None
         self._containers: list[ContainerDescription] | None = None
@@ -454,10 +457,7 @@ class CachedTool:
             versions = list(self._lineage.tool_versions)
         else:
             versions = [entry.version] if entry.version else []
-        if entry.is_data_source:
-            link = url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
-        else:
-            link = url_for(controller="tool_runner", tool_id=self.id)
+        link = tool_runner_link(self._url_prefix, self.id, entry.is_data_source)
         payload: dict[str, Any] = {
             "model_class": entry.model_class,
             "id": self.id,
@@ -1177,6 +1177,7 @@ class CachedToolBox(ToolBox):
             materialize_callback=self._materialize_for_cached_tool,
             is_admin_user=self.app.config.is_admin_user,
             preserve_python_environment=self.app.config.preserve_python_environment,
+            url_prefix=self.app.config.galaxy_url_prefix,
         )
         if hasattr(self, "_lineage_map"):
             cached._lineage = self._lineage_map.get(entry.id) or self._lineage_map.register(cached)  # type: ignore[arg-type]

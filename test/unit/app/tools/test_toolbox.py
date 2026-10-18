@@ -169,6 +169,12 @@ class TestToolBox(BaseToolBoxTestCase):
             assert tool.to_panel_entry(trans) == tool.to_dict(trans)
             assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
 
+    def test_panel_entry_link_uses_url_prefix(self):
+        self._init_tool_in_section()
+        self.app.config.galaxy_url_prefix = "/galaxy/"
+        tool = self.toolbox.get_tool("test_tool")
+        assert tool.to_panel_entry(mock_trans())["link"] == "/galaxy/tool_runner?tool_id=test_tool"
+
     def test_to_dict_out_of_panel(self):
         for json_conf in [True, False]:
             self._init_tool_in_section(json=json_conf)

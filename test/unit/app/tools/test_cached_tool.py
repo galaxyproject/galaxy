@@ -6,13 +6,11 @@ from datetime import (
     datetime,
     timezone,
 )
-from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 from cachetools import LRUCache
-from routes import Mapper
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
@@ -55,7 +53,7 @@ def _entry(**overrides):
     return ToolIndexEntry(**base)
 
 
-def _stub(entry=None, materialize=None, is_admin=None):
+def _stub(entry=None, materialize=None, is_admin=None, url_prefix="/"):
     if materialize is None:
 
         def materialize(_e, _reason):  # noqa: E306
@@ -65,6 +63,7 @@ def _stub(entry=None, materialize=None, is_admin=None):
         entry or _entry(),
         materialize_callback=materialize,
         is_admin_user=is_admin or (lambda u: False),
+        url_prefix=url_prefix,
     )
 
 
@@ -182,42 +181,27 @@ def test_old_id_short_circuits_for_shed_ids():
     assert _stub(_entry(id="local_tool")).old_id == "local_tool"
 
 
-@pytest.fixture
-def tool_runner_routes(monkeypatch):
-    """Use real URL generation without leaking Routes' thread-local state."""
-
-    def configure(prefix):
-        environ = {"SCRIPT_NAME": prefix}
-        mapper = Mapper()
-        mapper.minimization = True
-        mapper.connect("/{controller}/{action}", action="index")
-        mapper.environ = environ
-        config = SimpleNamespace(mapper=mapper, environ=environ, mapper_dict={})
-        monkeypatch.setattr("routes.util.request_config", lambda: config)
-
-    configure("")
-    return configure
-
-
-@pytest.mark.parametrize("prefix", ["", "/galaxy", "/nested/galaxy"])
+@pytest.mark.parametrize(
+    ("url_prefix", "expected_prefix"),
+    [("/", ""), ("/galaxy", "/galaxy"), ("/galaxy/", "/galaxy"), ("/nested/galaxy", "/nested/galaxy")],
+)
 @pytest.mark.parametrize("tool_id", ["bowtie2", "toolshed.example.com/repos/owner/repo/tool/1.0+galaxy0"])
-def test_to_panel_entry_link_respects_prefix_and_encodes_tool_id(tool_runner_routes, prefix, tool_id):
-    tool_runner_routes(prefix)
-    tool = _stub(_entry(id=tool_id))
+def test_to_panel_entry_link_respects_prefix_and_encodes_tool_id(url_prefix, expected_prefix, tool_id):
+    tool = _stub(_entry(id=tool_id), url_prefix=url_prefix)
     encoded_id = tool_id.replace("/", "%2F").replace("+", "%2B")
 
     # _stub raises if URL generation tries to materialize the tool.
-    assert tool.to_panel_entry()["link"] == f"{prefix}/tool_runner?tool_id={encoded_id}"
+    assert tool.to_panel_entry()["link"] == f"{expected_prefix}/tool_runner?tool_id={encoded_id}"
 
 
 @pytest.mark.parametrize("tool_type", ["data_source", "data_source_async"])
-def test_to_panel_entry_data_source_link_uses_redirect(tool_runner_routes, tool_type):
-    tool = _stub(_entry(id="ucsc_table", tool_type=tool_type))
+def test_to_panel_entry_data_source_link_uses_redirect(tool_type):
+    tool = _stub(_entry(id="ucsc_table", tool_type=tool_type), url_prefix="/galaxy")
 
-    assert tool.to_panel_entry()["link"] == "/tool_runner/data_source_redirect?tool_id=ucsc_table"
+    assert tool.to_panel_entry()["link"] == "/galaxy/tool_runner/data_source_redirect?tool_id=ucsc_table"
 
 
-def test_to_panel_entry_does_not_materialise(tool_runner_routes):
+def test_to_panel_entry_does_not_materialise():
     def boom(_e, _reason):
         raise AssertionError(f"unexpected materialise for {_e.id!r}")
 

@@ -21,7 +21,10 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from urllib.parse import unquote_plus
+from urllib.parse import (
+    unquote_plus,
+    urlencode,
+)
 from uuid import UUID
 
 import webob.exc
@@ -427,6 +430,16 @@ def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | Non
     else:
         action_class = tool_types.get(tool_type, Tool).default_tool_action
     return action_class.produces_real_jobs
+
+
+def tool_runner_link(url_prefix: str, tool_id: str, is_data_source: bool) -> str:
+    """Return the panel link for a tool; data sources go through the redirect.
+
+    Built from ``galaxy_url_prefix`` rather than routes' ``url_for`` so the
+    link does not depend on per-request state and can be cached across requests.
+    """
+    path = "tool_runner/data_source_redirect" if is_data_source else "tool_runner"
+    return f"{url_prefix.rstrip('/')}/{path}?{urlencode({'tool_id': tool_id})}"
 
 
 REQUIRE_FULL_DIRECTORY = {
@@ -2912,10 +2925,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         panel_section_id, panel_section_name = self.get_panel_section()
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
         regular_form = self.__class__ == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
-        if isinstance(self, DataSourceTool):
-            link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
-        else:
-            link = self.app.url_for(controller="tool_runner", tool_id=self.id)
+        assert self.id, "Tool id must be set to build the panel entry"
+        link = tool_runner_link(self.app.config.galaxy_url_prefix, self.id, isinstance(self, DataSourceTool))
         kwargs: dict[str, Any] = self._dictify_view_keys()
         kwargs.update(
             icon=self.icon,
