@@ -108,9 +108,11 @@ defineExpose({
         box-shadow: 0 0 0 0.2rem rgb(from var(--color-blue-400) r g b / 0.33);
     }
 
+    // Page-background gap keeps the ring clear of the field border; outline survives forced colors.
     &:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
+        outline: 2px solid var(--color-blue-600);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color);
     }
 
     // Same shades as GSelect's state borders, which keep 3:1 contrast against the background
@@ -122,7 +124,8 @@ defineExpose({
         }
 
         &:focus-visible {
-            box-shadow: 0 0 0 0.2rem var(--color-green-700);
+            outline-color: var(--color-green-700);
+            box-shadow: 0 0 0 2px var(--background-color);
         }
     }
 
@@ -134,7 +137,8 @@ defineExpose({
         }
 
         &:focus-visible {
-            box-shadow: 0 0 0 0.2rem var(--color-red-600);
+            outline-color: var(--color-red-600);
+            box-shadow: 0 0 0 2px var(--background-color);
         }
     }
 }
