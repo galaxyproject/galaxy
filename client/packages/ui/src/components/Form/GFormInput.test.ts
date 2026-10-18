@@ -52,4 +52,11 @@ describe("GFormInput", () => {
         expect(component.emitted("blur")).toHaveLength(1);
         wrapper.unmount();
     });
+
+    it("renders a text input by default and lets a type attribute override it", () => {
+        expect(mount(GFormInput).find("input").attributes("type")).toBe("text");
+
+        const password = mount(GFormInput, { attrs: { type: "password" } }).find("input");
+        expect(password.attributes("type")).toBe("password");
+    });
 });

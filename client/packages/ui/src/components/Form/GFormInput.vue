@@ -41,6 +41,7 @@ defineExpose({
     <input
         ref="inputElement"
         v-model="inputValue"
+        type="text"
         class="g-form-input"
         @keydown="(event: KeyboardEvent) => emit('keydown', event)"
         @blur="(event: FocusEvent) => emit('blur', event)" />
