@@ -1,4 +1,4 @@
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
+import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 import { nextTick } from "vue";
@@ -136,5 +136,33 @@ describe("SelectionDialog.vue", () => {
 
         expect(wrapper.emitted("onClick")).toBeTruthy();
         expect(wrapper.emitted("onClick")).toHaveLength(1);
+    });
+
+    it("formats the time column from the item's updateTime and shows - when it is missing", async () => {
+        const updateTime = new Date("2026-10-17T09:30:00");
+        await wrapper.setProps({
+            optionsShow: true,
+            fields: [
+                { key: "label", label: "Name" },
+                { key: "time", label: "Time" },
+            ],
+            items: [
+                { id: "1", label: "file1", isLeaf: true, time: "2026-10-17T09:30:00", updateTime },
+                { id: "2", label: "file2", isLeaf: true, time: "not a date" },
+            ],
+        });
+
+        const cells = wrapper.findAll("td[id^='g-table-cell-time-']");
+        expect(cells).toHaveLength(2);
+        expect(nth(cells, 0).text()).toBe(
+            updateTime.toLocaleString("default", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                minute: "numeric",
+                hour: "numeric",
+            }),
+        );
+        expect(nth(cells, 1).text()).toBe("-");
     });
 });

@@ -185,9 +185,8 @@ function onSelectAll(selected: boolean) {
 }
 
 /** Format time stamp */
-function formatTime(value: string) {
-    if (value) {
-        const date = new Date(value);
+function formatTime(date?: Date) {
+    if (date) {
         return date.toLocaleString("default", {
             day: "numeric",
             month: "short",
@@ -360,11 +359,11 @@ defineExpose({
                     </template>
 
                     <template v-slot:cell(time)="data">
-                        {{ formatTime(data.value) }}
+                        {{ formatTime(data.item.updateTime) }}
                     </template>
 
                     <template v-slot:cell(update_time)="data">
-                        {{ formatTime(data.value) }}
+                        {{ formatTime(data.item.updateTime) }}
                     </template>
                 </GTable>
 
