@@ -3,11 +3,15 @@ Agent registry for managing available AI agents.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
-from .base import (
+from galaxy.agents.base import (
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
+
+if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
 
@@ -102,15 +106,15 @@ def build_default_registry(config=None) -> AgentRegistry:
             ``enabled: false`` in ``inference_services`` are skipped.
             The router agent is always registered regardless of config.
     """
-    from .base import AgentType
-    from .custom_tool import CustomToolAgent
-    from .error_analysis import ErrorAnalysisAgent
-    from .gtn_training import GTNTrainingAgent
-    from .history import HistoryAgent
-    from .orchestrator import WorkflowOrchestratorAgent
-    from .page_assistant import PageAssistantAgent
-    from .router import QueryRouterAgent
-    from .tools import ToolRecommendationAgent
+    from galaxy.agents.base import AgentType
+    from galaxy.agents.custom_tool import CustomToolAgent
+    from galaxy.agents.error_analysis import ErrorAnalysisAgent
+    from galaxy.agents.gtn_training import GTNTrainingAgent
+    from galaxy.agents.history import HistoryAgent
+    from galaxy.agents.orchestrator import WorkflowOrchestratorAgent
+    from galaxy.agents.page_assistant import PageAssistantAgent
+    from galaxy.agents.router import QueryRouterAgent
+    from galaxy.agents.tools import ToolRecommendationAgent
 
     inference_config: dict = {}
     if config is not None:
@@ -143,3 +147,20 @@ def build_default_registry(config=None) -> AgentRegistry:
     _register_if_enabled(registry, AgentType.GTN_TRAINING, GTNTrainingAgent)
     _register_if_enabled(registry, AgentType.PAGE_ASSISTANT, PageAssistantAgent)
     return registry
+
+
+def build_registry(config: "GalaxyAppConfiguration") -> AgentRegistry:
+    """Build an AgentRegistry based on config.
+
+    Uses StaticAgentRegistry when inference_services.static_responses is set,
+    otherwise builds the default registry with real agents.
+    """
+    inference_config = getattr(config, "inference_services", None) or {}
+    static_responses = inference_config.get("static_responses") if isinstance(inference_config, dict) else None
+    if static_responses:
+        # galaxy.agents.static_backend imports AgentRegistry from this module.
+        from galaxy.agents.static_backend import StaticAgentRegistry
+
+        log.info(f"Static agent backend loaded: {static_responses}")
+        return StaticAgentRegistry(static_responses)
+    return build_default_registry(config)

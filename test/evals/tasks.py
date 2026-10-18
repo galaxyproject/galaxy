@@ -27,9 +27,9 @@ from galaxy.agents.base import (
 )
 from galaxy.agents.custom_tool import CustomToolAgent
 from galaxy.agents.error_analysis import ErrorAnalysisAgent
-from galaxy.agents.registry import build_default_registry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.agents.tools import ToolRecommendationAgent
+from galaxy.managers.agent_registry import build_default_registry
 from .datasets import build_history
 
 UsageBuffer = list[dict[str, int]] | None

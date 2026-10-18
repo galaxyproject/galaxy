@@ -390,6 +390,6 @@ class TestStaticAgentRegistry:
         assert "no matching rule" in response.content.lower()
 
     def test_static_registry_is_agent_registry(self, static_registry):
-        from galaxy.agents.registry import AgentRegistry
+        from galaxy.managers.agent_registry import AgentRegistry
 
         assert isinstance(static_registry, AgentRegistry)

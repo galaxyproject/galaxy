@@ -11,7 +11,7 @@ transferring the body.
 
 Deliberately trans-free and database-free so it unit-tests without either.
 The module-level cache and refresh state deliberately follow the GTN search
-DB pattern (``galaxy.agents.gtn.search``).
+DB pattern (``galaxy.gtn.search``).
 """
 
 import fcntl
@@ -203,7 +203,7 @@ def extract_tool_ids(definition: dict[str, Any]) -> list[str] | None:
 def _iter_manifest_workflows(manifest: Any) -> Iterator[dict[str, Any]]:
     """Yield workflow objects from the manifest, skipping malformed containers.
 
-    ``galaxy.agents.iwc.all_workflows`` assumes the manifest is well formed; here it is
+    ``galaxy.workflow.iwc.all_workflows`` assumes the manifest is well formed; here it is
     third-party input, and a repository that is not an object -- or a
     ``workflows`` value that is not a list -- must not take the whole
     projection down with it, since the projection is all-or-nothing.
