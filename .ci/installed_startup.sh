@@ -42,7 +42,7 @@ cleanup() {
         echo "Installed Galaxy startup failed; showing $LOG_FILE:"
         cat "$LOG_FILE"
     fi
-    rm -rf "$WORK_DIR" || echo "Could not remove $WORK_DIR." >&2
+    rm -rf "$WORK_DIR"
     exit "$exit_code"
 }
 trap cleanup EXIT
