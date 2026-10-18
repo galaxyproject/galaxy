@@ -162,9 +162,11 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
+    // Page-background gap keeps the ring clear of the radio; outline survives forced colors.
     &:focus-visible {
-        outline: 2px solid var(--color-blue-500, #197cd2);
+        outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
     }
 }
 
@@ -220,12 +222,12 @@ function onChange(event: Event) {
         margin-left: 0;
     }
 
+    // Page-background gap keeps the ring clear of the fill and of neighbouring buttons; outline survives forced colors.
     &:has(.g-radio-input:focus-visible) {
         z-index: 1;
-        box-shadow: 0 0 0 0.2rem var(--color-blue-400);
-        // forced-colors mode drops box-shadow; the transparent outline then renders in the system color
-        outline: 2px solid transparent;
+        outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
     }
 
     &.g-grey {
