@@ -525,6 +525,16 @@ def test_create_tool_stamps_data_manager_conf_id_on_entry():
     box._store.update_index_entry.assert_called_once_with(e)
 
 
+def test_create_tool_replaces_indexed_data_manager_id_with_registry_id():
+    box = _seam_box()
+    guid = "toolshed.g2.bx.psu.edu/repos/iuc/data_manager_repeatmasker/repeatmasker_download/0.0.1"
+    e = _entry(id="dm_tool", tool_type="manage_data", data_manager_id="repeatmasker_download")
+    box._tool_index.entries["dm_tool"] = e
+    box.create_tool(config_file=None, guid="dm_tool", data_manager_id=guid)
+    assert e.data_manager_id == guid
+    box._store.update_index_entry.assert_called_once_with(e)
+
+
 def test_index_reload_refreshes_existing_stub_entries():
     box = _seam_box()
     stale = _entry(id="fastp_guid")

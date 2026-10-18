@@ -1073,7 +1073,7 @@ class CachedToolBox(ToolBox):
     # === create_tool seam: return CachedTool stub when the index already has the source ===
 
     def load_hidden_tool(self, config_file, **kwds):
-        """Stamp the ``<data_manager id>`` conf id before the load resolves.
+        """Stamp the data manager's registry id before the load resolves.
 
         ``DataManager._load_tool`` is the only caller passing
         ``data_manager_id``, and it loads with ``use_cached=True`` — a
@@ -1089,12 +1089,13 @@ class CachedToolBox(ToolBox):
         return super().load_hidden_tool(config_file, **kwds)
 
     def _stamp_data_manager_id(self, entry: ToolIndexEntry, data_manager_id: str) -> None:
-        """Record the conf id on the entry (and its per-version twin) and persist.
+        """Record the data manager's registry id on the entry (and its per-version twin) and persist.
 
-        Without it a materialised ``DataManagerTool`` falls back to the tool
-        id and ``exec_after_process`` misses the data-manager registry.
+        ``DataManager._load_tool`` passes ``DataManager.id``, the key
+        ``exec_after_process`` looks the manager up by, so it replaces
+        whatever id the entry was indexed with.
         """
-        if entry.data_manager_id:
+        if entry.data_manager_id == data_manager_id:
             return
         entry.data_manager_id = data_manager_id
         if self._tool_index is not None:
@@ -1109,7 +1110,7 @@ class CachedToolBox(ToolBox):
                 self._store.update_index_entry(entry)
             except Exception as e:
                 log.warning("Persisting data_manager_id for %s raised: %s", entry.id, e)
-        # A Tool materialised before the conf id was known (the install-time
+        # A Tool materialised before the registry id was known (the install-time
         # parse in ``get_repository_tools_tups``) carries the fallback id;
         # drop it so the next materialise rebuilds from the stamped entry.
         self._purge_tool_object_cache(entry.id)
@@ -1153,10 +1154,10 @@ class CachedToolBox(ToolBox):
                 "galaxy.tools.special_tools.hidden_lib_tool_paths()."
             )
         if data_manager_id := kwds.get("data_manager_id"):
-            # ``DataManager._load_tool`` hands the ``<data_manager id>`` conf
-            # id through ``load_hidden_tool``. Entries minted before any data
-            # manager conf covered this tool (install-time self-heal) don't
-            # carry it, and the materialise path must restore it or
+            # ``DataManager._load_tool`` hands ``DataManager.id`` through
+            # ``load_hidden_tool``. Entries minted before any data manager
+            # conf covered this tool (install-time self-heal) don't carry
+            # it, and the materialise path must restore it or
             # ``DataManagerTool.exec_after_process`` falls back to the tool
             # id and misses the registry. Persist so job-handler processes
             # materialising from the shared index see it too.
@@ -1407,8 +1408,8 @@ class CachedToolBox(ToolBox):
         # / ``get_tool`` and the ``_tools_by_id`` registry.
         kwds: dict[str, Any] = {"tool_dir": stored.tool_dir}
         if entry and entry.data_manager_id:
-            # The registry is keyed by the ``<data_manager id>`` conf id,
-            # which may differ from the tool XML id.
+            # The registry is keyed by ``DataManager.id`` (the conf guid,
+            # else its id), which may differ from the tool XML id.
             # ``DataManagerTool.__init__`` falls back to the tool id when
             # the kwd is missing and ``exec_after_process`` then can't find
             # the manager — eager threads this through ``load_hidden_tool``.
