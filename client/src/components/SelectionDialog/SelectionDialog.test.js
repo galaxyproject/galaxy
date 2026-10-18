@@ -165,4 +165,32 @@ describe("SelectionDialog.vue", () => {
         );
         expect(nth(cells, 1).text()).toBe("-");
     });
+
+    it("filters on the displayed values, not on the parsed time or the raw entry", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            items: [
+                {
+                    id: "1",
+                    label: "reads.fastq",
+                    isLeaf: true,
+                    selectionState: SELECTION_STATES.UNSELECTED,
+                    updateTime: new Date("2026-10-17T09:30:00Z"),
+                    entry: { id: "1" },
+                },
+            ],
+        });
+        const search = wrapper.findComponent(DataDialogSearch);
+        const rows = () => wrapper.findAll("td[id^='g-table-cell-label-']");
+
+        for (const text of ["gmt", "object", "unselected"]) {
+            search.vm.$emit("input", text);
+            await nextTick();
+            expect(rows()).toHaveLength(0);
+        }
+
+        search.vm.$emit("input", "reads");
+        await nextTick();
+        expect(rows()).toHaveLength(1);
+    });
 });

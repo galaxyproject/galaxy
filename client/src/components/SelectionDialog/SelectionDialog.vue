@@ -82,6 +82,9 @@ const emit = defineEmits<{
     (e: "onUndo"): void;
 }>();
 
+// GTable's local filter stringifies every item key; these hold no displayed text.
+const FILTER_IGNORED_FIELDS = ["entry", "selectionState", "updateTime"];
+
 const filter = ref("");
 const currentPage = ref(1);
 const perPage = ref(25);
@@ -313,6 +316,7 @@ defineExpose({
                     :current-page="usingProvider ? undefined : currentPage"
                     :fields="fieldDetails"
                     :filter="filter"
+                    :filter-ignored-fields="FILTER_IGNORED_FIELDS"
                     :items="tableItems"
                     :loading="isBusy"
                     :local-filtering="!usingProvider"
