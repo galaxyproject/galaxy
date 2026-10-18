@@ -6,7 +6,8 @@ import { BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
-import type { ItemsProvider } from "@/components/SelectionDialog/selectionTypes";
+import type { ItemsProvider, SelectItemsProvider } from "@/components/SelectionDialog/selectionTypes";
+import { type SelectItemsState, useSelectItems } from "@/composables/useSelectItems";
 import type Filtering from "@/utils/filtering";
 
 import type { SelectionItem } from "./selectionTypes";
@@ -40,6 +41,10 @@ interface Props {
     okButtonText?: string;
     filterClass?: Filtering<any>;
     watchOnPageChanges?: boolean;
+    /** Data source; the dialog loads, pages, searches and navigates through it. */
+    provider?: SelectItemsProvider;
+    /** Caller-owned useSelectItems() state, for callers that read the path or selection themselves. */
+    state?: SelectItemsState;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,6 +70,8 @@ const props = withDefaults(defineProps<Props>(), {
     okButtonText: "Select",
     filterClass: undefined,
     watchOnPageChanges: true,
+    provider: undefined,
+    state: undefined,
 });
 
 const emit = defineEmits<{
@@ -86,6 +93,36 @@ const sortBy = ref<string | undefined>(undefined);
 const sortDesc = ref<boolean | undefined>(undefined);
 
 const usingProvider = computed(() => Boolean(props.itemsProvider));
+
+const selection = props.state ?? (props.provider ? useSelectItems(() => props.provider!) : undefined);
+
+const listItems = computed(() => (selection ? selection.items.value : tableItems.value));
+const listTotal = computed(() => (selection ? selection.total.value : props.totalItems));
+const listPerPage = computed(() => (selection ? selection.perPage.value : perPage.value));
+const listBusy = computed(() => props.isBusy || Boolean(selection?.loading.value));
+const listError = computed(() => props.errorMessage || selection?.error.value || "");
+const listReady = computed(() => (selection ? selection.loaded.value : props.optionsShow));
+const listUndo = computed(() => props.undoShow || Boolean(selection?.path.value.length));
+const listFilter = computed({
+    get: () => (selection ? selection.filter.value : filter.value),
+    set: (value: string) => {
+        if (selection) {
+            selection.filter.value = value;
+        } else {
+            filter.value = value;
+        }
+    },
+});
+const listPage = computed({
+    get: () => (selection ? selection.page.value : currentPage.value),
+    set: (value: number) => {
+        if (selection) {
+            selection.page.value = value;
+        } else {
+            currentPage.value = value;
+        }
+    },
+});
 
 const okButtonText = computed(() => {
     return props.okButtonText ? props.okButtonText : props.fileMode ? "Select" : "Select this folder";
@@ -116,20 +153,35 @@ async function loadProviderItems() {
 }
 
 function onSortChanged(newSortBy: string, newSortDesc: boolean) {
-    sortBy.value = newSortBy || undefined;
-    sortDesc.value = newSortDesc;
+    if (selection) {
+        const formatter = props.fields.find((field) => field.key === newSortBy)?.formatter;
+        selection.setSort(newSortBy, newSortDesc, formatter);
+    } else {
+        sortBy.value = newSortBy || undefined;
+        sortDesc.value = newSortDesc;
+    }
 }
 
 function onClick(item: SelectionItem) {
+    if (selection && props.selectable) {
+        selection.toggle(item);
+    }
     emit("onClick", item);
 }
 
 function onOpen(item: SelectionItem) {
+    selection?.open(item);
     emit("onOpen", item);
 }
 
 function onSelectAll(selected: boolean) {
+    selection?.selectAll(selected);
     emit("onSelectAll", selected);
+}
+
+function onUndo() {
+    selection?.back();
+    emit("onUndo");
 }
 
 function resetFilter() {
@@ -207,29 +259,29 @@ defineExpose({
                 <Heading v-if="props.title" size="sm"> {{ props.title }} </Heading>
 
                 <SelectionSearch
-                    v-model:filter="filter"
+                    v-model:filter="listFilter"
                     :filter-class="props.filterClass"
-                    :loading="props.isBusy"
+                    :loading="listBusy"
                     :name="props.title"
                     :placeholder="props.searchTitle || props.title" />
             </div>
         </template>
         <slot name="helper" />
         <SelectionList
-            :current-page="currentPage"
-            :error-message="errorMessage"
+            :current-page="listPage"
+            :error-message="listError"
             :fields="props.fields"
-            :filter="filter"
+            :filter="listFilter"
             :folder-icon="props.folderIcon"
-            :is-busy="isBusy"
+            :is-busy="listBusy"
             :is-encoded="isEncoded"
-            :items="tableItems"
+            :items="listItems"
             :leaf-icon="leafIcon"
-            :local-paging="!usingProvider"
-            :options-show="optionsShow"
-            :per-page="perPage"
+            :local-paging="!selection && !usingProvider"
+            :options-show="listReady"
+            :per-page="listPerPage"
             :selectable="props.selectable"
-            :total-items="totalItems"
+            :total-items="listTotal"
             @click="onClick"
             @open="onOpen"
             @select-all="onSelectAll"
@@ -237,23 +289,19 @@ defineExpose({
         <template v-slot:footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
-                    <GButton
-                        v-if="undoShow"
-                        data-description="selection dialog undo"
-                        size="small"
-                        @click="emit('onUndo')">
+                    <GButton v-if="listUndo" data-description="selection dialog undo" size="small" @click="onUndo">
                         <FontAwesomeIcon :icon="faCaretLeft" />
                         Back
                     </GButton>
-                    <slot v-if="!errorMessage" name="buttons" />
+                    <slot v-if="!listError" name="buttons" />
                 </div>
                 <BPagination
-                    v-if="totalItems > perPage"
-                    v-model="currentPage"
+                    v-if="listTotal > listPerPage"
+                    v-model="listPage"
                     class="justify-content-md-center m-0"
                     size="sm"
-                    :per-page="perPage"
-                    :total-rows="totalItems" />
+                    :per-page="listPerPage"
+                    :total-rows="listTotal" />
                 <div>
                     <GButton data-description="selection dialog cancel" size="small" @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="faTimes" />
