@@ -306,16 +306,45 @@ const pickerSearch = computed(() => {
     if (remainder.split(/\s+/).some((word) => FAVORITES_KEYS.includes(word))) {
         return null;
     }
-    return { remainder, filterText: parsed ? parsed.clauses.map(({ text }) => text).join(" ") : "" };
+    return { remainder, clauses: parsed?.clauses ?? [] };
 });
 const canUseFilterPickers = computed(() => pickerSearch.value !== null);
-const pickerFilterSettings = computed<FilterSettings>(() =>
-    pickerSearch.value
-        ? normalizeFilterSettings(
-              Object.fromEntries(ToolFilters.value.getFiltersForText(pickerSearch.value.filterText)) as FilterSettings,
-          )
-        : {},
+const pickerFilterText = computed(() => pickerSearch.value?.clauses.map(({ text }) => text).join(" ") ?? "");
+const selectedPickerTags = computed(
+    () => pickerSearch.value?.clauses.filter(({ key }) => key === "tag").map(({ value }) => value) ?? [],
 );
+
+function isSameFilterValue(filter: string, left: string, right: string) {
+    const normalizedLeft = normalizeToolTagValue(left);
+    const normalizedRight = normalizeToolTagValue(right);
+    // Tags are matched case-insensitively by the backend
+    return filter === "tag"
+        ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+        : normalizedLeft === normalizedRight;
+}
+
+function buildFilterClause(filter: string, value: string): InlineFilterClause {
+    const normalized = normalizeToolTagValue(value);
+    const quoted = /\s/.test(normalized) ? `"${escapeQuotedWhooshToken(normalized)}"` : normalized;
+    // Keep values the caller quoted (e.g. EDAM ids) quoted
+    const written = /^".*"$/.test(value.trim()) ? value.trim() : quoted;
+    return { key: filter, value: normalized, text: `${filter}:${written}` };
+}
+
+/** Toggles `value` like `Filtering.setFilterValue`, leaving every other clause as written:
+ * a matching clause is removed, otherwise multi-valued filters gain the value and
+ * single-valued filters are replaced by it. */
+function toggleFilterClause(clauses: InlineFilterClause[], filter: string, value: string) {
+    const matching = clauses.filter(
+        ({ key, value: current }) => key === filter && isSameFilterValue(filter, current, value),
+    );
+    if (matching.length) {
+        return clauses.filter((clause) => !matching.includes(clause));
+    }
+    const multiValued = validFilters.value[filter]?.type === "MultiTags";
+    const kept = multiValued ? clauses : clauses.filter(({ key }) => key !== filter);
+    return [...kept, buildFilterClause(filter, value)];
+}
 
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
@@ -331,7 +360,7 @@ const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(
 
 const hasActiveFilters = computed(() => Boolean(filterText.value.trim()));
 const clearFiltersLabel = computed(() =>
-    pickerSearch.value && !pickerSearch.value.filterText ? "Clear search" : "Clear all filters",
+    pickerSearch.value && !pickerSearch.value.clauses.length ? "Clear search" : "Clear all filters",
 );
 
 function clearFilters() {
@@ -382,10 +411,10 @@ function applyFilter(filter: string, value: string | string[]) {
         filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
         return;
     }
-    // `Filtering` drops free text and folds words that follow a filter into its value,
-    // so it only edits the filters and the free text is put back in front.
-    const updatedFilters = ToolFilters.value.setFilterValue(search.filterText, filter, value);
-    filterText.value = [search.remainder, updatedFilters].filter(Boolean).join(" ");
+    // `Filtering` would drop the free text, fold words that follow a filter into its value
+    // and merge repeated filters, so the clauses are edited as written instead.
+    const clauses = [value].flat().reduce((current, item) => toggleFilterClause(current, filter, item), search.clauses);
+    filterText.value = [search.remainder, ...clauses.map(({ text }) => text)].filter(Boolean).join(" ");
 }
 
 function onToggleView(newView: ListViewMode) {
@@ -525,7 +554,7 @@ function onToggleView(newView: ListViewMode) {
 
             <ToolsListSectionFilters
                 :filter-class="ToolFilters"
-                :filter-text="pickerSearch?.filterText ?? ''"
+                :filter-text="pickerFilterText"
                 :disabled="loading || !canUseFilterPickers"
                 @apply-filter="applyFilter">
                 <template v-slot:tag-filter>
@@ -533,7 +562,7 @@ function onToggleView(newView: ListViewMode) {
                         :tags="tagAutocompleteValues"
                         :loading="loadingTags"
                         :error="tagsError"
-                        :selected-tags="pickerFilterSettings.tag || []"
+                        :selected-tags="selectedPickerTags"
                         :disabled="loading || !canUseFilterPickers"
                         @toggle-tag="applyFilter('tag', $event)" />
                 </template>
@@ -572,9 +601,7 @@ function onToggleView(newView: ListViewMode) {
             </ToolsListSectionFilters>
 
             <div class="d-flex flex-wrap align-items-center flex-gapx-1 mt-1">
-                <small v-if="pickerFilterSettings.tag?.length" class="text-muted">
-                    Tools must match all selected tags.
-                </small>
+                <small v-if="selectedPickerTags.length" class="text-muted"> Tools must match all selected tags. </small>
                 <small v-if="!canUseFilterPickers" class="text-muted">
                     Edit this search in the search field to preserve its conditions.
                 </small>

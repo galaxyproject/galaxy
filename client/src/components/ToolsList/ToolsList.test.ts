@@ -146,6 +146,18 @@ describe("ToolsList", () => {
         },
     );
 
+    it.each([
+        ["fastqc name:foo name:bar", 'fastqc name:foo name:bar tag:"data cleanup"'],
+        ['fastqc help:"format: SAM"', 'fastqc help:"format: SAM" tag:"data cleanup"'],
+        ['fastqc tag:"Data Cleanup" owner:devteam', "fastqc owner:devteam"],
+    ])("keeps every other condition of %s when toggling a tag with the picker", async (search, expectedSearch) => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search } });
+        await flushPromises();
+        wrapper.findComponent(ToolsListTagFilter).vm.$emit("toggle-tag", "data cleanup");
+        await flushPromises();
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(expectedSearch);
+    });
+
     it("keeps the free text when choosing an ontology with the picker", async () => {
         const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search: "fastqc" } });
         await flushPromises();

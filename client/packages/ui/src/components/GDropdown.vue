@@ -231,13 +231,15 @@ function onKeydown(event: KeyboardEvent) {
     const inMenuNavigation = onMenuItem || target === menuEl.value;
     let handled = true;
 
+    // A search field focused on open sits before the items; an initially focused item is just an item
     const initialFocusEl = props.initialFocus ? menuEl.value?.querySelector<HTMLElement>(props.initialFocus) : null;
+    const searchEl = initialFocusEl?.getAttribute("role") === "menuitem" ? null : initialFocusEl;
 
-    if (event.key === "ArrowDown" && initialFocusEl && target === initialFocusEl) {
+    if (event.key === "ArrowDown" && searchEl && target === searchEl) {
         focusMenuItem(0);
-    } else if (event.key === "ArrowUp" && initialFocusEl && onMenuItem && getMenuItems().indexOf(target) === 0) {
+    } else if (event.key === "ArrowUp" && searchEl && onMenuItem && getMenuItems().indexOf(target) === 0) {
         // Back up from the first item to the search field it was reached from
-        initialFocusEl.focus();
+        searchEl.focus();
     } else if (event.key === "ArrowDown" && onToggle) {
         openAndFocusMenuItem(0);
     } else if (event.key === "ArrowUp" && onToggle) {
