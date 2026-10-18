@@ -59,6 +59,7 @@ from galaxy.tool_util.parser.util import (
     boolean_true_and_false_values,
     multiple_select_value_split,
     ParameterParseException,
+    restricts_tool_data_files,
     text_input_is_optional,
 )
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
@@ -77,7 +78,6 @@ from galaxy.tools.parameters.workflow_utils import (
     NO_REPLACEMENT,
     workflow_building_modes,
 )
-from galaxy.tools.repositories import ValidationContext
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -1685,8 +1685,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         self.hierarchy = input_source.get("hierarchy", "exact")  # exact or recurse
         self.separator = input_source.get("separator", ",")
         tool_data_path = None
-        # validation loads untrusted Tool Shed tools, whose from_file could name any file on the host
-        if self.tool and not isinstance(self.tool.app, ValidationContext):
+        # deprecated from_file isn't read for untrusted tools at all
+        if self.tool and not restricts_tool_data_files(self.tool.app.config):
             tool_data_path = self.tool.app.config.tool_data_path
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:

@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 from typing import (
     List,
@@ -9,7 +10,10 @@ from typing import (
 
 from packaging.version import Version
 
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    in_directory,
+    string_as_bool,
+)
 from .parameter_validators import statically_validates
 
 if TYPE_CHECKING:
@@ -17,6 +21,27 @@ if TYPE_CHECKING:
         InputSource,
         ToolSource,
     )
+
+
+def restricts_tool_data_files(config) -> bool:
+    """True if files a tool names must stay inside ``config.tool_data_path``.
+
+    Tool Shed validation loads untrusted tools with a work dir as ``tool_data_path``,
+    these must not read other files on the host.
+    """
+    return getattr(config, "restrict_tool_data_files", False)
+
+
+def resolve_tool_data_file(config, filename: str) -> Optional[str]:
+    """Resolve a file a tool names against ``config.tool_data_path``, an absolute filename is kept.
+
+    Returns None if the file must stay inside ``tool_data_path`` but doesn't.
+    """
+    path = os.path.join(config.tool_data_path, filename)
+    if restricts_tool_data_files(config) and not in_directory(path, config.tool_data_path):
+        return None
+    return path
+
 
 DEFAULT_DELTA = 10000
 DEFAULT_DELTA_FRAC = None

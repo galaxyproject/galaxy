@@ -2,6 +2,8 @@ import os
 import shutil
 from contextlib import contextmanager
 
+import pytest
+
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tools.repositories import ValidationContext
 from galaxy.util import galaxy_directory
@@ -143,6 +145,57 @@ def test_validation_keeps_select_from_file_in_work_dir(tmp_path):
             assert options.index_file is None
             assert options.missing_index_file == from_file
             assert options.file_fields is None
+
+
+VALIDATOR_FILENAME_TOOL = """<tool id="validator_filename" name="validator_filename" version="1.0.0">
+    <command>echo '$parameter'</command>
+    <inputs>
+        <param name="parameter" type="data" format="txt">
+            <validator type="dataset_metadata_in_file" filename="{filename}" metadata_name="dbkey" metadata_column="0"/>
+        </param>
+    </inputs>
+    <outputs/>
+</tool>
+"""
+
+OUTPUT_ACTION_FROM_FILE_TOOL = """<tool id="output_action_from_file" name="output_action_from_file" version="1.0.0">
+    <command>echo 'a' > '$output'</command>
+    <inputs/>
+    <outputs>
+        <data name="output" format="txt">
+            <actions>
+                <action type="format">
+                    <option type="from_file" name="{filename}" column="0"/>
+                </action>
+            </actions>
+        </data>
+    </outputs>
+</tool>
+"""
+
+
+@pytest.mark.parametrize("tool_template", [VALIDATOR_FILENAME_TOOL, OUTPUT_ACTION_FROM_FILE_TOOL])
+def test_validation_keeps_tool_data_files_in_work_dir(tmp_path, tool_template):
+    outside_file = tmp_path / "outside.loc"
+    outside_file.write_text("value\n")
+    with get_tool_validator() as tv:
+        work_dir = os.path.realpath(tv.app.config.tool_data_path)
+        with open(os.path.join(work_dir, "inside.loc"), "w") as fh:
+            fh.write("value\n")
+        full_path = tmp_path / "tool.xml"
+
+        def load(filename):
+            full_path.write_text(tool_template.format(filename=filename))
+            tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=str(full_path))
+            return valid, message
+
+        assert load("inside.loc") == (True, None)
+        outside = os.path.relpath(outside_file, work_dir)
+        missing = os.path.relpath(tmp_path / "missing.loc", work_dir)
+        valid, message = load(outside)
+        assert valid is False
+        # an existing file outside the work dir is reported like a missing one
+        assert load(missing) == (False, message.replace(outside, missing))
 
 
 @contextmanager
