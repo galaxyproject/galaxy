@@ -7522,7 +7522,8 @@ steps:
         response = self.workflow_populator.invoke_workflow_raw(workflow_id, target)
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == (
-            "Workflow was not invoked; the following tools are not workflow-compatible: test_data_source"
+            "Workflow was not invoked; the following tools are not workflow-compatible: "
+            "test_data_source (version 1.0.0)"
         )
         assert self.workflow_populator.workflow_invocations(workflow_id) == []
         assert self._history_jobs(history_id) == []
@@ -7601,9 +7602,7 @@ steps:
         )
         self._assert_status_code_is(response, 400)
         expected_tools = (
-            "nonexistent_tool (version 0.1), nonexistent_tool (version 0.2)"
-            if exact
-            else "nonexistent_tool, nonexistent_tool"
+            "nonexistent_tool (version 0.1), nonexistent_tool (version 0.2)" if exact else "nonexistent_tool"
         )
         assert response.json()["err_msg"] == (
             "Workflow was not invoked; the following required tools are not installed: " + expected_tools

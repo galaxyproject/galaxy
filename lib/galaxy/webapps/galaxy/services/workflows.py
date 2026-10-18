@@ -162,6 +162,15 @@ def _validate_extraction_labels(
         seen.add(label)
 
 
+def _describe_tool_references(tools: list[dict[str, Any]], require_exact_tool_versions: bool) -> str:
+    # Versions only distinguish references in exact mode; list each description once.
+    if require_exact_tool_versions:
+        descriptions = [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in tools]
+    else:
+        descriptions = [tool["tool_id"] for tool in tools]
+    return ", ".join(dict.fromkeys(descriptions))
+
+
 class WorkflowsService(ServiceBase):
     def __init__(
         self,
@@ -638,9 +647,20 @@ class WorkflowsService(ServiceBase):
     ) -> None:
         tools = self._workflow_contents_manager.get_all_tools(workflow)
         missing_tools = []
-        incompatible_tool_ids = []
+        incompatible_tools = []
         toolbox = trans.app.toolbox
         for tool_reference in tools:
+            # Availability comes from has_tool: for exact requests the cached
+            # toolbox's get_tool can resolve a different version of the tool.
+            if not toolbox.has_tool(
+                tool_reference["tool_id"],
+                tool_version=tool_reference["tool_version"],
+                tool_uuid=tool_reference["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
+            ):
+                missing_tools.append(tool_reference)
+                continue
             tool = toolbox.get_tool(
                 tool_reference["tool_id"],
                 tool_version=tool_reference["tool_version"],
@@ -648,23 +668,17 @@ class WorkflowsService(ServiceBase):
                 exact=require_exact_tool_versions,
                 user=trans.user,
             )
-            if tool is None:
-                missing_tools.append(tool_reference)
-            elif not tool.is_workflow_compatible:
-                incompatible_tool_ids.append(tool_reference["tool_id"])
+            if tool and not tool.is_workflow_compatible:
+                incompatible_tools.append(tool_reference)
         if missing_tools:
-            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-            if require_exact_tool_versions:
-                missing_tools_message += ", ".join(
-                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-                )
-            else:
-                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-            raise exceptions.MessageException(missing_tools_message)
-        if incompatible_tool_ids:
-            raise exceptions.RequestParameterInvalidException(
+            raise exceptions.MessageException(
+                "Workflow was not invoked; the following required tools are not installed: "
+                + _describe_tool_references(missing_tools, require_exact_tool_versions)
+            )
+        if incompatible_tools:
+            raise exceptions.MessageException(
                 "Workflow was not invoked; the following tools are not workflow-compatible: "
-                + ", ".join(incompatible_tool_ids)
+                + _describe_tool_references(incompatible_tools, require_exact_tool_versions)
             )
 
     def _create_landing_request_association(
