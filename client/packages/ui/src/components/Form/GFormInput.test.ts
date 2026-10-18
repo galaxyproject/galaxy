@@ -69,4 +69,24 @@ describe("GFormInput", () => {
         expect(large.classes()).toContain("g-large");
         expect(mount(GFormInput).find("input").classes()).toEqual(["g-form-input"]);
     });
+
+    it("marks an invalid state with aria-invalid and a state class", () => {
+        const invalid = mount(GFormInput, { props: { state: false } }).find("input");
+        expect(invalid.attributes("aria-invalid")).toBe("true");
+        expect(invalid.classes()).toContain("g-invalid");
+        expect(invalid.attributes("state")).toBeUndefined();
+
+        const absent = mount(GFormInput).find("input");
+        expect(absent.attributes("aria-invalid")).toBeUndefined();
+        expect(absent.classes()).not.toContain("g-invalid");
+        expect(absent.classes()).not.toContain("g-valid");
+
+        const valid = mount(GFormInput, { props: { state: true } }).find("input");
+        expect(valid.attributes("aria-invalid")).toBeUndefined();
+        expect(valid.classes()).toContain("g-valid");
+
+        const unset = mount(GFormInput, { props: { state: null } }).find("input");
+        expect(unset.attributes("aria-invalid")).toBeUndefined();
+        expect(unset.classes()).toEqual(["g-form-input"]);
+    });
 });

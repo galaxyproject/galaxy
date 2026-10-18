@@ -8,11 +8,17 @@ defineOptions({
     compatConfig: { COMPONENT_V_MODEL: false },
 });
 
-const props = defineProps<{
-    modelValue?: string | null;
-    /** Field size; unset renders the medium size */
-    size?: ComponentSize;
-}>();
+// state defaults to null: Vue would cast an absent boolean prop to false, i.e. invalid
+const props = withDefaults(
+    defineProps<{
+        modelValue?: string | null;
+        /** Field size; unset renders the medium size */
+        size?: ComponentSize;
+        /** Validation state: false marks the field invalid, true valid, null or unset neither */
+        state?: boolean | null;
+    }>(),
+    { state: null },
+);
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: string | null): void;
@@ -21,6 +27,12 @@ const emit = defineEmits<{
 }>();
 
 const sizeClass = computed(() => (props.size ? prefix(props.size) : undefined));
+const stateClass = computed(() => {
+    if (props.state === false) {
+        return "g-invalid";
+    }
+    return props.state === true ? "g-valid" : undefined;
+});
 
 const inputElement = ref<HTMLInputElement | null>(null);
 
@@ -49,7 +61,8 @@ defineExpose({
         v-model="inputValue"
         type="text"
         class="g-form-input"
-        :class="sizeClass"
+        :class="[sizeClass, stateClass]"
+        :aria-invalid="props.state === false ? 'true' : undefined"
         @keydown="(event: KeyboardEvent) => emit('keydown', event)"
         @blur="(event: FocusEvent) => emit('blur', event)" />
 </template>
@@ -100,6 +113,31 @@ defineExpose({
         outline: none;
         box-shadow: 0 0 0 0.2rem var(--color-blue-400);
         z-index: 999;
+    }
+
+    // Same shades as GSelect's state borders, which keep 3:1 contrast against the background
+    &.g-valid {
+        border-color: var(--color-green-700);
+
+        &:focus {
+            box-shadow: 0 0 0 0.2rem rgb(from var(--color-green-700) r g b / 0.33);
+        }
+
+        &:focus-visible {
+            box-shadow: 0 0 0 0.2rem var(--color-green-700);
+        }
+    }
+
+    &.g-invalid {
+        border-color: var(--color-red-600);
+
+        &:focus {
+            box-shadow: 0 0 0 0.2rem rgb(from var(--color-red-600) r g b / 0.33);
+        }
+
+        &:focus-visible {
+            box-shadow: 0 0 0 0.2rem var(--color-red-600);
+        }
     }
 }
 </style>
