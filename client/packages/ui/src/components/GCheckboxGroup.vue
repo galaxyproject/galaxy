@@ -34,6 +34,11 @@ interface Props {
      */
     label?: string;
     /**
+     * Extra classes for the legend, e.g. to tighten its spacing
+     * @default undefined
+     */
+    legendClass?: string | string[] | Record<string, boolean>;
+    /**
      * The v-model value: values of the checked boxes, in the order they were checked
      * @default []
      */
@@ -68,6 +73,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     label: undefined,
+    legendClass: undefined,
     modelValue: () => [] as T[],
     name: undefined,
     options: () => [],
@@ -106,7 +112,7 @@ provide(checkboxGroupKey, {
 
 <template>
     <fieldset class="g-checkbox-group" :disabled="disabled">
-        <legend v-if="label || $slots.label" class="g-checkbox-group-legend">
+        <legend v-if="label || $slots.label" class="g-checkbox-group-legend" :class="legendClass">
             <slot name="label">{{ label }}</slot>
         </legend>
 
