@@ -5,6 +5,7 @@ from pathlib import Path
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(galaxy_root / "lib"))
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 from galaxy.tools.source_store.discover import (
     discover_tools,
@@ -218,16 +219,13 @@ def test_shed_data_managers_parse_their_shed_conf_once(tmp_path, monkeypatch):
     dm_conf = tmp_path / "shed_data_manager_conf.xml"
     dm_conf.write_text(f"<data_managers>{''.join(dm_elems)}</data_managers>")
 
-    class _Cfg:
-        root = None
-        tool_path = str(tmp_path)
-        enable_beta_tool_formats = False
-        data_manager_config_file = None
-        shed_data_manager_config_file = str(dm_conf)
-
-        def all_tool_config_files(self):
-            return [str(shed_conf)]
-
+    config = GalaxyAppConfiguration(
+        root=str(galaxy_root),
+        data_dir=str(tmp_path / "data"),
+        override_tempdir=False,
+        tool_config_file=str(shed_conf),
+        shed_data_manager_config_file=str(dm_conf),
+    )
     parsed: list[str] = []
 
     def counting_get_toolbox_parser(path):
@@ -237,7 +235,7 @@ def test_shed_data_managers_parse_their_shed_conf_once(tmp_path, monkeypatch):
     monkeypatch.setattr("galaxy.tools.source_store.discover.get_toolbox_parser", counting_get_toolbox_parser)
     discovered = [
         d
-        for d in discover_tools(_Cfg(), include_bundled=False, include_converters=False, only_confs=set())  # type: ignore[arg-type]
+        for d in discover_tools(config, include_bundled=False, include_converters=False, only_confs=set())
         if d.tool_conf == str(dm_conf)
     ]
 
