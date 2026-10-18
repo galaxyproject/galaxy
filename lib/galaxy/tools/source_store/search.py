@@ -19,10 +19,12 @@ from whoosh.fields import (
     Schema,
     TEXT,
 )
+from whoosh.index import LockError
 from whoosh.qparser import (
     MultifieldParser,
     OrGroup,
 )
+from whoosh.reading import IndexReader
 from whoosh.scoring import (
     BM25F,
     Frequency,
@@ -47,11 +49,14 @@ from galaxy.util.tool_version import (
 
 log = logging.getLogger(__name__)
 
-# Matching sidecar signatures let ``build`` skip an unchanged corpus.
-_CORPUS_SIGNATURE_FILE = "corpus.md5"
-# Stored per-document fingerprint; a changed corpus rewrites only the
-# documents whose fingerprint differs.
+# Stored per-document fingerprint; a build rewrites only the documents whose
+# fingerprint differs from the corpus it is given.
 _DOC_HASH_FIELD = "doc_hash"
+
+# Galaxy processes on a host share ``tool_search_index_dir`` and index the same
+# toolbox into it, so a rebuild that cannot get the write lock in time can be
+# skipped: the process holding the lock is writing the same documents.
+INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
 # Tool help can contain embedded tables and tutorials large enough to dominate
 # both the persisted metadata index and Whoosh. Eager and cached search must
@@ -278,6 +283,10 @@ def search_whoosh_index(
     return scored if limit is None else scored[:limit]
 
 
+def _stored_doc_hashes(reader: IndexReader) -> dict[str, str | None]:
+    return {fields["id"]: fields.get(_DOC_HASH_FIELD) for fields in reader.all_stored_fields() if fields}
+
+
 class ToolWhooshIndex:
     """Build and query a Whoosh index over ``ToolIndexEntry`` rows."""
 
@@ -290,13 +299,18 @@ class ToolWhooshIndex:
             tuning,
             help_boost=tuning.help_boost if tuning.index_tool_help else None,
         )
+        self._schema_without_doc_hash = self.schema.copy()
         self.schema.add(_DOC_HASH_FIELD, ID(stored=True))
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
         if index.exists_in(self.index_dir):
             ix = index.open_dir(self.index_dir)
-            if ix.schema == self.schema:
+            # An index written before documents carried their hash gains the
+            # field in place (see ``build``), so the upgrade rewrites documents
+            # in an ordinary commit rather than deleting a directory other
+            # processes may be searching.
+            if ix.schema == self.schema or ix.schema == self._schema_without_doc_hash:
                 return ix
             # Schema drift — rebuild from scratch so old field layouts don't
             # poison ranking.
@@ -306,14 +320,11 @@ class ToolWhooshIndex:
             os.makedirs(self.index_dir, exist_ok=True)
         return index.create_in(self.index_dir, schema=self.schema)
 
-    def _corpus_signature(self, doc_hashes: dict[str, str]) -> str:
-        """Fingerprint document content, schema, and tuning."""
-        return md5_hash_str(
-            repr(self.tuning) + json.dumps(sorted(self.schema.names())) + json.dumps(sorted(doc_hashes.items()))
-        )
-
     def build(self, tool_index: ToolIndex, tool_ids: Collection[str] | None = None) -> int:
-        """Rebuild one panel-view corpus, or all entries when unscoped."""
+        """Bring one panel-view corpus, or all entries when unscoped, up to date.
+
+        Returns the number of documents written.
+        """
         docs = []
         entries = (
             tool_index.entries.values()
@@ -327,28 +338,32 @@ class ToolWhooshIndex:
             if doc is None:
                 continue
             docs.append(doc)
-
         doc_hashes = {str(doc["id"]): md5_hash_str(json.dumps(doc, sort_keys=True)) for doc in docs}
-        # Avoid re-tokenising an unchanged corpus.
-        signature = self._corpus_signature(doc_hashes)
-        signature_path = os.path.join(self.index_dir, _CORPUS_SIGNATURE_FILE)
-        if os.path.isdir(self.index_dir) and index.exists_in(self.index_dir):
-            try:
-                with open(signature_path) as f:
-                    if f.read().strip() == signature:
-                        log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
-                        return 0
-            except OSError:
-                pass
 
         # Tokenising is the expensive part of a build, and a shed install
-        # changes a handful of documents in a corpus of thousands: rewrite
-        # only the documents that differ from what the index holds.
+        # changes a handful of documents in a corpus of thousands, so compare
+        # against the hashes stored with the indexed documents and rewrite only
+        # the differences. Every process reindexes after a reload broadcast and
+        # writes this directory; the committed documents are the one record of
+        # what it holds.
         ix = self._open()
         with ix.reader() as reader:
-            indexed = {fields["id"]: fields.get(_DOC_HASH_FIELD) for fields in reader.all_stored_fields() if fields}
+            if _stored_doc_hashes(reader) == doc_hashes:
+                log.info("Whoosh index at %s is up to date; skipping rebuild", self.index_dir)
+                return 0
+        try:
+            writer = ix.writer(limitmb=256, timeout=INDEX_WRITE_LOCK_TIMEOUT)
+        except LockError:
+            log.warning("Whoosh index at %s is locked by another writer, skipping this rebuild", self.index_dir)
+            return 0
         written = 0
-        with ix.writer(limitmb=256) as writer:
+        with writer:
+            if _DOC_HASH_FIELD not in writer.schema:
+                writer.add_field(_DOC_HASH_FIELD, ID(stored=True))
+            # Another process may have committed between the check above and
+            # taking the lock.
+            with writer.reader() as reader:
+                indexed = _stored_doc_hashes(reader)
             for tool_id in indexed.keys() - doc_hashes.keys():
                 writer.delete_by_term("id", tool_id)
             for doc in docs:
@@ -356,8 +371,6 @@ class ToolWhooshIndex:
                 if indexed.get(str(doc["id"])) != doc_hash:
                     writer.update_document(**doc, **{_DOC_HASH_FIELD: doc_hash})
                     written += 1
-        with open(signature_path, "w") as f:
-            f.write(signature)
         return written
 
     def search(self, query: str, limit: int | None = None) -> list[str]:

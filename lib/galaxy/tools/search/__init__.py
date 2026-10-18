@@ -44,6 +44,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.tools.source_store.search import (
     build_search_document,
     build_search_schema,
+    INDEX_WRITE_LOCK_TIMEOUT,
     search_whoosh_index,
     ToolSearchTuning,
     ToolWhooshIndex,
@@ -64,11 +65,6 @@ log = logging.getLogger(__name__)
 
 CanConvertToFloat = str | int | float
 CanConvertToInt = str | int | float
-
-# Galaxy processes on a host share ``tool_search_index_dir`` and index the same
-# toolbox into it, so a rebuild that cannot get the write lock in time can be
-# skipped: the process holding the lock is writing the same documents.
-INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
 UNSAFE_PATH_CHARACTERS = re.compile(r"[^A-Za-z0-9_-]")
 

@@ -1,11 +1,14 @@
 """Pin ``ToolWhooshIndex.build`` rebuild/skip semantics."""
 
+from whoosh import index
+
 from galaxy.tools import DataManagerTool
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.search import (
+    build_search_schema,
     MAX_TOOL_SEARCH_HELP_CHARS,
     ToolSearchTuning,
     ToolWhooshIndex,
@@ -66,6 +69,32 @@ def test_changed_doc_is_rewritten(tmp_path):
     searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
     assert searcher.search("blorbinator") == ["mytool"]
     assert searcher.search("quaxifier") == []
+
+
+def test_doc_removed_by_another_writer_is_restored(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller"))
+    with index.open_dir(index_dir).writer() as writer:
+        writer.delete_by_term("id", "caller")
+
+    assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller")) == 1
+    assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("caller") == ["caller"]
+
+
+def test_index_without_doc_hashes_is_upgraded_by_a_commit(tmp_path):
+    index_dir = tmp_path / "ix"
+    index_dir.mkdir()
+    legacy = index.create_in(str(index_dir), schema=build_search_schema(_TUNING, help_boost=_TUNING.help_boost))
+    with legacy.writer() as writer:
+        writer.add_document(id="mapper", id_exact="mapper", name="Mapper", name_exact="Mapper")
+    legacy_generation = index.open_dir(str(index_dir)).latest_generation()
+
+    searcher = ToolWhooshIndex(index_dir=str(index_dir), tuning=_TUNING)
+    assert searcher.build(_index("mapper")) == 1
+    # One more commit on the existing index; recreating the directory would
+    # restart its generations.
+    assert index.open_dir(str(index_dir)).latest_generation() == legacy_generation + 1
+    assert searcher.search("mapper") == ["mapper"]
 
 
 def test_build_scopes_corpus_to_panel_membership(tmp_path):
