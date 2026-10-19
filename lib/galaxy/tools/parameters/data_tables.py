@@ -1,18 +1,38 @@
 """Inspect declared data table usage without deserializing dataset parameters."""
 
 import json
-from collections.abc import Mapping
+from collections.abc import (
+    Iterator,
+    Mapping,
+)
 from contextlib import suppress
 from typing import Any
 
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import SelectToolParameter
+from galaxy.tools.parameters.grouping import (
+    Conditional,
+    Repeat,
+    Section,
+    UploadDataset,
+)
 
 
 def is_data_table_select(parameter: Any) -> bool:
     """Whether ``parameter`` is a select whose options come from ``from_data_table``."""
     options = getattr(parameter, "options", None)
     return isinstance(parameter, SelectToolParameter) and bool(getattr(options, "tool_data_table_name", None))
+
+
+def conditional_selectors(inputs: Mapping[str, Any]) -> Iterator[Any]:
+    """Conditional test parameters, which ``Tool.input_params`` does not include."""
+    for input in inputs.values():
+        if isinstance(input, Conditional):
+            yield input.test_param
+            for case in input.cases:
+                yield from conditional_selectors(case.inputs or {})
+        elif isinstance(input, (Repeat, Section, UploadDataset)):
+            yield from conditional_selectors(input.inputs or {})
 
 
 def _has_selection(value: Any) -> bool:

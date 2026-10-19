@@ -15,6 +15,7 @@ from collections.abc import (
     Sequence,
 )
 from datetime import datetime
+from itertools import chain
 from typing import (
     Any,
     cast,
@@ -191,6 +192,7 @@ from galaxy.tools.parameters.basic import (
     ToolParameter,
 )
 from galaxy.tools.parameters.data_tables import (
+    conditional_selectors,
     is_data_table_select,
     uses_data_table,
 )
@@ -2486,7 +2488,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def has_data_table(self) -> bool:
         """Whether any select input, including inactive branches, uses ``from_data_table`` options."""
-        return any(is_data_table_select(param) for param in self.input_params)
+        params = chain(self.input_params, conditional_selectors(self.inputs))
+        return any(is_data_table_select(param) for param in params)
 
     def is_using_data_table(self, job: Job) -> bool:
         """Whether the job selected an installed data table entry in its active parameter state.

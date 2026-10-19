@@ -87,6 +87,15 @@ def test_nested_repeats_and_sections():
     assert tool.is_using_data_table(persisted_job(tool, {"references": [history, item(1, "indexed", "hg38")]}))
 
 
+def test_table_backed_conditional_selector():
+    tool = load_tool(
+        '<conditional name="genome"><param name="build" type="select"><options from_data_table="test_indexes" /></param>'
+        '<when value="hg38" /></conditional>'
+    )
+    assert tool.has_data_table
+    assert tool.is_using_data_table(persisted_job(tool, {"genome": {"build": "hg38"}}))
+
+
 def test_data_input_with_table_options_is_not_a_table_select():
     tool = load_tool('<param name="input" type="data" format="txt"><options from_data_table="test_indexes" /></param>')
     assert not tool.has_data_table
