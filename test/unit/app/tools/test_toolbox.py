@@ -292,18 +292,23 @@ class TestToolBox(BaseToolBoxTestCase):
         as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
         assert len(as_dict) == 0, as_dict
 
-    def test_curated_tool_tags_by_id_only_lists_tools_visible_to_the_user(self):
-        self._init_tool_in_section()
-        tool = self.toolbox.get_tool("test_tool")
-        tool.tool_tags = ["curated_tag"]
+    def test_curated_tool_tags_by_id_skips_tools_the_user_cannot_access(self):
+        tool = self._init_curated_tag_tool()
         assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {"test_tool": ["curated_tag"]}
 
         tool.allow_user_access = lambda user, attempting_access: False
         assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {}
 
-        del tool.allow_user_access
+    def test_curated_tool_tags_by_id_skips_hidden_tools(self):
+        tool = self._init_curated_tag_tool()
         tool.hidden = True
         assert self.toolbox.curated_tool_tags_by_id(mock_trans()) == {}
+
+    def _init_curated_tag_tool(self) -> "Tool":
+        self._init_tool_in_section()
+        tool = self.toolbox.get_tool("test_tool")
+        tool.tool_tags = ["curated_tag"]
+        return tool
 
     def _setup_dynamic_tool_test(self) -> "Tool":
         self._init_tool()
