@@ -343,10 +343,24 @@ def test_adapt_dataset_store_root_named_after_an_upload(store_root):
 
 
 @pytest.mark.parametrize(
-    "store_root", ["a';touch pwned;'.zarr", "$(id).zarr", 'a"b.zarr', "a`id`.zarr", "a\\b", "a\nb"]
+    "store_root",
+    [
+        "a';touch pwned;'.zarr",
+        "$(id).zarr",
+        'a"b.zarr',
+        "a`id`.zarr",
+        "a\\b",
+        "a\nb",
+        "a;id;.zarr",
+        "a&&id.zarr",
+        "a|id.zarr",
+        "a>out.zarr",
+        "a<in.zarr",
+    ],
 )
 def test_adapt_dataset_rejects_a_store_root_that_cannot_be_quoted(store_root):
-    # A shell_command pastes the path in unescaped, so it must not end or escape a quoted value.
+    # A shell_command pastes the path in unescaped, so it must not end or escape a quoted value,
+    # nor start another command where the tool leaves it unquoted.
     with pytest.raises(ValueError, match="cannot be passed to a tool"):
         _adapt_input("zarr", metadata={"store_root": store_root}, shell_quotable=True)
 

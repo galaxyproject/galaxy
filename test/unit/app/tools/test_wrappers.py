@@ -407,6 +407,14 @@ def test_dataset_path_store_root_error_reaches_the_command_line_template():
         fill_template("ls '$input.path'", context={"input": wrapper})
 
 
+def test_dataset_path_rejects_a_store_root_that_runs_a_command_when_unquoted():
+    dataset = _dataset_of_type(ZarrDirectory())
+    dataset.metadata = SimpleNamespace(store_root="a;id;.zarr")
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=REWRITING_COMPUTE_ENVIRONMENT)
+    with pytest.raises(ValueError, match="cannot be passed to a tool"):
+        fill_template("cp -r $input.path/. out", context={"input": wrapper})
+
+
 def test_dataset_path_error_reaches_the_command_line_template():
     dataset = _dataset_of_type(Directory(), has_deferred_data=True)
     cast(MockDataset, dataset).deferred_source_uri = "https://example.org/store.zarr"

@@ -41,8 +41,9 @@ CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, str | None], 
 InpDataCollectionsDictT = dict[str, HistoryDatasetCollectionAssociation | DatasetCollectionElement]
 
 # Characters that would end or escape a single- or double-quoted value on a command line,
-# plus line breaks, which XML tool command cleanup turns into spaces.
-COMMAND_LINE_UNSAFE = re.compile(r"[\"'$`\\\x00\r\n]")
+# plus line breaks, which XML tool command cleanup turns into spaces, and the operators that
+# start another command or a redirection where a tool leaves the path unquoted.
+COMMAND_LINE_UNSAFE = re.compile(r"[\"'$`\\\x00\r\n;&|<>]")
 
 
 def dataset_path(

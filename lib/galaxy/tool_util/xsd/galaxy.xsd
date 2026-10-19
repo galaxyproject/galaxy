@@ -4416,8 +4416,10 @@ Existing Zarr tools use ``$input.extra_files_path/$input.metadata.store_root``.
 That keeps pointing at the store, since ``store_root`` is empty for a store at
 the root and names the subfolder otherwise, but new tools should use
 ``$input.path``. For an older dataset whose subfolder name holds a quote,
-``$``, a backtick, a backslash or a line break, ``$input.path`` is an error,
-since that name could not be quoted safely on the command line.
+``$``, a backtick, a backslash, a line break, ``;``, ``&``, ``|``, ``<`` or
+``>``, ``$input.path`` is an error, since that name could not be passed safely
+on the command line. Other names, e.g. with spaces, are accepted, so always
+quote ``$input.path``.
 
 The following demonstrates a ``param`` which may accept multiple files and
 multiple formats.
