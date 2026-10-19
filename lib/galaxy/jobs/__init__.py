@@ -38,7 +38,6 @@ import yaml
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
-    and_,
     func,
     or_,
     select,
@@ -1819,130 +1818,40 @@ class MinimalJobWrapper(HasResourceParameters):
         else:
             other_jobs = Job.id != job.id
 
-        if job.user_id:
-            user_job_count = (
+        def active_job_count(*where):
+            return (
                 select(func.count(Job.id))
                 .where(
-                    and_(
-                        Job.state.in_(
-                            [
-                                Job.states.QUEUED,
-                                Job.states.RUNNING,
-                                Job.states.RESUBMITTED,
-                            ]
-                        ),
-                        Job.user_id == job.user_id,
-                        other_jobs,
-                    )
+                    Job.state.in_([Job.states.QUEUED, Job.states.RUNNING, Job.states.RESUBMITTED]), other_jobs, *where
                 )
                 .scalar_subquery()
             )
 
+        if job.user_id:
             if registered_user_concurrent_jobs is not None:
-                conditions.append(user_job_count < registered_user_concurrent_jobs)
+                conditions.append(active_job_count(Job.user_id == job.user_id) < registered_user_concurrent_jobs)
             if destination_user_limit is not None:
-                destination_job_count = (
-                    select(func.count(Job.id))
-                    .where(
-                        and_(
-                            Job.state.in_(
-                                [
-                                    Job.states.QUEUED,
-                                    Job.states.RUNNING,
-                                    Job.states.RESUBMITTED,
-                                ]
-                            ),
-                            Job.destination_id == job_destination.id,
-                            Job.user_id == job.user_id,
-                            other_jobs,
-                        )
-                    )
-                    .scalar_subquery()
+                destination_job_count = active_job_count(
+                    Job.destination_id == job_destination.id, Job.user_id == job.user_id
                 )
                 conditions.append(destination_job_count < destination_user_limit)
             for tag, limit in destination_user_tag_limits.items():
                 destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
-                user_tag_count = (
-                    select(func.count(Job.id))
-                    .where(
-                        and_(
-                            Job.state.in_(
-                                [
-                                    Job.states.QUEUED,
-                                    Job.states.RUNNING,
-                                    Job.states.RESUBMITTED,
-                                ]
-                            ),
-                            Job.destination_id.in_(destination_ids),
-                            Job.user_id == job.user_id,
-                            other_jobs,
-                        )
-                    )
-                    .scalar_subquery()
-                )
+                user_tag_count = active_job_count(Job.destination_id.in_(destination_ids), Job.user_id == job.user_id)
                 conditions.append(user_tag_count < limit)
 
         elif anonymous_user_concurrent_jobs is not None and job.galaxy_session and job.galaxy_session.id:
-            anon_job_count = (
-                select(func.count(Job.id))
-                .where(
-                    and_(
-                        Job.state.in_(
-                            [
-                                Job.states.QUEUED,
-                                Job.states.RUNNING,
-                                Job.states.RESUBMITTED,
-                            ]
-                        ),
-                        Job.session_id == job.galaxy_session.id,
-                        other_jobs,
-                    )
-                )
-                .scalar_subquery()
-            )
+            anon_job_count = active_job_count(Job.session_id == job.galaxy_session.id)
             conditions.append(anon_job_count < anonymous_user_concurrent_jobs)
 
         if destination_total_limit is not None:
-            destination_total_count = (
-                select(func.count(Job.id))
-                .where(
-                    and_(
-                        Job.state.in_(
-                            [
-                                Job.states.QUEUED,
-                                Job.states.RUNNING,
-                                Job.states.RESUBMITTED,
-                            ]
-                        ),
-                        Job.destination_id == job_destination.id,
-                        other_jobs,
-                    )
-                )
-                .scalar_subquery()
-            )
+            destination_total_count = active_job_count(Job.destination_id == job_destination.id)
             conditions.append(destination_total_count < destination_total_limit)
 
-        if destination_tag_limits:
-            for tag, limit in destination_tag_limits.items():
-                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
-                tag_count = (
-                    select(func.count(Job.id))
-                    .where(
-                        and_(
-                            Job.state.in_(
-                                [
-                                    Job.states.QUEUED,
-                                    Job.states.RUNNING,
-                                    Job.states.RESUBMITTED,
-                                ]
-                            ),
-                            Job.destination_id.in_(destination_ids),
-                            other_jobs,
-                        )
-                    )
-                    .scalar_subquery()
-                )
-                conditions.append(tag_count < limit)
+        for tag, limit in destination_tag_limits.items():
+            destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
+            tag_count = active_job_count(Job.destination_id.in_(destination_ids))
+            conditions.append(tag_count < limit)
 
         update_stmt = (
             update(Job)
