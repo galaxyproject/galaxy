@@ -249,23 +249,17 @@ def reference_destination(tool, job):
     return "general_cluster"
 ```
 
-`tool.has_data_table` reports whether any parameter declares `options from_data_table`,
-including inactive conditional branches. `tool.is_using_data_table(job)` checks only
-the active parameter state, including repeats and sections. A history-reference
-branch, an empty selection, or a history/library dataset supplied directly to a
-table-backed select does not count as installed table usage.
+`tool.has_data_table` reports whether any select parameter uses `options from_data_table`,
+including parameters in inactive conditional branches. `tool.is_using_data_table(job)`
+checks the job's active parameter state, including repeats and sections. A
+history-reference branch, an empty selection, or a history dataset supplied to a
+table-backed select does not count as installed table usage. Job parameters are
+only decoded from JSON, so datasets are not loaded, and parameter state that no
+longer matches the tool is ignored rather than raising.
 
-The relevant parameter tree is cached per tool instance and rebuilt on tool reload.
-Tools without tables do not read job parameters. Other tools decode only relevant
-top-level JSON values without deserializing datasets or evaluating dynamic options;
-loading the job's parameter relationship may still load all parameter rows. Job
-results are not cached by Galaxy, so a scheduler may cache them for one evaluation.
-
-This detects declared, populated table-backed selections, including static options
-added to those selects. It does not verify membership in a table, inspect option
-filters, detect legacy `from_file` options, or detect arbitrary access inside tool
-templates or code. Literal string keys such as `"None"` count as selections.
-Malformed relevant JSON or conditional state raises rather than returning `False`.
+This detects populated table-backed selections only. It does not verify that the
+value exists in the table, detect legacy `from_file` options, or detect table
+access in tool templates, output actions or code.
 
 #### Dynamic Destination Mapping (DTD method)
 
