@@ -68,6 +68,19 @@ const currentSortedJobs = computed(() => {
     return sortedStoredJobs.value.filter((job) => currentJobIds.value.has(job.id));
 });
 
+// Ensure any jobs added to the store while no filter is active are included in `currentJobIds`
+// (these would be jobs not already included in the paginated set; think a job submitted while the panel is open)
+watch(sortedStoredJobs, (jobs) => {
+    if (filterText.value.trim()) {
+        return;
+    }
+    for (const job of jobs) {
+        if (!HIDDEN_TOOL_IDS.includes(job.tool_id)) {
+            currentJobIds.value.add(job.id);
+        }
+    }
+});
+
 async function loadJobs(_offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
