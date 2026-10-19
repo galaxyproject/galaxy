@@ -316,6 +316,17 @@ def build_workflow_run_configs(
         )
     if "inputs" in payload and "ds_map" in payload:
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
+    for object_store_id_key in (
+        "preferred_object_store_id",
+        "preferred_outputs_object_store_id",
+        "preferred_intermediate_object_store_id",
+    ):
+        if object_store_id := payload.get(object_store_id_key):
+            validation_error = app.object_store.validate_selected_object_store_id(trans.user, object_store_id)
+            if validation_error:
+                raise exceptions.RequestParameterInvalidException(
+                    f"Invalid '{object_store_id_key}': {validation_error}"
+                )
 
     add_to_history = "no_add_to_history" not in payload
     legacy = payload.get("legacy", False)

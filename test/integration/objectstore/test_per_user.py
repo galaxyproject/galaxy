@@ -4,6 +4,7 @@ from typing import (
 
 from galaxy.objectstore.templates.examples import get_example
 from galaxy_test.base import api_asserts
+from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.driver import integration_util
 from ._base import BaseObjectStoreIntegrationTestCase
 from .test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
@@ -78,6 +79,17 @@ MULTI_VERSION_LIBRARY = """
 
 
 MULTI_VERSION_WITH_SECRETS_LIBRARY = get_example("testing_multi_version_with_secrets.yml")
+
+SIMPLE_WORKFLOW = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  cat:
+    tool_id: cat
+    in:
+      input1: input1
+"""
 
 
 class BaseUserObjectStoreIntegration(BaseObjectStoreIntegrationTestCase):
@@ -219,6 +231,33 @@ class TestPerUserObjectStoreIntegration(BaseUserObjectStoreIntegration):
             contents = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
             assert contents.startswith("1 2 3")
             self.dataset_populator.set_user_preferred_object_store_id(None)
+
+    def test_running_with_inaccessible_object_store_not_allowed(self):
+        object_store_id = self._create_simple_object_store()
+        workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        with self._different_user("object_store_other_user@bx.psu.edu"):
+            with self.dataset_populator.test_history() as history_id:
+                hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+                hda_input = {"src": "hda", "id": hda["id"]}
+                response = self.dataset_populator.run_tool_raw(
+                    "multi_data_param",
+                    {"f1": hda_input, "f2": hda_input},
+                    history_id,
+                    preferred_object_store_id=object_store_id,
+                )
+                api_asserts.assert_status_code_is(response, 400)
+                api_asserts.assert_error_message_contains(response, "object store")
+
+                workflow_id = workflow_populator.upload_yaml_workflow(SIMPLE_WORKFLOW)
+                request = {
+                    "history_id": history_id,
+                    "inputs": {"input1": hda_input},
+                    "inputs_by": "name",
+                    "preferred_object_store_id": object_store_id,
+                }
+                response = workflow_populator.invoke_workflow_raw(workflow_id, request)
+                api_asserts.assert_status_code_is(response, 400)
+                api_asserts.assert_error_message_contains(response, "object store")
 
     def test_create_unknown_id(self):
         body = {
