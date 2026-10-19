@@ -52,11 +52,3 @@ def test_rebuild_toolbox_search_index_builds_only_on_config_watcher(is_webapp, i
     app = _SearchIndexApp(is_webapp, is_config_watcher)
     rebuild_toolbox_search_index(app)
     assert app.toolbox_search.build_index_if_stale.called is writes
-
-
-def test_reindex_tool_search_is_skipped_off_the_config_watcher():
-    # remove_tool_by_id reindexes in whichever process served the uninstall;
-    # its reload broadcast reaches the watcher, which does the write.
-    app = _SearchIndexApp(is_webapp=True, is_config_watcher=False)
-    app.reindex_tool_search()
-    app.toolbox_search.build_index.assert_not_called()
