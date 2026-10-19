@@ -179,13 +179,18 @@ const currentVariant = computed(() => {
 });
 
 /**
+ * Whether a selected value is flagged for map over, e.g. a `list:paired` collection selected for a
+ * `paired` collection input. Tool form only: workflow run forms set a `flavor`, and a collection
+ * given to a workflow input is passed to the workflow whole.
+ */
+const selectionMapsOver = computed(() => !props.flavor && !!currentValue.value?.some((v) => !!v.map_over_type));
+
+/**
  * Whether the input is mapped over this tool: a collection on a `data` input, or a selection
- * flagged for map over, e.g. a `list:paired` collection selected for a `paired` collection input
+ * flagged for map over
  */
 const mapsOver = computed(
-    () =>
-        (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION) ||
-        !!currentValue.value?.some((v) => !!v.map_over_type),
+    () => (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION) || selectionMapsOver.value,
 );
 
 /**
@@ -206,10 +211,10 @@ const mapOverUnit = computed((): { code?: string; text: string } | null => {
 });
 
 /**
- * Show batch info whenever the selection is submitted as a batch
+ * Show batch info for a batch variant or a selection mapped over this tool
  */
 const showBatchInfo = computed(
-    () => !!currentVariant.value && isBatchSelection(currentVariant.value.batch, currentValue.value ?? []),
+    () => !!currentVariant.value && (currentVariant.value.batch !== BATCH.DISABLED || selectionMapsOver.value),
 );
 
 /**

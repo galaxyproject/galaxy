@@ -626,6 +626,19 @@ describe("FormData batch hint", () => {
         expect(wrapper.find("input[type='checkbox']").exists()).toBeFalsy();
     });
 
+    it("shows no mapped over info for a nested collection in a workflow run form", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            flavor: "module",
+            collectionTypes: ["paired"],
+            value: { values: [{ id: "hdca7", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.emitted().input[0][0].batch).toBe(true);
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
     it("toggles mapped over info when switching collection input selection", async () => {
         const wrapper = createTarget({
             type: "data_collection",
