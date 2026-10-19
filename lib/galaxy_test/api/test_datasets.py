@@ -338,6 +338,33 @@ class TestDatasetsApi(ApiTestCase):
             show_response = self._get(f"datasets/{hda['id']}")
             self._assert_status_code_is_ok(show_response)
 
+    @requires_admin
+    def test_permissions_changed_while_queued_survive_job_finish(self, history_id, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://httpstat.us/200?sleep=5000",
+            body="OK",
+            sleep_ms=5000,
+        )
+        payload = {
+            "history_id": history_id,
+            "targets": [{"destination": {"type": "hdas"}, "items": [{"src": "url", "url": url, "ext": "txt"}]}],
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=False)
+        self._assert_status_code_is(fetch_response, 200)
+        response = fetch_response.json()
+        dataset_id = response["outputs"][0]["id"]
+
+        update_response = self._put(
+            f"datasets/{dataset_id}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
+        )
+        self._assert_status_code_is_ok(update_response)
+        assert self.dataset_populator.get_job_details(response["jobs"][0]["id"]).json()["state"] != "ok"
+
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        with self._different_user():
+            show_response = self._get(f"datasets/{dataset_id}")
+            self._assert_status_code_is_ok(show_response)
+
     def test_make_private_is_idempotent(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
         for _ in range(2):
