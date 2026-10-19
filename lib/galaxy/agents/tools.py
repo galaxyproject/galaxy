@@ -21,8 +21,8 @@ from pydantic import (
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
-from galaxy.agents import iwc
 from galaxy.schema.agents import ConfidenceLevel
+from galaxy.workflow import iwc
 from .base import (
     ActionSuggestion,
     ActionType,

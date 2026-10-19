@@ -59,6 +59,7 @@ from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
+    PermissionProvider,
 )
 from galaxy.job_execution.setup import (
     ensure_configs_directory,
@@ -2252,6 +2253,10 @@ class MinimalJobWrapper(HasResourceParameters):
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                # Datasets discovered by the job are created by the import, without permissions.
+                permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
+                for hda in [*object_import_tracker.hdas_by_key.values(), *object_import_tracker.hdas_by_id.values()]:
+                    permission_provider.set_default_hda_permissions(hda)
                 # The import leaves job.state untouched so nothing polling the job can see it finish before
                 # exec_after_process and the final commit below have run.
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
