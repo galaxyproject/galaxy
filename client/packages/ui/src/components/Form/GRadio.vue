@@ -222,9 +222,14 @@ function onChange(event: Event) {
         margin-left: 0;
     }
 
+    // Joined buttons overlap by 1px; lift the checked one so its darker border is not covered by the next button
+    &.g-checked {
+        z-index: 1;
+    }
+
     // Page-background gap keeps the ring clear of the fill and of neighbouring buttons; outline survives forced colors.
     &:has(.g-radio-input:focus-visible) {
-        z-index: 1;
+        z-index: 2;
         outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
         box-shadow: 0 0 0 2px var(--background-color, #ffffff);
