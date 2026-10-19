@@ -105,7 +105,6 @@ defineExpose({
         color: var(--color-grey-800);
         border-color: var(--color-grey-400);
         outline: none;
-        box-shadow: 0 0 0 0.2rem rgb(from var(--color-blue-400) r g b / 0.33);
     }
 
     // Page-background gap keeps the ring clear of the field border; outline survives forced colors.
@@ -119,26 +118,16 @@ defineExpose({
     &.g-valid {
         border-color: var(--color-green-700);
 
-        &:focus {
-            box-shadow: 0 0 0 0.2rem rgb(from var(--color-green-700) r g b / 0.33);
-        }
-
         &:focus-visible {
             outline-color: var(--color-green-700);
-            box-shadow: 0 0 0 2px var(--background-color);
         }
     }
 
     &.g-invalid {
         border-color: var(--color-red-600);
 
-        &:focus {
-            box-shadow: 0 0 0 0.2rem rgb(from var(--color-red-600) r g b / 0.33);
-        }
-
         &:focus-visible {
             outline-color: var(--color-red-600);
-            box-shadow: 0 0 0 2px var(--background-color);
         }
     }
 }
