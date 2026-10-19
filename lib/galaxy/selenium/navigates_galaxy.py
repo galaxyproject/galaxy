@@ -1693,6 +1693,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         name_input_field.send_keys(name)
         input_field.send_keys(self._get_random_name(prefix="description"))
         self.components.libraries.save_new_library_btn.wait_for_and_click()
+        # Clicking create again before the POST resolves would toggle the still-open form closed.
+        self.components.libraries.save_new_library_btn.wait_for_absent_or_hidden(
+            wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -1774,7 +1778,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
-        self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
+        self.components.toast.message.wait_for_absent_or_hidden(wait_type=WAIT_TYPES.UX_POPUP)
 
     def clear_tooltips(self, selector_to_move="#center"):
         self.hover(self.find_element_by_selector(selector_to_move))
