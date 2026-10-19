@@ -55,7 +55,8 @@ describe("galaxy-ui token contract", () => {
     });
 
     it("declares exactly the non-palette tokens the contract promises", () => {
-        const actual = [...packageTokens.keys()].filter((name) => !/^--color-[a-z]+-\d00$/.test(name)).sort();
+        // Half steps such as grey-250 are palette shades too
+        const actual = [...packageTokens.keys()].filter((name) => !/^--color-[a-z]+-\d[05]0$/.test(name)).sort();
         expect(actual).toEqual([...NON_PALETTE_TOKENS].sort());
     });
 
