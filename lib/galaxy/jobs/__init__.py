@@ -341,6 +341,33 @@ class JobConfigurationLimits:
     destination_total_concurrent_jobs: dict[str, int] = field(default_factory=dict)
 
 
+class DestinationTagRegistry:
+    """Destination IDs by tag, registered per source.
+
+    Each registration replaces everything the source registered before. Writers swap in a new mapping under a lock,
+    so readers need none.
+    """
+
+    def __init__(self) -> None:
+        self._tags: dict[str | None, dict[str, frozenset[str]]] = {}
+        self._lock = threading.Lock()
+
+    def register(self, source: str | None, tags: Mapping[str, Iterable[str]]) -> None:
+        with self._lock:
+            source_tags = dict(self._tags)
+            if tags:
+                source_tags[source] = {tag: frozenset(ids) for tag, ids in tags.items()}
+            else:
+                source_tags.pop(source, None)
+            self._tags = source_tags
+
+    def ids_for_tag(self, tag: str) -> set[str]:
+        ids: set[str] = set()
+        for source_tags in self._tags.values():
+            ids.update(source_tags.get(tag, ()))
+        return ids
+
+
 class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
@@ -371,8 +398,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.default_handler_id: str | None = None
         self.handler_ready_window_size: int | None = None
         self.destinations: dict[str, list[JobDestination]] = {}
-        self._destination_tags: dict[str | None, dict[str, frozenset[str]]] = {}
-        self._destination_tags_lock = threading.Lock()
+        self.destination_tags = DestinationTagRegistry()
         self.default_destination_id: str | None = None
         self.tools: dict[str, list[JobToolConfiguration]] = {}
         self.tool_classes: dict[str, list[JobToolConfiguration]] = {}
@@ -564,7 +590,7 @@ class JobConfiguration(ConfiguresHandlers):
                         self.destinations[tag] = []
                     self.destinations[tag].append(job_destination)
                     destination_tags.setdefault(tag, set()).add(environment_id)
-        self._destination_tags = {None: {tag: frozenset(ids) for tag, ids in destination_tags.items()}}
+        self.destination_tags.register(None, destination_tags)
 
         # Determine the default destination
         self.default_destination_id = self._ensure_default_set(
@@ -908,23 +934,13 @@ class JobConfiguration(ConfiguresHandlers):
         :param source: Name identifying the caller, e.g. the ID of the dynamic destination that created them.
         :param tags: Destination IDs keyed by tag.
         """
-        # Replaced rather than mutated, so get_destination_ids_for_tag() needs no lock.
-        with self._destination_tags_lock:
-            destination_tags = dict(self._destination_tags)
-            if tags:
-                destination_tags[source] = {tag: frozenset(ids) for tag, ids in tags.items()}
-            else:
-                destination_tags.pop(source, None)
-            self._destination_tags = destination_tags
+        self.destination_tags.register(source, tags)
 
     def get_destination_ids_for_tag(self, tag: str) -> set[str]:
         """Return the IDs of all destinations carrying ``tag``, from both the job configuration and
         set_dynamic_destination_tags().
         """
-        ids: set[str] = set()
-        for source_tags in self._destination_tags.values():
-            ids.update(source_tags.get(tag, ()))
-        return ids
+        return self.destination_tags.ids_for_tag(tag)
 
     def get_job_runner_plugins(self, handler_id: str):
         """Load all configured job runner plugins
