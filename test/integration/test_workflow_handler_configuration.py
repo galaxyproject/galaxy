@@ -4,12 +4,12 @@ import os
 import re
 import string
 import tempfile
-import time
 from json import dumps
 
 from galaxy import model
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    wait_on,
     WorkflowPopulator,
 )
 from galaxy_test.driver import integration_util
@@ -133,6 +133,16 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         workflow_invocations = history.workflow_invocations
         return workflow_invocations
 
+    def _wait_for_handler_assignment(self, history_id: str, handler_pattern: re.Pattern):
+        # With db-skip-locked and db-transaction-isolation the request only stores the
+        # handler tag, and the workflow request monitor grabs the invocation later.
+        def handler_assigned():
+            self._app.model.session.expire_all()
+            workflow_invocations = self._get_workflow_invocations(history_id)
+            return True if handler_pattern.match(workflow_invocations[0].handler) else None
+
+        wait_on(handler_assigned, "workflow invocation handler assignment")
+
     @property
     def is_app_workflow_scheduler(self):
         return self._app.workflow_scheduling_manager.request_monitor is not None
@@ -233,9 +243,7 @@ class TestJobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigu
 
     def test_handler_assignment(self, history_id: str):
         self._invoke_n_workflows(1, history_id)
-        time.sleep(2)
-        workflow_invocations = self._get_workflow_invocations(history_id)
-        assert JOB_HANDLER_PATTERN.match(workflow_invocations[0].handler)
+        self._wait_for_handler_assignment(history_id, JOB_HANDLER_PATTERN)
 
     def test_default_job_handler_is_workflow_handler(self):
         assert self.is_app_workflow_scheduler
@@ -280,9 +288,7 @@ class TestWorkflowSchedulerHandlerAssignmentDbSkipLocked(TestExplicitWorkflowHan
 
     def test_handler_assignment(self, history_id: str):
         self._invoke_n_workflows(1, history_id)
-        time.sleep(2)
-        workflow_invocations = self._get_workflow_invocations(history_id)
-        assert WORKFLOW_SCHEDULER_HANDLER_PATTERN.match(workflow_invocations[0].handler)
+        self._wait_for_handler_assignment(history_id, WORKFLOW_SCHEDULER_HANDLER_PATTERN)
 
 
 @integration_util.skip_unless_postgres()
