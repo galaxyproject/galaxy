@@ -175,6 +175,21 @@ def test_destination_user_tag_limit():
     assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination_mock) is True
 
 
+@pytest.mark.parametrize("limit", ["destination_total_concurrent_jobs", "destination_user_concurrent_jobs"])
+def test_destination_tag_limit_counts_unregistered_destination(limit):
+    app = create_mock_app()
+    getattr(app.job_config.limits, limit)["three"] = 1
+    job_destination = JobDestination(id="unregistered", runner="test_runner", tags=["three"])
+
+    # Test below limit
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination) is True
+
+    # Test at limit, counting the job queued to the destination being checked
+    job_wrapper = create_job_wrapper(app, user_id=1)
+    assert job_wrapper.queue_with_limit(job_wrapper.get_job(), job_destination) is False
+
+
 def set_registered_user_limit(limits):
     limits.registered_user_concurrent_jobs = 2
 

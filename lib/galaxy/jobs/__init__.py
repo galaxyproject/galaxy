@@ -1799,6 +1799,8 @@ class MinimalJobWrapper(HasResourceParameters):
         destination_user_concurrent_jobs = self.app.job_config.limits.destination_user_concurrent_jobs
         destination_tag_limits: dict[str, int] = {}
         destination_user_tag_limits: dict[str, int] = {}
+        # The destination being checked carries its tags even if they were never registered.
+        own_destination_ids = {job_destination.id} if job_destination.id else set()
         if job_destination.tags:
             for tag in job_destination.tags:
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
@@ -1865,7 +1867,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 )
                 conditions.append(destination_job_count < destination_user_limit)
             for tag, limit in destination_user_tag_limits.items():
-                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag)
+                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
                 user_tag_count = (
                     select(func.count(Job.id))
                     .where(
@@ -1928,7 +1930,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if destination_tag_limits:
             for tag, limit in destination_tag_limits.items():
-                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag)
+                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag) | own_destination_ids
                 tag_count = (
                     select(func.count(Job.id))
                     .where(
