@@ -62,6 +62,7 @@ from galaxy.tool_util.parser.util import (
     text_input_is_optional,
 )
 from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
+from galaxy.tool_util_models.untrusted import is_loading_untrusted_tools
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.pagination import (
     DataOptionsBuilder,
@@ -1873,7 +1874,10 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         self.display = input_source.get("display", None)
         self.hierarchy = input_source.get("hierarchy", "exact")  # exact or recurse
         self.separator = input_source.get("separator", ",")
-        tool_data_path = self.tool.app.config.tool_data_path if self.tool else None
+        tool_data_path = None
+        # deprecated from_file isn't read for untrusted tools at all
+        if self.tool and not is_loading_untrusted_tools():
+            tool_data_path = self.tool.app.config.tool_data_path
         drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
         if drill_down_dynamic_options is not None:
             self.is_dynamic = True
@@ -1882,8 +1886,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         else:
             self.is_dynamic = False
             self.dynamic_options = None
-            self.options = input_source.parse_drill_down_static_options(tool_data_path)
-            assert self.options is not None, "Drill down options from a relative from_file require a tool data path"
+            # None if from_file wasn't read
+            self.options = input_source.parse_drill_down_static_options(tool_data_path) or []
 
     def _get_options_from_code(self, trans: "ProvidesHistoryContext | None" = None, other_values=None):
         assert self.dynamic_options, Exception("dynamic_options was not specifed")

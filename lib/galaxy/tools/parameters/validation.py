@@ -17,6 +17,7 @@ from galaxy import (
 from galaxy.tool_util.parser.parameter_validators import (
     parse_xml_validators as parse_xml_validators_models,
 )
+from galaxy.tool_util.parser.util import resolve_tool_data_file
 from galaxy.tool_util_models.parameter_validators import (
     AnyValidatorModel,
     EmptyFieldParameterValidatorModel,
@@ -530,6 +531,8 @@ def _to_validator(app, validator_model: AnyValidatorModel) -> Validator:
         as_dict["tool_data_table"] = tool_data_table
     if "filename" in as_dict and app is not None:
         filename = as_dict.pop("filename")
-        as_dict["filename"] = os.path.join(app.config.tool_data_path, filename)
+        path = resolve_tool_data_file(app.config, filename)
+        assert path, f"File {filename} specified by the 'filename' attribute not found"
+        as_dict["filename"] = path
 
     return validator_types[validator_type](**as_dict)

@@ -31,7 +31,7 @@ dependencies = [
     "fastmcp>=2.13.0",
     "gunicorn!=25.1.0",
     "httpx",
-    "gxformat2>=0.27.0",
+    "gxformat2>=0.28.0",
     "Mako",
     "MarkupSafe",
     "Paste",

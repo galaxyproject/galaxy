@@ -103,7 +103,7 @@ griffelib==2.3.2 ; python_full_version >= '3.11'
 grpcio==1.84.0
 grpcio-status==1.84.0
 gunicorn==26.2.0
-gxformat2==0.27.0
+gxformat2==0.28.0
 h11==0.16.0
 h5grove==4.0.0
 h5py==3.16.0
