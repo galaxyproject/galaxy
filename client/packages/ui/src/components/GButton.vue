@@ -220,18 +220,15 @@ const buttonElementRef = useResolveElement(buttonRef);
         border-color: var(--color-grey-300);
         color: var(--color-grey-800);
 
-        &:hover,
-        &:focus-visible {
+        // No focus fill or border: a darker focused button would read as pressed, and the ring shows focus
+        &:hover {
             background-color: var(--color-grey-300);
             border-color: var(--color-grey-400);
-
-            &:active {
-                background-color: var(--color-grey-400);
-                border-color: var(--color-grey-600);
-            }
         }
 
-        &:focus-visible {
+        &:hover:active,
+        &:focus-visible:active {
+            background-color: var(--color-grey-400);
             border-color: var(--color-grey-600);
         }
 
