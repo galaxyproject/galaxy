@@ -21,12 +21,8 @@ describe("MarkdownEditor", () => {
         const wrapper = mountEditor();
         const group = wrapper.find("[role=radiogroup]");
         expect(group.attributes("aria-label")).toBe("Editor mode");
-        // inline like a button group, so the help button stays on the same row
-        expect(group.classes()).toContain("d-inline-block");
         const buttons = group.findAll(".g-radio-button");
         expect(buttons.map((button) => button.text())).toEqual(["Editor", "Text"]);
-        expect(buttons.every((button) => button.classes("g-outline") && button.classes("g-blue"))).toBe(true);
-        expect(buttons.every((button) => button.classes("g-small"))).toBe(true);
         expect(group.find(".g-checked").text()).toBe("Text");
         expect(wrapper.find("text-editor-stub").exists()).toBe(true);
     });

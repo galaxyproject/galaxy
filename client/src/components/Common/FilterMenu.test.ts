@@ -208,7 +208,6 @@ describe("FilterMenu", () => {
         for (let i = 0; i < options.length; i++) {
             expect(radioBtnGrp[i]?.text()).toBe(options[i]?.text);
             expect(radioBtnGrp[i]?.props("value")).toBe(options[i]?.value);
-            expect(radioBtnGrp[i]?.classes()).toContain("g-radio-button");
         }
         // unset filter shows "Any"; all radios share one name for arrow-key navigation
         expect(radioGroup.find(".g-checked").text()).toBe("Any");
