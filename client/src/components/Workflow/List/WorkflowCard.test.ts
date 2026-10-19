@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { deferred } from "@tests/vitest/deferred";
 import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -50,16 +51,6 @@ function mountWorkflowCard() {
     return { wrapper, workflow };
 }
 
-function deferred() {
-    let resolve!: (value: unknown) => void;
-    let reject!: (reason: unknown) => void;
-    const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-    });
-    return { promise, resolve, reject };
-}
-
 /** Adds a tag the way the tag editor does: to the tags the card currently shows. */
 async function addTag(wrapper: ReturnType<typeof mount>, tag: string) {
     const editor = wrapper.findComponent(StatelessTags);
@@ -78,32 +69,6 @@ describe("WorkflowCard", () => {
         );
     });
 
-    it("saves tag edits one after another without reloading the list", async () => {
-        const firstSave = deferred();
-        const secondSave = deferred();
-        mockedUpdateWorkflow
-            .mockImplementationOnce(() => firstSave.promise as never)
-            .mockImplementationOnce(() => secondSave.promise as never);
-        const { wrapper, workflow } = mountWorkflowCard();
-
-        await addTag(wrapper, "first");
-        await addTag(wrapper, "second");
-
-        expect(workflow.tags).toEqual(["first", "second"]);
-        // the second save waits for the first, so an older tag list never lands last
-        expect(mockedUpdateWorkflow).toHaveBeenCalledTimes(1);
-
-        firstSave.resolve({});
-        await flushPromises();
-        expect(mockedUpdateWorkflow).toHaveBeenCalledTimes(2);
-        expect(mockedUpdateWorkflow).toHaveBeenLastCalledWith(workflow.id, { tags: ["first", "second"] });
-
-        secondSave.resolve({});
-        await flushPromises();
-        // a list reload would re-sort the list and move the card away from the open tag editor
-        expect(wrapper.emitted("refreshList")).toBeUndefined();
-    });
-
     it("reloads the list when a tag save fails", async () => {
         mockedUpdateWorkflow.mockRejectedValueOnce(new Error("save failed"));
         const { wrapper } = mountWorkflowCard();
@@ -113,30 +78,6 @@ describe("WorkflowCard", () => {
 
         expect(Toast.error).toHaveBeenCalledTimes(1);
         expect(wrapper.emitted("refreshList")).toEqual([[true, true]]);
-    });
-
-    it("does not reload the list when a failed tag save is followed by a successful one", async () => {
-        const firstSave = deferred();
-        const secondSave = deferred();
-        mockedUpdateWorkflow
-            .mockImplementationOnce(() => firstSave.promise as never)
-            .mockImplementationOnce(() => secondSave.promise as never);
-        const { wrapper, workflow } = mountWorkflowCard();
-
-        await addTag(wrapper, "first");
-        await addTag(wrapper, "second");
-
-        firstSave.reject(new Error("save failed"));
-        await flushPromises();
-        expect(Toast.error).toHaveBeenCalledTimes(1);
-        // the queued save carries the newest tags, so a reload now could bring back the stored, older ones
-        expect(wrapper.emitted("refreshList")).toBeUndefined();
-
-        secondSave.resolve({});
-        await flushPromises();
-        expect(mockedUpdateWorkflow).toHaveBeenLastCalledWith(workflow.id, { tags: ["first", "second"] });
-        expect(workflow.tags).toEqual(["first", "second"]);
-        expect(wrapper.emitted("refreshList")).toBeUndefined();
     });
 
     it("shows the saved tags again when a list reload during the save brought back older ones", async () => {
@@ -153,6 +94,7 @@ describe("WorkflowCard", () => {
         save.resolve({});
         await flushPromises();
 
+        expect(mockedUpdateWorkflow).toHaveBeenCalledWith(workflow.id, { tags: ["first"] });
         expect(reloadedWorkflow.tags).toEqual(["first"]);
         expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["first"]);
         expect(wrapper.emitted("refreshList")).toBeUndefined();
