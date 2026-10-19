@@ -15,7 +15,10 @@ import pytest
 from sqlalchemy.engine import make_url
 
 from galaxy import model
-from galaxy.jobs import JobConfigurationLimits
+from galaxy.jobs import (
+    DestinationTagRegistry,
+    JobConfigurationLimits,
+)
 from galaxy.jobs.handler import (
     JOB_ERROR,
     JOB_USER_OVER_TOTAL_WALLTIME,
@@ -75,12 +78,16 @@ class HandlerHarness:
         self.deferred = {}
         self.selected: list[tuple[int | None, int | None]] = []
         self.destination = JobDestination(id="local", runner="local")
+        destination_tags = DestinationTagRegistry()
         app.job_config = SimpleNamespace(
             limits=JobConfigurationLimits(),
             handler_assignment_methods=[],
             handler_ready_window_size=WINDOW,
             dynamic_params=None,
             get_destination=lambda id: self.destination,
+            destination_tags=destination_tags,
+            get_destination_ids_for_tag=destination_tags.ids_for_tag,
+            set_dynamic_destination_tags=destination_tags.register,
         )
         app.config.track_jobs_in_database = True
         app.config.cache_user_job_count = True
@@ -296,6 +303,24 @@ def test_ordinary_limits_keep_front_window_and_cached_destinations(handler, limi
     assert handler.dispatched == jobs[:WINDOW]
     handler.poll()
     assert handler.dispatched == jobs
+
+
+@pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
+@pytest.mark.parametrize("limit", ["destination_total_concurrent_jobs", "destination_user_concurrent_jobs"])
+def test_tag_limits_count_registered_dynamic_destinations(handler, limit):
+    handler.destination = JobDestination(id="local", runner="local", tags=["cluster"])
+    user = handler.user()
+    running = handler.job(user, state="running")
+    handler.update_job(running, destination_id="tpv_dynamic")
+    handler.app.job_config.set_dynamic_destination_tags("tpv", {"cluster": {"tpv_dynamic"}})
+    tag_limits = getattr(handler.app.job_config.limits, limit)
+    tag_limits["cluster"] = 1
+    job = handler.job(user)
+    assert handler.poll() == [job]
+    assert handler.dispatched == []
+    tag_limits.clear()
+    handler.poll()
+    assert handler.dispatched == [job]
 
 
 def test_sweep_advances_through_ordinary_waits(handler):
