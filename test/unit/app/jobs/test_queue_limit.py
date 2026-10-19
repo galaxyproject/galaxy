@@ -1,6 +1,7 @@
 import pytest
 
 from galaxy.jobs import (
+    DestinationTagRegistry,
     JobConfigurationLimits,
     MinimalJobWrapper,
 )
@@ -16,10 +17,11 @@ from galaxy.model.unittest_utils.data_app import GalaxyDataTestConfig
 class MockJobConfig:
     def __init__(self) -> None:
         self.limits = JobConfigurationLimits()
-        self.destination_tags: dict[str, set[str]] = {"one": {"one"}, "two": {"one"}}
+        self.destination_tags = DestinationTagRegistry()
+        self.destination_tags.register(None, {"one": {"one"}, "two": {"one"}})
 
     def get_destination_ids_for_tag(self, tag):
-        return self.destination_tags.get(tag, set())
+        return self.destination_tags.ids_for_tag(tag)
 
 
 class GalaxyJobConfigApp(GalaxyDataTestApp):
@@ -138,7 +140,7 @@ def test_destination_tag_limit():
 
 def test_destination_tag_limit_counts_dynamic_destinations():
     app = create_mock_app()
-    app.job_config.destination_tags["two"] = {"one", "dynamic"}
+    app.job_config.destination_tags.register("dynamic_rule", {"two": {"dynamic"}})
     app.job_config.limits.destination_total_concurrent_jobs["two"] = 2
     create_mock_job(app, user_id=2, state="running", destination_id="dynamic")
     job_destination_mock = create_mock_destination()
@@ -154,7 +156,7 @@ def test_destination_tag_limit_counts_dynamic_destinations():
 
 def test_destination_user_tag_limit():
     app = create_mock_app()
-    app.job_config.destination_tags["two"] = {"one", "dynamic"}
+    app.job_config.destination_tags.register("dynamic_rule", {"two": {"dynamic"}})
     app.job_config.limits.destination_user_concurrent_jobs["two"] = 3
     for user_id in (1, 2):
         for destination_id in ("one", "dynamic"):

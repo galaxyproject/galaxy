@@ -8,7 +8,10 @@ from pykwalify.core import Core
 
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
-from galaxy.jobs import JobConfiguration
+from galaxy.jobs import (
+    DestinationTagRegistry,
+    JobConfiguration,
+)
 from galaxy.jobs.runners import (
     BaseJobRunner,
     local,
@@ -415,6 +418,20 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
 
 class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):
     extension = "yml"
+
+
+def test_destination_tag_registry_replaced_per_source():
+    registry = DestinationTagRegistry()
+    registry.register(None, {"longjobs": {"pbs_longjobs", "remote_cluster"}})
+    registry.register("tpv_dispatcher", {"longjobs": {"tpv_long"}})
+    registry.register("tpv_other", {"longjobs": {"other_long"}})
+    registry.register("tpv_dispatcher", {"dynamic": {"tpv_short"}})
+    assert registry.ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster", "other_long"}
+    assert registry.ids_for_tag("dynamic") == {"tpv_short"}
+    registry.register("tpv_dispatcher", {})
+    assert registry.ids_for_tag("dynamic") == set()
+    assert registry.ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster", "other_long"}
+    assert registry.ids_for_tag("nonexistent") == set()
 
 
 def test_yaml_advanced_validation():
