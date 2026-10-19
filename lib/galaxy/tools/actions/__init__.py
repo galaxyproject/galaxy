@@ -212,7 +212,7 @@ class DefaultToolAction(ToolAction):
                         data = data.get_converted_dataset(
                             trans,
                             target_ext,
-                            target_context=parent,
+                            target_context=param_values,
                             history=history,
                             use_cached_job=param_values.get("__use_cached_job__", False),
                         )
