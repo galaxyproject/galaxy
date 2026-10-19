@@ -5905,7 +5905,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # Check if we have dependencies
         try:
             for dependency in depends_list:
-                dep_dataset = self.get_converted_dataset(trans, dependency, use_cached_job=use_cached_job)
+                dep_dataset = self.get_converted_dataset(
+                    trans, dependency, target_context=target_context, history=history, use_cached_job=use_cached_job
+                )
                 if dep_dataset is None:
                     # None means converter is running first time
                     return None

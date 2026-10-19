@@ -192,6 +192,31 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         assert "__index__" not in context
         assert convert.call_args.kwargs["use_cached_job"] is True
 
+    def test_dependency_conversion_receives_target_context(self) -> None:
+        source = self.__add_dataset()
+        source.extension = "interval"
+        target_history = model.History()
+        target_context = {"__job_resource": {"__job_resource__select": "yes", "processors": 4}}
+        converted = {"bgzip": self.__add_dataset(), "tabix": self.__add_dataset()}
+
+        def convert_dataset(trans, original_dataset, target_type, **kwargs):
+            return {"output": converted[target_type]}
+
+        with (
+            patch.dict(self.app.datatypes_registry.converter_deps, {"interval": {"tabix": ["bgzip"]}}),
+            patch.object(source, "get_converter_types", return_value={"bgzip": {}, "tabix": {}}),
+            patch.object(source.datatype, "convert_dataset", side_effect=convert_dataset) as convert,
+        ):
+            result = source.get_converted_dataset(
+                self.trans, "tabix", target_context=target_context, history=target_history
+            )
+
+        assert result is converted["tabix"]
+        assert [c.args[2] for c in convert.call_args_list] == ["bgzip", "tabix"]
+        for c in convert.call_args_list:
+            assert c.kwargs["target_context"] is target_context
+            assert c.kwargs["history"] is target_history
+
     def test_output_created(self):
         _, output = self._simple_execute()
         assert len(output) == 1
