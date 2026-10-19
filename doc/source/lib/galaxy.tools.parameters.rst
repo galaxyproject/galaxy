@@ -18,7 +18,7 @@ galaxy.tools.parameters.basic module
    :show-inheritance:
 
 galaxy.tools.parameters.data\_tables module
-------------------------------------------
+-------------------------------------------
 
 .. automodule:: galaxy.tools.parameters.data_tables
    :members:
