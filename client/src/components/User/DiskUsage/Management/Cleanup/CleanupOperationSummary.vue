@@ -77,7 +77,7 @@ function onReviewItems() {
                 {{ errorMessage }}
             </GAlert>
             <GLink v-else-if="summary && canClearItems" data-test-id="review-link" @click="onReviewItems">
-                <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
+                {{ localize("Review and clear") }} {{ summary.niceTotalSize }}
             </GLink>
             <b v-else class="text-secondary" data-test-id="no-items-indicator">
                 {{ localize("No items to clear") }}
