@@ -112,9 +112,8 @@ function openInteractiveTool(toolId: string) {
         </div>
 
         <div>
-            <div v-if="loading" class="p-3 text-center" role="status">
-                <LoadingSpan spinner-only />
-                <p class="mt-2">Loading interactive tools...</p>
+            <div v-if="loading" class="p-3 text-center">
+                <LoadingSpan message="Loading interactive tools" />
             </div>
             <div v-else-if="filteredTools.length === 0" class="p-3 text-center">
                 <p>No matching interactive tools found</p>

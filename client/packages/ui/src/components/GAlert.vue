@@ -5,7 +5,9 @@
  * `<div class="alert alert-{variant}">` markup the existing bootstrap CSS expects.
  */
 
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, provide, ref, useAttrs, watch } from "vue";
+
+import { liveRegionKey } from "./liveRegionContext";
 
 type AlertVariant = "info" | "warning" | "danger" | "success" | "primary" | "secondary" | "light" | "dark";
 // `string & {}` keeps IDE autocomplete for the recommended variants while still accepting arbitrary
@@ -52,6 +54,10 @@ const emit = defineEmits<{
 const variantClass = computed(() => `alert-${props.variant || "info"}`);
 // danger/warning interrupt (implicit aria-live=assertive); everything else is a polite status message
 const role = computed(() => (props.variant === "danger" || props.variant === "warning" ? "alert" : "status"));
+
+const attrs = useAttrs();
+// A call-site role="none"/"presentation" strips the live region, so nested content must keep its own role
+provide(liveRegionKey, !["none", "presentation"].includes(String(attrs.role ?? "")));
 
 const boundShow = computed<AlertShow>(() => {
     if (props.value !== undefined) {
