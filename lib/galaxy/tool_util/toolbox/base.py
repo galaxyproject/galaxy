@@ -5,7 +5,10 @@ import os
 import string
 import time
 from collections import namedtuple
-from collections.abc import Iterator
+from collections.abc import (
+    Iterator,
+    Mapping,
+)
 from errno import ENOENT
 from typing import (
     Any,
@@ -1718,6 +1721,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def materialize_tool(self, tool: ToolLike, *, reason: MaterializationReasonName) -> "Tool":
         """Return a fully parsed tool; eager toolboxes already hold one."""
         return cast("Tool", tool)
+
+    def index_tool_files(self, path_guids: Mapping[str, str | None]) -> None:
+        """Index tool files that no conf covers yet; eager toolboxes keep no index."""
 
     def to_panel_view(self, trans: "PanelViewTrans", view="default_panel_view", **kwds):
         """

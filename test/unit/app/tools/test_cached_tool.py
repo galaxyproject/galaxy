@@ -513,6 +513,61 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     box._store.invalidate_index_cache.assert_called()
 
 
+def _shed_tool_files(tmp_path, names):
+    path_guids = {}
+    for name in names:
+        tool_file = tmp_path / f"{name}.xml"
+        tool_file.write_text(f"<tool id='{name}' version='1.0'/>")
+        path_guids[str(tool_file)] = f"toolshed.example.com/repos/owner/repo/{name}/1.0"
+    return path_guids
+
+
+def test_index_tool_files_populates_only_index_misses(tmp_path, monkeypatch):
+    # Metadata resets and repository updates load tools the index already
+    # holds; only the misses need a populate.
+    path_guids = _shed_tool_files(tmp_path, ["indexed", "new"])
+    box = _seam_box()
+    indexed_guid = path_guids[str(tmp_path / "indexed.xml")]
+    box._tool_index.entries[indexed_guid] = _entry(id=indexed_guid)
+    calls = []
+    monkeypatch.setattr(mod, "populate_for_paths", lambda config, paths, path_guids=None, **kwargs: calls.append(paths))
+    box.index_tool_files(path_guids)
+    assert calls == [[str(tmp_path / "new.xml")]]
+
+
+def test_index_tool_files_skips_populate_when_every_tool_is_indexed(tmp_path, monkeypatch):
+    path_guids = _shed_tool_files(tmp_path, ["first", "second"])
+    box = _seam_box()
+    for guid in path_guids.values():
+        box._tool_index.entries[guid] = _entry(id=guid)
+    calls = []
+    monkeypatch.setattr(mod, "populate_for_paths", lambda config, paths, path_guids=None, **kwargs: calls.append(paths))
+    box.index_tool_files(path_guids)
+    assert calls == []
+    box._store.invalidate_index_cache.assert_not_called()
+
+
+def test_index_tool_files_populates_version_bump_at_indexed_path(tmp_path, monkeypatch):
+    # A repository update rewrites a tool file in place; the store still maps
+    # that path to the previous version, which must not count as indexed.
+    path_guids = _shed_tool_files(tmp_path, ["bumped"])
+    path, old_guid = next(iter(path_guids.items()))
+    box = _seam_box()
+    box._tool_index.add_entry(_entry(id=old_guid, version="1.0"))
+    box._store.get_by_source_path.return_value = StoredToolSource(
+        hash="old_hash",
+        tool_source_class="XmlToolSource",
+        raw_source="<tool/>",
+        tool_id=old_guid,
+        tool_version="1.0",
+        source_path=path,
+    )
+    calls = []
+    monkeypatch.setattr(mod, "populate_for_paths", lambda config, paths, path_guids=None, **kwargs: calls.append(paths))
+    box.index_tool_files({path: old_guid.replace("/1.0", "/2.0")})
+    assert calls == [[path]]
+
+
 def test_create_tool_stamps_data_manager_conf_id_on_entry():
     box = _seam_box()
     e = _entry(id="dm_tool", tool_type="manage_data")
