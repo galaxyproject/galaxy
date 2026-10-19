@@ -25,6 +25,7 @@ import sys
 sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.source_store import populator
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -429,8 +430,6 @@ class TestIncrementalFastPath:
         cfg = _populate_config(tmp_path, conf)
         requested = str(tools_dir / "shed_7.xml")
 
-        from galaxy.tools.source_store import populator
-
         discovered_paths: list[str] = []
 
         def recording_discover_tools(*args, **kwargs):
@@ -459,8 +458,6 @@ class TestIncrementalFastPath:
         )
         cfg = _populate_config(tmp_path, conf)
         _populate_default(cfg)
-
-        from galaxy.tools.source_store import populator
 
         scan_complete = threading.Event()
         allow_commit = threading.Event()
