@@ -270,8 +270,8 @@ const buttonElementRef = useResolveElement(buttonRef);
                 border-color: var(--color-#{$color}-900);
             }
 
-            // See the grey block above: restate the hover / focus-visible feedback
-            // that this higher-specificity selector would otherwise swallow.
+            // Out-ranks the hover / focus-visible rule above, so both are restated here.
+            // Unlike grey, focus still darkens the fill: -900 stays darker than a focused unpressed -700.
             &.g-pressed:not(.g-outline):not(.g-transparent) {
                 background-color: var(--color-#{$color}-700);
                 border-color: var(--color-#{$color}-900);
