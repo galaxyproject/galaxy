@@ -227,7 +227,8 @@ function markNotificationAsSeen() {
                     <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
                     >{{ " " }}<span>shared </span>
                     <GLink
-                        v-g-tooltip.bottom
+                        tooltip
+                        tooltip-placement="bottom"
                         :title="`View ${props.notification.content.item_type} in new tab`"
                         :href="absPath(props.notification.content.slug)"
                         target="_blank"
