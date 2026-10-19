@@ -53,9 +53,11 @@ log = logging.getLogger(__name__)
 _DOC_HASH_FIELD = "doc_hash"
 
 # Galaxy processes share ``tool_search_index_dir``. The elected config watcher
-# writes it, but a previous watcher or a restarting process can still hold the
-# write lock; a rebuild that cannot get it in time gives up rather than block
-# the control task, and the caller leaves the index stale.
+# writes it, but another process can still hold the write lock: a previous
+# watcher, or at boot a web worker that elected itself before its peers
+# registered and stays watcher until its next heartbeat. A rebuild that cannot
+# get the lock in time gives up rather than block the control task, and the
+# caller leaves the index stale.
 INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
 # Whoosh's estimate of its in-memory posting pool before spilling to disk. The
