@@ -7,10 +7,9 @@ import { useWorkflowCardActions } from "@/components/Workflow/List/useWorkflowCa
 import { useWorkflowCardBadges } from "@/components/Workflow/List/useWorkflowCardBadges";
 import { useWorkflowCardIndicators } from "@/components/Workflow/List/useWorkflowCardIndicators";
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
-import { Toast } from "@/composables/toast";
+import { useSerialTagSaves } from "@/composables/serialTagSaves";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
-import { errorMessageAsString } from "@/utils/simple-error";
 
 import GCard from "@/components/Common/GCard.vue";
 
@@ -74,45 +73,16 @@ const description = computed(() => {
     }
 });
 
-/** Tag saves run one after another, so an older tag list never lands after a newer one. */
-let tagsSaved: Promise<void> = Promise.resolve();
-let pendingTagSaves = 0;
-let lastSavedTags: string[] | undefined;
-let lastTagSaveFailed = false;
+const { saveTags } = useSerialTagSaves({
+    getTags: () => workflow.value.tags,
+    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
+    setTags: (tags) => (workflow.value.tags = tags),
+    onFailed: () => emit("refreshList", true, true),
+});
 
 function onTagsUpdate(tags: string[]) {
-    // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
-    workflow.value.tags = tags;
     const workflowId = workflow.value.id;
-    pendingTagSaves++;
-    tagsSaved = tagsSaved.then(async () => {
-        try {
-            await updateWorkflow(workflowId, { tags });
-            lastSavedTags = tags;
-            lastTagSaveFailed = false;
-        } catch (error) {
-            Toast.error(`Failed to save tags: ${errorMessageAsString(error)}`);
-            lastTagSaveFailed = true;
-        } finally {
-            pendingTagSaves--;
-            if (pendingTagSaves === 0) {
-                onTagSavesDone();
-            }
-        }
-    });
-}
-
-function onTagSavesDone() {
-    if (lastTagSaveFailed) {
-        emit("refreshList", true, true);
-    } else if (lastSavedTags && !sameTags(workflow.value.tags, lastSavedTags)) {
-        // a list load that ran during the saves can hold the tags from before them
-        workflow.value.tags = lastSavedTags;
-    }
-}
-
-function sameTags(a: string[], b: string[]) {
-    return a.length === b.length && a.every((tag, index) => tag === b[index]);
+    saveTags(tags, () => updateWorkflow(workflowId, { tags }));
 }
 
 async function onTagClick(tag: string) {
