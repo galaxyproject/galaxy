@@ -3,6 +3,7 @@ import zipfile
 from io import BytesIO
 from urllib.parse import quote
 
+import pytest
 import requests
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -310,6 +311,15 @@ class TestDatasetsApi(ApiTestCase):
         with self._different_user():
             show_response = self._get(f"datasets/{hda['id']}")
             self._assert_status_code_is(show_response, 403)
+
+    @pytest.mark.parametrize("fetch_data", [True, False])
+    def test_show_upload_permissions(self, history_id, fetch_data):
+        role_id = self.dataset_populator.user_private_role_id()
+        hda = self.dataset_populator.new_dataset(history_id, fetch_data=fetch_data, wait=True)
+        show_response = self._get(f"datasets/{hda['id']}")
+        self._assert_status_code_is(show_response, 200)
+        # New users get private data by default, so the access role is the private role as well.
+        assert show_response.json()["permissions"] == {"manage": [role_id], "access": [role_id]}
 
     @requires_admin
     def test_admin_can_update_permissions(self, history_id):
