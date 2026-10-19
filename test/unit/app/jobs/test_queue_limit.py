@@ -1,11 +1,10 @@
-from unittest.mock import Mock
-
 import pytest
 
 from galaxy.jobs import (
     JobConfigurationLimits,
     MinimalJobWrapper,
 )
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.model import (
     GalaxySession,
     Job,
@@ -56,13 +55,7 @@ def create_mock_job(app: GalaxyJobConfigApp, user_id=None, session_id=None, stat
 
 
 def create_mock_destination():
-    """Creates a mock job destination."""
-    job_destination_mock = Mock()
-    job_destination_mock.id = "one"
-    job_destination_mock.params = {}
-    job_destination_mock.runner = "test_runner"
-    job_destination_mock.tags = ["one", "two"]
-    return job_destination_mock
+    return JobDestination(id="one", runner="test_runner", tags=["one", "two"])
 
 
 def test_registered_user_limit():
