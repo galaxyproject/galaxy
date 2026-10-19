@@ -71,7 +71,8 @@ defineExpose({
 // Colours stay scoped so the galaxy-ui tokens beat any field class a consumer adds
 .g-form-input {
     color: var(--color-grey-800);
-    border-color: var(--color-grey-400);
+    // Same border as GSelect, so side-by-side fields match
+    border-color: var(--color-grey-500);
 
     &::placeholder {
         color: var(--color-grey-600);
@@ -103,7 +104,7 @@ defineExpose({
     // Keep the token colours on focus when a consumer's field class sets its own
     &:focus {
         color: var(--color-grey-800);
-        border-color: var(--color-grey-400);
+        border-color: var(--color-grey-500);
         outline: none;
     }
 
