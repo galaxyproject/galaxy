@@ -15,6 +15,7 @@ from pydantic import (
 from galaxy.tool_util.version import parse_version
 from galaxy.tools import (
     DatabaseOperationTool,
+    DataSourceTool,
     InteractiveTool,
     Tool,
     tool_types,
@@ -103,6 +104,10 @@ class ToolIndexEntry(BaseModel):
         tool_class = self._tool_class
         regular = tool_class is Tool or issubclass(tool_class, (DatabaseOperationTool, InteractiveTool))
         return "regular" if regular else "special"
+
+    @property
+    def is_data_source(self) -> bool:
+        return issubclass(self._tool_class, DataSourceTool)
 
     @property
     def _tool_class(self) -> type[Tool]:
