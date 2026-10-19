@@ -198,7 +198,7 @@ def get_fastapi_instance() -> FastAPI:
         description=("This API allows you to manage the Tool Shed repositories."),
         docs_url="/api/docs",
         redoc_url="/api/redoc",
-        tags=api_tags_metadata,
+        openapi_tags=api_tags_metadata,
         license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
     )
 
