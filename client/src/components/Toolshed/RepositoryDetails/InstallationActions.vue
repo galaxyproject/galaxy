@@ -26,7 +26,7 @@ function onReset() {
 
 <template>
     <div>
-        <GButton v-if="isBusy" size="small" loading />
+        <GButton v-if="isBusy" size="small" loading :title="localize('Working...')" />
         <GButton v-else-if="installState" color="blue" size="small" @click="() => emit('onInstall')"> Install </GButton>
         <GButton v-else-if="uninstallState" color="red" size="small" @click="() => emit('onUninstall')">
             Uninstall
