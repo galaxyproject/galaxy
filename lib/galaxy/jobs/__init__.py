@@ -13,11 +13,13 @@ import pwd
 import shlex
 import shutil
 import sys
+import threading
 import time
 import traceback
 from collections.abc import (
     Callable,
     Iterable,
+    Mapping,
 )
 from dataclasses import (
     dataclass,
@@ -367,6 +369,8 @@ class JobConfiguration(ConfiguresHandlers):
         self.default_handler_id: str | None = None
         self.handler_ready_window_size: int | None = None
         self.destinations: dict[str, list[JobDestination]] = {}
+        self._destination_tags: dict[str | None, dict[str, frozenset[str]]] = {}
+        self._destination_tags_lock = threading.Lock()
         self.default_destination_id: str | None = None
         self.tools: dict[str, list[JobToolConfiguration]] = {}
         self.tool_classes: dict[str, list[JobToolConfiguration]] = {}
@@ -488,6 +492,7 @@ class JobConfiguration(ConfiguresHandlers):
                 environment_dict["function"] = "map_tool_to_destination"
                 environment_dict["rules_module"] = "tpv.rules"
 
+        destination_tags: dict[str, set[str]] = {}
         for environment_id, environment_dict in environments_list:
             metrics = environment_dict.get("metrics")
             if metrics is None:
@@ -556,6 +561,8 @@ class JobConfiguration(ConfiguresHandlers):
                     if tag not in self.destinations:
                         self.destinations[tag] = []
                     self.destinations[tag].append(job_destination)
+                    destination_tags.setdefault(tag, set()).add(environment_id)
+        self._destination_tags = {None: {tag: frozenset(ids) for tag, ids in destination_tags.items()}}
 
         # Determine the default destination
         self.default_destination_id = self._ensure_default_set(
@@ -883,6 +890,35 @@ class JobConfiguration(ConfiguresHandlers):
         anything which might modify them.
         """
         return self.destinations.get(id_or_tag, [])
+
+    def set_dynamic_destination_tags(self, source: str, tags: Mapping[str, Iterable[str]]) -> None:
+        """Register the IDs of destinations carrying each tag, for destinations created at runtime.
+
+        Destinations returned by dynamic rules (e.g. TPV) are not in the job configuration, so tag-based concurrency
+        limits only count jobs in them once their tags are registered here. Each call replaces everything previously
+        registered by ``source``; an empty mapping removes it. Tags of destinations in the job configuration are held
+        under the source ``None``, which only parsing the job configuration sets.
+
+        :param source: Name identifying the caller, e.g. the ID of the dynamic destination that created them.
+        :param tags: Destination IDs keyed by tag.
+        """
+        # Replaced rather than mutated, so get_destination_ids_for_tag() needs no lock.
+        with self._destination_tags_lock:
+            destination_tags = dict(self._destination_tags)
+            if tags:
+                destination_tags[source] = {tag: frozenset(ids) for tag, ids in tags.items()}
+            else:
+                destination_tags.pop(source, None)
+            self._destination_tags = destination_tags
+
+    def get_destination_ids_for_tag(self, tag: str) -> set[str]:
+        """Return the IDs of all destinations carrying ``tag``, from both the job configuration and
+        set_dynamic_destination_tags().
+        """
+        ids: set[str] = set()
+        for source_tags in self._destination_tags.values():
+            ids.update(source_tags.get(tag, ()))
+        return ids
 
     def get_job_runner_plugins(self, handler_id: str):
         """Load all configured job runner plugins
@@ -1738,11 +1774,15 @@ class MinimalJobWrapper(HasResourceParameters):
             if job_destination.id
             else None
         )
+        destination_user_concurrent_jobs = self.app.job_config.limits.destination_user_concurrent_jobs
         destination_tag_limits: dict[str, int] = {}
+        destination_user_tag_limits: dict[str, int] = {}
         if job_destination.tags:
             for tag in job_destination.tags:
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
                     destination_tag_limits[tag] = tag_limit
+                if tag_limit := destination_user_concurrent_jobs.get(tag):
+                    destination_user_tag_limits[tag] = tag_limit
 
         conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
         # The job being queued must not take up a slot itself. This only matters for
@@ -1802,6 +1842,27 @@ class MinimalJobWrapper(HasResourceParameters):
                     .scalar_subquery()
                 )
                 conditions.append(destination_job_count < destination_user_limit)
+            for tag, limit in destination_user_tag_limits.items():
+                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag)
+                user_tag_count = (
+                    select(func.count(Job.id))
+                    .where(
+                        and_(
+                            Job.state.in_(
+                                [
+                                    Job.states.QUEUED,
+                                    Job.states.RUNNING,
+                                    Job.states.RESUBMITTED,
+                                ]
+                            ),
+                            Job.destination_id.in_(destination_ids),
+                            Job.user_id == job.user_id,
+                            other_jobs,
+                        )
+                    )
+                    .scalar_subquery()
+                )
+                conditions.append(user_tag_count < limit)
 
         elif anonymous_user_concurrent_jobs is not None and job.galaxy_session and job.galaxy_session.id:
             anon_job_count = (
@@ -1845,7 +1906,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if destination_tag_limits:
             for tag, limit in destination_tag_limits.items():
-                destination_ids = {destination.id for destination in self.app.job_config.get_destinations(tag)}
+                destination_ids = self.app.job_config.get_destination_ids_for_tag(tag)
                 tag_count = (
                     select(func.count(Job.id))
                     .where(

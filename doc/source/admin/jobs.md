@@ -550,7 +550,7 @@ The collection contains `<limit>`s, which have different meanings based on their
 : Optional destination on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only) (e.g. ``id="galaxy_cluster"``).
 
 ``tag``
-: Optional destinations on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only).
+: Optional destinations on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only). Destinations created at runtime by dynamic rules count toward a tag limit only if the rules register their tags with Galaxy, as [TPV](https://total-perspective-vortex.readthedocs.io/) does.
 
 If a limit tag is defined, its value must be set.  If the limit tag is not defined, the default for each type is unlimited.  The syntax for the available `type`s are:
 

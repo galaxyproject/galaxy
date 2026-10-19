@@ -1043,7 +1043,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     if tag in self.app.job_config.limits.destination_user_concurrent_jobs:
                         # Only if there's a limit defined for this tag
                         count = 0
-                        for id in [d.id for d in self.app.job_config.get_destinations(tag)]:
+                        for id in self.app.job_config.get_destination_ids_for_tag(tag):
                             # Add up the aggregate job total for this tag
                             count += count_per_id.get(id, 0)
                         if count >= self.app.job_config.limits.destination_user_concurrent_jobs[tag]:
@@ -1108,7 +1108,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     if tag in self.app.job_config.limits.destination_total_concurrent_jobs:
                         # Only if there's a limit defined for this tag
                         count = 0
-                        for id in [d.id for d in self.app.job_config.get_destinations(tag)]:
+                        for id in self.app.job_config.get_destination_ids_for_tag(tag):
                             # Add up the aggregate job total for this tag
                             count += count_per_id.get(id, 0)
                         if count >= self.app.job_config.limits.destination_total_concurrent_jobs[tag]:
