@@ -30,7 +30,14 @@ import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
-import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, findDataOption, isDataOption, itemUniqueKey } from "./types";
+import {
+    containsDataOption,
+    DEFAULT_OPTIONS_PAGE_SIZE,
+    findDataOption,
+    isDataOption,
+    isSameItem,
+    itemUniqueKey,
+} from "./types";
 import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -295,17 +302,19 @@ const formattedOptions = computed(() => {
         }
         // Populate keep-options from cache
         Object.values(keepOptions).forEach((option) => {
-            if (option.value && getSourceType(option.value) === currentSource.value) {
+            const keepValue = option.value;
+            if (keepValue && getSourceType(keepValue) === currentSource.value) {
                 // check if the same option is already in result, if yes replace it with keepOption
-                const key = itemUniqueKey(option.value);
+                const key = itemUniqueKey(keepValue);
                 const existingOptionIndex = result.findIndex((v) => v.value && itemUniqueKey(v.value) === key);
                 if (existingOptionIndex >= 0) {
                     const existingOption = result[existingOptionIndex];
-                    if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, option.value)) {
+                    if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, keepValue)) {
                         return;
                     }
                     result[existingOptionIndex] = option;
-                } else {
+                } else if (!result.some((v) => v.value && isSameItem(v.value, keepValue))) {
+                    // the server's entry for the same item knows how it maps over, so it stands in for this one
                     result.unshift(option);
                 }
             }
@@ -1017,10 +1026,8 @@ function onDragEnter(evt: DragEvent) {
                 }
                 // Check if the item is already in the current value
                 const option = toDataOption(item);
-                const isAlreadyInValue = containsDataOption(
-                    currentValue.value ?? [],
-                    option && (findExistingOption(option) ?? option),
-                );
+                const listedOption = option && (findExistingOption(option) ?? option);
+                const isAlreadyInValue = containsDataOption(currentValue.value ?? [], listedOption);
                 if (isAlreadyInValue) {
                     highlightingState = "warning";
                     $emit("alert", `${getNameForItem(item)} is already selected.`);

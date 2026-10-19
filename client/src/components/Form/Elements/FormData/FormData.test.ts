@@ -582,18 +582,6 @@ describe("FormData", () => {
             expect(selectedValues.at(0).text()).toContain("9: nested (one job per list)");
         });
 
-        it("resolves a value without map_over_type to the direct entry", async () => {
-            const wrapper = createTarget({
-                type: "data_collection",
-                value: { values: [{ id: "hdca9", src: "hdca" }] },
-                options: nestedOptions,
-            });
-            expect(wrapper.emitted()!.input![0]![0]).toEqual(directValue);
-            expect(wrapper.emitted()!.input!.length).toEqual(1);
-            await wrapper.vm.$nextTick();
-            expect(wrapper.find(SELECTED_VALUE).text()).toBe("9: nested");
-        });
-
         it("resolves a value with an unlisted map-over type to the direct entry", async () => {
             const wrapper = createTarget({
                 type: "data_collection",
@@ -632,6 +620,67 @@ describe("FormData", () => {
                 "9: nested (one job per dataset)",
                 "10: pairs (one job per dataset pair)",
             ]);
+        });
+    });
+
+    describe("dropped collection mapped over by the server", () => {
+        const dropped = { id: "hdca7", hid: 7, name: "dropped", src: "hdca", tags: [] };
+
+        function dragCollection(wrapper: ReturnType<typeof createTarget>, collectionType: string, event: string) {
+            eventStore.setDragData({
+                id: "hdca7",
+                hid: 7,
+                name: "dropped",
+                history_content_type: "dataset_collection",
+                collection_type: collectionType,
+            });
+            dispatchEvent(wrapper, event);
+        }
+
+        it.each([
+            ["a multiple dataset input", { multiple: true }, "list:list", "list", "7: dropped"],
+            [
+                "a collection input",
+                { type: "data_collection", collectionTypes: ["list", "list:list"] },
+                "list:list:list",
+                "list:list",
+                "7: dropped (one job per list:list)",
+            ],
+        ])(
+            "appears once on %s after the server lists it",
+            async (_, targetProps, collectionType, mapOverType, label) => {
+                const wrapper = createTarget({ ...targetProps, value: null, options: { hdca: [] } });
+                dragCollection(wrapper, collectionType, "dragenter");
+                dragCollection(wrapper, collectionType, "drop");
+                await wrapper.setProps({ value: wrapper.emitted()!.input!.at(-1)![0] });
+                await wrapper.setProps({ options: { hdca: [{ ...dropped, map_over_type: mapOverType }] } });
+                const labels = wrapper.findAll(SELECT_OPTIONS).wrappers.map((element) => element.text());
+                expect(labels).toEqual([label]);
+                expect(wrapper.emitted()!.input!.at(-1)![0]).toEqual({
+                    batch: true,
+                    product: false,
+                    values: [{ id: "hdca7", src: "hdca", map_over_type: mapOverType }],
+                });
+            },
+        );
+
+        it("selects the listed entry on drop and warns when it is dragged again", async () => {
+            const wrapper = createTarget({
+                value: null,
+                multiple: true,
+                options: { hdca: [{ ...dropped, map_over_type: "list" }] },
+            });
+            dragCollection(wrapper, "list:list", "dragenter");
+            dragCollection(wrapper, "list:list", "drop");
+            const value = wrapper.emitted()!.input!.at(-1)![0];
+            expect(value).toEqual({
+                batch: true,
+                product: false,
+                values: [{ id: "hdca7", src: "hdca", map_over_type: "list" }],
+            });
+            await wrapper.setProps({ value });
+            dragCollection(wrapper, "list:list", "dragenter");
+            expect(wrapper.emitted()!.alert!.at(-1)![0]).toBe("dropped is already selected.");
         });
     });
 
