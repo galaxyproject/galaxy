@@ -121,12 +121,12 @@ describe("filtering", () => {
             expect(filters[3][1]).toBe("2021-01-01");
             expect(filters[4][0]).toBe("update_time_lt");
             expect(filters[4][1]).toBe("2022-01-01");
-            // state and extension are equals (`-eq`) keys, so their case is preserved even
-            // unquoted; filterTexts[0] happens to be lowercase already, filterTexts[1] is not
+            // state and extension use equals() as their handler, but aren't dedicated `_eq`
+            // sibling keys, so they still fold to lower case when unquoted like any other key
             expect(filters[5][0]).toBe("state");
-            expect(filters[5][1]).toBe(i === 0 ? "success" : "sUccEss");
+            expect(filters[5][1]).toBe("success");
             expect(filters[6][0]).toBe("extension");
-            expect(filters[6][1]).toBe(i === 0 ? "ext" : "EXT");
+            expect(filters[6][1]).toBe("ext");
             expect(filters[7][0]).toBe("tag");
             expect(filters[7][1]).toBe("first");
             expect(filters[8][0]).toBe("deleted");
@@ -150,9 +150,10 @@ describe("filtering", () => {
             expect(queryDict["hid-lt"]).toBe("100");
             expect(queryDict["create_time-gt"]).toBe(1609459200);
             expect(queryDict["update_time-lt"]).toBe(1640995200);
-            // state and extension are equals keys, so case is preserved even unquoted
-            expect(queryDict["state-eq"]).toBe(i === 0 ? "success" : "sUccEss");
-            expect(queryDict["extension-eq"]).toBe(i === 0 ? "ext" : "EXT");
+            // state and extension use equals() as their handler, but aren't dedicated `_eq`
+            // sibling keys, so they still fold to lower case when unquoted like any other key
+            expect(queryDict["state-eq"]).toBe("success");
+            expect(queryDict["extension-eq"]).toBe("ext");
             expect(queryDict["tag"]).toBe("first");
             expect(queryDict["deleted"]).toBe(false);
             expect(queryDict["visible"]).toBe(true);
@@ -242,12 +243,10 @@ describe("filtering", () => {
         };
         // iterate through filterTexts and compare with parsedFilters. filterTexts[0] quotes
         // `visible:'TRUE'`, so its parsed value keeps the original case; filterTexts[1] writes
-        // `state`/`extension` (equals keys) in mixed case, which is also preserved unquoted.
+        // `state`/`extension` in mixed case unquoted, which still folds to lower case since
+        // neither is a dedicated `_eq` sibling key.
         filterTexts.forEach((filterText, i) => {
-            const expected =
-                i === 0
-                    ? { ...parsedFilters, visible: "TRUE" }
-                    : { ...parsedFilters, state: "sUccEss", extension: "EXT" };
+            const expected = i === 0 ? { ...parsedFilters, visible: "TRUE" } : parsedFilters;
             expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(expected);
         });
     });
@@ -314,9 +313,9 @@ describe("quoted filter values (case preserved, grouped, not routed to _eq)", ()
         expect(F.getQueryString("name:grep")).toBe("q=name-contains&qv=grep");
     });
 
-    test("state is itself an equals (`-eq`) key, so case is preserved quoted or not", () => {
+    test("state uses equals() as its handler, but is not a dedicated `_eq` sibling key, so it follows the normal quoted/unquoted case rule", () => {
         expect(F.getQueryDict("state:'OK'")).toEqual({ "state-eq": "OK" });
-        expect(F.getQueryDict("state:OK")).toEqual({ "state-eq": "OK" });
+        expect(F.getQueryDict("state:OK")).toEqual({ "state-eq": "ok" });
     });
 
     test("getFilterText re-serializes a quoted single-word value unquoted", () => {

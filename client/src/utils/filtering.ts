@@ -557,9 +557,12 @@ export default class Filtering<T> {
         return this.validFilters[`${key}_eq`] !== undefined ? `${key}_eq` : key;
     }
 
-    /** Whether `key`'s own handler resolves to a backend equals match (`-eq`) query. */
+    /** Whether `key` is an explicit exact-match sibling key (e.g. `tool_id_eq`), as opposed to a
+     * key whose own handler merely happens to use an equals comparison (e.g. `state`). Only the
+     * former should keep its case: the latter still needs folding to match backend values.
+     */
     private isEqualsKey(key: string): boolean {
-        return this.validFilters[key]?.handler.query.endsWith("-eq") ?? false;
+        return key.endsWith("_eq") && this.validFilters[key] !== undefined;
     }
 
     /** Build a text filter from filters {filter: "value", ...} => "filter:value"
