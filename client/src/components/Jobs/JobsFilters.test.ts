@@ -23,6 +23,10 @@ describe("jobsFilterParams", () => {
             expect(jobsFilterParams("state:ok")).toEqual({ state: ["ok"] });
         });
 
+        it("lowercases an unquoted mixed-case state value to match the backend's stored values", () => {
+            expect(jobsFilterParams("state:OK")).toEqual({ state: ["ok"] });
+        });
+
         it("pulls update_time range into its own params, out of search", () => {
             expect(jobsFilterParams("update_time>'2024-01-01' update_time<'2024-02-01'")).toEqual({
                 date_range_min: "2024-01-01",
