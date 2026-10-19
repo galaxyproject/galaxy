@@ -6,6 +6,7 @@ from datetime import (
     datetime,
     timezone,
 )
+from types import MethodType
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -14,6 +15,7 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
+from galaxy.app import GalaxyManagerApplication
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -713,6 +715,19 @@ def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
     box._store.remove_index_entry.assert_called_once_with("doomed")
     assert calls == [("reload_tool_source_cache", {"noop_self": True})]
     assert "doomed" not in box._tools_by_id
+
+
+def test_remove_tool_by_id_leaves_search_index_to_config_watcher(monkeypatch):
+    box = _registry_box()
+    box._tool_index = ToolIndex()
+    entry = _entry(id="doomed")
+    box._tool_index.add_entry(entry)
+    box._register_cached_entry(entry)
+    box.app.writes_tool_search_index = False
+    box.app.reindex_tool_search = MethodType(GalaxyManagerApplication.reindex_tool_search, box.app)
+    monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: None)
+    box.remove_tool_by_id("doomed")
+    box.app.toolbox_search.build_index.assert_not_called()
 
 
 def test_remove_tool_by_id_persists_shared_cached_index_before_mutating(monkeypatch, tmp_path):
