@@ -52,14 +52,14 @@ const styleClasses = computed(() => {
         &:deep(> :not(.g-button):not(:last-child) .g-button) {
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
-            border-right: 0;
+            // Width only: the shorthand would also reset the colour to currentcolor
+            border-right-width: 0;
         }
 
         // Keeps the pressed button's own right border, drawn over the next button's left border
         &:deep(> .g-button.g-pressed:not(:last-child)),
         &:deep(> :not(.g-button):not(:last-child) .g-button.g-pressed) {
             margin-right: -1px;
-            border-right-style: solid;
             border-right-width: 1px;
         }
     }
@@ -77,14 +77,13 @@ const styleClasses = computed(() => {
         &:deep(> :not(.g-button):not(:last-child) .g-button) {
             border-bottom-left-radius: 0;
             border-bottom-right-radius: 0;
-            border-bottom: 0;
+            border-bottom-width: 0;
         }
 
         // Keeps the pressed button's own bottom border, drawn over the next button's top border
         &:deep(> .g-button.g-pressed:not(:last-child)),
         &:deep(> :not(.g-button):not(:last-child) .g-button.g-pressed) {
             margin-bottom: -1px;
-            border-bottom-style: solid;
             border-bottom-width: 1px;
         }
     }
