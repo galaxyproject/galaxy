@@ -20,7 +20,7 @@ describe("MarkdownEditor", () => {
     it("offers the editor choice as named toggle buttons with Text selected", () => {
         const wrapper = mountEditor();
         const group = wrapper.find("[role=radiogroup]");
-        expect(group.attributes("aria-label")).toBe("Editor");
+        expect(group.attributes("aria-label")).toBe("Editor mode");
         // inline like a button group, so the help button stays on the same row
         expect(group.classes()).toContain("d-inline-block");
         const buttons = group.findAll(".g-radio-button");

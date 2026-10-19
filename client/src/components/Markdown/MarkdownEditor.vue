@@ -13,11 +13,11 @@
                             v-model="editor"
                             v-g-tooltip.hover.bottom
                             buttons
-                            aria-label="Editor"
+                            aria-label="Editor mode"
                             button-variant="outline-blue"
                             class="d-inline-block align-middle"
                             size="small"
-                            title="Editor"
+                            title="Editor mode"
                             :options="editorOptions" />
                         <slot name="buttons" />
                         <GButton v-g-tooltip.hover.bottom title="Help" transparent icon-only @click="onHelp">
