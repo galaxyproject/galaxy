@@ -226,7 +226,6 @@ class ToolPanelManager:
                         load_panel_dict=True,
                         guid=config_elem.get("guid"),
                     )
-                self.app.reindex_tool_search()
             else:
                 # Eager path: append + load each elem, then persist the
                 # updated shed_tool_conf.

@@ -74,12 +74,14 @@ class DataManagers(DataManagersInterface):
             if not tool_path:
                 tool_path = "."
             self.tool_path = tool_path
-        for data_manager_elem in root.findall("data_manager"):
-            if not self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path):
-                # Wasn't able to load manager, could happen when galaxy is managed by planemo.
-                # Fall back to loading relative to the data_manager_conf.xml file
-                tool_path = os.path.dirname(xml_filename)
-                self.load_manager_from_elem(data_manager_elem, tool_path=tool_path)
+        # The cached toolbox persists index entries it corrects while data managers load; write them once.
+        with self.app.toolbox.batch_index_writes():
+            for data_manager_elem in root.findall("data_manager"):
+                if not self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path):
+                    # Wasn't able to load manager, could happen when galaxy is managed by planemo.
+                    # Fall back to loading relative to the data_manager_conf.xml file
+                    tool_path = os.path.dirname(xml_filename)
+                    self.load_manager_from_elem(data_manager_elem, tool_path=tool_path)
 
     def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True) -> Optional["DataManager"]:
         try:
