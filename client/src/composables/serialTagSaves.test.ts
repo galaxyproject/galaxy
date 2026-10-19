@@ -39,6 +39,7 @@ describe("useSerialTagSaves", () => {
 
         firstSave.resolve(undefined);
         await flushPromises();
+        expect(card.tags).toEqual(["first", "second"]);
         expect(saveSecond).toHaveBeenCalledTimes(1);
 
         secondSave.resolve(undefined);
