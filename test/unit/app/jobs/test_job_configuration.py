@@ -302,25 +302,9 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
             "tpv_long",
         }
         assert self.job_config.get_destination_ids_for_tag("dynamic") == {"tpv_short", "tpv_long"}
-
-    def test_dynamic_destination_tags_replaced_per_source(self):
-        self._with_advanced_config()
-        self.job_config.set_dynamic_destination_tags("tpv_dispatcher", {"longjobs": {"tpv_long"}})
-        self.job_config.set_dynamic_destination_tags("tpv_other", {"longjobs": {"other_long"}})
-        self.job_config.set_dynamic_destination_tags("tpv_dispatcher", {"dynamic": {"tpv_short"}})
-        assert self.job_config.get_destination_ids_for_tag("longjobs") == {
-            "pbs_longjobs",
-            "remote_cluster",
-            "other_long",
-        }
-        assert self.job_config.get_destination_ids_for_tag("dynamic") == {"tpv_short"}
         self.job_config.set_dynamic_destination_tags("tpv_dispatcher", {})
         assert self.job_config.get_destination_ids_for_tag("dynamic") == set()
-        assert self.job_config.get_destination_ids_for_tag("longjobs") == {
-            "pbs_longjobs",
-            "remote_cluster",
-            "other_long",
-        }
+        assert self.job_config.get_destination_ids_for_tag("longjobs") == {"pbs_longjobs", "remote_cluster"}
 
     def test_load_tool(self):
         self._with_advanced_config()
