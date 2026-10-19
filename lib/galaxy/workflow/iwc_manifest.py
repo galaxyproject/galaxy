@@ -51,7 +51,7 @@ def download_manifest(timeout: float) -> list[dict[str, Any]]:
     Intentionally cache-free: the parsed manifest is ~16 MB, so callers that
     only need a derived projection of it (see ``galaxy.workflow.curated``) can
     drop it as soon as they are done instead of pinning it in every process
-    that happens to touch this module. ``galaxy.agents.iwc`` layers its TTL
+    that happens to touch this module. ``galaxy.workflow.iwc`` layers its TTL
     cache on top of this.
     """
     return fetch_manifest(timeout)[0]

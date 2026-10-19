@@ -17,6 +17,7 @@ from pydantic_ai import (
     RunContext,
 )
 
+from galaxy.gtn import GTNSearchDB
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
@@ -30,7 +31,6 @@ from .base import (
     GalaxyAgentDependencies,
     normalize_llm_text,
 )
-from .gtn import GTNSearchDB
 
 log = logging.getLogger(__name__)
 

@@ -23,8 +23,6 @@ from sqlalchemy import (
 )
 
 from galaxy import model
-from galaxy.agents import iwc
-from galaxy.agents.gtn import GTNSearchDB
 from galaxy.celery import (
     celery_app,
     galaxy_task,
@@ -33,6 +31,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.gtn import GTNSearchDB
 from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
@@ -94,7 +93,10 @@ from galaxy.util import (
     now,
 )
 from galaxy.util.custom_logging import get_logger
-from galaxy.workflow import curated
+from galaxy.workflow import (
+    curated,
+    iwc,
+)
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
 log = get_logger(__name__)

@@ -1,6 +1,6 @@
 """Admin CLI for the GTN search database.
 
-Run as ``python -m galaxy.agents.gtn --refresh`` from within a Galaxy
+Run as ``python -m galaxy.gtn --refresh`` from within a Galaxy
 virtualenv to force-redownload the published database. The CLI resolves
 ``gtn_database_path`` from Galaxy configuration unless ``--path`` is supplied.
 """
