@@ -12,8 +12,12 @@ from galaxy.util.hash_util import md5_hash_str
 RAW_CACHED_JSON = dict[str, Any]
 
 
+# bump when tools are parsed into the cached models differently, without a change to the models' schema
+MODEL_PARSING_VERSION = 1
+
+
 def hash_model(model_class: type[BaseModel]) -> str:
-    return md5_hash_str(json.dumps(model_class.model_json_schema()))
+    return md5_hash_str(json.dumps([model_class.model_json_schema(), MODEL_PARSING_VERSION]))
 
 
 MODEL_HASHES: dict[type[BaseModel], str] = {}

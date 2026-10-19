@@ -14,6 +14,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from contextlib import nullcontext
 from datetime import datetime
 from typing import (
     Any,
@@ -21,7 +22,10 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from urllib.parse import unquote_plus
+from urllib.parse import (
+    unquote_plus,
+    urlencode,
+)
 from uuid import UUID
 
 import webob.exc
@@ -149,6 +153,10 @@ from galaxy.tool_util_models.parameters import (
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
     JavascriptRequirement,
+)
+from galaxy.tool_util_models.untrusted import (
+    is_loading_untrusted_tools,
+    loading_untrusted_tools,
 )
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
@@ -427,6 +435,16 @@ def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | Non
     else:
         action_class = tool_types.get(tool_type, Tool).default_tool_action
     return action_class.produces_real_jobs
+
+
+def tool_runner_link(url_prefix: str, tool_id: str, is_data_source: bool) -> str:
+    """Return the panel link for a tool; data sources go through the redirect.
+
+    Built from ``galaxy_url_prefix`` rather than routes' ``url_for`` so the
+    link does not depend on per-request state and can be cached across requests.
+    """
+    path = "tool_runner/data_source_redirect" if is_data_source else "tool_runner"
+    return f"{url_prefix.rstrip('/')}/{path}?{urlencode({'tool_id': tool_id})}"
 
 
 REQUIRE_FULL_DIRECTORY = {
@@ -1276,6 +1294,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.credentials: list[CredentialsRequirement] | None = None
         self._tests: str | None = None
         self._tests_parsed: bool = False
+        # tests are parsed later, in the same trust context as the tool itself
+        self._loaded_untrusted = is_loading_untrusted_tools()
         self.parameters: list[ToolParameterT] | None = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1679,7 +1699,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         # seconds-long) validation cost on first access rather than at
         # construction.
         if not self._tests_parsed and self.app.is_webapp:
-            self.parse_tests()
+            with loading_untrusted_tools() if self._loaded_untrusted else nullcontext():
+                self.parse_tests()
         if self._tests:
             return [ToolTestDescription(d) for d in json.loads(self._tests)]
         return None
@@ -2912,10 +2933,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         panel_section_id, panel_section_name = self.get_panel_section()
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
         regular_form = self.__class__ == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
-        if isinstance(self, DataSourceTool):
-            link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
-        else:
-            link = self.app.url_for(controller="tool_runner", tool_id=self.id)
+        assert self.id, "Tool id must be set to build the panel entry"
+        link = tool_runner_link(self.app.config.galaxy_url_prefix, self.id, isinstance(self, DataSourceTool))
         kwargs: dict[str, Any] = self._dictify_view_keys()
         kwargs.update(
             icon=self.icon,

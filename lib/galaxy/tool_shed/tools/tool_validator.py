@@ -10,6 +10,7 @@ from galaxy.tool_shed.util import (
 )
 from galaxy.tool_util.fetcher import ToolLocationFetcher
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util_models.untrusted import loading_untrusted_tools
 from galaxy.tools import (
     create_tool_from_source,
     parameters,
@@ -84,13 +85,14 @@ class ToolValidator:
             tool_location_fetcher=ToolLocationFetcher(),
         )
         try:
-            tool = create_tool_from_source(
-                config_file=full_path,
-                app=self.app,
-                tool_source=tool_source,
-                repository_id=repository_id,
-                allow_code_files=False,
-            )
+            with loading_untrusted_tools():
+                tool = create_tool_from_source(
+                    config_file=full_path,
+                    app=self.app,
+                    tool_source=tool_source,
+                    repository_id=repository_id,
+                    allow_code_files=False,
+                )
             valid = True
             error_message = None
         except KeyError as e:
