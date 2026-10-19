@@ -70,8 +70,8 @@ from galaxy.agents.custom_tool import (
     CritiqueReport,
     ToolEdit,
 )
+from galaxy.agents.registry import build_default_registry
 from galaxy.agents.tools import SimplifiedToolRecommendationResult
-from galaxy.managers.agent_registry import build_default_registry
 from galaxy.managers.agents import AgentService
 from galaxy.tool_util.deps.mulled.recommend import (
     ContainerRecommendation,

@@ -16,10 +16,8 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
 from galaxy import util
-from galaxy.managers.agent_registry import (
-    AgentRegistry,
-    build_registry as build_agent_registry,
-)
+from galaxy.agents.factory import build_registry as build_agent_registry
+from galaxy.agents.registry import AgentRegistry
 from galaxy.managers.agents import AgentService
 from galaxy.managers.jobs import JobManager as JobQueryManager
 from galaxy.structured_app import MinimalApp

@@ -11,13 +11,13 @@ from typing import (
 
 import yaml
 
-from galaxy.managers.agent_registry import AgentRegistry
 from .base import (
     ActionSuggestion,
     AgentResponse,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
+from .registry import AgentRegistry
 
 
 class StaticAgent(BaseGalaxyAgent):
