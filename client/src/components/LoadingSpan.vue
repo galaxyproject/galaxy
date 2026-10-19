@@ -5,7 +5,7 @@
 -->
 <template>
     <span :role="insideLiveRegion ? null : 'status'">
-        <span :class="spinnerClasses" title="loading"></span>
+        <span :class="spinnerClasses" title="loading" aria-hidden="true"></span>
         <span v-if="!spinnerOnly" class="loading-message" data-description="loading message"> {{ message }}... </span>
         <span v-else class="sr-only">{{ message }}...</span>
     </span>

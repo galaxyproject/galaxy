@@ -13,6 +13,12 @@ describe("LoadingSpan", () => {
         expect(wrapper.text()).toBe("Loading datasets...");
     });
 
+    it("hides the spinner icon from assistive technology", () => {
+        const wrapper = mount(LoadingSpan);
+
+        expect(wrapper.get(".loading-icon").attributes("aria-hidden")).toBe("true");
+    });
+
     it("keeps a visually hidden message when spinner-only", () => {
         const wrapper = mount(LoadingSpan, { props: { spinnerOnly: true } });
 
