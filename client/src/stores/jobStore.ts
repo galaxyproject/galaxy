@@ -82,6 +82,8 @@ export const useJobStore = defineStore("jobStore", () => {
     /** Merges partial job data (e.g. from a jobs list response) into the cache. */
     function updateJob(id: string, updatedData: Partial<ShowFullJobResponse>) {
         storedJobs.value[id] = mergeJob(updatedData as ShowFullJobResponse, storedJobs.value[id]);
+        markUsed(id);
+        evictIfOverCap();
     }
 
     const sortedStoredJobs = computed(() => {
