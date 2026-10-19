@@ -89,7 +89,9 @@ function onDoNotShowAgain() {
             boundary="window">
             <div class="d-flex flex-column flex-gapx-1">
                 <span>{{ localize("Background operations are running. Click this spinner to open status.") }}</span>
-                <GLink @click="onDoNotShowAgain">{{ localize("Do not show this again") }}</GLink>
+                <GLink class="align-self-start" @click="onDoNotShowAgain">{{
+                    localize("Do not show this again")
+                }}</GLink>
             </div>
         </GPopover>
     </div>
