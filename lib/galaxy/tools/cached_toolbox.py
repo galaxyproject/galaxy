@@ -757,11 +757,13 @@ class CachedToolBox(ToolBox):
         instead of a store query per tool — on a CVMFS-scale deployment the
         per-tool round trips dominated boot time.
 
-        Confs routed to read-only stores are not walked at all: the
-        populator can't write those stores, so a miss there could never be
-        healed — their coverage is the trust/schema gate's job
-        (``index_is_fresh``), and any genuinely missing tool falls through
-        to the eager parse in ``create_tool``.
+        Confs routed to read-only stores are not walked at all: their
+        coverage is the trust/schema gate's job (``index_is_fresh``). Tools
+        such a conf lists that its store lacks (shed installs since it was
+        published) reach the default store through the install's partial
+        populate, or through the full populate a conf change triggers; one
+        that slips past both falls through to the eager parse in
+        ``create_tool``.
         """
         if self._store is None:
             return False

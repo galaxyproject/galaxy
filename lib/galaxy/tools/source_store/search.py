@@ -52,9 +52,10 @@ log = logging.getLogger(__name__)
 # fingerprint differs from the corpus it is given.
 _DOC_HASH_FIELD = "doc_hash"
 
-# Galaxy processes on a host share ``tool_search_index_dir`` and index the same
-# toolbox into it, so a rebuild that cannot get the write lock in time can be
-# skipped: the process holding the lock is writing the same documents.
+# Galaxy processes share ``tool_search_index_dir``. The elected config watcher
+# writes it, but a previous watcher or a restarting process can still hold the
+# write lock; a rebuild that cannot get it in time gives up rather than block
+# the control task, and the caller leaves the index stale.
 INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
 # Whoosh's estimate of its in-memory posting pool before spilling to disk. The
@@ -350,9 +351,9 @@ class ToolWhooshIndex:
         # Tokenising is the expensive part of a build, and a shed install
         # changes a handful of documents in a corpus of thousands, so compare
         # against the hashes stored with the indexed documents and rewrite only
-        # the differences. Every process reindexes after a reload broadcast and
-        # writes this directory; the committed documents are the one record of
-        # what it holds.
+        # the differences. A previous config watcher may have written this
+        # directory too, so the committed documents are the one record of what
+        # it holds.
         ix = self._open()
         with ix.reader() as reader:
             if _stored_doc_hashes(reader) == doc_hashes:
