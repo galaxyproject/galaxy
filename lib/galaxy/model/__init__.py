@@ -5882,8 +5882,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         use_cached_job=False,
     ):
         """
-        Return converted dataset(s) if they exist, along with a dict of dependencies.
-        If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
+        Return the converted dataset, starting the conversion (and any conversions it
+        depends on) if it does not exist yet. If unconvertible, raise exception.
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
@@ -5908,14 +5908,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 dep_dataset = self.get_converted_dataset(
                     trans, dependency, target_context=target_context, history=history, use_cached_job=use_cached_job
                 )
-                if dep_dataset is None:
-                    # None means converter is running first time
-                    return None
-                elif dep_dataset.state == Job.states.ERROR:
+                if dep_dataset.state == Job.states.ERROR:
                     raise ConverterDependencyException(f"A dependency ({dependency}) was in an error state.")
-                elif dep_dataset.state != Job.states.OK:
-                    # Pending
-                    return None
+                # A pending dependency is fine, the converter job waits for its inputs.
                 deps[dependency] = dep_dataset
         except NoConverterException:
             raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")

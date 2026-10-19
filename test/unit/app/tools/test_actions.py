@@ -192,30 +192,37 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         assert "__index__" not in context
         assert convert.call_args.kwargs["use_cached_job"] is True
 
-    def test_dependency_conversion_receives_target_context(self) -> None:
+    def test_conversion_queued_on_pending_dependency_conversion(self) -> None:
         source = self.__add_dataset()
         source.extension = "interval"
-        target_history = model.History()
-        target_context = {"__job_resource": {"__job_resource__select": "yes", "processors": 4}}
-        converted = {"bgzip": self.__add_dataset(), "tabix": self.__add_dataset()}
+        converted = {"bgzip": self.__add_dataset(state="queued"), "tabix": self.__add_dataset(state="queued")}
+        incoming = {"source": source, "__job_resource": {"__job_resource__select": "yes", "processors": 4}}
+        self._init_tool(
+            '<tool id="tabix_input" name="Tabix input" version="1.0"><command>echo</command>'
+            '<inputs><param name="source" type="data" format="tabix"/></inputs></tool>'
+        )
 
         def convert_dataset(trans, original_dataset, target_type, **kwargs):
             return {"output": converted[target_type]}
 
         with (
             patch.dict(self.app.datatypes_registry.converter_deps, {"interval": {"tabix": ["bgzip"]}}),
+            patch.object(source, "find_conversion_destination", return_value=(False, "tabix", None)),
             patch.object(source, "get_converter_types", return_value={"bgzip": {}, "tabix": {}}),
             patch.object(source.datatype, "convert_dataset", side_effect=convert_dataset) as convert,
         ):
-            result = source.get_converted_dataset(
-                self.trans, "tabix", target_context=target_context, history=target_history
+            input_datasets, _ = self.action._collect_input_datasets(
+                self.tool, incoming, cast(ProvidesHistoryContext, self.trans), self.history, current_user_roles=[]
             )
 
-        assert result is converted["tabix"]
-        assert [c.args[2] for c in convert.call_args_list] == ["bgzip", "tabix"]
-        for c in convert.call_args_list:
-            assert c.kwargs["target_context"] is target_context
-            assert c.kwargs["history"] is target_history
+        assert input_datasets["source"] is converted["tabix"]
+        bgzip_call, tabix_call = convert.call_args_list
+        assert bgzip_call.args[2] == "bgzip"
+        assert tabix_call.args[2] == "tabix"
+        assert tabix_call.kwargs["deps"] == {"bgzip": converted["bgzip"]}
+        for call in (bgzip_call, tabix_call):
+            assert call.kwargs["target_context"] is incoming
+            assert call.kwargs["history"] is self.history
 
     def test_output_created(self):
         _, output = self._simple_execute()
@@ -266,7 +273,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
     def __add_dataset(self, state="ok"):
         hda = model.HistoryDatasetAssociation()
         hda.dataset = model.Dataset()
-        hda.dataset.state = "ok"
+        hda.dataset.state = state
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
         self.history.add_dataset(hda)
         session = self.app.model.context
