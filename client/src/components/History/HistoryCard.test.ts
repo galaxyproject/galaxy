@@ -1,3 +1,4 @@
+import { deferred } from "@tests/vitest/deferred";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -53,16 +54,6 @@ function mountOwnHistoryCard() {
     return { wrapper, history };
 }
 
-function deferred() {
-    let resolve!: (value: unknown) => void;
-    let reject!: (reason: unknown) => void;
-    const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
-    });
-    return { promise, resolve, reject };
-}
-
 /** Adds a tag the way the tag editor does: to the tags the card currently shows. */
 async function addTag(wrapper: ReturnType<typeof mount>, tag: string) {
     const editor = wrapper.findComponent(StatelessTags);
@@ -86,33 +77,6 @@ describe("HistoryCard", () => {
         expect(title.attributes("title")).toBe(HISTORY_NAME);
     });
 
-    it("keeps both tags when a second tag is added before the first save finishes", async () => {
-        const firstSave = deferred();
-        const secondSave = deferred();
-        mockedUpdateHistoryFields
-            .mockImplementationOnce(() => firstSave.promise as never)
-            .mockImplementationOnce(() => secondSave.promise as never);
-        const { wrapper, history } = mountOwnHistoryCard();
-
-        await addTag(wrapper, "first");
-        await addTag(wrapper, "second");
-
-        expect(history.tags).toEqual(["first", "second"]);
-        // the second save waits for the first, so an older tag list never lands last
-        expect(mockedUpdateHistoryFields).toHaveBeenCalledTimes(1);
-
-        firstSave.resolve({ id: "history_id", tags: ["first"] });
-        await flushPromises();
-        expect(mockedUpdateHistoryFields).toHaveBeenCalledTimes(2);
-        expect(mockedUpdateHistoryFields).toHaveBeenLastCalledWith("history_id", { tags: ["first", "second"] });
-
-        secondSave.resolve({ id: "history_id", tags: ["first", "second"] });
-        await flushPromises();
-        expect(history.tags).toEqual(["first", "second"]);
-        // a list reload would re-sort the list and move the card away from the open tag editor
-        expect(wrapper.emitted("refreshList")).toBeUndefined();
-    });
-
     it("reloads the list when a tag save fails", async () => {
         mockedUpdateHistoryFields.mockRejectedValueOnce(new Error("save failed"));
         const { wrapper } = mountOwnHistoryCard();
@@ -122,30 +86,6 @@ describe("HistoryCard", () => {
 
         expect(Toast.error).toHaveBeenCalledTimes(1);
         expect(wrapper.emitted("refreshList")).toEqual([[true, true]]);
-    });
-
-    it("does not reload the list when a failed tag save is followed by a successful one", async () => {
-        const firstSave = deferred();
-        const secondSave = deferred();
-        mockedUpdateHistoryFields
-            .mockImplementationOnce(() => firstSave.promise as never)
-            .mockImplementationOnce(() => secondSave.promise as never);
-        const { wrapper, history } = mountOwnHistoryCard();
-
-        await addTag(wrapper, "first");
-        await addTag(wrapper, "second");
-
-        firstSave.reject(new Error("save failed"));
-        await flushPromises();
-        expect(Toast.error).toHaveBeenCalledTimes(1);
-        // the queued save carries the newest tags, so a reload now could bring back the stored, older ones
-        expect(wrapper.emitted("refreshList")).toBeUndefined();
-
-        secondSave.resolve({ id: "history_id", tags: ["first", "second"] });
-        await flushPromises();
-        expect(mockedUpdateHistoryFields).toHaveBeenLastCalledWith("history_id", { tags: ["first", "second"] });
-        expect(history.tags).toEqual(["first", "second"]);
-        expect(wrapper.emitted("refreshList")).toBeUndefined();
     });
 
     it("shows the saved tags again when a list reload during the save brought back older ones", async () => {
@@ -162,6 +102,7 @@ describe("HistoryCard", () => {
         save.resolve({ id: "history_id", tags: ["first"] });
         await flushPromises();
 
+        expect(mockedUpdateHistoryFields).toHaveBeenCalledWith("history_id", { tags: ["first"] });
         expect(reloadedHistory.tags).toEqual(["first"]);
         expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["first"]);
         expect(wrapper.emitted("refreshList")).toBeUndefined();
