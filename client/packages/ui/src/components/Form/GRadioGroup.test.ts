@@ -203,6 +203,26 @@ describe("GRadioGroup", () => {
             expect(wrapper.attributes("aria-labelledby")).toBe(legend.attributes("id"));
         });
 
+        it("renders the description under the options and links it with aria-describedby", () => {
+            const { wrapper } = mountWithModel(undefined, {
+                label: "Format",
+                description: "Pick one.",
+                options: OPTIONS,
+            });
+
+            const description = wrapper.find("fieldset > small");
+            expect(description.text()).toBe("Pick one.");
+            expect(wrapper.attributes("aria-describedby")).toBe(description.attributes("id"));
+            expect(wrapper.attributes("description")).toBeUndefined();
+        });
+
+        it("renders no description and no aria-describedby by default", () => {
+            const { wrapper } = mountWithModel(undefined, { options: OPTIONS });
+
+            expect(wrapper.find("fieldset > small").exists()).toBe(false);
+            expect(wrapper.attributes("aria-describedby")).toBeUndefined();
+        });
+
         it("puts legendClass on the legend, not on the group", () => {
             const { wrapper } = mountWithModel(undefined, { label: "Format", legendClass: "pb-0", options: OPTIONS });
 

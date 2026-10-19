@@ -33,21 +33,17 @@
         </Heading>
         <GCollapse v-model="advancedShow" class="mt-2">
             <BCard>
-                <div v-if="toolConfigs.length > 1" class="mb-3">
-                    <GRadioGroup
-                        v-model="toolConfig"
-                        stacked
-                        aria-describedby="repository-tool-config-description"
-                        label="Tool Configuration:">
-                        <GRadio v-for="filename in toolConfigs" :key="filename" :value="filename">
-                            {{ filename }}
-                        </GRadio>
-                    </GRadioGroup>
-
-                    <small id="repository-tool-config-description" class="d-block mt-1 text-muted">
-                        Choose a tool configuration.
-                    </small>
-                </div>
+                <GRadioGroup
+                    v-if="toolConfigs.length > 1"
+                    v-model="toolConfig"
+                    stacked
+                    class="mb-3"
+                    description="Choose a tool configuration."
+                    label="Tool Configuration:">
+                    <GRadio v-for="filename in toolConfigs" :key="filename" :value="filename">
+                        {{ filename }}
+                    </GRadio>
+                </GRadioGroup>
                 <BFormGroup label="Dependencies:" description="Choose how to handle dependencies.">
                     <BFormCheckbox v-model="installResolverDependencies">
                         Install resolvable dependencies
