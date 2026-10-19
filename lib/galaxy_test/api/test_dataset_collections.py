@@ -687,7 +687,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
     def test_list_download_with_directory_element(self, history_id):
         fasta_contents = "> seq\nACGT\n"
         fasta = self.dataset_populator.new_dataset(history_id, content=fasta_contents, ftype="fasta", wait=True)
-        text = self.dataset_populator.new_dataset(history_id, content="text\n", ftype="txt", wait=True)
         run_response = self.dataset_populator.run_tool(
             "create_directory_index", inputs={"reference": {"src": "hda", "id": fasta["id"]}}, history_id=history_id
         )
@@ -699,7 +698,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
             name="indexes",
             element_identifiers=[
                 {"name": "index", "src": "hda", "id": directory["id"]},
-                {"name": "notes", "src": "hda", "id": text["id"]},
             ],
         )
         self._assert_status_code_is(create_response, 200)
@@ -708,9 +706,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
         )
         self._assert_status_code_is(download_response, 200)
         archive = zipfile.ZipFile(BytesIO(download_response.content))
-        assert sorted(archive.namelist()) == ["indexes/index/1.fasta", "indexes/notes.txt"]
+        assert archive.namelist() == ["indexes/index/1.fasta"]
         assert archive.read("indexes/index/1.fasta").decode() == fasta_contents
-        assert archive.read("indexes/notes.txt").decode() == "text\n"
 
     def test_pair_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

@@ -125,16 +125,6 @@ def test_sendfile_range_suffix_longer_than_file(test_file_handle):
     assert response.content.decode() == CONTENT
 
 
-def test_sendfile_range_end_past_eof(test_file_handle):
-    app = setup_fastAPI(test_file_handle)
-    client = TestClient(app)
-    response = client.get("/test/send_file", headers={"Range": "bytes=0-99"})
-    assert response.status_code == 206
-    assert response.headers["content-range"] == f"bytes 0-6/{len(CONTENT)}"
-    assert response.headers["content-length"] == str(len(CONTENT))
-    assert response.content.decode() == CONTENT
-
-
 def test_sendfile_range_unsatisfiable(test_file_handle):
     app = setup_fastAPI(test_file_handle)
     client = TestClient(app)

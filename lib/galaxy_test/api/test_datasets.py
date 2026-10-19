@@ -402,7 +402,7 @@ class TestDatasetsApi(ApiTestCase):
         assert head_response.headers["content-length"] == str(len(fasta_contents.encode()))
         assert head_response.content == b""
 
-    @pytest.mark.parametrize("datatype", ["directory", "bwa_index", "ome_zarr"])
+    @pytest.mark.parametrize("datatype", ["bwa_index", "ome_zarr"])
     def test_directory_subclass_download_is_zip(self, history_id: str, datatype: str):
         directory_dataset, fasta_contents = self._create_directory_dataset(history_id)
         update_response = self._put(

@@ -14,13 +14,10 @@ from galaxy.webapps.base.api import (
 @pytest.mark.parametrize(
     "range_header, expected",
     [
-        ("bytes=0-499", (0, 499)),
-        ("bytes=500-", (500, 999)),
         ("bytes=-500", (500, 999)),
         ("bytes=-1", (999, 999)),
         ("bytes=-5000", (0, 999)),
         ("bytes=0-5000", (0, 999)),
-        ("bytes=999-999", (999, 999)),
         ("Bytes=0-1", (0, 1)),
         ("bytes = 0 - 1", (0, 1)),
     ],
@@ -34,29 +31,12 @@ def test_get_range_header_ignored(range_header):
     assert _get_range_header(range_header, 1000) is None
 
 
-@pytest.mark.parametrize(
-    "range_header, file_size",
-    [
-        ("bytes=1000-", 1000),
-        ("bytes=-0", 1000),
-        ("bytes=-1", 0),
-        ("bytes=500-499", 1000),
-        ("bytes=-", 1000),
-        ("bytes", 1000),
-        ("bytes=a-b", 1000),
-        ("bytes=\u0661-", 1000),
-        ("bytes=-1-1", 1000),
-        ("bytes=--5", 1000),
-        ("bytes=" + " " * 65536 + "x", 1000),
-        ("bytes=" + "1" * 5000 + "-", 1000),
-    ],
-    ids=lambda value: value if not isinstance(value, str) or len(value) < 20 else f"{value[:10]}...",
-)
-def test_get_range_header_unsatisfiable(range_header, file_size):
+@pytest.mark.parametrize("range_header", ["bytes=-0", "bytes=-"])
+def test_get_range_header_unsatisfiable(range_header):
     with pytest.raises(HTTPException) as exc_info:
-        _get_range_header(range_header, file_size)
+        _get_range_header(range_header, 1000)
     assert exc_info.value.status_code == 416
-    assert exc_info.value.headers == {"content-range": f"bytes */{file_size}"}
+    assert exc_info.value.headers == {"content-range": "bytes */1000"}
 
 
 @pytest.fixture

@@ -560,7 +560,7 @@ BYTE_POSITION_RE = re.compile(r"[0-9]*")
 
 
 class RangeNotSatisfiable(Exception):
-    """The ``Range`` header asks only for bytes outside the file."""
+    """The ``Range`` header's byte range is malformed or lies outside the file."""
 
 
 def parse_byte_range(range_header: str, file_size: int) -> Optional[tuple[int, int]]:
