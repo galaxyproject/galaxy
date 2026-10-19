@@ -5857,16 +5857,19 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     if include_errored
                     else Dataset.valid_input_states
                 )
-                if not item.deleted and item.state in valid_states and not item._paused_on_failed_input():
+                if not item.deleted and item.state in valid_states and not item._blocked_on_failed_input():
                     return item
         return None
 
-    def _paused_on_failed_input(self) -> bool:
-        """Whether this dataset's job is paused on a failed input, so it can never run."""
-        if self.state != Dataset.states.PAUSED or not (job := self.creating_job):
+    def _blocked_on_failed_input(self) -> bool:
+        """Whether this dataset's pending job is blocked by an unrecoverable input."""
+        if self.state not in (Dataset.states.NEW, Dataset.states.QUEUED, Dataset.states.PAUSED) or not (
+            job := self.creating_job
+        ):
             return False
         return any(
-            assoc.dataset.state == Dataset.states.ERROR or assoc.dataset._paused_on_failed_input()
+            assoc.dataset.state in (Dataset.states.ERROR, Dataset.states.DISCARDED)
+            or assoc.dataset._blocked_on_failed_input()
             for assoc in job.input_datasets
             if assoc.dataset
         )

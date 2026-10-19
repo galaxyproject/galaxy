@@ -244,6 +244,38 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         assert input_datasets["source"] is paused_tabix
         convert.assert_not_called()
 
+    @pytest.mark.parametrize("conversion_state", ["new", "queued", "paused"])
+    def test_conversion_blocked_on_cancelled_dependency_is_requeued(self, conversion_state: str) -> None:
+        source = self.__add_dataset(extension="interval")
+        bgzip = self.__add_conversion(source, "bgzip", state="queued")
+        assert bgzip.creating_job
+        bgzip.creating_job.mark_deleted()
+        self.__add_conversion(source, "tabix", state=conversion_state, job_inputs=[bgzip])
+        converted = {"bgzip": self.__add_dataset(state="queued"), "tabix": self.__add_dataset(state="queued")}
+        with self.__tabix_converters(source, converted) as convert:
+            input_datasets = self.__collect_tabix_input({"source": source})
+        assert input_datasets["source"] is converted["tabix"]
+        assert [call.args[2] for call in convert.call_args_list] == ["bgzip", "tabix"]
+
+    def test_conversion_blocked_on_indirect_cancelled_dependency_is_not_reused(self) -> None:
+        source = self.__add_dataset(extension="interval")
+        cancelled = self.__add_conversion(source, "cancelled", state="queued")
+        assert cancelled.creating_job
+        cancelled.creating_job.mark_deleted()
+        bgzip = self.__add_conversion(source, "bgzip", state="paused", job_inputs=[cancelled])
+        self.__add_conversion(source, "tabix", state="queued", job_inputs=[bgzip])
+
+        assert source.get_converted_files_by_type("tabix") is None
+        assert source.get_converted_files_by_type("bgzip") is None
+
+    def test_conversion_paused_on_deleted_input_is_reused(self) -> None:
+        source = self.__add_dataset(extension="interval")
+        bgzip = self.__add_conversion(source, "bgzip", state="ok")
+        bgzip.deleted = True
+        paused_tabix = self.__add_conversion(source, "tabix", state="paused", job_inputs=[bgzip])
+
+        assert source.get_converted_files_by_type("tabix") is paused_tabix
+
     def test_output_created(self):
         _, output = self._simple_execute()
         assert len(output) == 1
