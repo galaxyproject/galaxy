@@ -314,7 +314,7 @@ def test_boundary_prefers_undeleted_local_copy():
     live_copy = MockHda(12, copied_from=original)
     history = SimpleNamespace(id=TARGET_HISTORY, all_contents=[deleted_copy, live_copy])
     boundary = HistoryBoundary.of(cast(History, history))
-    assert boundary.local_copies == {("hda", 10): live_copy}
+    assert boundary.local_copies == {("hda", 10): cast(HistoryItem, live_copy)}
 
 
 def test_plain_job_ref_seeds_producing_subgraph():
