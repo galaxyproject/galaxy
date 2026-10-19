@@ -229,7 +229,7 @@ pre {
     box-shadow: var(--shed-shadow-sm);
 }
 
-/* Form fields: a little taller and softer than the package default, with a brand focus ring */
+/* Form fields: a little taller and softer than the package default, with a brand focus border */
 .shed-main input.g-form-input,
 .shed-main textarea.g-form-input {
     min-height: 2.5rem;
