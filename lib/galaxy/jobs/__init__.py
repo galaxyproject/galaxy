@@ -35,6 +35,7 @@ from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
     and_,
     func,
+    or_,
     select,
     update,
 )
@@ -1669,6 +1670,21 @@ class MinimalJobWrapper(HasResourceParameters):
                     destination_tag_limits[tag] = tag_limit
 
         conditions = [model.Job.table.c.id == job.id]
+        # The job being queued must not take up a slot itself. This only matters for
+        # resubmitted jobs: new jobs aren't in a counted state. A resubmitted job only
+        # counts resubmitted jobs with a lower id, so resubmitted jobs drain in order
+        # instead of blocking each other forever when there are more than the limit.
+        # A lower-id resubmitted job that isn't ready yet (still waiting out
+        # __resubmit_delay_seconds, or assigned to a handler that isn't running) holds up
+        # higher-id resubmitted jobs sharing a limit, including other users' jobs under
+        # destination total or tag limits.
+        if job.state == model.Job.states.RESUBMITTED:
+            other_jobs = or_(
+                model.Job.table.c.state != model.Job.states.RESUBMITTED,
+                model.Job.table.c.id < job.id,
+            )
+        else:
+            other_jobs = model.Job.table.c.id != job.id
 
         if job.user_id:
             user_job_count = (
@@ -1683,6 +1699,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ]
                         ),
                         model.Job.table.c.user_id == job.user_id,
+                        other_jobs,
                     )
                 )
                 .scalar_subquery()
@@ -1704,6 +1721,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ),
                             model.Job.table.c.destination_id == job_destination.id,
                             model.Job.table.c.user_id == job.user_id,
+                            other_jobs,
                         )
                     )
                     .scalar_subquery()
@@ -1723,6 +1741,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ]
                         ),
                         model.Job.table.c.session_id == job.galaxy_session.id,
+                        other_jobs,
                     )
                 )
                 .scalar_subquery()
@@ -1742,6 +1761,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ]
                         ),
                         model.Job.table.c.destination_id == job_destination.id,
+                        other_jobs,
                     )
                 )
                 .scalar_subquery()
@@ -1763,6 +1783,7 @@ class MinimalJobWrapper(HasResourceParameters):
                                 ]
                             ),
                             model.Job.table.c.destination_id.in_(destination_ids),
+                            other_jobs,
                         )
                     )
                     .scalar_subquery()
