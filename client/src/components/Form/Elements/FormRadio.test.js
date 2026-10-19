@@ -39,4 +39,11 @@ describe("FormRadio", () => {
             expect(emittedArg(wrapper, "input", i)).toBe(`value_${i}`);
         }
     });
+
+    it("names the radio group by the given label id", async () => {
+        await wrapper.setProps({ options: [{ label: "label_0", value: "value_0" }] });
+        expect(wrapper.find("fieldset").attributes("aria-labelledby")).toBeUndefined();
+        await wrapper.setProps({ ariaLabelledby: "title-id" });
+        expect(wrapper.find("fieldset").attributes("aria-labelledby")).toBe("title-id");
+    });
 });

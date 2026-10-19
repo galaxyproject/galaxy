@@ -14,6 +14,11 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    /** Id of the element that names the radio group, e.g. the parameter title */
+    ariaLabelledby: {
+        type: String,
+        default: undefined,
+    },
 });
 
 const currentValue = computed({
@@ -31,7 +36,7 @@ const hasOptions = computed(() => {
 </script>
 
 <template>
-    <GRadioGroup v-if="hasOptions" v-model="currentValue" stacked>
+    <GRadioGroup v-if="hasOptions" v-model="currentValue" :aria-labelledby="props.ariaLabelledby" stacked>
         <GRadio v-for="(option, index) in options" :key="index" :value="option.value">
             {{ option.label }}
         </GRadio>

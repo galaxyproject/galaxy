@@ -132,6 +132,26 @@ describe("FormElement", () => {
         expect(wrapper.find("fieldset").attributes("aria-labelledby")).toBeUndefined();
     });
 
+    it("names a radio select group by the parameter title", async () => {
+        await wrapper.setProps({
+            type: "select",
+            value: null,
+            attributes: {
+                display: "radio",
+                options: [
+                    ["Alpha", "a"],
+                    ["Beta", "b"],
+                ],
+            },
+        });
+        const titleId = wrapper.find("fieldset").attributes("aria-labelledby");
+        expect(titleId).toBe("form-element-input-title");
+        expect(wrapper.find(`#${titleId}`).text()).toBe("title_text");
+
+        await wrapper.setProps({ title: undefined });
+        expect(wrapper.find("fieldset").attributes("aria-labelledby")).toBeUndefined();
+    });
+
     it("marks required values", async () => {
         await wrapper.setProps({ type: "text", attributes: { optional: false } });
         expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
