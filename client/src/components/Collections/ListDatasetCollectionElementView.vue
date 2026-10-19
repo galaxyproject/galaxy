@@ -115,5 +115,11 @@ watch(
     text-align: left;
     color: inherit;
     background: transparent;
+
+    // A 24px rename field keeps its 4px focus ring inside the builders' 32px rows
+    :deep(.input-icon-wrapper .g-form-input) {
+        height: 24px;
+        padding-block: 0;
+    }
 }
 </style>
