@@ -325,7 +325,13 @@ function isSameFilterValue(filter: string, left: string, right: string) {
 
 function buildFilterClause(filter: string, value: string): InlineFilterClause {
     const normalized = normalizeToolTagValue(value);
-    const quoted = /\s/.test(normalized) ? `"${escapeQuotedWhooshToken(normalized)}"` : normalized;
+    // The inline parser has no escapes: wrap quote-bearing values in the other quote kind
+    let quoted = normalized;
+    if (normalized.includes('"')) {
+        quoted = `'${normalized}'`;
+    } else if (/[\s']/.test(normalized)) {
+        quoted = `"${escapeQuotedWhooshToken(normalized)}"`;
+    }
     // Keep values the caller quoted (e.g. EDAM ids) quoted
     const written = /^".*"$/.test(value.trim()) ? value.trim() : quoted;
     return { key: filter, value: normalized, text: `${filter}:${written}` };

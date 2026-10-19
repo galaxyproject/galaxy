@@ -289,6 +289,19 @@ describe("ToolsList", () => {
         expect(wrapper.findComponent(ToolsListTagFilter).props("tags")).toEqual(["Get Data", "Quality Control"]);
     });
 
+    it("round-trips picker tags containing quotes", async () => {
+        const wrapper = mount(ToolsList as object, { localVue, pinia, router, propsData: { search: "fastqc" } });
+        await flushPromises();
+        const selector = wrapper.findComponent(ToolsListTagFilter);
+        selector.vm.$emit("toggle-tag", "it's");
+        await flushPromises();
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe(`fastqc tag:"it's"`);
+        expect(selector.props("selectedTags")).toEqual(["it's"]);
+        selector.vm.$emit("toggle-tag", "it's");
+        await flushPromises();
+        expect((wrapper.get("input.search-query").element as HTMLInputElement).value).toBe("fastqc");
+    });
+
     it("synchronizes tag selection and removal with search text, URL, and backend queries", async () => {
         const wrapper = mount(ToolsList as object, {
             localVue,
