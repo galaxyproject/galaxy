@@ -74,7 +74,6 @@ const description = computed(() => {
 });
 
 const { saveTags } = useSerialTagSaves({
-    getTags: () => workflow.value.tags,
     // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
     setTags: (tags) => (workflow.value.tags = tags),
     onFailed: () => emit("refreshList", true, true),

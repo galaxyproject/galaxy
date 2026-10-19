@@ -2,7 +2,6 @@ import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 interface SerialTagSavesOptions {
-    getTags: () => string[];
     setTags: (tags: string[]) => void;
     /** Called when the last queued save failed. */
     onFailed: () => void;
@@ -13,7 +12,7 @@ interface SerialTagSavesOptions {
  * Once the queue drains, a failed last save calls ``onFailed``; otherwise the last saved tags are
  * shown again, since a list load that ran during the saves can hold the tags from before them.
  */
-export function useSerialTagSaves({ getTags, setTags, onFailed }: SerialTagSavesOptions) {
+export function useSerialTagSaves({ setTags, onFailed }: SerialTagSavesOptions) {
     let tagsSaved: Promise<void> = Promise.resolve();
     let pendingTagSaves = 0;
     let lastSavedTags: string[] | undefined;
@@ -22,7 +21,7 @@ export function useSerialTagSaves({ getTags, setTags, onFailed }: SerialTagSaves
     function onTagSavesDone() {
         if (lastTagSaveFailed) {
             onFailed();
-        } else if (lastSavedTags && !sameTags(getTags(), lastSavedTags)) {
+        } else if (lastSavedTags) {
             setTags(lastSavedTags);
         }
     }
@@ -49,8 +48,4 @@ export function useSerialTagSaves({ getTags, setTags, onFailed }: SerialTagSaves
     }
 
     return { saveTags };
-}
-
-function sameTags(a: string[], b: string[]) {
-    return a.length === b.length && a.every((tag, index) => tag === b[index]);
 }

@@ -203,7 +203,6 @@ const { historyCardTitleBadges } = useHistoryCardBadges(
 const history = computed(() => props.history);
 
 const { saveTags } = useSerialTagSaves({
-    getTags: () => history.value.tags,
     // updated in place: a list reload re-sorts the list and moves the card away from the open tag editor
     setTags: (tags) => (history.value.tags = tags),
     onFailed: () => emit("refreshList", true, true),
