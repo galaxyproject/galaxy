@@ -6,11 +6,13 @@ import ariaAlert from "@/utils/ariaAlert";
 
 export type FavoriteObjectKind = "tags" | "edam_operations" | "edam_topics";
 
+// Shared so a card and a filter chip for the same object can't both start a toggle
+const pending = ref(new Set<string>());
+
 /** Shared favorite actions for curated tags and EDAM terms in cards and filter chips. */
 export function useFavoriteObjects() {
     const userStore = useUserStore();
     const toast = useToast();
-    const pending = ref(new Set<string>());
     const canFavorite = computed(() => Boolean(userStore.currentUser) && !userStore.isAnonymous);
     const keyFor = (kind: FavoriteObjectKind, value: string) => JSON.stringify([kind, value]);
     const isFavorite = (kind: FavoriteObjectKind, value: string) => userStore.currentFavorites[kind].includes(value);
