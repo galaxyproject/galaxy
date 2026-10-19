@@ -211,6 +211,16 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             api_asserts.assert_status_code_is(response, 400)
             api_asserts.assert_error_message_contains(response, "object store")
 
+            response = self.dataset_populator.tool_request_raw(
+                "multi_data_param",
+                {"f1": hda_input, "f2": hda_input},
+                history_id,
+                strict=False,
+                preferred_object_store_id="dynamic_s3",
+            )
+            api_asserts.assert_status_code_is(response, 400)
+            api_asserts.assert_error_message_contains(response, "object store")
+
             workflow_id = self.workflow_populator.upload_yaml_workflow(TEST_WORKFLOW)
             for key in (
                 "preferred_object_store_id",
