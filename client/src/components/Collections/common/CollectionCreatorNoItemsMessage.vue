@@ -12,7 +12,7 @@ const emit = defineEmits<{
     <GAlert variant="info" show>
         {{ localize("No items available to create a collection.") }}
         {{ localize("Exit and change your current history, or") }}
-        <GLink @click.stop.prevent="emit('click-upload')">
+        <GLink @click.stop="emit('click-upload')">
             {{ localize("Upload some datasets.") }}
         </GLink>
     </GAlert>

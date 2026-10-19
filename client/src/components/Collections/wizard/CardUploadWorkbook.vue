@@ -41,7 +41,7 @@ const emit = defineEmits(["workbookContents"]);
             </GAlert>
         </div>
         <div>
-            <GLink @click.prevent="browseFiles">
+            <GLink @click="browseFiles">
                 <FontAwesomeIcon size="xl" :icon="faUpload" />
                 Drop completed workbook here or click to upload.
             </GLink>
