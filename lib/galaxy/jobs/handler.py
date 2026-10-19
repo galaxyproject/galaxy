@@ -1041,11 +1041,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 for tag in job_wrapper.job_destination.tags:
                     # Check each tag for this job's destination
                     if tag in self.app.job_config.limits.destination_user_concurrent_jobs:
-                        # Only if there's a limit defined for this tag
-                        count = 0
-                        for id in self.app.job_config.get_destination_ids_for_tag(tag):
-                            # Add up the aggregate job total for this tag
-                            count += count_per_id.get(id, 0)
+                        # Only if there's a limit defined for this tag, add up the aggregate job total for this tag,
+                        # including this destination, which may not be registered under its tags
+                        tag_ids = self.app.job_config.get_destination_ids_for_tag(tag) | {id}
+                        count = sum(count_per_id.get(tag_id, 0) for tag_id in tag_ids)
                         if count >= self.app.job_config.limits.destination_user_concurrent_jobs[tag]:
                             return JOB_WAIT
         elif job.galaxy_session:
@@ -1106,11 +1105,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 for tag in job_wrapper.job_destination.tags:
                     # Check each tag for this job's destination
                     if tag in self.app.job_config.limits.destination_total_concurrent_jobs:
-                        # Only if there's a limit defined for this tag
-                        count = 0
-                        for id in self.app.job_config.get_destination_ids_for_tag(tag):
-                            # Add up the aggregate job total for this tag
-                            count += count_per_id.get(id, 0)
+                        # Only if there's a limit defined for this tag, add up the aggregate job total for this tag,
+                        # including this destination, which may not be registered under its tags
+                        tag_ids = self.app.job_config.get_destination_ids_for_tag(tag) | {id}
+                        count = sum(count_per_id.get(tag_id, 0) for tag_id in tag_ids)
                         if count >= self.app.job_config.limits.destination_total_concurrent_jobs[tag]:
                             return JOB_WAIT
         return JOB_READY

@@ -307,12 +307,16 @@ def test_ordinary_limits_keep_front_window_and_cached_destinations(handler, limi
 
 @pytest.mark.parametrize("handler", ["sqlite", "postgresql"], indirect=True)
 @pytest.mark.parametrize("limit", ["destination_total_concurrent_jobs", "destination_user_concurrent_jobs"])
-def test_tag_limits_count_registered_dynamic_destinations(handler, limit):
-    handler.destination = JobDestination(id="local", runner="local", tags=["cluster"])
+@pytest.mark.parametrize("running_destination", ["registered_dynamic", "unregistered_own"])
+def test_tag_limits_count_dynamic_destinations(handler, limit, running_destination):
+    handler.destination = JobDestination(id="tpv_own", runner="local", tags=["cluster"])
     user = handler.user()
     running = handler.job(user, state="running")
-    handler.update_job(running, destination_id="tpv_dynamic")
-    handler.app.job_config.set_dynamic_destination_tags("tpv", {"cluster": {"tpv_dynamic"}})
+    if running_destination == "registered_dynamic":
+        handler.update_job(running, destination_id="tpv_other")
+        handler.app.job_config.set_dynamic_destination_tags("tpv", {"cluster": {"tpv_other"}})
+    else:
+        handler.update_job(running, destination_id="tpv_own")
     tag_limits = getattr(handler.app.job_config.limits, limit)
     tag_limits["cluster"] = 1
     job = handler.job(user)
