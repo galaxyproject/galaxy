@@ -44,7 +44,7 @@ describe("InteractiveToolsPanel component", () => {
         (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockImplementation((tools) => tools);
     });
 
-    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
+    const mountComponent = async (toolsList: Partial<Tool>[] = mockTools, fetchTools = vi.fn()) => {
         const pinia = createTestingPinia({
             createSpy: vi.fn,
             stubActions: false,
@@ -53,7 +53,7 @@ describe("InteractiveToolsPanel component", () => {
 
         // Mock the stores before mounting
         const toolStore = useToolStore();
-        vi.spyOn(toolStore, "fetchTools").mockImplementation(vi.fn());
+        vi.spyOn(toolStore, "fetchTools").mockImplementation(fetchTools);
         seedToolsById(toolStore, toolsList);
 
         const interactiveToolsStore = useInteractiveToolsStore();
@@ -82,6 +82,17 @@ describe("InteractiveToolsPanel component", () => {
 
         return wrapper;
     };
+
+    it("announces the loading state as a status", async () => {
+        const wrapper = await mountComponent(
+            mockTools,
+            vi.fn(() => new Promise<void>(() => {})),
+        );
+
+        const status = wrapper.find("[role='status']");
+        expect(status.exists()).toBe(true);
+        expect(status.text()).toContain("Loading interactive tools...");
+    });
 
     it("should call filterLatestToolVersions with interactive tools", async () => {
         await mountComponent();
