@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import ThemeSelector from "./ThemeSelector.vue";
@@ -31,6 +31,12 @@ function radios(wrapper: ReturnType<typeof mountSelector>) {
 }
 
 describe("ThemeSelector", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        currentTheme.value = "blue";
+        settingTheme.value = false;
+    });
+
     it("lists the themes in a named radio group with the current theme checked", () => {
         const wrapper = mountSelector();
         expect(wrapper.find("[role=radiogroup]").attributes("aria-label")).toBe("Theme");
@@ -49,6 +55,5 @@ describe("ThemeSelector", () => {
         settingTheme.value = true;
         await wrapper.vm.$nextTick();
         expect(radios(wrapper).every((radio) => radio.element.disabled)).toBe(true);
-        settingTheme.value = false;
     });
 });

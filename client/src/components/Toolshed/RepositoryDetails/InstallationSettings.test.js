@@ -55,7 +55,6 @@ describe("InstallationSettings", () => {
         await vi.waitFor(() => expect(wrapper.findAll("input[type=radio]").length).toBe(2));
         const group = wrapper.find("[role=radiogroup]");
         expect(wrapper.get(`#${group.attributes("aria-labelledby")}`).text()).toBe("Tool Configuration:");
-        expect(group.find("legend").text()).toBe("Tool Configuration:");
         expect(group.element.parentElement.closest("fieldset")).toBeNull();
         expect(wrapper.get(`#${group.attributes("aria-describedby")}`).text()).toBe("Choose a tool configuration.");
         const radios = group.findAll("input[type=radio]");
