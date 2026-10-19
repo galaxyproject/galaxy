@@ -82,6 +82,7 @@ describe("UserDeletion.vue", () => {
         await input.trigger("blur");
 
         expect(wrapper.text()).toContain("Email does not match the current user email");
+        expect(input.attributes("aria-invalid")).toBe("true");
     });
 
     it("successfully deletes user account and logs out", async () => {
