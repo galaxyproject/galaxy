@@ -466,6 +466,12 @@ tools_list:
     toggle_help: '[id="g-card-content-${tool_id}"] [data-description="tools list toggle tool help"]'
     tool_help: '[id="g-card-content-${tool_id}"] [data-description="tools list tool help"]'
     open_tool_button: '[id="g-card-action-open-tool-${tool_id}"]'
+    tag_picker_toggle: '.tools-list .tool-tags-dropdown .dropdown-toggle'
+    tag_picker_search: '.tools-list .tool-tags-dropdown input[aria-label="Search tags/categories"]'
+    tag_picker_option:
+      type: xpath
+      selector: '//*[contains(@class, "tool-tags-dropdown")]//*[contains(@class, "dropdown-item") and normalize-space(.)="${tag}"]'
+    tag_chip_remove: '.tools-list button[title="Remove tag ${tag}"]'
 
 multi_history_panel:
   selectors:

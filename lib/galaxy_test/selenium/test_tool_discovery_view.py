@@ -80,6 +80,48 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
         tools_list._.wait_for_absent()
         self.screenshot("tools_list_navigated_to_tool")
 
+    @selenium_test
+    def test_tool_discovery_tag_picker_filters_results(self):
+        tools_list = self._open_tools_list_with_filter_failed()
+        filter_failed_card = tools_list.tool_card(tool_id=self.FILTER_FAILED_TOOL_ID)
+
+        self._pick_tool_tag(tools_list, "Collection Operations")
+        tools_list.tag_chip_remove(tag="Collection Operations").wait_for_visible()
+        assert tools_list.search_input.wait_for_value() == 'filter failed tag:"Collection Operations"'
+        filter_failed_card.wait_for_visible()
+        self.screenshot("tools_list_tag_picker_selected")
+
+        self._pick_tool_tag(tools_list, "Get Data")
+        tools_list.tag_chip_remove(tag="Get Data").wait_for_visible()
+        filter_failed_card.wait_for_absent()
+
+        tools_list.tag_chip_remove(tag="Get Data").wait_for_and_click()
+        tools_list.tag_chip_remove(tag="Get Data").wait_for_absent()
+        filter_failed_card.wait_for_visible()
+
+        tools_list.tag_chip_remove(tag="Collection Operations").wait_for_and_click()
+        tools_list.tag_chip_remove(tag="Collection Operations").wait_for_absent()
+        assert tools_list.search_input.wait_for_value() == "filter failed"
+
+    @selenium_test
+    def test_tool_discovery_tag_picker_disabled_for_boolean_search(self):
+        self.home()
+        self.components.tool_panel.discover_tools_link.wait_for_and_click()
+        tools_list = self.components.tools_list
+        tools_list._.wait_for_visible()
+        tools_list.search_input.wait_for_and_send_keys('tag:"Get Data" OR tag:"Collection Operations"')
+        toggle = tools_list.tag_picker_toggle
+        self._wait_on(
+            lambda: toggle.wait_for_present().get_attribute("disabled") is not None,
+            "tag picker to be disabled for a boolean search",
+        )
+        self.screenshot("tools_list_tag_picker_disabled")
+
+    def _pick_tool_tag(self, tools_list, tag):
+        tools_list.tag_picker_toggle.wait_for_and_click()
+        tools_list.tag_picker_search.wait_for_and_send_keys(tag)
+        tools_list.tag_picker_option(tag=tag).wait_for_and_click()
+
     @playwright_only("Validates /tools/list tag autocomplete behavior with Playwright backend.")
     @selenium_test
     def test_tools_list_tag_autocomplete_search(self):
