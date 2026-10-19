@@ -407,10 +407,11 @@ describe("useInvocationGraph — parameter input text", () => {
         workflowSteps.value = {
             0: { id: 0, type: "parameter_input", position: { left: 0, top: 0 }, outputs: [output] },
         };
-        const { steps, invocation, load } = setupComposable({ workflow_step_id: 10 });
-        invocation.value.input_step_parameters = {
-            param: { label: "param", parameter_value: parameterValue, workflow_step_id: 10 },
-        };
+        const { steps, load } = setupComposable({ workflow_step_id: 10 }, [], false, {
+            input_step_parameters: {
+                param: { label: "param", parameter_value: parameterValue, workflow_step_id: 10 },
+            },
+        });
         await load();
         return steps.value[0]?.nodeText;
     }
