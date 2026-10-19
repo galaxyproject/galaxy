@@ -235,15 +235,13 @@ const buttonElementRef = useResolveElement(buttonRef);
             border-color: var(--color-grey-600);
         }
 
-        // This block out-ranks the `&:hover, &:focus-visible` rule above, so the
-        // feedback has to be restated here or a pressed solid button looks inert.
+        // Out-ranks the hover rule above, so hover is restated here; focus keeps the light fill and the ring shows it
         &.g-pressed:not(.g-outline):not(.g-transparent) {
-            background-color: var(--color-grey-300);
+            background-color: var(--color-grey-250);
             border-color: var(--color-grey-600);
 
-            &:hover,
-            &:focus-visible {
-                background-color: var(--color-grey-400);
+            &:hover {
+                background-color: var(--color-grey-300);
             }
         }
 
