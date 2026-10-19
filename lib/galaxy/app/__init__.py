@@ -238,6 +238,7 @@ class HaltableContainer(Container):
 class SentryClientMixin:
     config: GalaxyAppConfiguration
     application_stack: ApplicationStack
+    is_webapp: bool
 
     def configure_sentry_client(self):
         self.sentry_client = None
@@ -252,8 +253,11 @@ class SentryClientMixin:
             ], f"Invalid sentry event level '{self.config.sentry.event_level}'"
 
             import sentry_sdk
+            from sentry_sdk.integrations import (
+                DidNotEnable,
+                Integration,
+            )
             from sentry_sdk.integrations.celery import CeleryIntegration
-            from sentry_sdk.integrations.fastapi import FastApiIntegration
             from sentry_sdk.integrations.logging import LoggingIntegration
             from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
             from sentry_sdk.integrations.starlette import StarletteIntegration
@@ -262,6 +266,31 @@ class SentryClientMixin:
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=getattr(logging, event_level),  # Send errors as events
             )
+            integrations: list[Integration] = [
+                sentry_logging,
+                StarletteIntegration(),
+                CeleryIntegration(),
+                SqlalchemyIntegration(),
+            ]
+            try:
+                # galaxy-app installs without the web apps do not ship FastAPI.
+                from sentry_sdk.integrations.fastapi import FastApiIntegration
+            except DidNotEnable:
+                pass
+            else:
+                integrations.append(FastApiIntegration())
+            if self.is_webapp:
+                # The web app serves the agent and MCP APIs, so it loads these libraries anyway.
+                from sentry_sdk.integrations.pydantic_ai import PydanticAIIntegration
+
+                integrations.append(PydanticAIIntegration())
+                try:
+                    # Older sentry-sdk releases do not support the installed MCP SDK.
+                    from sentry_sdk.integrations.mcp import MCPIntegration
+                except DidNotEnable as e:
+                    log.warning("Sentry MCP integration not enabled: %s", e)
+                else:
+                    integrations.append(MCPIntegration())
 
             def before_send(event, hint):
                 if "exc_info" in hint:
@@ -293,13 +322,7 @@ class SentryClientMixin:
                 # Auto-enabling integrations import every installed library Sentry
                 # supports, including the AI SDKs Galaxy only loads when an agent runs.
                 auto_enabling_integrations=False,
-                integrations=[
-                    sentry_logging,
-                    StarletteIntegration(),
-                    FastApiIntegration(),
-                    CeleryIntegration(),
-                    SqlalchemyIntegration(),
-                ],
+                integrations=integrations,
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
                 ca_certs=self.config.sentry_ca_certs,
                 before_send=before_send,
@@ -338,7 +361,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             logging.basicConfig(level=logging.DEBUG)
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "galaxy"
-        self.is_webapp = False
+        self.is_webapp = kwargs.get("is_webapp", False)
         # Read config file and check for errors
         self.config = self._register_singleton(GalaxyAppConfiguration, GalaxyAppConfiguration(**kwargs))
         self.config.check()
@@ -988,8 +1011,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("application stack", self._shutdown_application_stack),
         ]
         self._register_singleton(StructuredApp, self)  # type: ignore[type-abstract]
-        if kwargs.get("is_webapp"):
-            self.is_webapp = kwargs["is_webapp"]
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
