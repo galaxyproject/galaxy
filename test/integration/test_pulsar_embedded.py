@@ -131,6 +131,9 @@ test_tools = integration_util.integration_tool_runner(
         "detect_errors",
         "tool_directory_copy",
         "create_directory_index",
+        # Directory datasets read through $input.path, without naming extra_files_path.
+        "dataset_path",
+        "directory_or_file_user_defined",
         "collection_split_on_column",
     ]
 )

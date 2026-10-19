@@ -5,7 +5,10 @@ Unit tests for base DataTypes.
 
 import os
 from types import SimpleNamespace
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
 
 import pytest
 
@@ -236,7 +239,67 @@ def test_zarr_set_meta_leaves_a_wrapped_store_in_place_and_records_it(tmp_path):
 def test_zarr_content_path_stays_inside_the_dataset(tmp_path):
     dataset = _zarr_dataset(tmp_path, store_root="../elsewhere")
 
-    assert ZarrDirectory().content_path(dataset) == str(tmp_path)
+    with pytest.raises(ValueError, match="outside"):
+        ZarrDirectory().content_path(dataset)
+
+
+@pytest.mark.parametrize("store_root", ["Bob's store (1).zarr", "..sample.zarr", "...zarr"])
+def test_zarr_content_path_of_a_store_named_after_an_upload(tmp_path, store_root):
+    # Older datasets record whatever folder name they were uploaded with.
+    dataset = _zarr_dataset(tmp_path, store_root=store_root)
+
+    assert ZarrDirectory().content_path(dataset) == str(tmp_path / store_root)
+
+
+@pytest.mark.parametrize("store_root", ["/etc", "..", "a/../..", "../elsewhere"])
+def test_zarr_content_path_rejects_a_store_root_outside_the_dataset(tmp_path, store_root):
+    with pytest.raises(ValueError, match="outside"):
+        ZarrDirectory().content_path(_zarr_dataset(tmp_path, store_root=store_root))
+
+
+@pytest.mark.parametrize("store_root", ["link", "link/sub"])
+def test_zarr_content_path_rejects_a_store_root_through_a_link_outside(tmp_path, store_root):
+    outside = tmp_path / "outside"
+    (outside / "sub").mkdir(parents=True)
+    extra_files = tmp_path / "extra_files"
+    extra_files.mkdir()
+    (extra_files / "link").symlink_to(outside)
+
+    with pytest.raises(ValueError, match="outside"):
+        ZarrDirectory().content_path(_zarr_dataset(extra_files, store_root=store_root))
+
+
+def test_zarr_content_path_accepts_a_link_inside_the_dataset(tmp_path):
+    (tmp_path / "store.zarr").mkdir()
+    (tmp_path / "link").symlink_to(tmp_path / "store.zarr")
+
+    assert ZarrDirectory().content_path(_zarr_dataset(tmp_path, store_root="link")) == str(tmp_path / "link")
+
+
+def test_zarr_preview_of_a_store_root_outside_the_dataset_falls_back(tmp_path, monkeypatch):
+    (tmp_path / ".zgroup").write_text('{"zarr_format": 2}')
+    monkeypatch.setattr(Data, "display_data", lambda self, *args, **kwargs: "default display")
+
+    result = ZarrDirectory().display_data(
+        cast(Any, None), _zarr_dataset(tmp_path, store_root="../elsewhere"), preview=True
+    )
+
+    assert result == "default display"
+
+
+def test_zarr_set_meta_does_not_record_a_symlinked_wrapper(tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / ".zgroup").write_text('{"zarr_format": 2}')
+    extra_files = tmp_path / "extra_files"
+    extra_files.mkdir()
+    (extra_files / "wrapped.zarr").symlink_to(outside)
+    dataset = _zarr_dataset(extra_files)
+
+    ZarrDirectory().set_meta(dataset)
+
+    assert dataset.metadata.store_root == ""
+    assert ZarrDirectory().content_path(dataset) == str(extra_files)
 
 
 def test_directory_content_path_is_the_extra_files_path(tmp_path):

@@ -65,7 +65,6 @@ from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
 )
-from galaxy.util.path import safe_relpath
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders as p_dataproviders,
@@ -1358,6 +1357,15 @@ def zarr_v2_store_keys(consolidated_metadata: dict[str, Any]) -> tuple[list[str]
     return list(metadata), chunk_keys
 
 
+def _is_inside(path: str, directory: str) -> bool:
+    """Return whether ``path`` stays inside ``directory``, also through links that exist."""
+    # Compare whole components, since a folder name may itself start with "..". A path that
+    # does not exist here, e.g. on a remote compute node, is only compared as written.
+    real_directory = os.path.realpath(directory)
+    real_path = os.path.realpath(path)
+    return os.path.commonpath([real_directory, real_path]) == real_directory
+
+
 class Directory(Data):
     """Class representing a directory of files."""
 
@@ -1406,11 +1414,15 @@ class Directory(Data):
         """Return the path of the folder holding the dataset's content.
 
         ``extra_files_path`` replaces the dataset's own, e.g. with its path on a compute node.
+        Raises ``ValueError`` if the recorded folder would point outside the dataset.
         """
         if extra_files_path is None:
             extra_files_path = dataset.extra_files_path
         if content_root := self.content_root(dataset):
-            return os.path.join(extra_files_path, content_root)
+            content_path = os.path.join(extra_files_path, content_root)
+            if not _is_inside(content_path, extra_files_path):
+                raise ValueError(f"The content folder [{content_root}] recorded for this dataset is outside of it")
+            return content_path
         return extra_files_path
 
     def groom_directory_content(self, extra_files_path: str) -> None:
@@ -1419,7 +1431,7 @@ class Directory(Data):
         if wrapper is None:
             return
         wrapper_path = os.path.join(extra_files_path, wrapper)
-        if os.path.islink(extra_files_path) or os.path.islink(wrapper_path):
+        if os.path.islink(extra_files_path):
             # Never move content through a link that may point outside the dataset.
             return
         # Stay inside extra_files_path, whose parent may not be writable. Rename the
@@ -1443,6 +1455,9 @@ class Directory(Data):
             return None
         wrapper = items_in_path[0]
         wrapper_path = os.path.join(path, wrapper)
+        if os.path.islink(wrapper_path):
+            # Never record or move content through a link that may point outside the dataset.
+            return None
         if os.path.isdir(wrapper_path) and self.is_content_root(wrapper_path):
             return wrapper
         return None
@@ -1516,7 +1531,12 @@ class ZarrDirectory(Directory):
         **kwd,
     ):
         if preview:
-            metadata_file_path = self._find_zarr_metadata_file(self.content_path(dataset))
+            try:
+                content_path = self.content_path(dataset)
+            except ValueError as e:
+                log.warning("Not previewing Zarr dataset: %s", e)
+                content_path = None
+            metadata_file_path = content_path and self._find_zarr_metadata_file(content_path)
             if metadata_file_path:
                 headers = kwd.get("headers", {})
                 headers["content-type"] = "application/json"
@@ -1547,9 +1567,7 @@ class ZarrDirectory(Directory):
         return self._find_zarr_metadata_file(path) is not None
 
     def content_root(self, dataset: HasMetadata) -> str:
-        store_root = dataset.metadata.store_root or ""
-        # Tools can provide metadata too; never point outside the dataset.
-        return store_root if safe_relpath(store_root) else ""
+        return dataset.metadata.store_root or ""
 
     def sniff_directory(self, path: str) -> bool:
         return self._get_format_version(path) is not None
