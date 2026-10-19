@@ -3,6 +3,7 @@ import zipfile
 from io import BytesIO
 from urllib.parse import quote
 
+import pytest
 import requests
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -311,6 +312,15 @@ class TestDatasetsApi(ApiTestCase):
             show_response = self._get(f"datasets/{hda['id']}")
             self._assert_status_code_is(show_response, 403)
 
+    @pytest.mark.parametrize("fetch_data", [True, False])
+    def test_show_upload_permissions(self, history_id, fetch_data):
+        role_id = self.dataset_populator.user_private_role_id()
+        hda = self.dataset_populator.new_dataset(history_id, fetch_data=fetch_data, wait=True)
+        show_response = self._get(f"datasets/{hda['id']}")
+        self._assert_status_code_is(show_response, 200)
+        # New users get private data by default, so the access role is the private role as well.
+        assert show_response.json()["permissions"] == {"manage": [role_id], "access": [role_id]}
+
     @requires_admin
     def test_admin_can_update_permissions(self, history_id):
         # Create private dataset
@@ -326,6 +336,33 @@ class TestDatasetsApi(ApiTestCase):
         # Other users can access the dataset
         with self._different_user():
             show_response = self._get(f"datasets/{hda['id']}")
+            self._assert_status_code_is_ok(show_response)
+
+    @requires_admin
+    def test_permissions_changed_while_queued_survive_job_finish(self, history_id, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://httpstat.us/200?sleep=5000",
+            body="OK",
+            sleep_ms=5000,
+        )
+        payload = {
+            "history_id": history_id,
+            "targets": [{"destination": {"type": "hdas"}, "items": [{"src": "url", "url": url, "ext": "txt"}]}],
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=False)
+        self._assert_status_code_is(fetch_response, 200)
+        response = fetch_response.json()
+        dataset_id = response["outputs"][0]["id"]
+
+        update_response = self._put(
+            f"datasets/{dataset_id}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
+        )
+        self._assert_status_code_is_ok(update_response)
+        assert self.dataset_populator.get_job_details(response["jobs"][0]["id"]).json()["state"] != "ok"
+
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        with self._different_user():
+            show_response = self._get(f"datasets/{dataset_id}")
             self._assert_status_code_is_ok(show_response)
 
     def test_make_private_is_idempotent(self, history_id):
