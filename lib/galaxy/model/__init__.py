@@ -5857,9 +5857,19 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     if include_errored
                     else Dataset.valid_input_states
                 )
-                if not item.deleted and item.state in valid_states:
+                if not item.deleted and item.state in valid_states and not item._paused_on_failed_input():
                     return item
         return None
+
+    def _paused_on_failed_input(self) -> bool:
+        """Whether this dataset's job is paused on a failed input, so it can never run."""
+        if self.state != Dataset.states.PAUSED or not (job := self.creating_job):
+            return False
+        return any(
+            assoc.dataset.state == Dataset.states.ERROR or assoc.dataset._paused_on_failed_input()
+            for assoc in job.input_datasets
+            if assoc.dataset
+        )
 
     def get_converted_dataset_deps(self, trans: "ProvidesUserContext", target_ext, use_cached_job=False):
         """
@@ -5906,7 +5916,12 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         try:
             for dependency in depends_list:
                 dep_dataset = self.get_converted_dataset(
-                    trans, dependency, target_context=target_context, history=history, use_cached_job=use_cached_job
+                    trans,
+                    dependency,
+                    target_context=target_context,
+                    history=history,
+                    include_errored=include_errored,
+                    use_cached_job=use_cached_job,
                 )
                 if dep_dataset.state == Job.states.ERROR:
                     raise ConverterDependencyException(f"A dependency ({dependency}) was in an error state.")

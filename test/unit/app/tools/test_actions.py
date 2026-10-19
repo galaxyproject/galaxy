@@ -1,4 +1,5 @@
 import string
+from contextlib import contextmanager
 from typing import (
     Any,
     cast,
@@ -193,27 +194,11 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         assert convert.call_args.kwargs["use_cached_job"] is True
 
     def test_conversion_queued_on_pending_dependency_conversion(self) -> None:
-        source = self.__add_dataset()
-        source.extension = "interval"
+        source = self.__add_dataset(extension="interval")
         converted = {"bgzip": self.__add_dataset(state="queued"), "tabix": self.__add_dataset(state="queued")}
         incoming = {"source": source, "__job_resource": {"__job_resource__select": "yes", "processors": 4}}
-        self._init_tool(
-            '<tool id="tabix_input" name="Tabix input" version="1.0"><command>echo</command>'
-            '<inputs><param name="source" type="data" format="tabix"/></inputs></tool>'
-        )
-
-        def convert_dataset(trans, original_dataset, target_type, **kwargs):
-            return {"output": converted[target_type]}
-
-        with (
-            patch.dict(self.app.datatypes_registry.converter_deps, {"interval": {"tabix": ["bgzip"]}}),
-            patch.object(source, "find_conversion_destination", return_value=(False, "tabix", None)),
-            patch.object(source, "get_converter_types", return_value={"bgzip": {}, "tabix": {}}),
-            patch.object(source.datatype, "convert_dataset", side_effect=convert_dataset) as convert,
-        ):
-            input_datasets, _ = self.action._collect_input_datasets(
-                self.tool, incoming, cast(ProvidesHistoryContext, self.trans), self.history, current_user_roles=[]
-            )
+        with self.__tabix_converters(source, converted) as convert:
+            input_datasets = self.__collect_tabix_input(incoming)
 
         assert input_datasets["source"] is converted["tabix"]
         bgzip_call, tabix_call = convert.call_args_list
@@ -223,6 +208,41 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         for call in (bgzip_call, tabix_call):
             assert call.kwargs["target_context"] is incoming
             assert call.kwargs["history"] is self.history
+
+    def test_conversion_paused_on_failed_dependency_is_requeued(self) -> None:
+        source = self.__add_dataset(extension="interval")
+        failed_bgzip = self.__add_conversion(source, "bgzip", state="error")
+        self.__add_conversion(source, "tabix", state="paused", job_inputs=[failed_bgzip])
+        converted = {"bgzip": self.__add_dataset(state="queued"), "tabix": self.__add_dataset(state="queued")}
+        with self.__tabix_converters(source, converted) as convert:
+            input_datasets = self.__collect_tabix_input({"source": source})
+
+        assert input_datasets["source"] is converted["tabix"]
+        assert [call.args[2] for call in convert.call_args_list] == ["bgzip", "tabix"]
+
+    def test_conversion_status_reports_failed_dependency(self) -> None:
+        source = self.__add_dataset(extension="interval")
+        failed_bgzip = self.__add_conversion(source, "bgzip", state="error")
+        self.__add_conversion(source, "tabix", state="paused", job_inputs=[failed_bgzip])
+        with self.__tabix_converters(source, {}) as convert:
+            message = source.convert_dataset(self.trans, "tabix")
+
+        assert message == {
+            "kind": model.Dataset.conversion_messages.ERROR,
+            "message": "A dependency (bgzip) was in an error state.",
+        }
+        convert.assert_not_called()
+
+    def test_conversion_paused_for_other_reasons_is_reused(self) -> None:
+        # e.g. paused because the user was over quota; resuming the job completes the conversion
+        source = self.__add_dataset(extension="interval")
+        bgzip = self.__add_conversion(source, "bgzip", state="ok")
+        paused_tabix = self.__add_conversion(source, "tabix", state="paused", job_inputs=[bgzip])
+        with self.__tabix_converters(source, {}) as convert:
+            input_datasets = self.__collect_tabix_input({"source": source})
+
+        assert input_datasets["source"] is paused_tabix
+        convert.assert_not_called()
 
     def test_output_created(self):
         _, output = self._simple_execute()
@@ -270,8 +290,8 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
             return
         raise AssertionError("Tool execution succeeded for inactive user!")
 
-    def __add_dataset(self, state="ok"):
-        hda = model.HistoryDatasetAssociation()
+    def __add_dataset(self, state="ok", extension="data"):
+        hda = model.HistoryDatasetAssociation(extension=extension)
         hda.dataset = model.Dataset()
         hda.dataset.state = state
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
@@ -279,6 +299,45 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         session = self.app.model.context
         session.commit()
         return hda
+
+    def __add_conversion(self, source, ext, state, job_inputs=()):
+        converted = self.__add_dataset(state=state, extension=ext)
+        job = model.Job()
+        for i, job_input in enumerate(job_inputs):
+            job.add_input_dataset(f"input{i}", job_input)
+        job.add_output_dataset("output", converted)
+        session = self.app.model.context
+        source.attach_implicitly_converted_dataset(session, converted, ext)
+        session.commit()
+        return converted
+
+    @contextmanager
+    def __tabix_converters(self, source, converted):
+        """Register interval -> tabix (depending on bgzip) and stub out converter job creation."""
+
+        def find_conversion_destination(formats):
+            return False, "tabix", source.get_converted_files_by_type("tabix")
+
+        def convert_dataset(trans, original_dataset, target_type, **kwargs):
+            return {"output": converted[target_type]}
+
+        with (
+            patch.dict(self.app.datatypes_registry.converter_deps, {"interval": {"tabix": ["bgzip"]}}),
+            patch.object(source, "find_conversion_destination", side_effect=find_conversion_destination),
+            patch.object(source, "get_converter_types", return_value={"bgzip": {}, "tabix": {}}),
+            patch.object(source.datatype, "convert_dataset", side_effect=convert_dataset) as convert,
+        ):
+            yield convert
+
+    def __collect_tabix_input(self, incoming):
+        self._init_tool(
+            '<tool id="tabix_input" name="Tabix input" version="1.0"><command>echo</command>'
+            '<inputs><param name="source" type="data" format="tabix"/></inputs></tool>'
+        )
+        input_datasets, _ = self.action._collect_input_datasets(
+            self.tool, incoming, cast(ProvidesHistoryContext, self.trans), self.history, current_user_roles=[]
+        )
+        return input_datasets
 
     def _simple_execute(self, contents=None, incoming=None):
         if contents is None:
