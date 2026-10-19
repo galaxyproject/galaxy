@@ -1248,41 +1248,33 @@ class CachedToolBox(ToolBox):
         return self._resolve_index_entry(config_file, guid)
 
     def index_tool_files(self, path_guids: Mapping[str, str | None]) -> None:
-        """Index the on-disk tool files the index misses, in one populate.
+        """Index on-disk tool files that no conf covers yet, in one populate.
 
         ``path_guids`` maps absolute tool file paths to their shed guid (or
         ``None``). A shed install loads all of a repository's tools before
         their conf entries exist; indexing them together costs one populate,
         one ``reload_tool_source_cache`` broadcast and one index reload, where
-        a per-tool index miss pays each of those once per tool. Files the
-        index already holds are skipped, so a metadata reset of an indexed
-        repository costs nothing.
+        a per-tool index miss pays each of those once per tool.
+
+        Every file is parsed: a repository update rewrites its tools in place,
+        possibly only in imported macro files. The populate writes the index,
+        broadcasts and reloads only when an entry changed, so a metadata reset
+        of an indexed repository costs one parse per tool.
         """
-        missing = {
-            path: guid
-            for path, guid in path_guids.items()
-            if os.path.exists(path) and not self._indexes_tool_file(path, guid)
-        }
-        if not missing:
+        existing = {path: guid for path, guid in path_guids.items() if os.path.exists(path)}
+        if not existing:
             return
-        populate_for_paths(
+        stats = populate_for_paths(
             self.app.config,
-            list(missing),
-            path_guids=missing,
+            list(existing),
+            path_guids=existing,
+            incremental=False,
             app=self.app,
         )
-        if self._store is not None:
+        if self._store is not None and stats.get("indexes_written"):
             self._store.invalidate_index_cache()
             self._tool_index = self._store.load_index() or ToolIndex()
             self._rebuild_shed_short_id_map()
-
-    def _indexes_tool_file(self, path: str, guid: str | None) -> bool:
-        if guid:
-            # Not ``_resolve_index_entry``: a repository update rewrites tool
-            # files in place, and the store still maps the path to the
-            # previous version.
-            return self._tool_index is not None and guid in self._tool_index.entries
-        return self._resolve_index_entry(path, None) is not None
 
     def _index_source_paths(self) -> set[str]:
         """Every ``source_path`` the current in-memory index covers.

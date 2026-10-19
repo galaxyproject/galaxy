@@ -952,8 +952,19 @@ def _populate_store_inline_unlocked(
         # off DiscoveredTool).
         full_scan = paths is None or prune
         biotools_metadata_source = get_galaxy_biotools_metadata_source(config)
+        stats["indexes_written"] = 0
         for store_name in sorted(writable_names):
             previous_index = stores[store_name].load_index()
+            new_entries: list[ToolIndexEntry] = []
+            for index_input in index_inputs[store_name]:
+                if isinstance(index_input, ToolIndexEntry):
+                    # Unchanged tool: prior entry carried forward, no re-parse.
+                    new_entries.append(index_input)
+                    continue
+                d, stored, tool_source = index_input
+                new_entry = build_index_entry_from_source(d, stored, tool_source, biotools_metadata_source)
+                if new_entry is not None:
+                    new_entries.append(new_entry)
             if full_scan:
                 # Replace the index entirely from this run's discoveries.
                 index = ToolIndex()
@@ -962,15 +973,12 @@ def _populate_store_inline_unlocked(
                 # entries for the paths we just rescanned. Anything else
                 # stays as-is (use reconcile_index for full prune).
                 index = previous_index or ToolIndex()
-            for index_input in index_inputs[store_name]:
-                if isinstance(index_input, ToolIndexEntry):
-                    # Unchanged tool: prior entry carried forward, no re-parse.
-                    index.add_entry(index_input, new_placements_first=not full_scan)
+                if previous_index is not None and all(index.holds(entry) for entry in new_entries):
+                    # Every process reloads the index after a write, so a
+                    # rescan that changed nothing (a metadata reset) skips it.
                     continue
-                d, stored, tool_source = index_input
-                new_entry = build_index_entry_from_source(d, stored, tool_source, biotools_metadata_source)
-                if new_entry is not None:
-                    index.add_entry(new_entry, new_placements_first=not full_scan)
+            for entry in new_entries:
+                index.add_entry(entry, new_placements_first=not full_scan)
             if full_scan and previous_index is not None and previous_index.panel_items:
                 # The placements list is the panel's ordering memory — the
                 # role integrated_tool_panel.xml plays for the eager toolbox.
@@ -993,6 +1001,7 @@ def _populate_store_inline_unlocked(
                 if write_manifests:
                     raise
                 continue
+            stats["indexes_written"] += 1
             if write_manifests:
                 store_url = stores[store_name].manifest_url
                 if store_url is None:
@@ -1003,7 +1012,7 @@ def _populate_store_inline_unlocked(
                         log.info("Skipping manifest for non-file SQLite store %s", store_name)
                     else:
                         log.info("Wrote tool source store manifest for %s to %s", store_name, manifest_path)
-        if broadcast:
+        if broadcast and stats["indexes_written"]:
             # Tell peer Galaxy processes to drop their cached index so the
             # next request reloads what we just wrote.
             _broadcast_reload(config, app)
@@ -1064,6 +1073,7 @@ def populate_for_paths(
     paths: list[str],
     *,
     path_guids: dict[str, str | None] | None = None,
+    incremental: bool = True,
     app=None,
 ) -> dict[str, int]:
     """Partial-update populator entry for shed installs.
@@ -1074,12 +1084,15 @@ def populate_for_paths(
     processes pick up the new tools. ``path_guids`` supplies the guid for
     paths that no persisted conf covers yet (install-time metadata
     generation), so the ad-hoc entries are keyed like their eventual
-    conf-driven replacements. Pass ``app`` so reload broadcasts reach peers
-    on the SQLAlchemy transport.
+    conf-driven replacements. ``incremental=False`` parses every path even
+    when the file is byte-identical to its indexed version, which catches
+    changes made only in the macro files it imports. Pass ``app`` so reload
+    broadcasts reach peers on the SQLAlchemy transport.
     """
     return populate_store_inline(
         config,
         paths=paths,
+        incremental=incremental,
         broadcast=True,
         path_guids=path_guids,
         app=app,

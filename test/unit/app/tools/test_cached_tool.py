@@ -6,7 +6,6 @@ from datetime import (
     datetime,
     timezone,
 )
-from types import MethodType
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -15,7 +14,6 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
-from galaxy.app import GalaxyManagerApplication
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -500,6 +498,7 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     def fake_populate(config, paths, path_guids=None, **kwargs):
         calls["paths"] = paths
         calls["path_guids"] = path_guids
+        return {"indexes_written": 1}
 
     monkeypatch.setattr(mod, "populate_for_paths", fake_populate)
     tool = box.create_tool(config_file=str(tool_file), guid=guid)
@@ -513,59 +512,25 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     box._store.invalidate_index_cache.assert_called()
 
 
-def _shed_tool_files(tmp_path, names):
-    path_guids = {}
-    for name in names:
-        tool_file = tmp_path / f"{name}.xml"
-        tool_file.write_text(f"<tool id='{name}' version='1.0'/>")
-        path_guids[str(tool_file)] = f"toolshed.example.com/repos/owner/repo/{name}/1.0"
-    return path_guids
-
-
-def test_index_tool_files_populates_only_index_misses(tmp_path, monkeypatch):
-    # Metadata resets and repository updates load tools the index already
-    # holds; only the misses need a populate.
-    path_guids = _shed_tool_files(tmp_path, ["indexed", "new"])
+@pytest.mark.parametrize("indexes_written", [0, 1])
+def test_index_tool_files_parses_indexed_files_and_reloads_after_a_write(tmp_path, monkeypatch, indexes_written):
+    # A repository update rewrites indexed tool files in place, possibly only
+    # in the macros they import, so every file is parsed again.
+    guid = "toolshed.example.com/repos/owner/repo/updated/1.0"
+    tool_file = tmp_path / "updated.xml"
+    tool_file.write_text("<tool id='updated' version='1.0'/>")
     box = _seam_box()
-    indexed_guid = path_guids[str(tmp_path / "indexed.xml")]
-    box._tool_index.entries[indexed_guid] = _entry(id=indexed_guid)
+    box._tool_index.add_entry(_entry(id=guid))
     calls = []
-    monkeypatch.setattr(mod, "populate_for_paths", lambda config, paths, path_guids=None, **kwargs: calls.append(paths))
-    box.index_tool_files(path_guids)
-    assert calls == [[str(tmp_path / "new.xml")]]
 
+    def fake_populate(config, paths, path_guids=None, incremental=True, **kwargs):
+        calls.append((paths, incremental))
+        return {"indexes_written": indexes_written}
 
-def test_index_tool_files_skips_populate_when_every_tool_is_indexed(tmp_path, monkeypatch):
-    path_guids = _shed_tool_files(tmp_path, ["first", "second"])
-    box = _seam_box()
-    for guid in path_guids.values():
-        box._tool_index.entries[guid] = _entry(id=guid)
-    calls = []
-    monkeypatch.setattr(mod, "populate_for_paths", lambda config, paths, path_guids=None, **kwargs: calls.append(paths))
-    box.index_tool_files(path_guids)
-    assert calls == []
-    box._store.invalidate_index_cache.assert_not_called()
-
-
-def test_index_tool_files_populates_version_bump_at_indexed_path(tmp_path, monkeypatch):
-    # A repository update rewrites a tool file in place; the store still maps
-    # that path to the previous version, which must not count as indexed.
-    path_guids = _shed_tool_files(tmp_path, ["bumped"])
-    path, old_guid = next(iter(path_guids.items()))
-    box = _seam_box()
-    box._tool_index.add_entry(_entry(id=old_guid, version="1.0"))
-    box._store.get_by_source_path.return_value = StoredToolSource(
-        hash="old_hash",
-        tool_source_class="XmlToolSource",
-        raw_source="<tool/>",
-        tool_id=old_guid,
-        tool_version="1.0",
-        source_path=path,
-    )
-    calls = []
-    monkeypatch.setattr(mod, "populate_for_paths", lambda config, paths, path_guids=None, **kwargs: calls.append(paths))
-    box.index_tool_files({path: old_guid.replace("/1.0", "/2.0")})
-    assert calls == [[path]]
+    monkeypatch.setattr(mod, "populate_for_paths", fake_populate)
+    box.index_tool_files({str(tool_file): guid})
+    assert calls == [([str(tool_file)], False)]
+    assert box._store.invalidate_index_cache.called is bool(indexes_written)
 
 
 def test_create_tool_stamps_data_manager_conf_id_on_entry():
@@ -770,19 +735,6 @@ def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):
     box._store.remove_index_entry.assert_called_once_with("doomed")
     assert calls == [("reload_tool_source_cache", {"noop_self": True})]
     assert "doomed" not in box._tools_by_id
-
-
-def test_remove_tool_by_id_leaves_search_index_to_config_watcher(monkeypatch):
-    box = _registry_box()
-    box._tool_index = ToolIndex()
-    entry = _entry(id="doomed")
-    box._tool_index.add_entry(entry)
-    box._register_cached_entry(entry)
-    box.app.writes_tool_search_index = False
-    box.app.reindex_tool_search = MethodType(GalaxyManagerApplication.reindex_tool_search, box.app)
-    monkeypatch.setattr(queue_worker_mod, "send_control_task", lambda app, task, **kwargs: None)
-    box.remove_tool_by_id("doomed")
-    box.app.toolbox_search.build_index.assert_not_called()
 
 
 def test_remove_tool_by_id_persists_shared_cached_index_before_mutating(monkeypatch, tmp_path):

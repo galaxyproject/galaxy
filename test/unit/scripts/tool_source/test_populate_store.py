@@ -446,6 +446,38 @@ class TestIncrementalFastPath:
         entry = index.entries["toolshed.example.org/repos/iuc/shed_7/shed_7/1.0"]
         assert entry.panel_section_id == "shed_section"
 
+    def test_partial_populate_writes_index_only_when_an_entry_changed(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tool = _write_tool(tools_dir / "rescan.xml", "rescan")
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="rescan.xml"/>')
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 0
+
+        _write_tool(tool, "rescan", command="echo changed")
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 1
+
+    def test_partial_populate_picks_up_macro_only_change(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tools_dir.mkdir()
+        tool = tools_dir / "macro_tool.xml"
+        tool.write_text(
+            '<tool id="macro_tool" name="Macro" version="@TOOL_VERSION@" profile="21.09">'
+            "<macros><import>macros.xml</import></macros><command>echo</command></tool>"
+        )
+        macros = tools_dir / "macros.xml"
+        macros.write_text('<macros><token name="@TOOL_VERSION@">1.0</token></macros>')
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="macro_tool.xml"/>')
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        macros.write_text('<macros><token name="@TOOL_VERSION@">2.0</token></macros>')
+        _populate_default(cfg, paths=[str(tool)], incremental=False)
+
+        _, index = _load_default_index(cfg)
+        assert index.entries["macro_tool"].version == "2.0"
+
     def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
         """A stale scan must commit before a concurrent uninstall can prune it."""
         tools_dir = tmp_path / "tools"

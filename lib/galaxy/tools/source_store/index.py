@@ -213,6 +213,19 @@ class ToolIndex(BaseModel):
         if replace:
             self.entries[entry.id] = entry
 
+    def holds(self, entry: ToolIndexEntry) -> bool:
+        """Whether the index already has ``entry`` and its placement, ignoring ``indexed_at``."""
+        existing = self.entries_by_version.get(entry.id, {}).get(entry.version or "")
+        if existing is None or existing.model_copy(update={"indexed_at": entry.indexed_at}) != entry:
+            return False
+        if not entry.in_panel:
+            return True
+        return any(
+            (item.tool_id, item.section_id, item.section_name, item.hidden)
+            == (entry.id, entry.panel_section_id, entry.panel_section_name, entry.hidden)
+            for item in self.panel_items
+        )
+
     def _record_panel_item(self, entry: ToolIndexEntry, new_placements_first: bool = False) -> None:
         """Record ``entry``'s panel placement, keyed on (tool id, section).
 
