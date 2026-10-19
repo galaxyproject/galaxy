@@ -3,7 +3,8 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import type { JobBaseModel, JobFetchExtraParams } from "@/api/jobs";
+import type { RegisteredUser } from "@/api";
+import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/api/jobs";
 import { fetchJobs } from "@/api/jobs";
 import { jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
 import { useJobStore } from "@/stores/jobStore";
@@ -25,7 +26,8 @@ const props = withDefaults(defineProps<Props>(), {
     inPanel: false,
 });
 
-const { currentUser, showToolNamesInJobPanel } = storeToRefs(useUserStore());
+const userStore = useUserStore();
+const { currentUser, showToolNamesInJobPanel } = storeToRefs(userStore);
 
 const jobStore = useJobStore();
 const { sortedStoredJobs } = storeToRefs(jobStore);
@@ -68,6 +70,17 @@ const currentSortedJobs = computed(() => {
     return sortedStoredJobs.value.filter((job) => currentJobIds.value.has(job.id));
 });
 
+/** If user information is available, determines whether the job belongs to another user. */
+function belongsToAnotherUser(job: ShowFullJobResponse): boolean {
+    if (job.user_id !== undefined && job.user_id !== null) {
+        return !userStore.matchesCurrentUserId(job.user_id);
+    }
+    if (job.user_email) {
+        return job.user_email !== (currentUser.value as RegisteredUser | null)?.email;
+    }
+    return false;
+}
+
 // Ensure any jobs added to the store while no filter is active are included in `currentJobIds`
 // (these would be jobs not already included in the paginated set; think a job submitted while the panel is open)
 watch(sortedStoredJobs, (jobs) => {
@@ -75,7 +88,7 @@ watch(sortedStoredJobs, (jobs) => {
         return;
     }
     for (const job of jobs) {
-        if (!HIDDEN_TOOL_IDS.includes(job.tool_id)) {
+        if (!HIDDEN_TOOL_IDS.includes(job.tool_id) && !belongsToAnotherUser(job)) {
             currentJobIds.value.add(job.id);
         }
     }
