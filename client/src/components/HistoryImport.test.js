@@ -109,13 +109,14 @@ describe("HistoryImport.vue", () => {
     it("switches the import source from a labelled radio group", async () => {
         const group = wrapper.find("[role=radiogroup]");
         const legend = group.find("legend");
-        expect(legend.text()).toBe(wrapper.vm.howLabel);
+        expect(legend.text()).toBe("How would you like to specify the history archive?");
         expect(group.attributes("aria-labelledby")).toBe(legend.attributes("id"));
         const radios = group.findAll("input[type=radio]");
         expect(radios.map((radio) => radio.attributes("value"))).toEqual(["externalUrl", "upload", "remoteFilesUri"]);
         expect(radios[0].element.checked).toBe(true);
+        expect(wrapper.find("input[type=file]").exists()).toBe(false);
         await radios[1].setValue(true);
-        expect(wrapper.vm.importType).toBe("upload");
+        expect(wrapper.find("input[type=file]").exists()).toBe(true);
         expect(wrapper.find("input[type=url]").exists()).toBe(false);
     });
 
