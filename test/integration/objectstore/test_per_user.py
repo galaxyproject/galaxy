@@ -248,6 +248,16 @@ class TestPerUserObjectStoreIntegration(BaseUserObjectStoreIntegration):
                 api_asserts.assert_status_code_is(response, 400)
                 api_asserts.assert_error_message_contains(response, "object store")
 
+                response = self.dataset_populator.tool_request_raw(
+                    "multi_data_param",
+                    {"f1": hda_input, "f2": hda_input},
+                    history_id,
+                    strict=False,
+                    preferred_object_store_id=object_store_id,
+                )
+                api_asserts.assert_status_code_is(response, 400)
+                api_asserts.assert_error_message_contains(response, "object store")
+
                 workflow_id = workflow_populator.upload_yaml_workflow(SIMPLE_WORKFLOW)
                 request = {
                     "history_id": history_id,
