@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BCardTitle, BLink } from "bootstrap-vue";
+import { BCard, BCardTitle } from "bootstrap-vue";
 
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 
 async function handleWorkbook(base64Content: string) {
     emit("workbookContents", base64Content);
@@ -40,10 +41,10 @@ const emit = defineEmits(["workbookContents"]);
             </GAlert>
         </div>
         <div>
-            <BLink href="#" @click.prevent="browseFiles">
+            <GLink @click="browseFiles">
                 <FontAwesomeIcon size="xl" :icon="faUpload" />
                 Drop completed workbook here or click to upload.
-            </BLink>
+            </GLink>
             <HiddenWorkbookUploadInput
                 ref="uploadRef"
                 data-description="workbook card file input"
