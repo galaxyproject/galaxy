@@ -3,7 +3,6 @@ Support for dynamically modifying output attributes.
 """
 
 import logging
-import os.path
 import re
 from typing import (
     Any,
@@ -12,6 +11,7 @@ from typing import (
 from typing_extensions import Protocol
 
 from galaxy import util
+from .util import resolve_tool_data_file
 
 try:
     from galaxy.util.template import fill_template
@@ -219,11 +219,12 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
         self.offset = int(self.offset)
         self.separator = elem.get("separator", "\t")
         self.options = []
-        data_file = self.name
-        if not os.path.isabs(data_file):
-            data_file = os.path.join(self.app.config.tool_data_path, data_file)
-        for line in open(data_file):
-            self.options.append(line.rstrip("\n\r").split(self.separator))
+        data_file = resolve_tool_data_file(self.app.config, self.name)
+        if data_file is None:
+            raise FileNotFoundError(f"File {self.name} specified by the 'name' attribute not found")
+        with open(data_file) as fh:
+            for line in fh:
+                self.options.append(line.rstrip("\n\r").split(self.separator))
 
     def get_value(self, other_values):
         options = self.options

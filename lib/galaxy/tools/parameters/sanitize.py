@@ -104,11 +104,12 @@ class ToolParameterSanitizer:
             if split_name.startswith("string."):
                 string_constant = split_name[7:]
                 if string_constant in ("letters", "lowercase", "uppercase"):
-                    split_name = f"string.ascii_{string_constant}"
-                try:
-                    value = eval(split_name)
-                except NameError as e:
-                    log.debug(f"Invalid string preset specified: {e}")
+                    string_constant = f"ascii_{string_constant}"
+                constant = getattr(string, string_constant, None) if not string_constant.startswith("_") else None
+                if isinstance(constant, str):
+                    value = constant
+                else:
+                    log.debug(f"Invalid string preset specified: {split_name}")
             elif split_name in cls.VALID_PRESET:
                 value = cls.VALID_PRESET[split_name]
             else:
