@@ -359,17 +359,10 @@ const selectedCount = computed(() => {
                 class="toggle-button case-sensitivity"
                 outline
                 color="blue"
-                :aria-pressed="`${caseSensitive}`"
                 title="case sensitive">
                 Aa
             </GButton>
-            <GButton
-                v-model:pressed="useRegex"
-                class="toggle-button use-regex"
-                outline
-                color="blue"
-                :aria-pressed="`${useRegex}`"
-                title="use regex">
+            <GButton v-model:pressed="useRegex" class="toggle-button use-regex" outline color="blue" title="use regex">
                 .*
             </GButton>
         </fieldset>

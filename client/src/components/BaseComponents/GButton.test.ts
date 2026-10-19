@@ -298,6 +298,12 @@ describe("GButton.vue pressed", () => {
         expect(wrapper.get("button").attributes("aria-pressed")).toBeUndefined();
     });
 
+    it("lets an explicit aria-pressed from the consumer win", () => {
+        const wrapper = mountGButton({ pressed: true, "aria-pressed": "mixed" });
+
+        expect(wrapper.get("button").attributes("aria-pressed")).toBe("mixed");
+    });
+
     // aria-pressed is not allowed on links.
     it("leaves aria-pressed off a router-link root", () => {
         const wrapper = mount(GButton as object, {
