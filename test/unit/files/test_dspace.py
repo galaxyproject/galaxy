@@ -49,7 +49,8 @@ def _fake_repository():
         "sizeBytes": 3,
         "checkSum": {"checkSumAlgorithm": "MD5", "value": "900150983cd24fb0d6963f7d28e17f72"},
     }
-    responses.get(f"{API}/core/bundles/b1/bitstreams", json=_page("bitstreams", [bitstream]))
+    pdf = {**bitstream, "uuid": "f2", "name": "paper.pdf", "_embedded": {"format": {"mimetype": "application/pdf"}}}
+    responses.get(f"{API}/core/bundles/b1/bitstreams", json=_page("bitstreams", [bitstream, pdf]))
     responses.get(f"{API}/core/bundles/b2/bitstreams", json=_page("bitstreams", [{"uuid": "t1", "name": "reads.jpg"}]))
 
 
@@ -74,9 +75,12 @@ def test_browse_down_to_the_original_files():
     }
     files = file_source.list("/items/i1")[0]
     assert [(entry.name, entry.uri) for entry in files] == [
-        ("reads.fastq", "gxfiles://dspace/bitstreams/f1/reads.fastq")
+        ("reads.fastq", "gxfiles://dspace/bitstreams/f1/reads.fastq"),
+        ("paper.pdf", "gxfiles://dspace/bitstreams/f2/paper.pdf"),
     ]
     assert files[0].hashes[0].hash_value == "900150983cd24fb0d6963f7d28e17f72"
+    # a citation cover page can change a PDF, so its MD5 is not passed on
+    assert files[1].hashes is None
 
 
 @responses.activate
