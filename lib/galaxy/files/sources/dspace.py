@@ -15,6 +15,7 @@ from urllib3.exceptions import LocationParseError
 from urllib3.util import parse_url
 
 from galaxy.exceptions import (
+    AuthenticationRequired,
     ConfigDoesNotAllowException,
     MessageException,
     ObjectNotFound,
@@ -89,6 +90,11 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         if recursive:
             raise MessageException("Recursive listing is not supported for DSpace file sources.")
         config = context.config
+        if (config.token or "").strip():
+            # DSpace quietly treats an expired token as no token, so ask whether it still logs in
+            status = self._get_json(config, self._url(config.api_url, "authn/status"), {})
+            if not status.get("authenticated"):
+                raise self._token_not_accepted()
         query = query.strip() if query else None
         parts = self._split(path)
         if not parts:
@@ -263,6 +269,9 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
             else:
                 raise MessageException(f"DSpace redirected more than {MAX_REDIRECTS} times [{url}].")
             with response:
+                if response.status_code == 400 and "Authorization" in headers:
+                    # DSpace answers 400 to a login token it no longer accepts
+                    raise self._token_not_accepted()
                 if response.status_code == 404:
                     raise ObjectNotFound(f"DSpace object not found [{response.url}].")
                 if response.status_code in (401, 403):
@@ -273,6 +282,12 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
                 yield response.raw
         except requests.exceptions.RequestException as e:
             raise MessageException(f"Could not get {url} from DSpace. Reason: {e}") from e
+
+    def _token_not_accepted(self) -> AuthenticationRequired:
+        return AuthenticationRequired(
+            f"DSpace did not accept the token of {self.label}; it may have expired. "
+            "Log in to DSpace again and update the token."
+        )
 
     def _refuse_a_private_address(self, url: str) -> None:
         # parsed as requests parses it; validate_non_local needs a lowercase scheme and a bare IPv6 host

@@ -9,7 +9,10 @@ from urllib.parse import (
 import pytest
 import responses
 
-from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    ConfigDoesNotAllowException,
+)
 from galaxy.files.plugins import FileSourcePluginsConfig
 from ._util import (
     configured_file_sources,
@@ -93,6 +96,15 @@ def test_download_checks_every_redirect_and_keeps_the_token_on_dspace():
     auth = {str(call.request.url).split("?")[0]: call.request.headers.get("Authorization") for call in responses.calls}
     assert auth[f"{API}/core/bitstreams/f1/content"] == "Bearer secret"
     assert auth[CDN] is None
+
+    responses.replace(responses.GET, f"{API}/core/bitstreams/f1/content", status=400)
+    with pytest.raises(AuthenticationRequired):
+        realize_to_temp_file(file_sources, "gxfiles://dspace/bitstreams/f1/reads.fastq")
+    responses.replace(responses.GET, f"{API}/core/bitstreams/f1/content", status=302, headers={"Location": CDN})
+    # an expired token still lists, but only what is public
+    responses.get(f"{API}/authn/status", json={"authenticated": False})
+    with pytest.raises(AuthenticationRequired):
+        file_sources.get_file_source_path("gxfiles://dspace").file_source.list("/")
 
     responses.replace(responses.GET, CDN, status=302, headers={"Location": "http://169.254.169.254/latest"})
     responses.get("http://169.254.169.254/latest", body=b"secret")
