@@ -223,7 +223,7 @@ class TestFrontendRepositories(PlaywrightTestCase):
                 .locator(Locators.config_file_contents_body)
             )
             expect(shed_yml).to_contain_text(f"name: {repository.name}")
-            assert yaml.safe_load(shed_yml.text_content()) == {
+            assert yaml.safe_load(shed_yml.inner_text()) == {
                 "name": repository.name,
                 "owner": repository.owner,
                 "description": synopsis,
