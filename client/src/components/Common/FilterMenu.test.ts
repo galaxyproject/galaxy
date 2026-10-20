@@ -198,7 +198,11 @@ describe("FilterMenu", () => {
         // default bool filter
         const radioGroup = wrapper.find("[data-description='filter bool_def']");
         expect(radioGroup.attributes("role")).toBe("radiogroup");
-        expect(radioGroup.attributes("aria-label")).toBe("Filter by option (any/yes/no)");
+        // named by the visible label, so the accessible name follows it
+        expect(radioGroup.attributes("aria-label")).toBeUndefined();
+        expect(wrapper.get(`#${radioGroup.attributes("aria-labelledby")}`).text()).toBe(
+            "Filter by option (any/yes/no):",
+        );
         const radioBtnGrp = radioGroup.findAllComponents(GRadio);
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
@@ -306,7 +310,8 @@ describe("FilterMenu", () => {
 
         // -------- Testing deleted filter first:  ---------
         const deletedFilterCheckbox = wrapper.find<HTMLInputElement>("[data-description='filter deleted'] input");
-        expect(deletedFilterCheckbox.attributes("aria-label")).toBe("Deleted");
+        expect(deletedFilterCheckbox.attributes("aria-label")).toBeUndefined();
+        expect(wrapper.get(`#${deletedFilterCheckbox.attributes("aria-labelledby")}`).text()).toBe("Deleted:");
         expect(deletedFilterCheckbox.element.checked).toBe(false);
         await deletedFilterCheckbox.setValue(true);
         await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);

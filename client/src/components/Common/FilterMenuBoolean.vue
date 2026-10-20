@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
+import { useUid } from "@/composables/utils/uid";
 import type { ValidFilter } from "@/utils/filtering";
 
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
@@ -20,6 +21,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     view: "dropdown",
 });
+
+const labelId = useUid("filter-menu-boolean-label-");
 
 const boolType = computed(() => props.filter.boolType || "default");
 const isCheckbox = computed(() => boolType.value === "is" && props.view === "compact");
@@ -70,21 +73,18 @@ watch(
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
     <div :class="{ 'd-flex': isCheckbox }" @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
-        <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
+        <small :id="labelId" :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
 
         <div v-if="isCheckbox" :data-description="`filter ${props.name}`">
             <!-- value is "any" when unset, which is not a checked state -->
-            <GCheckbox
-                :aria-label="props.filter.placeholder"
-                :model-value="value === true"
-                @update:model-value="value = $event" />
+            <GCheckbox :aria-labelledby="labelId" :model-value="value === true" @update:model-value="value = $event" />
         </div>
         <GRadioGroup
             v-else
             v-model="value"
             buttons
             size="small"
-            :aria-label="props.filter.placeholder"
+            :aria-labelledby="labelId"
             :data-description="`filter ${props.name}`"
             :options="options" />
     </div>
