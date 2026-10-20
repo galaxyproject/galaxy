@@ -34,15 +34,15 @@ interface Props {
      */
     buttonVariant?: RadioButtonVariant;
     /**
-     * Disables every radio in the group
-     * @default false
-     */
-    disabled?: boolean;
-    /**
      * Help text under the options, linked to the group with aria-describedby
      * @default undefined
      */
     description?: string;
+    /**
+     * Disables every radio in the group
+     * @default false
+     */
+    disabled?: boolean;
     /**
      * Visible legend for the group
      * @default undefined
