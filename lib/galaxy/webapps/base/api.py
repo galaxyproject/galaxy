@@ -37,7 +37,11 @@ from galaxy.exceptions.utils import (
     validation_error_to_message_exception,
 )
 from galaxy.util.path import StrPath
-from galaxy.web.framework.base import walk_controller_modules
+from galaxy.web.framework.base import (
+    parse_byte_range,
+    RangeNotSatisfiable,
+    walk_controller_modules,
+)
 
 if TYPE_CHECKING:
     from starlette.background import BackgroundTask
@@ -53,24 +57,15 @@ from galaxy.schema.schema import MessageExceptionModel
 log = getLogger(__name__)
 
 
-# Copied from https://github.com/tiangolo/fastapi/issues/1240#issuecomment-1055396884
-def _get_range_header(range_header: str, file_size: int) -> tuple[int, int]:
-    def _invalid_range():
-        return HTTPException(
+def _get_range_header(range_header: str, file_size: int) -> Optional[tuple[int, int]]:
+    try:
+        return parse_byte_range(range_header, file_size)
+    except RangeNotSatisfiable:
+        raise HTTPException(
             status.HTTP_416_RANGE_NOT_SATISFIABLE,
             detail=f"Invalid request range (Range:{range_header!r})",
+            headers={"content-range": f"bytes */{file_size}"},
         )
-
-    try:
-        h = range_header.replace("bytes=", "").rsplit("-", 1)
-        start = int(h[0]) if h[0] != "" else 0
-        end = int(h[1]) if h[1] != "" else file_size - 1
-    except ValueError:
-        raise _invalid_range()
-
-    if start > end or start < 0 or end > file_size - 1:
-        raise _invalid_range()
-    return start, end
 
 
 def _live_request_sessions() -> list:
@@ -178,15 +173,16 @@ class GalaxyFileResponse(FileResponse):
 
         start = 0
         end = stat_result.st_size - 1
+        byte_range = None
         if not send_header_only:
-            http_range = ""
             for key, value in scope["headers"]:
                 if key == b"range":
-                    http_range = value.decode("latin-1")
-                    start, end = _get_range_header(http_range, stat_result.st_size)
-                    self.headers["content-length"] = str(end - start + 1)
-                    self.headers["content-range"] = f"bytes {start}-{end}/{stat_result.st_size}"
-                    self.status_code = status.HTTP_206_PARTIAL_CONTENT
+                    byte_range = _get_range_header(value.decode("latin-1"), stat_result.st_size)
+                    if byte_range is not None:
+                        start, end = byte_range
+                        self.headers["content-length"] = str(end - start + 1)
+                        self.headers["content-range"] = f"bytes {start}-{end}/{stat_result.st_size}"
+                        self.status_code = status.HTTP_206_PARTIAL_CONTENT
                     break
 
         # All DB work for this request is done; the body below is pure file I/O
@@ -210,7 +206,7 @@ class GalaxyFileResponse(FileResponse):
                 if start:
                     await file.seek(start)
                 while more_body:
-                    if http_range:
+                    if byte_range is not None:
                         pos = await file.tell()
                         read_size = min(self.chunk_size, end + 1 - pos)
                         if pos + read_size == end + 1:

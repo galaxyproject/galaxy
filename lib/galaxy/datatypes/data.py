@@ -471,7 +471,12 @@ class Data(metaclass=DataMeta):
         """
         rel_paths = []
         file_paths = []
-        if dataset.datatype.composite_type or dataset.extension.endswith("html"):
+        if isinstance(dataset.datatype, Directory):
+            # Like the single-dataset download, a directory archive holds only the extra files.
+            for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
+                rel_paths.append(os.path.join(name, rpath))
+                file_paths.append(fpath)
+        elif dataset.datatype.composite_type or dataset.extension.endswith("html"):
             main_file = f"{name}.html"
             rel_paths.append(main_file)
             file_paths.append(dataset.get_file_name())
@@ -488,10 +493,8 @@ class Data(metaclass=DataMeta):
         composite_extensions.append("html")  # for archiving composite datatypes
         composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
-        composite_extensions.append("directory")  # for downloading directories.
-        composite_extensions.append("zarr")  # for downloading zarr directories.
 
-        if data.extension in composite_extensions:
+        if data.extension in composite_extensions or isinstance(data.datatype, Directory):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
             headers["Content-Length"] = str(file_size)
