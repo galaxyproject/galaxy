@@ -161,7 +161,8 @@ describe("GCheckboxGroup", () => {
             const description = wrapper.find("fieldset > small");
             expect(description.text()).toBe("Pick one.");
             expect(wrapper.attributes("aria-describedby")).toBe(description.attributes("id"));
-            expect(wrapper.attributes("description")).toBeUndefined();
+            // the last child of the fieldset, so it reads after the options
+            expect(wrapper.element.lastElementChild).toBe(description.element);
         });
 
         it("renders no description and no aria-describedby by default", () => {
