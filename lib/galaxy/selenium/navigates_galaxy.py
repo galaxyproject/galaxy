@@ -1032,6 +1032,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.snapshot("login-submitted")
 
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
+        """Register a user from the login page's "Register here" form."""
         if email is None:
             email = self._get_random_email()
         if password is None:
