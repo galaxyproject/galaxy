@@ -102,6 +102,8 @@ class TestLoginController(TestCase):
             ("https://galaxy.example:8443/galaxy/x", root),
             ("http://galaxy.example/galaxy/x", root),
             ("https://user@galaxy.example/galaxy/x", root),
+            ("/user/logout", root),
+            ("https://galaxy.example/galaxy/user/logout", root),
             ("/\\evil.example.com/", root),
             ("https://evil.example.com\\@galaxy.example/", root),
             ("https://[galaxy.example/", root),

@@ -396,6 +396,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         if not (_is_absolute_url_to(root_url, redirect) or util.is_safe_login_redirect(redirect, allowed_hosts)):
             log.warning("Ignoring post-login redirect target that is not allowed: %s", redirect)
             return root_url
-        if util.compare_urls(logout_url, redirect):
+        # The client prepends galaxy_url_prefix to paths on this server.
+        destination = url_for("/").rstrip("/") + redirect if util.is_safe_local_redirect(redirect) else redirect
+        if util.compare_urls(logout_url, destination):
             return root_url
         return redirect
