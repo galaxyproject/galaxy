@@ -30,6 +30,7 @@ import os
 import re
 import shutil
 import threading
+from collections.abc import Callable
 from typing import (
     Protocol,
     runtime_checkable,
@@ -67,6 +68,12 @@ CanConvertToFloat = str | int | float
 CanConvertToInt = str | int | float
 
 UNSAFE_PATH_CHARACTERS = re.compile(r"[^A-Za-z0-9_-]")
+
+# A cached search build blocked by another writer's lock is retried after
+# INDEX_BUILD_RETRY_DELAY seconds, doubling the delay each time, at most
+# INDEX_BUILD_MAX_RETRIES times.
+INDEX_BUILD_RETRY_DELAY = 30.0
+INDEX_BUILD_MAX_RETRIES = 5
 
 
 def panel_view_index_dir(index_dir: str, panel_view_id: str) -> str:
@@ -163,6 +170,9 @@ class ToolBoxSearch:
         panel_search = self.panel_searches[panel_view]
         return panel_search.search(q, config)
 
+    def shutdown(self) -> None:
+        pass
+
 
 @runtime_checkable
 class SupportsCachedSearch(Protocol):
@@ -181,7 +191,13 @@ class SupportsCachedSearch(Protocol):
 class CachedToolboxSearch(ToolBoxSearch):
     """Build one metadata-only Whoosh corpus per rendered panel view."""
 
-    def __init__(self, config: GalaxyAppConfiguration, toolbox: SupportsCachedSearch | None = None) -> None:
+    def __init__(
+        self,
+        config: GalaxyAppConfiguration,
+        toolbox: SupportsCachedSearch | None = None,
+        retry_build: Callable[[], None] | None = None,
+        retry_delay: float = INDEX_BUILD_RETRY_DELAY,
+    ) -> None:
         self.config = config
         self._toolbox: SupportsCachedSearch | None = None
         self.cached_panel_searches: dict[str, ToolWhooshIndex] = {}
@@ -196,6 +212,15 @@ class CachedToolboxSearch(ToolBoxSearch):
         # TestCachedDataManagerIntegration setup in CI). Serialize the whole
         # build so only one rebuild touches the index dirs at a time.
         self._init_build_state()
+        # ``retry_build`` rebuilds a stale index; it runs on a timer thread
+        # after a build that another writer's lock blocked.
+        self._retry_build = retry_build
+        self._retry_delay = retry_delay
+        self._retry_lock = threading.Lock()
+        self._retry_timer: threading.Timer | None = None
+        self._retry_attempts = 0
+        self._retrying = False
+        self._shut_down = False
         if toolbox is not None:
             self._sync_panel_searches(toolbox)
 
@@ -218,9 +243,64 @@ class CachedToolboxSearch(ToolBoxSearch):
             if complete:
                 self._mark_built(cached_toolbox)
             else:
-                # The other writer may hold an older corpus: leave the index
-                # stale so the next rebuild_toolbox_search_index retries.
+                # The lock holder is another process, such as a previous
+                # config watcher, and may be writing an older corpus. Nothing
+                # else rebuilds before the next toolbox reload, so leave the
+                # index stale and retry.
                 self.indexed_reload_count = None
+                self._schedule_retry(first=not self._retrying)
+
+    def shutdown(self) -> None:
+        with self._retry_lock:
+            self._shut_down = True
+            if self._retry_timer is not None:
+                self._retry_timer.cancel()
+                self._retry_timer = None
+
+    def _schedule_retry(self, first: bool) -> None:
+        with self._retry_lock:
+            if self._retry_build is None or self._shut_down:
+                return
+            if first:
+                # A blocked install or reload starts a new series of retries,
+                # replacing a pending retry that may be minutes away.
+                self._retry_attempts = 0
+                if self._retry_timer is not None:
+                    self._retry_timer.cancel()
+                    self._retry_timer = None
+            elif self._retry_timer is not None:
+                return
+            if self._retry_attempts >= INDEX_BUILD_MAX_RETRIES:
+                log.warning(
+                    "Tool search index is still locked after %d retries, leaving it stale until the next toolbox reload",
+                    self._retry_attempts,
+                )
+                return
+            delay = self._retry_delay * 2**self._retry_attempts
+            self._retry_attempts += 1
+            log.info("Retrying the tool search index build in %s seconds", delay)
+            self._retry_timer = threading.Timer(delay, self._run_retry)
+            self._retry_timer.daemon = True
+            self._retry_timer.start()
+
+    def _run_retry(self) -> None:
+        with self._retry_lock:
+            # A replaced or cancelled timer can fire before cancel() lands;
+            # shutdown clears the timer too.
+            if self._retry_timer is not threading.current_thread():
+                return
+            self._retry_timer = None
+        assert self._retry_build is not None
+        with self._build_lock:
+            if self._shut_down:
+                return
+            self._retrying = True
+            try:
+                self._retry_build()
+            except Exception:
+                log.exception("Retrying the tool search index build failed")
+            finally:
+                self._retrying = False
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self._panel_view_ids:

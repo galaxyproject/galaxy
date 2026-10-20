@@ -440,7 +440,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             # materializing their tool stubs.
             cached_toolbox = self.toolbox
             assert isinstance(cached_toolbox, CachedToolBox)
-            search_singleton: ToolBoxSearch = CachedToolboxSearch(self.config, cached_toolbox)
+            search_singleton: ToolBoxSearch = CachedToolboxSearch(
+                self.config, cached_toolbox, retry_build=self.ensure_tool_search_index
+            )
         else:
             search_singleton = ToolBoxSearch(
                 self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
@@ -555,6 +557,22 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     @property
     def toolbox_or_none(self) -> tools.ToolBox | None:
         return self._toolbox
+
+    @property
+    def writes_tool_search_index(self) -> bool:
+        """Whether this process writes the shared ``tool_search_index_dir``."""
+        return False
+
+    def ensure_tool_search_index(self) -> None:
+        """Index the toolbox once per toolbox reload."""
+        if self.toolbox_or_none is None or not self.writes_tool_search_index:
+            return
+        if self.toolbox_search.build_index_if_stale(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        ):
+            self.tool_cache.reset_status()
 
     def _set_enabled_container_types(self):
         container_types_to_destinations = collections.defaultdict(list)
@@ -962,11 +980,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     def error_reports(self) -> ErrorReports:
         return self._error_reports
 
-    @property
-    def writes_tool_search_index(self) -> bool:
-        """Whether this process writes the shared ``tool_search_index_dir``."""
-        return False
-
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed. Defined here rather than on
         # MinimalGalaxyApplication so it wins over the MinimalManagerApp
@@ -981,17 +994,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         )
         self.tool_cache.reset_status()
 
-    def ensure_tool_search_index(self) -> None:
-        """Index the toolbox once per toolbox reload."""
-        if self.toolbox_or_none is None or not self.writes_tool_search_index:
-            return
-        if self.toolbox_search.build_index_if_stale(
-            tool_cache=self.tool_cache,
-            toolbox=self.toolbox,
-            index_help=self.config.index_tool_help,
-        ):
-            self.tool_cache.reset_status()
-
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
     """Encapsulates the state of a Universe application"""
@@ -1002,6 +1004,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         startup_timer = ExecutionTimer()
         super().__init__(fsmon=True, **kwargs)
         self.haltables = [
+            ("tool search index retry", self._shutdown_toolbox_search),
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
@@ -1228,6 +1231,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.legacy_mapper = None
         self.application_stack.register_postfork_function(self.object_store.start)
         log.info(f"Galaxy app startup finished {startup_timer}")
+
+    def _shutdown_toolbox_search(self):
+        self.toolbox_search.shutdown()
 
     def _shutdown_queue_worker(self):
         self.queue_worker.shutdown()
