@@ -5,6 +5,8 @@ from datetime import (
 )
 from unittest.mock import patch
 
+import pytest
+
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
@@ -17,6 +19,7 @@ admin_users = admin_email
 default_password = "123456"
 changed_password = "654321"
 user2_data = dict(email="User2@example.org", username="user2", password=default_password)
+ROOT_URL = "https://galaxy.example/galaxy/"
 
 
 class TestLoginController(TestCase):
@@ -86,37 +89,39 @@ class TestLoginController(TestCase):
         )
         assert response["message"] == "Success."
 
-    def test_login_redirect(self):
+    @pytest.mark.parametrize(
+        "redirect, expected",
+        [
+            ("https://tools.example.org/back", "https://tools.example.org/back"),
+            ("https://galaxy.example/galaxy/x", "https://galaxy.example/galaxy/x"),
+            ("https://galaxy.example:443/galaxy/x", "https://galaxy.example:443/galaxy/x"),
+            ("https://GALAXY.example/galaxy/x", "https://GALAXY.example/galaxy/x"),
+            ("https://galaxy.example:8443/galaxy/x", ROOT_URL),
+            ("http://galaxy.example/galaxy/x", ROOT_URL),
+            ("https://user@galaxy.example/galaxy/x", ROOT_URL),
+            (" https://galaxy.example/galaxy/x", ROOT_URL),
+            ("/user/logout", ROOT_URL),
+            ("https://galaxy.example/galaxy/user/logout", ROOT_URL),
+            ("/\\evil.example.com/", ROOT_URL),
+            ("https://evil.example.com\\@galaxy.example/", ROOT_URL),
+            ("https://[galaxy.example/", ROOT_URL),
+        ],
+    )
+    def test_login_redirect(self, redirect, expected):
         def url_for(path=None, controller=None, action=None, qualified=False):
             path = path or f"/{controller}/{action}"
             return f"https://galaxy.example/galaxy{path}" if qualified else f"/galaxy{path}"
 
         self.user_manager.create(**user2_data)
         self.trans.app.config.allowed_login_redirect_hosts = ["tools.example.org"]
-        root = "https://galaxy.example/galaxy/"
-        for redirect, expected in [
-            ("https://tools.example.org/back", "https://tools.example.org/back"),
-            ("https://galaxy.example/galaxy/x", "https://galaxy.example/galaxy/x"),
-            ("https://galaxy.example:443/galaxy/x", "https://galaxy.example:443/galaxy/x"),
-            ("https://GALAXY.example/galaxy/x", "https://GALAXY.example/galaxy/x"),
-            ("https://galaxy.example:8443/galaxy/x", root),
-            ("http://galaxy.example/galaxy/x", root),
-            ("https://user@galaxy.example/galaxy/x", root),
-            (" https://galaxy.example/galaxy/x", root),
-            ("/user/logout", root),
-            ("https://galaxy.example/galaxy/user/logout", root),
-            ("/\\evil.example.com/", root),
-            ("https://evil.example.com\\@galaxy.example/", root),
-            ("https://[galaxy.example/", root),
-        ]:
-            with patch("galaxy.webapps.galaxy.controllers.user.url_for", url_for):
-                response = json.loads(
-                    User(self.app).login(
-                        self.trans,
-                        payload={"login": user2_data["email"], "password": default_password, "redirect": redirect},
-                    )
+        with patch("galaxy.webapps.galaxy.controllers.user.url_for", url_for):
+            response = json.loads(
+                User(self.app).login(
+                    self.trans,
+                    payload={"login": user2_data["email"], "password": default_password, "redirect": redirect},
                 )
-            assert response["redirect"] == expected, redirect
+            )
+        assert response["redirect"] == expected
 
     def test_get_reset_token(self):
         def _check_reset_token(email):
