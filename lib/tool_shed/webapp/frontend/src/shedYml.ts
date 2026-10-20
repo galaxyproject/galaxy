@@ -9,8 +9,9 @@ type ShedYmlRepository = Pick<
 // Starting with a letter rules out numbers, dates and indicators; booleans and null are the words left.
 const PLAIN_SCALAR = /^[A-Za-z][\w ./()+,-]*$|^https?:\/\/[^\s#]*[^\s#:]$/
 const RESOLVES_TO_NON_STRING = /^(true|false|yes|no|on|off|y|n|null)$/i
-// Characters YAML refuses unescaped that JSON.stringify leaves as they are
-const UNPRINTABLE = /[\u007f-\u009f\ufffe\uffff]/g
+// Characters YAML refuses, or reads as line breaks, unescaped. JSON.stringify escapes the C0 ones itself.
+// eslint-disable-next-line no-control-regex -- matching control characters is the point
+const UNPRINTABLE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u2028\u2029\ufffe\uffff]/g
 
 function quoted(value: string): string {
     return JSON.stringify(value).replace(UNPRINTABLE, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)
