@@ -11,6 +11,10 @@ inputs:
   - name: count
     type: integer
     value: 2
+  - name: flag
+    type: boolean
+    optional: true
+    value: null
 outputs:
 - name: output
   type: data

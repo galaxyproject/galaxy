@@ -83,13 +83,18 @@ def test_section_contract(loaded_tool: LoadedTool, tool_input_format: DescribeTo
     section = loaded_tool.build()["inputs"][0]
     assert section["name"] == "group"
     assert section["type"] == "section"
-    assert [(parameter["name"], parameter["value"]) for parameter in section["inputs"]] == [("count", "2")]
+    parameters = {parameter["name"]: parameter for parameter in section["inputs"]}
+    assert parameters["count"]["value"] == "2"
+    assert parameters["flag"]["value"] is None
+    assert parameters["flag"]["optional"] is True
     loaded_tool.execute().with_inputs(tool_input_format.when.any({})).assert_has_single_job.with_output(
         "output"
-    ).with_json({"group": {"count": 2}})
-    inputs = tool_input_format.when.flat({"group|count": 5}).when.nested({"group": {"count": 5}})
+    ).with_json({"group": {"count": 2, "flag": None}})
+    inputs = tool_input_format.when.flat({"group|count": 5, "group|flag": True}).when.nested(
+        {"group": {"count": 5, "flag": True}}
+    )
     loaded_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_json(
-        {"group": {"count": 5}}
+        {"group": {"count": 5, "flag": True}}
     )
 
 

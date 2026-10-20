@@ -171,8 +171,13 @@ def landing_encode(
     return request_state
 
 
-def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParameterBundle) -> RequestToolState:
-    """Convert a relaxed request state into a strict request state by applying legacy behavior."""
+def strictify(
+    relaxed_state: RelaxedRequestToolState, input_models: ToolParameterBundle, yaml_origin: bool = False
+) -> RequestToolState:
+    """Convert a relaxed request state into a strict request state by applying legacy behavior.
+
+    Pass yaml_origin=True for YAML tools so section defaults follow the YAML Boolean policy.
+    """
 
     tool_state = deepcopy(relaxed_state.input_state)
 
@@ -196,7 +201,7 @@ def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParamete
                 _strictify_parameters(instance_state, parameter)
         elif isinstance(parameter, SectionParameterModel):
             section_state = _initialize_section_state(parameter, tool_state)
-            _fill_defaults(section_state, parameter, yaml_origin=False)
+            _fill_defaults(section_state, parameter, yaml_origin)
         elif isinstance(parameter, TextParameterModel):
             parameter_name = parameter.name
             if parameter_name not in tool_state:
