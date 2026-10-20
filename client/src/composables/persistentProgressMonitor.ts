@@ -15,9 +15,9 @@ interface ProcessedObject {
 
     /**
      * The type of the object being processed.
-     * For example, "history", "invocation", etc.
+     * For example, "history", "invocation", "dataset", etc.
      */
-    type: "history" | "invocation" | "collection";
+    type: "history" | "invocation" | "collection" | "dataset";
 
     /**
      * The name of the object.

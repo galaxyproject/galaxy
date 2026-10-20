@@ -11,6 +11,7 @@ from ._common import PdfDocumentType
 from .schema import (
     BcoGenerationParametersMixin,
     DatasetSourceType,
+    DiscardedDataType,
     HistoryContentType,
     Model,
     ModelStoreFormat,
@@ -92,6 +93,7 @@ class ImportModelStoreTaskRequest(Model):
     source_uri: str
     for_library: bool
     model_store_format: ModelStoreFormat | None = None
+    discarded_data: DiscardedDataType = DiscardedDataType.FORBID
 
 
 class MaterializeDatasetInstanceTaskRequest(Model):
