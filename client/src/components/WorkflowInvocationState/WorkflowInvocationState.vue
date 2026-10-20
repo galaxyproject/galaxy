@@ -470,7 +470,6 @@ async function onCancel() {
                     :invocation="invocation"
                     :steps-jobs-summary="stepsJobsSummary || undefined"
                     :is-full-page="props.isFullPage"
-                    :invocation-and-job-terminal="invocationAndJobTerminal"
                     :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
             </div>

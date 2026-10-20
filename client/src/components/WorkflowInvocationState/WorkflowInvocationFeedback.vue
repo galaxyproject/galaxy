@@ -4,7 +4,7 @@ import { computed, ref, watch } from "vue";
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
-import { useInvocationGraph } from "@/composables/useInvocationGraph";
+import { stepJobSummaryLookup, useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -51,20 +51,12 @@ watch(
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {
+        const findStepJobSummary = stepJobSummaryLookup(props.stepsJobsSummary);
         return Object.entries(steps.value)
             .filter(([index, step]) => {
                 if (!isWorkflowInput(step.type)) {
                     const invocationStep = props.invocation.steps[Number(index)];
-                    let invocationStepSummary: StepJobSummary | undefined;
-                    if (invocationStep) {
-                        invocationStepSummary = props.stepsJobsSummary.find((stepJobSummary: StepJobSummary) => {
-                            if (stepJobSummary.model === "ImplicitCollectionJobs") {
-                                return stepJobSummary.id === invocationStep.implicit_collection_jobs_id;
-                            } else {
-                                return stepJobSummary.id === invocationStep.job_id;
-                            }
-                        });
-                    }
+                    const invocationStepSummary = invocationStep && findStepJobSummary(invocationStep);
                     if (invocationStepSummary) {
                         return errorCount(invocationStepSummary) > 0;
                     }

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
@@ -27,8 +27,6 @@ interface Props {
     stepsJobsSummary: StepJobSummary[];
     /** The workflow which was run */
     workflow: StoredWorkflowDetailed;
-    /** Whether the invocation is terminal */
-    isTerminal: boolean;
     /** The zoom level for the graph */
     zoom?: number;
     /** Whether to show the minimap */
@@ -57,7 +55,6 @@ const loadingGraph = ref(true);
 const initialLoading = ref(true);
 const errored = ref(false);
 const errorMessage = ref("");
-const pollTimeout = ref<any>(null);
 const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
@@ -84,15 +81,26 @@ onMounted(async () => {
     workflowGraph.value?.fitWorkflow(0.25, 1.0, 20.0);
 });
 
-// Equivalent to onMounted; this is where the graph is initialized, and the polling is started
+// Equivalent to onMounted; this is where the graph is initialized. The graph then follows the
+// `invocation` and `stepsJobsSummary` props, polled by the parent.
 watch(
     () => workflowId.value,
     async (wfId) => {
         if (wfId) {
-            await pollInvocationGraph();
+            await loadGraph();
         }
     },
     { immediate: true },
+);
+
+// Retry a failed load when the parent polls new data
+watch(
+    () => [props.invocation, props.stepsJobsSummary],
+    async () => {
+        if (errored.value && workflowId.value) {
+            await loadGraph();
+        }
+    },
 );
 
 const stateStore = useWorkflowStateStore(storeId.value);
@@ -103,10 +111,6 @@ watch(
     () => (stateStore.scale = props.zoom),
     { immediate: true },
 );
-
-onUnmounted(() => {
-    clearTimeout(pollTimeout.value);
-});
 
 const initialPosition = computed(() => ({
     x: -props.initialX * props.zoom,
@@ -149,16 +153,6 @@ function navigateStep(direction: "previous" | "next") {
         } else if (direction === "previous" && activeNodeId.value > 0) {
             activeNodeId.value -= 1;
         }
-    }
-}
-
-/** Poll and load the invocation graph until the invocation is terminal */
-async function pollInvocationGraph() {
-    await loadGraph();
-    if (!props.isTerminal) {
-        pollTimeout.value = setTimeout(pollInvocationGraph, 3000);
-    } else {
-        clearTimeout(pollTimeout.value);
     }
 }
 
