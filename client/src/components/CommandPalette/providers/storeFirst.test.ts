@@ -35,10 +35,12 @@ describe("storeFirstItems", () => {
         resetListRefreshTracking();
     });
 
-    it("hydrates the listing once and answers later keystrokes from the cache", async () => {
+    it("hydrates the listing once and answers later keystrokes from a complete cache", async () => {
         const list = fakeList();
+        list.state.complete = true;
 
         await storeFirstItems(list, "", 8);
+        // two cached matches fill the limit of one, and a complete list needs no backend
         const items = await storeFirstItems(list, "alp", 1);
 
         expect(items.map((item) => item.title)).toEqual(["alpha"]);
@@ -65,6 +67,20 @@ describe("storeFirstItems", () => {
         list.state.complete = false;
         await storeFirstItems(list, "alp", 8);
         expect(list.searchItems).toHaveBeenCalledWith("alp");
+    });
+
+    it("searches an incomplete list even when loose cached matches fill the limit", async () => {
+        const exact = row("exact", "rna seq 02");
+        const list = fakeList();
+        list.state.loaded = true;
+        list.cachedItems = () => Array.from({ length: 10 }, (_, i) => row(`loose${i}`, `rna seq run ${i}`));
+        list.searchItems.mockResolvedValue([exact]);
+
+        const items = await storeFirstItems(list, "rna seq 02", 8);
+
+        expect(list.searchItems).toHaveBeenCalledWith("rna seq 02");
+        expect(items).toHaveLength(8);
+        expect(items[0]).toEqual(exact);
     });
 
     it("merges the found rows into the cached ones, one row per entity", async () => {
