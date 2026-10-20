@@ -1797,9 +1797,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.get("workflows/import")
 
     def workflow_index_open_with_name(self, name: str):
+        self._workflow_card_action(name, self.navigation.workflows.edit_button)
+
+    def _workflow_card_action(self, name: str, action: Target):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.components.workflows.edit_button.wait_for_and_click()
+        self.wait_for_and_click(action)
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1954,9 +1957,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_with_name(self, name: str):
-        self.workflow_index_open()
-        self.workflow_index_search_for(name)
-        self.components.workflows.run_button.wait_for_and_click()
+        self._workflow_card_action(name, self.navigation.workflows.run_button)
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: dict[str, Any]):
