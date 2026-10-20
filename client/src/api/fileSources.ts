@@ -1,5 +1,13 @@
 import { faAws, faDropbox, faGithub, faGoogleDrive, faHubspot } from "@fortawesome/free-brands-svg-icons";
-import { faAtom, faCloud, faFolderTree, faGlobe, faNetworkWired, type IconDefinition } from "font-awesome-6";
+import {
+    faAtom,
+    faBuildingColumns,
+    faCloud,
+    faFolderTree,
+    faGlobe,
+    faNetworkWired,
+    type IconDefinition,
+} from "font-awesome-6";
 
 import type { components } from "@/api/schema";
 import { contains } from "@/utils/filtering";
@@ -144,6 +152,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message:
             "This is a read-only file source for browsing and importing versioned HAL deposits and their attached files.",
+    },
+    dspace: {
+        icon: faBuildingColumns,
+        message: "This is a read-only file repository plugin that connects with a DSpace repository.",
     },
 };
 
