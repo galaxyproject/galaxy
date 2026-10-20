@@ -536,3 +536,238 @@ describe("FormData", () => {
         expect(select_2.at(2).text()).toContain("3: hdaName3");
     });
 });
+
+describe("FormData batch hint", () => {
+    const BATCH_INFO = ".info.text-info";
+    const MAPPED_OVER = /^The supplied input will be .*mapped over this tool\.$/;
+    const MAPPED_OVER_PER_DATASET = /^The supplied input will be .*mapped over this tool: one job per dataset\.$/;
+    const MAPPED_OVER_PER_PAIR = /^The supplied input will be .*mapped over this tool: one job per dataset pair\.$/;
+
+    function batchInfoText(wrapper) {
+        const info = wrapper.find(BATCH_INFO);
+        expect(info.exists()).toBe(true);
+        return info.text().replace(/\s+/g, " ");
+    }
+
+    it("shows mapped over info for a collection selected on a data input", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_DATASET);
+    });
+
+    it("shows no batch info for a single dataset on a data input", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "hda1", src: "hda" }] },
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    it("shows batch mode info for multiple datasets on a data input", async () => {
+        const wrapper = createTarget({
+            value: null,
+            options: defaultOptions,
+        });
+        await wrapper.find("[title='Multiple datasets']").trigger("click");
+        expect(wrapper.find(BATCH_INFO).text()).toBe(
+            "This is a batch mode input field. Individual jobs will be triggered for each dataset.",
+        );
+    });
+
+    it("shows no batch info for a collection directly selected on a collection input", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            value: { values: [{ id: "hdca5", src: "hdca" }] },
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    const pairedOptions = {
+        hdca: [
+            {
+                id: "hdca7",
+                hid: 7,
+                name: "listPaired",
+                src: "hdca",
+                collection_type: "list:paired",
+                map_over_type: "paired",
+            },
+            { id: "hdca8", hid: 8, name: "pair", src: "hdca", collection_type: "paired" },
+        ],
+    };
+
+    it("shows no batch info for multiple directly selected collections", async () => {
+        const wrapper = createTarget({
+            multiple: true,
+            value: { values: [{ id: "hdca8", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".btn-group .active").attributes("title")).toBe("Dataset collection");
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    it("shows mapped over info for a nested collection mapped over a collection input", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired"],
+            value: { values: [{ id: "hdca7", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.emitted().input[0][0].batch).toBe(true);
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
+        expect(wrapper.find("input[type='checkbox']").exists()).toBeFalsy();
+    });
+
+    it("shows no mapped over info for a nested collection in a workflow run form", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            flavor: "module",
+            collectionTypes: ["paired"],
+            value: { values: [{ id: "hdca7", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.emitted().input[0][0].batch).toBe(true);
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    it("toggles mapped over info when switching collection input selection", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired"],
+            value: { values: [{ id: "hdca8", src: "hdca" }] },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+        await wrapper.setProps({ value: { values: [{ id: "hdca7", src: "hdca" }] } });
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
+        await wrapper.setProps({ value: { values: [{ id: "hdca8", src: "hdca" }] } });
+        expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
+    });
+
+    it("shows mapped over info for a dropped nested collection on a collection input", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired"],
+            value: null,
+            optional: true,
+            options: pairedOptions,
+        });
+        eventStore.setDragData({
+            id: "hdca9",
+            hid: 9,
+            name: "droppedListPaired",
+            history_content_type: "dataset_collection",
+            collection_type: "list:paired",
+        });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        const emitted = wrapper.emitted().input.at(-1)[0];
+        expect(emitted).toEqual({
+            batch: true,
+            product: false,
+            values: [{ id: "hdca9", map_over_type: "paired", src: "hdca" }],
+        });
+        await wrapper.setProps({ value: emitted });
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
+    });
+
+    it("shows mapped over info when any of multiple selected collections maps over", async () => {
+        const wrapper = createTarget({
+            multiple: true,
+            value: {
+                values: [
+                    { id: "hdca8", src: "hdca" },
+                    { id: "hdca7", src: "hdca" },
+                ],
+            },
+            options: pairedOptions,
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".btn-group .active").attributes("title")).toBe("Dataset collection");
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+    });
+
+    it("names dataset as the job unit for a collection mapped over as single datasets", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired_or_unpaired"],
+            value: { values: [{ id: "hdca10", src: "hdca" }] },
+            options: {
+                hdca: [
+                    {
+                        id: "hdca10",
+                        hid: 10,
+                        name: "list",
+                        src: "hdca",
+                        collection_type: "list",
+                        map_over_type: "single_datasets",
+                    },
+                ],
+            },
+        });
+        await wrapper.vm.$nextTick();
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_DATASET);
+    });
+
+    it("names the raw type as the job unit for a collection type without a label", async () => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            collectionTypes: ["paired_or_unpaired"],
+            value: { values: [{ id: "hdca12", src: "hdca" }] },
+            options: {
+                hdca: [
+                    {
+                        id: "hdca12",
+                        hid: 12,
+                        name: "mixedList",
+                        src: "hdca",
+                        collection_type: "list:paired_or_unpaired",
+                        map_over_type: "paired_or_unpaired",
+                    },
+                ],
+            },
+        });
+        await wrapper.vm.$nextTick();
+        expect(batchInfoText(wrapper)).toMatch(
+            /^The supplied input will be .*mapped over this tool: one job per paired_or_unpaired collection\.$/,
+        );
+        expect(wrapper.find(`${BATCH_INFO} code`).text()).toBe("paired_or_unpaired");
+    });
+
+    it("names no job unit when several selected collections map over", async () => {
+        const wrapper = createTarget({
+            multiple: true,
+            value: {
+                values: [
+                    { id: "hdca7", src: "hdca" },
+                    { id: "hdca11", src: "hdca" },
+                ],
+            },
+            options: {
+                hdca: [
+                    ...pairedOptions.hdca,
+                    {
+                        id: "hdca11",
+                        hid: 11,
+                        name: "listPaired2",
+                        src: "hdca",
+                        collection_type: "list:paired",
+                        map_over_type: "paired",
+                    },
+                ],
+            },
+        });
+        await wrapper.vm.$nextTick();
+        expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER);
+    });
+});
