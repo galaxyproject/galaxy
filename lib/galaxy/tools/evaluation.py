@@ -127,9 +127,12 @@ class ToolTemplatingException(Exception):
         self.is_latest = is_latest
 
 
-def _is_not_repeat_index(path, key, value) -> bool:
-    """``remap`` visitor dropping the internal ``__index__`` key of repeat instances."""
-    return key != "__index__"
+_GROUP_STATE_KEYS = frozenset(("__index__", "__current_case__"))
+
+
+def _is_not_group_state_key(path, key, value) -> bool:
+    """``remap`` visitor dropping repeat ``__index__`` and conditional ``__current_case__`` keys."""
+    return key not in _GROUP_STATE_KEYS
 
 
 def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
@@ -1149,7 +1152,7 @@ class UserToolEvaluator(ToolEvaluator):
             )
             hda_references = []
             cwl_style_inputs = to_cwl(
-                remap(incoming, visit=_is_not_repeat_index),
+                remap(incoming, visit=_is_not_group_state_key),
                 hda_references=hda_references,
                 compute_environment=compute_environment,
                 element_identifiers=element_identifiers,
