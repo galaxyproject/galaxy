@@ -193,6 +193,7 @@ def _outputs_in_directory(job: Job, compute_environment: "ComputeEnvironment", d
     for association in associations:
         # None when a runner doesn't relocate the output: the tool writes to its final location.
         path = compute_environment.output_path_rewrite(association.dataset)
+        # Remote paths for Pulsar, they can't be resolved on the Galaxy server.
         if not path or not os.path.abspath(path).startswith(os.path.join(os.path.abspath(directory), "")):
             return False
     return True
