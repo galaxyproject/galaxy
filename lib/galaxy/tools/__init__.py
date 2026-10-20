@@ -20,6 +20,7 @@ from contextlib import (
     nullcontext,
 )
 from datetime import datetime
+from itertools import chain
 from typing import (
     Any,
     cast,
@@ -201,6 +202,11 @@ from galaxy.tools.parameters.basic import (
     SelectTagParameter,
     SelectToolParameter,
     ToolParameter,
+)
+from galaxy.tools.parameters.data_tables import (
+    conditional_selectors,
+    is_data_table_select,
+    uses_data_table,
 )
 from galaxy.tools.parameters.dataset_matcher import (
     set_dataset_matcher_factory,
@@ -2508,6 +2514,20 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             else:
                 message = f"Failure executing tool with id '{self.id}' (invalid data returned from tool execution)"
             return False, message
+
+    @property
+    def has_data_table(self) -> bool:
+        """Whether any select input, including inactive branches, uses ``from_data_table`` options."""
+        params = chain(self.input_params, conditional_selectors(self.inputs))
+        return any(is_data_table_select(param) for param in params)
+
+    def is_using_data_table(self, job: Job) -> bool:
+        """Whether the job selected an installed data table entry in its active parameter state.
+
+        History datasets supplied to a table-backed select do not count. Job
+        parameters are only read for tools that have data table inputs.
+        """
+        return self.has_data_table and uses_data_table(self.inputs, job.raw_param_dict())
 
     @property
     def params_with_missing_data_table_entry(self):
