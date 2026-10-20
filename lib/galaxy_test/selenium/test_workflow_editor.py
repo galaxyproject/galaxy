@@ -156,8 +156,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
     @selenium_test
     def test_parameter_editor_save_keeps_validators_the_form_cannot_show(self):
-        negated = {"type": "regex", "expression": "^bad", "message": "no bad", "negate": True}
-        workflow = parameter_input_workflow("text_param", "text", [negated])
+        hidden = {"type": "length", "min": 2, "negate": False}
+        workflow = parameter_input_workflow("text_param", "text", [hidden])
         name = workflow["name"] = self._get_random_name()
         workflow_id = self.workflow_populator.create_workflow(workflow)
         self.workflow_editor_open_with_name(name)
@@ -175,7 +175,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         tool_state = json.loads(self.workflow_populator.download_workflow(workflow_id)["steps"]["0"]["tool_state"])
         added = {"type": "regex", "expression": "^good", "message": "must start with good", "negate": False}
-        assert tool_state["validators"] == [negated, added], tool_state["validators"]
+        assert tool_state["validators"] == [hidden, added], tool_state["validators"]
 
     @selenium_test
     def test_int_parameter_minimum_validation(self):

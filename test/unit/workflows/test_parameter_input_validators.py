@@ -20,6 +20,7 @@ MAX_RANGE = {"type": "in_range", "max": 5, "negate": False}
 MESSAGE_RANGE = {"type": "in_range", "min": 1, "max": 5, "message": "1-5 only"}
 FRACTIONAL_RANGE = {"type": "in_range", "min": 1.5, "max": 5, "negate": False}
 EXCLUSIVE_RANGE = {"type": "in_range", "min": 1, "max": 5, "exclude_min": True, "negate": False}
+LENGTH = {"type": "length", "min": 2, "negate": False}
 
 
 def import_input(parameter_type, validators):
@@ -138,7 +139,7 @@ def test_imported_range_message_is_kept():
         ("integer", [MIN_RANGE, MAX_RANGE]),
         ("integer", [MESSAGE_RANGE]),
         ("float", [EXCLUSIVE_RANGE]),
-        ("text", [{"type": "length", "min": 2, "negate": False}]),
+        ("text", [LENGTH]),
         ("integer", [FRACTIONAL_RANGE]),
     ],
 )
@@ -152,7 +153,7 @@ def test_import_stores_and_exports_declared_validators(parameter_type, validator
 @pytest.mark.parametrize(
     "parameter_type,validators",
     [
-        ("text", [REGEX, NEGATED_REGEX]),
+        ("text", [REGEX, LENGTH]),
         ("integer", [MIN_RANGE, MAX_RANGE]),
         ("integer", [MESSAGE_RANGE]),
         ("float", [EXCLUSIVE_RANGE]),
@@ -166,13 +167,19 @@ def test_editor_resave_keeps_validators_the_form_cannot_show(parameter_type, val
 # a regex spelling out a default (implicit: false) is still a form row
 @pytest.mark.parametrize("shown", [REGEX, {**REGEX, "implicit": False}])
 def test_editor_edits_shown_validators_and_keeps_hidden_ones(shown):
-    step = import_input("text", [shown, NEGATED_REGEX])
+    step = import_input("text", [shown, LENGTH])
     resaved = editor_resave(step, drop_prefix="parameter_definition|validators_")
+    assert resaved.tool_inputs["validators"] == [LENGTH]
+
+
+def test_editor_shows_negated_regex_as_form_row():
+    step = import_input("text", [NEGATED_REGEX])
+    resaved = editor_resave(step, drop_prefix="parameter_definition|extra_validators")
     assert resaved.tool_inputs["validators"] == [NEGATED_REGEX]
 
 
 def test_editor_drops_hidden_validators_when_parameter_type_changes():
-    step = import_input("text", [NEGATED_REGEX])
+    step = import_input("text", [LENGTH])
     resaved = editor_resave(step, parameter_type="integer")
     assert resaved.tool_inputs["parameter_type"] == "integer"
     assert resaved.tool_inputs["validators"] == []
@@ -218,8 +225,7 @@ def test_validator_incompatible_with_parameter_type_rejected_at_import(parameter
 
 
 def test_compatible_non_form_validator_accepted_on_directory_uri():
-    length = {"type": "length", "min": 2, "negate": False}
-    assert import_input("directory_uri", [length]).tool_inputs["validators"] == [length]
+    assert import_input("directory_uri", [LENGTH]).tool_inputs["validators"] == [LENGTH]
 
 
 def test_unsafe_hidden_validator_rejected_at_save():
@@ -238,9 +244,9 @@ def test_unsafe_hidden_validator_rejected_at_save():
         )
 
 
-@pytest.mark.parametrize("validators", [[NEGATED_REGEX, REGEX], [NEGATED_RANGE, RANGE]])
+@pytest.mark.parametrize("validators", [[LENGTH, REGEX], [NEGATED_RANGE, RANGE]])
 def test_validator_order_is_kept(validators):
-    parameter_type = "text" if validators[0]["type"] == "regex" else "integer"
+    parameter_type = "integer" if validators[0]["type"] == "in_range" else "text"
     step = import_input(parameter_type, validators)
     assert normalized(step.tool_inputs["validators"]) == normalized(validators)
     assert normalized(editor_resave(step).tool_inputs["validators"]) == normalized(validators)
