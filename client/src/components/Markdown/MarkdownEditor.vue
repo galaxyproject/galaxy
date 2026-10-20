@@ -13,12 +13,12 @@
                             v-model="editor"
                             v-g-tooltip.hover.bottom
                             buttons
-                            aria-label="Editor mode"
                             button-variant="outline-blue"
                             class="d-inline-block align-middle"
                             size="small"
-                            title="Editor mode"
-                            :options="editorOptions" />
+                            :aria-label="localize('Editor mode')"
+                            :options="editorOptions"
+                            :title="localize('Editor mode')" />
                         <slot name="buttons" />
                         <GButton v-g-tooltip.hover.bottom title="Help" transparent icon-only @click="onHelp">
                             <FontAwesomeIcon :icon="faQuestion" />
@@ -52,6 +52,8 @@
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
+
+import localize from "@/utils/localization";
 
 import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
