@@ -52,6 +52,7 @@ from typing import (
 )
 from urllib.parse import (
     quote,
+    SplitResult,
     urlencode,
     urlparse,
     urlsplit,
@@ -1406,33 +1407,59 @@ def normalize_https_authority(authority: str) -> str:
     return authority
 
 
-def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bool:
+DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _split_unambiguous_url(url: Any) -> Optional[SplitResult]:
+    """Split an absolute URL whose authority browsers and Python read alike, else ``None``."""
+    if not isinstance(url, str) or not url:
+        return None
+    # Browsers read a backslash as a slash in an https URL and Python does not, so the
+    # two disagree on where the host ends. Refuse instead of picking a side.
+    if url != url.strip() or CONTROL_CHARACTERS.search(url) or "\\" in url:
+        return None
+    try:
+        split = urlsplit(url)
+        split.port  # noqa: B018 - raises ValueError for a port that is not a number
+    except ValueError:
+        return None
+    # Credentials in the authority ("https://allowed@evil") are refused for the same reason.
+    if "@" in split.netloc or not split.hostname:
+        return None
+    return split
+
+
+def _origin(url: SplitResult) -> tuple[str, Optional[str], Optional[int]]:
+    return url.scheme, url.hostname, url.port or DEFAULT_PORTS.get(url.scheme)
+
+
+def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = (), base_url: Optional[str] = None) -> bool:
     """May Galaxy send a browser to ``target`` after login?
 
     Relative URLs that stay on this server are always accepted (see
-    :func:`is_safe_local_redirect`). An absolute ``https`` URL is accepted when its
-    host -- with the port, if it is not 443 -- is one of ``allowed_hosts``, the
-    admin-configured ``allowed_login_redirect_hosts``. Hosts match exactly and
-    case-insensitively, and an ``allowed_hosts`` entry may name port 443.
+    :func:`is_safe_local_redirect`), and so are absolute URLs with the scheme, host and
+    port of ``base_url``. An absolute ``https`` URL is accepted when its host -- with
+    the port, if it is not 443 -- is one of ``allowed_hosts``, the admin-configured
+    ``allowed_login_redirect_hosts``. Hosts match exactly and case-insensitively, and an
+    ``allowed_hosts`` entry may name port 443.
     """
     if is_safe_local_redirect(target):
         return True
-    if not allowed_hosts or not isinstance(target, str) or not target:
+    if not allowed_hosts and not base_url:
         return False
-    # Browsers read a backslash as a slash in an https URL and Python does not, so the
-    # two disagree on where the host ends. Refuse instead of picking a side.
-    if target != target.strip() or CONTROL_CHARACTERS.search(target) or "\\" in target:
+    url = _split_unambiguous_url(target)
+    if url is None:
         return False
-    try:
-        url = urlsplit(target)
-        port = url.port
-    except ValueError:
-        return False
-    # Credentials in the authority ("https://allowed@evil") are refused for the same reason.
-    if url.scheme != "https" or "@" in url.netloc or not url.hostname:
+    if base_url:
+        try:
+            if _origin(url) == _origin(urlsplit(base_url)):
+                return True
+        except ValueError:
+            return False
+    if url.scheme != "https":
         return False
     # Compare the authority as written, so IPv6 entries keep their brackets.
-    host = normalize_https_authority(url.netloc) if port == 443 else url.netloc.lower()
+    host = normalize_https_authority(url.netloc) if url.port == 443 else url.netloc.lower()
     return host in {normalize_https_authority(allowed) for allowed in allowed_hosts}
 
 

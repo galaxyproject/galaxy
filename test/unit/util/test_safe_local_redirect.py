@@ -119,3 +119,30 @@ def test_allowlist_entries_may_name_the_default_port(target):
 
 def test_no_external_login_redirects_without_allowlist():
     assert is_safe_login_redirect("https://tools.example.org/") is False
+
+
+BASE_URL = "https://galaxy.example/galaxy/"
+
+
+@pytest.mark.parametrize(
+    "target",
+    ["https://galaxy.example/other", "https://GALAXY.example:443/galaxy/x", "https://tools.example.org/back"],
+)
+def test_absolute_urls_back_to_base_url_are_safe_login_redirects(target):
+    assert is_safe_login_redirect(target, ["tools.example.org"], base_url=BASE_URL) is True
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "http://galaxy.example/galaxy/x",
+        "https://galaxy.example:8443/galaxy/x",
+        "https://user@galaxy.example/galaxy/x",
+        "https://evil.example.com\\@galaxy.example/",
+        " https://galaxy.example/galaxy/x",
+        "https://galaxy.example/galaxy/\tx",
+        "https://[galaxy.example/",
+    ],
+)
+def test_base_url_shares_the_ambiguous_url_refusals(target):
+    assert is_safe_login_redirect(target, base_url=BASE_URL) is False

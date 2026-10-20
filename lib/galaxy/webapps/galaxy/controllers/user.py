@@ -7,12 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
-from typing import Optional
-from urllib.parse import (
-    SplitResult,
-    unquote,
-    urlsplit,
-)
+from urllib.parse import unquote
 
 from markupsafe import escape
 from sqlalchemy.exc import NoResultFound
@@ -39,30 +34,10 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesFormDefinitionsMixin,
 )
+from .authnz import is_allowed_login_redirect
 from ..api import depends
 
 log = logging.getLogger(__name__)
-
-
-DEFAULT_PORTS = {"http": 80, "https": 443}
-
-
-def _origin(url: SplitResult) -> tuple[str, Optional[str], Optional[int]]:
-    return url.scheme, url.hostname, url.port or DEFAULT_PORTS.get(url.scheme)
-
-
-def _is_absolute_url_to(base_url: str, url: str) -> bool:
-    """Is ``url`` an absolute URL with the same scheme, host and port as ``base_url``?"""
-    # A backslash or control character would let a browser read the authority differently.
-    if not isinstance(url, str) or "\\" in url or util.CONTROL_CHARACTERS.search(url):
-        return False
-    try:
-        target, base = urlsplit(url), urlsplit(base_url)
-        same_origin = _origin(target) == _origin(base)
-    except ValueError:
-        return False
-    # Credentials in the authority are refused, as in is_safe_login_redirect.
-    return same_origin and bool(target.hostname) and "@" not in target.netloc
 
 
 def _filtered_registration_params_dict(payload):
@@ -392,9 +367,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         logout_url = url_for(controller="user", action="logout", qualified=True)
         # Accept paths on this server, absolute URLs back to it, and the hosts admins allow
         # in allowed_login_redirect_hosts. Never send the user into a logout/login loop.
-        allowed_hosts = trans.app.config.allowed_login_redirect_hosts
-        if not (_is_absolute_url_to(root_url, redirect) or util.is_safe_login_redirect(redirect, allowed_hosts)):
-            log.warning("Ignoring post-login redirect target that is not allowed: %s", redirect)
+        if not is_allowed_login_redirect(trans, redirect, base_url=root_url):
             return root_url
         # The client prepends galaxy_url_prefix to paths on this server.
         destination = url_for("/").rstrip("/") + redirect if util.is_safe_local_redirect(redirect) else redirect

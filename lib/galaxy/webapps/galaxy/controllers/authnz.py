@@ -5,7 +5,10 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 import datetime
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 from urllib.parse import quote
 
 import jwt
@@ -34,6 +37,14 @@ LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
 
 
+def is_allowed_login_redirect(trans, target, base_url: Optional[str] = None) -> bool:
+    """Check a post-login destination against ``allowed_login_redirect_hosts``, logging refusals."""
+    if is_safe_login_redirect(target, trans.app.config.allowed_login_redirect_hosts, base_url=base_url):
+        return True
+    log.warning("Ignoring post-login redirect target that is not allowed: %s", target)
+    return False
+
+
 def login_destination(trans) -> str:
     """The URL to send the user to once this OIDC login completes.
 
@@ -44,14 +55,13 @@ def login_destination(trans) -> str:
     # The cookie can hold the literal string 'None', which is not a destination.
     if not login_next or login_next == "None":
         return url_for("/")
-    if is_safe_login_redirect(login_next, trans.app.config.allowed_login_redirect_hosts):
-        # The client sends the destination percent-decoded, and url_for and the Location
-        # header both need it encoded.
-        login_next = quote(login_next, safe=URL_SAFE_CHARACTERS)
-        # Only paths on this server need galaxy_url_prefix.
-        return url_for(login_next) if is_safe_local_redirect(login_next) else login_next
-    log.warning("Ignoring post-login redirect target that is not allowed: %s", login_next)
-    return url_for("/")
+    if not is_allowed_login_redirect(trans, login_next):
+        return url_for("/")
+    # The client sends the destination percent-decoded, and url_for and the Location
+    # header both need it encoded.
+    login_next = quote(login_next, safe=URL_SAFE_CHARACTERS)
+    # Only paths on this server need galaxy_url_prefix.
+    return url_for(login_next) if is_safe_local_redirect(login_next) else login_next
 
 
 class OIDC(BaseUIController):
