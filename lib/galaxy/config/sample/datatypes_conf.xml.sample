@@ -118,14 +118,12 @@
       <converter file="bigbed_to_bed_converter.xml" target_datatype="bed"/>
       <display file="ucsc/bigbed.xml"/>
       <display file="igb/bb.xml"/>
-      <visualization plugin="igv" />
     </datatype>
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <converter file="bigwig_to_wig_converter.xml" target_datatype="wig"/>
       <display file="ucsc/bigwig.xml"/>
       <display file="igb/bigwig.xml"/>
       <display file="igv/bigwig.xml"/>
-      <visualization plugin="igv" />
     </datatype>
     <datatype extension="cxb" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" description="Cuffquant output format"/>
     <datatype extension="chrint" type="galaxy.datatypes.interval:ChromatinInteractions" display_in_upload="true">
@@ -255,7 +253,6 @@
     </datatype>
     <datatype extension="gff3" auto_compressed_types="gz,bz2" type="galaxy.datatypes.interval:Gff3" display_in_upload="true" description="The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF3">
       <infer_from suffix="gff" />
-      <visualization plugin="igv" />
     </datatype>
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
@@ -265,7 +262,6 @@
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="igb/gtf.xml"/>
-      <visualization plugin="igv" />
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true"/>
     <datatype extension="hdf4" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -664,7 +660,6 @@
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true">
         <infer_from suffix="bcf" />
         <converter file="bcf_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
-        <visualization plugin="igv" />
     </datatype>
     <!-- bcf_bgzip is just an alias for bcf for backward-compatibility -->
     <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Bcf" subclass="true"/>
@@ -677,7 +672,6 @@
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
       <display file="igb/wig.xml"/>
-      <visualization plugin="igv" />
     </datatype>
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
@@ -717,7 +711,6 @@
       <display file="igv/vcf.xml"/>
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
       <converter file="gz_to_uncompressed.xml" target_datatype="vcf"/>
-      <visualization plugin="igv" />
     </datatype>
     <datatype extension="bus" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="kallisto.idx" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
