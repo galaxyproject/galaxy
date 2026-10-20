@@ -120,6 +120,9 @@ describe("safeReturnPath", () => {
             "https://evil.example",
             "//evil.example",
             "/\\evil.example",
+            // URL parsing drops tabs and newlines, leaving //evil.example
+            "/\t/evil.example",
+            "/\n/evil.example",
             "javascript:alert(1)",
             "repos/x",
             "",

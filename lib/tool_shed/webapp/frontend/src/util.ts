@@ -104,9 +104,14 @@ function isApiException(e: unknown): e is ApiMessageException {
     return e instanceof Object && "err_msg" in e
 }
 
-// Only paths on this site, so a crafted ?redirect= can't send someone off-site after logging in
+// Only paths on this site, so a crafted ?redirect= can't send someone off-site after logging in. Resolving
+// against our origin catches what prefix checks miss, like "/\t/evil.example" parsing as "//evil.example".
 export function safeReturnPath(value: string | null | undefined): string | null {
-    return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null
+    if (!value?.startsWith("/")) {
+        return null
+    }
+    const url = new URL(value, window.location.origin)
+    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : null
 }
 
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {

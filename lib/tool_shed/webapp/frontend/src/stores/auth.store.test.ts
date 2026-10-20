@@ -10,7 +10,7 @@ describe("auth store login", () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         document.cookie = "session_csrf_token=token"
-        vi.stubGlobal("location", { href: "/login" })
+        vi.stubGlobal("location", { href: "/login", origin: "http://localhost" })
     })
 
     afterEach(() => {
