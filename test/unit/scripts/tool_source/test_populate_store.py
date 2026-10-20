@@ -750,3 +750,31 @@ class TestToolsMissingFromReadOnlyStore:
         _, index = _load_default_index(config)
         assert index.entries["installed"].in_panel is True
         assert "published" not in index.entries
+
+    def test_confs_sharing_a_read_only_store_each_keep_their_installed_tools(self, tmp_path):
+        confs = {name: tmp_path / f"{name}_tool_conf.xml" for name in ("first", "second")}
+
+        def write_confs(*tool_kinds: str) -> None:
+            for name, conf in confs.items():
+                tools_dir = tmp_path / f"{name}_tools"
+                items = "".join(f'<tool file="{name}_{kind}.xml"/>' for kind in tool_kinds)
+                conf.write_text(
+                    f'<toolbox tool_path="{tools_dir}" store="published">'
+                    f'<section id="{name}" name="{name}">{items}</section></toolbox>'
+                )
+
+        for name in confs:
+            for kind in ("published", "installed"):
+                _write_tool(tmp_path / f"{name}_tools" / f"{name}_{kind}.xml", f"{name}_{kind}")
+        tool_config_file = ",".join(str(conf) for conf in confs.values())
+        write_confs("published")
+        populate_store_inline(self._config(tmp_path, tool_config_file, read_only=False), target="published")
+        write_confs("published", "installed")
+
+        populate_store_inline(self._config(tmp_path, tool_config_file, read_only=True), prune=True)
+
+        _, index = _load_default_index(self._config(tmp_path, tool_config_file, read_only=True))
+        assert sorted(tool_id for tool_id in index.entries if tool_id.startswith(("first_", "second_"))) == [
+            "first_installed",
+            "second_installed",
+        ]

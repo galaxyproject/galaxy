@@ -731,14 +731,25 @@ def _populate_store_inline_unlocked(
     # index. Confs whose store is unavailable are skipped: the cached toolbox
     # refuses to load without that store's index.
     if default_writable:
+        # Several confs can route to one read-only store; list its paths once.
+        # None marks a store whose listing failed.
+        published_paths_by_store: dict[str, set[str] | None] = {}
         for conf, store_name in conf_to_store.items():
             store = stores.get(store_name)
             if store is None or not store.read_only or isinstance(store, UnavailableToolSourceStore):
                 continue
-            try:
-                published_paths = store.list_source_paths()
-            except Exception as e:
-                log.warning("Skipping tools of %s missing from read-only store %s: %s", conf, store_name, e)
+            if store_name not in published_paths_by_store:
+                try:
+                    published_paths_by_store[store_name] = store.list_source_paths()
+                except Exception as e:
+                    log.warning(
+                        "Skipping tools missing from read-only store %s for every conf routed to it: %s",
+                        store_name,
+                        e,
+                    )
+                    published_paths_by_store[store_name] = None
+            published_paths = published_paths_by_store[store_name]
+            if published_paths is None:
                 continue
             for d in discover_tools_from_config(
                 conf,
