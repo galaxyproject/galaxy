@@ -71,7 +71,7 @@ inputs:
 - name: more_files
   label: "More Files"
   type: repeat
-  blocks:
+  parameters:
     - type: data
       name: nestinput
 - name: p1

@@ -1,12 +1,12 @@
 class: GalaxyUserTool
-id: gx_user_repeat
-name: gx_user_repeat
+id: gx_user_section
+name: gx_user_section
 version: 1.0.0
 container: busybox
-shell_command: printf '%s\n' '$(inputs)' > output.json
+shell_command: 'printf ''%s\n'' ''$({group: inputs.group})'' > output.json'
 inputs:
 - name: group
-  type: repeat
+  type: section
   parameters:
   - name: count
     type: integer

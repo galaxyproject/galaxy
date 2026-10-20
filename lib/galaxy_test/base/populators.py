@@ -4910,9 +4910,6 @@ class DescribeUserTool:
         self._history_id = history_id
         self._required_tool: Optional[RequiredTool] = None
 
-    def build_raw(self) -> Response:
-        return self._dataset_populator.build_unprivileged_tool_raw(self._representation, self._history_id)
-
     def build(self) -> dict[str, Any]:
         return self._dataset_populator.build_unprivileged_tool(self._representation, self._history_id)
 

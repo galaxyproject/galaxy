@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
@@ -124,6 +125,11 @@ class ToolTemplatingException(Exception):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.is_latest = is_latest
+
+
+def _is_not_repeat_index(path, key, value) -> bool:
+    """``remap`` visitor dropping the internal ``__index__`` key of repeat instances."""
+    return key != "__index__"
 
 
 def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
@@ -1143,7 +1149,7 @@ class UserToolEvaluator(ToolEvaluator):
             )
             hda_references = []
             cwl_style_inputs = to_cwl(
-                incoming,
+                remap(incoming, visit=_is_not_repeat_index),
                 hda_references=hda_references,
                 compute_environment=compute_environment,
                 element_identifiers=element_identifiers,

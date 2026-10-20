@@ -4,7 +4,7 @@
   "name": "gx_user_section",
   "version": "1.0.0",
   "container": "busybox",
-  "shell_command": "printf '%s\\n' '$(inputs)' > output.json",
+  "shell_command": "printf '%s\\n' '$({group: inputs.group})' > output.json",
   "inputs": [
     {
       "name": "group",
