@@ -1,6 +1,8 @@
 import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import type { IconDefinition } from "font-awesome-6";
 
+import type { DataOption } from "./types";
+
 /** Data input variations interface */
 export interface VariantInterface {
     batch: string;
@@ -13,6 +15,11 @@ export interface VariantInterface {
 
 /** Batch mode variations */
 export const BATCH = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
+
+/** Whether a selection is submitted as a batch: a batch variant, or a collection flagged for map over */
+export function isBatchSelection(variantBatch: string, values: DataOption[]): boolean {
+    return variantBatch !== BATCH.DISABLED || values.some((v) => !!v.map_over_type);
+}
 
 /** Data source variations */
 export const SOURCE = { DATASET: "hda", COLLECTION: "hdca", COLLECTION_ELEMENT: "dce", LIBRARY_DATASET: "ldda" };
