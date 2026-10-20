@@ -12,6 +12,7 @@ from tool_shed.test.base.populators import (
     HasRepositoryId,
     repo_tars,
 )
+from tool_shed.util import hg_util
 from tool_shed_client.schema import (
     RepositoryIndexRequest,
     RepositoryPaginatedIndexRequest,
@@ -119,6 +120,22 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         detailed = populator.get_repository(repository_id)
         assert detailed.description == "new synopsis"
         assert detailed.long_description == "new long description"
+
+    def test_show_lists_categories(self):
+        populator = self.populator
+        prefix = "testshowcategories"
+        category_ids = [populator.new_category(prefix=prefix).id, populator.new_category(prefix=prefix).id]
+        repository = populator.new_repository(category_ids, prefix=prefix)
+        assert sorted(populator.get_repository(repository.id).category_ids) == sorted(category_ids)
+
+    def test_show_clone_url_clones(self):
+        repository = self.populator.setup_column_maker_repo(prefix="testshowcloneurl")
+        clone_url = self.populator.get_repository(repository.id).clone_url
+        assert clone_url == f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
+        clone_dir = os.path.join(tempfile.mkdtemp(), repository.name)
+        success, message = hg_util.clone_repository(clone_url, clone_dir, "tip")
+        assert success, message
+        assert "column_maker.xml" in os.listdir(clone_dir)
 
     def test_update_category(self):
         populator = self.populator
