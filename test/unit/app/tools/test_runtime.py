@@ -31,11 +31,13 @@ from galaxy.tool_util_models.parameters import (
     DataRequestInternalHda,
     ToolParameterBundleModel,
 )
+from galaxy.tools.evaluation import UserToolEvaluator
 from galaxy.tools.runtime import (
     _validate_collection_runtime_dict,
     collection_to_runtime,
     setup_for_runtimeify,
 )
+from galaxy.util.bunch import Bunch
 from galaxy.workflow.modules import to_cwl
 
 
@@ -277,7 +279,7 @@ class DatatypesApp:
         self.datatypes_registry = datatypes_registry
 
 
-def _adapt_input(extension, deferred_uri=None, metadata=None, deferred=False):
+def _adapt_input(extension, deferred_uri=None, metadata=None, deferred=False, shell_quotable=False):
     registry = example_datatype_registry_for_sample()
     set_datatypes_registry(registry)
     hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name="input", extension=extension)
@@ -291,7 +293,10 @@ def _adapt_input(extension, deferred_uri=None, metadata=None, deferred=False):
     if deferred_uri:
         hda.dataset.sources = [DatasetSource(source_uri=deferred_uri)]
     _, adapt_dataset, _ = setup_for_runtimeify(
-        cast(Any, DatatypesApp(registry)), cast(Any, RewritingComputeEnvironment()), {"input": hda}
+        cast(Any, DatatypesApp(registry)),
+        cast(Any, RewritingComputeEnvironment()),
+        {"input": hda},
+        shell_quotable=shell_quotable,
     )
     return adapt_dataset(DataRequestInternalHda(src="hda", id=1), [extension])
 
@@ -317,9 +322,59 @@ def test_adapt_dataset_zarr_store_in_a_recorded_wrapper_folder(extension):
     assert result.path == "/job/inputs/dataset_1_files/wrapped.zarr"
 
 
-def test_adapt_dataset_ignores_a_store_root_outside_the_dataset():
-    result = _adapt_input("zarr", metadata={"store_root": "../elsewhere"})
-    assert result.path == "/job/inputs/dataset_1_files"
+@pytest.mark.parametrize(
+    "store_root",
+    [
+        "my store.zarr",
+        "sample (1).zarr",
+        "data+v2.zarr",
+        ".hidden.zarr",
+        "..sample.zarr",
+        "...zarr",
+        "données.zarr",
+        "-x.zarr",
+        "tab\tbed.zarr",
+    ],
+)
+def test_adapt_dataset_store_root_named_after_an_upload(store_root):
+    # store_root is the name of the folder an older dataset was uploaded in, whatever that was.
+    result = _adapt_input("zarr", metadata={"store_root": store_root}, shell_quotable=True)
+    assert result.path == f"/job/inputs/dataset_1_files/{store_root}"
+
+
+@pytest.mark.parametrize(
+    "store_root",
+    [
+        "a';touch pwned;'.zarr",
+        "$(id).zarr",
+        'a"b.zarr',
+        "a`id`.zarr",
+        "a\\b",
+        "a\nb",
+        "a;id;.zarr",
+        "a&&id.zarr",
+        "a|id.zarr",
+        "a>out.zarr",
+        "a<in.zarr",
+    ],
+)
+def test_adapt_dataset_rejects_a_store_root_that_cannot_be_quoted(store_root):
+    # A shell_command pastes the path in unescaped, so it must not end or escape a quoted value,
+    # nor start another command where the tool leaves it unquoted.
+    with pytest.raises(ValueError, match="cannot be passed to a tool"):
+        _adapt_input("zarr", metadata={"store_root": store_root}, shell_quotable=True)
+
+
+def test_adapt_dataset_store_root_with_a_quote_for_escaped_arguments():
+    # base_command arguments are shell-escaped, so any folder name inside the dataset works there.
+    result = _adapt_input("zarr", metadata={"store_root": "Bob's store.zarr"})
+    assert result.path == "/job/inputs/dataset_1_files/Bob's store.zarr"
+
+
+@pytest.mark.parametrize("store_root", ["../elsewhere", "/etc"])
+def test_adapt_dataset_rejects_a_store_root_outside_the_dataset(store_root):
+    with pytest.raises(ValueError, match="outside"):
+        _adapt_input("zarr", metadata={"store_root": store_root})
 
 
 def test_adapt_dataset_deferred_input_has_location_and_no_path():
@@ -355,6 +410,74 @@ def test_to_cwl_zarr_store_in_a_recorded_wrapper_folder():
     properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
 
     assert properties["path"] == "/job/inputs/dataset_1_files/wrapped.zarr"
+
+
+def test_to_cwl_deferred_dataset_has_location_and_no_path():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    assert hda.dataset is not None
+    hda.dataset.state = Dataset.states.DEFERRED
+    hda.dataset.sources = [DatasetSource(source_uri="https://example.org/data/store.zarr")]
+
+    properties = to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
+
+    assert properties["location"] == "https://example.org/data/store.zarr"
+    assert "path" not in properties
+
+
+def test_to_cwl_store_root_with_a_quote():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    hda.metadata.store_root = "Bob's store.zarr"
+    compute_environment = cast(Any, RewritingComputeEnvironment())
+
+    # Workflow expressions and escaped arguments never paste the path into a shell.
+    properties = to_cwl(hda, [], compute_environment=compute_environment)
+    assert properties["path"] == "/job/inputs/dataset_1_files/Bob's store.zarr"
+    with pytest.raises(ValueError, match="cannot be passed to a tool"):
+        to_cwl({"input": [hda]}, [], compute_environment=compute_environment, shell_quotable=True)
+
+
+class WorkingDirectoryComputeEnvironment(RewritingComputeEnvironment):
+    def working_directory(self):
+        return "/job/working"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        {"shell_command": "ls '$(inputs.input.path)'"},
+        {"base_command": ["ls"]},
+        # base_command is the one that runs when a tool has both.
+        {"base_command": ["ls"], "shell_command": "ls '$(inputs.input.path)'"},
+    ],
+)
+def test_user_tool_requires_a_quotable_path_only_for_shell_command(command):
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    hda.metadata.store_root = "Bob's store.zarr"
+    tool = Bunch(shell_command=command.get("shell_command"), base_command=command.get("base_command"))
+    evaluator = UserToolEvaluator(cast(Any, Bunch()), cast(Any, tool), cast(Any, None), "/job")
+    evaluator.compute_environment = cast(Any, WorkingDirectoryComputeEnvironment())
+
+    def build_param_dict():
+        return evaluator.build_param_dict({"input": hda}, {}, {}, {})
+
+    if not tool.base_command:
+        with pytest.raises(ValueError, match="cannot be passed to a tool"):
+            build_param_dict()
+    else:
+        assert build_param_dict()["inputs"]["input"]["path"] == "/job/inputs/dataset_1_files/Bob's store.zarr"
+
+
+def test_to_cwl_deferred_dataset_without_a_source_is_rejected():
+    set_datatypes_registry(example_datatype_registry_for_sample())
+    hda = _hda(1, "zarr")
+    assert hda.dataset is not None
+    hda.dataset.state = Dataset.states.DEFERRED
+
+    with pytest.raises(ValueError, match="has no source"):
+        to_cwl(hda, [], compute_environment=cast(Any, RewritingComputeEnvironment()))
 
 
 def test_to_cwl_file():

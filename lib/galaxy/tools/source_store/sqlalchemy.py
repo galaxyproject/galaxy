@@ -53,8 +53,12 @@ from .interface import (
     StoredToolSource,
     ToolSourceStore,
 )
+from .manifest import sqlite_database_path
 
 log = logging.getLogger(__name__)
+
+# (inode, size, mtime_ns) of a database file.
+_FileSignature = tuple[int, int, int]
 
 # pysqlite's 5s default is too short for slow commits (network/FUSE
 # filesystems) when several processes write one store.
@@ -142,6 +146,9 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         self.read_only = read_only
         self._freshness_probe = freshness_probe
         self._cached_index: ToolIndex | None = None
+        self._database_path = sqlite_database_path(url) if read_only else None
+        # Database file signature taken before the cached index was read.
+        self._cached_index_signature: tuple[_FileSignature, _FileSignature | None] | None = None
 
         self._ensure_sqlite_parent_directory(url)
 
@@ -184,6 +191,22 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
 
     def _session(self) -> Session:
         return self._Session()
+
+    def _database_signature(self) -> tuple[_FileSignature, _FileSignature | None] | None:
+        if self._database_path is None:
+            return None
+        try:
+            st = os.stat(self._database_path)
+        except OSError:
+            return None
+        # A database in WAL mode commits into the -wal file and leaves the
+        # main file untouched until a checkpoint.
+        try:
+            wal = os.stat(f"{self._database_path}-wal")
+            wal_signature: _FileSignature | None = (wal.st_ino, wal.st_size, wal.st_mtime_ns)
+        except OSError:
+            wal_signature = None
+        return ((st.st_ino, st.st_size, st.st_mtime_ns), wal_signature)
 
     def _ensure_writable(self) -> None:
         if self.read_only:
@@ -332,6 +355,7 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
     def load_index(self) -> ToolIndex | None:
         if self._cached_index is not None:
             return self._cached_index
+        signature = self._database_signature()
         with self._session() as session:
             row = session.execute(select(_ToolIndexRow).order_by(_ToolIndexRow.id.desc())).scalar_one_or_none()
         if row is None or not row.data:
@@ -345,22 +369,41 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
                 log.info("Persisted tool index in %s has a stale schema; discarding", self.url)
                 return None
             self._cached_index = ToolIndex.model_validate(payload["index"])
+            self._cached_index_signature = signature
             return self._cached_index
         except Exception as e:
             log.error(f"Failed to decode tool index from store {self.url}: {e}")
             return None
 
-    @_serialized_write
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
+        self.update_index_entries([entry])
+
+    @_serialized_write
+    def update_index_entries(self, entries: list[ToolIndexEntry]) -> None:
         self._ensure_writable()
         index = self.load_index() or ToolIndex()
-        # add_entry keeps every index projection in step. Single-entry writes are runtime
+        # add_entry keeps every index projection in step. Entry writes are runtime
         # additions (a shed install, a self-heal), so a new placement goes
         # to the head of its section like the eager runtime insert does.
-        index.add_entry(entry, new_placements_first=True)
+        for entry in entries:
+            index.add_entry(entry, new_placements_first=True)
         self.store_index(index)
 
     def invalidate_index_cache(self) -> None:
+        """Drop the cached index so the next ``load_index`` re-reads it.
+
+        A read-only SQLite store keeps its cached index while its database
+        file is unchanged: re-reading a large published index costs seconds
+        and hundreds of MiB per process. When the file was republished, the
+        engine is disposed too, because connections opened before the publish
+        keep reading the old file on CVMFS. Read-only stores on other
+        backends are always re-read.
+        """
+        if self.read_only:
+            signature = self._database_signature()
+            if signature is not None and signature == self._cached_index_signature:
+                return
+            self._engine.dispose()
         self._cached_index = None
 
     def dispose(self) -> None:

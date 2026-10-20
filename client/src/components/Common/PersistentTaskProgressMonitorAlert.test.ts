@@ -1,4 +1,6 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount, type VueWrapper } from "@vue/test-utils";
+import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
@@ -61,11 +63,15 @@ const mountComponent = (
         useMonitor: FAKE_MONITOR,
     },
 ) => {
+    // The download tracker keeps its list in a Pinia store.
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    setActivePinia(pinia);
     const wrapper = shallowMount(PersistentTaskProgressMonitorAlert as object, {
         props: {
             ...props,
         },
         global: {
+            plugins: [pinia],
             stubs: {
                 // Assertions read the alert text out of GAlert's default slot, and the
                 // `variant` prop as a plain attribute. VTU's auto-stub with

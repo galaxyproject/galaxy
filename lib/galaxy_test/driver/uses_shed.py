@@ -26,7 +26,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TOOL_SHEDS_CONF = os.path.join(SCRIPT_DIRECTORY, "tool_sheds_conf.xml")
 
 SHED_TOOL_CONF = string.Template("""<?xml version="1.0"?>
-<toolbox tool_path="$shed_tools_path">
+<toolbox tool_path="$shed_tools_path"$store_attribute>
 </toolbox>""")
 
 SHED_DATA_MANAGER_CONF = """<?xml version="1.0"?>
@@ -44,9 +44,16 @@ class UsesShed(UsesShedApi):
     def _app(self) -> UniverseApplication: ...
 
     shed_tools_dir: ClassVar[str]
+    # Tool source store the shed tool conf routes to (``<toolbox store="...">``).
+    shed_tool_conf_store: ClassVar[str | None] = None
     shed_tool_data_dir: ClassVar[str]
     conda_tmp_prefix: ClassVar[str]
     _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _shed_tool_conf(cls, shed_tools_path: str) -> str:
+        store_attribute = f' store="{cls.shed_tool_conf_store}"' if cls.shed_tool_conf_store else ""
+        return SHED_TOOL_CONF.substitute(shed_tools_path=shed_tools_path, store_attribute=store_attribute)
 
     @classmethod
     def configure_shed(cls, config):
@@ -62,7 +69,7 @@ class UsesShed(UsesShedApi):
         config["shed_tool_data_table_config"] = os.path.join(cls.shed_tool_data_dir, "shed_data_table_conf.xml")
         config["shed_tool_data_path"] = cls.shed_tool_data_dir
         with open(shed_tool_config, "w") as tool_conf_file:
-            tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=cls.shed_tools_dir))
+            tool_conf_file.write(cls._shed_tool_conf(cls.shed_tools_dir))
         with open(config["shed_data_manager_config_file"], "w") as shed_data_config:
             shed_data_config.write(SHED_DATA_MANAGER_CONF)
         with open(config["shed_tool_data_table_config"], "w") as shed_data_table_config:
@@ -83,7 +90,7 @@ class UsesShed(UsesShedApi):
         os.makedirs(self._app.config.shed_tools_dir)
         self._app.config.shed_tools_dir = self.shed_tools_dir
         with open(self._app.config.shed_tool_config_file, "w") as tool_conf_file:
-            tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
+            tool_conf_file.write(self._shed_tool_conf(self._app.config.shed_tools_dir))
         # Drop shed-tool index entries that no longer have a backing conf.
         # The populator is the single writer of the index, so a stale entry
         # would otherwise survive the ``reload_toolbox`` below: ``CachedToolBox``

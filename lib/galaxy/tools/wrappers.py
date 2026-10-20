@@ -13,6 +13,7 @@ from functools import total_ordering
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
     TYPE_CHECKING,
     TypeAlias,
@@ -43,6 +44,7 @@ from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
+from galaxy.tools.runtime import dataset_path
 from galaxy.util import (
     filesystem_safe_string,
     safe_filename_component,
@@ -486,6 +488,27 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def is_deferred(self) -> bool:
         return self.unsanitized.has_deferred_data
+
+    @property
+    def path(self) -> str:
+        """Where the tool finds this dataset's data on disk.
+
+        The dataset's file, or for directory datatypes the folder holding their
+        content. Raises for an unset optional input, and for a deferred dataset
+        passed on as its source URI, which ``$input`` itself renders (see ``is_deferred``).
+        An empty value would turn ``'$input.path'/sub`` into an absolute path.
+        """
+        # Not AttributeError, which Python would hand to __getattr__ and turn into a dataset attribute lookup.
+        if not self:
+            raise ValueError("The dataset input is not set, so it has no path; check '#if $input' first")
+        if self.is_deferred:
+            raise ValueError(
+                "The dataset input is deferred and passed on as its source URI, which '$input' renders; "
+                "check '$input.is_deferred' first"
+            )
+        io_type: Literal["input", "output"] = "output" if self.__io_type == "output" else "input"
+        # Cheetah pastes this into the command line unescaped.
+        return dataset_path(self.unsanitized, self.compute_environment, io_type, shell_quotable=True)
 
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
