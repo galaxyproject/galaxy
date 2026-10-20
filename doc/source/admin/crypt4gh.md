@@ -442,7 +442,9 @@ Protected jobs fail closed:
   deleted, not moved to `_cleared_contents` like those of other jobs.
 
 Job errors are shown to users, so they name the setting or error involved but
-never include the compute service's address. To see the underlying error while
+never include the compute service's address. Unexpected errors only show their type,
+since their message may contain decrypted data, and their traceback in the job's
+stderr leaves out that message. To see the underlying error while
 setting up a destination, for example a TLS problem, set
 `crypt4gh_recryptor_verbose_errors: true` on that destination; turn it off again
 afterwards, since users of that destination see these details too. Alternatively,
