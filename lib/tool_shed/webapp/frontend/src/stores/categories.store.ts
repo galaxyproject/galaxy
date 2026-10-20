@@ -11,6 +11,11 @@ export const useCategoriesStore = defineStore({
         loading: true,
     }),
     actions: {
+        async ensureLoaded() {
+            if (this.categories.length == 0) {
+                await this.getAll()
+            }
+        },
         async getAll() {
             this.loading = true
             try {

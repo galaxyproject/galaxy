@@ -139,7 +139,7 @@ describe("RepositoryPage", () => {
         expect(wrapper.get(".description").text()).toBe("Joins datasets head to tail, with options.")
     })
 
-    it("links the repository's categories and lists them in its .shed.yml", async () => {
+    it("links the repository's categories by name and lists them in its .shed.yml", async () => {
         const category = { description: "", deleted: false, repositories: 1 }
         useCategoriesStore().$patch({
             categories: [
@@ -148,15 +148,20 @@ describe("RepositoryPage", () => {
             ],
         })
         const wrapper = await mountPage({
-            repository: repository({ category_ids: ["c2", "deleted"] }),
+            repository: repository({ category_ids: ["c1", "c2", "not-loaded"] }),
             repositoryMetadata: revision(),
         })
 
         const links = wrapper.findAll(".repository-category").map((link) => [link.text(), link.attributes("to")])
-        expect(links).toEqual([["Convert Formats", "/repositories_by_category/c2"]])
+        expect(links).toEqual([
+            ["Convert Formats", "/repositories_by_category/c2"],
+            ["Text Manipulation", "/repositories_by_category/c1"],
+        ])
         const shedYml = wrapper
             .findAll(".config-file-contents")
             .find((file) => file.get(".config-file-contents-name").text() === ".shed.yml")
-        expect(shedYml?.get("pre").text()).toContain("type: unrestricted\ncategories:\n- Convert Formats")
+        expect(shedYml?.get("pre").text()).toContain(
+            "type: unrestricted\ncategories:\n- Convert Formats\n- Text Manipulation",
+        )
     })
 })

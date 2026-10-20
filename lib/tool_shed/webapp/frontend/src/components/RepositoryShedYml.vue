@@ -18,8 +18,8 @@ const contents = computed(() => shedYml(props.repository, props.categories))
 <template>
     <h2 class="shed-section-title">Planemo</h2>
     <p class="shed-yml-text">
-        <a :href="UPDATING_WITH_PLANEMO_URL">Planemo</a> creates and updates this repository from a
-        <code>.shed.yml</code> with these settings:
+        To manage this repository with <a :href="UPDATING_WITH_PLANEMO_URL">Planemo</a>, use a
+        <code>.shed.yml</code> like:
     </p>
     <config-file-contents name=".shed.yml" :contents="contents" what=".shed.yml" />
 </template>
