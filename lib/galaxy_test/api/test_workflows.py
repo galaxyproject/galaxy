@@ -8379,10 +8379,13 @@ steps:
         self._assert_status_code_is(response, 400)
         assert_error_message_contains(response, "Workflow input 'count' has a minimum (5) greater than its maximum (1)")
 
-    def test_numeric_input_inverted_bounds_flagged_in_editor(self):
+    def test_numeric_input_inverted_bounds_flagged_in_editor_and_export(self):
         workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        message = "Workflow input 'count' has a minimum (5) greater than its maximum (1)."
         editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
-        assert editor_steps["0"]["errors"] == "Workflow input 'count' has a minimum (5) greater than its maximum (1)."
+        assert editor_steps["0"]["errors"] == message
+        export_steps = self._download_workflow(workflow_id)["steps"]
+        assert export_steps["0"]["errors"] == message
 
     def _upload_bounded_integer_workflow(self, minimum: int, maximum: int) -> str:
         return self.workflow_populator.upload_yaml_workflow(f"""

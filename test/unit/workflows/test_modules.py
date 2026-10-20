@@ -20,6 +20,7 @@ from galaxy.tools.parameters.workflow_utils import (
 )
 from galaxy.util import bunch
 from galaxy.workflow import modules
+from galaxy.workflow.workflow_parameter_input_definitions import split_numeric_bounds
 from .workflow_support import (
     MockTrans,
     yaml_to_model,
@@ -164,10 +165,15 @@ def test_parameter_input_range_reaches_run_form(parameter_type, min, max, expect
     assert (field["min"], field["max"]) == expected
 
 
-@pytest.mark.parametrize("min,max,default", [(1, 5, 3), (1, 5, 7), (5, 1, 3)])
-def test_parameter_input_editor_state_with_bounds(min, max, default):
+@pytest.mark.parametrize(
+    "min,max,default,field_bounds",
+    [(1, 5, 3, (1, 5)), (1, 5, 7, (1, 5)), (5, 1, 3, (None, None))],
+)
+def test_parameter_input_editor_state_with_bounds(min, max, default, field_bounds):
+    # Building the editor form keeps saved state as-is, even for an out-of-range default or inverted bounds.
     module = __numeric_editor_module("integer", min, max, default=default)
-    assert __editor_default_parameter(module, "integer").name == "default"
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == field_bounds
     assert module.get_export_state()["default"] == default
     assert module.get_export_state()["validators"] == [{"min": min, "max": max, "negate": False, "type": "in_range"}]
 
@@ -191,7 +197,7 @@ def test_parameter_input_editor_default_follows_edited_bounds():
         "parameter_definition|parameter_type": "integer",
         "parameter_definition|optional|optional": "false",
         "parameter_definition|optional|specify_default|specify_default": "true",
-        "parameter_definition|optional|specify_default|default": "20",
+        "parameter_definition|optional|specify_default|default": "3",
         "parameter_definition|min": "2",
         "parameter_definition|max": "4",
         "parameter_definition|restrictions|how": "none",
@@ -201,7 +207,7 @@ def test_parameter_input_editor_default_follows_edited_bounds():
     populate_state(trans, module.get_inputs(), incoming, state, errors=errors, check=True)
     module.recover_state(state, from_tool_form=True)
     assert not errors
-    assert module.get_export_state()["default"] == 20
+    assert module.get_export_state()["default"] == 3
     field = __editor_default_parameter(module, "integer").to_dict(trans)
     assert (field["min"], field["max"]) == (2, 4)
 
@@ -213,6 +219,34 @@ def test_parameter_input_inverted_bounds():
     with pytest.raises(RequestParameterInvalidException, match="Workflow input 'Count' has a minimum"):
         module.get_runtime_inputs(__step())
     assert module.get_errors() == "Workflow input 'Count' has a minimum (5) greater than its maximum (1)."
+
+
+def test_parameter_input_cleared_bounds_are_unbounded():
+    # Both editor fields cleared still saves an in_range validator, with no ends set.
+    module = __numeric_editor_module("integer", None, None)
+    field = __editor_default_parameter(module, "integer").to_dict(module.trans)
+    assert (field["min"], field["max"]) == (None, None)
+    assert module.get_errors() is None
+
+
+@pytest.mark.parametrize(
+    "parameter_type,min,max,expected_bounds",
+    [
+        ("integer", None, None, None),
+        ("integer", 0, None, {"min": 0, "max": None}),
+        ("float", None, 2.5, {"min": None, "max": 2.5}),
+        ("text", 1, 5, None),
+    ],
+)
+def test_split_numeric_bounds(parameter_type, min, max, expected_bounds):
+    range_validator = {"type": "in_range", "min": min, "max": max, "negate": False}
+    regex_validator = {"type": "regex", "expression": ".*", "negate": False}
+    bounds, validators = split_numeric_bounds(
+        {"parameter_type": parameter_type, "validators": [range_validator, regex_validator]}
+    )
+    assert bounds == expected_bounds
+    expected_validators = [range_validator, regex_validator] if parameter_type == "text" else [regex_validator]
+    assert validators == expected_validators
 
 
 def test_parameter_input_ordered_bounds_have_no_errors():
