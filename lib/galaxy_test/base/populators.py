@@ -4911,9 +4911,10 @@ class DescribeToolExecution:
         return self
 
     def _execute(self):
-        kwds: dict[str, Any] = {
-            "use_cached_job": self.use_cached_job,
-        }
+        kwds: dict[str, Any] = {}
+        if self.use_cached_job:
+            # Form-encoded "False" is truthy to the tools API, so omit the flag unless requested.
+            kwds["use_cached_job"] = True
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
         history_id = self._ensure_history_id
