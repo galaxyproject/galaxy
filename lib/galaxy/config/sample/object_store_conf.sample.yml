@@ -64,8 +64,9 @@ backends:
 # In the distributed object store, existing datasets will be located by the `object_store_id` column in the `dataset`
 # table of the Galaxy database, which corresponds to the `id` option on the backend. New datasets are created based on
 # the `weight` option: a backend with weight "2" has twice the chance of being (randomly) selected for new datasets as a
-# backend with weight "1". A weight of "0" will still allow datasets in that backend to be read, but no new datasets
-# will be written to that backend.
+# backend with weight "1". A weight of "0" will still allow datasets in that backend to be read, and Galaxy will not
+# pick it at random for new datasets. New datasets can still be written to it if it has `allow_selection` enabled and a
+# user, history, tool run or workflow invocation selects it (see the user-selectable storage example below).
 #
 # In distributed and hierarchical configurations, you can choose that some backends are automatically unused whenever
 # they become too full. Setting the `global_max_percent_full` option on the top level backends config enables this, or
@@ -110,7 +111,7 @@ backends:
     name: Scratch Storage
     description: >
       This data storage is fast and meant for exploratory analysis and methods development. Data stored here is not backed up
-      and automatically purged after a month. 
+      and automatically purged after a month.
     badges:
         - type: faster
         - type: less_stable
@@ -160,7 +161,7 @@ backends:
 # suitable just for AWS services (aws_s3 & cloud), one is
 # more suited for non-AWS S3 compatible services (generic_s3),
 # and finally boto3 gracefully handles either scenario.
-# 
+#
 # boto3 is built on the newest and most widely used Python client
 # outside of Galaxy. It has advanced transfer options and is likely
 # the client you should use for new setup. generic_s3 and aws_s3
@@ -246,7 +247,7 @@ connection:
   # The domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
   # devel instances (see above). The minimal supported Onezone version is 21.02.4.
   onezone_domain: datahub.egi.eu
-  # Allows connection to Onedata servers that do not present trusted SSL certificates. 
+  # Allows connection to Onedata servers that do not present trusted SSL certificates.
   # SHOULD NOT be used unless you really know what you are doing.
   disable_tls_certificate_validation: false
 space:
@@ -462,6 +463,15 @@ extra_dirs:
 # It is safe to just relabel the object store that a dataset belongs to if the underlying paths mapped to by the object
 # stores are the same and the dataset has not been copied. To enable users to relocate datasets this way set the
 # backends' `device` property to the same value.
+#
+# To retire a user-selectable backend while keeping its datasets readable, keep it in the configuration with `weight`
+# set to "0" and remove `allow_selection`. Galaxy ignores user and history preferences that point to a backend that no
+# longer allows selection, and those datasets go to the next preference or the weighted default instead. The default
+# may have different quota, privacy or expiry settings than the retired backend. To send them to a specific replacement,
+# update the stored preferences in the database:
+#
+#   UPDATE galaxy_user SET preferred_object_store_id = '<new id>' WHERE preferred_object_store_id = '<old id>';
+#   UPDATE history SET preferred_object_store_id = '<new id>' WHERE preferred_object_store_id = '<old id>';
 
 type: distributed
 backends:
