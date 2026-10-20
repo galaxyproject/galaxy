@@ -191,9 +191,10 @@ defineExpose({
                         <span class="multiselect__tag remove_sharing_with" :data-email="option.email">
                             <span>{{ option.email }}</span>
                             <i
-                                aria-hidden="true"
+                                role="button"
                                 tabindex="0"
                                 class="multiselect__tag-icon"
+                                :aria-label="`Remove ${option.email}`"
                                 @click="remove(option)"
                                 @keyup.enter.space="remove(option)"></i>
                         </span>
