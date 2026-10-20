@@ -124,7 +124,7 @@ def evaluate_tool(tmpdir: str, working_directory: str, import_store_directory: s
     )
     compute_environment: ComputeEnvironment = SharedComputeEnvironment(job_io=job_io, job=job_io.job)
     if job_io.protection_plan_path:
-        # Inputs were decrypted before this script ran, point the tool at them.
+        # Inputs are decrypted after this script ran, right before the tool: point the tool at where they will be.
         compute_environment = ProtectedInputsComputeEnvironment(
             compute_environment, ProtectionPlan.read(job_io.protection_plan_path)
         )
