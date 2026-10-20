@@ -13,6 +13,7 @@ import { GButton, GButtonGroup, GDropdownItem, GDropdownItemButton } from "@gala
 import { computed } from "vue"
 import ActionMenu from "@/components/ActionMenu.vue"
 import { goToRepository, goToMetadataInspector } from "@/router"
+import { useAuthStore } from "@/stores"
 
 interface Repository {
     name: string
@@ -37,10 +38,24 @@ const props = withDefaults(defineProps<RepositoryExploreProps>(), {
 
 const changelog = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/shortlog`)
 const contents = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/file/tip`)
-const hgwebLinks = computed(() => [
-    { key: "changelog", icon: faCodeCompare, label: "Changelog", target: { href: changelog.value } },
-    { key: "contents", icon: faList, label: "Contents", target: { href: contents.value } },
-])
+
+// hgweb's HTML views sit behind login (crawlers), so anonymous users log in first and then land on the view
+const authStore = useAuthStore()
+const hgwebLinks = computed(() =>
+    [
+        { key: "changelog", icon: faCodeCompare, path: changelog.value, label: "Changelog", prompt: "view changelog" },
+        { key: "contents", icon: faList, path: contents.value, label: "Contents", prompt: "browse contents" },
+    ].map(({ key, icon, path, label, prompt }) =>
+        authStore.user
+            ? { key, icon, label, target: { href: path } }
+            : {
+                  key,
+                  icon,
+                  label: `Log in to ${prompt}`,
+                  target: { to: `/login?redirect=${encodeURIComponent(path)}` },
+              },
+    ),
+)
 </script>
 <template>
     <ActionMenu v-if="!dense" :icon="faCompass" label="Explore repository">

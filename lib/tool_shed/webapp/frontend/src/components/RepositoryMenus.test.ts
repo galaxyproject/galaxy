@@ -1,9 +1,11 @@
-import { mount } from "@vue/test-utils"
-import { describe, expect, it } from "vitest"
+import { flushPromises, mount } from "@vue/test-utils"
+import { createPinia, setActivePinia } from "pinia"
+import { beforeEach, describe, expect, it } from "vitest"
 import { createMemoryHistory, createRouter } from "vue-router"
 import RepositoryActions from "./RepositoryActions.vue"
 import RepositoryExplore from "./RepositoryExplore.vue"
 import RepositoryHealth from "./RepositoryHealth.vue"
+import { useAuthStore } from "@/stores"
 
 const repository = { id: "abc", name: "bismark", owner: "devteam" }
 
@@ -63,7 +65,16 @@ describe("RepositoryActions", () => {
 })
 
 describe("RepositoryExplore", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia())
+    })
+
+    function logIn() {
+        useAuthStore().user = { id: "u1", username: "shuser" }
+    }
+
     it("links the changelog and contents from the explore menu", () => {
+        logIn()
         const wrapper = mount(RepositoryExplore, { props: { repository }, ...withRouter() })
 
         const links = wrapper.findAll("a.dropdown-item").map((link) => link.attributes("href"))
@@ -71,6 +82,7 @@ describe("RepositoryExplore", () => {
     })
 
     it("shows labelled icon buttons in dense mode, including the optional external links", () => {
+        logIn()
         const wrapper = mount(RepositoryExplore, {
             props: {
                 repository: { ...repository, homepage_url: "https://example.org", remote_repository_url: null },
@@ -82,5 +94,27 @@ describe("RepositoryExplore", () => {
         const labels = wrapper.findAll(".repository-explore-buttons .g-button").map((b) => b.attributes("aria-label"))
         expect(labels).toEqual(["Details", "Metadata Inspector", "Changelog", "Contents", "Homepage"])
         expect(wrapper.get('[aria-label="Homepage"]').attributes("href")).toBe("https://example.org")
+    })
+
+    it("sends anonymous users to log in first, then on to the changelog or contents", async () => {
+        const wrapper = mount(RepositoryExplore, { props: { repository }, ...withRouter() })
+        await flushPromises()
+
+        const items = wrapper.findAll("a.dropdown-item")
+        expect(items.map((item) => item.text())).toEqual(["Log in to view changelog", "Log in to browse contents"])
+        expect(items.map((item) => item.attributes("href"))).toEqual([
+            "/login?redirect=%2Frepos%2Fdevteam%2Fbismark%2Fshortlog",
+            "/login?redirect=%2Frepos%2Fdevteam%2Fbismark%2Ffile%2Ftip",
+        ])
+
+        const dense = mount(RepositoryExplore, { props: { repository, dense: true }, ...withRouter() })
+        await flushPromises()
+        const labels = dense.findAll(".repository-explore-buttons .g-button").map((b) => b.attributes("aria-label"))
+        expect(labels).toEqual([
+            "Details",
+            "Metadata Inspector",
+            "Log in to view changelog",
+            "Log in to browse contents",
+        ])
     })
 })
