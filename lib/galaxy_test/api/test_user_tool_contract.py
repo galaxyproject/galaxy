@@ -147,3 +147,14 @@ def test_optional_boolean_omitted(loaded_tool: LoadedTool, tool_input_format: De
     loaded_tool.execute().with_inputs(tool_input_format.when.any({"flag": None})).assert_has_single_job.with_output(
         "output"
     ).with_json({"flag": None})
+
+
+@pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_user_boolean_optional_null"), indirect=True)
+def test_optional_boolean_null(loaded_tool: LoadedTool, tool_input_format: DescribeToolInputs):
+    parameter = loaded_tool.build()["inputs"][0]
+    assert parameter["name"] == "flag"
+    assert parameter["value"] is None
+    assert parameter["optional"] is True
+    loaded_tool.execute().with_inputs(tool_input_format.when.any({})).assert_has_single_job.with_output(
+        "output"
+    ).with_json({"flag": None})
