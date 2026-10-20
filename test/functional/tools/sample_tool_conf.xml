@@ -315,6 +315,7 @@
   <tool file="parameters/gx_boolean_user.yml" />
   <tool file="parameters/gx_data_user.yml" />
   <tool file="parameters/gx_data_multiple_user.yml" />
+  <tool file="parameters/gx_user_boolean_optional_omitted.yml" />
   <tool file="parameters/gx_user_boolean_defaults.yml" />
   <tool file="parameters/gx_user_boolean_conditional.yml" />
   <tool file="parameters/gx_select_multiple_one_default_user.yml" />

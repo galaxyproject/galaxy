@@ -108,3 +108,42 @@ def test_conditional_contract(loaded_tool: LoadedTool, tool_input_format: Descri
     loaded_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_json(
         {"choice": {"flag": False, "no": "chosen"}}
     )
+
+
+@pytest.mark.parametrize(
+    "loaded_tool, name, value",
+    _load_paths(
+        "configfile",
+        SOURCE_DIR / "configfile_user_defined.yml",
+        SOURCE_DIR / "configfile_user_defined.json",
+        "text",
+        "hello!",
+    )
+    + _load_paths(
+        "gx_select_multiple_one_default_user",
+        SOURCE_DIR / "gx_select_multiple_one_default_user.yml",
+        SOURCE_DIR / "gx_select_multiple_one_default_user.json",
+        "parameter",
+        "--ex3",
+    ),
+    indirect=["loaded_tool"],
+)
+def test_omitted_optionality(loaded_tool: LoadedTool, name, value):
+    parameter = loaded_tool.build()["inputs"][0]
+    assert parameter["name"] == name
+    assert parameter["value"] == value
+    assert parameter["optional"] is False
+
+
+@pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_user_boolean_optional_omitted"), indirect=True)
+def test_optional_boolean_omitted(loaded_tool: LoadedTool, tool_input_format: DescribeToolInputs):
+    parameter = loaded_tool.build()["inputs"][0]
+    assert parameter["name"] == "flag"
+    assert parameter["value"] is False
+    assert parameter["optional"] is True
+    loaded_tool.execute().with_inputs(tool_input_format.when.any({})).assert_has_single_job.with_output(
+        "output"
+    ).with_json({"flag": False})
+    loaded_tool.execute().with_inputs(tool_input_format.when.any({"flag": None})).assert_has_single_job.with_output(
+        "output"
+    ).with_json({"flag": None})
