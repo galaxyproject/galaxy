@@ -1473,6 +1473,14 @@ class InputParameterModule(WorkflowModule):
                             "help": "This message will be shown if the regular does not match the input",
                         },
                     ),
+                    "regex_negate": BooleanToolParameter(
+                        None,
+                        {
+                            "name": "regex_negate",
+                            "label": "Reject values matching this expression",
+                            "help": "If set, input values matching the regular expression are invalid",
+                        },
+                    ),
                 }
 
                 return add_validators_repeat
@@ -1894,6 +1902,7 @@ class InputParameterModule(WorkflowModule):
                         {
                             "regex_doc": source_validator.get("message"),
                             "regex_match": source_validator.get("expression"),
+                            "regex_negate": source_validator.get("negate", False),
                         }
                     )
                 elif source_type == "in_range":
@@ -1964,7 +1973,7 @@ class InputParameterModule(WorkflowModule):
                         {
                             "message": form_validator["regex_doc"],
                             "expression": form_validator["regex_match"],
-                            "negate": False,
+                            "negate": form_validator.get("regex_negate", False),
                             "type": "regex",
                         }
                     )
