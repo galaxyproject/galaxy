@@ -2267,7 +2267,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             else:
                 input_field = workflow_run.input_data_div(label=css_attribute_value(label))
             input_div_element = input_field.wait_for_visible()
-            hid = value.pop("hid")
+            hid = value["hid"]
             self.select_set_value(input_div_element, f"{hid}: ")
 
     def workflow_run_submit(self):

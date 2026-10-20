@@ -822,6 +822,8 @@ input:
   file_type: tabular
   type: File
 """)
+        # The run form preselects the newest dataset, so only a real selection picks the test data.
+        decoy = self.dataset_populator.new_dataset(history_id, content="1\t2\n", file_type="tabular", wait=True)
         self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -848,6 +850,9 @@ steps:
         self.workflow_run_submit()
         invocation = self._wait_for_single_invocation(history_id)
         assert invocation["input_step_parameters"]["columns"]["parameter_value"] == [1, 2]
+        selected_id = invocation["inputs"]["0"]["id"]
+        assert selected_id != decoy["id"], "run form kept the preselected newest dataset"
+        assert selected_id == inputs["input"]["id"]
         content = self.dataset_populator.get_history_dataset_content(
             history_id, dataset_id=invocation["outputs"]["output"]["id"]
         )
@@ -930,10 +935,16 @@ steps:
         history_id = self.workflow_run_and_submit(
             WORKFLOW_WITH_CUSTOM_REPORT_1,
             WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+            inputs_specified_screenshot_name="workflow_run_invocation_report_inputs",
             ensure_expanded=True,
         )
         self.screenshot("workflow_run_invocation_report")
         invocation = self._wait_for_single_invocation(history_id)
+        # Both untyped data inputs share one preselected default, so distinct names need real selections.
+        selected = {i["label"]: i["id"] for i in invocation["inputs"].values()}
+        for label, name in (("input_1", "my bed file"), ("image_input", "my input image")):
+            details = self.dataset_populator.get_history_dataset_details(history_id, content_id=selected[label])
+            assert details["name"] == name, f"{label} got {details['name']!r}"
         self.get(f"workflows/invocations/report?id={invocation['id']}")
         self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_custom_1")
