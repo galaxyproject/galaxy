@@ -20,6 +20,7 @@ import ResetPassword from "@/components/pages/ResetPassword.vue"
 import CitableRepositoryPage from "@/components/pages/CitableRepositoryPage.vue"
 
 import type { RouteRecordRaw } from "vue-router"
+import { queryParamToString } from "@/util"
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -33,6 +34,7 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: "/login",
         component: LoginPage,
+        props: (route) => ({ returnTo: queryParamToString(route.query.redirect) }),
     },
     {
         path: "/user/change_password_success",

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 const addToast = vi.fn()
 vi.mock("@galaxyproject/galaxy-ui", () => ({ useToast: () => ({ addToast }) }))
 
-const { copyAndNotify, downloadTextFile, getCookie, notify, notifyOnCatch } = await import("./util")
+const { copyAndNotify, downloadTextFile, getCookie, notify, notifyOnCatch, safeReturnPath } = await import("./util")
 
 describe("notify", () => {
     beforeEach(() => {
@@ -106,5 +106,26 @@ describe("downloadTextFile", () => {
         expect(revokeObjectURL).not.toHaveBeenCalled()
         vi.advanceTimersByTime(10000)
         expect(revokeObjectURL).toHaveBeenCalledWith("blob:contents")
+    })
+})
+
+describe("safeReturnPath", () => {
+    it("keeps paths on this site", () => {
+        expect(safeReturnPath("/repos/devteam/bismark/shortlog")).toBe("/repos/devteam/bismark/shortlog")
+        expect(safeReturnPath("/repositories/abc?revision=1")).toBe("/repositories/abc?revision=1")
+    })
+
+    it("rejects anything that could leave the site", () => {
+        for (const value of [
+            "https://evil.example",
+            "//evil.example",
+            "/\\evil.example",
+            "javascript:alert(1)",
+            "repos/x",
+            "",
+            null,
+        ]) {
+            expect(safeReturnPath(value)).toBeNull()
+        }
     })
 })

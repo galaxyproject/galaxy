@@ -104,6 +104,11 @@ function isApiException(e: unknown): e is ApiMessageException {
     return e instanceof Object && "err_msg" in e
 }
 
+// Only paths on this site, so a crafted ?redirect= can't send someone off-site after logging in
+export function safeReturnPath(value: string | null | undefined): string | null {
+    return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null
+}
+
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {
     return Array.isArray(param) ? param[0] : param
 }

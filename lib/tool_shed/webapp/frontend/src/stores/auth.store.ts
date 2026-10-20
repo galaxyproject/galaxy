@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { ensureCookie, errorMessageAsString, notifyOnCatch } from "@/util"
+import { ensureCookie, errorMessageAsString, notifyOnCatch, safeReturnPath } from "@/util"
 
 import { ToolShedApi } from "@/schema"
 
@@ -21,7 +21,7 @@ export const useAuthStore = defineStore({
                 console.debug(`Failed to get current user: ${errorMessageAsString(e)}`)
             }
         },
-        async login(username: string, password: string) {
+        async login(username: string, password: string, returnTo: string | null = null) {
             const token = ensureCookie("session_csrf_token")
             await ToolShedApi().PUT("/api_internal/login", {
                 body: {
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore({
             })
             // We need to do this outside the router to get updated
             // cookies and hence csrf token.
-            window.location.href = "/login_success"
+            window.location.href = safeReturnPath(returnTo) ?? "/login_success"
         },
         async logout() {
             const token = ensureCookie("session_csrf_token")
