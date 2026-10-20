@@ -867,7 +867,7 @@ class User(Base, Dictifiable, RepresentById):
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
     external: Mapped[Optional[bool]] = mapped_column(default=False)
     form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
-    preferred_object_store_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     disk_usage: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0), index=True)
