@@ -96,6 +96,12 @@ class TestLoginController(TestCase):
         root = "https://galaxy.example/galaxy/"
         for redirect, expected in [
             ("https://tools.example.org/back", "https://tools.example.org/back"),
+            ("https://galaxy.example/galaxy/x", "https://galaxy.example/galaxy/x"),
+            ("https://galaxy.example:443/galaxy/x", "https://galaxy.example:443/galaxy/x"),
+            ("https://GALAXY.example/galaxy/x", "https://GALAXY.example/galaxy/x"),
+            ("https://galaxy.example:8443/galaxy/x", root),
+            ("http://galaxy.example/galaxy/x", root),
+            ("https://user@galaxy.example/galaxy/x", root),
             ("/\\evil.example.com/", root),
             ("https://evil.example.com\\@galaxy.example/", root),
             ("https://[galaxy.example/", root),

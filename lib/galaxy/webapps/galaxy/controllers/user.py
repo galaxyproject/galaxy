@@ -7,7 +7,9 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import Optional
 from urllib.parse import (
+    SplitResult,
     unquote,
     urlsplit,
 )
@@ -42,16 +44,25 @@ from ..api import depends
 log = logging.getLogger(__name__)
 
 
+DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _origin(url: SplitResult) -> tuple[str, Optional[str], Optional[int]]:
+    return url.scheme, url.hostname, url.port or DEFAULT_PORTS.get(url.scheme)
+
+
 def _is_absolute_url_to(base_url: str, url: str) -> bool:
-    """Is ``url`` an absolute URL with the same scheme and authority as ``base_url``?"""
+    """Is ``url`` an absolute URL with the same scheme, host and port as ``base_url``?"""
     # A backslash or control character would let a browser read the authority differently.
     if not isinstance(url, str) or "\\" in url or util.CONTROL_CHARACTERS.search(url):
         return False
     try:
         target, base = urlsplit(url), urlsplit(base_url)
+        same_origin = _origin(target) == _origin(base)
     except ValueError:
         return False
-    return bool(target.netloc) and (target.scheme, target.netloc) == (base.scheme, base.netloc)
+    # Credentials in the authority are refused, as in is_safe_login_redirect.
+    return same_origin and bool(target.hostname) and "@" not in target.netloc
 
 
 def _filtered_registration_params_dict(payload):
