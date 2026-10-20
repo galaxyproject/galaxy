@@ -101,7 +101,8 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
         encrypted: bytes,
         expires_in: timedelta = timedelta(days=7),
         user: Keypair | None = None,
-    ) -> None:
+        status_code: int = 200,
+    ):
         """Do what the browser does with the user-side recryptor service."""
         user = user or self.user
         key_ref = self.service.get_compute_key_info(user.public, expires_in=expires_in)
@@ -113,7 +114,8 @@ class BaseCrypt4GHExecutionIntegrationTestCase(integration_util.IntegrationTestC
             "crypt4gh_compute_keypair_expiration_date": recrypted["crypt4gh_compute_keypair_expiration_date"],
         }
         response = self._put(f"datasets/{dataset_id}/protection", payload, json=True)
-        self._assert_status_code_is(response, 200)
+        self._assert_status_code_is(response, status_code)
+        return response
 
     def _upload_authorized(self, history_id: str, plaintext: bytes, name: str = "reads.fastqsanger.c4gh") -> dict:
         dataset, encrypted = self._upload_encrypted(history_id, plaintext, name=name)
@@ -511,15 +513,15 @@ steps:
                 self._assert_status_code_is(response, 400)
         assert self.service.requests == []
 
-    def test_grant_expiring_during_the_job_is_refused_when_preparing(self, history_id):
+    def test_keypair_expiring_before_a_job_could_finish_is_refused_when_authorizing(self, history_id):
         dataset, encrypted = self._upload_encrypted(history_id, PLAINTEXT_1)
-        # Usable right now, but expires before a job hitting the 48h walltime would be done.
-        self._authorize(dataset["id"], encrypted, expires_in=timedelta(hours=30))
+        # Accepted by the key service right now, but expires before a job hitting the 48h walltime would be done.
+        response = self._authorize(dataset["id"], encrypted, expires_in=timedelta(hours=30), status_code=400)
 
-        job, output = self._wait_for_job(history_id, self._run_cat(history_id, dataset))
-
-        assert job["state"] == "error"
-        assert "Authorize the dataset again" in output["misc_info"]
+        assert "expires before a job using it could finish" in response.json()["err_msg"]
+        response = self._run_cat(history_id, dataset)
+        self._assert_status_code_is(response, 400)
+        assert "not authorized to decrypt" in response.json()["err_msg"]
         assert self.service.requests == []
 
     def test_failed_decryption_fails_the_job_before_the_tool_runs(self, history_id):

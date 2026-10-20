@@ -1549,7 +1549,6 @@ class MinimalJobWrapper(HasResourceParameters):
             metadata_strategy=self.metadata_strategy or self.app.config.metadata_strategy,
             has_tasks=dispatcher.splits_into_tasks(self, runner),
             is_pulsar=dispatcher.is_pulsar(runner),
-            walltime=self.app.job_config.limits.walltime_delta,
         )
 
     def default_compute_environment(self, job=None):

@@ -19,7 +19,6 @@ import json
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import timedelta
 from functools import cached_property
 from typing import (
     Any,
@@ -166,7 +165,6 @@ class ProtectionDestination:
     remote_metadata: bool
     rewrite_parameters: bool
     recryptor: RecryptorSettings | None
-    walltime: timedelta | None = None
     live_tool_output_reporting: bool = False
 
     @classmethod
@@ -177,7 +175,6 @@ class ProtectionDestination:
         metadata_strategy: str,
         has_tasks: bool,
         is_pulsar: bool,
-        walltime: timedelta | None,
     ) -> "ProtectionDestination":
         """Read the parameters of a job destination, along with what Galaxy decided for the job."""
         return cls(
@@ -187,7 +184,6 @@ class ProtectionDestination:
             remote_metadata=asbool(params.get("remote_metadata", False)),
             rewrite_parameters=asbool(params.get("rewrite_parameters", False)),
             recryptor=RecryptorSettings.from_params(params),
-            walltime=walltime,
             live_tool_output_reporting=asbool(params.get("live_tool_output_reporting", False)),
         )
 
