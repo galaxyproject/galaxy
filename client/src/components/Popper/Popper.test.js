@@ -53,6 +53,16 @@ describe("PopperComponent.vue", () => {
         container.remove();
     });
 
+    test("omits the header and close control without a title", async () => {
+        const wrapper = mountTarget();
+        await wrapper.setProps({ title: undefined });
+        await wrapper.get("button").trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        expect(wrapper.find(".popper-header").exists()).toBe(false);
+        expect(wrapper.find(".popper-close").exists()).toBe(false);
+        wrapper.unmount();
+    });
+
     test("renders component with default props", async () => {
         const wrapper = mountTarget();
         expect(wrapper.find(".popper-element").exists()).toBe(true);
