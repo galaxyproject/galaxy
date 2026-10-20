@@ -300,11 +300,16 @@ function onChange(event: Event) {
         }
     }
 
-    // Forced colors drop the backgrounds that mark the selected button; keep it visible with a system-colored outline
+    // Forced colors drop the fills that mark the selected button and the focus ring owns outline, so mark it with a border
     @media (forced-colors: active) {
-        &.g-checked {
-            outline: 2px solid Highlight;
-            outline-offset: -3px;
+        // :is() matches the colour rules' specificity so Highlight wins; 1px less padding keeps the row from shifting
+        &.g-checked:is(.g-grey, .g-blue, .g-green, .g-red, .g-yellow, .g-orange) {
+            padding: calc(var(--spacing-1, 0.25rem) - 1px) calc(var(--spacing-2, 0.5rem) - 1px);
+            border: 2px solid Highlight;
+
+            &.g-large {
+                padding: calc(var(--spacing-2, 0.5rem) - 1px) calc(var(--spacing-3, 0.75rem) - 1px);
+            }
         }
     }
 }
