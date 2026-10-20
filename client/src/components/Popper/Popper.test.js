@@ -91,6 +91,26 @@ describe("PopperComponent.vue", () => {
         wrapper.unmount();
     });
 
+    test("closes a hover popup on Escape only when focus is inside it", async () => {
+        const wrapper = mountTarget("hover", true);
+        const reference = wrapper.get("button");
+        const popperElement = wrapper.get(".popper-element");
+        await reference.trigger("mouseover");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(popperElement.isVisible()).toBe(true);
+
+        reference.element.focus();
+        await reference.trigger("keydown", { key: "Escape" });
+        expect(popperElement.isVisible()).toBe(true);
+
+        const close = wrapper.get(".popper-close");
+        close.element.focus();
+        await close.trigger("keydown", { key: "Escape" });
+        expect(popperElement.isVisible()).toBe(false);
+        expect(document.activeElement).toBe(reference.element);
+        wrapper.unmount();
+    });
+
     test("returns focus to an external reference without stealing focus from elsewhere", async () => {
         const reference = document.createElement("button");
         reference.textContent = "Open details";
