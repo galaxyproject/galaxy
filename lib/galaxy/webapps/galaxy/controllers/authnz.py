@@ -6,6 +6,7 @@ import datetime
 import json
 import logging
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 import jwt
 
@@ -15,6 +16,7 @@ from galaxy import (
 )
 from galaxy.authnz.flow_state import InvalidFlow
 from galaxy.util import (
+    is_safe_local_redirect,
     is_safe_login_redirect,
     url_get,
 )
@@ -28,6 +30,8 @@ log = logging.getLogger(__name__)
 
 PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
 LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
+# RFC 3986 reserved characters plus "%" and "~", the safe set requests.utils.requote_uri uses.
+URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
 
 
 def login_destination(trans) -> str:
@@ -41,7 +45,11 @@ def login_destination(trans) -> str:
     if not login_next or login_next == "None":
         return url_for("/")
     if is_safe_login_redirect(login_next, trans.app.config.allowed_login_redirect_hosts):
-        return url_for(login_next)
+        # The client sends the destination percent-decoded, and url_for and the Location
+        # header both need it encoded.
+        login_next = quote(login_next, safe=URL_SAFE_CHARACTERS)
+        # Only paths on this server need galaxy_url_prefix.
+        return url_for(login_next) if is_safe_local_redirect(login_next) else login_next
     log.warning("Ignoring post-login redirect target that is not allowed: %s", login_next)
     return url_for("/")
 
