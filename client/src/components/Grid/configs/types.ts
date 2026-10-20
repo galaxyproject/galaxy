@@ -73,7 +73,7 @@ export interface FieldFilter {
     search: (query: string) => Promise<FilterOption[]>;
 }
 
-export type FieldHandler = (data: RowData) => void;
+export type FieldHandler = (data: RowData) => void | Promise<void>;
 
 export interface BatchOperation {
     title: string;
