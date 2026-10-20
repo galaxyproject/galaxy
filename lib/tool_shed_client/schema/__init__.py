@@ -37,6 +37,8 @@ class Repository(BaseModel):
 
 class DetailedRepository(Repository):
     long_description: str | None
+    category_ids: list[str] = []
+    clone_url: str | None = None
 
 
 class RepositoryPermissions(BaseModel):

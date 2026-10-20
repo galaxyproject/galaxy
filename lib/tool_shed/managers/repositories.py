@@ -52,6 +52,7 @@ from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
+from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.util.metadata_util import (
     build_invalid_tools,
     get_all_dependencies,
@@ -761,8 +762,11 @@ def to_model(app: ToolShedApp, repository: Repository) -> SchemaRepository:
     return SchemaRepository(**to_element_dict(app, repository))
 
 
-def to_detailed_model(app: ToolShedApp, repository: Repository) -> DetailedRepository:
-    return DetailedRepository(**to_element_dict(app, repository))
+def to_detailed_model(trans: ProvidesRepositoriesContext, repository: Repository) -> DetailedRepository:
+    return DetailedRepository(
+        **to_element_dict(trans.app, repository, include_categories=True),
+        clone_url=generate_clone_url_for(trans, repository),
+    )
 
 
 def upload_tar_and_set_metadata(

@@ -1883,6 +1883,13 @@ export interface components {
         DescriptorTypeVersion: string
         /** DetailedRepository */
         DetailedRepository: {
+            /**
+             * Category Ids
+             * @default []
+             */
+            category_ids: string[]
+            /** Clone Url */
+            clone_url?: string | null
             /** Create Time */
             create_time: string
             /** Deleted */
