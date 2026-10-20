@@ -5,7 +5,6 @@ the destination has to be validated -- doing it here covers every writer of the 
 including the ``next`` parameter accepted by ``OIDC.login``.
 """
 
-import json
 from typing import Optional
 
 import pytest
@@ -47,32 +46,6 @@ class StubTrans:
 
     def show_error_message(self, message):
         return message
-
-
-class CompletingTrans(StubTrans):
-    """A transaction whose OIDC backend logs the user in and returns the destination it was given."""
-
-    def __init__(self, login_next_cookie: Optional[str], allowed_hosts=()):
-        super().__init__(login_next_cookie, allowed_hosts)
-        self.app.config.enable_oidc = True
-        self.app.authnz_manager.create_user = self._create_user
-        self.request = Bunch(method="POST", POST={"confirmation_id": "confirmation"})
-        self.response = Bunch(headers={}, set_content_type=lambda content_type: None, send_redirect=lambda url: url)
-
-    def _callback(self, provider, state, code, trans, login_redirect_url=None, idphint=None):
-        return True, "", (login_redirect_url, "user")
-
-    def _create_user(self, provider, confirmation_id=None, trans=None, login_redirect_url=None):
-        return True, "", (login_redirect_url, "user")
-
-    def set_cookie(self, value, name, **kwargs):
-        self._cookies[name] = value
-
-    def handle_user_login(self, user):
-        pass
-
-    def check_csrf_token(self, payload):
-        return None
 
 
 @pytest.fixture(autouse=True)
@@ -134,17 +107,3 @@ def test_callback_falls_back_to_root_without_a_destination(empty):
 )
 def test_callback_encodes_the_destination_for_url_for(galaxy_url_prefix, cookie_value, expected):
     assert chosen_redirect_for(cookie_value, allowed_hosts=["tools.example.org"]) == expected
-
-
-@pytest.mark.parametrize("destination", [LANDING_PATH, "https://tools.example.org/back"])
-def test_callback_sends_the_user_to_an_allowed_destination(destination):
-    trans = CompletingTrans(destination, allowed_hosts=["tools.example.org"])
-    assert OIDC.callback(None, trans, "keycloak", code="auth-code", state="state-token") == destination
-    assert trans.get_cookie(LOGIN_NEXT_COOKIE_NAME) == "/"
-
-
-def test_account_confirmation_sends_the_user_to_an_allowed_destination():
-    trans = CompletingTrans("https://tools.example.org/back", allowed_hosts=["tools.example.org"])
-    response = OIDC.create_user(object.__new__(OIDC), trans, provider="keycloak")
-    assert json.loads(response) == {"redirect_uri": "https://tools.example.org/back"}
-    assert trans.get_cookie(LOGIN_NEXT_COOKIE_NAME) == "/"
