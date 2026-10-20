@@ -1,3 +1,5 @@
+import re
+
 from playwright.sync_api import expect
 
 from ..base.playwrighttestcase import PlaywrightTestCase
@@ -156,3 +158,21 @@ class TestFrontendRepositories(PlaywrightTestCase):
         assert readme.locator("img").evaluate("img => img.decode().then(() => img.naturalWidth)") == 24
         readme.scroll_into_view_if_needed()
         self.screenshot("repository_latest_revision_readme")
+
+    def test_repository_page_categories_clone_command_and_shed_yml(self):
+        category = self.populator.new_category(prefix=TEST_CATEGORY_PREFIX)
+        repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX, category_id=category.id)
+        self.visit_url(f"/repositories/{repository.id}")
+        page = self._page
+
+        clone_url = f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
+        expect(page.locator(".repository-link code")).to_have_text(f"hg clone {clone_url}")
+        shed_yml = page.locator(".config-file-contents").filter(has_text=".shed.yml").locator("pre")
+        expect(shed_yml).to_be_visible()
+        assert f"name: {repository.name}\nowner: {repository.owner}\n" in shed_yml.inner_text()
+        assert f"categories:\n- {category.name}\n" in shed_yml.inner_text()
+        shed_yml.scroll_into_view_if_needed()
+        self.screenshot("repository_categories_and_shed_yml")
+
+        page.locator(".repository-category").filter(has_text=category.name).click()
+        expect(page).to_have_url(re.compile(f"/repositories_by_category/{category.id}$"))
