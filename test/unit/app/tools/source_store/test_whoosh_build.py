@@ -1,5 +1,7 @@
 """Pin ``ToolWhooshIndex.build`` rebuild/skip semantics."""
 
+from dataclasses import replace
+
 import pytest
 from whoosh import index
 
@@ -233,3 +235,37 @@ def test_toggling_help_indexing_rebuilds_existing_index(tmp_path):
     )
     assert written == 1
     assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("quaxifier") == ["mytool"]
+
+
+@pytest.mark.parametrize(
+    "rebuild_tuning",
+    [_TUNING, replace(_TUNING, index_tool_help=False)],
+    ids=["same-schema", "schema-change"],
+)
+def test_long_lived_index_sees_a_later_build(tmp_path, rebuild_tuning):
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller"))
+    searching = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    assert searching.search("caller") == ["caller"]
+
+    ToolWhooshIndex(index_dir=index_dir, tuning=rebuild_tuning).build(_index("mapper", "trimmer"))
+    assert searching.search("trimmer") == ["trimmer"]
+    assert searching.search("caller") == []
+
+
+def test_search_before_the_index_exists(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    searching = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    assert searching.search("mapper") == []
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper"))
+    assert searching.search("mapper") == ["mapper"]
+
+
+def test_searchers_are_reused_but_never_shared(tmp_path):
+    searching = ToolWhooshIndex(index_dir=str(tmp_path / "ix"), tuning=_TUNING)
+    searching.build(_index("mapper"))
+    with searching._searcher() as first, searching._searcher() as second:
+        assert first is not None
+        assert first is not second
+    with searching._searcher() as third:
+        assert third in (first, second)

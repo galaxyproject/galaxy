@@ -5,7 +5,12 @@ import logging
 import os
 import re
 import shutil
-from collections.abc import Collection
+import threading
+from collections.abc import (
+    Collection,
+    Iterator,
+)
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from whoosh import (
@@ -29,6 +34,7 @@ from whoosh.scoring import (
     Frequency,
     MultiWeighting,
 )
+from whoosh.searching import Searcher
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tool_util.ontologies.ontology_data import curated_tool_tags
@@ -250,6 +256,13 @@ def entry_to_search_document(entry: ToolIndexEntry, *, include_help: bool = Fals
     )
 
 
+def search_weighting(tuning: ToolSearchTuning) -> MultiWeighting:
+    return MultiWeighting(
+        Frequency(),
+        help=BM25F(K1=tuning.help_bm25f_k1),
+    )
+
+
 def search_whoosh_index(
     ix: index.FileIndex,
     query: str,
@@ -259,6 +272,15 @@ def search_whoosh_index(
     """Search an eager or cached index with one parser and scoring policy."""
     if not query or not query.strip():
         return []
+    with ix.searcher(weighting=search_weighting(tuning)) as searcher:
+        return search_whoosh_searcher(searcher, query, limit=limit)
+
+
+def search_whoosh_searcher(searcher: Searcher, query: str, limit: int | None = None) -> list[tuple[str, float]]:
+    """Search with a searcher opened with :func:`search_weighting`."""
+    if not query or not query.strip():
+        return []
+    schema = searcher.schema
     search_fields = [
         "id",
         "id_exact",
@@ -274,21 +296,40 @@ def search_whoosh_index(
         "labels",
         "tool_tags",
     ]
-    if "help" in ix.schema.names():
+    if "help" in schema.names():
         search_fields.append("help")
-    parser = MultifieldParser(search_fields, schema=ix.schema, group=OrGroup)
+    parser = MultifieldParser(search_fields, schema=schema, group=OrGroup)
     parsed = parser.parse(query)
-    weighting = MultiWeighting(
-        Frequency(),
-        help=BM25F(K1=tuning.help_bm25f_k1),
-    )
-    with ix.searcher(weighting=weighting) as searcher:
-        hits = searcher.search(parsed, limit=None, sortedby="", terms=True)
-        scored = [(hit["id"], hit.score) for hit in hits]
+    hits = searcher.search(parsed, limit=None, sortedby="", terms=True)
+    scored = [(hit["id"], hit.score) for hit in hits]
     # Whoosh does not define a stable tie order. Sharing an explicit secondary
     # key makes eager and cached result ordering deterministic.
     scored.sort(key=lambda hit: (-hit[1], hit[0]))
     return scored if limit is None else scored[:limit]
+
+
+# Whoosh writes ``_MAIN_<generation>.toc`` on each commit of an index opened
+# with the default name, and names a segment's files ``<segment id>.<ext>``.
+_TOC_FILENAME = re.compile(r"_MAIN_([0-9]+)\.toc")
+
+
+def _latest_generation(filenames: list[str]) -> int:
+    return max((int(match.group(1)) for name in filenames if (match := _TOC_FILENAME.fullmatch(name))), default=-1)
+
+
+def _reads_latest_commit(searcher: Searcher, filenames: list[str]) -> bool:
+    """Whether ``searcher`` reads the latest commit of the index holding ``filenames``.
+
+    Rebuilding an index for a new schema restarts its generations at 0, so the
+    rebuilt index can reach the generation of the one it replaced. Its segments
+    have new ids, though, and the replaced segments' files are gone.
+    """
+    reader = searcher.reader()
+    if reader.generation() != _latest_generation(filenames):
+        return False
+    stems = {name.split(".", 1)[0] for name in filenames}
+    segments = (leaf.segment() for leaf, _docbase in reader.leaf_readers())
+    return all(segment.segment_id() in stems for segment in segments if segment is not None)
 
 
 def _stored_doc_hashes(reader: IndexReader) -> dict[str, str | None]:
@@ -309,6 +350,11 @@ class ToolWhooshIndex:
         )
         self._schema_without_doc_hash = self.schema.copy()
         self.schema.add(_DOC_HASH_FIELD, ID(stored=True))
+        # Opening an index and its segment readers costs as much as a search,
+        # so searchers are kept until the index has a newer commit. A searcher
+        # serves one thread at a time.
+        self._idle_searchers: list[Searcher] = []
+        self._idle_searchers_lock = threading.Lock()
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
@@ -392,7 +438,31 @@ class ToolWhooshIndex:
         """Like :meth:`search`, but pair each tool id with its score."""
         if not query or not query.strip():
             return []
-        if not (os.path.isdir(self.index_dir) and index.exists_in(self.index_dir)):
-            return []
-        ix = index.open_dir(self.index_dir)
-        return search_whoosh_index(ix, query, self.tuning, limit=limit)
+        with self._searcher() as searcher:
+            if searcher is None:
+                return []
+            return search_whoosh_searcher(searcher, query, limit=limit)
+
+    @contextmanager
+    def _searcher(self) -> Iterator[Searcher | None]:
+        try:
+            filenames = os.listdir(self.index_dir)
+        except FileNotFoundError:
+            filenames = []
+        with self._idle_searchers_lock:
+            searcher = self._idle_searchers.pop() if self._idle_searchers else None
+        if searcher is not None and not _reads_latest_commit(searcher, filenames):
+            searcher.close()
+            searcher = None
+        if searcher is None:
+            if _latest_generation(filenames) < 0:
+                yield None
+                return
+            searcher = index.open_dir(self.index_dir).searcher(weighting=search_weighting(self.tuning))
+        try:
+            yield searcher
+        except BaseException:
+            searcher.close()
+            raise
+        with self._idle_searchers_lock:
+            self._idle_searchers.append(searcher)

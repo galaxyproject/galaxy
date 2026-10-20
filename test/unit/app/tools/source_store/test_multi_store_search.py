@@ -119,3 +119,17 @@ def test_search_index_dirs_use_encoded_panel_view_ids(tmp_path, search_config):
 
     assert [path.name for path in tmp_path.iterdir()] == ["ontology%3Aedam_operations"]
     assert search.search("mapper", panel_view="ontology:edam_operations", config=config) == ["local_mapper"]
+
+
+def test_rebuild_keeps_the_panel_searches_of_unchanged_views(tmp_path, search_config):
+    config = search_config(_TUNING, str(tmp_path))
+    toolbox = _FakeToolbox(
+        [ToolIndexEntry(id="local_mapper", name="Sequence mapper", version="1.0")],
+        {"default": {"local_mapper"}},
+    )
+    search = CachedToolboxSearch(config, toolbox)
+    search.build_index(tool_cache=cast(Any, None), toolbox=cast(Any, toolbox))
+    panel_search = search.cached_panel_searches["default"]
+
+    search.build_index(tool_cache=cast(Any, None), toolbox=cast(Any, toolbox))
+    assert search.cached_panel_searches["default"] is panel_search
