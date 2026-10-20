@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { faArrowCircleLeft, faArrowCircleRight, faArrowDown, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowCircleLeft,
+    faArrowCircleRight,
+    faArrowDown,
+    faExpand,
+    faEye,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
@@ -15,6 +22,8 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
@@ -60,7 +69,7 @@ const errorMessage = ref("");
 const pollTimeout = ref<any>(null);
 const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
-const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
+const stepExpanded = ref(false);
 const detailedViewEnabled = ref(false);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
@@ -97,6 +106,14 @@ watch(
 
 const stateStore = useWorkflowStateStore(storeId.value);
 const { activeNodeId } = storeToRefs(stateStore);
+
+// Collapse the step card whenever the active step changes
+watch(
+    () => activeNodeId.value,
+    () => {
+        stepExpanded.value = false;
+    },
+);
 
 watch(
     () => props.zoom,
@@ -163,8 +180,10 @@ async function pollInvocationGraph() {
 }
 
 function scrollStepToView() {
-    const stepCardHeader = stepCard.value?.querySelector(".card-header");
-    stepCardHeader?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!props.isFullPage) {
+        const stepCardHeader = stepCard.value?.querySelector(".card-header");
+        stepCardHeader?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 }
 
 /** On a repetition of the step clicked, scroll to the step */
@@ -241,11 +260,9 @@ function toggleDetailedView() {
                 </div>
             </div>
             <BCard v-if="activeNodeId !== null && activeStep" ref="stepCard" class="invocation-step-card mt-2" no-body>
-                <BCardHeader
-                    class="invocation-step-header"
-                    :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
+                <BCardHeader class="invocation-step-header" :class="steps[activeNodeId]?.headerClass">
                     <WorkflowInvocationStepHeader
-                        class="w-100 pr-2"
+                        class="mr-2"
                         :workflow-step="activeStep"
                         :graph-step="steps[activeNodeId]"
                         :invocation-step="props.invocation.steps[activeNodeId]" />
@@ -257,6 +274,14 @@ function toggleDetailedView() {
                             transparent
                             @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
+                        </GButton>
+                        <GButton
+                            v-if="activeStep.type === 'tool'"
+                            title="Expand Step"
+                            size="small"
+                            transparent
+                            @click="stepExpanded = true">
+                            <FontAwesomeIcon :icon="faExpand" />
                         </GButton>
                         <GButtonGroup>
                             <GButton
@@ -290,16 +315,32 @@ function toggleDetailedView() {
                         </GButton>
                     </div>
                 </BCardHeader>
-                <BCardBody body-class="p-2">
+                <component
+                    :is="stepExpanded ? GModal : BCardBody"
+                    body-class="p-2"
+                    fixed-height
+                    size="medium"
+                    show
+                    @close="stepExpanded = false">
+                    <template v-slot:header>
+                        <WorkflowInvocationStepHeader
+                            class="mr-2"
+                            :workflow-step="activeStep"
+                            :graph-step="steps[activeNodeId]"
+                            :invocation-step="props.invocation.steps[activeNodeId]" />
+                    </template>
                     <WorkflowInvocationStep
-                        ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
                         :workflow-step="activeStep"
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
                         expanded />
-                </BCardBody>
+                </component>
+                <GAlert v-if="stepExpanded" class="m-2">
+                    The step details are currently being shown in a modal.
+                    <GLink @click="stepExpanded = false">Click here to view the details here instead.</GLink>
+                </GAlert>
             </BCard>
             <GAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</GAlert>
         </div>
