@@ -546,7 +546,7 @@ describe("FormData batch hint", () => {
     const MAPPED_OVER_PER_DATASET = /^The supplied input will be .*mapped over this tool: one job per dataset\.$/;
     const MAPPED_OVER_PER_PAIR = /^The supplied input will be .*mapped over this tool: one job per dataset pair\.$/;
 
-    function batchInfoText(wrapper) {
+    function batchInfoText(wrapper: ReturnType<typeof createTarget>) {
         const info = wrapper.find(BATCH_INFO);
         expect(info.exists()).toBe(true);
         return info.text().replace(/\s+/g, " ");
@@ -624,7 +624,7 @@ describe("FormData batch hint", () => {
             options: pairedOptions,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.emitted().input[0][0].batch).toBe(true);
+        expect((wrapper.emitted()!.input![0]![0] as { batch: boolean }).batch).toBe(true);
         expect(batchInfoText(wrapper)).toMatch(MAPPED_OVER_PER_PAIR);
         expect(wrapper.find("input[type='checkbox']").exists()).toBeFalsy();
     });
@@ -638,7 +638,7 @@ describe("FormData batch hint", () => {
             options: pairedOptions,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.emitted().input[0][0].batch).toBe(true);
+        expect((wrapper.emitted()!.input![0]![0] as { batch: boolean }).batch).toBe(true);
         expect(wrapper.find(BATCH_INFO).exists()).toBeFalsy();
     });
 
@@ -674,7 +674,7 @@ describe("FormData batch hint", () => {
         });
         dispatchEvent(wrapper, "dragenter");
         dispatchEvent(wrapper, "drop");
-        const emitted = wrapper.emitted().input.at(-1)[0];
+        const emitted = wrapper.emitted()!.input!.at(-1)![0] as Record<string, unknown>;
         expect(emitted).toEqual({
             batch: true,
             product: false,
