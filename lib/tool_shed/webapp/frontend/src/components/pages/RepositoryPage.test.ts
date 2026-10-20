@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { flushPromises, mount } from "@vue/test-utils"
 import { createPinia, setActivePinia } from "pinia"
-import { useRepositoryStore } from "@/stores"
+import { useCategoriesStore, useRepositoryStore } from "@/stores"
 import RepositoryPage from "./RepositoryPage.vue"
 
 const { readmes, mockGet } = vi.hoisted(() => {
@@ -18,6 +18,7 @@ function repository(overrides: Record<string, unknown> = {}) {
         id: "repo1",
         name: "concat",
         owner: "devteam",
+        type: "unrestricted",
         description: "Concatenate datasets",
         long_description: null,
         deprecated: false,
@@ -136,5 +137,26 @@ describe("RepositoryPage", () => {
         })
 
         expect(wrapper.get(".description").text()).toBe("Joins datasets head to tail, with options.")
+    })
+
+    it("links the repository's categories and lists them in its .shed.yml", async () => {
+        const category = { description: "", deleted: false, repositories: 1 }
+        useCategoriesStore().$patch({
+            categories: [
+                { ...category, id: "c1", name: "Text Manipulation" },
+                { ...category, id: "c2", name: "Convert Formats" },
+            ],
+        })
+        const wrapper = await mountPage({
+            repository: repository({ category_ids: ["c2", "deleted"] }),
+            repositoryMetadata: revision(),
+        })
+
+        const links = wrapper.findAll(".repository-category").map((link) => [link.text(), link.attributes("to")])
+        expect(links).toEqual([["Convert Formats", "/repositories_by_category/c2"]])
+        const shedYml = wrapper
+            .findAll(".config-file-contents")
+            .find((file) => file.get(".config-file-contents-name").text() === ".shed.yml")
+        expect(shedYml?.get("pre").text()).toContain("type: unrestricted\ncategories:\n- Convert Formats")
     })
 })
