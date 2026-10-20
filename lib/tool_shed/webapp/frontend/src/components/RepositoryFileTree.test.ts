@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import RepositoryFileTree from "./RepositoryFileTree.vue"
 
 function entry(path: string, type: "file" | "symlink" = "file") {
-    return { path, size: 10, type, executable: false }
+    return { path, type, executable: false }
 }
 
 const files = [

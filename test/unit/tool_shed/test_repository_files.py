@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from mercurial import (
+    context,
     hg,
     revlog,
     ui,
@@ -74,7 +75,6 @@ def test_list_manifest(hg_repo):
     entries = {entry.path: entry for entry in list_manifest(_tip(hg_repo))}
     assert sorted(entries) == ["a/README", "b/README", "big.txt", "image.png", "latin1.txt", "link", "run.sh"]
     assert entries["a/README"].type == "file"
-    assert entries["a/README"].size == len("from a\n")
     assert not entries["a/README"].executable
     assert entries["run.sh"].executable
     assert entries["link"].type == "symlink"
@@ -145,9 +145,12 @@ def no_file_reads(monkeypatch):
     monkeypatch.setattr(revlog.revlog, "_revisiondata", _revisiondata)
 
 
-def test_list_manifest_does_not_read_files(hg_repo, no_file_reads):
-    entries = {entry.path: entry for entry in list_manifest(_tip(hg_repo))}
-    assert entries["big.txt"].size == 100
+def test_list_manifest_opens_no_files(hg_repo, monkeypatch):
+    def filectx(*args, **kwargs):
+        raise AssertionError("listing opened a file")
+
+    monkeypatch.setattr(context.changectx, "filectx", filectx)
+    assert len(list_manifest(_tip(hg_repo))) == 7
 
 
 def test_read_over_size_cap_does_not_read_file(hg_repo, no_file_reads):

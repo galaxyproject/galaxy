@@ -54,12 +54,6 @@ RepositoryFileType = Literal["file", "symlink"]
 
 class RepositoryFileEntry(BaseModel):
     path: str
-    size: int = Field(
-        description=(
-            "Size in bytes from the revlog index. For copied or renamed files this may include hg's "
-            "copy metadata header, so it can be slightly larger than the size the contents endpoint reports."
-        ),
-    )
     type: RepositoryFileType
     executable: bool
 

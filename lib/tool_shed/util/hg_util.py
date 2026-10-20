@@ -308,8 +308,7 @@ def changectx_for_revision(hg_repo: "IRepo", changeset_revision: str) -> Optiona
 def file_size(fctx: "filectx") -> int:
     """Return a committed file's size from the revlog index, without reading its data.
 
-    filectx.size() reconstructs the whole file for any revision that might carry copy
-    metadata (most first revisions), so for those this includes the metadata header.
+    Unlike filectx.size(), this never reconstructs the file, so it may count hg's copy metadata header.
     """
     filelog = fctx.filelog()
     rev = fctx.filerev()

@@ -99,7 +99,7 @@ const diffIdentical = { name: "unchanged", version: "1.0.0" }
 
 // Repository file browser demos
 function fileEntry(path: string, type: RepositoryFileEntry["type"] = "file"): RepositoryFileEntry {
-    return { path, size: 1024, type, executable: false }
+    return { path, type, executable: false }
 }
 const demoFiles: RepositoryFileEntry[] = [
     fileEntry("column_maker/column_maker.xml"),

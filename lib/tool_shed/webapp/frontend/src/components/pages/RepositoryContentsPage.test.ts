@@ -60,8 +60,8 @@ function revision(changeset: string, overrides: Record<string, unknown> = {}) {
 }
 
 const files = [
-    { path: "column_maker/column_maker.xml", size: 25, type: "file", executable: false },
-    { path: "README.md", size: 6, type: "file", executable: false },
+    { path: "column_maker/column_maker.xml", type: "file", executable: false },
+    { path: "README.md", type: "file", executable: false },
 ]
 
 function contents(path: string, content = "<tool>") {

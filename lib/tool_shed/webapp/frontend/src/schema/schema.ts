@@ -3036,11 +3036,6 @@ export interface components {
             /** Path */
             path: string
             /**
-             * Size
-             * @description Size in bytes from the revlog index. For copied or renamed files this may include hg's copy metadata header, so it can be slightly larger than the size the contents endpoint reports.
-             */
-            size: number
-            /**
              * Type
              * @enum {string}
              */

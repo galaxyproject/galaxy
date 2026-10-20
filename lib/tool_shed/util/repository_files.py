@@ -38,7 +38,6 @@ def list_manifest(ctx: "changectx") -> list[RepositoryFileEntry]:
         entries.append(
             RepositoryFileEntry(
                 path=path.decode("utf-8", errors="replace"),
-                size=file_size(ctx[path]),
                 type=_file_type(flags),
                 executable=EXECUTABLE_FLAG in flags,
             )

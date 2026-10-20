@@ -27,7 +27,7 @@ class TestShedRepositoryFilesApi(ShedApiTestCase):
             repository, readme_revisions[0], "column_maker_unchanged/column_maker.xml"
         )
         assert contents.content and 'id="Add_a_column1"' in contents.content
-        assert contents.size == entry.size
+        assert contents.type == entry.type
 
     def test_repository_file_contents_per_revision(self):
         populator = self.populator
