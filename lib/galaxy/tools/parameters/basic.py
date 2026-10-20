@@ -28,7 +28,10 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import (
+    contains_eager,
+    selectinload,
+)
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
@@ -1902,7 +1905,10 @@ def _load_owned_items(trans, history, keys: list[tuple[str, int]]) -> dict[tuple
                 Dataset.state.not_in([Dataset.states.ERROR, Dataset.states.DISCARDED]),
                 owned,
             )
-            .options(contains_eager(HistoryDatasetAssociation.dataset))
+            .options(
+                contains_eager(HistoryDatasetAssociation.dataset),
+                selectinload(HistoryDatasetAssociation.tags),
+            )
         )
         for hda in trans.sa_session.scalars(hda_stmt):
             loaded[("hda", hda.id)] = hda
@@ -1915,6 +1921,7 @@ def _load_owned_items(trans, history, keys: list[tuple[str, int]]) -> dict[tuple
                 HistoryDatasetCollectionAssociation.deleted == false(),
                 owned,
             )
+            .options(selectinload(HistoryDatasetCollectionAssociation.tags))
         )
         for hdca in trans.sa_session.scalars(hdca_stmt):
             loaded[("hdca", hdca.id)] = hdca
