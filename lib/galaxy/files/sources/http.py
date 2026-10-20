@@ -12,7 +12,7 @@ from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
-    stream_to_open_named_file,
+    stream_to_path,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.config_templates import TemplateExpansion
@@ -78,10 +78,7 @@ class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPF
         with page:
             # Verify url post-redirects is still allowlisted
             validate_non_local(page.geturl(), self._allowlist or config.fetch_url_allowlist)
-            f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
-            return stream_to_open_named_file(
-                page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
-            )
+            return stream_to_path(page, native_path, source_encoding=get_charset_from_http_headers(page.headers))
 
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
