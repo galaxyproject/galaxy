@@ -6,7 +6,7 @@ const config: StorybookConfig = {
     // vue-docgen-api can't parse the BaseComponents wrappers around galaxy-ui and
     // fails the module; no autodocs/controls inference until vue-component-meta is tried.
     framework: { name: "@storybook/vue3-vite", options: { docgen: false } },
-    addons: ["msw-storybook-addon", "@storybook/addon-vitest"],
+    addons: ["msw-storybook-addon", "@storybook/addon-vitest", "@storybook/addon-a11y"],
     stories: ["../src/**/*.stories.ts"],
     staticDirs: ["./public"],
     core: { disableTelemetry: true },

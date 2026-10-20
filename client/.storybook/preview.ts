@@ -38,7 +38,25 @@ const preview: Preview = {
     beforeEach: resetUnmockedRequests,
     afterEach: failOnUnmockedRequests,
     // Named, so a story's own handlers merge with these and replace one by name.
-    parameters: { msw: { handlers: appHandlers } },
+    parameters: {
+        msw: { handlers: appHandlers },
+        a11y: {
+            // Include body-level teleports (dialogs, menus and tooltips).
+            context: "body",
+            test: "error",
+            options: {
+                // runOnly replaces axe's defaults; retain those and add WCAG 2.2 AA.
+                runOnly: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice", "wcag22aa"],
+            },
+        },
+        viewport: {
+            options: {
+                galaxyDesktop: { name: "Galaxy desktop", styles: { width: "1280px", height: "900px" } },
+                galaxyPanel: { name: "Galaxy narrow panel", styles: { width: "400px", height: "900px" } },
+                galaxyMobile: { name: "Galaxy mobile", styles: { width: "375px", height: "812px" } },
+            },
+        },
+    },
 };
 
 export default preview;
