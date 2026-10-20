@@ -1432,7 +1432,7 @@ def _split_unambiguous_url(url: Any) -> Optional[SplitResult]:
     return split
 
 
-def _origin(url: SplitResult) -> tuple[str, Optional[str], Optional[int]]:
+def _origin(url: SplitResult) -> Tuple[str, Optional[str], Optional[int]]:
     return url.scheme, url.hostname, url.port or DEFAULT_PORTS.get(url.scheme)
 
 
