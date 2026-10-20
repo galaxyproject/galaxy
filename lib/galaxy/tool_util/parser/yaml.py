@@ -561,6 +561,11 @@ class YamlInputSource(InputSource):
     def get_bool_or_none(self, key, default):
         return self.input_dict.get(key, default)
 
+    def parse_boolean_default(self, default: Optional[bool], *, allow_none: bool = True) -> Optional[bool]:
+        if "value" in self.input_dict:
+            return self.input_dict["value"]
+        return super().parse_boolean_default(default, allow_none=allow_none)
+
     def _page_source(self, inputs_list) -> YamlPageSource:
         return YamlPageSource(inputs_list, trusted=self.trusted)
 
