@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import type { RegisteredUser } from "@/api";
@@ -58,11 +58,36 @@ const filterKey = computed(() => filterText.value.trim());
  * scopes the list back down to just what matches the current filters. */
 const currentJobIds = ref(new Set<string>());
 
+/** `unretainJob` callbacks from `jobStore.retainJob`, keyed by job id, for jobs added via
+ * `addCurrentJob`. */
+const unretainJobById = new Map<string, () => void>();
+
+/** Adds `id` to `currentJobIds` and retains it in `jobStore` so it can't be evicted while this
+ * panel is showing it. Without this, scrolling past `MAX_CACHED_JOBS` would evict earlier pages'
+ * jobs, and the rendered list would stop growing even as new pages load. */
+function addCurrentJob(id: string) {
+    if (!unretainJobById.has(id)) {
+        unretainJobById.set(id, jobStore.retainJob(id));
+    }
+    currentJobIds.value.add(id);
+}
+
+/** Un-retains every job added via `addCurrentJob`, making them evictable again. */
+function stopRetainingCurrentJobs() {
+    for (const unretainJob of unretainJobById.values()) {
+        unretainJob();
+    }
+    unretainJobById.clear();
+}
+
 watch(filterKey, () => {
+    stopRetainingCurrentJobs();
     currentJobIds.value = new Set();
     serverOffset.value = 0;
     totalJobCount.value = undefined;
 });
+
+onUnmounted(stopRetainingCurrentJobs);
 
 /** The jobs matching the current filters, kept up to date reactively as the store updates
  * (e.g. job state changes polled elsewhere), same as `sortedStoredInvocations` for invocations. */
@@ -89,7 +114,7 @@ watch(sortedStoredJobs, (jobs) => {
     }
     for (const job of jobs) {
         if (!HIDDEN_TOOL_IDS.includes(job.tool_id) && !belongsToAnotherUser(job)) {
-            currentJobIds.value.add(job.id);
+            addCurrentJob(job.id);
         }
     }
 });
@@ -115,8 +140,8 @@ async function loadJobs(_offset: number, limit: number) {
 
     const items = data.filter((job) => !HIDDEN_TOOL_IDS.includes(job.tool_id));
     for (const item of items) {
+        addCurrentJob(item.id);
         jobStore.updateJob(item.id, item);
-        currentJobIds.value.add(item.id);
     }
 
     // `totalMatches` counts hidden-tool jobs too, which we are not showing.
