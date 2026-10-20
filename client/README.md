@@ -181,6 +181,19 @@ terminal this starts for executing Vitest tests.
 
 ### Testing Best Practices and Patterns
 
+#### Readable Test Scenarios
+
+Name each test after the behavior and the condition that produces it. Keep setup,
+the action, and assertions together so the scenario can be understood without
+tracing unrelated requests or mutable fixtures. Split independent success and
+failure scenarios into separate tests or use
+[`it.each`](https://vitest.dev/api/test#test-each) to test combinations.
+
+Use helpers to remove repeated domain setup, while keeping the scenario's inputs
+and expected results visible in the test. Reuse existing test-data factories
+before adding new ones. Extract a shared helper when multiple files need the same
+setup; keep a short, single-use arrangement inline.
+
 #### Test File Structure
 
 Test files should be placed adjacent to the code they test with a `.test.ts` or `.test.js` extension:
@@ -196,7 +209,7 @@ Standard imports pattern:
 
 ```typescript
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -215,6 +228,10 @@ const localVue = getLocalVue();
 // or with localization instrumentation for testing l() calls:
 const localVue = getLocalVue(true);
 ```
+
+Pass these options as `global`. To use your own Pinia or router instance,
+`withPlugins(localVue, pinia, router)` replaces the corresponding defaults while
+preserving the other plugins and stubs.
 
 **Test Data Factories**: Use factory functions for consistent test data:
 
@@ -275,16 +292,23 @@ beforeEach(() => {
 });
 ```
 
-For untyped responses (endpoints not in OpenAPI spec):
+For response shapes not covered by the generated OpenAPI schema, use
+`response.untyped(...)`:
 
 ```typescript
+import { beforeEach } from "vitest";
+
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-server.use(
-    http.get("/api/configuration", ({ response }) => {
-        return response.untyped(HttpResponse.json({ enable_feature: true }));
-    }),
-);
+const { server, http } = useServerMock();
+
+beforeEach(() => {
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response.untyped(HttpResponse.json({ enable_feature: true }));
+        }),
+    );
+});
 ```
 
 See the [MSW documentation](https://mswjs.io/docs/) for advanced usage patterns.
@@ -307,13 +331,16 @@ Vue Test Utils provides two mounting functions: `mount` and `shallowMount`. In G
 - Slower, requires more mocking setup
 
 ```typescript
-import { shallowMount, mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { mount, shallowMount } from "@vue/test-utils";
+
+const localVue = getLocalVue();
 
 // Preferred: isolated unit test
-const wrapper = shallowMount(MyComponent, { localVue, pinia });
+const wrapper = shallowMount(MyComponent, { global: withPlugins(localVue, pinia) });
 
 // Use sparingly: when testing parent-child interaction
-const wrapper = mount(MyComponent, { localVue, pinia });
+const wrapper = mount(MyComponent, { global: withPlugins(localVue, pinia) });
 ```
 
 **Why shallowMount for Galaxy?** Client-side tests should be focused unit tests that verify individual component behavior. Integration testing across multiple components is better handled by Galaxy's Selenium/Playwright test framework, which tests the full application stack in a real browser environment. This separation keeps unit tests fast, focused, and maintainable.
@@ -325,16 +352,15 @@ See [Vue Test Utils: Stubs and Shallow Mount](https://test-utils.vuejs.org/guide
 **Mount Wrapper Factories**: Create reusable mount functions for complex component setup:
 
 ```typescript
-async function mountMyComponent(propsData = {}, options = {}) {
+async function mountMyComponent(props = {}, options = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
 
     const wrapper = shallowMount(MyComponent, {
-        localVue,
-        propsData: {
+        props: {
             defaultProp: "value",
-            ...propsData,
+            ...props,
         },
-        pinia,
+        global: withPlugins(localVue, pinia),
         ...options,
     });
 
@@ -381,7 +407,7 @@ import { setActivePinia } from "pinia";
 const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 setActivePinia(pinia);
 
-const wrapper = shallowMount(MyComponent, { localVue, pinia });
+const wrapper = shallowMount(MyComponent, { global: withPlugins(localVue, pinia) });
 
 // Access and manipulate stores
 const userStore = useUserStore();
@@ -408,7 +434,11 @@ describe("useMyStore", () => {
 
 #### Composable Testing
 
-Test composables by mounting a minimal component that uses them:
+Call composables directly when they only calculate or render values and do not
+require component lifecycle hooks or injection.
+
+For composables that require lifecycle hooks or a component context, mount a
+minimal component that uses them:
 
 ```typescript
 import { mount } from "@vue/test-utils";
@@ -435,30 +465,34 @@ it("computes result correctly", () => {
 
 #### Mocking Modules and Composables
 
-Mock at file level before imports are resolved:
+Mock at file level before imports are resolved. A `vi.mock` path must resolve to the module the code imports, or it silently mocks nothing; bare ids left over from Jest's module mapping, like `vi.mock("app")`, match no module here. For configuration, use the ref-backed `__mocks__/config` (or seed `configurationStore` through `createTestingPinia({ initialState })`); a `useConfig` mock returning a plain object reads as undefined in templates:
 
 ```typescript
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: { enable_feature: true },
-        isConfigLoaded: true,
-    })),
-}));
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 
+vi.mock("@/composables/config");
 vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({ params: { id: "123" } })),
 }));
+
+beforeEach(() => {
+    resetMockConfig();
+    setMockConfig({ enable_feature: true });
+});
 ```
 
 #### Async Operations
 
-Always use `flushPromises()` after operations that trigger API calls or state updates:
+Await the promise returned by the operation under test when it exposes one.
+For mounted components whose lifecycle or event handlers start API calls without
+returning their promises, use `flushPromises()` before asserting the resulting
+state:
 
 ```typescript
 import flushPromises from "flush-promises";
 
 it("loads data on mount", async () => {
-    const wrapper = shallowMount(MyComponent, { localVue, pinia });
+    const wrapper = shallowMount(MyComponent, { global: withPlugins(localVue, pinia) });
     await flushPromises(); // Wait for mounted() API calls
 
     expect(wrapper.find(".data").exists()).toBe(true);
@@ -497,6 +531,15 @@ The following test files demonstrate specific patterns well and can serve as ref
 | **Scoped slots mock**         | `src/components/Visualizations/DisplayApplications.test.js`             | Mocking provider component with $scopedSlots                                          |
 | **Slots in stubs**            | `src/components/Markdown/Editor/Configurations/ConfigureHeader.test.js` | Stub templates that include slot definitions                                          |
 | **Test data factory**         | `tests/test-data/index.ts`                                              | getFakeRegisteredUser() pattern for reusable mock data                                |
+
+#### Teardown Dependencies
+
+Unmount components before restoring timers or mocks they use during cleanup. With
+Vitest's default stacked hooks, `afterEach` runs in reverse registration order:
+register restoration first and `enableAutoUnmount(afterEach)` last, in the same
+scope. For an already mocked shared function such as `sanitizeHtml`, retain its
+initial mock implementation and restore it after unmounting; clearing call history
+or resetting to an empty mock does not restore that implementation.
 
 #### Best Practices Summary
 
