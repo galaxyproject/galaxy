@@ -309,13 +309,22 @@ function toggleDetailedView() {
                         </GButton>
                     </div>
                 </BCardHeader>
-                <component
-                    :is="stepExpanded ? GModal : BCardBody"
-                    body-class="p-2"
-                    fixed-height
-                    size="medium"
-                    show
-                    @close="stepExpanded = false">
+                <BCardBody body-class="p-2">
+                    <Teleport :to="`#invocation-step-modal-${props.invocation.id}`" :disabled="!stepExpanded" defer>
+                        <WorkflowInvocationStep
+                            :key="activeNodeId"
+                            :invocation="props.invocation"
+                            :workflow-step="activeStep"
+                            in-graph-view
+                            :graph-step="steps[activeNodeId]"
+                            expanded />
+                    </Teleport>
+                    <GAlert v-if="stepExpanded">
+                        The step details are currently being shown in a modal.
+                        <GLink @click="stepExpanded = false">Click here to view the details here instead.</GLink>
+                    </GAlert>
+                </BCardBody>
+                <GModal :show="stepExpanded" fixed-height size="medium" @close="stepExpanded = false">
                     <template v-slot:header>
                         <WorkflowInvocationStepHeader
                             class="mr-2"
@@ -323,18 +332,8 @@ function toggleDetailedView() {
                             :graph-step="steps[activeNodeId]"
                             :invocation-step="props.invocation.steps[activeNodeId]" />
                     </template>
-                    <WorkflowInvocationStep
-                        :key="activeNodeId"
-                        :invocation="props.invocation"
-                        :workflow-step="activeStep"
-                        in-graph-view
-                        :graph-step="steps[activeNodeId]"
-                        expanded />
-                </component>
-                <GAlert v-if="stepExpanded" class="m-2">
-                    The step details are currently being shown in a modal.
-                    <GLink @click="stepExpanded = false">Click here to view the details here instead.</GLink>
-                </GAlert>
+                    <div :id="`invocation-step-modal-${props.invocation.id}`" />
+                </GModal>
             </BCard>
             <GAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</GAlert>
         </div>
