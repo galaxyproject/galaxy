@@ -4,7 +4,7 @@ import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
 import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
-import { useRepositoryStore } from "@/stores"
+import { useCategoriesStore, useRepositoryStore } from "@/stores"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import PageHeader from "@/components/PageHeader.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -17,6 +17,8 @@ import RepositoryHealth from "@/components/RepositoryHealth.vue"
 import InstallingHowto from "@/components/InstallingHowto.vue"
 import RepositoryLinks from "@/components/RepositoryLinks.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
+import RepositoryCategories from "@/components/RepositoryCategories.vue"
+import RepositoryShedYml from "@/components/RepositoryShedYml.vue"
 import { type RevisionMetadata, type RepositoryTool as RepositoryToolModel } from "@/schema"
 import { ToolShedApi } from "@/schema"
 import { notifyOnCatch } from "@/util"
@@ -186,6 +188,16 @@ const invalidTools = computed(() => currentMetadata.value?.invalid_tools || [])
 const malicious = computed(() => currentMetadata.value?.malicious || false)
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
 const canPush = computed(() => repositoryPermissions.value?.can_push || false)
+
+const categoriesStore = useCategoriesStore()
+if (categoriesStore.categories.length == 0) {
+    void categoriesStore.getAll()
+}
+// A category deleted since it was assigned is missing from the store, so it drops out
+const categories = computed(() =>
+    (repository.value?.category_ids ?? []).flatMap((categoryId) => categoriesStore.byId(categoryId) ?? []),
+)
+const categoryNames = computed(() => categories.value.map((category) => category.name))
 </script>
 
 <template>
@@ -324,6 +336,12 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                             </template>
                         </div>
                     </section>
+
+                    <section class="repository-card shed-card">
+                        <div class="shed-card-body">
+                            <repository-shed-yml :repository="repository" :categories="categoryNames" />
+                        </div>
+                    </section>
                 </div>
 
                 <aside class="repository-aside">
@@ -334,6 +352,11 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                                 :repository-name="repositoryName"
                                 :repository-owner="repositoryOwner"
                             />
+                        </div>
+                    </section>
+                    <section class="repository-card shed-card" v-if="categories.length > 0">
+                        <div class="shed-card-body">
+                            <repository-categories :categories="categories" />
                         </div>
                     </section>
                     <section class="repository-card shed-card">
