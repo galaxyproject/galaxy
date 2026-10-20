@@ -139,6 +139,26 @@ describe("useVisualizationStore", () => {
         expect(loadVisualizations).toHaveBeenCalledTimes(3);
     });
 
+    it("stays loading until the last of two overlapping fetches settles", async () => {
+        type Result = { data: VisualizationSummary[]; totalMatches: number };
+        const resolvers: Array<(value: Result) => void> = [];
+        vi.mocked(loadVisualizations).mockImplementation(
+            () => new Promise<Result>((resolve) => resolvers.push(resolve)),
+        );
+
+        const mine = store.fetchVisualizations("my");
+        const shared = store.fetchVisualizations("shared");
+        expect(store.isLoading).toBe(true);
+
+        resolvers[0]!({ data: [], totalMatches: 0 });
+        await mine;
+        expect(store.isLoading).toBe(true);
+
+        resolvers[1]!({ data: [], totalMatches: 0 });
+        await shared;
+        expect(store.isLoading).toBe(false);
+    });
+
     it("filters the cached variant list by title", async () => {
         vi.mocked(loadVisualizations).mockResolvedValue({
             data: [mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot")],
