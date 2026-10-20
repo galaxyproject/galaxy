@@ -154,7 +154,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator.assert_category_has_n_repositories(new_category_id, 0)
 
         request = UpdateRepositoryRequest(category_ids=[new_category_id])
-        populator.update(repository_id, request)
+        assert populator.update(repository_id, request).category_ids == [new_category_id]
 
         # does this mean we cannot remove categories?
         populator.assert_category_has_n_repositories(old_category_id, 0)

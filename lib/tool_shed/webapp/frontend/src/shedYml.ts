@@ -1,28 +1,35 @@
-interface ShedYmlRepository {
-    name: string
-    owner: string
-    type: string
-    description: string
-    long_description?: string | null
-    homepage_url?: string | null
-    remote_repository_url?: string | null
-}
+import { type components } from "@/schema"
+
+type ShedYmlRepository = Pick<
+    components["schemas"]["DetailedRepository"],
+    "name" | "owner" | "type" | "description" | "long_description" | "homepage_url" | "remote_repository_url"
+>
 
 // Left plain only when YAML would read it back as the same string, otherwise JSON's quoting is valid YAML.
 // Starting with a letter rules out numbers, dates and indicators; booleans and null are the words left.
-const PLAIN_SCALAR = /^[A-Za-z][\w ./()+,-]*$|^https?:\/\/[^\s#]+$/
+const PLAIN_SCALAR = /^[A-Za-z][\w ./()+,-]*$|^https?:\/\/[^\s#]*[^\s#:]$/
 const RESOLVES_TO_NON_STRING = /^(true|false|yes|no|on|off|y|n|null)$/i
+// Characters YAML refuses unescaped that JSON.stringify leaves as they are
+const UNPRINTABLE = /[\u007f-\u009f\ufffe\uffff]/g
+
+function quoted(value: string): string {
+    return JSON.stringify(value).replace(UNPRINTABLE, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)
+}
 
 function scalar(value: string): string {
     if (PLAIN_SCALAR.test(value) && !RESOLVES_TO_NON_STRING.test(value) && !value.endsWith(" ")) {
         return value
     }
-    return JSON.stringify(value)
+    return quoted(value)
 }
 
+// A literal block keeps a multi-line description readable; anything it can't hold exactly is quoted
 function block(value: string): string {
-    if (!value.includes("\n") || /^\s/.test(value)) {
+    if (!value.includes("\n")) {
         return scalar(value)
+    }
+    if (/^\s|\r|\n\n$/.test(value) || new RegExp(UNPRINTABLE.source).test(value)) {
+        return quoted(value)
     }
     const chomp = value.endsWith("\n") ? "|" : "|-"
     const lines = value.replace(/\n$/, "").split("\n")

@@ -730,11 +730,11 @@ def to_element_dict(app: ToolShedApp, repository: Repository, include_categories
     value_mapper = get_value_mapper(app)
     repository_dict = repository.to_dict(view="element", value_mapper=value_mapper)
     if include_categories:
-        category_ids = []
-        for rca in repository.categories:
-            assert rca.category is not None
-            category_ids.append(app.security.encode_id(rca.category.id))
-        repository_dict["category_ids"] = category_ids
+        repository_dict["category_ids"] = [
+            app.security.encode_id(rca.category.id)
+            for rca in repository.categories
+            if rca.category is not None and not rca.category.deleted
+        ]
     return repository_dict
 
 

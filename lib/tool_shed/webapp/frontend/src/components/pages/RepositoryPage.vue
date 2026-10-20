@@ -190,12 +190,12 @@ const canManage = computed(() => repositoryPermissions.value?.can_manage || fals
 const canPush = computed(() => repositoryPermissions.value?.can_push || false)
 
 const categoriesStore = useCategoriesStore()
-if (categoriesStore.categories.length == 0) {
-    void categoriesStore.getAll()
-}
-// A category deleted since it was assigned is missing from the store, so it drops out
+void categoriesStore.ensureLoaded()
+// Names fill in once the categories load
 const categories = computed(() =>
-    (repository.value?.category_ids ?? []).flatMap((categoryId) => categoriesStore.byId(categoryId) ?? []),
+    (repository.value?.category_ids ?? [])
+        .flatMap((categoryId) => categoriesStore.byId(categoryId) ?? [])
+        .sort((a, b) => a.name.localeCompare(b.name)),
 )
 const categoryNames = computed(() => categories.value.map((category) => category.name))
 </script>

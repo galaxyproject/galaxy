@@ -168,9 +168,9 @@ class TestFrontendRepositories(PlaywrightTestCase):
         clone_url = f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
         expect(page.locator(".repository-link code")).to_have_text(f"hg clone {clone_url}")
         shed_yml = page.locator(".config-file-contents").filter(has_text=".shed.yml").locator("pre")
-        expect(shed_yml).to_be_visible()
+        # Category names come from a separate fetch, so wait on them rather than reading the text once
+        expect(shed_yml).to_contain_text(f"categories:\n- {category.name}")
         assert f"name: {repository.name}\nowner: {repository.owner}\n" in shed_yml.inner_text()
-        assert f"categories:\n- {category.name}\n" in shed_yml.inner_text()
         shed_yml.scroll_into_view_if_needed()
         self.screenshot("repository_categories_and_shed_yml")
 

@@ -6,6 +6,7 @@ const repository = {
     owner: "devteam",
     type: "unrestricted",
     description: "Bisulfite mapper",
+    long_description: null,
 }
 
 describe("shedYml", () => {
@@ -37,7 +38,7 @@ categories:
     })
 
     it("leaves out settings the repository doesn't have", () => {
-        expect(shedYml({ ...repository, long_description: null, homepage_url: null }, [])).toBe(`name: bismark
+        expect(shedYml({ ...repository, homepage_url: null }, [])).toBe(`name: bismark
 owner: devteam
 description: Bisulfite mapper
 type: unrestricted
@@ -49,5 +50,16 @@ type: unrestricted
 
         expect(yml).toContain('description: "Mapper: fast #1"')
         expect(yml).toContain('categories:\n- "yes"\n- "2024-01-01"\n')
+    })
+
+    it("quotes what a literal block or plain scalar can't hold exactly", () => {
+        const yml = shedYml(
+            { ...repository, long_description: "Windows\r\nline endings", homepage_url: "https://example.org/x:" },
+            ["Odd\u007fname"],
+        )
+
+        expect(yml).toContain('long_description: "Windows\\r\\nline endings"')
+        expect(yml).toContain('homepage_url: "https://example.org/x:"')
+        expect(yml).toContain('- "Odd\\u007fname"')
     })
 })
