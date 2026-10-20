@@ -141,11 +141,11 @@ class TestCustomTools(SeleniumTestCase):
 
         # The editor rewrites its route to carry the new tool's UUID once the save
         # round-trip lands, and that URL is the test's only handle on the id.
-        def saved_tool_uuid(driver):
-            _, _, uuid = driver.current_url.partition("/tools/editor/")
+        def saved_tool_uuid(driver=None):
+            _, _, uuid = self.current_url.partition("/tools/editor/")
             return uuid or None
 
-        return self._wait_on(
+        return self._wait_on_custom(
             saved_tool_uuid,
             "custom tool editor URL to carry the saved tool UUID",
             wait_type=self.wait_types.DATABASE_OPERATION,
