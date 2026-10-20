@@ -102,15 +102,15 @@ it("step header follows the polled stepsJobsSummary prop", async () => {
     expect(wrapper.find("[data-step='0'] .portlet-content").exists()).toBe(true);
 });
 
-it("expands the grouped input and scrolls to it when a selection clears a previous search", async () => {
+it("expands the grouped input when a selection clears a previous search", async () => {
     mocks.steps = {
         0: { id: 0, type: "data_input", label: "reads" },
         1: { id: 1, type: "data_input", label: "reference" },
         2: { id: 2, type: "tool", label: "align" },
     };
     mocks.selection = { stepIndex: ref<number | null>(null), stepTab: ref(), job: ref(), output: ref() };
-    const scroll = vi.fn();
-    Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: scroll });
+    // jsdom has no scrollIntoView; scrolling is covered by the browser test.
+    Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: () => {} });
     const wrapper = shallowMount(WorkflowInvocationSteps as object, {
         propsData: {
             invocation: { id: "inv1", workflow_id: "wf1", steps: [], inputs: {}, input_step_parameters: {} },
@@ -128,6 +128,5 @@ it("expands the grouped input and scrolls to it when a selection clears a previo
     const inputs = wrapper.findAllComponents(WorkflowInvocationStep);
     expect(inputs).toHaveLength(3);
     expect(inputs.find((card) => card.props("workflowStep").id === 0)?.props("expanded")).toBe(true);
-    expect(scroll).toHaveBeenCalled();
     wrapper.unmount();
 });

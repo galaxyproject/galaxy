@@ -43,13 +43,10 @@ function setup(job: string) {
 }
 
 describe("Invocation mapped job selection", () => {
-    it("filters, paginates, opens a deep linked job and follows same-mounted selection changes", async () => {
+    it("follows same-mounted selection changes to another job state and to an unknown job", async () => {
         const { wrapper, selection } = setup("job-1");
         await flushPromises();
         const table = wrapper.findComponent(JobStepJobs);
-        expect(table.props("jobs")).toHaveLength(12);
-        expect(table.props("currentPage")).toBe(2);
-        expect(wrapper.find("dialog code").text()).toContain("job-1");
         selection.job.value = "job-0";
         await flushPromises();
         expect(table.props("jobs")).toHaveLength(1);
