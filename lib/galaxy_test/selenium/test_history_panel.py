@@ -13,6 +13,9 @@ HISTORY_PANEL_AXE_IMPACT_LEVEL = "moderate"
 # the heading is now nested in `ClickToEdit`, and it conditionally replaces the label for the input
 HISTORY_PANEL_VIOLATION_EXCEPTIONS = ["heading-order", "label"]
 
+OPEN_DIALOG = "dialog.g-dialog[open]"
+TAG_OPTIONS = f"{OPEN_DIALOG} .headless-multiselect__options"
+
 
 class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
@@ -391,6 +394,25 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         self.click_history_option_resume_paused_jobs()
         self.history_panel_wait_for_hid_ok(cat_hid)
         self.screenshot("history_panel_resumed_job")
+
+    @selenium_test
+    def test_escape_in_bulk_add_tags_dialog_closes_tag_list_first(self):
+        history_id = self.current_history_id()
+        hids = [self.dataset_populator.new_dataset(history_id, content=f"{i}", wait=True)["hid"] for i in range(2)]
+        self.history_panel_wait_for_and_select(hids)
+        self.use_bootstrap_dropdown(option="add tags", menu="selected content menu")
+
+        self.wait_for_and_click_selector(f"{OPEN_DIALOG} .headless-multiselect .toggle-button")
+        tag_input = self.wait_for_selector_visible(f"{OPEN_DIALOG} .headless-multiselect input")
+        tag_input.send_keys("escape_test")
+        self.wait_for_selector_visible(TAG_OPTIONS)
+
+        self.send_escape(tag_input)
+        self.wait_for_selector_absent(TAG_OPTIONS)
+        self.wait_for_selector_visible(OPEN_DIALOG)
+
+        self.send_escape()
+        self.wait_for_selector_absent(OPEN_DIALOG)
 
     @retry_assertion_during_transitions
     def assert_name_changed(self):
