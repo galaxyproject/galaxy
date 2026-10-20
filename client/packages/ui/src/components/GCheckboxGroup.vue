@@ -24,15 +24,15 @@ defineOptions({
 
 interface Props {
     /**
-     * Disables every checkbox in the group
-     * @default false
-     */
-    disabled?: boolean;
-    /**
      * Help text under the options, linked to the group with aria-describedby
      * @default undefined
      */
     description?: string;
+    /**
+     * Disables every checkbox in the group
+     * @default false
+     */
+    disabled?: boolean;
     /**
      * Visible legend for the group
      * @default undefined
