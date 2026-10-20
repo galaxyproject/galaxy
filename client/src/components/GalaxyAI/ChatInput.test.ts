@@ -42,6 +42,15 @@ describe("ChatInput", () => {
         wrapper.unmount();
     });
 
+    it.each([{ value: "" }, { value: "hello" }, { value: "hello", busy: true }, { value: "hello", disabled: true }])(
+        "names the send action in state %j",
+        (props) => {
+            const wrapper = mountInput(props);
+            expect(wrapper.get("button").element).toHaveAccessibleName("Send message");
+            wrapper.unmount();
+        },
+    );
+
     describe("rendering", () => {
         it("renders textarea with provided value", () => {
             const wrapper = mountInput({ value: "hello" });

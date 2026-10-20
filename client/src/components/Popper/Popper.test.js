@@ -6,6 +6,7 @@ import {
 } from "@tests/vitest/tooltipTestUtils";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
 
@@ -60,6 +61,64 @@ describe("PopperComponent.vue", () => {
         expect(wrapper.get(".popper-element").isVisible()).toBe(true);
         expect(wrapper.find(".popper-header").exists()).toBe(false);
         expect(wrapper.find(".popper-close").exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    test("offers a named native close button and returns focus to its trigger", async () => {
+        const wrapper = mountTarget();
+        await wrapper.get("button").trigger("click");
+        const close = wrapper.get(".popper-close");
+        expect(close.element).toHaveAccessibleName("Close");
+        expect(close.element.tagName).toBe("BUTTON");
+        expect(close.attributes("type")).toBe("button");
+        close.element.focus();
+        expect(document.activeElement).toBe(close.element);
+        await close.trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.get("button").element);
+        wrapper.unmount();
+    });
+
+    test("returns focus to the trigger when Escape dismisses the focused popup", async () => {
+        const wrapper = mountTarget();
+        await wrapper.get("button").trigger("click");
+        const close = wrapper.get(".popper-close");
+        close.element.focus();
+        expect(document.activeElement).toBe(close.element);
+        await close.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.get("button").element);
+        wrapper.unmount();
+    });
+
+    test("returns focus to an external reference without stealing focus from elsewhere", async () => {
+        const reference = document.createElement("button");
+        reference.textContent = "Open details";
+        const elsewhere = document.createElement("button");
+        elsewhere.textContent = "Other action";
+        container.append(reference, elsewhere);
+        const wrapper = mount(PopperComponent, {
+            props: { title: "Details", referenceEl: reference, trigger: "click" },
+            attachTo: container,
+        });
+
+        reference.click();
+        await nextTick();
+        const close = wrapper.get(".popper-close");
+        expect(close.element).toHaveAccessibleName("Close");
+        close.element.focus();
+        expect(document.activeElement).toBe(close.element);
+        await close.trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(reference);
+
+        reference.click();
+        await nextTick();
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        elsewhere.focus();
+        await close.trigger("click");
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(elsewhere);
         wrapper.unmount();
     });
 

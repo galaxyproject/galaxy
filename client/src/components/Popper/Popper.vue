@@ -3,13 +3,24 @@
         <span v-if="!referenceEl" ref="reference" class="popper-reference-container">
             <slot name="reference" />
         </span>
-        <div v-show="!disabled && visible" ref="popper" class="popper-element" :class="`popper-element-${mode}`">
+        <!-- Delegate Escape from focusable popup children without adding a container tab stop. -->
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <div
+            v-show="!disabled && visible"
+            ref="popper"
+            class="popper-element"
+            :class="`popper-element-${mode}`"
+            @keydown.esc="close">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
-                <span class="popper-close align-items-center cursor-pointer" @click="visible = false">
-                    <FontAwesomeIcon :icon="faTimesCircle" />
-                </span>
+                <button
+                    type="button"
+                    aria-label="Close"
+                    class="popper-close align-items-center cursor-pointer"
+                    @click="close">
+                    <FontAwesomeIcon :icon="faTimesCircle" aria-hidden="true" />
+                </button>
             </div>
             <slot />
         </div>
@@ -61,6 +72,16 @@ const { visible } = usePopper(reference, popper, {
     trigger: props.trigger,
 });
 
+function close() {
+    const restoreFocus = popper.value?.contains(document.activeElement);
+    visible.value = false;
+    if (restoreFocus) {
+        const trigger =
+            props.referenceEl ?? reference.value?.querySelector("button, a[href], input, select, textarea, [tabindex]");
+        trigger?.focus();
+    }
+}
+
 defineExpose({
     visible,
     reference,
@@ -79,6 +100,27 @@ defineExpose({
     z-index: 9999;
     border-radius: $border-radius-large;
     pointer-events: auto;
+}
+
+.popper-close {
+    display: inline-flex;
+    font: inherit;
+
+    &,
+    &:hover,
+    &:focus,
+    &:not(:disabled):not(.disabled):active {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        box-shadow: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+    }
 }
 
 /** Available variants */
