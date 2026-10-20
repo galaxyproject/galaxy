@@ -128,6 +128,9 @@ export default defineConfig({
         include: ["src/**/*.test.{js,ts}", "tests/vitest/**/*.test.{js,ts}", "packages/*/src/**/*.test.{js,ts}"],
         // Exclude patterns
         exclude: ["node_modules", "dist", "**/dist/**"],
+        // "unit" is this config, in happy-dom. "storybook" runs every story in a real
+        // browser; it builds on the app's vite.config.mjs instead of this file.
+        projects: [{ extends: true, test: { name: "unit" } }, "./vitest.storybook.config.mts"],
     },
     resolve: {
         alias: {

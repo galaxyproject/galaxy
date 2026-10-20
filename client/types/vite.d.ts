@@ -20,3 +20,8 @@ declare module "monaco-yaml/yaml.worker?worker" {
     const workerConstructor: new () => Worker;
     export default workerConstructor;
 }
+
+// The explicit browser entry exports the same API as the package's typed entry.
+declare module "monaco-editor/esm/vs/editor/editor.main.js" {
+    export * from "monaco-editor";
+}
