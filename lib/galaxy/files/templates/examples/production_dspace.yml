@@ -1,0 +1,25 @@
+- id: dspace
+  version: 0
+  name: DSpace
+  description: |
+    Browse and import files from a [DSpace](https://dspace.org) repository, from its communities
+    and collections down to the files of each item.
+  variables:
+    api_url:
+      label: DSpace REST API URL
+      type: string
+      help: |
+        The REST API of a DSpace 7 or newer repository, usually the repository address followed by
+        `/server/api`, e.g. https://demo.dspace.org/server/api.
+  secrets:
+    token:
+      label: DSpace token
+      optional: true
+      help: |
+        Optional. Without a token, you can browse and import public files. With a token, you also see
+        the items and files your DSpace account can access. DSpace login tokens usually expire after
+        30 minutes.
+  configuration:
+    type: dspace
+    api_url: "{{ variables.api_url }}"
+    token: "{{ secrets.token }}"
