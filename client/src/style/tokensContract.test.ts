@@ -23,6 +23,7 @@ function isInterpolated(value: string): boolean {
 
 const COLOR_FAMILIES = ["blue", "green", "grey", "orange", "red", "yellow"];
 const COLOR_SHADES = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+const HALF_STEP_TOKENS = ["--color-grey-250"];
 const NON_PALETTE_TOKENS = [
     "--background-color",
     "--font-size-large",
@@ -55,8 +56,9 @@ describe("galaxy-ui token contract", () => {
     });
 
     it("declares exactly the non-palette tokens the contract promises", () => {
-        // Half steps such as grey-250 are palette shades too
-        const actual = [...packageTokens.keys()].filter((name) => !/^--color-[a-z]+-\d[05]0$/.test(name)).sort();
+        const actual = [...packageTokens.keys()]
+            .filter((name) => !/^--color-[a-z]+-\d00$/.test(name) && !HALF_STEP_TOKENS.includes(name))
+            .sort();
         expect(actual).toEqual([...NON_PALETTE_TOKENS].sort());
     });
 
