@@ -73,6 +73,9 @@ class CompositeToolSourceStore(ToolSourceStore):
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         self._default_store.update_index_entry(entry)
 
+    def update_index_entries(self, entries: list[ToolIndexEntry]) -> None:
+        self._default_store.update_index_entries(entries)
+
     def remove_index_entry(self, tool_id: str) -> None:
         self._default_store.remove_index_entry(tool_id)
 
@@ -131,9 +134,8 @@ class CompositeToolSourceStore(ToolSourceStore):
     def read_only_member_names(self) -> set[str]:
         """Names of member stores no populator can write to.
 
-        The boot coverage check treats paths routed to these differently:
-        a miss there can never be healed by running the populator, so it
-        must not trigger one.
+        The boot coverage check does not walk confs routed to these (see
+        ``CachedToolBox._index_needs_population``).
         """
         return {name for name, member in self._members if member.read_only}
 

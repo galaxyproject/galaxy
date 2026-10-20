@@ -962,12 +962,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     def error_reports(self) -> ErrorReports:
         return self._error_reports
 
+    @property
+    def writes_tool_search_index(self) -> bool:
+        """Whether this process writes the shared ``tool_search_index_dir``."""
+        return False
+
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed. Defined here rather than on
         # MinimalGalaxyApplication so it wins over the MinimalManagerApp
         # interface stub in the MRO, the same way is_job_handler does.
         # Celery manager apps intentionally have no toolbox or search index.
-        if self.toolbox_or_none is None:
+        if self.toolbox_or_none is None or not self.writes_tool_search_index:
             return
         self.toolbox_search.build_index(
             tool_cache=self.tool_cache,
@@ -978,7 +983,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     def ensure_tool_search_index(self) -> None:
         """Index the toolbox once per toolbox reload."""
-        if self.toolbox_or_none is None:
+        if self.toolbox_or_none is None or not self.writes_tool_search_index:
             return
         if self.toolbox_search.build_index_if_stale(
             tool_cache=self.tool_cache,
@@ -1236,6 +1241,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # this not-yet-elected process, so the new watcher queues its own.
         if is_config_watcher:
             send_local_control_task(self, "rebuild_toolbox_search_index")
+
+    @property
+    def writes_tool_search_index(self) -> bool:
+        # Every process searches the shared tool_search_index_dir and reopens it
+        # per query, so the elected config watcher is its only writer.
+        return bool(self.is_webapp and self.database_heartbeat.is_config_watcher)
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()

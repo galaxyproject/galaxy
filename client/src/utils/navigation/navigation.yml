@@ -855,6 +855,8 @@ tool_form:
     parameter_value_list_add:
       type: xpath
       selector: //div[@id="form-element-${parameter}"]//button[@data-description="add value"]
+    parameter_data_select_dropdown: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect__content-wrapper'
+    parameter_batch_info: 'div.ui-form-element[id="form-element-${parameter}"] .info'
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'

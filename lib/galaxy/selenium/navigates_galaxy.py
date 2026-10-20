@@ -1761,6 +1761,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         name_input_field.send_keys(name)
         input_field.send_keys(self._get_random_name(prefix="description"))
         self.components.libraries.save_new_library_btn.wait_for_and_click()
+        # Clicking create again before the POST resolves would toggle the still-open form closed.
+        self.components.libraries.save_new_library_btn.wait_for_absent_or_hidden(
+            wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -1842,7 +1846,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
-        self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
+        self.components.toast.message.wait_for_absent_or_hidden(wait_type=WAIT_TYPES.UX_POPUP)
 
     def clear_tooltips(self, selector_to_move="#center"):
         self.hover(self.find_element_by_selector(selector_to_move))
@@ -2225,6 +2229,24 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def tool_form_execute(self):
         self.components.tool_form.execute.wait_for_and_click()
+
+    def tool_form_select_data(self, parameter: str, value: str, multiple: bool = False):
+        select_field = self.components.tool_form.parameter_data_select(parameter=parameter)
+        self.select_set_value(select_field, value, multiple=multiple)
+        self.components.tool_form.parameter_data_select_dropdown(parameter=parameter).wait_for_absent_or_hidden()
+
+    def tool_form_wait_for_batch_info(self, parameter: str, text: str) -> str:
+        batch_info = self.components.tool_form.parameter_batch_info(parameter=parameter)
+
+        def batch_info_with_text(driver=None):
+            # the inline help link can render on its own line, collapse whitespace
+            info = " ".join(batch_info.wait_for_text().split())
+            return info if text in info else None
+
+        return self._wait_on_custom(
+            batch_info_with_text,
+            f"batch info of parameter [{parameter}] to contain [{text}]",
+        )
 
     def click_activity_workflow(self):
         self.components.workflows.activity.wait_for_and_click()

@@ -1,11 +1,15 @@
 """Pin ``ToolWhooshIndex.build`` rebuild/skip semantics."""
 
+import pytest
+from whoosh import index
+
 from galaxy.tools import DataManagerTool
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.search import (
+    build_search_schema,
     MAX_TOOL_SEARCH_HELP_CHARS,
     ToolSearchTuning,
     ToolWhooshIndex,
@@ -43,16 +47,72 @@ def test_unchanged_corpus_skips_rebuild(tmp_path):
     assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("mapper") == ["mapper"]
 
 
-def test_changed_corpus_rebuilds_and_drops_stale_docs(tmp_path):
+def test_changed_corpus_writes_only_new_docs_and_drops_stale_docs(tmp_path):
     index_dir = str(tmp_path / "ix")
     ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller"))
 
     written = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "trimmer"))
-    assert written == 2
+    assert written == 1
     searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
     assert searcher.search("trimmer") == ["trimmer"]
-    # "caller" left the corpus; the CLEAR rebuild must not serve it anymore.
+    assert searcher.search("mapper") == ["mapper"]
     assert searcher.search("caller") == []
+
+
+def test_changed_doc_is_rewritten(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_help_index("mytool", "Wraps the quaxifier."))
+
+    written = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(
+        _help_index("mytool", "Wraps the blorbinator.")
+    )
+    assert written == 1
+    searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    assert searcher.search("blorbinator") == ["mytool"]
+    assert searcher.search("quaxifier") == []
+
+
+def test_doc_removed_by_another_writer_is_restored(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller"))
+    with index.open_dir(index_dir).writer() as writer:
+        writer.delete_by_term("id", "caller")
+
+    assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper", "caller")) == 1
+    assert ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).search("caller") == ["caller"]
+
+
+def test_index_without_doc_hashes_is_upgraded_by_a_commit(tmp_path):
+    index_dir = tmp_path / "ix"
+    index_dir.mkdir()
+    legacy = index.create_in(str(index_dir), schema=build_search_schema(_TUNING, help_boost=_TUNING.help_boost))
+    with legacy.writer() as writer:
+        writer.add_document(id="mapper", id_exact="mapper", name="Mapper", name_exact="Mapper")
+    legacy_generation = index.open_dir(str(index_dir)).latest_generation()
+
+    searcher = ToolWhooshIndex(index_dir=str(index_dir), tuning=_TUNING)
+    assert searcher.build(_index("mapper")) == 1
+    # One more commit on the existing index; recreating the directory would
+    # restart its generations.
+    assert index.open_dir(str(index_dir)).latest_generation() == legacy_generation + 1
+    assert searcher.search("mapper") == ["mapper"]
+
+
+def test_build_raises_when_another_writer_holds_the_lock(tmp_path, monkeypatch):
+    monkeypatch.setattr("galaxy.tools.source_store.search.INDEX_WRITE_LOCK_TIMEOUT", 0.1)
+    index_dir = str(tmp_path / "ix")
+    ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("mapper"))
+
+    other_writer = index.open_dir(index_dir).writer()
+    try:
+        with pytest.raises(index.LockError):
+            ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING).build(_index("trimmer"))
+    finally:
+        other_writer.cancel()
+
+    searcher = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    assert searcher.search("mapper") == ["mapper"]
+    assert searcher.build(_index("trimmer")) == 1
 
 
 def test_build_scopes_corpus_to_panel_membership(tmp_path):

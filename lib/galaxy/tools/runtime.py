@@ -1,6 +1,8 @@
+import re
 from collections.abc import Callable
 from typing import (
     Any,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
@@ -38,6 +40,57 @@ CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, str | None], 
 # or DCEs (from job.input_dataset_collection_elements for subcollection mapping).
 InpDataCollectionsDictT = dict[str, HistoryDatasetCollectionAssociation | DatasetCollectionElement]
 
+# Characters that would end or escape a single- or double-quoted value on a command line,
+# plus line breaks, which XML tool command cleanup turns into spaces, and the operators that
+# start another command or a redirection where a tool leaves the path unquoted.
+COMMAND_LINE_UNSAFE = re.compile(r"[\"'$`\\\x00\r\n;&|<>]")
+
+
+def dataset_path(
+    dataset: DatasetInstance,
+    compute_environment: Optional["ComputeEnvironment"] = None,
+    io_type: Literal["input", "output"] = "input",
+    shell_quotable: bool = False,
+) -> str:
+    """Return where a tool finds a dataset's data on disk.
+
+    This is the dataset's file, or for directory datatypes the folder holding
+    their content (see ``Directory.content_path``). YAML tools get this as
+    ``path`` and XML tools as ``$input.path``.
+
+    Raises ``ValueError`` for a deferred dataset, which is passed to the tool
+    as its source URI. With ``shell_quotable``, for a command line that pastes
+    the path in unescaped, also raises for content in a folder whose name
+    cannot be quoted there.
+    """
+    if dataset.has_deferred_data:
+        raise ValueError(f"Dataset {dataset.id} is deferred and has no path on disk, the tool reads its source URI")
+    is_output = io_type == "output"
+    datatype = dataset.datatype
+    if isinstance(datatype, Directory):
+        if is_output:
+            # New outputs have their content at the root, whatever store_root metadata_source copied.
+            output_path: str = (
+                compute_environment.output_extra_files_rewrite(dataset) if compute_environment else None
+            ) or dataset.extra_files_path
+            return output_path
+        # An older dataset may keep its content in a wrapper folder it recorded, named
+        # after whatever it was uploaded as.
+        content_root = datatype.content_root(dataset)
+        if shell_quotable and COMMAND_LINE_UNSAFE.search(content_root):
+            raise ValueError(
+                f"Dataset {dataset.id} keeps its content in a folder named {content_root!r}, which cannot be passed to a tool"
+            )
+        extra_files_path = compute_environment.input_extra_files_rewrite(dataset) if compute_environment else None
+        return datatype.content_path(dataset, extra_files_path)
+    rewrite = None
+    if compute_environment is not None:
+        if is_output:
+            rewrite = compute_environment.output_path_rewrite(dataset)
+        else:
+            rewrite = compute_environment.input_path_rewrite(dataset)
+    return rewrite or dataset.get_file_name()
+
 
 def is_list_like(collection_type: str) -> bool:
     """Returns True if this collection type has array elements.
@@ -54,8 +107,11 @@ def setup_for_runtimeify(
     compute_environment: Optional["ComputeEnvironment"],
     input_datasets: InpDataDictT,
     input_dataset_collections: InpDataCollectionsDictT | None = None,
+    shell_quotable: bool = False,
 ):
     """Set up callbacks for runtimeify to convert tool state to runtime representations.
+
+    ``shell_quotable`` requires dataset paths that can be quoted on a command line (see ``dataset_path``).
 
     Returns:
         Tuple of (hda_references, adapt_dataset, adapt_collection)
@@ -116,8 +172,7 @@ def setup_for_runtimeify(
             )
         hda_entry, index = find_input(value.id, extensions)
         assert hda_entry.dataset is not None
-        datatype = hda_entry.datatype
-        is_directory = isinstance(datatype, Directory)
+        is_directory = isinstance(hda_entry.datatype, Directory)
         properties: dict[str, Any] = {
             "class": "Directory" if is_directory else "File",
             "location": f"step_input://{index}",
@@ -131,18 +186,8 @@ def setup_for_runtimeify(
             if not (source_uri := hda_entry.deferred_source_uri):
                 raise ValueError(f"Deferred dataset {hda_entry.id} has no source to read it from")
             properties["location"] = source_uri
-        elif isinstance(datatype, Directory):
-            # The content sits at the root of the extra files, or in the folder an older dataset recorded.
-            extra_files_path = (
-                compute_environment.input_extra_files_rewrite(hda_entry)
-                if compute_environment
-                else hda_entry.extra_files_path
-            )
-            properties["path"] = datatype.content_path(hda_entry, extra_files_path)
         else:
-            properties["path"] = (
-                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
-            )
+            properties["path"] = dataset_path(hda_entry, compute_environment, shell_quotable=shell_quotable)
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         return DataInternalJson(**properties)
 

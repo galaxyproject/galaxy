@@ -9,7 +9,10 @@ app) so they're cheap and pinpoint regressions. Behaviours pinned:
 - pydantic serialization round-trips ``entries_by_version``
 """
 
-from galaxy.tools.source_store.index import ToolIndex
+from galaxy.tools.source_store.index import (
+    INDEX_SCHEMA_HASH,
+    ToolIndex,
+)
 
 
 def test_add_entry_default_picks_highest_packaging_version(index_entry, tool_index):
@@ -118,3 +121,29 @@ def test_tests_summary_excludes_datatype_converters(index_entry, tool_index):
         index_entry("convert_fasta", version="1.0", test_count=1, is_datatype_converter=True),
     )
     assert set(index.get_tests_summary()) == {"real_tool"}
+
+
+def test_validation_shares_default_entries_with_version_map(index_entry, tool_index):
+    index = tool_index(
+        index_entry("multi", version="0.1"),
+        index_entry("multi", version="0.2"),
+        index_entry("solo", version="1.0"),
+    )
+    dumped = index.model_dump(mode="json")
+    # The stored format keeps every version, defaults included.
+    assert {tool_id: set(versions) for tool_id, versions in dumped["entries_by_version"].items()} == {
+        "multi": {"0.1", "0.2"},
+        "solo": {"1.0"},
+    }
+
+    loaded = ToolIndex.model_validate(dumped)
+
+    assert loaded.entries_by_version["multi"]["0.2"] is loaded.entries["multi"]
+    assert loaded.entries_by_version["solo"]["1.0"] is loaded.entries["solo"]
+    assert loaded.entries_by_version["multi"]["0.1"].version == "0.1"
+
+
+def test_index_schema_hash_is_pinned():
+    # Published tool source store bundles are matched on this hash; a change
+    # discards every deployed index until the bundles are republished.
+    assert INDEX_SCHEMA_HASH == "c90ca5455dfe48a0179a2e1ea5ae7fe8"

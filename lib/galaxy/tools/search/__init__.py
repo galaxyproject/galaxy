@@ -44,6 +44,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.tools.source_store.search import (
     build_search_document,
     build_search_schema,
+    INDEX_WRITE_LOCK_TIMEOUT,
     search_whoosh_index,
     ToolSearchTuning,
     ToolWhooshIndex,
@@ -64,11 +65,6 @@ log = logging.getLogger(__name__)
 
 CanConvertToFloat = str | int | float
 CanConvertToInt = str | int | float
-
-# Galaxy processes on a host share ``tool_search_index_dir`` and index the same
-# toolbox into it, so a rebuild that cannot get the write lock in time can be
-# skipped: the process holding the lock is writing the same documents.
-INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
 UNSAFE_PATH_CHARACTERS = re.compile(r"[^A-Za-z0-9_-]")
 
@@ -208,10 +204,23 @@ class CachedToolboxSearch(ToolBoxSearch):
         with self._build_lock:
             self._sync_panel_searches(cached_toolbox)
             tool_index = cached_toolbox.tool_index
+            complete = True
             if tool_index is not None:
                 for panel_view_id, searcher in self.cached_panel_searches.items():
-                    searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
-            self._mark_built(cached_toolbox)
+                    try:
+                        searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
+                    except LockError:
+                        log.warning(
+                            "Tool search index of panel %s is locked by another writer, skipping this rebuild",
+                            panel_view_id,
+                        )
+                        complete = False
+            if complete:
+                self._mark_built(cached_toolbox)
+            else:
+                # The other writer may hold an older corpus: leave the index
+                # stale so the next rebuild_toolbox_search_index retries.
+                self.indexed_reload_count = None
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self._panel_view_ids:

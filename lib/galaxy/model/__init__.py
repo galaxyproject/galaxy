@@ -5857,9 +5857,22 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     if include_errored
                     else Dataset.valid_input_states
                 )
-                if not item.deleted and item.state in valid_states:
+                if not item.deleted and item.state in valid_states and not item._blocked_on_failed_input():
                     return item
         return None
+
+    def _blocked_on_failed_input(self) -> bool:
+        """Whether this dataset's pending job is blocked by an unrecoverable input."""
+        if self.state not in (Dataset.states.NEW, Dataset.states.QUEUED, Dataset.states.PAUSED) or not (
+            job := self.creating_job
+        ):
+            return False
+        return any(
+            assoc.dataset.state in (Dataset.states.ERROR, Dataset.states.DISCARDED)
+            or assoc.dataset._blocked_on_failed_input()
+            for assoc in job.input_datasets
+            if assoc.dataset
+        )
 
     def get_converted_dataset_deps(self, trans: "ProvidesUserContext", target_ext, use_cached_job=False):
         """
@@ -5882,8 +5895,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         use_cached_job=False,
     ):
         """
-        Return converted dataset(s) if they exist, along with a dict of dependencies.
-        If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
+        Return the converted dataset, starting the conversion (and any conversions it
+        depends on) if it does not exist yet. If unconvertible, raise exception.
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
@@ -5905,15 +5918,17 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # Check if we have dependencies
         try:
             for dependency in depends_list:
-                dep_dataset = self.get_converted_dataset(trans, dependency, use_cached_job=use_cached_job)
-                if dep_dataset is None:
-                    # None means converter is running first time
-                    return None
-                elif dep_dataset.state == Job.states.ERROR:
+                dep_dataset = self.get_converted_dataset(
+                    trans,
+                    dependency,
+                    target_context=target_context,
+                    history=history,
+                    include_errored=include_errored,
+                    use_cached_job=use_cached_job,
+                )
+                if dep_dataset.state == Job.states.ERROR:
                     raise ConverterDependencyException(f"A dependency ({dependency}) was in an error state.")
-                elif dep_dataset.state != Job.states.OK:
-                    # Pending
-                    return None
+                # A pending dependency is fine, the converter job waits for its inputs.
                 deps[dependency] = dep_dataset
         except NoConverterException:
             raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
@@ -8390,6 +8405,7 @@ class HistoryDatasetCollectionAssociation(
             hid=self.hid,
             collection=self.collection.serialize(id_encoder, serialization_options),
             implicit_output_name=self.implicit_output_name,
+            tags=self.make_tag_string_list(),
         )
         if self.history:
             rval["history_encoded_id"] = serialization_options.get_identifier(id_encoder, self.history)

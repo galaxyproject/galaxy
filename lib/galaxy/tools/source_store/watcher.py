@@ -7,10 +7,10 @@ fire on CVMFS). Polling each store's freshness probe is the only reliable
 signal, and it is cheap: one probe per store per tick.
 
 The watcher itself is deliberately dumb: it detects token transitions and
-hands the changed store names to ``on_change``. Reload mechanics —
-disposing engines so new connections see the new CVMFS snapshot, index
+hands the changed store names to ``on_change``. Reload mechanics — index
 reload, panel refresh, and search rebuild — belong to the toolbox callback
-owner.
+owner. A read-only SQLite store disposes its own engine in
+``invalidate_index_cache`` when its database file changed.
 """
 
 import logging
