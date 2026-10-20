@@ -31,6 +31,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     DescribeToolInputs,
+    DescribeUserTool,
     get_tool_ids,
     RequiredTool,
     TargetHistory,
@@ -150,6 +151,13 @@ def required_tool(dataset_populator: DatasetPopulator, history_id: str, required
     tool_id = required_tool_ids[0]
     tool = RequiredTool(dataset_populator, tool_id, history_id)
     return tool
+
+
+@pytest.fixture
+def user_tool(dataset_populator: DatasetPopulator, history_id: str, request) -> Iterator[DescribeUserTool]:
+    """Parametrize indirectly with a raw tool mapping or a YAML/JSON tool path."""
+    with dataset_populator.user_tool_execute_permissions():
+        yield dataset_populator.describe_user_tool(request.param, history_id)
 
 
 @pytest.fixture(params=["legacy", "21.01", "request"])
