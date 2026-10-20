@@ -1,5 +1,6 @@
 import re
 
+import yaml
 from playwright.sync_api import expect
 
 from galaxy_test.base.api_util import random_name
@@ -194,6 +195,44 @@ class TestFrontendRepositories(PlaywrightTestCase):
 
         categories.filter(has_text=beta.name).click()
         expect(page).to_have_url(re.compile(f"/repositories_by_category/{beta.id}$"))
+
+    def test_repository_shed_yml_loads_back_with_pyyaml(self):
+        # Planemo reads .shed.yml with PyYAML, so awkward values must load back unchanged
+        category = self.populator.new_category(name=f"{random_name(prefix=TEST_CATEGORY_PREFIX)}: yes #1")
+        synopsis = "Mapper: fast #1"
+        homepage_url = "https://example.org/tool:"
+        remote_repository_url = "https://github.com/galaxyproject/tools-iuc"
+        # The first is written as a literal block, the second needs escapes
+        for long_description in ["First line\nsecond: line #2\n\nthird\n", "First\r\nsecond\u2028third\n\n  indented"]:
+            repository = self.populator.new_repository([category.id], prefix=TEST_REPO_PREFIX)
+            self.populator.update(
+                repository,
+                UpdateRepositoryRequest(
+                    synopsis=synopsis,
+                    description=long_description,
+                    homepage_url=homepage_url,
+                    remote_repository_url=remote_repository_url,
+                ),
+            )
+            self.visit_url(f"/repositories/{repository.id}")
+            page = self._page
+
+            shed_yml = (
+                page.locator(Locators.config_file_contents)
+                .filter(has=page.locator(Locators.config_file_contents_name, has_text=".shed.yml"))
+                .locator(Locators.config_file_contents_body)
+            )
+            expect(shed_yml).to_contain_text(f"name: {repository.name}")
+            assert yaml.safe_load(shed_yml.text_content()) == {
+                "name": repository.name,
+                "owner": repository.owner,
+                "description": synopsis,
+                "long_description": long_description,
+                "homepage_url": homepage_url,
+                "remote_repository_url": remote_repository_url,
+                "type": "unrestricted",
+                "categories": [category.name],
+            }
 
     def test_repository_aside_end_reachable_on_long_page(self):
         repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX)
