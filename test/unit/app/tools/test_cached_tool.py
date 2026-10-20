@@ -15,6 +15,7 @@ from cachetools import LRUCache
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
 from galaxy.app_unittest_utils.tool_source_support import populate_config
+from galaxy.exceptions import ConfigurationError
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -38,6 +39,7 @@ from galaxy.tools.source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
+from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
 
 
 def _entry(**overrides):
@@ -1207,3 +1209,103 @@ def test_fast_path_watches_tool_dir_without_loading_existing_tools(tmp_path):
 
     box.load_tool.assert_not_called()
     box._tool_watcher.watch_directory.assert_called_once()
+
+
+def test_unconfigured_bundled_version_does_not_replace_configured_tool():
+    # A tool conf names jupyter 0.3; newer bundled files are indexed
+    # storage-only. The default lookup and the lineage must stay on the
+    # configured version, as in the eager toolbox.
+    box = _registry_box()
+    configured = _entry(id="jupyter", version="0.3", panel_section_id="it", panel_section_name="Interactive")
+    box._tool_index.add_entry(configured)
+    for version in ("1.0.0", "1.0.3"):
+        box._tool_index.add_entry(_entry(id="jupyter", version=version, in_panel=False))
+    box._register_cached_entry(configured)
+
+    tool = box.get_tool("jupyter")
+    assert tool.version == "0.3"
+    assert box._index_versions_for("jupyter") == ["0.3"]
+    assert [t.version for t in box.get_tool("jupyter", get_all_versions=True)] == ["0.3"]
+    # An explicit unconfigured version is a miss, as in the eager toolbox;
+    # direct loads still resolve the bundled file by path.
+    assert box.get_tool("jupyter", tool_version="1.0.3").version == "0.3"
+    assert not box.has_tool("jupyter", tool_version="1.0.3", exact=True)
+    # Materialising the configured version must not register the bundled
+    # siblings either, or an exact lookup would serve them from the registry.
+    box._load_tool_on_demand = lambda entry, reason: MagicMock()
+    box.materialize_tool(tool, reason="execution")
+    assert set(box._tool_versions_by_id["jupyter"]) == {"0.3"}
+    assert box.get_tool("jupyter", tool_version="1.0.3", exact=True).version == "0.3"
+
+
+def test_invalidate_index_cache_drops_versions_a_reindex_removed():
+    # A peer re-indexed an in-place edit of probe from 1.1 to 1.2 and
+    # dropped 1.1 from the index.
+    box = _registry_box()
+    box._guid_sibling_versions_cache = None
+    old = _entry(id="probe", version="1.1", source_hash="h1", source_path="/t/probe.xml")
+    box._tool_index.add_entry(old)
+    box._register_cached_entry(old)
+    assert list(box._lineage_map.get("probe").tool_versions) == ["1.1"]
+
+    reloaded = ToolIndex()
+    reloaded.add_entry(_entry(id="probe", version="1.2", source_hash="h2", source_path="/t/probe.xml"))
+    box._store.load_index.return_value = reloaded
+    box.invalidate_index_cache()
+
+    assert "1.1" not in box._tool_versions_by_id["probe"]
+    assert ("probe", "1.1") not in box._cached_tools
+    assert list(box._lineage_map.get("probe").tool_versions) == ["1.2"]
+    assert not box.has_tool("probe", tool_version="1.1", exact=True)
+    # The panel's proxy stays the one served for the surviving version.
+    assert box.get_tool("probe", tool_version="1.2") is box._tools_by_id["probe"]
+    assert box.get_tool("probe", tool_version="1.1", exact=True).version == "1.2"
+
+
+def test_reindex_edited_tool_files_reindexes_only_changed_files(tmp_path, monkeypatch):
+    from galaxy.util.hash_util import md5_hash_file
+
+    edited = tmp_path / "edited.xml"
+    untouched = tmp_path / "untouched.xml"
+    edited.write_text("<tool id='edited' version='1.1'/>")
+    untouched.write_text("<tool id='untouched' version='1.0'/>")
+    box = _seam_box()
+    box._store.read_only = False
+    unmodified = tmp_path / "unmodified.xml"
+    unmodified.write_text("<tool id='unmodified' version='1.0'/>")
+    index = ToolIndex()
+    for tool_id, path in (("edited", edited), ("untouched", untouched)):
+        index.add_entry(_entry(id=tool_id, source_path=str(path), file_hash=md5_hash_file(str(path))))
+    # Not modified since indexing: skipped without hashing, as the eager ToolCache does.
+    indexed_at = datetime.fromtimestamp(unmodified.stat().st_mtime + 60, tz=timezone.utc)
+    index.add_entry(_entry(id="unmodified", source_path=str(unmodified), file_hash="stale", indexed_at=indexed_at))
+    box._store.load_index.return_value = index
+    edited.write_text("<tool id='edited' version='1.2'/>")
+    calls: list[dict[str, str | None]] = []
+    monkeypatch.setattr(box, "index_tool_files", calls.append)
+
+    box._reindex_edited_tool_files()
+
+    assert calls == [{str(edited): None}]
+
+
+@pytest.mark.parametrize(
+    "read_only_member, message",
+    [
+        (UnavailableToolSourceStore("no compatible external tool source store for 'cloud'"), "no compatible"),
+        (MagicMock(read_only=True, **{"load_index.return_value": None}), "'cloud' has no loadable index"),
+    ],
+)
+def test_toolbox_refuses_to_build_without_read_only_store_index(monkeypatch, read_only_member, message):
+    # Its tools would otherwise be parsed and held in memory, or self-heal
+    # one populate and one whole-index write per tool.
+    box = _seam_box()
+    default = MagicMock(read_only=False)
+    box._store = CompositeToolSourceStore(
+        members=[("cloud", read_only_member), ("__default__", default)], default="__default__"
+    )
+    monkeypatch.setattr(box, "_run_inline_populator", MagicMock(side_effect=AssertionError("populated")))
+
+    with pytest.raises(ConfigurationError, match=message):
+        box._init_tools_from_configs([])
+    default.load_index.assert_not_called()

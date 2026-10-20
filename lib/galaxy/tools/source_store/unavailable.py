@@ -15,7 +15,10 @@ from .interface import (
 
 
 class UnavailableToolSourceStore(ToolSourceStore):
-    """An empty member that leaves its tool conf on the eager parse path."""
+    """An empty member standing in for a read-only store with no compatible index.
+
+    Populates skip it; the cached toolbox refuses to load while one is configured.
+    """
 
     read_only = True
 
@@ -66,6 +69,6 @@ class UnavailableToolSourceStore(ToolSourceStore):
 
     def index_is_fresh(self) -> bool:
         # Nothing local can populate this read-only member. Reporting it as
-        # handled avoids re-running the writable populator on every boot;
-        # absent entries still fall through to the eager tool parser.
+        # handled avoids re-running the writable populator for it; the cached
+        # toolbox rejects the configuration instead.
         return True

@@ -157,7 +157,8 @@ def _ensure_datatypes_registry(config: GalaxyAppConfiguration) -> None:
     ``set_datatypes_registry`` installs at app boot. In-process callers
     already have it; the standalone CLI does not, so build one from
     ``config.datatypes_config`` — otherwise the converters are dropped from
-    the store. Only invoked on a full rebuild (see ``populate_store_inline``).
+    the store. Only invoked when the default store is written (see
+    ``populate_store_inline``).
     """
     try:
         _get_datatypes_registry()
@@ -675,12 +676,20 @@ def _populate_store_inline_unlocked(
 
     stats = {"processed": 0, "stored": 0, "skipped": 0, "unchanged": 0, "errors": 0}
 
-    # Converters route to the default store, so only enumerate them on a full
-    # rebuild — a targeted single-store populate never writes them and would
-    # otherwise pay to load the datatypes registry.
-    include_converters = target is None
+    # Converters route to the default store, so enumerate them whenever this
+    # run writes it — a full ``--target __default__`` rebuild that skipped
+    # them would drop them from the index. Other targeted populates never
+    # write them and would otherwise pay to load the datatypes registry.
+    include_converters = DEFAULT_STORE_NAME in writable_names
     if include_converters:
-        _ensure_datatypes_registry(config)
+        try:
+            _ensure_datatypes_registry(config)
+        except Exception as e:
+            # A full rebuild without converters would drop them from the
+            # index; a partial populate only needs them for converter paths.
+            if paths is None or prune:
+                raise
+            log.warning("Could not build a datatypes registry to enumerate converters: %s", e)
     # Walk only confs routed to a store this run writes: the per-tool
     # existence checks are the expensive part of discovery on network
     # filesystems, and tools routed elsewhere (read-only stores, stores
@@ -717,8 +726,8 @@ def _populate_store_inline_unlocked(
     # them, with their conf context, because the cached toolbox builds its
     # panel from index placements: an ad-hoc entry keeps a tool out of the
     # panel, and a full populate that skipped them would drop them from the
-    # index. Confs whose store is unavailable are walked eagerly by the
-    # toolbox instead.
+    # index. Confs whose store is unavailable are skipped: the cached toolbox
+    # refuses to load without that store's index.
     if default_writable:
         for conf, store_name in conf_to_store.items():
             store = stores.get(store_name)
@@ -973,10 +982,24 @@ def _populate_store_inline_unlocked(
                 # entries for the paths we just rescanned. Anything else
                 # stays as-is (use reconcile_index for full prune).
                 index = previous_index or ToolIndex()
-                if previous_index is not None and all(index.holds(entry) for entry in new_entries):
+                # A rescanned file defines exactly the entries just built for
+                # it; versions it used to define (an in-place version bump)
+                # would otherwise stay indexed and materialise the old source.
+                rescanned_paths = {entry.source_path for entry in new_entries if entry.source_path}
+                rebuilt_keys = {(entry.id, entry.version or "") for entry in new_entries}
+                superseded = [
+                    (tool_id, version)
+                    for tool_id, versions in index.entries_by_version.items()
+                    for version, entry in versions.items()
+                    if entry.source_path in rescanned_paths and (tool_id, version) not in rebuilt_keys
+                ]
+                if previous_index is not None and not superseded and all(index.holds(entry) for entry in new_entries):
                     # Every process reloads the index after a write, so a
                     # rescan that changed nothing (a metadata reset) skips it.
                     continue
+                rebuilt_ids = {tool_id for tool_id, _ in rebuilt_keys}
+                for tool_id, version in superseded:
+                    index.remove_version(tool_id, version, keep_placements=tool_id in rebuilt_ids)
             for entry in new_entries:
                 index.add_entry(entry, new_placements_first=not full_scan)
             if full_scan and previous_index is not None and previous_index.panel_items:
