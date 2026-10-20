@@ -1398,6 +1398,14 @@ def is_safe_local_redirect(path: Any) -> bool:
     return path[1:2] not in ("/", "\\")
 
 
+def normalize_https_authority(authority: str) -> str:
+    """Lower-case an ``https`` URL authority and drop the default port 443."""
+    authority = authority.lower()
+    if authority.endswith(":443"):
+        authority = authority[: -len(":443")]
+    return authority
+
+
 def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bool:
     """May Galaxy send a browser to ``target`` after login?
 
@@ -1405,7 +1413,7 @@ def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bo
     :func:`is_safe_local_redirect`). An absolute ``https`` URL is accepted when its
     host -- with the port, if it is not 443 -- is one of ``allowed_hosts``, the
     admin-configured ``allowed_login_redirect_hosts``. Hosts match exactly and
-    case-insensitively.
+    case-insensitively, and an ``allowed_hosts`` entry may name port 443.
     """
     if is_safe_local_redirect(target):
         return True
@@ -1424,10 +1432,8 @@ def is_safe_login_redirect(target: Any, allowed_hosts: Iterable[str] = ()) -> bo
     if url.scheme != "https" or "@" in url.netloc or not url.hostname:
         return False
     # Compare the authority as written, so IPv6 entries keep their brackets.
-    host = url.netloc.lower()
-    if port == 443 and host.endswith(":443"):
-        host = host[: -len(":443")]
-    return host in {allowed.lower() for allowed in allowed_hosts}
+    host = normalize_https_authority(url.netloc) if port == 443 else url.netloc.lower()
+    return host in {normalize_https_authority(allowed) for allowed in allowed_hosts}
 
 
 def read_build_sites(filename, check_builds=True):

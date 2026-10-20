@@ -105,5 +105,17 @@ def test_other_hosts_are_refused_as_login_redirects(target):
     assert is_safe_login_redirect(target, ALLOWED_HOSTS) is False
 
 
+@pytest.mark.parametrize(
+    "target",
+    [
+        "https://tools.example.org/landing",
+        "https://tools.example.org:443/landing",
+        "https://[2001:db8::1]/back",
+    ],
+)
+def test_allowlist_entries_may_name_the_default_port(target):
+    assert is_safe_login_redirect(target, ["Tools.Example.org:443", "[2001:DB8::1]:443"]) is True
+
+
 def test_no_external_login_redirects_without_allowlist():
     assert is_safe_login_redirect("https://tools.example.org/") is False
