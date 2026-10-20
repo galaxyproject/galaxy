@@ -312,6 +312,18 @@ describe("DatasetView", () => {
             expect(wrapper.vm.$props.tab).toBe("preview");
         });
 
+        it("blocks the view when the dataset cannot be loaded", async () => {
+            server.use(
+                http.get("/api/datasets/:dataset_id", ({ response }) => {
+                    return response(403).json({ err_msg: "Access denied", err_code: 403002 });
+                }),
+            );
+            const wrapper = await mountLoadingDatasetView();
+            expect(wrapper.find(".alert-heading").text()).toBe("Dataset Not Available");
+            expect(wrapper.text()).toContain("Access denied");
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
+        });
+
         it.skip("uses preferred visualization for supported datatypes", async () => {
             const wrapper = await mountDatasetView("preview", { dataset: h5Dataset });
             await flushPromises(); // Wait for preferred visualization check
