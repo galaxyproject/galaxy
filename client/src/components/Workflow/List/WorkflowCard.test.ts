@@ -91,12 +91,24 @@ describe("WorkflowCard", () => {
         await wrapper.setProps({ workflow: reloadedWorkflow } as object);
         expect(wrapper.findComponent(StatelessTags).props("value")).toEqual([]);
 
-        save.resolve({});
+        save.resolve({ tags: ["first"] });
         await flushPromises();
 
         expect(mockedUpdateWorkflow).toHaveBeenCalledWith(workflow.id, { tags: ["first"] });
         expect(reloadedWorkflow.tags).toEqual(["first"]);
         expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["first"]);
+        expect(wrapper.emitted("refreshList")).toBeUndefined();
+    });
+
+    it("shows the tags as the server stored them", async () => {
+        mockedUpdateWorkflow.mockResolvedValueOnce({ tags: ["group:liver"] } as WorkflowSummary);
+        const { wrapper, workflow } = mountWorkflowCard();
+
+        await addTag(wrapper, "group=liver");
+        await flushPromises();
+
+        expect(mockedUpdateWorkflow).toHaveBeenCalledWith(workflow.id, { tags: ["group=liver"] });
+        expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["group:liver"]);
         expect(wrapper.emitted("refreshList")).toBeUndefined();
     });
 });

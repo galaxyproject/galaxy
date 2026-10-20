@@ -107,4 +107,17 @@ describe("HistoryCard", () => {
         expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["first"]);
         expect(wrapper.emitted("refreshList")).toBeUndefined();
     });
+
+    it("shows the tags as the server stored them", async () => {
+        mockedUpdateHistoryFields.mockResolvedValueOnce({ id: "history_id", tags: ["group:liver"] } as never);
+        const { wrapper, history } = mountOwnHistoryCard();
+
+        await addTag(wrapper, "group=liver");
+        await flushPromises();
+
+        expect(mockedUpdateHistoryFields).toHaveBeenCalledWith("history_id", { tags: ["group=liver"] });
+        expect(history.tags).toEqual(["group:liver"]);
+        expect(wrapper.findComponent(StatelessTags).props("value")).toEqual(["group:liver"]);
+        expect(wrapper.emitted("refreshList")).toBeUndefined();
+    });
 });

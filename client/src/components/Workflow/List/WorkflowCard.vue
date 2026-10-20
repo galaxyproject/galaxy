@@ -81,7 +81,7 @@ const { saveTags } = useSerialTagSaves({
 
 function onTagsUpdate(tags: string[]) {
     const workflowId = workflow.value.id;
-    saveTags(tags, () => updateWorkflow(workflowId, { tags }));
+    saveTags(tags, async () => (await updateWorkflow(workflowId, { tags })).tags);
 }
 
 async function onTagClick(tag: string) {

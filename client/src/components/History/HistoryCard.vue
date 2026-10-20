@@ -214,7 +214,7 @@ const { saveTags } = useSerialTagSaves({
  * @param {string[]} tags - The new array of tags to set
  */
 function onTagsUpdate(historyId: string, tags: string[]) {
-    saveTags(tags, () => historyStore.updateHistory(historyId, { tags }));
+    saveTags(tags, async () => (await historyStore.updateHistory(historyId, { tags })).tags);
 }
 
 function onClick(event: Event) {
