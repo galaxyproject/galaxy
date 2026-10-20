@@ -148,7 +148,7 @@ def supports_returning(engine: Engine) -> bool:
     """
     Return True if the database bound to `engine` supports the `RETURNING` SQL clause.
     """
-    stmt = text("UPDATE job SET tool_id=abc WHERE false RETURNING id")
+    stmt = text("UPDATE job SET tool_id='abc' WHERE false RETURNING id")
     return _statement_executed_without_error(stmt, engine)
 
 

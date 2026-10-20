@@ -1,13 +1,23 @@
 <tool id="shapefile_composite" name="composite shapefile tool" version="1.0.0">
-    <requirements>
-        <requirement type="package" version="1.8.6">fiona</requirement>
-    </requirements>
     <command><![CDATA[
         mkdir '$output_shapefile.extra_files_path' &&
-        python -c "import fiona; shape = fiona.open('$input.extra_files_path/shapefile.shp'); print(shape.schema)" > '$output' &&
+        python '$dbf_fields' '$input.extra_files_path/shapefile.dbf' > '$output' &&
         cp '$input.extra_files_path'/* '$output_shapefile.extra_files_path'
     ]]>
     </command>
+    <configfiles>
+        <configfile name="dbf_fields">import sys
+
+with open(sys.argv[1], "rb") as fh:
+    fh.read(32)
+    while True:
+        descriptor = fh.read(32)
+        if not descriptor or descriptor[0] == 0x0D:
+            break
+        name = descriptor[:11].split(b"\x00")[0].decode()
+        print(name, chr(descriptor[11]), descriptor[16])
+</configfile>
+    </configfiles>
     <inputs>
         <param name="input" type="data" format="shp" label="Shapefile" help="Used in GIS applications"/>
     </inputs>
@@ -25,7 +35,11 @@
             </param>
             <output name="output">
                 <assert_contents>
-                    <has_text text="{'properties': OrderedDict([('FIPS', 'str:2'), ('ISO2', 'str:2'), ('ISO3', 'str:3'), ('UN', 'int:3')," />
+                    <has_n_lines n="11" />
+                    <has_line line="FIPS C 2" />
+                    <has_line line="ISO2 C 2" />
+                    <has_line line="ISO3 C 3" />
+                    <has_line line="UN N 3" />
                 </assert_contents>
             </output>
             <output name="output_shapefile" file="shapefile/output.html">
