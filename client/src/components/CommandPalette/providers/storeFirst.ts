@@ -119,7 +119,7 @@ export async function rootListItems(
     if (own && !options.localOnly) {
         await hydrateOnce(own);
     }
-    const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.rootOwn, { cacheOnly: true }) : [];
+    const ownItems = own ? await storeFirstItems(own, query, PALETTE_LIMITS.section, { cacheOnly: true }) : [];
     const merged = dedupePaletteItemsByEntity([ownItems, ...(await listed)].flat());
     return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.section);
 }

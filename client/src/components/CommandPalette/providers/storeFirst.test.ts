@@ -150,6 +150,16 @@ describe("rootListItems", () => {
         expect(items).toHaveLength(PALETTE_LIMITS.section);
     });
 
+    it("fills the section with own rows when the listings find nothing", async () => {
+        const own = fakeList();
+        await own.fetchListing();
+        own.cachedItems = () => Array.from({ length: 10 }, (_, index) => row(`own${index}`, `alpine ${index}`));
+
+        const items = await rootListItems("alp", own, [async () => []]);
+
+        expect(items).toHaveLength(PALETTE_LIMITS.section);
+    });
+
     it("skips the listing searches and the hydration for a short or local-only query", async () => {
         const listing = vi.fn(async () => [REMOTE]);
         const own = fakeList();
