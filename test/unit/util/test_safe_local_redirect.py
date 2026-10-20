@@ -62,6 +62,7 @@ def test_empty_and_non_string_values_are_refused(path):
     assert is_safe_local_redirect(path) is False
 
 
+# Keep these vectors in step with client/src/utils/redirect.test.ts, which checks safeLoginRedirect.
 ALLOWED_HOSTS = ["tools.example.org", "data.example.org:8443", "[2001:db8::1]"]
 
 
@@ -85,6 +86,9 @@ def test_allowlisted_hosts_are_safe_login_redirects(target):
         "https://evil.example.com/",
         "https://tools.example.org.evil.com/",
         "https://eviltools.example.org/",
+        # spellings a browser normalizes to an allowed host
+        "https://tools\uff0eexample\uff0eorg/",
+        "https://tools%2eexample.org/",
         "https://tools.example.org:8443/",
         "https://data.example.org/",
         "http://tools.example.org/",

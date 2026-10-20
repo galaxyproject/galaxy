@@ -63,38 +63,40 @@ describe("safeRedirectPath", () => {
 });
 
 describe("safeLoginRedirect", () => {
-    const allowedHosts = ["tools.example.org", "data.example.org:8443"];
+    // Keep in step with test/unit/util/test_safe_local_redirect.py, which checks the server side.
+    const allowedHosts = ["tools.example.org", "data.example.org:8443", "[2001:db8::1]"];
 
-    it("accepts https URLs on allowed hosts", () => {
-        for (const target of [
-            "https://tools.example.org/landing",
-            "https://TOOLS.example.org/landing",
-            "https://tools.example.org:443/landing",
-            "https://data.example.org:8443/back",
-        ]) {
-            expect(safeLoginRedirect(target, allowedHosts)).toEqual(target);
-        }
+    it.each([
+        "https://tools.example.org/landing",
+        "https://TOOLS.example.org/landing",
+        "https://tools.example.org:443/landing",
+        "https://data.example.org:8443/back",
+        "https://[2001:db8::1]/back",
+    ])("accepts %s", (target) => {
+        expect(safeLoginRedirect(target, allowedHosts)).toEqual(target);
     });
 
-    it("refuses other hosts and URLs parsers disagree about", () => {
-        for (const target of [
-            "https://evil.example.com/",
-            "https://tools.example.org.evil.com/",
-            "https://tools\uFF0Eexample\uFF0Eorg/",
-            "https://tools%2eexample.org/",
-            "https://tools.example.org:8443/",
-            "https://data.example.org/",
-            "http://tools.example.org/",
-            "https:tools.example.org",
-            "https://tools.example.org@evil.com/",
-            "https://user:pass@tools.example.org/",
-            "https://evil.com\\@tools.example.org/",
-            "https://evil.com#@tools.example.org",
-            "https://tools.example.org/\tpath",
-            " https://tools.example.org/",
-        ]) {
-            expect(safeLoginRedirect(target, allowedHosts)).toBeUndefined();
-        }
+    it.each([
+        "https://evil.example.com/",
+        "https://tools.example.org.evil.com/",
+        "https://eviltools.example.org/",
+        "https://tools\uFF0Eexample\uFF0Eorg/",
+        "https://tools%2eexample.org/",
+        "https://tools.example.org:8443/",
+        "https://data.example.org/",
+        "http://tools.example.org/",
+        "https:tools.example.org",
+        "https:///tools.example.org",
+        "https://tools.example.org@evil.com/",
+        "https://user:pass@tools.example.org/",
+        "https://evil.com\\@tools.example.org/",
+        "https://tools.example.org\\.evil.com/",
+        "https://evil.com#@tools.example.org",
+        "https://tools.example.org:notaport/",
+        "https://tools.example.org/\tpath",
+        " https://tools.example.org/",
+    ])("refuses %j", (target) => {
+        expect(safeLoginRedirect(target, allowedHosts)).toBeUndefined();
     });
 
     it("refuses external URLs without allowed hosts", () => {
