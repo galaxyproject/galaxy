@@ -1950,6 +1950,26 @@ class MinimalJobWrapper(HasResourceParameters):
                     working_directory,
                 )
 
+    def _validated_stored_preferred_object_store_id(
+        self, user, object_store_id: str | None, owner_type: str, owner_id: int
+    ) -> str | None:
+        # Preferences stored on users and histories are validated when they are set,
+        # but the object store configuration may have changed since (e.g. a backend
+        # no longer allows selection), so ignore stale preferences here.
+        if object_store_id is None:
+            return None
+        validation_error = self.app.object_store.validate_selected_object_store_id(user, object_store_id)
+        if validation_error:
+            log.warning(
+                "Ignoring preferred object store id '%s' of %s %s: %s",
+                object_store_id,
+                owner_type,
+                owner_id,
+                validation_error,
+            )
+            return None
+        return object_store_id
+
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
@@ -2004,10 +2024,14 @@ class MinimalJobWrapper(HasResourceParameters):
         if object_store_id is None:
             history = job.history
             if history is not None:
-                object_store_id = history.preferred_object_store_id
+                object_store_id = self._validated_stored_preferred_object_store_id(
+                    user, history.preferred_object_store_id, "history", history.id
+                )
         if object_store_id is None:
             if user is not None:
-                object_store_id = user.preferred_object_store_id
+                object_store_id = self._validated_stored_preferred_object_store_id(
+                    user, user.preferred_object_store_id, "user", user.id
+                )
 
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
         if split_object_stores is None:
