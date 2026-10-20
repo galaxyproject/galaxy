@@ -1,0 +1,49 @@
+{
+  "class": "GalaxyUserTool",
+  "id": "gx_user_boolean_conditional",
+  "name": "gx_user_boolean_conditional",
+  "version": "1.0.0",
+  "container": "busybox",
+  "shell_command": "printf '%s\\n' '$({choice: inputs.choice.flag ? {flag: inputs.choice.flag, yes: inputs.choice.yes} : {flag: inputs.choice.flag, no: inputs.choice.no}})' > output.json",
+  "inputs": [
+    {
+      "name": "choice",
+      "type": "conditional",
+      "test_parameter": {
+        "name": "flag",
+        "type": "boolean",
+        "value": true
+      },
+      "whens": [
+        {
+          "discriminator": true,
+          "parameters": [
+            {
+              "name": "yes",
+              "type": "text",
+              "value": "true branch"
+            }
+          ]
+        },
+        {
+          "discriminator": false,
+          "parameters": [
+            {
+              "name": "no",
+              "type": "text",
+              "value": "false branch"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output",
+      "type": "data",
+      "format": "json",
+      "from_work_dir": "output.json"
+    }
+  ]
+}
