@@ -84,10 +84,12 @@ class TestDataToolParameter(BaseParameterTestCase):
     def test_field_display_every_batch_value(self):
         hda1 = self._new_hda(name="hda1")
         hda2 = self._new_hda(name="hda2")
-        hda1.visible = False
-        hda2.visible = False
+        for hda in (hda1, hda2):
+            hda.visible = False
+            hda.history = self.test_history
+        self.app.model.context.commit()
         self.stub_active_datasets(hda1, hda2)
-        # from_json resolves ids through trans, so it must share the test's app.
+        # Batch values load through trans, so it must share the test's app.
         self.trans = galaxy_mock.MockTrans(app=self.app, history=self.test_history)
         batch = {
             "batch": True,

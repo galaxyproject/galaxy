@@ -67,8 +67,12 @@ def populate_model(
                 test_param["text_value"] = input.test_param.value_to_display_text(test_param["value"])
                 for i in range(len(tool_dict["cases"])):
                     current_state = {}
+                    case_incoming = None
                     if i == group_state.get("__current_case__"):
                         current_state = group_state
+                        # Cases often share param names, so only the active
+                        # case may read the request's batch values.
+                        case_incoming = incoming
                     populate_model(
                         request_context,
                         input.cases[i].inputs,
@@ -77,7 +81,7 @@ def populate_model(
                         other_values,
                         options_pagination=options_pagination,
                         name_prefix=f"{full_name}|",
-                        incoming=incoming,
+                        incoming=case_incoming,
                     )
         elif input.type == "section":
             tool_dict = input.to_dict(request_context)

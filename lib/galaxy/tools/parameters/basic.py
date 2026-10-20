@@ -23,6 +23,12 @@ from typing import (
 )
 
 from packaging.version import Version
+from sqlalchemy import (
+    false,
+    or_,
+    select,
+)
+from sqlalchemy.orm import contains_eager
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
@@ -37,6 +43,7 @@ from galaxy.model import (
     DatasetHash,
     DatasetInstance,
     DatasetSource,
+    History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
@@ -107,10 +114,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
     from galaxy.managers.context import ProvidesHistoryContext
-    from galaxy.model import (
-        History,
-        HistoryItem,
-    )
+    from galaxy.model import HistoryItem
     from galaxy.security.idencoding import IdEncodingHelper
     from galaxy.structured_app import MinimalApp
     from galaxy.tools import Tool
@@ -1869,6 +1873,54 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return d
 
 
+_BATCH_LABEL_SRCS = ("hda", "hdca")
+
+
+def _src_of(item) -> Optional[str]:
+    if isinstance(item, HistoryDatasetAssociation):
+        return "hda"
+    if isinstance(item, HistoryDatasetCollectionAssociation):
+        return "hdca"
+    return None
+
+
+def _load_owned_items(trans, history, keys: list[tuple[str, int]]) -> dict[tuple[str, int], Any]:
+    """Load usable HDAs/HDCAs by id in one query each, limited to the
+    current history and the user's own histories."""
+    owned = History.id == history.id
+    if trans.user is not None:
+        owned = or_(owned, History.user_id == trans.user.id)
+    loaded: dict[tuple[str, int], Any] = {}
+    if hda_ids := [item_id for src, item_id in keys if src == "hda"]:
+        hda_stmt = (
+            select(HistoryDatasetAssociation)
+            .join(History, HistoryDatasetAssociation.history_id == History.id)
+            .join(Dataset, HistoryDatasetAssociation.dataset_id == Dataset.id)
+            .where(
+                HistoryDatasetAssociation.id.in_(hda_ids),
+                HistoryDatasetAssociation.deleted == false(),
+                Dataset.state.not_in([Dataset.states.ERROR, Dataset.states.DISCARDED]),
+                owned,
+            )
+            .options(contains_eager(HistoryDatasetAssociation.dataset))
+        )
+        for hda in trans.sa_session.scalars(hda_stmt):
+            loaded[("hda", hda.id)] = hda
+    if hdca_ids := [item_id for src, item_id in keys if src == "hdca"]:
+        hdca_stmt = (
+            select(HistoryDatasetCollectionAssociation)
+            .join(History, HistoryDatasetCollectionAssociation.history_id == History.id)
+            .where(
+                HistoryDatasetCollectionAssociation.id.in_(hdca_ids),
+                HistoryDatasetCollectionAssociation.deleted == false(),
+                owned,
+            )
+        )
+        for hdca in trans.sa_session.scalars(hdca_stmt):
+            loaded[("hdca", hdca.id)] = hdca
+    return loaded
+
+
 def _carried_state_label(value) -> str:
     """Reason a rerun input cannot be naturally selected in this history.
     Stable string surfaced to the client as the entry name prefix.
@@ -2609,12 +2661,12 @@ class DataToolParameter(BaseDataToolParameter):
         # carry-over `options` entries (deleted/hidden/foreign-history items,
         # DCEs, LDDAs) — clients rely on this to pre-select the rerun input
         # regardless of pagination state.
-        job_input_values = self._selected_values(trans, other_values, incoming_value)
+        selected_values = self._selected_values(trans, history, other_values, incoming_value)
 
-        job_input_values = self._page_hda_matches(
-            trans, builder, history, dataset_matcher, dataset_matcher_factory, job_input_values
+        selected_values = self._page_hda_matches(
+            trans, builder, history, dataset_matcher, dataset_matcher_factory, selected_values
         )
-        unresolved = self._pin_live_hda_inputs(builder, history, dataset_matcher, job_input_values)
+        unresolved = self._pin_live_hda_inputs(builder, history, dataset_matcher, selected_values)
         self._carry_unresolved_inputs(builder, history, unresolved)
         self._page_hdca_matches(
             builder,
@@ -2626,21 +2678,33 @@ class DataToolParameter(BaseDataToolParameter):
         builder.sort_by_hid()
         return d
 
-    def _selected_values(self, trans, other_values, incoming_value) -> list:
+    def _selected_values(self, trans, history, other_values, incoming_value) -> list:
         """Selected values from the form state, plus the later values of a
-        batch selection (the state keeps only the first)."""
+        batch selection (the state keeps only the first).
+
+        The later values only need a label, so they are bulk loaded rather
+        than validated one by one through ``from_json``.
+        """
         selected = list(util.listify(other_values.get(self.name)))
-        if not (isinstance(incoming_value, MutableMapping) and incoming_value.get("batch")):
+        # A multiple parameter's state already holds every batch value.
+        if self.multiple or not (isinstance(incoming_value, MutableMapping) and incoming_value.get("batch")):
             return selected
+        selected_keys = {(_src_of(item), getattr(item, "id", None)) for item in selected}
+        batch_keys: list[tuple[str, int]] = []
         for value in incoming_value.get("values") or []:
-            try:
-                resolved = util.listify(self.from_json(value, trans, other_values))
-            except (ValueError, MalformedId):
+            if not isinstance(value, MutableMapping) or value.get("src") not in _BATCH_LABEL_SRCS:
                 continue
-            for item in resolved:
-                if item not in selected:
-                    selected.append(item)
-        return selected
+            try:
+                id_value = value["id"]
+                decoded_id = id_value if isinstance(id_value, int) else trans.security.decode_id(id_value)
+                key = (value["src"], decoded_id)
+            except (KeyError, ValueError, MalformedId):
+                continue
+            if key not in selected_keys:
+                selected_keys.add(key)
+                batch_keys.append(key)
+        loaded = _load_owned_items(trans, history, batch_keys)
+        return selected + [loaded[key] for key in batch_keys if key in loaded]
 
     def _fill_to_dict_static(self, d: dict) -> None:
         """Populate the non-history-dependent fields of the ``to_dict`` response
@@ -2669,11 +2733,11 @@ class DataToolParameter(BaseDataToolParameter):
         history,
         dataset_matcher,
         dataset_matcher_factory,
-        job_input_values: list,
+        selected_values: list,
     ) -> list:
         """Emit one page of matching HDAs into ``builder.options['hda']``.
 
-        Returns ``job_input_values`` with the matched HDAs removed so the
+        Returns ``selected_values`` with the matched HDAs removed so the
         caller does not double-add them via the pinned/carried paths.
         """
         _hda_offset, _hda_limit, hda_search = builder.page("hda")
@@ -2701,14 +2765,14 @@ class DataToolParameter(BaseDataToolParameter):
         )
 
         # Dedup implicit conversions by HID; also consume matched HDAs from
-        # ``job_input_values`` so they aren't double-added via pinned.
+        # ``selected_values`` so they aren't double-added via pinned.
         # ``HdaDirectMatch`` has no ``original_hda``; ``getattr`` falls back
         # to the matched HDA itself for direct matches.
         matches_by_hid: dict[int, list] = {}
         for match in page_matches:
             m = match.hda
             original = getattr(match, "original_hda", m)
-            job_input_values = [h for h in job_input_values if h != m and h != original]
+            selected_values = [h for h in selected_values if h != m and h != original]
             matches_by_hid.setdefault(m.hid, []).append(match)
 
         for matches in matches_by_hid.values():
@@ -2721,10 +2785,10 @@ class DataToolParameter(BaseDataToolParameter):
             )
             builder.options["hda"].append(make_hda_entry(builder.security, match.hda, m_name))
 
-        return job_input_values
+        return selected_values
 
     def _pin_live_hda_inputs(
-        self, builder: DataOptionsBuilder, history, dataset_matcher, job_input_values: list
+        self, builder: DataOptionsBuilder, history, dataset_matcher, selected_values: list
     ) -> list:
         """Pin selected HDAs that still live in this history but landed
         outside the current page window. Returns the inputs that did not pin
@@ -2732,7 +2796,7 @@ class DataToolParameter(BaseDataToolParameter):
         the carry-forward step.
         """
         unresolved: list = []
-        for value in job_input_values:
+        for value in selected_values:
             if (
                 isinstance(value, HistoryDatasetAssociation)
                 and value.history_id == history.id
