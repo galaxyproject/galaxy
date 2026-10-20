@@ -2134,12 +2134,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def tool_form_wait_for_batch_info(self, parameter: str, text: str) -> str:
         batch_info = self.components.tool_form.parameter_batch_info(parameter=parameter)
-        self._wait_on(
-            ec.text_to_be_present_in_element(batch_info.element_locator, text),
+
+        def batch_info_with_text(driver=None):
+            # the inline help link can render on its own line, collapse whitespace
+            info = " ".join(batch_info.wait_for_text().split())
+            return info if text in info else None
+
+        return self._wait_on_custom(
+            batch_info_with_text,
             f"batch info of parameter [{parameter}] to contain [{text}]",
         )
-        # the inline help link can render on its own line, collapse whitespace
-        return " ".join(batch_info.wait_for_text().split())
 
     def click_activity_workflow(self):
         self.components.workflows.activity.wait_for_and_click()
