@@ -1001,7 +1001,9 @@ def _populate_store_inline_unlocked(
                 for tool_id, version in superseded:
                     index.remove_version(tool_id, version, keep_placements=tool_id in rebuilt_ids)
             for entry in new_entries:
-                index.add_entry(entry, new_placements_first=not full_scan)
+                # A rescan is the newer truth for its files; only a full
+                # scan's own twins defer to a configured entry.
+                index.add_entry(entry, new_placements_first=not full_scan, supersede=not full_scan)
             if full_scan and previous_index is not None and previous_index.panel_items:
                 # The placements list is the panel's ordering memory — the
                 # role integrated_tool_panel.xml plays for the eager toolbox.

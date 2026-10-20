@@ -384,9 +384,10 @@ class SqlAlchemyToolSourceStore(ToolSourceStore):
         index = self.load_index() or ToolIndex()
         # add_entry keeps every index projection in step. Entry writes are runtime
         # additions (a shed install, a self-heal), so a new placement goes
-        # to the head of its section like the eager runtime insert does.
+        # to the head of its section like the eager runtime insert does, and
+        # the written entry replaces whatever its id/version slot held.
         for entry in entries:
-            index.add_entry(entry, new_placements_first=True)
+            index.add_entry(entry, new_placements_first=True, supersede=True)
         self.store_index(index)
 
     def invalidate_index_cache(self) -> None:
