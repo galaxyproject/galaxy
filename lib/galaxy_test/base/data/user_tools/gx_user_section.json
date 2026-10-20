@@ -1,0 +1,29 @@
+{
+  "class": "GalaxyUserTool",
+  "id": "gx_user_section",
+  "name": "gx_user_section",
+  "version": "1.0.0",
+  "container": "busybox",
+  "shell_command": "printf '%s\\n' '$(inputs)' > output.json",
+  "inputs": [
+    {
+      "name": "group",
+      "type": "section",
+      "parameters": [
+        {
+          "name": "count",
+          "type": "integer",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output",
+      "type": "data",
+      "format": "json",
+      "from_work_dir": "output.json"
+    }
+  ]
+}

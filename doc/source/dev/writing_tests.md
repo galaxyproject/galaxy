@@ -665,6 +665,7 @@ Key fixtures:
 | ``history_id`` | function | Fresh history per test |
 | ``target_history`` | function | Fluent API for test data |
 | ``required_tool`` | function | Tool fixture from markers |
+| ``user_tool`` | function | User tool from an indirect YAML/JSON path or mapping |
 
 Interactor fixtures are function scoped because creating one mints a new API key
 for the test user, which invalidates keys held by earlier interactors.
