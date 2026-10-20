@@ -169,6 +169,11 @@ class RemoteUser:
                 "/user/logout",
                 "/user/toolbox_filters",
                 "/user/set_default_permissions",
+                # client-side User Preferences pages, so a reload or a direct link does not hit the error page
+                "/user/credentials",
+                "/user/external_ids",
+                "/user/notifications",
+                "/user/permissions",
             )
 
             admin_accessible_paths = (
