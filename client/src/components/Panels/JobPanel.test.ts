@@ -2,20 +2,44 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 import type { ShowFullJobResponse } from "@/api/jobs";
-import { useJobStore } from "@/stores/jobStore";
+import { MAX_CACHED_JOBS, useJobStore } from "@/stores/jobStore";
 import { useUserStore } from "@/stores/userStore";
 
 import JobPanel from "./JobPanel.vue";
 
 const { server, http } = useServerMock();
 
-const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
+const router = injectTestRouter(getLocalVue());
+
+// Default handler for tests that don't care about pagination; the scroll-cap test below
+// overrides it with its own, since the most recently registered handler wins.
+server.use(
+    http.get("/api/jobs", ({ response }) => {
+        return response(200).json([]);
+    }),
+);
+
+/** The infinite scroll callback `ScrollList` registers on mount, captured so tests can
+ * trigger additional pages without a real scroll event (same technique as ScrollList.test.ts). */
+let loadMore: (() => void) | null = null;
+
+vi.mock("@vueuse/core", async () => ({
+    ...(await vi.importActual("@vueuse/core")),
+    useInfiniteScroll: vi.fn((_element, callback) => {
+        loadMore = callback;
+        return {};
+    }),
+}));
+
+/** Mocks a single scroll-to-bottom event that triggers `ScrollList` to load its next page. */
+async function scrollOnce() {
+    loadMore?.();
+    await flushPromises();
+}
 
 function buildJob(overrides: Partial<ShowFullJobResponse> = {}): ShowFullJobResponse {
     return {
@@ -34,26 +58,18 @@ function buildJob(overrides: Partial<ShowFullJobResponse> = {}): ShowFullJobResp
 }
 
 describe("JobPanel", () => {
-    let wrapper: VueWrapper;
-
-    beforeEach(() => {
-        setActivePinia(createPinia());
-        server.use(
-            http.get("/api/jobs", ({ response }) => {
-                return response(200).json([]);
-            }),
-        );
-
-        const userStore = useUserStore();
-        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser", email: "fake_user_email" });
-
-        wrapper = mount(JobPanel as object, {
-            localVue,
-            router,
-        });
-    });
+    /** Mounts `JobPanel` against a fresh store/user, so each test gets its own isolated state
+     * instead of sharing one `beforeEach`-mounted instance. `getLocalVue()` creates and activates
+     * its own Pinia instance, so it must run before `useUserStore()` below -- otherwise the store
+     * it sets state on isn't the one `mount()` ends up using. */
+    function mountJobPanel(): VueWrapper {
+        const localVue = getLocalVue();
+        useUserStore().currentUser = getFakeRegisteredUser({ id: "fakeUser", email: "fake_user_email" });
+        return mount(JobPanel as object, { localVue, router });
+    }
 
     it("shows a job that lands in jobStore via another view while no filter is active", async () => {
+        const wrapper = mountJobPanel();
         await flushPromises();
 
         const jobStore = useJobStore();
@@ -64,6 +80,7 @@ describe("JobPanel", () => {
     });
 
     it("does not show a job belonging to another user (by user_id)", async () => {
+        const wrapper = mountJobPanel();
         await flushPromises();
 
         const jobStore = useJobStore();
@@ -74,6 +91,7 @@ describe("JobPanel", () => {
     });
 
     it("does not show a job belonging to another user (by user_email)", async () => {
+        const wrapper = mountJobPanel();
         await flushPromises();
 
         const jobStore = useJobStore();
@@ -84,6 +102,7 @@ describe("JobPanel", () => {
     });
 
     it("shows a job with no owner information (the common, non-admin case)", async () => {
+        const wrapper = mountJobPanel();
         await flushPromises();
 
         const jobStore = useJobStore();
@@ -91,5 +110,38 @@ describe("JobPanel", () => {
         await flushPromises();
 
         expect(wrapper.text()).toContain("cat1");
+    });
+
+    it("keeps showing more jobs once scrolling has loaded past jobStore's cache cap", async () => {
+        // Pages through a pool larger than MAX_CACHED_JOBS, so later pages' `updateJob` calls
+        // would evict earlier pages' jobs from the store if the panel didn't retain them
+        // (see `addCurrentJob`).
+        const PAGE_SIZE = 20;
+        const TOTAL_JOBS = MAX_CACHED_JOBS + PAGE_SIZE;
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                const url = new URL(request.url);
+                const offset = Number(url.searchParams.get("offset") ?? "0");
+                const limit = Number(url.searchParams.get("limit") ?? `${PAGE_SIZE}`);
+                const jobs = Array.from({ length: Math.min(limit, TOTAL_JOBS - offset) }, (_, i) =>
+                    buildJob({
+                        id: `job${offset + i}`,
+                        update_time: `2024-01-01T00:${String(offset + i).padStart(2, "0")}:00`,
+                    }),
+                );
+                return response(200).json(jobs, { headers: { total_matches: `${TOTAL_JOBS}` } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+
+        // Scroll enough times to load every job in the pool.
+        for (let i = 0; i < TOTAL_JOBS / PAGE_SIZE; i++) {
+            await scrollOnce();
+        }
+
+        expect(wrapper.text()).toContain("All jobs loaded");
+        expect(wrapper.findAll(".job-card-title-text").length).toBe(TOTAL_JOBS);
     });
 });
