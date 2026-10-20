@@ -2,6 +2,7 @@ import re
 
 from playwright.sync_api import expect
 
+from galaxy_test.base.api_util import random_name
 from ..base.playwrighttestcase import PlaywrightTestCase
 
 TEST_CATEGORY_PREFIX = "guitestcategory"
@@ -160,19 +161,23 @@ class TestFrontendRepositories(PlaywrightTestCase):
         self.screenshot("repository_latest_revision_readme")
 
     def test_repository_page_categories_clone_command_and_shed_yml(self):
-        category = self.populator.new_category(prefix=TEST_CATEGORY_PREFIX)
-        repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX, category_id=category.id)
+        # Created out of alphabetical order, as the page lists them by name
+        name_base = random_name(prefix=TEST_CATEGORY_PREFIX)
+        beta = self.populator.new_category(name=f"{name_base} Beta")
+        alpha = self.populator.new_category(name=f"{name_base} Alpha")
+        repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX, category_id=[beta.id, alpha.id])
         self.visit_url(f"/repositories/{repository.id}")
         page = self._page
 
         clone_url = f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
         expect(page.locator(".repository-link code")).to_have_text(f"hg clone {clone_url}")
-        shed_yml = page.locator(".config-file-contents").filter(has_text=".shed.yml").locator("pre")
         # Category names come from a separate fetch, so wait on them rather than reading the text once
-        expect(shed_yml).to_contain_text(f"categories:\n- {category.name}")
+        expect(page.locator(".repository-category")).to_have_text([alpha.name, beta.name])
+        shed_yml = page.locator(".config-file-contents").filter(has_text=".shed.yml").locator("pre")
+        expect(shed_yml).to_contain_text(f"categories:\n- {alpha.name}\n- {beta.name}")
         assert f"name: {repository.name}\nowner: {repository.owner}\n" in shed_yml.inner_text()
         shed_yml.scroll_into_view_if_needed()
         self.screenshot("repository_categories_and_shed_yml")
 
-        page.locator(".repository-category").filter(has_text=category.name).click()
-        expect(page).to_have_url(re.compile(f"/repositories_by_category/{category.id}$"))
+        page.locator(".repository-category").filter(has_text=beta.name).click()
+        expect(page).to_have_url(re.compile(f"/repositories_by_category/{beta.id}$"))
