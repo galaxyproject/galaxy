@@ -8,6 +8,7 @@ import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useDatasetStore } from "@/stores/datasetStore";
 
 import DatasetView from "./DatasetView.vue";
 
@@ -334,6 +335,41 @@ describe("DatasetView", () => {
             expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);
             expect(wrapper.find("iframe").exists()).toBe(true);
             expect(wrapper.find("iframe").attributes("src")).toBe(`/datasets/${DATASET_ID}/display/?preview=true`);
+        });
+    });
+
+    describe("Background refresh", () => {
+        it("shows a dataset that is already stored when switching to it", async () => {
+            const wrapper = await mountDatasetView("preview");
+            const otherDataset = { ...mockDataset, id: "other_dataset_id", name: "Other Dataset" };
+            useDatasetStore().saveDatasets([{ ...otherDataset, history_content_type: "dataset" }]);
+
+            await wrapper.setProps({ datasetId: otherDataset.id });
+            await flushPromises();
+            expect(wrapper.find(".dataset-view").exists()).toBe(true);
+            expect(wrapper.find(".dataset-view").text()).toContain("Other Dataset");
+        });
+
+        it("waits for datatype details on the first load", async () => {
+            let releaseDatatype;
+            const datatypeReleased = new Promise((resolve) => {
+                releaseDatatype = resolve;
+            });
+            server.use(
+                http.get("/api/datatypes/:datatype", async ({ response }) => {
+                    await datatypeReleased;
+                    return response(200).json({ extension: "downloadonly", display_behavior: "download" });
+                }),
+            );
+            const wrapper = await mountDatasetView("preview", {
+                dataset: { ...mockDataset, file_ext: "downloadonly" },
+            });
+            expect(wrapper.find(".loading-message").exists()).toBe(true);
+            expect(wrapper.find(".dataset-view").exists()).toBe(false);
+
+            releaseDatatype();
+            await flushPromises();
+            expect(wrapper.find(".auto-download-message").exists()).toBe(true);
         });
     });
 
