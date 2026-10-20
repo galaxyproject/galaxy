@@ -3,8 +3,10 @@ import re
 from playwright.sync_api import expect
 
 from galaxy_test.base.api_util import random_name
+from tool_shed_client.schema import UpdateRepositoryRequest
 from ..base.playwrightbrowser import Locators
 from ..base.playwrighttestcase import PlaywrightTestCase
+from ..base.populators import COLUMN_MAKER_PATH
 
 TEST_CATEGORY_PREFIX = "guitestcategory"
 TEST_REPO_PREFIX = "guitestcolumnmaker"
@@ -167,6 +169,7 @@ class TestFrontendRepositories(PlaywrightTestCase):
         beta = self.populator.new_category(name=f"{name_base} Beta")
         alpha = self.populator.new_category(name=f"{name_base} Alpha")
         repository = self.populator.new_repository([beta.id, alpha.id], prefix=TEST_REPO_PREFIX)
+        assert self.populator.upload_revision(repository, COLUMN_MAKER_PATH).is_ok
         self.visit_url(f"/repositories/{repository.id}")
         page = self._page
 
@@ -191,3 +194,16 @@ class TestFrontendRepositories(PlaywrightTestCase):
 
         categories.filter(has_text=beta.name).click()
         expect(page).to_have_url(re.compile(f"/repositories_by_category/{beta.id}$"))
+
+    def test_repository_aside_end_reachable_on_long_page(self):
+        repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX)
+        long_description = "A long description that runs well past the window. " * 600
+        self.populator.update(repository, UpdateRepositoryRequest(description=long_description))
+        self.visit_url(f"/repositories/{repository.id}")
+        page = self._page
+
+        clone_command = page.locator(Locators.repository_link_command)
+        expect(clone_command).to_be_attached()
+        # Halfway down, a sticky aside taller than the window must still show its last card
+        page.evaluate("window.scrollTo(0, (document.body.scrollHeight - window.innerHeight) / 2)")
+        expect(clone_command).to_be_in_viewport()
