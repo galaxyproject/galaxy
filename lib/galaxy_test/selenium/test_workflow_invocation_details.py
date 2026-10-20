@@ -265,3 +265,33 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
 
         assert_other_node_selected()
         self.screenshot("invocation_mapped_job_changed_node")
+
+    @selenium_test
+    @managed_history
+    def test_step_url_scrolls_steps_list(self):
+        """A step URL on the Steps tab scrolls a step far down the list into view."""
+        steps = {}
+        previous = "input1"
+        for index in range(25):
+            steps[f"cat_{index}"] = {"tool_id": "cat", "in": {"input1": previous}}
+            previous = f"cat_{index}/out_file1"
+        workflow = {"class": "GalaxyWorkflow", "inputs": {"input1": "data"}, "steps": steps}
+        summary = self.workflow_populator.run_workflow(
+            yaml.safe_dump(workflow),
+            test_data={"input1": {"value": "1.bed", "type": "File"}},
+            history_id=self.current_history_id(),
+            wait=False,
+        )
+        self.get(f"workflows/invocations/{summary.invocation_id}/steps?step_number=26")
+        last_step = self.components.invocations.step_title(order_index="25")
+
+        @retry_assertion_during_transitions
+        def assert_last_step_in_view():
+            top, bottom = self.execute_script(
+                "const r = arguments[0].getBoundingClientRect(); return [r.top, window.innerHeight];",
+                last_step.wait_for_visible(),
+            )
+            assert 0 <= top < bottom, (top, bottom)
+
+        assert_last_step_in_view()
+        self.screenshot("invocation_steps_url_scrolled")
