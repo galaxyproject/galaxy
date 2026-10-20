@@ -166,7 +166,7 @@ class TestFrontendRepositories(PlaywrightTestCase):
         name_base = random_name(prefix=TEST_CATEGORY_PREFIX)
         beta = self.populator.new_category(name=f"{name_base} Beta")
         alpha = self.populator.new_category(name=f"{name_base} Alpha")
-        repository = self.populator.setup_column_maker_repo(prefix=TEST_REPO_PREFIX, category_id=[beta.id, alpha.id])
+        repository = self.populator.new_repository([beta.id, alpha.id], prefix=TEST_REPO_PREFIX)
         self.visit_url(f"/repositories/{repository.id}")
         page = self._page
 
