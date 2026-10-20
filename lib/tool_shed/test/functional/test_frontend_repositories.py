@@ -3,6 +3,7 @@ import re
 from playwright.sync_api import expect
 
 from galaxy_test.base.api_util import random_name
+from ..base.playwrightbrowser import Locators
 from ..base.playwrighttestcase import PlaywrightTestCase
 
 TEST_CATEGORY_PREFIX = "guitestcategory"
@@ -170,14 +171,24 @@ class TestFrontendRepositories(PlaywrightTestCase):
         page = self._page
 
         clone_url = f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
-        expect(page.locator(".repository-link code")).to_have_text(f"hg clone {clone_url}")
+        clone_command = page.locator(Locators.repository_link_command)
+        expect(clone_command).to_have_text(f"hg clone {clone_url}")
         # Category names come from a separate fetch, so wait on them rather than reading the text once
-        expect(page.locator(".repository-category")).to_have_text([alpha.name, beta.name])
-        shed_yml = page.locator(".config-file-contents").filter(has_text=".shed.yml").locator("pre")
-        expect(shed_yml).to_contain_text(f"categories:\n- {alpha.name}\n- {beta.name}")
-        assert f"name: {repository.name}\nowner: {repository.owner}\n" in shed_yml.inner_text()
-        shed_yml.scroll_into_view_if_needed()
-        self.screenshot("repository_categories_and_shed_yml")
+        categories = page.locator(Locators.repository_category)
+        expect(categories).to_have_text([alpha.name, beta.name])
+        shed_yml = (
+            page.locator(Locators.config_file_contents)
+            .filter(has=page.locator(Locators.config_file_contents_name, has_text=".shed.yml"))
+            .locator(Locators.config_file_contents_body)
+        )
+        expect(shed_yml).to_contain_text(f"categories: - {alpha.name} - {beta.name}")
+        # to_contain_text collapses whitespace, so check the YAML lines on the settled text
+        shed_yml_text = shed_yml.inner_text()
+        assert f"name: {repository.name}\nowner: {repository.owner}\n" in shed_yml_text
+        assert f"categories:\n- {alpha.name}\n- {beta.name}" in shed_yml_text
+        # The clone command ends the sticky aside; on this short page, scrolling to it shows all three
+        clone_command.scroll_into_view_if_needed()
+        self.screenshot("repository_categories_clone_command_and_shed_yml")
 
-        page.locator(".repository-category").filter(has_text=beta.name).click()
+        categories.filter(has_text=beta.name).click()
         expect(page).to_have_url(re.compile(f"/repositories_by_category/{beta.id}$"))
