@@ -1,5 +1,6 @@
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -637,7 +638,7 @@ DiscriminatedAnyValidatorModel = TypeAdapter(AnyValidatorModel)  # type: ignore[
 DiscriminatedAnySafeValidatorModel = TypeAdapter(AnySafeValidatorModel)  # type: ignore[var-annotated]
 
 # Validator types that apply to each tool parameter type; types not listed are not checked.
-PARAMETER_VALIDATOR_TYPE_COMPATIBILITY: dict[str, list[ValidatorType]] = {
+PARAMETER_VALIDATOR_TYPE_COMPATIBILITY: Dict[str, List[ValidatorType]] = {
     "integer": ["in_range", "expression"],
     "float": ["in_range", "expression"],
     "data": [
