@@ -62,11 +62,18 @@ class TestCustomTools(SeleniumTestCase):
 
     def save_tool(self) -> str:
         self.components.custom_tools.save_button.wait_for_and_click()
-        # Wait for save operation to complete
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        # Verify save was successful
-        current_url = self.driver.current_url
-        return current_url.split("/tools/editor/")[1]
+
+        # The editor rewrites its route to carry the new tool's UUID once the save
+        # round-trip lands, and that URL is the test's only handle on the id.
+        def saved_tool_uuid(driver=None):
+            _, _, uuid = self.current_url.partition("/tools/editor/")
+            return uuid or None
+
+        return self._wait_on_custom(
+            saved_tool_uuid,
+            "custom tool editor URL to carry the saved tool UUID",
+            wait_type=self.wait_types.DATABASE_OPERATION,
+        )
 
     def paste_tool(self):
         # Define a simple custom tool YAML
