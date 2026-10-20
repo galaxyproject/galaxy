@@ -163,14 +163,17 @@ describe("LoginForm", () => {
         const target = "https://tools.example.org/back?next=%2Fx";
         server.use(http.untyped.post(/.*\/user\/login.*/, () => HttpResponse.json({ redirect: target })));
         const originalHref = window.location.href;
-        const wrapper = await mountLoginForm();
-        const inputs = wrapper.findAll("input");
-        await inputs.at(0).setValue("user@example.org");
-        await inputs.at(1).setValue("test_pwd");
-        await wrapper.find("form").trigger("submit");
-        await flushPromises();
-        expect(window.location.href).toBe(target);
-        window.location.href = originalHref;
+        try {
+            const wrapper = await mountLoginForm();
+            const inputs = wrapper.findAll("input");
+            await inputs.at(0).setValue("user@example.org");
+            await inputs.at(1).setValue("test_pwd");
+            await wrapper.find("form").trigger("submit");
+            await flushPromises();
+            expect(window.location.href).toBe(target);
+        } finally {
+            window.location.href = originalHref;
+        }
     });
 
     it("connect external provider", async () => {
