@@ -5,6 +5,8 @@ import {
     faFile,
     faInfoCircle,
     faPen,
+    faSignInAlt,
+    faSpinner,
     faStop,
     faTrash,
     faTrashRestore,
@@ -13,12 +15,17 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ScanEye } from "lucide-vue-next";
+import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
 
+import { copyDataset } from "@/api/datasets";
+import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
@@ -34,6 +41,7 @@ const props = defineProps({
     itemUrls: { type: Object, required: true },
     isRunningInteractiveTool: { type: Boolean, default: false },
     interactiveToolId: { type: String, default: "" },
+    itemId: { type: String, default: "" },
 });
 
 const emit = defineEmits<{
@@ -46,8 +54,11 @@ const emit = defineEmits<{
 }>();
 
 const entryPointStore = useEntryPointStore();
+const Toast = useToast();
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 const errorMessage = ref("");
 const deleteCollectionMenu: Ref<InstanceType<typeof GDropdown> | null> = ref(null);
+const copyingCollection = ref(false);
 
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
 const editDisabled = computed(() =>
@@ -59,6 +70,14 @@ const displayUrl = computed(() => (props.itemUrls.display ? prependPath(props.it
 const isCollection = computed(() => !props.isDataset);
 
 const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
+
+// Used to ensure only top-level collections (HDCAs) can be copied
+// Nested `DatasetCollectionElement` collections don't have their
+// own `HistoryDatasetCollectionAssociation`, so only their individual
+// dataset elements remain copyable once you drill into them.
+const showCopyToCurrentHistory = computed(
+    () => !props.writable && isCollection.value && props.isHistoryItem && !props.isDeleted && !!props.itemId,
+);
 
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
 
@@ -105,6 +124,22 @@ function onDisplay($event: MouseEvent) {
         window.open(displayUrl.value, "_blank");
     } else {
         emit("display");
+    }
+}
+
+async function copyToCurrentHistory() {
+    copyingCollection.value = true;
+    try {
+        if (currentHistoryId.value) {
+            await copyDataset(props.itemId, currentHistoryId.value, "dataset_collection");
+            Toast.success(localize("Collection copied to the current history!"));
+        } else {
+            throw new Error(localize("No current history available to copy the collection to."));
+        }
+    } catch (error) {
+        Toast.error(errorMessageAsString(error), localize("Failed to copy collection to the current history"));
+    } finally {
+        copyingCollection.value = false;
     }
 }
 </script>
@@ -211,6 +246,17 @@ function onDisplay($event: MouseEvent) {
             transparent
             @click.stop="emit('unhide')">
             <FontAwesomeIcon :icon="faEyeSlash" />
+        </GButton>
+        <GButton
+            v-if="showCopyToCurrentHistory"
+            v-g-tooltip.hover
+            :disabled="copyingCollection"
+            class="copy-to-current-history-btn px-1"
+            :title="localize('Copy to Current History')"
+            size="small"
+            transparent
+            @click.prevent.stop="copyToCurrentHistory">
+            <FontAwesomeIcon :icon="copyingCollection ? faSpinner : faSignInAlt" :spin="copyingCollection" />
         </GButton>
     </span>
 </template>

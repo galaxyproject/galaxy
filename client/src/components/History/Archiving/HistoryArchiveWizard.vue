@@ -71,7 +71,7 @@ async function onArchiveHistory(exportRecordId?: string) {
         await historyStore.archiveHistoryById(props.historyId, exportRecordId, shouldPurge);
         toast.success("History archived successfully.");
     } catch (error) {
-        toast.error(`The history archive request failed. Please try again later. Reason: ${error}`);
+        toast.error(errorMessageAsString(error), "The history archive request failed");
     } finally {
         isArchiving.value = false;
     }

@@ -392,7 +392,7 @@ function unexpandedClick(event: Event) {
                         <span class="indicator">{{ item.sub_items?.length }}</span>
                     </GButton>
                     <ContentOptions
-                        v-if="!isPlaceholder && !item.purged"
+                        v-if="!isPlaceholder && !item.purged && props.item.accessible !== false"
                         :writable="writable"
                         :is-dataset="isDataset"
                         :is-deleted="item.deleted"
@@ -400,6 +400,7 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :item-id="item.id"
                         :is-running-interactive-tool="itemIsRunningInteractiveTool"
                         :interactive-tool-id="
                             itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''

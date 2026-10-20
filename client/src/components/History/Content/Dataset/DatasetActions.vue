@@ -1,13 +1,27 @@
 <script setup lang="ts">
-import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBug,
+    faChartBar,
+    faInfoCircle,
+    faLink,
+    faRedo,
+    faSignInAlt,
+    faSitemap,
+    faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import type { HDADetailed } from "@/api";
+import { copyDataset } from "@/api/datasets";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ItemUrls } from ".";
 
@@ -28,6 +42,10 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits(["toggleHighlights"]);
 
 const router = useRouter();
+const Toast = useToast();
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+const copyingDataset = ref(false);
 
 const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
@@ -43,6 +61,9 @@ const showVisualizations = computed(() => {
 });
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
+});
+const showCopyToCurrentHistory = computed(() => {
+    return !props.writable && !props.item.deleted && !props.item.purged;
 });
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
@@ -87,6 +108,19 @@ function onVisualize() {
 
 function onRerun() {
     router.push(`/?job_id=${props.item.creating_job}`);
+}
+
+async function copyToCurrentHistory() {
+    try {
+        if (currentHistoryId.value) {
+            await copyDataset(props.item.id, currentHistoryId.value, "dataset");
+            Toast.success(localize("Dataset copied to the current history!"));
+        } else {
+            throw new Error(localize("No current history available to copy the dataset to."));
+        }
+    } catch (error) {
+        Toast.error(errorMessageAsString(error), localize("Failed to copy dataset to the current history"));
+    }
 }
 </script>
 
@@ -164,6 +198,18 @@ function onRerun() {
                     :href="rerunUrl"
                     @click.prevent.stop="onRerun">
                     <FontAwesomeIcon :icon="faRedo" />
+                </GButton>
+
+                <GButton
+                    v-if="showCopyToCurrentHistory"
+                    class="px-1"
+                    :disabled="copyingDataset"
+                    title="Copy to Current History"
+                    tooltip
+                    size="small"
+                    transparent
+                    @click.prevent.stop="copyToCurrentHistory">
+                    <FontAwesomeIcon :icon="copyingDataset ? faSpinner : faSignInAlt" :spin="copyingDataset" />
                 </GButton>
             </div>
         </div>
