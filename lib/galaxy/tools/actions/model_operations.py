@@ -6,6 +6,7 @@ from typing import (
 
 from galaxy.model import (
     History,
+    HistoryDatasetAssociation,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -128,6 +129,8 @@ class ModelOperationToolAction(DefaultToolAction):
             tags=preserved_tags,
             hdca_tags=preserved_hdca_tags,
             skip=skip,
+            inp_data=inp_data,
+            inp_dataset_collections=inp_dataset_collections,
         )
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
@@ -156,6 +159,8 @@ class ModelOperationToolAction(DefaultToolAction):
         tags,
         hdca_tags,
         skip,
+        inp_data,
+        inp_dataset_collections,
     ):
         tool.produce_outputs(
             trans,
@@ -178,8 +183,20 @@ class ModelOperationToolAction(DefaultToolAction):
             for output_collection in output_collections.out_collections.values():
                 output_collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
+            # Outputs may reference the input datasets themselves (e.g. nested collections are
+            # copied without copying their datasets), these need to be copied before marking them skipped.
+            input_dataset_ids = {data.id for data in inp_data.values() if isinstance(data, HistoryDatasetAssociation)}
+            for collection_pairs in inp_dataset_collections.values():
+                for collection, _ in collection_pairs:
+                    if collection is not None:
+                        input_dataset_ids.update(data.id for data in collection.dataset_instances)
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
-                for data in hdca.dataset_instances:
+                for dce in hdca.collection.dataset_elements:
+                    data = dce.element_object
+                    if isinstance(data, HistoryDatasetAssociation) and data.id in input_dataset_ids:
+                        data = data.copy(copy_tags=data.tags, flush=False)
+                        history.stage_addition(data)
+                        dce.element_object = data
                     data.set_skipped(object_store_populator, replace_dataset=True)
         trans.sa_session.add_all(out_data.values())
