@@ -763,7 +763,7 @@ class BaseDatasetPopulator(BasePopulator):
     ) -> str:
         try:
             return wait_on_state(
-                lambda: self._get(f"histories/{history_id}"), desc="history state", assert_ok=assert_ok, timeout=timeout
+                lambda: self.get_history_raw(history_id), desc="history state", assert_ok=assert_ok, timeout=timeout
             )
         except AssertionError:
             self._summarize_history(history_id)
@@ -1149,6 +1149,13 @@ class BaseDatasetPopulator(BasePopulator):
 
     def copy_history(self, history_id, name="API Test Copied History", **kwds) -> Response:
         return self._post("histories", data={"name": name, "history_id": history_id, **kwds})
+
+    def copy_hda(self, history_id: str, hda_id: str, **kwds) -> dict[str, Any]:
+        """Copy an existing HDA into history_id, reusing its underlying Dataset."""
+        payload = {"source": "hda", "content": hda_id, **kwds}
+        copy_response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
+        api_asserts.assert_status_code_is_ok(copy_response)
+        return copy_response.json()
 
     def fetch_payload(
         self,
@@ -1906,6 +1913,14 @@ class BaseDatasetPopulator(BasePopulator):
         update_url = f"histories/{history_id}"
         put_response = self._put(update_url, payload, json=True)
         return put_response
+
+    def get_history_raw(self, history_id: str) -> Response:
+        return self._get(f"histories/{history_id}")
+
+    def get_history(self, history_id: str) -> dict[str, Any]:
+        get_response = self.get_history_raw(history_id)
+        api_asserts.assert_status_code_is_ok(get_response)
+        return get_response.json()
 
     def update_dataset(self, dataset_id: str, update_payload: dict[str, Any]):
         update_url = f"datasets/{dataset_id}"

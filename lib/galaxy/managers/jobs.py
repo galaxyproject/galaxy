@@ -696,7 +696,7 @@ class JobSearch:
                 model.Job.tool_id == tool_id,
                 or_(
                     model.Job.user_id == user_id,
-                    model.History.published == true(),
+                    and_(model.History.published == true(), model.Job.imported.isnot(True)),
                 ),
                 model.Job.copied_from_job_id.is_(None),  # Always pick original job
             )

@@ -1864,6 +1864,59 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat1")
     @requires_new_history
+    def test_job_cache_excludes_imported_jobs(self):
+        with self.dataset_populator.test_history_for(self.test_job_cache_excludes_imported_jobs) as history_id:
+            inputs = self._get_cat1_inputs(history_id)
+            self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            history_name = self.dataset_populator.get_history(history_id)["name"]
+
+            imported_history_id = self.dataset_populator.reimport_history(
+                history_id, history_name, wait_on_history_length=2, export_kwds={}, task_based=False
+            )
+            imported_input = self.dataset_populator.get_history_dataset_details(history_id=imported_history_id, hid=1)
+            self.dataset_populator.make_public(history_id=imported_history_id)
+
+            with self._different_user_and_history() as different_history_id:
+                copied_input = self.dataset_populator.copy_hda(different_history_id, imported_input["id"])
+
+                cached_output = self._run_cat1(
+                    different_history_id,
+                    inputs=dict(input1=dataset_to_param(copied_input)),
+                    use_cached_job=True,
+                    assert_ok=True,
+                    wait_for_job=True,
+                )
+                job = self.dataset_populator.get_job_details(cached_output["jobs"][0]["id"], full=True).json()
+            assert not job["copied_from_job_id"]
+
+    @skip_without_tool("cat1")
+    @requires_new_history
+    def test_job_cache_matches_own_imported_job(self):
+        with self.dataset_populator.test_history_for(self.test_job_cache_matches_own_imported_job) as history_id:
+            inputs = self._get_cat1_inputs(history_id)
+            self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            history_name = self.dataset_populator.get_history(history_id)["name"]
+
+            imported_history_id = self.dataset_populator.reimport_history(
+                history_id, history_name, wait_on_history_length=2, export_kwds={}, task_based=False
+            )
+            imported_input = self.dataset_populator.get_history_dataset_details(history_id=imported_history_id, hid=1)
+            imported_job_id = self.dataset_populator.get_history_dataset_details(history_id=imported_history_id, hid=2)[
+                "creating_job"
+            ]
+
+            cached_output = self._run_cat1(
+                imported_history_id,
+                inputs=dict(input1=dataset_to_param(imported_input)),
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            job = self.dataset_populator.get_job_details(cached_output["jobs"][0]["id"], full=True).json()
+            assert job["copied_from_job_id"] == imported_job_id
+
+    @skip_without_tool("cat1")
+    @requires_new_history
     def test_run_cat1_use_cached_job_renamed_input(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job_renamed_input) as history_id:
             # Run simple non-upload tool with an input data parameter.
