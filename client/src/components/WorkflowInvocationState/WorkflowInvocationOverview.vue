@@ -52,7 +52,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 </script>
 
 <template>
-    <div class="mb-3 workflow-invocation-state-component">
+    <div :class="props.isFullPage ? 'full-page' : 'mb-3'">
         <SubworkflowAlert v-if="isSubworkflow" :invocation-id="props.invocation.id" :state="props.invocation.state" />
         <div v-if="props.invocationMessages?.length" class="d-flex align-items-center">
             <WorkflowInvocationError
@@ -72,7 +72,7 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
         <GAlert v-else-if="error" variant="danger" show>
             {{ error }}
         </GAlert>
-        <div v-else-if="workflow && !isSubworkflow">
+        <div v-else-if="workflow && !isSubworkflow" class="invocation-graph-container">
             <InvocationGraph
                 ref="invocationGraph"
                 class="mt-1"
@@ -87,3 +87,19 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
         <GAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </GAlert>
     </div>
 </template>
+
+<style scoped lang="scss">
+.full-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+
+    .invocation-graph-container {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: 0;
+    }
+}
+</style>

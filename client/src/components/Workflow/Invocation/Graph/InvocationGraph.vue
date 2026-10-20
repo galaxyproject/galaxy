@@ -180,7 +180,7 @@ function toggleDetailedView() {
 </script>
 
 <template>
-    <div>
+    <div :class="{ 'full-page': props.isFullPage }">
         <GAlert v-if="initialLoading" show variant="info">
             <LoadingSpan message="Loading Invocation Graph" />
         </GAlert>
@@ -190,11 +190,11 @@ function toggleDetailedView() {
             </GAlert>
             <GAlert v-else show variant="danger"> Unknown Error </GAlert>
         </div>
-        <div v-else-if="steps && datatypesMapper">
-            <div class="d-flex">
+        <div v-else-if="steps && datatypesMapper" class="graph-layout">
+            <div class="d-flex graph-pane" :class="{ 'with-details': activeNodeId !== null && activeStep }">
                 <!-- eslint-disable-next-line vuejs-accessibility/mouse-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
                 <div
-                    class="position-relative w-100"
+                    class="position-relative w-100 graph-wrapper"
                     @mouseover="showSideOverlay = true"
                     @mouseleave="showSideOverlay = false">
                     <BCard no-body>
@@ -211,7 +211,7 @@ function toggleDetailedView() {
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
                             :detailed-view="detailedViewEnabled"
-                            :fixed-height="60"
+                            :fixed-height="props.isFullPage ? undefined : 60"
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
@@ -250,7 +250,12 @@ function toggleDetailedView() {
                         :graph-step="steps[activeNodeId]"
                         :invocation-step="props.invocation.steps[activeNodeId]" />
                     <div class="d-flex flex-gapx-1">
-                        <GButton title="Scroll to Step" size="small" transparent @click="scrollStepToView()">
+                        <GButton
+                            v-if="!props.isFullPage"
+                            title="Scroll to Step"
+                            size="small"
+                            transparent
+                            @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </GButton>
                         <GButtonGroup>
@@ -339,6 +344,44 @@ function toggleDetailedView() {
 
 .invocation-step-card {
     min-height: 500px;
+}
+
+// Full page: graph fills the space, splits 50/50 with the step card, and only the step body scrolls.
+.full-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+
+    .graph-layout,
+    .graph-wrapper,
+    .graph-wrapper > .card {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .graph-pane {
+        flex: 1 1 0;
+        min-height: 0;
+
+        &.with-details {
+            flex: 0 0 50%;
+        }
+    }
+
+    .invocation-step-card {
+        flex: 1 1 0;
+        min-height: 0;
+
+        .card-body {
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+    }
 }
 
 .detailed-view-button {
