@@ -169,6 +169,10 @@ class ToolSource(metaclass=ABCMeta):
         """Return whether this source may enable tool-provided metadata."""
         return False
 
+    def is_yaml_origin(self) -> bool:
+        """Return whether this is a GalaxyTool/GalaxyUserTool source, following the canonical parameter contract."""
+        return False
+
     def parse_tool_module(self) -> Optional[Tuple[str, str]]:
         """Load Tool class from a custom module. (Optional).
 

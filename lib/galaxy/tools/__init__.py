@@ -1165,6 +1165,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         return parse_tool_version(self.version)
 
     @property
+    def yaml_origin(self) -> bool:
+        """Whether this is a GalaxyTool/GalaxyUserTool YAML tool, following the canonical parameter contract."""
+        return self.tool_source.is_yaml_origin()
+
+    @property
     def sa_session(self):
         """Returns a SQLAlchemy session"""
         return self.app.model.context
@@ -2097,7 +2102,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         YAML tools, admin and user-defined alike, fill in only parameter references, the
         same ``$(inputs.<name>)`` syntax their commands use. Other tools fill labels as Cheetah.
         """
-        return self.tool_source.parse_class() in ("GalaxyTool", "GalaxyUserTool")
+        return self.yaml_origin
 
     def render_output_label(
         self,
