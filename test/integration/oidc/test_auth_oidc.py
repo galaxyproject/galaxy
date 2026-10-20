@@ -16,6 +16,7 @@ from urllib import parse
 from galaxy import model
 from galaxy.security.validate_user_input import validate_publicname_str
 from galaxy.util import requests
+from galaxy.webapps.galaxy.controllers.authnz import LOGIN_NEXT_COOKIE_NAME
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
 
@@ -208,6 +209,18 @@ class AbstractTestCases:
                 self.galaxy_interactor.cookies = session.cookies
             return session, response
 
+        def _callback_location(self, username, next):
+            session, response = self._login_via_keycloak(
+                username, KEYCLOAK_TEST_PASSWORD, expected_codes=[302], follow_callback=False, next=next
+            )
+            response = session.get(response.headers["Location"], allow_redirects=False)
+            self._assert_status_code_is(response, 302)
+            return session, response.headers["Location"]
+
+        def _assert_login_next_cookie_reset(self, session):
+            # The cookie value "/" is sent quoted.
+            assert (session.cookies.get(LOGIN_NEXT_COOKIE_NAME) or "").strip('"') == "/"
+
         def _csrf_token(self, session):
             response = session.get(f"{self.url}login/start")
             self._assert_status_code_is(response, 200)
@@ -279,11 +292,27 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
         # Should have redirected back if auth succeeded
         parsed_url = parse.urlparse(response.url)
+        assert parsed_url.path == "/user/external_ids"
         notification = parse.parse_qs(parsed_url.query)["notification"][0]
         assert "Your Keycloak identity has been linked to your Galaxy account." in notification
         response = self._get("users/current")
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
+
+    def test_oidc_first_login_from_deep_link_lands_on_destination(self):
+        session, location = self._callback_location("gxyuser_new_no_fixed", next="/workflows/list")
+        assert parse.urljoin(self.url, location) == f"{self.url}workflows/list"
+        self._assert_login_next_cookie_reset(session)
+        response = session.get(f"{self.url}api/users/current")
+        assert response.json()["email"] == "gxyuser_new_no_fixed@galaxy.org"
+
+    def test_oidc_first_login_with_refused_destination_lands_on_linked_identities(self):
+        session, location = self._callback_location("gxyuser_brand_new", next="https://evil.example.com/back")
+        parsed_url = parse.urlsplit(location)
+        assert parsed_url.path == "/user/external_ids"
+        assert "notification" in parse.parse_qs(parsed_url.query)
+        response = session.get(f"{self.url}api/users/current")
+        assert response.json()["email"] == "gxyuser_brand_new@galaxy.org"
 
     def test_oidc_login_returns_to_allowed_destination(self):
         # Link the identity first, so the login below is a repeat login.
@@ -540,6 +569,11 @@ class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakInteg
         "<require_create_confirmation>true</require_create_confirmation><pkce_support>true</pkce_support>"
     )
 
+    @classmethod
+    def handle_galaxy_oidc_config_kwds(cls, config):
+        super().handle_galaxy_oidc_config_kwds(config)
+        config["allowed_login_redirect_hosts"] = "tools.example.org"
+
     def test_confirmation_requires_post_and_csrf_then_creates_account(self):
         session, identifier = self._begin_confirmation("gxyuser")
         csrf_token = self._csrf_token(session)
@@ -578,6 +612,22 @@ class TestOIDCAccountConfirmationIntegration(AbstractTestCases.BaseKeycloakInteg
         assert response.json()["redirect_uri"] == "/workflows/list"
         response = session.get(f"{self.url}api/users/current")
         assert response.json()["email"] == "gxyuser_new_no_fixed@galaxy.org"
+
+    def test_confirmation_returns_to_allowed_external_destination(self):
+        destination = "https://tools.example.org/back?confirm=true"
+        session, identifier = self._begin_confirmation("gxyuser_no_fixed_auth", next=destination)
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["redirect_uri"] == destination
+        self._assert_login_next_cookie_reset(session)
+
+    def test_confirmation_refuses_disallowed_external_destination(self):
+        session, identifier = self._begin_confirmation("gxyuser_logged_in_once", next="https://evil.example.com/")
+        response = self._submit_confirmation(session, identifier)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["redirect_uri"] == "/"
+        response = session.get(f"{self.url}api/users/current")
+        assert response.json()["email"] == "gxyuser_logged_in_once@galaxy.org"
 
     def test_cancellation_prevents_confirmation_and_replay(self):
         session, identifier = self._begin_confirmation("gxyuser_brand_new")
