@@ -162,11 +162,10 @@ function onChange(event: Event) {
         cursor: not-allowed;
     }
 
-    // Page-background gap keeps the ring clear of the radio; outline survives forced colors.
+    // The offset leaves a gap that shows the real background; outline survives forced colors.
     &:focus-visible {
         outline: 2px solid var(--color-blue-600, #25537b);
         outline-offset: 2px;
-        box-shadow: 0 0 0 2px var(--background-color, #ffffff);
     }
 }
 
