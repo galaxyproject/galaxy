@@ -22,6 +22,7 @@ from galaxy.util import (
     is_safe_local_redirect,
     is_safe_login_redirect,
     url_get,
+    URL_SAFE_CHARACTERS,
 )
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
@@ -33,8 +34,6 @@ log = logging.getLogger(__name__)
 
 PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
 LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
-# RFC 3986 reserved characters plus "%" and "~", the safe set requests.utils.requote_uri uses.
-URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
 
 
 def is_allowed_login_redirect(trans, target, base_url: Optional[str] = None) -> bool:

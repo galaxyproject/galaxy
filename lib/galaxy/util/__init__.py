@@ -1376,6 +1376,9 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
 
 
 CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+# RFC 3986 reserved characters plus "%" and "~", the safe set requests.utils.requote_uri uses.
+# Keeping "%" leaves existing escapes, valid or not, exactly as given.
+URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
 
 
 def is_safe_local_redirect(path: Any) -> bool:

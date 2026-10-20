@@ -17,6 +17,7 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
     stream_to_path,
+    URL_SAFE_CHARACTERS,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.config_templates import TemplateExpansion
@@ -31,16 +32,12 @@ log = logging.getLogger(__name__)
 # same character set http.client refuses in a request line.
 _DISALLOWED_URL_CHARACTERS = re.compile(r"[\x00-\x20\x7f]")
 
-# RFC 3986 reserved characters plus "%" and "~", the safe set requests.utils.requote_uri uses.
-# Keeping "%" leaves existing escapes, valid or not, exactly as given.
-_URL_SAFE_CHARACTERS = "!#$%&'()*+,/:;=?@[]~"
-
 
 def _requote_http_url(url: str) -> str:
     # Percent-encode characters such as <, > and " after the host, leaving scheme and host untouched.
     parts = urlsplit(url)
     authority_end = len(parts.scheme) + len("://") + len(parts.netloc)
-    return url[:authority_end] + quote(url[authority_end:], safe=_URL_SAFE_CHARACTERS)
+    return url[:authority_end] + quote(url[authority_end:], safe=URL_SAFE_CHARACTERS)
 
 
 class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
