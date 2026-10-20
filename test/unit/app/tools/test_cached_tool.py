@@ -6,6 +6,7 @@ from datetime import (
     datetime,
     timezone,
 )
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -26,8 +27,12 @@ from galaxy.tools.cached_toolbox import (
     MaterializationReason,
     ToolMaterializationError,
 )
-from galaxy.tools.source_store import StoredToolSource
+from galaxy.tools.source_store import (
+    populator,
+    StoredToolSource,
+)
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
+from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -531,6 +536,114 @@ def test_index_tool_files_parses_indexed_files_and_reloads_after_a_write(tmp_pat
     box.index_tool_files({str(tool_file): guid})
     assert calls == [([str(tool_file)], False)]
     assert box._store.invalidate_index_cache.called is bool(indexes_written)
+
+
+def test_index_tool_files_reloads_a_stale_index_another_populate_already_wrote(tmp_path, monkeypatch):
+    # A toolbox reload during a repository update indexed the file mid-update,
+    # and the install's own populate has since stored and indexed the new
+    # content, so this populate writes nothing.
+    guid = "toolshed.example.com/repos/owner/repo/updated/1.0"
+    tool_file = tmp_path / "updated.xml"
+    tool_file.write_text("<tool id='updated' version='1.0'/>")
+    box = _seam_box()
+    box._tool_index.add_entry(_entry(id=guid, version="1.0", source_hash="before-update", source_path=str(tool_file)))
+    box._store.get_by_source_path.return_value = StoredToolSource(
+        hash="after-update",
+        tool_source_class="XmlToolSource",
+        raw_source="<tool/>",
+        tool_id=guid,
+        tool_version="1.0",
+        tool_dir=None,
+        source_path=str(tool_file),
+        stored_at=datetime.now(timezone.utc),
+    )
+    current = ToolIndex()
+    current.add_entry(_entry(id=guid, version="1.0", source_hash="after-update"))
+    box._store.load_index.return_value = current
+    monkeypatch.setattr(mod, "populate_for_paths", lambda *args, **kwargs: {"indexes_written": 0})
+
+    box.index_tool_files({str(tool_file): guid})
+
+    entry = box._tool_index.get(guid, "1.0")
+    assert entry is not None
+    assert entry.source_hash == "after-update"
+
+
+def _populate_config(tmp_path, conf):
+    return SimpleNamespace(
+        enable_beta_tool_formats=False,
+        tool_source_stores={},
+        tool_search_index_dir=None,
+        root=str(tmp_path),
+        tool_path=str(tmp_path),
+        tool_source_database_connection=f"sqlite:///{tmp_path}/ts.sqlite",
+        data_manager_config_file=None,
+        shed_data_manager_config_file=None,
+        biotools_content_directory=None,
+        biotools_use_api=False,
+        biotools_service_cache_type="memory",
+        biotools_service_cache_data_dir=None,
+        biotools_service_cache_lock_dir=None,
+        biotools_service_cache_url=None,
+        biotools_service_cache_table_name=None,
+        biotools_service_cache_schema_name=None,
+        all_tool_config_files=lambda: [str(conf)],
+    )
+
+
+GUID = "toolshed.example.com/repos/owner/repo/updated/1.0"
+
+
+def _shed_tool_xml(command, version_attr='version="1.0"'):
+    return f'<tool id="updated" name="updated" {version_attr} profile="21.09"><command>{command}</command></tool>'
+
+
+def _indexed_shed_tool_box(tmp_path, monkeypatch, tool_xml):
+    # Converter discovery needs a datatypes registry; these populates cover one shed tool.
+    monkeypatch.setattr(populator, "_ensure_datatypes_registry", lambda config: None)
+    tools_dir = tmp_path / "shed_tools"
+    tools_dir.mkdir()
+    tool_file = tools_dir / "updated.xml"
+    tool_file.write_text(tool_xml)
+    path = str(tool_file)
+    conf = tmp_path / "shed_tool_conf.xml"
+    conf.write_text(f'<toolbox tool_path="{tools_dir}"></toolbox>')
+    config = _populate_config(tmp_path, conf)
+    populator.populate_store_inline(config, paths=[path], path_guids={path: GUID})
+    box = _seam_box()
+    box.app.config = config
+    box._store = _build_default_store(config)
+    box._tool_index = box._store.load_index()
+    return box, tool_file
+
+
+def test_index_tool_files_catches_up_with_a_peer_populate_of_the_same_update(tmp_path, monkeypatch):
+    box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
+    path = str(tool_file)
+    stale = box._tool_index.get(GUID, "1.0")
+
+    # The install's own populate indexes the update first, so the box's populate writes nothing.
+    tool_file.write_text(_shed_tool_xml("echo after"))
+    populator.populate_store_inline(box.app.config, paths=[path], path_guids={path: GUID}, incremental=False)
+    box.index_tool_files({path: GUID})
+
+    entry = box._tool_index.get(GUID, "1.0")
+    stored = box._store.get_by_source_path(path)
+    assert stale is not None and entry is not None and stored is not None
+    assert entry.source_hash == stored.hash
+    assert entry.source_hash != stale.source_hash
+
+
+@pytest.mark.parametrize(
+    "version_attr", ['version="1.0"', 'version=""', ""], ids=["version", "empty-version", "no-version"]
+)
+def test_index_tool_files_keeps_an_index_that_matches_the_store(tmp_path, monkeypatch, version_attr):
+    box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo", version_attr))
+    index = box._tool_index
+
+    box.index_tool_files({str(tool_file): GUID})
+
+    assert box._tool_index is index
 
 
 def test_create_tool_stamps_data_manager_conf_id_on_entry():

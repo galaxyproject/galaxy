@@ -6,11 +6,13 @@ lightweight index in memory and loads full Tool objects on-demand with
 LRU eviction.
 """
 
+import itertools
 import logging
 import os
 import threading
 from collections.abc import (
     Callable,
+    Iterable,
     Iterator,
     Mapping,
 )
@@ -1259,6 +1261,13 @@ class CachedToolBox(ToolBox):
         possibly only in imported macro files. The populate writes the index,
         broadcasts and reloads only when an entry changed, so a metadata reset
         of an indexed repository costs one parse per tool.
+
+        The index is also reloaded when this toolbox's copy lags the store for
+        one of the paths. Another populate may already have written the new
+        entry, for example the install's own populate while a concurrent
+        toolbox reload built this toolbox from the file mid-update. Then this
+        populate has nothing to write, and keeping the copy would serve a hash
+        the store no longer holds.
         """
         existing = {path: guid for path, guid in path_guids.items() if os.path.exists(path)}
         if not existing:
@@ -1270,10 +1279,36 @@ class CachedToolBox(ToolBox):
             incremental=False,
             app=self.app,
         )
-        if self._store is not None and stats.get("indexes_written"):
+        if self._store is not None and (stats.get("indexes_written") or self._index_lags_store(existing)):
             self._store.invalidate_index_cache()
             self._tool_index = self._store.load_index() or ToolIndex()
             self._rebuild_shed_short_id_map()
+
+    def _index_lags_store(self, paths: Iterable[str]) -> bool:
+        """Whether an in-memory entry for one of ``paths`` holds another hash than the store's row.
+
+        Matched by ``source_path``, as ``_stored_source_for_entry`` resolves
+        them: the stored row keeps the tool's raw version, which the index
+        entry may default (``version=""``) or lack entirely.
+        """
+        assert self._store is not None
+        index = self._tool_index
+        if index is None:
+            return False
+        stored_hashes: dict[str, str] = {}
+        for path in paths:
+            stored = self._store.get_by_source_path(path)
+            if stored is not None:
+                stored_hashes[path] = stored.hash
+        if not stored_hashes:
+            return False
+        entries = itertools.chain(
+            index.entries.values(), *(versions.values() for versions in index.entries_by_version.values())
+        )
+        return any(
+            entry.source_path in stored_hashes and entry.source_hash != stored_hashes[entry.source_path]
+            for entry in entries
+        )
 
     def _index_source_paths(self) -> set[str]:
         """Every ``source_path`` the current in-memory index covers.
