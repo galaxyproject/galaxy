@@ -306,6 +306,8 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
                 tool_source_store=app.tool_source_store,
                 cache_size=app.config.cached_toolbox_cache_size,
                 save_integrated_tool_panel=save_integrated_tool_panel,
+                # A reload is how admins apply in-place tool edits.
+                reindex_edited_sources=True,
             )
         else:
             new_toolbox = ToolBox(

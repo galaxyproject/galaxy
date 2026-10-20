@@ -30,6 +30,7 @@ from uuid import UUID
 from cachetools import LRUCache
 
 from galaxy.exceptions import (
+    ConfigurationError,
     ObjectNotFound,
     RequestParameterInvalidException,
 )
@@ -64,6 +65,8 @@ from galaxy.tools.source_store.populator import (
     populate_for_paths,
     populate_store_inline,
 )
+from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
+from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.tool_version import (
     is_shed_guid,
     remove_version_from_guid,
@@ -529,6 +532,8 @@ class CachedToolBox(ToolBox):
     but only loads full Tool objects when needed for execution or form building.
     """
 
+    _reindex_edited_sources = False
+
     def __init__(
         self,
         config_filenames: list[str],
@@ -537,9 +542,11 @@ class CachedToolBox(ToolBox):
         tool_source_store: ToolSourceStore | None,
         cache_size: int = 500,
         save_integrated_tool_panel: bool = True,
+        reindex_edited_sources: bool = False,
     ) -> None:
         # Needed by the overridden initialization invoked from ``super()``.
         self._store = tool_source_store
+        self._reindex_edited_sources = reindex_edited_sources
         self._tool_object_cache: LRUCache[tuple[str, str, str], Tool] = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
         self._materialization_locks = tuple(threading.Lock() for _ in range(64))
@@ -578,17 +585,104 @@ class CachedToolBox(ToolBox):
         self._lineage_map = CachedLineageMap(self, versions_for=self._index_versions_for)
         self._tool_panel_loaded_from_index = False
         if self._store is not None:
+            self._require_read_only_store_indexes()
             self._tool_index = self._store.load_index() or ToolIndex()
             if self._index_needs_population():
                 self._run_inline_populator()
                 # The inline populator uses a separate store instance.
                 self._store.invalidate_index_cache()
                 self._tool_index = self._store.load_index() or ToolIndex()
+            elif self._reindex_edited_sources:
+                self._reindex_edited_tool_files()
         else:
             self._tool_index = ToolIndex()
         if self._init_tools_from_index(config_filenames):
             return
         super()._init_tools_from_configs(config_filenames)
+
+    def _require_read_only_store_indexes(self) -> None:
+        """Refuse to build when a read-only store cannot supply its index.
+
+        Nothing local can populate a read-only store, so its conf's tools
+        would either be parsed and kept resident (eager-toolbox memory in a
+        deployment sized for cached mode) or self-heal one populate and one
+        whole-index write at a time. Fail instead: at boot Galaxy does not
+        start, and a toolbox reload keeps the current toolbox.
+        """
+        if not isinstance(self._store, CompositeToolSourceStore):
+            return
+        unavailable = self._store.unavailable_read_only_member_names
+        if not unavailable:
+            return
+        reasons = []
+        for name, member in self._store.members:
+            if name not in unavailable:
+                continue
+            if isinstance(member, UnavailableToolSourceStore):
+                reasons.append(member.reason)
+            else:
+                reasons.append(f"read-only tool source store {name!r} has no loadable index")
+        raise ConfigurationError(
+            "The cached toolbox requires every read-only tool source store to provide a compatible index: "
+            + "; ".join(reasons)
+        )
+
+    def _member_stores(self) -> list[tuple[str, ToolSourceStore]]:
+        if self._store is None:
+            return []
+        if isinstance(self._store, CompositeToolSourceStore):
+            return self._store.members
+        return [("__default__", self._store)]
+
+    def _reindex_edited_tool_files(self) -> None:
+        """Re-index writable-store tool files edited in place since they were indexed.
+
+        The freshness token covers conf contents, not tool files, so a
+        toolbox reload after editing a local tool's XML would otherwise keep
+        serving the indexed definition. Comparing the md5 of each file
+        modified since it was indexed with the hash recorded on its entry
+        finds the edits without parsing anything.
+        Changes made only in an imported macro file leave the tool file's
+        hash unchanged and are not detected here.
+        """
+        changed: dict[str, str | None] = {}
+        checked: set[str] = set()
+        try:
+            for _name, store in self._member_stores():
+                if store.read_only:
+                    continue
+                index = store.load_index()
+                if index is None:
+                    continue
+                for versions in index.entries_by_version.values():
+                    for entry in versions.values():
+                        path = entry.source_path
+                        if not path or not entry.file_hash or path in checked:
+                            continue
+                        checked.add(path)
+                        try:
+                            mtime = os.stat(path).st_mtime
+                        except OSError:
+                            continue
+                        # Like the eager ToolCache, only hash files modified since indexing.
+                        if entry.indexed_at is not None and mtime <= entry.indexed_at.timestamp():
+                            continue
+                        file_hash = md5_hash_file(path)
+                        if file_hash is not None and file_hash != entry.file_hash:
+                            changed[path] = entry.id if is_shed_guid(entry.id) else None
+            if not changed:
+                return
+            log.info("CachedToolBox: re-indexing %d tool file(s) changed since they were indexed", len(changed))
+            self.index_tool_files(changed)
+            # A peer process reloading at the same time may have written these
+            # entries first, leaving this populate nothing to write; read the
+            # index back either way instead of keeping the stale cached copy.
+            if self._store is not None:
+                self._store.invalidate_index_cache()
+                self._tool_index = self._store.load_index() or ToolIndex()
+                self._rebuild_shed_short_id_map()
+        except Exception as e:
+            log.warning("Re-indexing edited tool files raised; serving the indexed definitions: %s", e)
 
     def _init_tools_from_index(self, config_filenames: list[str]) -> bool:
         """Register stubs directly from a fresh index.
@@ -600,15 +694,6 @@ class CachedToolBox(ToolBox):
         placement recording, return ``False`` and let the parent
         implementation take the conservative path.
         """
-        if isinstance(self._store, CompositeToolSourceStore):
-            unavailable = self._store.unavailable_read_only_member_names
-            if unavailable:
-                log.warning(
-                    "Cached toolbox fast panel initialization disabled because read-only "
-                    "tool source stores have no compatible index: %s",
-                    sorted(unavailable),
-                )
-                return False
         placements = self._index_panel_items()
         if not placements:
             return False
@@ -813,12 +898,7 @@ class CachedToolBox(ToolBox):
         one such orphan into a full inline repopulate on every boot and
         reload, permanently defeating the freshness-token scan skip.
         """
-        if self._store is None:
-            return False
-        stores = (
-            self._store.members if isinstance(self._store, CompositeToolSourceStore) else [("__default__", self._store)]
-        )
-        for store_name, store in stores:
+        for store_name, store in self._member_stores():
             if store.read_only:
                 continue
             source_hashes = set(store.list_all())
@@ -883,7 +963,7 @@ class CachedToolBox(ToolBox):
         """
         if self._tool_index is None:
             return []
-        versions = list(self._tool_index.entries_by_version.get(tool_id, {}).keys())
+        versions = list(self._tool_index.configured_versions(tool_id).keys())
         result = [v for v in versions if v]
         if is_shed_guid(tool_id):
             versionless = remove_version_from_guid(tool_id)
@@ -1015,7 +1095,7 @@ class CachedToolBox(ToolBox):
                         return (1, v)
 
                 versions = sorted(
-                    self._tool_index.entries_by_version.get(tool_id, {}).keys(),
+                    self._tool_index.configured_versions(tool_id).keys(),
                     key=_ver_key,
                 )
                 tools: list[ToolLike] = []
@@ -1026,7 +1106,7 @@ class CachedToolBox(ToolBox):
                 if tools:
                     return tools
             else:
-                entry = self._tool_index.get(tool_id, tool_version)
+                entry = self._tool_index.get_configured(tool_id, tool_version)
                 if entry is not None:
                     return self._cached_tool_for_entry(entry)
                 # Match eager behavior: inexact version misses use the default
@@ -1041,7 +1121,7 @@ class CachedToolBox(ToolBox):
         if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
             candidates: list[tuple[tuple[int, Any], ToolLike]] = []
             for guid in sorted(self._shed_short_id_to_guids[tool_id]):
-                entry = self._tool_index.get(guid, tool_version)
+                entry = self._tool_index.get_configured(guid, tool_version)
                 if entry is None and tool_version and not exact:
                     # Inexact requests may use this guid's default version.
                     entry = self._tool_index.entries.get(guid)
@@ -1365,7 +1445,9 @@ class CachedToolBox(ToolBox):
     def _materialize_for_cached_tool(self, entry: ToolIndexEntry, reason: MaterializationReason) -> "Tool":
         if self._tool_index is not None:
             versions = self._tool_versions_by_id.setdefault(entry.id, {})
-            for version, sibling_entry in self._tool_index.entries_by_version.get(entry.id, {}).items():
+            # Only the offered versions: an exact lookup falls through to this
+            # registry, so a storage-only sibling here would be served.
+            for version, sibling_entry in self._tool_index.configured_versions(entry.id).items():
                 versions[version] = self._cached_tool_for_entry(sibling_entry)  # type: ignore[assignment]
         return self._load_tool_on_demand(entry, reason)
 
@@ -1538,6 +1620,16 @@ class CachedToolBox(ToolBox):
                         self._refresh_changed_entry(tool_id, default_entry)
                     except Exception as e:
                         log.warning("Refreshing content-changed index entry %s raised: %s", tool_id, e)
+            for tool_id, old_hashes in previous_hashes.items():
+                current = self._tool_index.entries_by_version.get(tool_id)
+                if current is None:
+                    continue
+                removed = [version for version in old_hashes if version not in current]
+                if removed:
+                    try:
+                        self._remove_versions_in_memory(tool_id, removed)
+                    except Exception as e:
+                        log.warning("Reconciling removed versions of %s raised: %s", tool_id, e)
             # Reconcile removals: an id the previous index carried but the
             # reloaded one doesn't was removed by a peer process (uninstall).
             # Registration above is add/update-only, so without this pop the
@@ -1810,6 +1902,37 @@ class CachedToolBox(ToolBox):
             del self._cached_tools[key]
         return result
 
+    def _remove_versions_in_memory(self, tool_id: str, removed: list[str]) -> None:
+        """Drop registry slots, proxies and lineage versions the index no longer has.
+
+        A re-indexed file can stop defining a version while the id lives on
+        (an in-place version bump). Without this, an exact request for the
+        old version falls through to ``_tool_versions_by_id`` and gets a proxy
+        that now describes the new version. Caller must hold
+        ``app._toolbox_lock``.
+        """
+        assert self._tool_index is not None
+        slots = self._tool_versions_by_id.get(tool_id, {})
+        for version in removed:
+            slots.pop(version, None)
+            proxy = self._cached_tools.pop((tool_id, version), None)
+            # A proxy the default-entry refresh moved onto a surviving version
+            # stays the panel's object; keep it reachable under that version.
+            if proxy is not None and (live_version := proxy._entry.version or "") != version:
+                if live_version in self._tool_index.entries_by_version.get(tool_id, {}):
+                    self._cached_tools.setdefault((tool_id, live_version), proxy)
+                    slots.setdefault(live_version, proxy)  # type: ignore[arg-type]
+        with self._cache_lock:
+            for key in list(self._tool_object_cache):
+                if key[0] == tool_id and key[1] in removed:
+                    self._tool_object_cache.pop(key, None)
+        lineage = self._lineage_map.lineage_map.get(tool_id) if hasattr(self, "_lineage_map") else None
+        if lineage is not None:
+            still_offered = set(self._index_versions_for(tool_id))
+            for version in removed:
+                if version not in still_offered:
+                    lineage.tool_versions.discard(version)
+
     def _purge_tool_object_cache(self, tool_id: str) -> None:
         """Drop every parsed-tool LRU entry for ``tool_id``."""
         with self._cache_lock:
@@ -1847,7 +1970,7 @@ class CachedToolBox(ToolBox):
             if entries is not None:
                 if tool_version is None:
                     return bool(entries) or tool_id in self._tool_index.entries
-                if str(tool_version) in entries:
+                if str(tool_version) in self._tool_index.configured_versions(tool_id):
                     return True
                 if exact:
                     # Exact version requested and not present — say so.
@@ -1866,7 +1989,7 @@ class CachedToolBox(ToolBox):
             # mapped to this short id has the requested version.
             if self._tool_index is not None:
                 for guid in self._shed_short_id_to_guids[tool_id]:
-                    versions = self._tool_index.entries_by_version.get(guid, {})
+                    versions = self._tool_index.configured_versions(guid)
                     if str(tool_version) in versions:
                         return True
             if exact:

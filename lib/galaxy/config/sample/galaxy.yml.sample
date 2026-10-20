@@ -632,6 +632,10 @@ galaxy:
   # directory it reads the sidecars and automatically selects the newest
   # cohort compatible with its store/source/index formats and index
   # schema. External stores are always read-only.
+  # With ``use_cached_toolbox`` enabled, every read-only store must
+  # provide a compatible index. If one does not (no compatible cohort,
+  # or an index that fails to load), Galaxy does not start, and a
+  # toolbox reload keeps the current toolbox.
   # For SQLite connection-level read-only, use a SQLite URI with
   # ``mode=ro&uri=true``.
   # For details see

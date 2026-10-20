@@ -323,7 +323,7 @@ class TestBuildToolSourceStore:
         assert str(database_path) in store.url
         assert "mode=ro" in store.url
 
-    def test_named_store_without_compatible_cohort_uses_eager_fallback(self, tmp_path):
+    def test_named_store_without_compatible_cohort_is_unavailable(self, tmp_path):
         external_store_directory = tmp_path / "cohorts"
         external_store_directory.mkdir()
 

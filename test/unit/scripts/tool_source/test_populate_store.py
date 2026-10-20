@@ -333,9 +333,15 @@ def _populate_config(tmp_path, conf):
         biotools_service_cache_url = None
         biotools_service_cache_table_name = None
         biotools_service_cache_schema_name = None
+        # Lets a populate that writes the default store build an empty
+        # datatypes registry for converter discovery.
+        datatypes_config: list[str] = []
 
         def all_tool_config_files(self):
             return [str(conf)]
+
+        def get(self, key, default=None):
+            return getattr(self, key, default)
 
     return _Cfg()
 
@@ -477,6 +483,27 @@ class TestIncrementalFastPath:
 
         _, index = _load_default_index(cfg)
         assert index.entries["macro_tool"].version == "2.0"
+
+    def test_partial_populate_drops_version_an_edited_file_no_longer_defines(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tool = _write_tool(tools_dir / "probe.xml", "probe", version="1.1")
+        _write_tool(tools_dir / "other.xml", "other")
+        conf = _write_tool_conf(
+            tmp_path / "tool_conf.xml",
+            tools_dir,
+            '<section id="s" name="S"><tool file="probe.xml"/><tool file="other.xml"/></section>',
+        )
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        _write_tool(tool, "probe", version="1.2")
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 1
+
+        _, index = _load_default_index(cfg)
+        assert set(index.entries_by_version["probe"]) == {"1.2"}
+        assert index.entries["probe"].version == "1.2"
+        # The bump keeps the tool's place instead of moving it to the section head.
+        assert [item.tool_id for item in index.panel_items] == ["probe", "other"]
 
     def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
         """A stale scan must commit before a concurrent uninstall can prune it."""
