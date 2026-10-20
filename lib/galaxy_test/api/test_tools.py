@@ -563,14 +563,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return hdas
 
     def _build_inputs(self, tool_id: str, history_id: str, inputs: dict[str, Any]) -> list[dict[str, Any]]:
-        payload = {"history_id": history_id, "inputs": inputs}
-        response = self.dataset_populator._post(f"tools/{tool_id}/build", data=payload, json=True)
-        response.raise_for_status()
-        return response.json()["inputs"]
+        return self.dataset_populator.build_tool_state(tool_id, history_id, inputs=inputs)["inputs"]
 
     @staticmethod
-    def _batch(hdas: list[dict[str, Any]]) -> dict[str, Any]:
-        return {"batch": True, "values": [{"src": "hda", "id": hda["id"]} for hda in hdas]}
+    def _batch(items: list[dict[str, Any]], src: str = "hda") -> dict[str, Any]:
+        return {"batch": True, "values": [{"src": src, "id": item["id"]} for item in items]}
 
     @staticmethod
     def _hda_option_ids(input_dict: dict[str, Any]) -> list[str]:
@@ -584,6 +581,24 @@ class TestToolsApi(ApiTestCase, TestsTools):
             input1 = next(i for i in inputs if i["name"] == "input1")
             assert self._hda_option_ids(input1) == sorted(hda["id"] for hda in hdas)
             assert all(entry["name"].startswith("(hidden) ") for entry in input1["options"]["hda"])
+
+    @skip_without_tool("cat1")
+    def test_build_labels_every_batch_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdcas = [self._create_hdca(history_id, "list", hidden=True) for _ in range(2)]
+            inputs = self._build_inputs("cat1", history_id, {"input1": self._batch(hdcas, src="hdca")})
+            input1 = next(i for i in inputs if i["name"] == "input1")
+            assert sorted(entry["id"] for entry in input1["options"]["hdca"]) == sorted(hdca["id"] for hdca in hdcas)
+
+    @skip_without_tool("cat1")
+    def test_build_skips_batch_collection_with_deleted_elements(self):
+        with self.dataset_populator.test_history() as history_id:
+            first, with_deleted = (self._create_hdca(history_id, "list", hidden=True) for _ in range(2))
+            details = self.dataset_populator.get_history_collection_details(history_id, content_id=with_deleted["id"])
+            self.dataset_populator.delete_dataset(history_id, details["elements"][0]["object"]["id"])
+            inputs = self._build_inputs("cat1", history_id, {"input1": self._batch([first, with_deleted], src="hdca")})
+            input1 = next(i for i in inputs if i["name"] == "input1")
+            assert [entry["id"] for entry in input1["options"]["hdca"]] == [first["id"]]
 
     @skip_without_tool("cat1")
     def test_build_skips_batch_values_of_other_users(self):

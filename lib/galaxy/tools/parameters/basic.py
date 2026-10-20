@@ -1924,7 +1924,9 @@ def _load_owned_items(trans, history, keys: list[tuple[str, int]]) -> dict[tuple
             .options(selectinload(HistoryDatasetCollectionAssociation.tags))
         )
         for hdca in trans.sa_session.scalars(hdca_stmt):
-            loaded[("hdca", hdca.id)] = hdca
+            # Nested-collection summary, not a column; same check as from_json.
+            if not hdca.collection.elements_deleted:
+                loaded[("hdca", hdca.id)] = hdca
     return loaded
 
 
@@ -2832,7 +2834,7 @@ class DataToolParameter(BaseDataToolParameter):
         """
         for value in unresolved:
             if isinstance(value, HistoryDatasetCollectionAssociation):
-                if value.deleted or not value.visible or value.history != history:
+                if value.deleted or not value.visible or value.history_id != history.id:
                     state = _carried_state_label(value)
                     builder.options["hdca"].append(
                         make_hdca_entry(builder.security, value, f"({state}) {value.name}", keep=True)
