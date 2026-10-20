@@ -383,9 +383,15 @@ def build_route_name_index(app: FastAPI) -> dict[str, list["BaseRoute"]]:
     """
     index: dict[str, list[BaseRoute]] = {}
     for route in app.routes:
-        name = getattr(route, "name", None)
-        if name:
-            index.setdefault(name, []).append(route)
+        # Recent FastAPI keeps an included router as one unnamed route instead
+        # of copying its routes into app.routes. Its effective route contexts
+        # carry the names and build the URLs, as the router itself does.
+        effective_route_contexts = getattr(route, "effective_route_contexts", None)
+        candidates = effective_route_contexts() if effective_route_contexts else (route,)
+        for candidate in candidates:
+            name = getattr(candidate, "name", None)
+            if name:
+                index.setdefault(name, []).append(candidate)
     return index
 
 
