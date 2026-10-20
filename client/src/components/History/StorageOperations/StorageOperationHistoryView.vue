@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormInput } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { useStorageHistoryRunsWatcher } from "@/composables/useStorageRunWatcher";
@@ -9,6 +8,7 @@ import localize from "@/utils/localization";
 import { isTerminalRunState } from "@/utils/storageOperations";
 
 import StorageOperationRunsTable from "./StorageOperationRunsTable.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 
@@ -180,7 +180,7 @@ function onFinishedPageChange(page: number) {
 
         <template v-else>
             <div class="d-flex flex-wrap align-items-center mb-2 gap-2">
-                <BFormInput
+                <GFormInput
                     v-model="filterText"
                     class="storage-run-filter"
                     :placeholder="localize('Filter runs by target store location...')" />

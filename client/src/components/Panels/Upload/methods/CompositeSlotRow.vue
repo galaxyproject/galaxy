@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheck, faCloud, faEdit, faExclamation, faLaptop, faLink, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput, BFormTextarea } from "bootstrap-vue";
+import { BFormTextarea } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -11,6 +11,7 @@ import { bytesToString } from "@/utils/utils";
 
 import type { CompositeSlot, CompositeSlotMode } from "../types/uploadItem";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
@@ -141,8 +142,8 @@ function onRemoteFileSelected(items: SelectionItem[]) {
     showRemoteBrowser.value = false;
 }
 
-function onUrlInput(value: string) {
-    emit("update:slotItem", { ...base(), mode: "url", url: value });
+function onUrlInput(value: string | null) {
+    emit("update:slotItem", { ...base(), mode: "url", url: value ?? "" });
 }
 
 function onPasteInput(value: string) {
@@ -263,19 +264,19 @@ const display = computed(() => {
 
         <!-- Local file info row -->
         <div v-if="display.localFileName" class="mt-2">
-            <BFormInput :value="display.localFileName" readonly class="slot-file-name-input font-monospace" />
+            <GFormInput :model-value="display.localFileName" readonly class="slot-file-name-input font-monospace" />
         </div>
 
         <!-- URL input row -->
         <div v-if="slotItem.mode === 'url'" class="mt-2">
-            <BFormInput
-                :value="display.urlValue"
-                size="sm"
+            <GFormInput
+                :model-value="display.urlValue"
+                size="small"
                 placeholder="https://example.com/file.ext"
                 class="slot-url-input font-monospace"
                 data-test-id="composite-slot-url-input"
                 :state="urlInputState"
-                @input="onUrlInput" />
+                @update:model-value="onUrlInput" />
             <small v-if="urlValidationMessage" class="text-danger">
                 {{ urlValidationMessage }}
             </small>
@@ -294,7 +295,7 @@ const display = computed(() => {
 
         <!-- Remote file display row -->
         <div v-if="display.hasRemoteFile" class="mt-2">
-            <BFormInput :value="display.remoteName" readonly class="slot-file-name-input font-monospace" />
+            <GFormInput :model-value="display.remoteName" readonly class="slot-file-name-input font-monospace" />
         </div>
         <div v-else-if="slotItem.mode === 'remote'" class="mt-2 text-muted small">
             No file selected — click the dropdown to browse remote sources.

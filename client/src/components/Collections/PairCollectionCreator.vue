@@ -537,6 +537,11 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
         cursor: pointer;
         overflow: hidden;
 
+        // The rename field and its focus ring are taller than the row, so stop clipping while it is open
+        &:has(.input-icon-wrapper) {
+            overflow: visible;
+        }
+
         &:last-of-type {
             margin-bottom: 2px;
         }

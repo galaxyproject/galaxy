@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faFolder, faGlobe, faPlus, faTrash, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
@@ -41,6 +41,7 @@ import UploadTableExtensionCell from "../shared/UploadTableExtensionCell.vue";
 import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
 import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
@@ -806,7 +807,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- URL column (read-only) -->
                     <template v-slot:cell(url)="{ item }">
                         <div class="d-flex align-items-center">
-                            <BFormInput :value="item.url" size="sm" readonly class="uri-input" />
+                            <GFormInput :model-value="item.url" size="small" readonly class="uri-input" />
                         </div>
                     </template>
 

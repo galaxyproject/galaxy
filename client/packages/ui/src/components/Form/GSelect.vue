@@ -91,8 +91,10 @@ const selected = computed({
 .g-select {
     display: inline-block;
     width: 100%;
-    height: calc(1.5em + 0.75rem + 2px);
-    padding: 0.375rem 1.75rem 0.375rem 0.75rem;
+    height: var(--field-height-medium, calc(1.5em + 0.75rem + 2px));
+    // The right padding leaves room for the caret
+    padding: var(--field-padding-y-medium, 0.375rem) 1.75rem var(--field-padding-y-medium, 0.375rem)
+        var(--field-padding-x-medium, 0.75rem);
     font-size: var(--font-size-medium, 0.85rem);
     line-height: 1.5;
     color: var(--color-grey-800, #23262f);
@@ -104,7 +106,7 @@ const selected = computed({
         right 0.75rem center / 8px 10px no-repeat;
     // grey-500 keeps the border >= 3:1 against the page (WCAG 1.4.11)
     border: 1px solid var(--color-grey-500, #63656d);
-    border-radius: var(--spacing-1, 0.25rem);
+    border-radius: var(--field-radius-medium, 0.25rem);
     cursor: pointer;
 
     &:focus-visible {
@@ -127,18 +129,18 @@ const selected = computed({
     }
 
     &.g-small {
-        height: calc(1.5em + 0.5rem + 2px);
-        padding-top: 0.25rem;
-        padding-bottom: 0.25rem;
-        padding-left: 0.5rem;
+        height: var(--field-height-small, calc(1.5em + 0.5rem + 2px));
+        padding-top: var(--field-padding-y-small, 0.25rem);
+        padding-bottom: var(--field-padding-y-small, 0.25rem);
+        padding-left: var(--field-padding-x-small, 0.5rem);
         font-size: var(--font-size-small, 0.75rem);
     }
 
     &.g-large {
-        height: calc(1.5em + 1rem + 2px);
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        padding-left: 1rem;
+        height: var(--field-height-large, calc(1.5em + 1rem + 2px));
+        padding-top: var(--field-padding-y-large, 0.5rem);
+        padding-bottom: var(--field-padding-y-large, 0.5rem);
+        padding-left: var(--field-padding-x-large, 1rem);
         font-size: var(--font-size-large, 1rem);
     }
 

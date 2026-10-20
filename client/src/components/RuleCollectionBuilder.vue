@@ -539,7 +539,7 @@
                     <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
                     <div v-if="showCollectionNameInput" class="rule-footer-name-group">
-                        <BFormInput
+                        <GFormInput
                             v-model="collectionName"
                             v-g-tooltip.hover
                             class="collection-name"
@@ -613,7 +613,7 @@
 <script>
 import HotTable from "@handsontable/vue";
 import axios from "axios";
-import { BFormInput, BRow } from "bootstrap-vue";
+import { BRow } from "bootstrap-vue";
 import { escape } from "lodash";
 import { mapActions } from "pinia";
 
@@ -626,6 +626,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GFormInput from "./BaseComponents/Form/GFormInput.vue";
 import GButton from "./BaseComponents/GButton.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ColumnSelector from "@/components/RuleBuilder/ColumnSelector.vue";
@@ -660,9 +661,9 @@ const stripUiKeys = function (entry) {
 
 export default {
     components: {
-        BFormInput,
         BRow,
         GAlert,
+        GFormInput,
         TooltipOnHover,
         HotTable,
         RuleGrid,

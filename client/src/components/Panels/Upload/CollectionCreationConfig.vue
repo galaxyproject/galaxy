@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExclamationTriangle, faInfoCircle, faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -10,6 +9,7 @@ import type {
     SupportedCollectionType,
 } from "@/composables/upload/collectionTypes";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GSelect from "@/components/BaseComponents/GSelect.vue";
 
@@ -142,10 +142,10 @@ defineExpose({ reset });
                         Collection Name
                         <span class="text-danger">*</span>
                     </label>
-                    <BFormInput
+                    <GFormInput
                         id="collection-name-input"
                         v-model="collectionName"
-                        size="sm"
+                        size="small"
                         placeholder="Enter collection name"
                         :state="collectionValidation.valid ? null : false" />
                 </div>

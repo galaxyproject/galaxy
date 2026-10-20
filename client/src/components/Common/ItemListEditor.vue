@@ -4,9 +4,9 @@
  */
 import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
@@ -122,7 +122,7 @@ function resetForm() {
 <template>
     <div>
         <div v-if="showForm">
-            <BFormInput v-model="currentItem" :state="currentItemError ? false : null" @focus="removeErrorMessage" />
+            <GFormInput v-model="currentItem" :state="currentItemError ? false : null" @focus="removeErrorMessage" />
             <div class="spacer"></div>
             <div v-if="currentItemError" class="error">{{ currentItemError }}</div>
             <div v-if="props.description" v-sanitize-html="props.description"></div>
