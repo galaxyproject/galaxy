@@ -1250,6 +1250,13 @@ export interface components {
             /** Repositories */
             repositories: number
         }
+        /** CategorySummary */
+        CategorySummary: {
+            /** Id */
+            id: string
+            /** Name */
+            name: string
+        }
         /**
          * ChangesetMetadataStatus
          * @description Per-changeset detail during reset metadata operation.
@@ -1884,10 +1891,10 @@ export interface components {
         /** DetailedRepository */
         DetailedRepository: {
             /**
-             * Category Ids
+             * Categories
              * @default []
              */
-            category_ids: string[]
+            categories: components["schemas"]["CategorySummary"][]
             /** Clone Url */
             clone_url?: string | null
             /** Create Time */

@@ -4,7 +4,7 @@ import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
 import { GAlert } from "@galaxyproject/galaxy-ui"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
-import { useCategoriesStore, useRepositoryStore } from "@/stores"
+import { useRepositoryStore } from "@/stores"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import PageHeader from "@/components/PageHeader.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -188,16 +188,6 @@ const invalidTools = computed(() => currentMetadata.value?.invalid_tools || [])
 const malicious = computed(() => currentMetadata.value?.malicious || false)
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
 const canPush = computed(() => repositoryPermissions.value?.can_push || false)
-
-const categoriesStore = useCategoriesStore()
-void categoriesStore.ensureLoaded()
-// Names fill in once the categories load
-const categories = computed(() =>
-    (repository.value?.category_ids ?? [])
-        .flatMap((categoryId) => categoriesStore.byId(categoryId) ?? [])
-        .sort((a, b) => a.name.localeCompare(b.name)),
-)
-const categoryNames = computed(() => categories.value.map((category) => category.name))
 </script>
 
 <template>
@@ -339,7 +329,7 @@ const categoryNames = computed(() => categories.value.map((category) => category
 
                     <section class="repository-card shed-card">
                         <div class="shed-card-body">
-                            <repository-shed-yml :repository="repository" :categories="categoryNames" />
+                            <repository-shed-yml :repository="repository" />
                         </div>
                     </section>
                 </div>
@@ -354,9 +344,9 @@ const categoryNames = computed(() => categories.value.map((category) => category
                             />
                         </div>
                     </section>
-                    <section class="repository-card shed-card" v-if="categories.length > 0">
+                    <section class="repository-card shed-card" v-if="repository.categories.length > 0">
                         <div class="shed-card-body">
-                            <repository-categories :categories="categories" />
+                            <repository-categories :categories="repository.categories" />
                         </div>
                     </section>
                     <section class="repository-card shed-card">

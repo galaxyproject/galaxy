@@ -7,10 +7,11 @@ from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers import repositories as repositories_manager
 from tool_shed.managers.repositories import (
     guid_to_repository,
-    to_element_dict,
+    repository_categories,
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import Repository
+from tool_shed_client.schema import CategorySummary
 from ._util import (
     attach_category,
     create_category,
@@ -59,7 +60,7 @@ def test_guid_to_repository_parses_owner_and_name(monkeypatch):
     assert captured["context"] is sentinel_context
 
 
-def test_element_dict_leaves_out_deleted_categories(
+def test_repository_categories_leave_out_deleted_categories(
     provides_repositories: ProvidesRepositoriesContext, new_repository: Repository
 ):
     # No API deletes a category, so this can't be set up through the API tests
@@ -71,6 +72,6 @@ def test_element_dict_leaves_out_deleted_categories(
     provides_repositories.sa_session.flush()
 
     app = provides_repositories.app
-    element = to_element_dict(app, new_repository, include_categories=True)
+    categories = repository_categories(app, new_repository)
 
-    assert element["category_ids"] == [app.security.encode_id(live.id)]
+    assert categories == [CategorySummary(id=app.security.encode_id(live.id), name=live.name)]

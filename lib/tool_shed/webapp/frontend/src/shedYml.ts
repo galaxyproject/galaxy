@@ -2,7 +2,14 @@ import { type components } from "@/schema"
 
 type ShedYmlRepository = Pick<
     components["schemas"]["DetailedRepository"],
-    "name" | "owner" | "type" | "description" | "long_description" | "homepage_url" | "remote_repository_url"
+    | "name"
+    | "owner"
+    | "type"
+    | "description"
+    | "long_description"
+    | "homepage_url"
+    | "remote_repository_url"
+    | "categories"
 >
 
 // Left plain only when YAML would read it back as the same string, otherwise JSON's quoting is valid YAML.
@@ -11,10 +18,13 @@ const PLAIN_SCALAR = /^[A-Za-z][\w ./()+,-]*$|^https?:\/\/[^\s#]*[^\s#:]$/
 const RESOLVES_TO_NON_STRING = /^(true|false|yes|no|on|off|y|n|null)$/i
 // Characters YAML refuses, or reads as line breaks, unescaped. JSON.stringify escapes the C0 ones itself.
 // eslint-disable-next-line no-control-regex -- matching control characters is the point
-const UNPRINTABLE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u2028\u2029\ufffe\uffff]/g
+const UNPRINTABLE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u2028\u2029\ufffe\uffff]/
 
 function quoted(value: string): string {
-    return JSON.stringify(value).replace(UNPRINTABLE, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)
+    return JSON.stringify(value).replace(
+        new RegExp(UNPRINTABLE, "g"),
+        (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+    )
 }
 
 function scalar(value: string): string {
@@ -29,7 +39,7 @@ function block(value: string): string {
     if (!value.includes("\n")) {
         return scalar(value)
     }
-    if (/^\s|\r|\n\n$/.test(value) || new RegExp(UNPRINTABLE.source).test(value)) {
+    if (/^\s|\r|\n\n$/.test(value) || UNPRINTABLE.test(value)) {
         return quoted(value)
     }
     const chomp = value.endsWith("\n") ? "|" : "|-"
@@ -39,7 +49,7 @@ function block(value: string): string {
 
 // The .shed.yml planemo would create or update this repository from. Planemo never uploads the file
 // itself, so it is rebuilt from the repository's settings.
-export function shedYml(repository: ShedYmlRepository, categories: string[]): string {
+export function shedYml(repository: ShedYmlRepository): string {
     const lines = [
         `name: ${scalar(repository.name)}`,
         `owner: ${scalar(repository.owner)}`,
@@ -55,8 +65,8 @@ export function shedYml(repository: ShedYmlRepository, categories: string[]): st
         lines.push(`remote_repository_url: ${scalar(repository.remote_repository_url)}`)
     }
     lines.push(`type: ${scalar(repository.type)}`)
-    if (categories.length > 0) {
-        lines.push("categories:", ...categories.map((category) => `- ${scalar(category)}`))
+    if (repository.categories.length > 0) {
+        lines.push("categories:", ...repository.categories.map((category) => `- ${scalar(category.name)}`))
     }
     return `${lines.join("\n")}\n`
 }
