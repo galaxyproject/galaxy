@@ -1,6 +1,9 @@
 import { mount } from "@vue/test-utils"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import RepositoryLinks from "./RepositoryLinks.vue"
+
+const { copyAndNotify } = vi.hoisted(() => ({ copyAndNotify: vi.fn() }))
+vi.mock("@/util", () => ({ copyAndNotify }))
 
 const repository = {
     id: "abc",
@@ -22,7 +25,7 @@ const repository = {
 function links(wrapper: ReturnType<typeof mount>) {
     return wrapper.findAll(".repository-link").map((link) => ({
         label: link.get(".repository-link-label").text(),
-        href: link.get("a").attributes("href"),
+        href: link.find("a").exists() ? link.get("a").attributes("href") : null,
     }))
 }
 
@@ -50,5 +53,20 @@ describe("RepositoryLinks", () => {
         const wrapper = mount(RepositoryLinks, { props: { repository, currentRevision: null } })
 
         expect(links(wrapper)).toEqual([])
+    })
+
+    it("gives the hg clone command, as hgweb pages may need a login but cloning doesn't", async () => {
+        const wrapper = mount(RepositoryLinks, {
+            props: {
+                repository: { ...repository, clone_url: "https://toolshed.example/repos/devteam/bismark" },
+                currentRevision: null,
+            },
+        })
+
+        expect(links(wrapper)).toEqual([{ label: "Mercurial clone", href: null }])
+        const command = "hg clone https://toolshed.example/repos/devteam/bismark"
+        expect(wrapper.get(".repository-link code").text()).toBe(command)
+        await wrapper.get("button[aria-label='Copy clone command']").trigger("click")
+        expect(copyAndNotify).toHaveBeenCalledWith(command, "Clone command copied to your clipboard")
     })
 })

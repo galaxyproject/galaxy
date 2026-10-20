@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
-import { faCode, faCopy, faHouse, faLink } from "@fortawesome/free-solid-svg-icons"
+import { faCode, faCodeFork, faCopy, faHouse, faLink } from "@fortawesome/free-solid-svg-icons"
 import { GButton } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed } from "vue"
@@ -14,30 +14,54 @@ interface RepositoryLinkProps {
     currentRevision: string | null
 }
 
+// A link when it has an href, otherwise a command to copy
 interface LinkRow {
     label: string
     icon: IconDefinition
-    href: string
+    text: string
+    href?: string
+    copyText: string
+    copyLabel: string
+    copyMessage: string
 }
 
-function copyLink(href: string) {
-    const absoluteLink = href.startsWith("http") ? href : `${window.location.origin}${href}`
-    copyAndNotify(absoluteLink, "Link copied to your clipboard")
+function urlRow(label: string, icon: IconDefinition, href: string): LinkRow {
+    const copyText = href.startsWith("http") ? href : `${window.location.origin}${href}`
+    return {
+        label,
+        icon,
+        text: href,
+        href,
+        copyText,
+        copyLabel: "Copy link",
+        copyMessage: "Link copied to your clipboard",
+    }
 }
 
 const props = defineProps<RepositoryLinkProps>()
 
 const rows = computed(() => {
-    const { owner, name, homepage_url, remote_repository_url } = props.repository
+    const { owner, name, homepage_url, remote_repository_url, clone_url } = props.repository
     const rows: LinkRow[] = []
     if (props.currentRevision) {
-        rows.push({ label: "Permalink", icon: faLink, href: `/view/${owner}/${name}/${props.currentRevision}` })
+        rows.push(urlRow("Permalink", faLink, `/view/${owner}/${name}/${props.currentRevision}`))
     }
     if (homepage_url) {
-        rows.push({ label: "Homepage", icon: faHouse, href: homepage_url })
+        rows.push(urlRow("Homepage", faHouse, homepage_url))
     }
     if (remote_repository_url) {
-        rows.push({ label: "Development repository", icon: faCode, href: remote_repository_url })
+        rows.push(urlRow("Development repository", faCode, remote_repository_url))
+    }
+    if (clone_url) {
+        const command = `hg clone ${clone_url}`
+        rows.push({
+            label: "Mercurial clone",
+            icon: faCodeFork,
+            text: command,
+            copyText: command,
+            copyLabel: "Copy clone command",
+            copyMessage: "Clone command copied to your clipboard",
+        })
     }
     return rows
 })
@@ -48,15 +72,16 @@ const rows = computed(() => {
             <FontAwesomeIcon :icon="row.icon" class="repository-link-icon" fixed-width />
             <span class="repository-link-text">
                 <span class="repository-link-label">{{ row.label }}</span>
-                <a class="repository-link-url" :href="row.href">{{ row.href }}</a>
+                <a v-if="row.href" class="repository-link-url" :href="row.href">{{ row.text }}</a>
+                <code v-else class="repository-link-url">{{ row.text }}</code>
             </span>
             <GButton
                 icon-only
                 transparent
                 size="small"
-                aria-label="Copy link"
-                title="Copy link"
-                @click="copyLink(row.href)"
+                :aria-label="row.copyLabel"
+                :title="row.copyLabel"
+                @click="copyAndNotify(row.copyText, row.copyMessage)"
             >
                 <FontAwesomeIcon :icon="faCopy" />
             </GButton>
