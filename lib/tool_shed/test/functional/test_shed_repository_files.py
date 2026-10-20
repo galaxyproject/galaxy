@@ -56,6 +56,9 @@ class TestShedRepositoryFilesApi(ShedApiTestCase):
         )
         api_asserts.assert_status_code_is_ok(contents_response)
         assert 'version="1.1.0"' in contents_response.json()["content"]
+        # A cookie on anonymous responses would keep shared caches from storing them.
+        assert "Set-Cookie" not in listing_response.headers
+        assert "Set-Cookie" not in contents_response.headers
 
     def test_repository_file_contents_percent_encoded_path(self):
         # {path:path} matches the decoded path, so an encoded slash names the same nested file.
