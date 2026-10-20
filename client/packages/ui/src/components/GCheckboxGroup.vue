@@ -141,7 +141,7 @@ provide(checkboxGroupKey, {
 .g-checkbox-group-legend {
     width: auto;
     margin-bottom: 0;
-    // 7px below the legend so a labelled group lines up with the other labelled form fields
+    // Form labels' padding plus the 1px field border, not a spacing step, so a labelled group lines up with labelled fields
     padding: 0 0 calc(0.375rem + 1px);
     font-size: inherit;
 }
