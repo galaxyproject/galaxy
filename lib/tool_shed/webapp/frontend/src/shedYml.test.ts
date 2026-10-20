@@ -62,4 +62,11 @@ type: unrestricted
         expect(yml).toContain('homepage_url: "https://example.org/x:"')
         expect(yml).toContain('- "Odd\\u007fname"')
     })
+
+    it("escapes characters YAML reads as line breaks or refuses", () => {
+        const yml = shedYml({ ...repository, long_description: "text\nline\u2028more\u000b" }, ["a\u2029b"])
+
+        expect(yml).toContain('long_description: "text\\nline\\u2028more\\u000b"')
+        expect(yml).toContain('- "a\\u2029b"')
+    })
 })
