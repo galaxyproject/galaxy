@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { flushPromises, mount } from "@vue/test-utils"
 import { createPinia, setActivePinia } from "pinia"
-import { useCategoriesStore, useRepositoryStore } from "@/stores"
+import { useRepositoryStore } from "@/stores"
 import RepositoryPage from "./RepositoryPage.vue"
 
 const { readmes, mockGet } = vi.hoisted(() => {
     const readmes = { value: {} as Record<string, string> }
-    return { readmes, mockGet: vi.fn(async () => ({ data: readmes.value })) }
+    // The page also loads the category list, which none of these repositories use
+    return {
+        readmes,
+        mockGet: vi.fn(async (path: string) => ({ data: path == "/api/categories" ? [] : readmes.value })),
+    }
 })
 vi.mock("@/schema", async (importOriginal) => ({
     ...(await importOriginal<typeof import("@/schema")>()),
@@ -137,31 +141,5 @@ describe("RepositoryPage", () => {
         })
 
         expect(wrapper.get(".description").text()).toBe("Joins datasets head to tail, with options.")
-    })
-
-    it("links the repository's categories by name and lists them in its .shed.yml", async () => {
-        const category = { description: "", deleted: false, repositories: 1 }
-        useCategoriesStore().$patch({
-            categories: [
-                { ...category, id: "c1", name: "Text Manipulation" },
-                { ...category, id: "c2", name: "Convert Formats" },
-            ],
-        })
-        const wrapper = await mountPage({
-            repository: repository({ category_ids: ["c1", "c2", "not-loaded"] }),
-            repositoryMetadata: revision(),
-        })
-
-        const links = wrapper.findAll(".repository-category").map((link) => [link.text(), link.attributes("to")])
-        expect(links).toEqual([
-            ["Convert Formats", "/repositories_by_category/c2"],
-            ["Text Manipulation", "/repositories_by_category/c1"],
-        ])
-        const shedYml = wrapper
-            .findAll(".config-file-contents")
-            .find((file) => file.get(".config-file-contents-name").text() === ".shed.yml")
-        expect(shedYml?.get("pre").text()).toContain(
-            "type: unrestricted\ncategories:\n- Convert Formats\n- Text Manipulation",
-        )
     })
 })

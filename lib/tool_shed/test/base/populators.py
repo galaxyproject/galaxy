@@ -151,7 +151,7 @@ class ToolShedPopulator:
     def setup_column_maker_repo(
         self,
         prefix=DEFAULT_PREFIX,
-        category_id: str | None = None,
+        category_id: list[str] | str | None = None,
     ) -> Repository:
         if category_id is None:
             category_id = self.new_category(prefix=prefix).id
