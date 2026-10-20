@@ -213,7 +213,7 @@ class ToolIndex(BaseModel):
             return versions.get(tool_version)
         return self.entries.get(tool_id)
 
-    def add_entry(self, entry: ToolIndexEntry, *, new_placements_first: bool = False) -> None:
+    def add_entry(self, entry: ToolIndexEntry, *, new_placements_first: bool = False, supersede: bool = False) -> None:
         """Add an entry, populating both the default and per-version maps.
 
         The "default" entry per id (used by ``ToolIndex.get(tool_id)`` and
@@ -231,19 +231,36 @@ class ToolIndex(BaseModel):
         eager runtime behaviour, where ``update_or_append`` inserts the new
         tool at its conf-fragment position — the top of the section. Full
         rebuilds append, preserving conf order.
+
+        ``supersede``: the entry replaces its id/version slot even when a
+        configured entry holds it. Rescans and runtime writes pass this: a
+        shed update indexes the new revision ad hoc before its conf entry
+        catches up, and the old path may already be gone.
         """
         self.invalidate_caches()
+        version = entry.version or ""
         versions = self.entries_by_version.setdefault(entry.id, {})
-        slot = versions.get(entry.version or "")
-        if slot is not None and not _preferred_default(entry, slot, replace_equal=True):
-            # A storage-only twin of a configured id/version (e.g. a bundled
-            # copy at another path) must not displace it in either map.
+        slot = versions.get(version)
+        if slot is not None and not supersede and not _preferred_default(entry, slot, replace_equal=True):
+            # A storage-only twin of a configured id/version found by the same
+            # scan (e.g. a bundled copy at another path) must not displace it.
             return
-        versions[entry.version or ""] = entry
+        versions[version] = entry
         self._record_panel_item(entry, new_placements_first=new_placements_first)
         existing = self.entries.get(entry.id)
-        if existing is None or _preferred_default(entry, existing, replace_equal=True):
+        if existing is not None and (existing.version or "") == version:
+            self._select_default(entry.id)
+        elif existing is None or _preferred_default(entry, existing, replace_equal=True):
             self.entries[entry.id] = entry
+
+    def _select_default(self, tool_id: str) -> None:
+        """Point ``entries[tool_id]`` at the preferred one of its versions."""
+        remaining = iter(self.entries_by_version[tool_id].values())
+        default = next(remaining)
+        for candidate in remaining:
+            if _preferred_default(candidate, default):
+                default = candidate
+        self.entries[tool_id] = default
 
     def remove_version(self, tool_id: str, version: str | None, keep_placements: bool = False) -> bool:
         """Remove one version of ``tool_id``, re-selecting its default.
@@ -265,12 +282,7 @@ class ToolIndex(BaseModel):
         else:
             default = self.entries.get(tool_id)
             if default is None or (default.version or "") == (version or ""):
-                remaining = iter(versions.values())
-                default = next(remaining)
-                for candidate in remaining:
-                    if _preferred_default(candidate, default):
-                        default = candidate
-                self.entries[tool_id] = default
+                self._select_default(tool_id)
             if not keep_placements and not any(entry.in_panel for entry in versions.values()):
                 self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
                 self.rebuild_panel_projections()

@@ -203,6 +203,16 @@ def test_storage_only_twin_does_not_displace_configured_version_slot(index_entry
     assert index.get("x", "1.0") is configured
 
 
+def test_superseding_entry_replaces_configured_version_slot(index_entry, tool_index):
+    # A rescan of the same id and version at a new path replaces the slot.
+    configured = index_entry("x", version="1.0", source_path="/old/x.xml")
+    index = tool_index(configured, index_entry("x", version="0.9"))
+    rescanned = index_entry("x", version="1.0", source_path="/new/x.xml", in_panel=False)
+    index.add_entry(rescanned, supersede=True)
+    assert index.get("x", "1.0") is rescanned
+    assert index.entries["x"].version == "0.9"
+
+
 def test_remove_version_keeps_placement_order_for_readded_id(index_entry, tool_index):
     index = tool_index(*(index_entry(f"t{i}", version="1.0", panel_section_id="s") for i in (1, 2, 3)))
     index.remove_version("t1", "1.0", keep_placements=True)
