@@ -1914,9 +1914,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 page_source = input_source.parse_nested_inputs_source()
                 group_r.inputs = self.parse_input_elem(page_source, enctypes, context)
                 group_r.default = int(input_source.get("default", 0))
-                group_r.min = int(input_source.get("min", 0))
+                # Canonical YAML models serialize an unset min/max as null.
+                min_raw = input_source.get("min")
+                group_r.min = int(min_raw) if min_raw is not None else 0
+                max_raw = input_source.get("max")
                 # Use float instead of int so that math.inf can be used for no max
-                group_r.max = float(input_source.get("max", math.inf))
+                group_r.max = float(max_raw) if max_raw is not None else math.inf
                 assert group_r.min <= group_r.max, ValueError(
                     f"Tool with id '{self.id}': min repeat count must be less-than-or-equal to the max."
                 )

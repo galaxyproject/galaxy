@@ -32,13 +32,6 @@ BOOLEAN_OVERRIDES = {
 LoadedTool = Union[RequiredTool, DescribeUserTool]
 
 
-def _sources(tool_id, yaml_directory=TOOL_DIR / "parameters"):
-    return [
-        pytest.param(yaml_directory / f"{tool_id}.yml", id=f"{tool_id}-yaml"),
-        pytest.param(SOURCE_DIR / f"{tool_id}.json", id=f"{tool_id}-json"),
-    ]
-
-
 def _load_paths(tool_id, yaml_path, json_path, *values):
     """One case per load path: toolbox YAML, API user tool from YAML, API user tool from JSON."""
     return [
@@ -62,20 +55,42 @@ def loaded_tool(dataset_populator: DatasetPopulator, history_id: str, request) -
             yield dataset_populator.describe_user_tool(request.param, history_id)
 
 
-class UnsupportedStructuralInput(Exception):
-    pass
+@pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_user_repeat"), indirect=True)
+def test_repeat_contract(loaded_tool: LoadedTool, tool_input_format: DescribeToolInputs):
+    repeat = loaded_tool.build()["inputs"][0]
+    assert repeat["name"] == "group"
+    assert repeat["type"] == "repeat"
+    assert repeat["min"] == 1
+    parameters = {parameter["name"]: parameter for parameter in repeat["inputs"]}
+    assert parameters["count"]["value"] == "2"
+    assert parameters["flag"]["value"] is None
+    assert parameters["flag"]["optional"] is True
+    # Legacy and request {} fill the min instance; 21.01 needs the instance supplied.
+    defaults = tool_input_format.when.flat({}).when.nested({"group": [{}]}).when.request({})
+    loaded_tool.execute().with_inputs(defaults).assert_has_single_job.with_output("output").with_json(
+        {"group": [{"count": 2, "flag": None}]}
+    )
+    inputs = tool_input_format.when.flat({"group_0|count": 3, "group_1|count": 4, "group_1|flag": True}).when.nested(
+        {"group": [{"count": 3}, {"count": 4, "flag": True}]}
+    )
+    loaded_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_json(
+        {"group": [{"count": 3, "flag": None}, {"count": 4, "flag": True}]}
+    )
 
 
-@pytest.mark.parametrize(
-    "user_tool", _sources("gx_user_repeat", SOURCE_DIR) + _sources("gx_user_section", SOURCE_DIR), indirect=True
-)
-@pytest.mark.xfail(strict=True, raises=UnsupportedStructuralInput, reason="#23888: canonical groups fail API parsing")
-def test_user_structural_contract(user_tool: DescribeUserTool):
-    response = user_tool.build_raw()
-    if response.status_code == 500:
-        raise UnsupportedStructuralInput(response.text)
-    assert response.status_code == 200, response.text
-    assert response.json()["inputs"][0]["name"] == "group"
+@pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_user_section"), indirect=True)
+def test_section_contract(loaded_tool: LoadedTool, tool_input_format: DescribeToolInputs):
+    section = loaded_tool.build()["inputs"][0]
+    assert section["name"] == "group"
+    assert section["type"] == "section"
+    assert [(parameter["name"], parameter["value"]) for parameter in section["inputs"]] == [("count", "2")]
+    loaded_tool.execute().with_inputs(tool_input_format.when.any({})).assert_has_single_job.with_output(
+        "output"
+    ).with_json({"group": {"count": 2}})
+    inputs = tool_input_format.when.flat({"group|count": 5}).when.nested({"group": {"count": 5}})
+    loaded_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_json(
+        {"group": {"count": 5}}
+    )
 
 
 @pytest.mark.parametrize("loaded_tool", _parameter_load_paths("gx_user_boolean_defaults"), indirect=True)
