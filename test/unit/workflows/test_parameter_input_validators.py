@@ -6,6 +6,7 @@ import pytest
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.workflow import modules
 from .workflow_support import MockTrans
@@ -296,7 +297,8 @@ def _save_form(incoming):
     trans = _trans(workflow_building_modes.ENABLED)
     edited = modules.module_factory.from_dict(trans, {"type": "parameter_input"}, from_tool_form=True)
     errors: dict[str, Any] = {}
-    tool_state = edited.populate_state_from_tool_form(incoming, errors)
+    tool_state: dict[str, Any] = {}
+    populate_state(trans, edited.get_inputs(), incoming, tool_state, errors=errors, check=True)
     assert not errors, errors
     saved = modules.module_factory.from_dict(
         trans, {"type": "parameter_input", "label": "p", "tool_state": tool_state}, from_tool_form=True
