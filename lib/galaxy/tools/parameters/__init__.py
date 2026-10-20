@@ -274,6 +274,11 @@ def visit_input_values(
                 error=case_error,
                 replace_value=replace_conditional_test_values,
             )
+            if input.test_param.name not in values:
+                # The callback left a conditional absent from the state without a selector
+                # (e.g. the injected __job_resource group on import). Select the default case
+                # so the state stays serializable: Conditional.value_to_basic needs the selector.
+                values[input.test_param.name] = input.test_param.get_initial_value(None, context)
             values["__current_case__"] = get_current_case(input, values)
             if values["__current_case__"] >= 0:
                 visit_input_values(
