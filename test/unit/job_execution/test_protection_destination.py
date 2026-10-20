@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 import pytest
 
 from galaxy.job_execution.protection import (
@@ -15,7 +13,6 @@ def _destination(params):
         metadata_strategy="extended",
         has_tasks=False,
         is_pulsar=True,
-        walltime=timedelta(hours=2),
     )
 
 
@@ -34,7 +31,6 @@ def test_destination_params_are_read_as_job_configurations_write_them():
     assert destination.remote_metadata
     assert destination.rewrite_parameters
     assert not destination.live_tool_output_reporting
-    assert destination.walltime == timedelta(hours=2)
     assert destination.recryptor == RecryptorSettings(
         url="https://recryptor:61358", timeout=10, ca_cert="/etc/ca.pem", verbose_errors=True
     )
