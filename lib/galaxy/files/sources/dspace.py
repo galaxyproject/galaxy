@@ -147,14 +147,18 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
             bitstream
             for bundle in bundles
             if bundle.get("name") == CONTENT_BUNDLE
-            for bitstream in self._all(config, f"core/bundles/{bundle['uuid']}/bitstreams", {}, "bitstreams")
+            for bitstream in self._all(
+                config, f"core/bundles/{bundle['uuid']}/bitstreams", {"embed": "format"}, "bitstreams"
+            )
         ]
 
     def _file(self, bitstream: dict[str, Any]) -> RemoteFile:
         path = f"/bitstreams/{bitstream['uuid']}/{bitstream['name']}"
         checksum = bitstream.get("checkSum") or {}
+        mimetype = bitstream.get("_embedded", {}).get("format", {}).get("mimetype")
         hashes = None
-        if checksum.get("checkSumAlgorithm") == "MD5" and checksum.get("value"):
+        # DSpace can put a citation cover page in front of a PDF on download, which changes its MD5
+        if checksum.get("checkSumAlgorithm") == "MD5" and checksum.get("value") and mimetype != "application/pdf":
             hashes = [RemoteFileHash(hash_function="MD5", hash_value=checksum["value"].lower())]
         return RemoteFile(
             name=bitstream["name"],
