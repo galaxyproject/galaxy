@@ -50,7 +50,10 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
-from .util import _parse_name
+from .util import (
+    _parse_name,
+    text_input_is_optional,
+)
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
@@ -541,6 +544,12 @@ class InputSource(metaclass=ABCMeta):
         keys to be supported depend on the parameter type.
         """
 
+    def parse_boolean_default(self, default: Optional[bool], *, allow_none: bool = True) -> Optional[bool]:
+        """Return the declared Boolean default using this source's syntax."""
+        if allow_none:
+            return self.get_bool_or_none("checked", default)
+        return self.get_bool("checked", default)
+
     def parse_label(self):
         return self.get("label")
 
@@ -582,6 +591,10 @@ class InputSource(metaclass=ABCMeta):
         if default is None:
             default = self.default_optional
         return self.get_bool("optional", default)
+
+    def parse_text_optional(self) -> Tuple[bool, bool]:
+        """Return text optionality and whether it was inferred from validators accepting ""."""
+        return text_input_is_optional(self)
 
     def parse_dynamic_options(self) -> Optional[DynamicOptions]:
         """Return an optional element describing dynamic options.
