@@ -271,6 +271,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(9)
 
+    @selenium_only("Playwright element text on 26.0 includes the hidden help popover body")
     @selenium_test
     def test_map_over_paired_collection_hint(self):
         history_id = self.current_history_id()
