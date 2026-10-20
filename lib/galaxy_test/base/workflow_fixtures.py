@@ -1369,7 +1369,7 @@ report:
 """
 
 WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA = """
-image_input_1:
+image_input:
   value: 454Score.png
   type: File
   file_type: png
