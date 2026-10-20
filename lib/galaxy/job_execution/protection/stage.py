@@ -38,6 +38,7 @@ def _report(job_directory: str, relative_path: str, message: str) -> None:
 def run(command: str, plan_path: str) -> int:
     # The plan lives in <job directory>/configs/, failures are reported even when it can't be read.
     job_directory = os.path.dirname(os.path.dirname(os.path.abspath(plan_path)))
+    plan: ProtectionPlan | None = None
     try:
         plan = ProtectionPlan.read(plan_path)
         job_directory = plan.job_directory
@@ -58,8 +59,12 @@ def run(command: str, plan_path: str) -> int:
             _report(job_directory, CLEANUP_FAILURE_FILE, message)
         print(message, file=sys.stderr)
         if not isinstance(e, ProtectionError):
-            # Job stderr is shown to users: only unexpected errors, i.e. bugs, need their traceback.
-            traceback.print_exc()
+            # Job stderr is shown to users: only unexpected errors, i.e. bugs, need their traceback, and
+            # their message may show decrypted data. Administrators opt into it with verbose errors.
+            if plan and plan.recryptor.verbose_errors:
+                traceback.print_exc()
+            else:
+                traceback.print_tb(e.__traceback__)
         return 1
     return 0
 
