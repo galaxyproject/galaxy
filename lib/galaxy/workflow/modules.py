@@ -136,7 +136,7 @@ from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
     numeric_bounds_inverted,
-    numeric_bounds_type,
+    NumericBounds,
     split_numeric_bounds,
 )
 
@@ -1597,7 +1597,7 @@ class InputParameterModule(WorkflowModule):
         bounds, _ = split_numeric_bounds(self._parse_state_into_dict())
         return self._inverted_bounds_error(bounds) if bounds else None
 
-    def _inverted_bounds_error(self, bounds: numeric_bounds_type) -> Optional[str]:
+    def _inverted_bounds_error(self, bounds: NumericBounds) -> Optional[str]:
         if not numeric_bounds_inverted(bounds):
             return None
         input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
