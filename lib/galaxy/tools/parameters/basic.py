@@ -1348,6 +1348,8 @@ class SelectToolParameter(ToolParameter):
             # Conditional case inference walks tool state without a transaction
             # (see galaxy.tools.parameters.visit_input_values); only statically
             # declared options can be resolved without one.
+            if self.is_dynamic:
+                return None
             options = [ParameterOption(*o) for o in self.static_options]
         else:
             try:

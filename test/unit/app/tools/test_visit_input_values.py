@@ -79,3 +79,20 @@ def test_present_conditional_selector_is_kept():
     visit_input_values(inputs, state, _connect_input1)
 
     assert state["__job_resource"] == {"__job_resource__select": "yes", "__current_case__": 1}
+
+
+def test_missing_conditional_with_dynamic_selector_is_not_seeded():
+    # Without a transaction a dynamic select has no initial value, as for the upload
+    # tool's files_metadata conditional when tool parameters are reordered (meta.py).
+    conditional = Conditional("files_metadata")
+    conditional.test_param = SelectToolParameter(
+        None,
+        XML("""<param name="file_type" type="select" dynamic_options="get_file_types()"/>"""),
+    )
+    conditional.cases = [cast(ConditionalWhen, Bunch(value="auto", inputs={}))]
+    inputs = cast(ToolInputsT, {"files_metadata": conditional})
+    state: dict[str, Any] = {}
+
+    visit_input_values(inputs, state, lambda input, value, prefixed_name, **kwargs: None)
+
+    assert state["files_metadata"] == {"__current_case__": -1}
