@@ -1138,6 +1138,22 @@ steps:
     def test_editor_embed_workflow(self):
         self.setup_subworkflow()
 
+    @selenium_test
+    def test_editor_embed_two_workflows(self):
+        first_child_name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        second_child_name = self.workflow_upload_yaml_with_random_name(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION)
+        parent_name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        parent_workflow_id = self.workflow_populator.index_ids(search=parent_name)[0]
+        self.workflow_index_open_with_name(parent_name)
+        self.components.workflow_editor.canvas_body.wait_for_visible()
+        self.workflow_editor_add_subworkflow(first_child_name)
+        # The Workflows panel is still open after the first insert.
+        self.workflow_editor_add_subworkflow(second_child_name)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_names = [step["name"] for step in workflow["steps"].values() if step["type"] == "subworkflow"]
+        assert sorted(subworkflow_names) == sorted([first_child_name, second_child_name])
+
     def setup_subworkflow(self):
         workflow_populator = self.workflow_populator
         child_workflow_name = self._get_random_name()
