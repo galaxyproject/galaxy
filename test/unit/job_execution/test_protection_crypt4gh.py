@@ -176,6 +176,29 @@ def test_stage_command_errors_dont_reveal_the_service_address(tmp_path, service,
     assert "Traceback" not in stderr
 
 
+def test_unexpected_stage_errors_dont_reveal_their_message(tmp_path, service, user, capsys, monkeypatch):
+    key_ref = service.get_compute_key_info(user.public)
+    plan = _plan(tmp_path, service, key_ref, [_protected_input(tmp_path, service, user, key_ref)])
+    plan_path = str(tmp_path / "plan.json")
+    plan.write(plan_path)
+
+    # Not in the source line the traceback shows.
+    data = "decrypted content"
+
+    def fail(self):
+        raise OSError(data)
+
+    monkeypatch.setattr(Crypt4GHJobRuntime, "stage_inputs", fail)
+
+    assert run("stage-in", plan_path) == 1
+
+    # The traceback locates the bug, without the message.
+    stderr = capsys.readouterr().err
+    assert "Unexpected error (OSError)" in stderr
+    assert ", in fail" in stderr
+    assert data not in stderr
+
+
 def test_verbose_errors_show_the_cause(tmp_path, service, user, capsys):
     key_ref = service.get_compute_key_info(user.public)
     plan = _plan(
