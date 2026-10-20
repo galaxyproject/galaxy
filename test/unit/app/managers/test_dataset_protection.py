@@ -26,6 +26,8 @@ from galaxy.managers.dataset_protection import (
     _can_decrypt_inputs,
     _extra_files_expire,
     DatasetProtectionManager,
+    JOB_TTL_MARGIN,
+    KEY_SERVICE_EXPIRY_MARGIN,
     validate_crypt4gh_grant,
 )
 from galaxy.model import (
@@ -49,6 +51,10 @@ def _header(*packets: bytes) -> bytes:
     return header
 
 
+# Of a server without a walltime limit.
+JOB_MARGIN = KEY_SERVICE_EXPIRY_MARGIN + JOB_TTL_MARGIN
+
+
 def _payload(**overrides) -> Crypt4GHGrantPayload:
     values = {
         "scheme": "crypt4gh",
@@ -62,7 +68,7 @@ def _payload(**overrides) -> Crypt4GHGrantPayload:
 
 def test_valid_grant_is_stored_as_naive_utc():
     expiration = datetime.now(timezone(timedelta(hours=2))) + timedelta(days=6)
-    record = validate_crypt4gh_grant(_payload(crypt4gh_compute_keypair_expiration_date=expiration))
+    record = validate_crypt4gh_grant(_payload(crypt4gh_compute_keypair_expiration_date=expiration), JOB_MARGIN)
     assert record.key_ref == "cnk:0123456789abcdef"
     assert record.expires_at.tzinfo is None
     assert record.expires_at == expiration.astimezone(timezone.utc).replace(tzinfo=None)
@@ -83,7 +89,14 @@ def test_valid_grant_is_stored_as_naive_utc():
 )
 def test_invalid_grants_are_rejected(overrides):
     with pytest.raises(RequestParameterInvalidException):
-        validate_crypt4gh_grant(_payload(**overrides))
+        validate_crypt4gh_grant(_payload(**overrides), JOB_MARGIN)
+
+
+def test_keypairs_expiring_before_a_job_could_finish_are_rejected():
+    # Accepted by the key service for another day, but not until a job hitting a 48h walltime ends.
+    payload = _payload(crypt4gh_compute_keypair_expiration_date=datetime.now(timezone.utc) + timedelta(hours=60))
+    with pytest.raises(RequestParameterInvalidException, match="expires before a job using it could finish"):
+        validate_crypt4gh_grant(payload, _manager(walltime=timedelta(hours=48)).job_margin)
 
 
 def test_expiration_dates_without_timezone_are_rejected():
@@ -124,8 +137,10 @@ class _FakeOutput:
         self.deleted = False
 
 
-def _manager():
-    manager = DatasetProtectionManager(cast(GalaxyAppConfiguration, Bunch(crypt4gh_enabled=True)), mock.MagicMock())
+def _manager(walltime=None):
+    manager = DatasetProtectionManager(
+        cast(GalaxyAppConfiguration, Bunch(crypt4gh_enabled=True)), mock.MagicMock(), walltime
+    )
     manager.get_grant = mock.MagicMock(return_value=None)  # type: ignore[method-assign]
     return manager
 
@@ -570,11 +585,12 @@ def test_grant_status_shows_until_when_jobs_can_use_the_grant(tmp_path):
     output, _ = _protected_output(tmp_path)
     expires_at = datetime(2099, 10, 14, 12)
     grant = DatasetProtectionGrant(key_ref="cnk:1", expires_at=expires_at, grant_data={"compute_header": "compute"})
-    manager = _manager()
+    manager = _manager(walltime=timedelta(hours=48))
     manager.get_grant = mock.MagicMock(return_value=grant)
     status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
     assert status.ready
-    assert status.expires_at == expires_at - timedelta(days=1)
+    # The key service refuses keypairs within a day of their expiration, and jobs may run until the walltime.
+    assert status.expires_at == expires_at - timedelta(days=3, hours=1)
 
     # Extra files kept from the output's job expire with its keypair, authorizing again doesn't renew it.
     job_expiration = datetime(2099, 10, 10, 12)
@@ -584,4 +600,19 @@ def test_grant_status_shows_until_when_jobs_can_use_the_grant(tmp_path):
         "extra_files_key": {"key_ref": "cnk:job", "expires_at": job_expiration.isoformat()},
     }
     status = manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output))
-    assert status.expires_at == job_expiration - timedelta(days=1)
+    assert status.expires_at == job_expiration - timedelta(days=3, hours=1)
+
+
+def test_grants_expiring_before_a_job_can_end_are_refused_when_requested(tmp_path):
+    output, _ = _protected_output(tmp_path)
+    # The key service still accepts it, but not anymore when a job hitting the walltime ends.
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=30)).replace(tzinfo=None)
+    grant = DatasetProtectionGrant(key_ref="cnk:1", expires_at=expires_at, grant_data={"compute_header": "compute"})
+    manager = _manager(walltime=timedelta(hours=48))
+    manager.get_grant = mock.MagicMock(return_value=grant)
+    manager.inputs_needing_decryption = mock.MagicMock(return_value=[output])
+    tool = cast(Tool, Bunch(tool_type="default", config_files=[]))
+
+    assert not manager.grant_status(cast(User, Bunch(id=1)), cast(DatasetInstance, output)).ready
+    with pytest.raises(RequestParameterInvalidException, match="not authorized to decrypt it in jobs"):
+        manager.check_job_inputs(cast(User, Bunch(id=1)), tool, {})

@@ -341,7 +341,8 @@ also trust the user service's certificate, which the service creates with
 
 - The compute service issues compute keypairs valid for 7 days, and refuses to
   use them within 1 day of their expiration.
-- Users can't authorize datasets with compute keypairs expiring within 1 day.
+- Users can't authorize datasets with compute keypairs that jobs couldn't use,
+  i.e. expiring within the margin below.
 - A grant is only usable by a job if it is still valid, at dispatch, for 1 day
   plus the configured walltime limit plus 1 hour. Outputs are encrypted after the
   tool ran, so the compute service must still accept the key then. Time spent
@@ -350,7 +351,8 @@ also trust the user service's certificate, which the service creates with
   about 4 days after it was authorized. Destinations with a walltime over about
   6 days can't run jobs decrypting data at all.
 - Users authorize datasets again once their grant expires. The key icon shows
-  until when a dataset is authorized.
+  until when jobs can use a dataset, i.e. the grant's expiration minus that
+  margin; tools are refused when requested after that.
 - Outputs of a job are granted with the compute keypair expiring last among the
   job's inputs.
 
