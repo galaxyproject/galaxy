@@ -419,9 +419,19 @@ const categoryNames = computed(() => categories.value.map((category) => category
         align-items: start;
     }
 
+    /* Scrolls on its own once taller than the window, as a sticky column can't otherwise show its end.
+       The padding keeps the cards' shadows from being clipped by the scroll box. */
     .repository-aside {
         position: sticky;
         top: calc(var(--shed-masthead-height) + 1rem);
+        max-height: calc(100vh - var(--shed-masthead-height) - 2rem);
+        overflow-y: auto;
+        margin: -0.25rem;
+        padding: 0.25rem;
+    }
+
+    .repository-aside > .repository-card {
+        flex-shrink: 0;
     }
 }
 

@@ -73,7 +73,7 @@ const rows = computed(() => {
             <span class="repository-link-text">
                 <span class="repository-link-label">{{ row.label }}</span>
                 <a v-if="row.href" class="repository-link-url" :href="row.href">{{ row.text }}</a>
-                <code v-else class="repository-link-url repository-link-command">{{ row.text }}</code>
+                <code v-else class="repository-link-url repository-link-command" :title="row.text">{{ row.text }}</code>
             </span>
             <GButton
                 icon-only
@@ -132,12 +132,6 @@ const rows = computed(() => {
     font-size: 0.9rem;
     white-space: nowrap;
     text-overflow: ellipsis;
-}
-
-/* Nothing to hover or follow, so the whole command wraps rather than being cut off */
-.repository-link-command {
-    white-space: normal;
-    overflow-wrap: anywhere;
 }
 
 .repository-link :deep(.g-button.g-transparent) {
