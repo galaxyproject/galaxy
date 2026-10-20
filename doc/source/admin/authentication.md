@@ -49,37 +49,40 @@ To check that PKCE is active, open the browser's developer tools before logging 
 
 Galaxy refuses the login itself when the callback arrives without the matching login state, so it never depends on the IdP enforcing PKCE. Users then see "Authentication has expired or is invalid. Please start logging in again." If the IdP rejects the verifier, users see "Authentication with `<provider>` was canceled or the authorization code has expired".
 
-## Sending users back after login
+## Sending users back to another site after login
 
-A link to `<galaxy_url>/login/start?redirect=<target>` takes users to the login page and, once they have logged in, on to `<target>`. This works for password login and for OIDC providers, including CILogon. Users who are already logged in go straight to `<target>`.
-
-Percent-encode the target, so that its own query string stays part of it:
-
-```javascript
-const login = `https://galaxy.example.org/login/start?redirect=${encodeURIComponent("https://tools.example.org/back?item=1")}`;
-```
-
-Anyone can put such a link in front of users, so Galaxy only follows targets it trusts:
-
-* A path on this Galaxy server, such as `/workflows/list`, is always followed. Give it without `galaxy_url_prefix`.
-* An absolute URL is followed if it uses `https` and its host is listed in `allowed_login_redirect_hosts` in `galaxy.yml`. Password login also follows absolute URLs back to this Galaxy server.
+After login, Galaxy sends users back to the page they came from, but only if that page is on Galaxy itself. If another site, such as a portal or a tool, sends its users to Galaxy to log in and needs them back afterwards, list that site's host in `galaxy.yml`:
 
 ```yaml
 galaxy:
   allowed_login_redirect_hosts: tools.example.org,portal.example.org:8443
 ```
 
-Each entry is a host, or `host:port` when the port is not 443; write IPv6 addresses in brackets, such as `[2001:db8::1]`. Hosts match exactly and ignore case, so list every subdomain you trust. Galaxy ignores entries that contain `/`, `@`, `\`, `*` or spaces, such as full URLs or wildcards, and logs a warning for each at startup. The option is empty by default, so no external site is trusted.
+The site then links to Galaxy's login page with its own URL, percent-encoded, in `redirect`:
 
-Any other target sends users to the Galaxy home page instead, and Galaxy logs `Ignoring post-login redirect target that is not allowed: <target>`.
+```
+https://galaxy.example.org/login/start?redirect=https%3A%2F%2Ftools.example.org%2Fback%3Fitem%3D1
+```
 
-When a user links an OIDC identity to an existing Galaxy account by logging in with that account's password, Galaxy shows the linked identities page instead of the target. Without a target, a first OIDC login that creates or links an account lands on that page too, unless `fixed_delegated_auth` is set.
+After a password or OIDC login, users land on `https://tools.example.org/back?item=1`. Users who are already logged in are sent there straight away. The option is empty by default.
 
-Before trusting a host, consider:
+### Writing entries
 
-* Galaxy trusts every page on a listed host. A page there that forwards visitors to arbitrary URLs lets anyone use your Galaxy login link to send users to any site.
-* Galaxy adds nothing to the target URL. The site receives no token and no proof that the user logged in.
-* The list is public: Galaxy sends it to the browser through `/api/configuration`, so that already logged-in users can be forwarded without a round trip to the server.
+* An entry is a host name. Add the port if it is not 443: `portal.example.org:8443`.
+* Hosts must match exactly. There are no wildcards, so list every subdomain you trust.
+* Only `https` targets are followed.
+* Galaxy ignores entries that are not host names, such as full URLs or wildcards, and logs a warning at startup.
+
+### Before adding a host
+
+* Every page on that host is trusted. If any page there forwards visitors to arbitrary URLs, anyone can use a Galaxy login link to send your users to any site.
+* The site learns nothing from the redirect. Galaxy does not add a token or any proof that the user logged in.
+* The list is public. Anyone can read it from `/api/configuration`.
+
+### Troubleshooting
+
+* If users land on the Galaxy home page instead of the site, the target was refused. Galaxy logs `Ignoring post-login redirect target that is not allowed: <target>`. Check that the target uses `https`, that its host and port match an entry, and that it was percent-encoded.
+* Users who link an OIDC identity to an existing Galaxy account land on the page listing their linked identities instead of the target.
 
 ## Authentication Framework
 

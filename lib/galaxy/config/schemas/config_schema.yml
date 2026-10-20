@@ -2939,19 +2939,14 @@ mapping:
         type: str
         required: false
         desc: |
-          Comma-separated list of external hosts that Galaxy may send users to after
-          they log in, e.g. ``tools.example.org,portal.example.org:8443``.
+          Comma-separated list of other sites' hosts that Galaxy may send users to
+          after they log in, e.g. ``tools.example.org,portal.example.org:8443``.
 
-          A site can send users to Galaxy's login page with
-          ``/login/start?redirect=<url>``, with ``<url>`` percent-encoded, and Galaxy
-          returns them to ``<url>`` once they have logged in, with a password or
-          through OIDC. Paths on this Galaxy server are always accepted. An absolute
-          URL is accepted only if it uses https and its host matches an entry here
-          exactly; add the port to the entry if it is not 443, and write IPv6
-          addresses in brackets. Wildcards are not supported; entries that are not
-          a host or host:port are ignored with a warning. By default no external
-          host is allowed. See the authentication documentation for what trusting
-          a host implies.
+          A listed site can send its users to Galaxy's login page with
+          ``/login/start?redirect=<url>``, where ``<url>`` is the percent-encoded page
+          to return to. Hosts must match exactly (no wildcards); add the port if it
+          is not 443. Only https URLs are followed. Every page on a listed host is
+          trusted, so read the authentication documentation before adding one.
 
       allow_local_account_creation:
         type: bool
