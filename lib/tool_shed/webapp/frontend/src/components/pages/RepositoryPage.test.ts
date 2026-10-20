@@ -6,11 +6,7 @@ import RepositoryPage from "./RepositoryPage.vue"
 
 const { readmes, mockGet } = vi.hoisted(() => {
     const readmes = { value: {} as Record<string, string> }
-    // The page also loads the category list, which none of these repositories use
-    return {
-        readmes,
-        mockGet: vi.fn(async (path: string) => ({ data: path == "/api/categories" ? [] : readmes.value })),
-    }
+    return { readmes, mockGet: vi.fn(async () => ({ data: readmes.value })) }
 })
 vi.mock("@/schema", async (importOriginal) => ({
     ...(await importOriginal<typeof import("@/schema")>()),
@@ -25,6 +21,7 @@ function repository(overrides: Record<string, unknown> = {}) {
         type: "unrestricted",
         description: "Concatenate datasets",
         long_description: null,
+        categories: [],
         deprecated: false,
         update_time: "2024-01-01T00:00:00",
         times_downloaded: 3,

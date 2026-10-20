@@ -12,7 +12,7 @@ const repository = {
     type: "unrestricted",
     description: "Bisulfite mapper",
     long_description: null,
-    category_ids: [],
+    categories: [],
     user_id: "u1",
     private: false,
     deleted: false,

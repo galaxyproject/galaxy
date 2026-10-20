@@ -7,12 +7,11 @@ import { shedYml } from "@/shedYml"
 
 interface Props {
     repository: components["schemas"]["DetailedRepository"]
-    categories: string[]
 }
 
 const props = defineProps<Props>()
 
-const contents = computed(() => shedYml(props.repository, props.categories))
+const contents = computed(() => shedYml(props.repository))
 </script>
 
 <template>

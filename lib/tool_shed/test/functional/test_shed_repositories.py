@@ -6,6 +6,7 @@ from galaxy.tool_util.parser import get_tool_source
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_path
 from galaxy_test.base import api_asserts
+from galaxy_test.base.api_util import random_name
 from tool_shed.test.base.api_util import create_user
 from tool_shed.test.base.hg_operations import HgRepositoryOperations
 from tool_shed.test.base.populators import (
@@ -14,6 +15,7 @@ from tool_shed.test.base.populators import (
 )
 from tool_shed.util import hg_util
 from tool_shed_client.schema import (
+    CategorySummary,
     RepositoryIndexRequest,
     RepositoryPaginatedIndexRequest,
     RepositoryRevisionMetadata,
@@ -121,12 +123,17 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert detailed.description == "new synopsis"
         assert detailed.long_description == "new long description"
 
-    def test_show_lists_categories(self):
+    def test_show_lists_categories_by_name(self):
         populator = self.populator
-        prefix = "testshowcategories"
-        category_ids = [populator.new_category(prefix=prefix).id, populator.new_category(prefix=prefix).id]
-        repository = populator.new_repository(category_ids, prefix=prefix)
-        assert sorted(populator.get_repository(repository.id).category_ids) == sorted(category_ids)
+        name_base = random_name(prefix="testshowcategories")
+        # Created out of order and in mixed case, as the list is sorted by name ignoring case
+        beta = populator.new_category(name=f"{name_base} Beta")
+        alpha = populator.new_category(name=f"{name_base} alpha")
+        repository = populator.new_repository([beta.id, alpha.id])
+        assert populator.get_repository(repository.id).categories == [
+            CategorySummary(id=alpha.id, name=alpha.name),
+            CategorySummary(id=beta.id, name=beta.name),
+        ]
 
     def test_show_clone_url_clones(self):
         repository = self.populator.setup_column_maker_repo(prefix="testshowcloneurl")
@@ -154,7 +161,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator.assert_category_has_n_repositories(new_category_id, 0)
 
         request = UpdateRepositoryRequest(category_ids=[new_category_id])
-        assert populator.update(repository_id, request).category_ids == [new_category_id]
+        assert [category.id for category in populator.update(repository_id, request).categories] == [new_category_id]
 
         # does this mean we cannot remove categories?
         populator.assert_category_has_n_repositories(old_category_id, 0)

@@ -7,19 +7,22 @@ const repository = {
     type: "unrestricted",
     description: "Bisulfite mapper",
     long_description: null,
+    categories: [],
+}
+
+function categories(...names: string[]) {
+    return names.map((name, index) => ({ id: `c${index}`, name }))
 }
 
 describe("shedYml", () => {
     it("writes the keys planemo reads, in .shed.yml's usual order", () => {
-        const yml = shedYml(
-            {
-                ...repository,
-                long_description: "Maps bisulfite reads.\n\nSee the manual.",
-                homepage_url: "https://www.bioinformatics.babraham.ac.uk/projects/bismark/",
-                remote_repository_url: "https://github.com/galaxyproject/tools-iuc/tree/main/tools/bismark",
-            },
-            ["Sequence Analysis", "Next Gen Mappers"],
-        )
+        const yml = shedYml({
+            ...repository,
+            long_description: "Maps bisulfite reads.\n\nSee the manual.",
+            homepage_url: "https://www.bioinformatics.babraham.ac.uk/projects/bismark/",
+            remote_repository_url: "https://github.com/galaxyproject/tools-iuc/tree/main/tools/bismark",
+            categories: categories("Sequence Analysis", "Next Gen Mappers"),
+        })
 
         expect(yml).toBe(`name: bismark
 owner: devteam
@@ -38,7 +41,7 @@ categories:
     })
 
     it("leaves out settings the repository doesn't have", () => {
-        expect(shedYml({ ...repository, homepage_url: null }, [])).toBe(`name: bismark
+        expect(shedYml({ ...repository, homepage_url: null })).toBe(`name: bismark
 owner: devteam
 description: Bisulfite mapper
 type: unrestricted
@@ -46,17 +49,23 @@ type: unrestricted
     })
 
     it("quotes values YAML would read as something else", () => {
-        const yml = shedYml({ ...repository, description: "Mapper: fast #1" }, ["yes", "2024-01-01"])
+        const yml = shedYml({
+            ...repository,
+            description: "Mapper: fast #1",
+            categories: categories("yes", "2024-01-01"),
+        })
 
         expect(yml).toContain('description: "Mapper: fast #1"')
         expect(yml).toContain('categories:\n- "yes"\n- "2024-01-01"\n')
     })
 
     it("quotes what a literal block or plain scalar can't hold exactly", () => {
-        const yml = shedYml(
-            { ...repository, long_description: "Windows\r\nline endings", homepage_url: "https://example.org/x:" },
-            ["Odd\u007fname"],
-        )
+        const yml = shedYml({
+            ...repository,
+            long_description: "Windows\r\nline endings",
+            homepage_url: "https://example.org/x:",
+            categories: categories("Odd\u007fname"),
+        })
 
         expect(yml).toContain('long_description: "Windows\\r\\nline endings"')
         expect(yml).toContain('homepage_url: "https://example.org/x:"')
@@ -64,7 +73,11 @@ type: unrestricted
     })
 
     it("escapes characters YAML reads as line breaks or refuses", () => {
-        const yml = shedYml({ ...repository, long_description: "text\nline\u2028more\u000b" }, ["a\u2029b"])
+        const yml = shedYml({
+            ...repository,
+            long_description: "text\nline\u2028more\u000b",
+            categories: categories("a\u2029b"),
+        })
 
         expect(yml).toContain('long_description: "text\\nline\\u2028more\\u000b"')
         expect(yml).toContain('- "a\\u2029b"')

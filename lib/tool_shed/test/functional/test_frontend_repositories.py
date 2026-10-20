@@ -173,7 +173,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         clone_url = f"{self.url.rstrip('/')}/repos/{repository.owner}/{repository.name}"
         clone_command = page.locator(Locators.repository_link_command)
         expect(clone_command).to_have_text(f"hg clone {clone_url}")
-        # Category names come from a separate fetch, so wait on them rather than reading the text once
         categories = page.locator(Locators.repository_category)
         expect(categories).to_have_text([alpha.name, beta.name])
         shed_yml = (

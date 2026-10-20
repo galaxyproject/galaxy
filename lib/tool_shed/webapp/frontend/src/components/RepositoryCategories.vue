@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { components } from "@/schema"
 
-type Category = components["schemas"]["Category"]
-
-defineProps<{ categories: Category[] }>()
+defineProps<{ categories: components["schemas"]["CategorySummary"][] }>()
 </script>
 <template>
     <h2 class="shed-section-title">Categories</h2>

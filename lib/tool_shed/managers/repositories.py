@@ -89,6 +89,7 @@ from tool_shed.webapp.search.repo_search import (
     RepoSearch,
 )
 from tool_shed_client.schema import (
+    CategorySummary,
     CreateRepositoryRequest,
     DetailedRepository,
     ExtraRepoInfo,
@@ -726,16 +727,19 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
     return repo
 
 
-def to_element_dict(app: ToolShedApp, repository: Repository, include_categories: bool = False) -> dict[str, Any]:
+def to_element_dict(app: ToolShedApp, repository: Repository) -> dict[str, Any]:
     value_mapper = get_value_mapper(app)
-    repository_dict = repository.to_dict(view="element", value_mapper=value_mapper)
-    if include_categories:
-        repository_dict["category_ids"] = [
-            app.security.encode_id(rca.category.id)
-            for rca in repository.categories
-            if rca.category is not None and not rca.category.deleted
-        ]
-    return repository_dict
+    return repository.to_dict(view="element", value_mapper=value_mapper)
+
+
+def repository_categories(app: ToolShedApp, repository: Repository) -> list[CategorySummary]:
+    """The repository's live categories, by name."""
+    categories = [
+        CategorySummary(id=app.security.encode_id(rca.category.id), name=rca.category.name)
+        for rca in repository.categories
+        if rca.category and not rca.category.deleted
+    ]
+    return sorted(categories, key=lambda category: category.name.lower())
 
 
 def repositories_by_category(
@@ -764,7 +768,8 @@ def to_model(app: ToolShedApp, repository: Repository) -> SchemaRepository:
 
 def to_detailed_model(trans: ProvidesRepositoriesContext, repository: Repository) -> DetailedRepository:
     return DetailedRepository(
-        **to_element_dict(trans.app, repository, include_categories=True),
+        **to_element_dict(trans.app, repository),
+        categories=repository_categories(trans.app, repository),
         clone_url=generate_clone_url_for(trans, repository),
     )
 
