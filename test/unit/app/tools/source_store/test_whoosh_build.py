@@ -269,3 +269,15 @@ def test_searchers_are_reused_but_never_shared(tmp_path):
         assert first is not second
     with searching._searcher() as third:
         assert third in (first, second)
+
+
+def test_a_newer_commit_closes_every_stale_idle_searcher(tmp_path):
+    index_dir = str(tmp_path / "ix")
+    searching = ToolWhooshIndex(index_dir=index_dir, tuning=_TUNING)
+    searching.build(_index("mapper"))
+    with searching._searcher() as first, searching._searcher() as second, searching._searcher() as third:
+        pooled = [first, second, third]
+
+    ToolWhooshIndex(index_dir=index_dir, tuning=replace(_TUNING, index_tool_help=False)).build(_index("trimmer"))
+    assert searching.search("trimmer") == ["trimmer"]
+    assert all(searcher is not None and searcher.is_closed for searcher in pooled)

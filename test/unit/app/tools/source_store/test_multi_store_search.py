@@ -133,3 +133,20 @@ def test_rebuild_keeps_the_panel_searches_of_unchanged_views(tmp_path, search_co
 
     search.build_index(tool_cache=cast(Any, None), toolbox=cast(Any, toolbox))
     assert search.cached_panel_searches["default"] is panel_search
+
+
+def test_tuning_change_closes_the_replaced_panel_search(tmp_path, search_config):
+    config = search_config(_TUNING, str(tmp_path))
+    toolbox = _FakeToolbox(
+        [ToolIndexEntry(id="local_mapper", name="Sequence mapper", version="1.0")],
+        {"default": {"local_mapper"}},
+    )
+    search = CachedToolboxSearch(config, toolbox)
+    search.build_index(tool_cache=cast(Any, None), toolbox=cast(Any, toolbox))
+    replaced = search.cached_panel_searches["default"]
+    with replaced._searcher() as in_use:
+        config.tool_help_bm25f_k1 = 2.0
+        search.build_index(tool_cache=cast(Any, None), toolbox=cast(Any, toolbox))
+    assert search.cached_panel_searches["default"] is not replaced
+    assert in_use is not None and in_use.is_closed
+    assert search.search("mapper", panel_view="default", config=config) == ["local_mapper"]

@@ -308,13 +308,14 @@ def search_whoosh_searcher(searcher: Searcher, query: str, limit: int | None = N
     return scored if limit is None else scored[:limit]
 
 
-# Whoosh writes ``_MAIN_<generation>.toc`` on each commit of an index opened
-# with the default name, and names a segment's files ``<segment id>.<ext>``.
-_TOC_FILENAME = re.compile(r"_MAIN_([0-9]+)\.toc")
+# The file names Whoosh gives each commit's TOC and each segment's files in an
+# index opened with the default name.
+_TOC_FILENAME = index.TOC._pattern(index._DEF_INDEX_NAME)
+_SEGMENT_FILENAME = index.TOC._segment_pattern(index._DEF_INDEX_NAME)
 
 
 def _latest_generation(filenames: list[str]) -> int:
-    return max((int(match.group(1)) for name in filenames if (match := _TOC_FILENAME.fullmatch(name))), default=-1)
+    return max((int(match.group(1)) for name in filenames if (match := _TOC_FILENAME.match(name))), default=-1)
 
 
 def _reads_latest_commit(searcher: Searcher, filenames: list[str]) -> bool:
@@ -327,9 +328,9 @@ def _reads_latest_commit(searcher: Searcher, filenames: list[str]) -> bool:
     reader = searcher.reader()
     if reader.generation() != _latest_generation(filenames):
         return False
-    stems = {name.split(".", 1)[0] for name in filenames}
+    segment_ids = {match.group(1) for name in filenames if (match := _SEGMENT_FILENAME.match(name))}
     segments = (leaf.segment() for leaf, _docbase in reader.leaf_readers())
-    return all(segment.segment_id() in stems for segment in segments if segment is not None)
+    return all(segment.segment_id() in segment_ids for segment in segments if segment is not None)
 
 
 def _stored_doc_hashes(reader: IndexReader) -> dict[str, str | None]:
@@ -355,6 +356,7 @@ class ToolWhooshIndex:
         # serves one thread at a time.
         self._idle_searchers: list[Searcher] = []
         self._idle_searchers_lock = threading.Lock()
+        self._closed = False
 
     def _open(self) -> index.FileIndex:
         os.makedirs(self.index_dir, exist_ok=True)
@@ -452,8 +454,20 @@ class ToolWhooshIndex:
         with self._idle_searchers_lock:
             searcher = self._idle_searchers.pop() if self._idle_searchers else None
         if searcher is not None and not _reads_latest_commit(searcher, filenames):
+            # The index has a newer commit, so the other idle searchers are
+            # likely stale too and hold files the commit may have deleted.
             searcher.close()
             searcher = None
+            with self._idle_searchers_lock:
+                idle, self._idle_searchers = self._idle_searchers, []
+            current = []
+            for idle_searcher in idle:
+                if _reads_latest_commit(idle_searcher, filenames):
+                    current.append(idle_searcher)
+                else:
+                    idle_searcher.close()
+            with self._idle_searchers_lock:
+                self._idle_searchers.extend(current)
         if searcher is None:
             if _latest_generation(filenames) < 0:
                 yield None
@@ -465,4 +479,15 @@ class ToolWhooshIndex:
             searcher.close()
             raise
         with self._idle_searchers_lock:
-            self._idle_searchers.append(searcher)
+            if not self._closed:
+                self._idle_searchers.append(searcher)
+                return
+        searcher.close()
+
+    def close(self) -> None:
+        """Close the idle searchers, and searchers in use once they are returned."""
+        with self._idle_searchers_lock:
+            self._closed = True
+            idle, self._idle_searchers = self._idle_searchers, []
+        for searcher in idle:
+            searcher.close()
