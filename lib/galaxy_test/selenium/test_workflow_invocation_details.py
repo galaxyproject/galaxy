@@ -270,28 +270,56 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
     @managed_history
     def test_step_url_scrolls_steps_list(self):
         """A step URL on the Steps tab scrolls a step far down the list into view."""
-        steps = {}
-        previous = "input1"
-        for index in range(25):
-            steps[f"cat_{index}"] = {"tool_id": "cat", "in": {"input1": previous}}
-            previous = f"cat_{index}/out_file1"
-        workflow = {"class": "GalaxyWorkflow", "inputs": {"input1": "data"}, "steps": steps}
         summary = self.workflow_populator.run_workflow(
-            yaml.safe_dump(workflow),
+            yaml.safe_dump(cat_chain_workflow(25)),
             test_data={"input1": {"value": "1.bed", "type": "File"}},
             history_id=self.current_history_id(),
             wait=False,
         )
         self.get(f"workflows/invocations/{summary.invocation_id}/steps?step_number=26")
-        last_step = self.components.invocations.step_title(order_index="25")
-
-        @retry_assertion_during_transitions
-        def assert_last_step_in_view():
-            top, bottom = self.execute_script(
-                "const r = arguments[0].getBoundingClientRect(); return [r.top, window.innerHeight];",
-                last_step.wait_for_visible(),
-            )
-            assert 0 <= top < bottom, (top, bottom)
-
-        assert_last_step_in_view()
+        self.assert_in_window(self.components.invocations.step_title(order_index="25"))
         self.screenshot("invocation_steps_url_scrolled")
+
+    @selenium_test
+    @managed_history
+    def test_output_urls_expand_outputs(self):
+        """Step and workflow output URLs expand the named output and scroll it into view."""
+        # Zero-padded names keep step order stable through YAML's sorted keys.
+        workflow = {
+            "class": "GalaxyWorkflow",
+            "inputs": {"input1": "data"},
+            "outputs": {
+                f"cat_output_{index:02d}": {"outputSource": f"cat_{index:02d}/out_file1"} for index in range(12)
+            },
+            "steps": {f"cat_{index:02d}": {"tool_id": "cat", "in": {"input1": "input1"}} for index in range(12)},
+        }
+        summary = self.workflow_populator.run_workflow(
+            yaml.safe_dump(workflow),
+            test_data={"input1": {"value": "1.bed", "type": "File"}},
+            history_id=self.current_history_id(),
+        )
+        invocations = self.components.invocations
+        self.get(f"workflows/invocations/{summary.invocation_id}?step_label=cat_11&output=out_file1")
+        self.assert_in_window(invocations.step_output_expanded(order_index="12"))
+        self.screenshot("invocation_step_output_url")
+        self.get(f"workflows/invocations/{summary.invocation_id}/outputs?output=cat_output_11")
+        self.assert_in_window(invocations.workflow_output_expanded(label="cat_output_11"))
+        assert len(invocations.workflow_output_expanded(label="cat_output_00").all()) == 0
+        self.screenshot("invocation_workflow_output_url")
+
+    @retry_assertion_during_transitions
+    def assert_in_window(self, component):
+        top, bottom = self.execute_script(
+            "const r = arguments[0].getBoundingClientRect(); return [r.top, window.innerHeight];",
+            component.wait_for_visible(),
+        )
+        assert 0 <= top < bottom, (top, bottom)
+
+
+def cat_chain_workflow(length):
+    steps = {}
+    previous = "input1"
+    for index in range(length):
+        steps[f"cat_{index}"] = {"tool_id": "cat", "in": {"input1": previous}}
+        previous = f"cat_{index}/out_file1"
+    return {"class": "GalaxyWorkflow", "inputs": {"input1": "data"}, "steps": steps}

@@ -1336,6 +1336,8 @@ invocations:
     step_details: '[data-step="${order_index}"] .portlet-operations'
     step_header_state: '[data-step="${order_index}"] .portlet-header.header-${state}'
     step_outputs_tab_link: '.invocation-step-outputs-tab > a.nav-link'
+    step_output_expanded: '[data-step="${order_index}"] .invocation-step-output-details .dataset .details'
+    workflow_output_expanded: '[data-description="terminal invocation output"][data-label="${label}"] .dataset .details'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
     step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .content-title'
     step_output_collection_element_identifier:
