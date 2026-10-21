@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, shallowMount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import WorkflowInvocationSteps from "./WorkflowInvocationSteps.vue";
@@ -64,6 +64,9 @@ function mountSteps(): VueWrapper {
 
 const localVue = getLocalVue();
 
+afterEach(() => {
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
+});
 beforeEach(() => {
     mocks.steps = { 0: toolStep };
     mocks.selection = undefined;
@@ -110,7 +113,7 @@ it("expands the grouped input when a selection clears a previous search", async 
     };
     mocks.selection = { stepIndex: ref<number | null>(null), stepTab: ref(), job: ref(), output: ref() };
     // jsdom has no scrollIntoView; scrolling is covered by the browser test.
-    Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: () => {} });
+    Element.prototype.scrollIntoView = () => {};
     const wrapper = shallowMount(WorkflowInvocationSteps as object, {
         propsData: {
             invocation: { id: "inv1", workflow_id: "wf1", steps: [], inputs: {}, input_step_parameters: {} },
