@@ -2872,6 +2872,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def collection_builder_hide_originals(self):
         self.wait_for_and_click_selector('[data-description="hide original elements"]')
 
+    def collection_builder_toggle_remove_extensions(self) -> None:
+        """Flip the builder's "Remove file extensions?" switch (on by default)."""
+        self.components.collection_builders.list_wizard.remove_extensions.wait_for_and_click()
+
     def collection_builder_create(self):
         list_wizard_create = self.components.collection_builders.list_wizard.create
         modal_create = self.components.collection_builders.modals.create

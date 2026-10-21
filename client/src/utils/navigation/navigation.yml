@@ -535,6 +535,8 @@ collection_builders:
       wizard_next_button: '.wizard-actions .go-next-btn'
       auto_pairing: '[data-description="auto pairing"]'
       dismiss_unmatched: '[data-description="dismiss unmatched datasets"]'
+      # the switch's input is hidden, so click its label
+      remove_extensions: 'input[name="remove-extensions"] + label'
       cell: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
       cell_input: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
     row:
