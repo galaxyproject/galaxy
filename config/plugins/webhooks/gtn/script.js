@@ -185,7 +185,8 @@
                             if (tool_id === "upload1" || tool_id === "upload") {
                                 document.getElementById("tool-panel-upload-button").click();
                             } else {
-                                Galaxy.router.push({ path: `/?tool_id=${encodeURIComponent(tool_id)}` });
+                                // vue-router drops a query written into an object's path, so pass a string.
+                                Galaxy.router.push(`/?tool_id=${encodeURIComponent(tool_id)}`);
                             }
                             removeOverlay();
                         });
@@ -200,9 +201,9 @@
                         buttonify(el, () => {
                             // The click target can be nested markup inside the button, so read the bound element.
                             const trs_url = el.dataset.workflow;
-                            Galaxy.router.push({
-                                path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
-                            });
+                            Galaxy.router.push(
+                                `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`
+                            );
                             removeOverlay();
                         });
                     });
