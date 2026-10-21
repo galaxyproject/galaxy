@@ -6429,7 +6429,7 @@
     in an `x-api-key` header from their MCP server configuration (e.g.
     `"headers": {"x-api-key": "..."}`), which keeps it out of the
     model's context. Tools also accept an optional `api_key` argument,
-    which takes precedence over the header. This feature is
+    which is ignored when the header is set. This feature is
     experimental and disabled by default.
 :Default: ``false``
 :Type: bool

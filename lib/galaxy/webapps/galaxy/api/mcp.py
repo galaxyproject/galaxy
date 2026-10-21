@@ -61,8 +61,12 @@ ApiKey = Annotated[
 
 
 def _resolve_api_key(api_key: str | None, headers: Mapping[str, str]) -> str | None:
-    """Prefer an explicit ``api_key`` argument, falling back to the ``x-api-key`` request header."""
-    return api_key or headers.get(API_KEY_HEADER) or None
+    """Prefer the ``x-api-key`` request header, falling back to an explicit ``api_key`` argument.
+
+    The header comes from the operator's client config and the argument from the model, so the
+    model can't override the operator's choice of user.
+    """
+    return headers.get(API_KEY_HEADER) or api_key or None
 
 
 def get_mcp_url_builder(fallback_base_url: str):
