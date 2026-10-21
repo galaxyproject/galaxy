@@ -586,6 +586,8 @@ collection_builders:
       remove_extensions: 'input[name="remove-extensions"] + label'
       cell: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"]'
       cell_input: '[aria-rowindex="${row_index}"] [col-id="${column_identifier}"] input'
+      element_name: '[data-description="list dataset collection element"][data-hid="${hid}"] .click-to-edit-label'
+      element_name_input: '[data-description="list dataset collection element"][data-hid="${hid}"] input'
     row:
       selectors:
         _: '[row-index="${index}"]'

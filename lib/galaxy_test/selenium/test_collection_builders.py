@@ -69,6 +69,19 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
 
     @selenium_test
     @managed_history
+    def test_build_list_advanced_rename_element(self):
+        self._upload_and_select_sample_fastas()
+        self.history_panel_build_list_advanced_and_select_builder("list")
+        self.collection_builder_rename_element(1, "first")
+        self.collection_builder_set_name("list with a renamed element")
+        self.screenshot("collection_builder_advanced_list")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(5)
+        identifiers = self._collection_identifiers(5)
+        assert identifiers == ["first", "sample2"]
+
+    @selenium_test
+    @managed_history
     def test_build_paired_list_auto_matched(self):
         uploader = self.upload_context("paste-content")
         uploader.stage_paste_content("forward content", {"name": "basename_1.fasta"})
