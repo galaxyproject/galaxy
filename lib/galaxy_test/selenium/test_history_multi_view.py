@@ -105,12 +105,10 @@ class TestHistoryMultiView(SeleniumTestCase):
         target_history_id = self.dataset_populator.new_history("Multiview copy target")
         self.home()
         self.open_history_multi_view()
-        panel = self.components.multi_history_panel
-        panel.history_column_item(history_id=source_history_id, hid=1).wait_for_visible()
-        panel.history_column_drop_zone(history_id=target_history_id).wait_for_visible()
-        self.screenshot("multi_history_copy_between_columns")
         self.multi_history_copy_item(1, from_history_id=source_history_id, to_history_id=target_history_id)
         self.wait_for_history_to_have_hid(target_history_id, 1)
+        self.components.multi_history_panel.history_column_item(history_id=target_history_id, hid=1).wait_for_visible()
+        self.screenshot("multi_history_copy_between_columns")
         target_contents = self.dataset_populator.get_history_contents(history_id=target_history_id)
         assert [item["name"] for item in target_contents] == ["to copy"]
         assert self.current_history_id() == source_history_id

@@ -67,11 +67,34 @@ describe("useHistoryDragDrop", () => {
         expect(historyStore.pinHistory).not.toHaveBeenCalled();
     });
 
+    it("refreshes the target history after copying only a collection", async () => {
+        const historyStore = setUp([COLLECTION]);
+        await useHistoryDragDrop(TARGET_HISTORY_ID).onDrop();
+        expect(copyRequests).toEqual([{ historyId: TARGET_HISTORY_ID, content: COLLECTION.id, source: "hdca" }]);
+        expect(historyStore.loadHistoryById).toHaveBeenCalledWith(TARGET_HISTORY_ID);
+    });
+
+    it("refreshes the target history after copying only a dataset", async () => {
+        const historyStore = setUp([DATASET]);
+        await useHistoryDragDrop(TARGET_HISTORY_ID).onDrop();
+        expect(copyRequests).toEqual([{ historyId: TARGET_HISTORY_ID, content: DATASET.id, source: "hda" }]);
+        expect(historyStore.loadHistoryById).toHaveBeenCalledWith(TARGET_HISTORY_ID);
+    });
+
     it("pins the new and source histories after dropping on the new history box", async () => {
         const historyStore = setUpNewHistoryBoxDrop([DATASET, COLLECTION]);
         await useHistoryDragDrop(undefined, true, true).onDrop();
         expect(historyStore.createNewHistory).toHaveBeenCalled();
         expect(copyRequests.map(({ historyId }) => historyId)).toEqual([NEW_HISTORY_ID, NEW_HISTORY_ID]);
+        expect(historyStore.pinHistory).toHaveBeenCalledWith(NEW_HISTORY_ID);
+        expect(historyStore.pinHistory).toHaveBeenCalledWith(SOURCE_HISTORY_ID);
+        expect(historyStore.loadHistoryById).not.toHaveBeenCalled();
+    });
+
+    it("pins the new and source histories after dropping only a dataset on the new history box", async () => {
+        const historyStore = setUpNewHistoryBoxDrop([DATASET]);
+        await useHistoryDragDrop(undefined, true, true).onDrop();
+        expect(copyRequests).toEqual([{ historyId: NEW_HISTORY_ID, content: DATASET.id, source: "hda" }]);
         expect(historyStore.pinHistory).toHaveBeenCalledWith(NEW_HISTORY_ID);
         expect(historyStore.pinHistory).toHaveBeenCalledWith(SOURCE_HISTORY_ID);
         expect(historyStore.loadHistoryById).not.toHaveBeenCalled();
