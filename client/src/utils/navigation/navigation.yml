@@ -409,10 +409,13 @@ edit_dataset_attributes:
     name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    # a text metadata field on the Attributes tab, e.g. comment_lines
+    metadata_input: '[aria-labelledby="dataset-attributes-heading"] input#${name}'
     datatypes_tab: '.dataset-edit-datatype-tab'
     datatype_dropdown: '#datatype-container .multiselect'
     dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'
+    auto_detect_metadata_button: '#dataset-attributes-autodetect-metadata'
     auto_detect_datatype_button: '#dataset-attributes-autodetect-datatype'
     alert: '.dataset-attributes-alert'
 
