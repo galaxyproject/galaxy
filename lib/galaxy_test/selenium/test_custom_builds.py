@@ -1,7 +1,4 @@
-from selenium.webdriver.common.by import By
-
 from .framework import (
-    retry_assertion_during_transitions,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
@@ -9,77 +6,48 @@ from .framework import (
 
 class TestCustomBuilds(SharedStateSeleniumTestCase):
     user_email: str
-    build_name1: str
-    build_name2: str
-    build_key1: str
-    build_key2: str
 
     @selenium_test
     def test_build_add(self):
+        build_name = self._get_random_name()
         self._login()
         self.navigate_to_custom_builds_page()
-        self.add_custom_build(self.build_name1, self.build_key1)
-        self.assert_custom_builds_in_grid([self.build_name1])
+        self.add_custom_build(build_name, self._get_random_name(len=5))
+        self.assert_custom_build_listed(build_name)
 
     @selenium_test
     def test_build_delete(self):
+        build_name = self._get_random_name()
         self._login()
         self.navigate_to_custom_builds_page()
-        self.add_custom_build(self.build_name2, self.build_key2)
-        self.assert_custom_builds_in_grid([self.build_name2])
-        self.delete_custom_build(self.build_name2)
-        self.assert_custom_builds_in_grid([self.build_name2], False)
+        self.add_custom_build(build_name, self._get_random_name(len=5))
+        self.assert_custom_build_listed(build_name)
+        self.delete_custom_build(build_name)
+        self.assert_custom_build_not_listed(build_name)
 
-    @retry_assertion_during_transitions
-    def assert_custom_builds_in_grid(self, expected_builds, present=True):
-        actual_builds = self.get_custom_builds()
-        intersection = set(actual_builds).intersection(expected_builds)
-        if present:
-            assert intersection == set(expected_builds)
-        else:
-            assert intersection == set()
+    def assert_custom_build_listed(self, build_name):
+        self.components.custom_builds.row(name=build_name).wait_for_visible()
+
+    def assert_custom_build_not_listed(self, build_name):
+        custom_builds = self.components.custom_builds
+        # Wait for the table so absence isn't checked against an unloaded page.
+        custom_builds.table.wait_for_visible()
+        custom_builds.row(name=build_name).wait_for_absent()
 
     def _login(self):
         self.home()  # ensure Galaxy is loaded
         self.submit_login(self.user_email, retries=2)
 
     def add_custom_build(self, build_name, build_key):
-        name_input = self.wait_for_selector('input[id="name"]')
-        name_input.send_keys(build_name)
-
-        key_input = self.wait_for_selector('input[id="id"]')
-        key_input.send_keys(build_key)
-
-        self.wait_for_selector('select[id="type"]')
-        self.select_by_value(("css selector", 'select[id="type"]'), "text")
-        content_area = self.wait_for_and_click_selector('textarea[id="len-file-text-area"]')
-        content_area.send_keys("content")
-
-        self.wait_for_and_click_selector("button#save")
+        custom_builds = self.components.custom_builds
+        custom_builds.name.wait_for_and_send_keys(build_name)
+        custom_builds.key.wait_for_and_send_keys(build_key)
+        custom_builds.definition.select_by_value("text")
+        custom_builds.len_text.wait_for_and_send_keys("content")
+        custom_builds.save.wait_for_and_click()
 
     def delete_custom_build(self, build_name):
-        delete_button = None
-        custom_builds_table = self.wait_for_selector(".g-table > tbody")
-        for row in custom_builds_table.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
-            name = td[0].text
-            if name == build_name:
-                delete_button = td[3].find_element(By.CSS_SELECTOR, "button[data-title='Delete build']")
-                break
-
-        if delete_button is None:
-            raise AssertionError(f"Failed to find custom build with name [{build_name}]")
-
-        delete_button.click()
-
-    def get_custom_builds(self):
-        self.sleep_for(self.wait_types.UX_RENDER)
-        builds = []
-        custom_builds_table = self.wait_for_selector(".g-table > tbody")
-        for row in custom_builds_table.find_elements(By.TAG_NAME, "tr"):
-            name = row.find_elements(By.TAG_NAME, "td")[0].text
-            builds.append(name)
-        return builds
+        self.components.custom_builds.row_delete(name=build_name).wait_for_and_click()
 
     def navigate_to_custom_builds_page(self):
         self.home()
@@ -89,8 +57,3 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
     def setup_shared_state(self):
         TestCustomBuilds.user_email = self._get_random_email()
         self.register(self.user_email)
-
-        TestCustomBuilds.build_name1 = self._get_random_name()
-        TestCustomBuilds.build_name2 = self._get_random_name()
-        TestCustomBuilds.build_key1 = self._get_random_name(len=5)
-        TestCustomBuilds.build_key2 = self._get_random_name(len=5)
