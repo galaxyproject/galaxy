@@ -205,6 +205,7 @@ class DataTableColumnMismatch(Exception):
 
 class ToolDataTable(Dictifiable):
     type_key: str
+    columns: Dict[str, int]
     data: List[List[str]]
     empty_field_value: str
     empty_field_values: Dict[Optional[str], str]
@@ -1181,10 +1182,8 @@ class ToolDataTableManager(Dictifiable):
     ) -> None:
         """Raise if ``candidate_name`` is already registered with different columns."""
         existing = self.data_tables.get(candidate_name)
-        if existing is not None:
-            existing_columns = getattr(existing, "columns", None)
-            if existing_columns is not None and existing_columns != candidate_columns:
-                raise DataTableColumnMismatch(candidate_name, existing_columns, candidate_columns)
+        if existing is not None and existing.columns != candidate_columns:
+            raise DataTableColumnMismatch(candidate_name, existing.columns, candidate_columns)
 
     def to_dict(
         self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None
