@@ -1,4 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import { Model } from "./model";
@@ -130,5 +131,23 @@ describe("DataDialog.vue", () => {
         // expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
 
         // SelectionDialog DOM properties are tested now in SelectionDialog.test.js however.
+    });
+
+    it("reloads the listing from the new history when the history prop changes", async () => {
+        const get = vi.spyOn(Services.prototype, "get").mockResolvedValue([]);
+        const requestedUrls = () => get.mock.calls.map(([url]) => url);
+        wrapper = shallowMount(DataDialog, {
+            propsData: { ...mockOptions, history: "first" },
+            stubs: { Icon: true },
+        });
+        await flushPromises();
+        expect(requestedUrls()).toHaveLength(1);
+        expect(requestedUrls()[0]).toContain("api/histories/first/contents");
+
+        await wrapper.setProps({ history: "second" });
+        await flushPromises();
+        expect(requestedUrls()).toHaveLength(2);
+        expect(requestedUrls()[1]).toContain("api/histories/second/contents");
+        get.mockRestore();
     });
 });

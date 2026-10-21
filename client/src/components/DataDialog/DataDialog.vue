@@ -184,7 +184,7 @@ onMounted(() => {
 });
 
 watch(
-    () => history,
+    () => props.history,
     () => {
         urlTracker.reset(getHistoryUrl());
         load();
