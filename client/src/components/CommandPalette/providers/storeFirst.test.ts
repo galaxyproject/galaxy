@@ -55,7 +55,7 @@ describe("storeFirstItems", () => {
         await expect(storeFirstItems(list, "", 8)).rejects.toBeInstanceOf(PaletteFetchError);
     });
 
-    it("only asks the backend for a long enough query an incomplete cache cannot fill", async () => {
+    it("asks the backend only for a long enough query on an incomplete cache", async () => {
         const list = fakeList();
 
         await storeFirstItems(list, "a", 8);
