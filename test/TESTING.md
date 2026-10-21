@@ -22,14 +22,12 @@ dependency tests.
 ## ./run_tests.sh
 
 The runner provides suite selection, application configuration, fixture/client
-preparation, and reports. It syncs the locked test workspace once; it does not
-run server bootstrap or install requirements exports. Run `./run_tests.sh --help`
-for suite selectors. Use `--no-sync` to reuse a prepared environment.
+preparation, and reports. It syncs the locked test workspace once.
+Run `./run_tests.sh --help` for suite selectors. Use `--no-sync` to reuse a
+prepared environment.
 `UV_PROJECT_ENVIRONMENT` selects the environment; otherwise the runner uses
 `GALAXY_VIRTUAL_ENV`, the active virtualenv, or `.venv`, in that order.
 `GALAXY_PYTHON` (or `TEST_PYTHON`) can select Python when syncing.
 
-The old `--skip-venv`, `--no-create-venv`, `--skip-common-startup`, and pip
-replacement flags have been removed. Use `--no-sync` with an existing uv
-workspace environment instead. Client builds use `make client-production-maps`
-when requested by the suite or `GALAXY_SKIP_CLIENT_BUILD=0`.
+Client builds use `make client-production-maps` when requested by the suite
+or `GALAXY_SKIP_CLIENT_BUILD=0`.

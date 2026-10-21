@@ -17,26 +17,23 @@ Development uses a single
 [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/)
 rooted at the repository root. The root `pyproject.toml`
 (`name = "galaxy-workspace"`, `[tool.uv.workspace]` members `packages/*`) is
-the only workspace: the former nested `packages/pyproject.toml` workspace
-has been removed, so project commands run from a package directory
-resolve to the root workspace and its environment. Members use default
-editable installs; package imports need no `PYTHONPATH` setup or editable
-compatibility mode.
+the workspace manifest. Project commands issued from package directories use
+this workspace and its environment. Workspace members use editable installs,
+which make their Python packages importable in that environment.
 
 The exact uv version to use is pinned in `.tool-versions` at the repository
-root (`uv 0.12.23`). Both mise and asdf can read this file. Use the pinned
-version when syncing or regenerating the lock.
+root. Both mise and asdf can read this file. Use the pinned version when
+syncing or regenerating the lock.
 
-The root `uv.lock` is tracked and is the only workspace lockfile. The
-`.gitignore` exception for it keeps Galaxy runtime lock files ignored.
-Resolve manifest conflicts first, then regenerate the lock with the pinned uv
-version and review the dependency diff. Do not hand-edit the lock or run an
-unrelated broad upgrade in a source-move change.
+All workspace members share the tracked root `uv.lock`. Resolve manifest
+conflicts first, then regenerate the lock from the project manifests with the
+pinned uv version. Review dependency changes before committing.
 
 Sources live in `packages/<name>/src` and unit tests in
 `packages/<name>/tests`. Keep Python code in its owning distribution; shared
-fixture and frontend asset links remain. Shared pytest and sharding support lives in `packages/test_driver`;
-composed application tests and their fixtures live under `test/`.
+fixtures and frontend assets use symbolic links. Shared pytest and sharding
+support lives in `packages/test_driver`; composed application tests and their
+fixtures live under `test/`.
 
 ### Development profiles
 

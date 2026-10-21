@@ -1,7 +1,7 @@
 """Build workspace distributions with galaxy-release-util's artifact checks.
 
-The pinned release tool still looks for the version and runtime requirements
-under lib/. Supply their workspace locations without recreating that tree.
+Adapt the release tool's fixed lib/ lookups to workspace version and
+requirements paths.
 """
 
 import runpy

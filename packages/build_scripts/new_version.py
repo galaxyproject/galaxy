@@ -14,8 +14,7 @@ PROJECT_NAME = PROJECT_DIRECTORY_NAME.replace("_", "-")
 
 
 def _project_version_file(project_directory):
-    # pyproject.toml is canonical after the setup.cfg -> pyproject.toml migration;
-    # setup.cfg remains a legacy fallback for older package layouts.
+    # Prefer pyproject.toml; support setup.cfg for release branches that use it.
     for name in ("pyproject.toml", "setup.cfg"):
         path = os.path.join(project_directory, name)
         if os.path.exists(path):
@@ -24,8 +23,7 @@ def _project_version_file(project_directory):
 
 
 def _set_version(text, new_version):
-    # Preserve the existing quoting style (pyproject.toml quotes the version,
-    # legacy setup.cfg did not).
+    # Preserve the manifest's version quoting.
     def repl(match):
         quote = match.group(1)
         return f"version = {quote}{new_version}{quote}"

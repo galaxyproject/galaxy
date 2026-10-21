@@ -21,8 +21,13 @@ Galaxy's Python backend is now a single ``uv`` workspace rooted at the
 repository root: the root ``pyproject.toml`` is the only workspace manifest,
 ``uv.lock`` is the only lockfile, and the uv version is pinned in
 ``.tool-versions``. The sources of the published Galaxy Python packages moved
-from ``lib/`` into their packages (``packages/*/src``); ``lib/`` now only
-contains the root ``galaxy_test`` test-support package, and the package test
-suites live in ``packages/*/tests``. Documentation and tooling references
-have been retargeted to the new locations. Public imports, distribution names
-on PyPI, and entry points are unchanged.
+from ``lib/`` into their packages (``packages/*/src``), and package unit tests
+live in ``packages/*/tests``. Shared pytest and sharding support lives in
+``packages/test_driver``; composed application tests and their fixtures live
+under ``test/``. Public imports, distribution names on PyPI, and entry points
+are unchanged.
+
+``run_tests.sh`` uses the locked uv workspace for its test environment. The
+``--skip-venv``, ``--no-create-venv``, ``--skip-common-startup``, and pip
+replacement flags have been removed. Use ``--no-sync`` to reuse a prepared
+workspace environment.

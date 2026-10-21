@@ -99,8 +99,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
         ${PIP_CMD} install -r ../../requirements/pinned-typecheck-requirements.txt
-        # make mypy uses uv now and so this legacy code should just run mypy
-        # directly to use the venv we have already activated
+        # Run mypy directly to preserve the isolated package test environment.
         cd src
         mypy .
         cd ..
