@@ -36,7 +36,7 @@ bx-python==0.14.0
 cachecontrol==0.14.3
 cachetools==6.2.0
 celery==5.5.3
-certifi==2025.8.3
+certifi==2026.10.19
 cffi==2.0.0 ; implementation_name == 'pypy' or platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.3
 circus==0.19.0
