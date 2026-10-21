@@ -5221,13 +5221,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     def set_skipped(self, object_store_populator: "ObjectStorePopulator", replace_dataset: bool) -> None:
         assert self.dataset
-        object_store_populator.set_object_store_id(self)
         if replace_dataset:
-            replacement = Dataset(state=Dataset.states.NEW)
-            replacement.object_store_id = self.dataset.object_store_id
-            self.dataset = replacement
+            # Replace the dataset before touching the object store, the current one may be shared with an input.
+            self.dataset = Dataset(state=Dataset.states.NEW)
             self.dataset_id = None
-            self.dataset.object_store.create(self.dataset)
+        object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
