@@ -46,7 +46,7 @@ jobs:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Install Apptainer's singularity
-        uses: './galaxy root/.github/actions/install_apptainer'
+        uses: '$/.github/actions/install_apptainer'
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests
