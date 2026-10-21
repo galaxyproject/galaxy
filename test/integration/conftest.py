@@ -44,7 +44,7 @@ def shared_resource_scope(nodeid: str) -> str | None:
     return None
 
 
-class SharedResourceScopeScheduling(LoadScopeScheduling):  # type: ignore[misc]  # pytest-xdist is untyped
+class SharedResourceScopeScheduling(LoadScopeScheduling):
     def _split_scope(self, nodeid: str) -> str:
         return shared_resource_scope(nodeid) or super()._split_scope(nodeid)
 

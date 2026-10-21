@@ -60,7 +60,7 @@ def shared_repository_scopes(directory: Path) -> dict[str, str]:
     }
 
 
-class SharedRepositoryScheduling(LoadScopeScheduling):  # type: ignore[misc]  # pytest-xdist is untyped
+class SharedRepositoryScheduling(LoadScopeScheduling):
     def __init__(self, config, log=None):
         super().__init__(config, log)
         self.module_scopes = shared_repository_scopes(Path(__file__).parent)
