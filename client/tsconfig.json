@@ -14,7 +14,13 @@
             "@fortawesome/fontawesome-common-types": [
                 "./node_modules/@fortawesome/fontawesome-common-types/index"
             ],
-            "vite": ["./node_modules/vite/dist/node/index"]
+            "vite": ["./node_modules/vite/dist/node/index"],
+            // Storybook types are only reachable through package.json "exports",
+            // which resolvePackageJsonExports: false below turns off.
+            "@storybook/vue3-vite": ["./node_modules/@storybook/vue3-vite/dist/index"],
+            "@storybook/vue3": ["./node_modules/@storybook/vue3/dist/index"],
+            "storybook/internal/*": ["./node_modules/storybook/dist/*/index"],
+            "storybook/test": ["./node_modules/storybook/dist/test/index"]
         },
         "outDir": "./dist/build",
 
@@ -30,5 +36,5 @@
     "vueCompilerOptions": {
         "target": 3
     },
-    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"]
+    "include": ["./types/*.d.ts", "./.storybook/*.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"]
 }

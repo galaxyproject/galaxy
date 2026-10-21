@@ -1,93 +1,17 @@
-import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it } from "vitest";
 
-import ExportForm from "./ExportForm.vue";
-import FilesInput from "@/components/FilesDialog/FilesInput.vue";
+import * as ExportFormStories from "./ExportForm.stories";
 
-const localVue = getLocalVue(true);
+const stories = composeStories(ExportFormStories);
+const mountStory = useStoryMount();
 
+// The repository prompt, filling the form, enabling and clicking Export, and clearing after export are covered by the play functions.
 describe("ExportForm.vue", () => {
-    let wrapper: any;
+    it("localizes the export button text", () => {
+        const wrapper = mountStory(stories.HistoryArchive, { instrumentLocalization: true });
 
-    beforeEach(async () => {
-        wrapper = mount(ExportForm as object, {
-            props: {},
-            global: localVue,
-        });
+        expect(wrapper.get(".export-button").text()).toBeLocalizationOf("Export");
     });
-
-    it("should render a form with export button disabled because inputs are empty", async () => {
-        expectExportButtonDisabled();
-    });
-
-    it("should render a form with export button disabled because directory is empty", async () => {
-        const newValue = "export.tar.gz";
-        await setNameInput(newValue);
-
-        expectExportButtonDisabled();
-    });
-
-    it("should render a form with export button disabled because name is empty", async () => {
-        const newValue = "gxfiles://";
-        await setDirectoryInput(newValue);
-
-        expectExportButtonDisabled();
-    });
-
-    it("should allow export when all inputs are defined", async () => {
-        await setNameInput("export.tar.gz");
-        await setDirectoryInput("gxfiles://");
-
-        expectExportButtonEnabled();
-    });
-
-    it("should localize button text", async () => {
-        const newLocal = wrapper.find(".export-button").text();
-        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
-        (expect(newLocal) as any).toBeLocalizationOf("Export");
-    });
-
-    it("should emit 'export' event with correct inputs on export button click", async () => {
-        await setNameInput("export.tar.gz");
-        await setDirectoryInput("gxfiles://");
-        expect(wrapper.emitted()).not.toHaveProperty("export");
-
-        await wrapper.find(".export-button").trigger("click");
-
-        expect(wrapper.emitted()).toHaveProperty("export");
-        expect(emittedArg(wrapper, "export")).toBe("gxfiles://");
-        expect(wrapper.emitted("export")[0][1]).toBe("export.tar.gz");
-    });
-
-    it("should clear the inputs (hence disabling export) after export when clearInputAfterExport is enabled", async () => {
-        await wrapper.setProps({
-            clearInputAfterExport: true,
-        });
-        await setNameInput("export.tar.gz");
-        await setDirectoryInput("gxfiles://");
-
-        await wrapper.find(".export-button").trigger("click");
-
-        expectExportButtonDisabled();
-    });
-
-    function expectExportButtonDisabled() {
-        expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeTruthy();
-    }
-
-    function expectExportButtonEnabled() {
-        expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeFalsy();
-    }
-
-    async function setNameInput(newValue: string) {
-        const nameInput = wrapper.find("#name");
-        await nameInput.setValue(newValue);
-    }
-
-    async function setDirectoryInput(newValue: string) {
-        await wrapper.findComponent(FilesInput).vm.$emit("input", newValue);
-    }
 });

@@ -1,68 +1,58 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { WorkflowSummary } from "@/api/workflows";
+import { updateWorkflow } from "@/components/Workflow/workflows.services";
+
+import * as WorkflowCardListStories from "./WorkflowCardList.stories";
 
 import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowCardList from "./WorkflowCardList.vue";
 import WorkflowRename from "@/components/Common/RenameModal.vue";
 
-vi.mock("@/components/Workflow/workflows.services", () => ({
-    updateWorkflow: vi.fn(),
-}));
+// Spied, not replaced: the rename still reaches the story's handler.
+vi.mock("@/components/Workflow/workflows.services", { spy: true });
 
-vi.mock("@/composables/toast");
+const stories = composeStories(WorkflowCardListStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue();
+const FIRST_WORKFLOW = stories.OwnWorkflows.args.workflows![0]!;
+const SECOND_WORKFLOW = stories.OwnWorkflows.args.workflows![1]!;
 
-const WORKFLOW_ID = "workflow-abc123";
-const WORKFLOW_NAME = "My Test Workflow";
-const FAKE_WORKFLOW = { id: WORKFLOW_ID, name: WORKFLOW_NAME };
+async function mountWorkflowCardList() {
+    const wrapper = mountStory(stories.OwnWorkflows);
+    await flushPromises();
+    return wrapper;
+}
 
-const WORKFLOW_2_ID = "workflow-def456";
-const WORKFLOW_2_NAME = "Another Workflow";
-const FAKE_WORKFLOW_2 = { id: WORKFLOW_2_ID, name: WORKFLOW_2_NAME };
+async function requestRename(wrapper: VueWrapper, cardIndex: number, workflow: WorkflowSummary) {
+    wrapper.findAllComponents(WorkflowCard).at(cardIndex)!.vm.$emit("rename", workflow.id, workflow.name);
+    await flushPromises();
+}
 
 describe("WorkflowCardList — rename flow", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it("shows WorkflowRename with correct props when a card emits rename", async () => {
-        const wrapper = shallowMount(WorkflowCardList as object, {
-            localVue,
-            propsData: { workflows: [FAKE_WORKFLOW] },
-        });
+    it("emits refreshList on close and renames the workflow asked for next", async () => {
+        const wrapper = await mountWorkflowCardList();
 
-        expect(wrapper.findComponent(WorkflowRename).exists()).toBe(false);
-
-        wrapper.findComponent(WorkflowCard).vm.$emit("rename", WORKFLOW_ID, WORKFLOW_NAME);
-        await flushPromises();
-
-        const renameModal = wrapper.findComponent(WorkflowRename);
-        expect(renameModal.exists()).toBe(true);
-        expect(renameModal.props("name")).toBe(WORKFLOW_NAME);
-    });
-
-    it("does not retain first workflow's name when opening rename for a different workflow after aborting", async () => {
-        const wrapper = shallowMount(WorkflowCardList as object, {
-            localVue,
-            propsData: { workflows: [FAKE_WORKFLOW, FAKE_WORKFLOW_2] },
-        });
-
-        // Open rename for first workflow then abort
-        wrapper.findComponent(WorkflowCard).vm.$emit("rename", WORKFLOW_ID, WORKFLOW_NAME);
-        await flushPromises();
+        await requestRename(wrapper, 0, FIRST_WORKFLOW);
         wrapper.findComponent(WorkflowRename).vm.$emit("close");
         await flushPromises();
 
-        expect(wrapper.findComponent(WorkflowRename).exists()).toBe(false);
+        expect(wrapper.getComponent(WorkflowCardList).emitted("refreshList")).toEqual([[true, true]]);
 
-        // Open rename for second workflow
-        wrapper.findComponent(WorkflowCard).vm.$emit("rename", WORKFLOW_2_ID, WORKFLOW_2_NAME);
-        await flushPromises();
+        await requestRename(wrapper, 1, SECOND_WORKFLOW);
 
         const renameModal = wrapper.findComponent(WorkflowRename);
-        expect(renameModal.props("name")).toBe(WORKFLOW_2_NAME);
+        expect(renameModal.props("name")).toBe(SECOND_WORKFLOW.name);
+
+        await renameModal.props("renameAction")("Renamed Workflow");
+        expect(updateWorkflow).toHaveBeenCalledWith(SECOND_WORKFLOW.id, { name: "Renamed Workflow" });
     });
 });

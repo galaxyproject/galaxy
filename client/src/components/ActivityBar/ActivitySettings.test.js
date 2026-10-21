@@ -1,15 +1,18 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { nextTick, ref } from "vue";
+import { composeStories } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
+import { flushPromises } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { h, nextTick, ref } from "vue";
 
-import { useServerMock } from "@/api/client/__mocks__";
 import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
+import { ensureDefined } from "@/utils/assertions";
 
-import mountTarget from "./ActivitySettings.vue";
+import * as ActivitySettingsStories from "./ActivitySettings.stories";
+
+import ActivitySettings from "./ActivitySettings.vue";
 
 const mockConfig = ref({});
 
@@ -20,8 +23,33 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const { server, http } = useServerMock();
+const queryControls = new WeakMap();
+let nextQuery;
+const stories = composeStories(ActivitySettingsStories, {
+    render: (args) => ({
+        setup() {
+            const query = nextQuery;
+            return () => h(ActivitySettings, { ...args, query: query.value });
+        },
+    }),
+});
+const mountStory = useStoryMount();
 const activityItemSelector = ".activity-settings-item";
+
+async function mountActivitySettings(activityBarId, story = stories.BuiltInActivities) {
+    nextQuery = ref("");
+    const query = nextQuery;
+    const root = mountStory(story, {
+        props: { query: "", activityBarId },
+        // Preserve the original synthetic icon-attribute contract only in units.
+        // Standalone stories use actual built-in icons and dataset bookmarks.
+        global: { stubs: { FontAwesomeIcon: { template: "<div></div>" } } },
+    });
+    await vi.waitFor(() => root.getComponent(ActivitySettings));
+    const wrapper = root.getComponent(ActivitySettings);
+    queryControls.set(wrapper, query);
+    return wrapper;
+}
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
@@ -39,11 +67,13 @@ function testActivity(id, newOptions = {}) {
 }
 
 function activityTitle(id) {
-    return defaultActivities.find((activity) => activity.id === id).title;
+    return ensureDefined(defaultActivities.find((activity) => activity.id === id)).title;
 }
 
 async function testSearch(wrapper, query, result) {
-    await wrapper.setProps({ query });
+    // Update the mounted child through its parent without remounting story decorators.
+    ensureDefined(queryControls.get(wrapper)).value = query;
+    await nextTick();
     const filtered = wrapper.findAll(activityItemSelector);
     expect(filtered.length).toBe(result);
 }
@@ -53,28 +83,13 @@ describe("ActivitySettings", () => {
     let wrapper;
 
     beforeEach(async () => {
-        mockConfig.value = { interactivetools_enable: true, llm_api_configured: true };
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        // Mock the response of the API call
-        server.use(
-            http.get("/api/unprivileged_tools", ({ params, query, response }) => {
-                return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
-            }),
-        );
-        activityStore = useActivityStore("test-activity-bar");
-        wrapper = mount(mountTarget, {
-            global: {
-                ...getLocalVue(),
-                stubs: {
-                    FontAwesomeIcon: { template: "<div></div>" },
-                },
-            },
-            pinia,
-            props: {
-                query: "",
-                activityBarId: "test-activity-bar",
-            },
+        const originalConfig = mockConfig.value;
+        onTestFinished(() => {
+            mockConfig.value = originalConfig;
         });
+        mockConfig.value = { interactivetools_enable: true, llm_api_configured: true };
+        wrapper = await mountActivitySettings("test-activity-bar");
+        activityStore = useActivityStore("test-activity-bar");
         await activityStore.sync();
     });
 
@@ -89,14 +104,14 @@ describe("ActivitySettings", () => {
         await nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[data-title='Hide in Activity Bar']");
+        const checkbox = nth(items, 0).find("[data-title='Hide in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
         const icon = wrapper.find("[icon='activity-test-icon']");
         expect(icon.exists()).toBeTruthy();
-        expect(activityStore.getAll()[0].visible).toBeTruthy();
-        checkbox.trigger("click");
+        expect(nth(activityStore.getAll(), 0).visible).toBeTruthy();
+        await nth(items, 0).get("[data-title='Hide in Activity Bar']").trigger("click");
         await wrapper.vm.$nextTick();
-        expect(activityStore.getAll()[0].visible).toBeFalsy();
+        expect(nth(activityStore.getAll(), 0).visible).toBeFalsy();
     });
 
     it("non-visible but optional activity", async () => {
@@ -109,14 +124,14 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[data-title='Show in Activity Bar']");
+        const checkbox = nth(items, 0).find("[data-title='Show in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
-        expect(activityStore.getAll()[0].visible).toBeFalsy();
-        checkbox.trigger("click");
+        expect(nth(activityStore.getAll(), 0).visible).toBeFalsy();
+        await nth(items, 0).get("[data-title='Show in Activity Bar']").trigger("click");
         await wrapper.vm.$nextTick();
-        const visibleCheckbox = items.at(0).find("[data-title='Hide in Activity Bar']");
+        const visibleCheckbox = nth(items, 0).find("[data-title='Hide in Activity Bar']");
         expect(visibleCheckbox.exists()).toBeTruthy();
-        expect(activityStore.getAll()[0].visible).toBeTruthy();
+        expect(nth(activityStore.getAll(), 0).visible).toBeTruthy();
     });
 
     it("removable", async () => {
@@ -124,10 +139,10 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-description='delete activity']");
+        const trash = nth(items, 0).find("[data-description='delete activity']");
         expect(trash.exists()).toBeTruthy();
         expect(activityStore.getAll().length).toBe(1);
-        trash.trigger("click");
+        await nth(items, 0).get("[data-description='delete activity']").trigger("click");
         await wrapper.vm.$nextTick();
         expect(activityStore.getAll().length).toBe(0);
     });
@@ -141,7 +156,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-icon='trash']");
+        const trash = nth(items, 0).find("[data-icon='trash']");
         expect(trash.exists()).toBeFalsy();
     });
 
@@ -167,14 +182,12 @@ describe("ActivitySettings", () => {
 
         async function mountSettings(config, { canUseUnprivilegedTools }) {
             mockConfig.value = config;
-            const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            const settings = await mountActivitySettings(
+                "test-activity-bar-gates",
+                canUseUnprivilegedTools ? stories.CustomToolsPermitted : stories.BuiltInActivities,
+            );
             useUnprivilegedToolStore().canUseUnprivilegedTools = canUseUnprivilegedTools;
             const store = useActivityStore("test-activity-bar-gates");
-            const settings = mount(mountTarget, {
-                global: { ...getLocalVue(), stubs: { FontAwesomeIcon: { template: "<div></div>" } } },
-                pinia,
-                props: { query: "", activityBarId: "test-activity-bar-gates" },
-            });
             await store.sync();
             await flushPromises();
             return { settings, store };
@@ -193,7 +206,9 @@ describe("ActivitySettings", () => {
 
         it("updates config-gated activities when configuration arrives without changing saved visibility", async () => {
             const { settings, store } = await mountSettings(null, { canUseUnprivilegedTools: false });
-            const interactiveTools = store.getAll().find((activity) => activity.id === "interactivetools");
+            const interactiveTools = ensureDefined(
+                store.getAll().find((activity) => activity.id === "interactivetools"),
+            );
             interactiveTools.visible = false;
             await nextTick();
             expect(renderedTitles(settings)).not.toContain(activityTitle("interactivetools"));

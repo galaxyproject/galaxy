@@ -1,7 +1,7 @@
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActionSuggestion } from "@/composables/agentActions";
+import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
 import { ActionType } from "@/composables/agentActions";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
@@ -14,7 +14,7 @@ function makeUserMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
         id: "msg-1",
         role: "user",
         content: "What tools can analyze my data?",
-        timestamp: new Date(),
+        timestamp: new Date("2026-01-01T12:00:00Z"),
         feedback: null,
         ...overrides,
     };
@@ -25,27 +25,40 @@ function makeAssistantMessage(overrides: Partial<ChatMessage> = {}): ChatMessage
         id: "msg-2",
         role: "assistant",
         content: "You can use the **Dataset Analyzer** tool.",
-        timestamp: new Date(),
+        timestamp: new Date("2026-01-01T12:00:00Z"),
         agentType: "auto",
         feedback: null,
         ...overrides,
     };
 }
 
-const defaultRenderMarkdown = (text: string) => `<p>${text}</p>`;
+enableAutoUnmount(afterEach);
 
-function mountCell(message: ChatMessage, props: Record<string, unknown> = {}) {
-    return mount(ChatMessageCell as any, {
-        propsData: {
+function makeAgentResponse(overrides: Partial<AgentResponse> = {}): AgentResponse {
+    return {
+        content: "test",
+        agent_type: "auto",
+        confidence: "high",
+        suggestions: [],
+        metadata: {},
+        ...overrides,
+    };
+}
+
+function mountCell(message: ChatMessage, options: { renderActionCard?: boolean; afterContent?: string } = {}) {
+    return mount(ChatMessageCell, {
+        props: {
             message,
-            renderMarkdown: defaultRenderMarkdown,
+            renderMarkdown: (text: string) => `<p>${text}</p>`,
             processingAction: false,
-            ...props,
         },
-        stubs: {
-            FontAwesomeIcon: true,
-            ActionCard: true,
+        global: {
+            stubs: {
+                FontAwesomeIcon: true,
+                ActionCard: !options.renderActionCard,
+            },
         },
+        slots: options.afterContent ? { "after-content": options.afterContent } : {},
     });
 }
 
@@ -53,8 +66,8 @@ describe("ChatMessageCell", () => {
     describe("user messages", () => {
         it("renders user query with content", () => {
             const wrapper = mountCell(makeUserMessage());
-            expect(wrapper.find(".exchange-entry").classes()).toContain("entry-query");
-            expect(wrapper.find(".query-text").text()).toBe("What tools can analyze my data?");
+            expect(wrapper.get(".exchange-entry").classes()).toContain("entry-query");
+            expect(wrapper.get(".query-text").text()).toBe("What tools can analyze my data?");
         });
 
         it("does not render feedback buttons", () => {
@@ -66,21 +79,20 @@ describe("ChatMessageCell", () => {
     describe("assistant messages", () => {
         it("renders response entry", () => {
             const wrapper = mountCell(makeAssistantMessage());
-            expect(wrapper.find(".exchange-entry").classes()).toContain("entry-response");
+            expect(wrapper.get(".exchange-entry").classes()).toContain("entry-response");
         });
 
         it("renders markdown via renderMarkdown prop", () => {
             const wrapper = mountCell(makeAssistantMessage());
-            expect(wrapper.find(".response-content").html()).toContain(
+            expect(wrapper.get(".response-content").html()).toContain(
                 "<p>You can use the **Dataset Analyzer** tool.</p>",
             );
         });
 
         it("shows agent label in metadata", () => {
             const wrapper = mountCell(makeAssistantMessage({ agentType: "error_analysis" }));
-            const tags = wrapper.findAll(".meta-tag");
-            const labels = tags.map((w) => w.text());
-            expect(labels.some((l) => l.includes("Error Analysis"))).toBe(true);
+            const labels = wrapper.findAll(".meta-tag").map((tag) => tag.text());
+            expect(labels.some((label) => label.includes("Error Analysis"))).toBe(true);
         });
     });
 
@@ -89,13 +101,12 @@ describe("ChatMessageCell", () => {
             return makeAssistantMessage({
                 agentType: "clarification",
                 content: "Do you want a tool recommendation or a tutorial?",
-                agentResponse: {
+                agentResponse: makeAgentResponse({
                     content: "Do you want a tool recommendation or a tutorial?",
                     agent_type: "clarification",
                     confidence: "medium",
-                    suggestions: [],
                     metadata: { options: ["Tool recommendation", "Tutorial"] },
-                },
+                }),
                 ...overrides,
             });
         }
@@ -108,38 +119,36 @@ describe("ChatMessageCell", () => {
 
         it("renders one quick-reply button per option", () => {
             const wrapper = mountCell(makeClarificationMessage());
-            expect(wrapper.findAll(".clarification-options button").length).toBe(2);
+            expect(wrapper.findAll(".clarification-options button")).toHaveLength(2);
         });
 
         it("bubbles select-clarification-option with the chosen option", async () => {
             const wrapper = mountCell(makeClarificationMessage());
-            await wrapper.findAll(".clarification-options button").at(0)!.trigger("click");
+            await wrapper.get(".clarification-options button").trigger("click");
             expect(wrapper.emitted("select-clarification-option")).toEqual([["Tool recommendation"]]);
         });
 
         it("renders the question even with no options", () => {
             const wrapper = mountCell(
                 makeClarificationMessage({
-                    agentResponse: {
+                    agentResponse: makeAgentResponse({
                         content: "What would you like to do?",
                         agent_type: "clarification",
                         confidence: "medium",
-                        suggestions: [],
-                        metadata: {},
-                    },
+                    }),
                 }),
             );
-            expect(wrapper.find(".clarification-question").text()).toBe(
+            expect(wrapper.get(".clarification-question").text()).toBe(
                 "Do you want a tool recommendation or a tutorial?",
             );
-            expect(wrapper.findAll(".clarification-options button").length).toBe(0);
+            expect(wrapper.findAll(".clarification-options button")).toHaveLength(0);
         });
     });
 
     describe("system messages", () => {
         it("renders system notice", () => {
             const wrapper = mountCell(makeAssistantMessage({ isSystemMessage: true, content: "Welcome" }));
-            expect(wrapper.find(".system-notice").text()).toBe("Welcome");
+            expect(wrapper.get(".system-notice").text()).toBe("Welcome");
         });
 
         it("does not render feedback for system messages", () => {
@@ -152,33 +161,29 @@ describe("ChatMessageCell", () => {
         it("renders feedback buttons for normal assistant messages", () => {
             const wrapper = mountCell(makeAssistantMessage());
             const buttons = wrapper.findAll(".feedback-btn");
-            expect(buttons.length).toBe(2);
+            expect(buttons).toHaveLength(2);
         });
 
-        it("emits feedback event on thumbs-up click", async () => {
+        it.each([
+            { button: "Helpful", feedback: "up" },
+            { button: "Not helpful", feedback: "down" },
+        ])("emits $feedback feedback when the $button button is clicked", async ({ button, feedback }) => {
             const wrapper = mountCell(makeAssistantMessage());
-            const upBtn = wrapper.findAll(".feedback-btn").at(0);
-            await upBtn!.trigger("click");
-            expect(wrapper.emitted("feedback")).toEqual([["msg-2", "up"]]);
-        });
 
-        it("emits feedback event on thumbs-down click", async () => {
-            const wrapper = mountCell(makeAssistantMessage());
-            const downBtn = wrapper.findAll(".feedback-btn").at(1);
-            await downBtn!.trigger("click");
-            expect(wrapper.emitted("feedback")).toEqual([["msg-2", "down"]]);
+            await wrapper.get(`button[title="${button}"]`).trigger("click");
+
+            expect(wrapper.emitted("feedback")).toEqual([["msg-2", feedback]]);
         });
 
         it("disables feedback buttons after feedback given", () => {
             const wrapper = mountCell(makeAssistantMessage({ feedback: "up" }));
-            const buttons = wrapper.findAll(".feedback-btn");
-            expect((buttons.at(0)!.element as HTMLButtonElement).disabled).toBe(true);
-            expect((buttons.at(1)!.element as HTMLButtonElement).disabled).toBe(true);
+            expect(wrapper.get<HTMLButtonElement>('button[title="Helpful"]').element.disabled).toBe(true);
+            expect(wrapper.get<HTMLButtonElement>('button[title="Not helpful"]').element.disabled).toBe(true);
         });
 
         it("shows thanks text after feedback", () => {
             const wrapper = mountCell(makeAssistantMessage({ feedback: "up" }));
-            expect(wrapper.find(".feedback-ack").text()).toBe("Thanks!");
+            expect(wrapper.get(".feedback-ack").text()).toBe("Thanks!");
         });
 
         it("hides meta for error messages", () => {
@@ -188,36 +193,17 @@ describe("ChatMessageCell", () => {
     });
 
     describe("response metadata", () => {
-        it("shows model name when metadata.model present", () => {
-            const message = makeAssistantMessage({
-                agentResponse: {
-                    content: "test",
-                    agent_type: "auto",
-                    confidence: "high",
-                    suggestions: [],
-                    metadata: { model: "openai/gpt-4" },
-                },
-            });
-            const wrapper = mountCell(message);
-            const tags = wrapper.findAll(".meta-tag");
-            const text = tags.map((w) => w.text()).join(" ");
-            expect(text).toContain("gpt-4");
-        });
+        it.each([
+            { name: "model name", metadata: { model: "openai/gpt-4" }, expected: "gpt-4" },
+            { name: "token count", metadata: { total_tokens: 150 }, expected: "150 tok" },
+        ])("shows the $name from the agent response", ({ metadata, expected }) => {
+            const wrapper = mountCell(makeAssistantMessage({ agentResponse: makeAgentResponse({ metadata }) }));
 
-        it("shows token count when metadata.total_tokens present", () => {
-            const message = makeAssistantMessage({
-                agentResponse: {
-                    content: "test",
-                    agent_type: "auto",
-                    confidence: "high",
-                    suggestions: [],
-                    metadata: { total_tokens: 150 },
-                },
-            });
-            const wrapper = mountCell(message);
-            const tags = wrapper.findAll(".meta-tag");
-            const text = tags.map((w) => w.text()).join(" ");
-            expect(text).toContain("150 tok");
+            const metadataText = wrapper
+                .findAll(".meta-tag")
+                .map((tag) => tag.text())
+                .join(" ");
+            expect(metadataText).toContain(expected);
         });
     });
 
@@ -233,12 +219,12 @@ describe("ChatMessageCell", () => {
                 },
             ];
             const wrapper = mountCell(makeAssistantMessage({ suggestions }));
-            // ActionCard is stubbed by mountCell, so its own `.action-card` class never renders.
             expect(wrapper.find("action-card-stub").exists()).toBe(true);
         });
 
         it("does not render ActionCard when no suggestions", () => {
             const wrapper = mountCell(makeAssistantMessage());
+            expect(wrapper.find("action-card-stub").exists()).toBe(false);
             expect(wrapper.find(".action-card").exists()).toBe(false);
         });
 
@@ -250,56 +236,28 @@ describe("ChatMessageCell", () => {
                 confidence: "high",
                 priority: 1,
             };
-            const agentResponse = {
-                content: "test",
-                agent_type: "auto",
-                confidence: "high" as const,
-                suggestions: [],
-                metadata: {},
-            };
+            const agentResponse = makeAgentResponse();
             const message = makeAssistantMessage({
                 suggestions: [action],
                 agentResponse,
             });
-            const wrapper = mount(ChatMessageCell as any, {
-                propsData: {
-                    message,
-                    renderMarkdown: defaultRenderMarkdown,
-                    processingAction: false,
-                },
-                stubs: {
-                    FontAwesomeIcon: true,
-                },
-            });
-            await wrapper.find(".g-button").trigger("click");
+            // Keep the real ActionCard to exercise its button and the parent's event forwarding.
+            const wrapper = mountCell(message, { renderActionCard: true });
 
-            const emitted = wrapper.emitted("handle-action");
-            expect(emitted).toHaveLength(1);
-            expect(emitted![0]![0]).toEqual(action);
-            // Vue 3 wraps prop objects in a reactive proxy, so this is no longer the exact
-            // same object reference as `agentResponse` even though its contents are identical.
-            expect(emitted![0]![1]).toEqual(agentResponse);
+            await wrapper.get(".g-button").trigger("click");
+
+            expect(wrapper.emitted("handle-action")).toEqual([[action, agentResponse]]);
         });
     });
 
     describe("slots", () => {
         it("renders after-content slot", () => {
-            const wrapper = mount(ChatMessageCell as any, {
-                propsData: {
-                    message: makeAssistantMessage(),
-                    renderMarkdown: defaultRenderMarkdown,
-                    processingAction: false,
-                },
-                stubs: {
-                    FontAwesomeIcon: true,
-                    ActionCard: true,
-                },
-                slots: {
-                    "after-content": "<div class='custom-slot'>Extra content</div>",
-                },
+            const wrapper = mountCell(makeAssistantMessage(), {
+                afterContent: "<div class='custom-slot'>Extra content</div>",
             });
+
             expect(wrapper.find(".custom-slot").exists()).toBe(true);
-            expect(wrapper.find(".custom-slot").text()).toBe("Extra content");
+            expect(wrapper.get(".custom-slot").text()).toBe("Extra content");
         });
     });
 

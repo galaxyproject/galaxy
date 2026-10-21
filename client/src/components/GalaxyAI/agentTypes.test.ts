@@ -1,93 +1,81 @@
 import { faMagic, faRobot } from "@fortawesome/free-solid-svg-icons";
 import { describe, expect, it } from "vitest";
 
+import type { AgentResponse } from "@/composables/agentActions";
+
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
 
 describe("agentTypes", () => {
     describe("getAgentIcon", () => {
-        it("returns correct icon for known agent type", () => {
+        it("returns the agent's icon for a known agent type", () => {
             expect(getAgentIcon("auto")).toBe(faMagic);
         });
 
-        it("returns faRobot for unknown agent type", () => {
-            expect(getAgentIcon("nonexistent")).toBe(faRobot);
-        });
-
-        it("returns faRobot for undefined", () => {
-            expect(getAgentIcon(undefined)).toBe(faRobot);
-        });
-
-        it("returns faRobot for empty string", () => {
-            expect(getAgentIcon("")).toBe(faRobot);
+        it.each([
+            ["an unknown agent type", "nonexistent"],
+            ["undefined", undefined],
+            ["an empty string", ""],
+        ])("falls back to the robot icon for %s", (_condition, agentType) => {
+            expect(getAgentIcon(agentType)).toBe(faRobot);
         });
     });
 
     describe("getAgentLabel", () => {
-        it("returns label for known agent types", () => {
-            expect(getAgentLabel("auto")).toBe("Auto (Router)");
-            expect(getAgentLabel("error_analysis")).toBe("Error Analysis");
-            expect(getAgentLabel("gtn_training")).toBe("GTN Training");
+        it.each([
+            ["auto", "Auto (Router)"],
+            ["error_analysis", "Error Analysis"],
+            ["gtn_training", "GTN Training"],
+        ])("returns the label of known agent type %s", (agentType, label) => {
+            expect(getAgentLabel(agentType)).toBe(label);
         });
 
-        it("returns raw value for unknown agent type", () => {
+        it("returns the raw value for an unknown agent type", () => {
             expect(getAgentLabel("my_custom_agent")).toBe("my_custom_agent");
         });
 
-        it("returns 'AI Assistant' for undefined", () => {
-            expect(getAgentLabel(undefined)).toBe("AI Assistant");
-        });
-
-        it("returns 'AI Assistant' for empty string", () => {
-            expect(getAgentLabel("")).toBe("AI Assistant");
+        it.each([
+            ["undefined", undefined],
+            ["an empty string", ""],
+        ])("returns 'AI Assistant' for %s", (_condition, agentType) => {
+            expect(getAgentLabel(agentType)).toBe("AI Assistant");
         });
     });
 
     describe("formatModelName", () => {
-        it("extracts last segment from slash-separated model name", () => {
-            expect(formatModelName("openai/gpt-4")).toBe("gpt-4");
-            expect(formatModelName("anthropic/claude-3-opus")).toBe("claude-3-opus");
-        });
-
-        it("handles multi-slash model path", () => {
-            expect(formatModelName("org/team/gpt-4")).toBe("gpt-4");
-        });
-
-        it("returns model name as-is if no slashes", () => {
-            expect(formatModelName("gpt-4")).toBe("gpt-4");
-        });
-
-        it("returns empty string for undefined", () => {
-            expect(formatModelName(undefined)).toBe("");
-        });
-
-        it("returns empty string for empty string", () => {
-            expect(formatModelName("")).toBe("");
-        });
-
-        it("handles trailing slash", () => {
-            expect(formatModelName("openai/")).toBe("openai/");
+        it.each([
+            ["keeps the last segment of a provider/model name", "openai/gpt-4", "gpt-4"],
+            ["keeps the last segment of a provider/model name", "anthropic/claude-3-opus", "claude-3-opus"],
+            ["keeps the last segment of a multi-slash model path", "org/team/gpt-4", "gpt-4"],
+            ["returns a name without slashes as-is", "gpt-4", "gpt-4"],
+            ["returns the whole name when it ends in a slash", "openai/", "openai/"],
+            ["returns an empty string for undefined", undefined, ""],
+            ["returns an empty string for an empty string", "", ""],
+        ])("%s (%s)", (_behavior, model, formatted) => {
+            expect(formatModelName(model)).toBe(formatted);
         });
     });
 
     describe("getAgentResponseOrEmpty", () => {
-        it("returns provided response when present", () => {
-            const response = {
+        it("returns the provided response when present", () => {
+            const response: AgentResponse = {
                 content: "hello",
                 agent_type: "auto",
-                confidence: "high" as const,
+                confidence: "high",
                 suggestions: [],
                 metadata: { model: "gpt-4" },
             };
+
             expect(getAgentResponseOrEmpty(response)).toBe(response);
         });
 
-        it("returns empty response for undefined", () => {
-            const result = getAgentResponseOrEmpty(undefined);
-            expect(result.content).toBe("");
-            expect(result.agent_type).toBe("");
-            expect(result.confidence).toBe("low");
-            expect(result.suggestions).toEqual([]);
-            expect(result.metadata).toEqual({});
+        it("returns an empty low-confidence response for undefined", () => {
+            expect(getAgentResponseOrEmpty(undefined)).toEqual({
+                content: "",
+                agent_type: "",
+                confidence: "low",
+                suggestions: [],
+                metadata: {},
+            });
         });
     });
 });

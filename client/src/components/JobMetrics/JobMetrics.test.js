@@ -1,77 +1,63 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import JobMetrics from "./JobMetrics.vue";
 
+const JOB_ID = "9000";
 const NO_METRICS_MESSAGE = "No metrics available for this job.";
 
-// Ignore all axios calls, data is mocked locally -- just say "OKAY!"
-vi.mock("axios", () => ({
-    get: async () => {
-        return { response: { status: 200 } };
-    },
-}));
+const SELECTORS = {
+    NO_METRICS_ALERT: ".alert-info",
+    PLUGIN: ".metrics_plugin",
+    PLUGIN_TITLE: ".metrics_plugin_title",
+};
 
 const localVue = getLocalVue();
 
-describe("JobMetrics/JobMetrics.vue", () => {
-    it("should not render a div if no plugins found in store", async () => {
-        const wrapper = mount(JobMetrics, {
-            pinia: createTestingPinia({ createSpy: vi.fn }),
-            props: {
-                jobId: "9000",
-            },
-            global: localVue,
-        });
+enableAutoUnmount(afterEach);
 
-        await wrapper.vm.$nextTick();
-        const alert = wrapper.find(".alert-info");
-        expect(alert.text()).toBe(NO_METRICS_MESSAGE);
+/** The testing store stubs the metrics fetch, so tests seed what it would have loaded. */
+async function mountJobMetrics(jobMetricsByJobId = {}) {
+    const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: { jobMetricsStore: { jobMetricsByJobId } },
+    });
+    const wrapper = mount(JobMetrics, {
+        props: { jobId: JOB_ID },
+        global: withPlugins(localVue, pinia),
+    });
+    await flushPromises();
+    return wrapper;
+}
+
+describe("JobMetrics", () => {
+    it("shows the no-metrics message when the store has no metrics for the job", async () => {
+        const wrapper = await mountJobMetrics();
+
+        expect(wrapper.find(SELECTORS.NO_METRICS_ALERT).text()).toBe(NO_METRICS_MESSAGE);
+        expect(wrapper.find(SELECTORS.PLUGIN).exists()).toBe(false);
     });
 
-    it("should group plugins by type", async () => {
-        const JOB_ID = "9000";
-        const mockMetricsResponse = [
-            { plugin: "core", title: "runtime", value: 145 },
-            { plugin: "core", title: "memory", value: 146 },
-            { plugin: "extended", title: "awesomeness", value: 42 },
-        ];
-
-        const pinia = createTestingPinia({
-            createSpy: vi.fn,
-            initialState: {
-                jobMetricsStore: {
-                    jobMetricsByJobId: {
-                        [`${JOB_ID}`]: mockMetricsResponse,
-                    },
-                    jobMetricsByHdaId: {},
-                    jobMetricsByLddaId: {},
-                },
-            },
-        });
-        setActivePinia(pinia);
-
-        const wrapper = mount(JobMetrics, {
-            global: localVue,
-            pinia,
-            props: {
-                jobId: JOB_ID,
-            },
+    it("groups metrics into one table per plugin", async () => {
+        const wrapper = await mountJobMetrics({
+            [JOB_ID]: [
+                { plugin: "core", title: "runtime", value: 145 },
+                { plugin: "core", title: "memory", value: 146 },
+                { plugin: "extended", title: "awesomeness", value: 42 },
+            ],
         });
 
-        // Wait for axios and rendering.
-        await flushPromises();
-
-        // Three metrics, begin metrics for two plugins
-        const metricsTables = wrapper.findAll(".metrics_plugin");
-        expect(metricsTables.length).toBe(2);
-        expect(metricsTables.at(0).find(".metrics_plugin_title").text()).toBe("core");
-        expect(metricsTables.at(0).findAll("tr").length).toBe(2);
-        expect(metricsTables.at(1).find(".metrics_plugin_title").text()).toBe("extended");
-        expect(metricsTables.at(1).findAll("tr").length).toBe(1);
+        const plugins = wrapper.findAll(SELECTORS.PLUGIN).map((plugin) => ({
+            title: plugin.find(SELECTORS.PLUGIN_TITLE).text(),
+            rows: plugin.findAll("tr").length,
+        }));
+        expect(plugins).toEqual([
+            { title: "core", rows: 2 },
+            { title: "extended", rows: 1 },
+        ]);
+        expect(wrapper.find(SELECTORS.NO_METRICS_ALERT).exists()).toBe(false);
     });
 });

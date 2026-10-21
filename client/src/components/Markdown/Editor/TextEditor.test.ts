@@ -1,54 +1,52 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type VueWrapper } from "@vue/test-utils";
-import type { Pinia } from "pinia";
+import { composeStories } from "@storybook/vue3-vite";
+import { emittedArg } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEventStore } from "@/stores/eventStore";
 
+import * as TextEditorStories from "./TextEditor.stories";
+
 import TextEditor from "./TextEditor.vue";
 
-vi.mock("@/components/Markdown/MarkdownToolBox.vue", () => ({
-    default: {
-        name: "MarkdownToolBox",
-        template: "<div />",
-    },
-}));
-
-vi.mock("@/components/Panels/FlexPanel.vue", () => ({
-    default: {
-        name: "FlexPanel",
-        template: "<div><slot /></div>",
-    },
-}));
-
-const localVue = getLocalVue();
-
-let pinia: Pinia;
+const stories = composeStories(TextEditorStories);
+const mountStory = useStoryMount();
 let eventStore: ReturnType<typeof useEventStore>;
 
-function mountComponent(
-    propsOverrides: Partial<{ markdownText: string; mode: string; title: string; hideToolbox: boolean }> = {},
-) {
-    return shallowMount(TextEditor as object, {
-        localVue,
-        propsData: {
-            markdownText: "",
-            mode: "page",
-            title: "Test",
-            ...propsOverrides,
+async function mountEditor(props: Partial<InstanceType<typeof TextEditor>["$props"]> = {}) {
+    const story =
+        props.mode === "report"
+            ? stories.WorkflowReportTemplate
+            : props.hideToolbox === true
+              ? stories.CompactPage
+              : props.markdownText === "existing content"
+                ? stories.PageWithExistingContent
+                : stories.PageWithToolbox;
+    const root = mountStory(story, {
+        props,
+        // These original cases cover the TextEditor's panel presence and drop contract.
+        // Keep child stubs only here; standalone stories render the real toolbox/panel.
+        global: {
+            stubs: {
+                MarkdownToolBox: { name: "MarkdownToolBox", template: "<div />" },
+                FlexPanel: { name: "FlexPanel", template: "<div><slot /></div>" },
+            },
         },
-        pinia,
     });
+    await vi.waitFor(() => root.getComponent(TextEditor));
+    const wrapper = root.getComponent(TextEditor);
+    eventStore = useEventStore();
+    return wrapper;
 }
 
-function getTextarea(wrapper: VueWrapper) {
-    return wrapper.find("textarea");
+type EditorWrapper = Awaited<ReturnType<typeof mountEditor>>;
+
+function getTextarea(wrapper: EditorWrapper) {
+    return wrapper.get<HTMLTextAreaElement>("textarea");
 }
 
-function makeDragEvent(type: string): DragEvent {
-    const event = new Event(type, { bubbles: true, cancelable: true });
-    return event as DragEvent;
+function makeDragEvent(type: string): Event {
+    return new Event(type, { bubbles: true, cancelable: true });
 }
 
 function setDatasetDragItem(hid: number) {
@@ -63,62 +61,54 @@ function setNonHistoryDragItem() {
     eventStore.setDragData({ id: "wf1", name: "workflow", hid: 1 });
 }
 
-async function dropAndGetUpdate(wrapper: VueWrapper): Promise<string> {
+async function dropAndGetUpdate(wrapper: EditorWrapper): Promise<unknown> {
     const textarea = getTextarea(wrapper);
     textarea.element.dispatchEvent(makeDragEvent("drop"));
     await wrapper.vm.$nextTick();
     const updates = wrapper.emitted("update");
     expect(updates).toBeTruthy();
-    return updates![updates!.length - 1]![0] as string;
+    return emittedArg(wrapper, "update", -1);
 }
 
-async function applyHighlight(wrapper: VueWrapper) {
+async function applyHighlight(wrapper: EditorWrapper) {
     const textarea = getTextarea(wrapper);
     textarea.element.dispatchEvent(makeDragEvent("dragenter"));
     await wrapper.vm.$nextTick();
     expect(textarea.classes()).toContain("page-dragover-success");
 }
 
+beforeEach(() => {
+    vi.clearAllMocks();
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 describe("TextEditor toolbox visibility", () => {
-    beforeEach(() => {
-        pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        eventStore = useEventStore();
-        vi.clearAllMocks();
-    });
-
-    it("renders MarkdownToolBox when hideToolbox is not set", () => {
-        const wrapper = mountComponent();
+    it("renders MarkdownToolBox when hideToolbox is not set", async () => {
+        const wrapper = await mountEditor();
         expect(wrapper.findComponent({ name: "MarkdownToolBox" }).exists()).toBe(true);
         expect(wrapper.findComponent({ name: "FlexPanel" }).exists()).toBe(true);
     });
 
-    it("renders MarkdownToolBox when hideToolbox is false", () => {
-        const wrapper = mountComponent({ hideToolbox: false });
+    it("renders MarkdownToolBox when hideToolbox is false", async () => {
+        const wrapper = await mountEditor({ hideToolbox: false });
         expect(wrapper.findComponent({ name: "MarkdownToolBox" }).exists()).toBe(true);
         expect(wrapper.findComponent({ name: "FlexPanel" }).exists()).toBe(true);
     });
 
-    it("hides MarkdownToolBox when hideToolbox is true", () => {
-        const wrapper = mountComponent({ hideToolbox: true });
+    it("hides MarkdownToolBox when hideToolbox is true", async () => {
+        const wrapper = await mountEditor({ hideToolbox: true });
         expect(wrapper.findComponent({ name: "MarkdownToolBox" }).exists()).toBe(false);
         expect(wrapper.findComponent({ name: "FlexPanel" }).exists()).toBe(false);
     });
 });
 
 describe("TextEditor drag-and-drop", () => {
-    beforeEach(() => {
-        pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-        eventStore = useEventStore();
-        vi.clearAllMocks();
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
     describe("Drop insertion logic", () => {
         it("inserts history_dataset_display directive when dataset is dropped in page mode", async () => {
-            const wrapper = mountComponent({ markdownText: "existing content" });
+            const wrapper = await mountEditor({ markdownText: "existing content" });
             setDatasetDragItem(3);
 
             const content = await dropAndGetUpdate(wrapper);
@@ -127,7 +117,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("inserts history_dataset_collection_display directive when collection is dropped", async () => {
-            const wrapper = mountComponent({ markdownText: "" });
+            const wrapper = await mountEditor({ markdownText: "" });
             setCollectionDragItem(5);
 
             const content = await dropAndGetUpdate(wrapper);
@@ -135,7 +125,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("does not insert anything when mode is 'report'", async () => {
-            const wrapper = mountComponent({ mode: "report" });
+            const wrapper = await mountEditor({ mode: "report" });
             setDatasetDragItem(3);
 
             const textarea = getTextarea(wrapper);
@@ -146,7 +136,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("does not insert anything when eventStore has no drag data", async () => {
-            const wrapper = mountComponent();
+            const wrapper = await mountEditor();
 
             const textarea = getTextarea(wrapper);
             textarea.element.dispatchEvent(makeDragEvent("drop"));
@@ -156,7 +146,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("does not insert anything when dragged item is not a history item", async () => {
-            const wrapper = mountComponent();
+            const wrapper = await mountEditor();
             setNonHistoryDragItem();
 
             const textarea = getTextarea(wrapper);
@@ -169,7 +159,7 @@ describe("TextEditor drag-and-drop", () => {
 
     describe("Visual feedback", () => {
         it("applies success highlight class on dragenter with valid item", async () => {
-            const wrapper = mountComponent();
+            const wrapper = await mountEditor();
             setDatasetDragItem(1);
 
             const textarea = getTextarea(wrapper);
@@ -180,7 +170,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("does not apply highlight class on dragenter when mode is 'report'", async () => {
-            const wrapper = mountComponent({ mode: "report" });
+            const wrapper = await mountEditor({ mode: "report" });
             setDatasetDragItem(1);
 
             const textarea = getTextarea(wrapper);
@@ -191,7 +181,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("removes highlight class on dragleave", async () => {
-            const wrapper = mountComponent();
+            const wrapper = await mountEditor();
             setDatasetDragItem(1);
             await applyHighlight(wrapper);
 
@@ -202,7 +192,7 @@ describe("TextEditor drag-and-drop", () => {
         });
 
         it("removes highlight class after drop", async () => {
-            const wrapper = mountComponent();
+            const wrapper = await mountEditor();
             setDatasetDragItem(1);
             await applyHighlight(wrapper);
 

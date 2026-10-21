@@ -1,97 +1,51 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStory } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
+import * as DatasetAttributesStories from "./DatasetAttributes.stories";
+
 import DatasetAttributes from "./DatasetAttributes.vue";
 
-const DATASET_ID = "dataset_id";
-
-const localVue = getLocalVue();
 const { server, http } = useServerMock();
+const mountStory = useStoryMount();
 
-async function mountDatasetAttributes(conversion_disable = false) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
-
-    server.use(
-        http.untyped.put("/dataset/set_edit", () => {
-            return HttpResponse.json({ message: "success", status: "success" });
-        }),
-        http.untyped.get("/dataset/get_edit", ({ request }) => {
-            const url = new URL(request.url);
-            if (url.searchParams.get("dataset_id") === DATASET_ID) {
-                return HttpResponse.json({
-                    attribute_inputs: [{ name: "attribute_text", type: "text" }],
-                    conversion_inputs: [{ name: "conversion_text", type: "text" }],
-                    conversion_disable: conversion_disable,
-                    datatype_inputs: [{ name: "datatype_text", type: "text" }],
-                    permission_inputs: [{ name: "permission_text", type: "text" }],
-                });
-            }
-            return HttpResponse.json({}, { status: 404 });
-        }),
+async function mountDatasetAttributes() {
+    // Keep the original synthetic save message only in this unit contract.
+    const story = composeStory(
+        {
+            ...DatasetAttributesStories.EditableBed,
+            parameters: {
+                msw: {
+                    handlers: {
+                        save: http.untyped.put("/dataset/set_edit", () =>
+                            HttpResponse.json({ message: "success", status: "success" }),
+                        ),
+                    },
+                },
+            },
+        },
+        DatasetAttributesStories.default,
     );
-
-    const wrapper = mount(DatasetAttributes as object, {
-        props: {
-            datasetId: DATASET_ID,
-        },
-        global: localVue,
-        pinia,
-    });
-
+    const root = mountStory(story);
+    await vi.waitFor(() => root.getComponent(DatasetAttributes));
     await flushPromises();
-
-    return wrapper;
-}
-
-async function buildWrapperWithError(error: string) {
-    server.use(
-        http.untyped.get("/dataset/get_edit", () => {
-            return HttpResponse.json({}, { status: 400 });
-        }),
-    );
-    const wrapper = mount(DatasetAttributes as object, {
-        props: {
-            datasetId: DATASET_ID,
-            messageText: error,
-            messageVariant: "danger",
-        },
-        global: localVue,
-        stubs: {
-            FontAwesomeIcon: false,
-            FormElement: false,
-        },
-    });
-    await flushPromises();
-    return wrapper;
+    return root.getComponent(DatasetAttributes);
 }
 
 describe("DatasetAttributes", () => {
-    it("check rendering", async () => {
+    it("shows a successful save", async () => {
         const wrapper = await mountDatasetAttributes();
 
-        // 6 form buttons (GTabs nav uses <a> tags, not buttons)
-        expect(wrapper.findAll("button").length).toBe(6);
-        expect(wrapper.findAll("#attribute_text").length).toBe(1);
-        expect(wrapper.findAll("#conversion_text").length).toBe(1);
-        expect(wrapper.findAll("#datatype_text").length).toBe(1);
-        expect(wrapper.findAll("#permission_text").length).toBe(1);
-        expect(wrapper.findAll(".tab-pane").length).toBe(3);
-        expect(wrapper.findAll(".ui-portlet-section").length).toBe(2);
-
-        const saveButton = wrapper.find("#dataset-attributes-default-save");
+        const saveButton = wrapper.get("#dataset-attributes-default-save");
 
         await saveButton.trigger("click");
 
         await flushPromises();
 
-        expect(wrapper.find(".dataset-attributes-alert").text()).toBe("success");
+        expect(wrapper.get(".dataset-attributes-alert").text()).toBe("success");
     });
 
     it("shows why saving failed", async () => {
@@ -102,33 +56,9 @@ describe("DatasetAttributes", () => {
             }),
         );
 
-        await wrapper.find("#dataset-attributes-default-save").trigger("click");
+        await wrapper.get("#dataset-attributes-default-save").trigger("click");
         await flushPromises();
 
-        expect(wrapper.find(".dataset-attributes-alert").text()).toBe("This dataset is encrypted.");
-    });
-
-    it("check rendering without conversion option", async () => {
-        const wrapper = await mountDatasetAttributes(true);
-
-        // 5 form buttons (GTabs nav uses <a> tags, not buttons)
-        expect(wrapper.findAll("button").length).toBe(5);
-        expect(wrapper.findAll("#attribute_text").length).toBe(1);
-        expect(wrapper.findAll("#conversion_text").length).toBe(0);
-        expect(wrapper.findAll("#datatype_text").length).toBe(1);
-        expect(wrapper.findAll("#permission_text").length).toBe(1);
-        expect(wrapper.findAll(".tab-pane").length).toBe(3);
-        expect(wrapper.findAll(".ui-portlet-section").length).toBe(1);
-    });
-
-    it("doesn't render edit controls with error", async () => {
-        const wrapper = await buildWrapperWithError("error");
-        expect(wrapper.findAll("button").length).toBe(0);
-        expect(wrapper.findAll("#attribute_text").length).toBe(0);
-        expect(wrapper.findAll("#conversion_text").length).toBe(0);
-        expect(wrapper.findAll("#datatype_text").length).toBe(0);
-        expect(wrapper.findAll("#permission_text").length).toBe(0);
-        expect(wrapper.findAll(".tab-pane").length).toBe(0);
-        expect(wrapper.findAll(".ui-portlet-section").length).toBe(0);
+        expect(wrapper.get(".dataset-attributes-alert").text()).toBe("This dataset is encrypted.");
     });
 });

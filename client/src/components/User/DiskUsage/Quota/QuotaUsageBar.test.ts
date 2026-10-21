@@ -1,12 +1,14 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 
 const localVue = getLocalVue();
+
+enableAutoUnmount(afterEach);
 
 const NON_DEFAULT_QUOTA_USAGE: QuotaUsage = toQuotaUsage({
     quota_source_label: "The label",
@@ -23,11 +25,15 @@ const UNLIMITED_USAGE: QuotaUsage = toQuotaUsage({
 });
 
 function mountQuotaUsageBarWith(quotaUsage: QuotaUsage) {
-    const wrapper = mount(QuotaUsageBar as object, { props: { quotaUsage }, localVue });
-    return wrapper;
+    return mount(QuotaUsageBar, { props: { quotaUsage }, global: localVue });
 }
 
 describe("QuotaUsageBar.vue", () => {
+    it("names the usage bar for an unlimited storage source", () => {
+        const wrapper = mountQuotaUsageBarWith(UNLIMITED_USAGE);
+        expect(wrapper.get('[role="progressbar"]').attributes("aria-label")).toBe("Unlimited disk quota used");
+    });
+
     it("names each progress bar by its storage source and retains its quota value", () => {
         const wrapper = mountQuotaUsageBarWith(NON_DEFAULT_QUOTA_USAGE);
         const progress = wrapper.get('[role="progressbar"]');
@@ -37,34 +43,26 @@ describe("QuotaUsageBar.vue", () => {
         expect(progress.attributes("aria-valuemax")).toBe("100");
     });
 
-    it("names the usage bar for an unlimited storage source", () => {
-        const wrapper = mountQuotaUsageBarWith(UNLIMITED_USAGE);
-        expect(wrapper.get('[role="progressbar"]').attributes("aria-label")).toBe("Unlimited disk quota used");
-    });
-
-    it("should display the quota source label when the quota source is not the default one", async () => {
+    it("displays the source label for a non-default quota", () => {
         const wrapper = mountQuotaUsageBarWith(NON_DEFAULT_QUOTA_USAGE);
         const storageSourceLabel = wrapper.find(".storage-source-label");
-        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
-        expect((wrapper.vm as any).isDefaultQuota).toBe(false);
+        expect(wrapper.vm.isDefaultQuota).toBe(false);
         expect(storageSourceLabel.exists()).toBe(true);
         expect(storageSourceLabel.text()).toBe(NON_DEFAULT_QUOTA_USAGE.sourceLabel);
     });
 
-    it("should show the usage percent when there is a quota limit", async () => {
+    it("shows the usage percent when the quota has a limit", () => {
         const wrapper = mountQuotaUsageBarWith(NON_DEFAULT_QUOTA_USAGE);
         const percentText = wrapper.find(".quota-percent-text");
-        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
-        expect((wrapper.vm as any).quotaHasLimit).toBe(true);
+        expect(wrapper.vm.quotaHasLimit).toBe(true);
         expect(percentText.exists()).toBe(true);
         expect(percentText.text()).toContain(NON_DEFAULT_QUOTA_USAGE.quotaPercent?.toString());
     });
 
-    it("should not show percentage when there is no quota limit", async () => {
+    it("hides the usage percent when the quota is unlimited", () => {
         const wrapper = mountQuotaUsageBarWith(UNLIMITED_USAGE);
         const percentText = wrapper.find(".quota-percent-text");
-        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
-        expect((wrapper.vm as any).quotaHasLimit).toBe(false);
+        expect(wrapper.vm.quotaHasLimit).toBe(false);
         expect(percentText.exists()).toBe(false);
     });
 });

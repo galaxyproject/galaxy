@@ -1,11 +1,13 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
+import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import type { JobDestinationParams as JobDestinationParameters } from "@/api/jobs";
 import { useUserStore } from "@/stores/userStore";
 
 import jobDestinationResponseData from "./testData/jobDestinationResponse.json";
@@ -16,11 +18,13 @@ const JOB_ID = "foo_job_id";
 
 const localVue = getLocalVue();
 
-const jobDestinationResponse = jobDestinationResponseData as Record<string, string | null>;
+const jobDestinationResponse = jobDestinationResponseData satisfies JobDestinationParameters;
 
 const { server, http } = useServerMock();
 
-async function mountJobDestinationParams() {
+enableAutoUnmount(afterEach);
+
+async function mountJobDestinationParams(user: RegisteredUser | null) {
     server.use(
         http.get("/api/jobs/{job_id}/destination_params", ({ response }) => {
             return response(200).json(jobDestinationResponse);
@@ -28,44 +32,39 @@ async function mountJobDestinationParams() {
     );
 
     const pinia = createPinia();
-    const wrapper = shallowMount(JobDestinationParams as object, {
+    useUserStore(pinia).currentUser = user;
+
+    const wrapper = shallowMount(JobDestinationParams, {
         props: {
             jobId: JOB_ID,
         },
-        global: localVue,
-        pinia,
+        global: withPlugins(localVue, pinia),
     });
-
-    const userStore = useUserStore();
-    userStore.currentUser = getFakeRegisteredUser({ is_admin: true });
 
     await flushPromises();
 
     return wrapper;
 }
 
-describe("JobDestinationParams/JobDestinationParams.vue", () => {
-    const responseKeys = Object.keys(jobDestinationResponse);
-    expect(responseKeys.length > 0).toBeTruthy();
+describe("JobDestinationParams", () => {
+    it("renders every destination parameter for an admin, with null values left blank", async () => {
+        const wrapper = await mountJobDestinationParams(getFakeRegisteredUser({ is_admin: true }));
 
-    it("should render destination parameters", async () => {
-        const wrapper = await mountJobDestinationParams();
+        const rows = wrapper.get("#destination_parameters").findAll("tbody > tr");
+        const renderedParameters = rows.map((row) => row.findAll("td").map((cell) => cell.text()));
+        const expectedParameters = Object.entries(jobDestinationResponse).map(([title, value]) => [title, value ?? ""]);
 
-        const paramsTable = wrapper.find("#destination_parameters");
-        expect(paramsTable.exists()).toBe(true);
-        const params = paramsTable.findAll("tbody > tr");
-        expect(params.length).toBe(responseKeys.length);
+        expect(expectedParameters.length).toBeGreaterThan(0);
+        expect(renderedParameters).toEqual(expectedParameters);
+    });
 
-        for (let counter = 0; counter < responseKeys.length - 1; counter++) {
-            const parameter = nth(params, counter).findAll("td");
-            const parameterTitle = nth(parameter, 0).text();
-            const parameterValue = nth(parameter, 1).text();
+    it.each([
+        ["a registered non-admin", getFakeRegisteredUser()],
+        ["a visitor without a loaded user", null],
+    ])("hides destination parameters from %s", async (_description, user) => {
+        const wrapper = await mountJobDestinationParams(user);
 
-            expect(responseKeys.includes(parameterTitle)).toBeTruthy();
-            // since we render null as an empty string, rendered empty string should always equal null in test data
-            expect(
-                jobDestinationResponse[parameterTitle] === (parameterValue === "" ? null : parameterValue),
-            ).toBeTruthy();
-        }
+        expect(wrapper.find("#destination_parameters").exists()).toBe(false);
+        expect(wrapper.find("#destination-parameters-heading").exists()).toBe(false);
     });
 });

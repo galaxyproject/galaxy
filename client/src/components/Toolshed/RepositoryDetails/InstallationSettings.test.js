@@ -1,80 +1,25 @@
 import "@/composables/__mocks__/filter";
 
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import * as InstallationSettingsStories from "./InstallationSettings.stories";
 
 import InstallationSettings from "./InstallationSettings.vue";
 
-vi.mock("app");
-// Mock the useConfig composable
-vi.mock("@/composables/config", () => ({
-    useConfig: () => ({
-        config: {
-            install_tool_dependencies: true,
-            install_repository_dependencies: true,
-            install_resolver_dependencies: true,
-        },
-        isConfigLoaded: true,
-    }),
-}));
+const { WithToolPanel } = composeStories(InstallationSettingsStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue();
-
-const { server, http } = useServerMock();
-
+// Display and dependency defaults are exercised by the browser plays.
 describe("InstallationSettings", () => {
-    beforeEach(() => {
-        server.use(
-            http.get("/api/configuration/dynamic_tool_confs", ({ response }) => {
-                return response(200).json([]);
-            }),
-        );
-    });
-
-    it("test tool repository installer interface", () => {
-        const wrapper = mount(InstallationSettings, {
-            propsData: {
-                repo: {
-                    long_description: "long_description",
-                    description: "description",
-                    owner: "owner",
-                    name: "name",
-                },
-                changesetRevision: "changesetRevision",
-                requiresPanel: true,
-                toolshedUrl: "toolshedUrl",
-                currentPanel: {},
-            },
-            localVue,
-        });
-        expect(wrapper.find(".g-modal-title").text()).toBe("Installing 'name'");
-        expect(wrapper.find(".description").text()).toBe("long_description");
-        expect(wrapper.find(".revision").text()).toBe("owner rev. changesetRevision");
-
-        const sectionInput = wrapper.get("#install-tool-section");
-        expect(wrapper.get('label[for="install-tool-section"]').text()).toBe("Target Section:");
-        expect(sectionInput.element.closest('[role="combobox"]')).not.toBeNull();
-
-        expect(wrapper.vm.installToolDependencies).toBe(true);
-        expect(wrapper.vm.installRepositoryDependencies).toBe(true);
-        expect(wrapper.vm.installResolverDependencies).toBe(true);
-    });
-
     describe("target section", () => {
         function mountWithSections() {
-            return mount(InstallationSettings, {
-                propsData: {
-                    repo: { name: "name", owner: "owner" },
-                    changesetRevision: "changesetRevision",
-                    requiresPanel: true,
-                    toolshedUrl: "toolshedUrl",
+            return mountStory(WithToolPanel, {
+                props: {
                     currentPanel: { mapping: { id: "mapping", name: "Mapping", tools: ["bwa"] } },
                 },
-                localVue,
-            });
+            }).getComponent(InstallationSettings);
         }
 
         async function pickSection(wrapper, label) {

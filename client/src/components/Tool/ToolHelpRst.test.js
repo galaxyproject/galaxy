@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
@@ -28,8 +28,16 @@ const expectedHelpText = `
 <h6>h4 Heading</h6>
 <a target="_blank">empty link</a>`;
 
-describe("ToolHelp RST", () => {
-    it("modifies help text", () => {
+describe("ToolHelpRst", () => {
+    beforeEach(() => {
+        vi.mocked(sanitizeHtml).mockClear();
+    });
+    afterEach(() => {
+        vi.mocked(sanitizeHtml).mockClear();
+    });
+    enableAutoUnmount(afterEach);
+
+    it("demotes headings and opens links in a new tab", () => {
         const wrapper = mount(ToolHelpRst, {
             props: {
                 content: inputHelpText,
@@ -37,13 +45,15 @@ describe("ToolHelp RST", () => {
             global: localVue,
         });
 
-        const help = wrapper.find(".form-help");
+        const help = wrapper.get(".form-help");
         expect(help.element).toContainHTML(expectedHelpText.trim());
     });
 
     it("renders the formatted help through v-sanitize-html with the links profile", () => {
-        vi.mocked(sanitizeHtml).mockClear();
-        mount(ToolHelpRst, { propsData: { content: '<a href="https://galaxyproject.org">link</a>' }, localVue });
+        mount(ToolHelpRst, {
+            props: { content: '<a href="https://galaxyproject.org">link</a>' },
+            global: localVue,
+        });
         expect(sanitizeHtml).toHaveBeenCalledWith(
             '<a href="https://galaxyproject.org" target="_blank">link</a>',
             "links",

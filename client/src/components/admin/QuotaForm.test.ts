@@ -1,184 +1,125 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import "@/composables/__mocks__/filter";
+
+import { composeStories } from "@storybook/vue3-vite";
+import { createTestRouter } from "@tests/vitest/helpers";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
+import { useConfigStore } from "@/stores/configurationStore";
 
-import QuotaForm from "./QuotaForm.vue";
+import * as QuotaFormStories from "./QuotaForm.stories";
+import { ADMIN_GROUPS, ADMIN_USER } from "./test_fixtures";
+
 import FormSelection from "@/components/Form/Elements/FormSelection.vue";
 
-vi.mock("@/composables/config");
-
+const stories = composeStories(QuotaFormStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
-const localVue = getLocalVue();
-const mockPush = vi.fn();
 
-vi.mock("vue-router", () => ({
-    useRouter: () => ({
-        push: (...args: unknown[]) => mockPush(...args),
-    }),
-}));
+const SELECTORS = {
+    NAME: "#admin-quota-name",
+    DESCRIPTION: "#admin-quota-description",
+    AMOUNT: "#admin-quota-amount",
+    SUBMIT: "#admin-quota-submit",
+};
 
-// FormSelection filters its options in a web worker, which the test environment does not provide.
-vi.mock("@/composables/filter/filter.js", async () => {
-    const { ref } = await import("vue");
-    return {
-        useFilterObjectArray: () => ({ filtered: ref([]), pending: ref(false) }),
-    };
-});
+// The quota ExistingQuota loads, with ADMIN_USER and the first of ADMIN_GROUPS.
+const QUOTA_NAME = "Workshop participants";
+const QUOTA_DESCRIPTION = "Extra space for the RNA-seq workshop";
+const QUOTA_AMOUNT = "1.2 GB";
+const QUOTA_GROUP_ID = ADMIN_GROUPS[0]!.id;
+// The quota label NewQuotaForLabeledStorage's Galaxy offers.
+const STORAGE_LABEL = "scratch";
 
-function quotaDetails(overrides: Record<string, unknown> = {}) {
-    return {
-        id: "q1",
-        model_class: "Quota" as const,
-        name: "Existing Quota",
-        description: "Existing Description",
-        bytes: 1234567890,
-        operation: "=" as const,
-        display_amount: "1.2 GB",
-        default: [],
-        users: [
-            {
-                model_class: "UserQuotaAssociation" as const,
-                user: {
-                    id: "u1",
-                    email: "user1@example.org",
-                    username: "user1",
-                    active: true,
-                    deleted: false,
-                    last_password_change: null,
-                    model_class: "User" as const,
-                },
-            },
-        ],
-        groups: [
-            {
-                model_class: "GroupQuotaAssociation" as const,
-                group: { id: "g1", name: "Group 1", model_class: "Group" as const },
-            },
-        ],
-        ...overrides,
-    };
-}
-
-function useGroups() {
-    server.use(
-        http.get("/api/groups", ({ response }) =>
-            response(200).json([{ id: "g1", name: "Group 1", url: "/api/groups/g1", model_class: "Group" }]),
-        ),
-    );
-}
-
+/** Records the bodies of quota updates (PUT) and creations (POST); the story still answers. */
 function captureRequests() {
     const requests: { put: unknown[]; post: unknown[] } = { put: [], post: [] };
     server.use(
-        http.put("/api/quotas/{id}", async ({ request, response }) => {
-            requests.put.push(await request.json());
-            return response(200).json("");
+        http.put("/api/quotas/{id}", async ({ request }) => {
+            requests.put.push(await request.clone().json());
         }),
-        http.post("/api/quotas", async ({ request, response }) => {
-            requests.post.push(await request.json());
-            return response(200).json({
-                id: "q2",
-                model_class: "Quota",
-                name: "New Quota",
-                url: "/api/quotas/q2",
-                message: "",
-                quota_source_label: null,
-            });
+        http.post("/api/quotas", async ({ request }) => {
+            requests.post.push(await request.clone().json());
         }),
     );
     return requests;
 }
 
-async function mountTarget(quota?: ReturnType<typeof quotaDetails>) {
-    useGroups();
-    if (quota) {
-        server.use(http.get("/api/quotas/{id}", ({ response }) => response(200).json(quota)));
-    }
-    const wrapper = mount(QuotaForm as object, {
-        localVue,
-        propsData: quota ? { quotaId: quota.id } : {},
-        stubs: { FontAwesomeIcon: true },
-    });
+/** Mounts the story on its form page, so leaving it for the quotas list is observable. */
+async function mountQuotaForm(story: StoryOf<typeof stories>) {
+    const router = createTestRouter();
+    const formPage = story.args.quotaId ? "/admin/form/edit_quota" : "/admin/form/create_quota";
+    await router.push(formPage);
+    const wrapper = mountStory(story, { router });
+    await vi.waitFor(() => expect(useConfigStore().isLoaded).toBe(true));
     await flushPromises();
-    return wrapper;
+    return { wrapper, router, formPage, requests: captureRequests() };
 }
 
 async function choose(wrapper: VueWrapper, selectionId: string, value: string) {
     const selection = wrapper.findAllComponents(FormSelection).find((w) => w.props("id") === selectionId);
-    selection!.vm.$emit("input", value);
+    if (!selection) {
+        throw new Error(`No FormSelection with id "${selectionId}".`);
+    }
+    selection.vm.$emit("input", value);
     await flushPromises();
 }
 
 async function submit(wrapper: VueWrapper) {
-    await wrapper.find("#admin-quota-submit").trigger("click");
+    await wrapper.find(SELECTORS.SUBMIT).trigger("click");
     await flushPromises();
 }
 
-beforeEach(() => {
-    // FormSelection reads a Pinia store.
-    setActivePinia(createPinia());
-    resetMockConfig();
-    mockPush.mockClear();
-});
-
 describe("QuotaForm.vue edit mode", () => {
-    it("loads all quota fields and titles the form with the saved name", async () => {
-        const wrapper = await mountTarget(quotaDetails());
-        expect(wrapper.find("#admin-quota-name").element).toHaveProperty("value", "Existing Quota");
-        expect(wrapper.find("#admin-quota-description").element).toHaveProperty("value", "Existing Description");
-        expect(wrapper.find("#admin-quota-amount").element).toHaveProperty("value", "1.2 GB");
-        await wrapper.find("#admin-quota-name").setValue("Renamed Quota");
-        expect(wrapper.text()).toContain("Quota 'Existing Quota'");
-    });
-
     it("does not send the rounded amount back when it was not changed", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget(quotaDetails());
-        await wrapper.find("#admin-quota-name").setValue("Renamed Quota");
+        const { wrapper, router, requests } = await mountQuotaForm(stories.ExistingQuota);
+
+        await wrapper.find(SELECTORS.NAME).setValue("Renamed Quota");
         await submit(wrapper);
+
         expect(requests.put).toEqual([
             {
                 name: "Renamed Quota",
-                description: "Existing Description",
+                description: QUOTA_DESCRIPTION,
                 operation: "=",
-                in_users: ["u1"],
-                in_groups: ["g1"],
+                in_users: [ADMIN_USER.id],
+                in_groups: [QUOTA_GROUP_ID],
             },
         ]);
-        expect(mockPush).toHaveBeenCalledWith("/admin/quotas");
+        expect(router.currentRoute.value.path).toBe("/admin/quotas");
     });
 
     it("sends a changed amount with its operation", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget(quotaDetails());
-        await wrapper.find("#admin-quota-amount").setValue("2 GB");
+        const { wrapper, requests } = await mountQuotaForm(stories.ExistingQuota);
+
+        await wrapper.find(SELECTORS.AMOUNT).setValue("2 GB");
         await submit(wrapper);
+
         expect(requests.put).toMatchObject([{ amount: "2 GB", operation: "=" }]);
     });
 
     it("sends the amount along with a changed operation", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget(quotaDetails());
+        const { wrapper, requests } = await mountQuotaForm(stories.ExistingQuota);
+
         await choose(wrapper, "admin-quota-operation", "+");
         await submit(wrapper);
-        expect(requests.put).toMatchObject([{ amount: "1.2 GB", operation: "+" }]);
+
+        expect(requests.put).toMatchObject([{ amount: QUOTA_AMOUNT, operation: "+" }]);
     });
 
     it("drops users and groups when the quota becomes a default", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget(quotaDetails());
+        const { wrapper, requests } = await mountQuotaForm(stories.ExistingQuota);
+
         await choose(wrapper, "admin-quota-default", "registered");
-        expect(wrapper.find("#admin-quota-users").exists()).toBe(false);
         await submit(wrapper);
+
         expect(requests.put).toEqual([
             {
-                name: "Existing Quota",
-                description: "Existing Description",
+                name: QUOTA_NAME,
+                description: QUOTA_DESCRIPTION,
                 operation: "=",
                 default: "registered",
             },
@@ -186,64 +127,43 @@ describe("QuotaForm.vue edit mode", () => {
     });
 
     it("leaves an existing default quota's default and associations alone", async () => {
-        const requests = captureRequests();
-        const quota = quotaDetails({
-            default: [{ model_class: "DefaultQuotaAssociation", type: "registered" }],
-            users: [],
-            groups: [],
-        });
-        const wrapper = await mountTarget(quota);
-        expect(wrapper.find("#admin-quota-users").exists()).toBe(false);
-        expect(wrapper.find("#admin-quota-groups").exists()).toBe(false);
+        const { wrapper, requests } = await mountQuotaForm(stories.ExistingDefaultQuota);
+
         await submit(wrapper);
-        expect(requests.put).toEqual([{ name: "Existing Quota", description: "Existing Description", operation: "=" }]);
+
+        expect(requests.put).toEqual([{ name: QUOTA_NAME, description: QUOTA_DESCRIPTION, operation: "=" }]);
     });
 
     it("saves without a description", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget(quotaDetails());
-        await wrapper.find("#admin-quota-description").setValue("");
+        const { wrapper, requests } = await mountQuotaForm(stories.ExistingQuota);
+
+        await wrapper.find(SELECTORS.DESCRIPTION).setValue("");
         await submit(wrapper);
+
         expect(requests.put).toMatchObject([{ description: "" }]);
     });
 
-    it("requires a name and an amount", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget(quotaDetails());
-        await wrapper.find("#admin-quota-amount").setValue("");
+    it("sends nothing without an amount", async () => {
+        const { wrapper, router, formPage, requests } = await mountQuotaForm(stories.ExistingQuota);
+
+        await wrapper.find(SELECTORS.AMOUNT).setValue("");
         await submit(wrapper);
+
         expect(wrapper.text()).toContain("Please enter a name and amount.");
         expect(requests.put).toEqual([]);
-    });
-
-    it("cannot be saved when the quota fails to load", async () => {
-        useGroups();
-        server.use(
-            http.get("/api/quotas/{id}", ({ response }) =>
-                response("4XX").json({ err_msg: "Quota not found", err_code: 404 }, { status: 404 }),
-            ),
-        );
-        const wrapper = mount(QuotaForm as object, {
-            localVue,
-            propsData: { quotaId: "q1" },
-            stubs: { FontAwesomeIcon: true },
-        });
-        await flushPromises();
-        expect(wrapper.text()).toContain("Quota not found");
-        expect(wrapper.find("#admin-quota-submit").exists()).toBe(false);
+        expect(router.currentRoute.value.path).toBe(formPage);
     });
 });
 
 describe("QuotaForm.vue create mode", () => {
     async function fillRequiredFields(wrapper: VueWrapper) {
-        await wrapper.find("#admin-quota-name").setValue("New Quota");
-        await wrapper.find("#admin-quota-description").setValue("New Description");
-        await wrapper.find("#admin-quota-amount").setValue("10 GB");
+        await wrapper.find(SELECTORS.NAME).setValue("New Quota");
+        await wrapper.find(SELECTORS.DESCRIPTION).setValue("New Description");
+        await wrapper.find(SELECTORS.AMOUNT).setValue("10 GB");
     }
 
     it("associates the visible field labels with editable controls", async () => {
-        useGroups();
-        const wrapper = await mountTarget();
+        const { wrapper } = await mountQuotaForm(stories.NewQuota);
         const ids = [
             "admin-quota-name",
             "admin-quota-description",
@@ -262,12 +182,12 @@ describe("QuotaForm.vue create mode", () => {
     });
 
     it("creates a quota for a labeled object store", async () => {
-        setMockConfig({ quota_source_labels: ["mylabel"] });
-        const requests = captureRequests();
-        const wrapper = await mountTarget();
+        const { wrapper, router, requests } = await mountQuotaForm(stories.NewQuotaForLabeledStorage);
+
         await fillRequiredFields(wrapper);
-        await choose(wrapper, "admin-quota-source-label", "mylabel");
+        await choose(wrapper, "admin-quota-source-label", STORAGE_LABEL);
         await submit(wrapper);
+
         expect(requests.post).toEqual([
             {
                 name: "New Quota",
@@ -275,35 +195,32 @@ describe("QuotaForm.vue create mode", () => {
                 amount: "10 GB",
                 operation: "=",
                 default: "no",
-                quota_source_label: "mylabel",
+                quota_source_label: STORAGE_LABEL,
                 in_users: [],
                 in_groups: [],
             },
         ]);
-        expect(mockPush).toHaveBeenCalledWith("/admin/quotas");
+        expect(router.currentRoute.value.path).toBe("/admin/quotas");
     });
 
     it("creates a quota for the default object store", async () => {
-        setMockConfig({ quota_source_labels: ["mylabel"] });
-        const requests = captureRequests();
-        const wrapper = await mountTarget();
+        const { wrapper, requests } = await mountQuotaForm(stories.NewQuotaForLabeledStorage);
+
         await fillRequiredFields(wrapper);
         await submit(wrapper);
+
         expect(requests.post).toMatchObject([{ quota_source_label: null }]);
     });
 
-    it("hides the object store choice when there are no labeled object stores", async () => {
-        const wrapper = await mountTarget();
-        expect(wrapper.find("#admin-quota-source-label").exists()).toBe(false);
-    });
+    it("sends nothing without a description", async () => {
+        const { wrapper, router, formPage, requests } = await mountQuotaForm(stories.NewQuota);
 
-    it("requires a description", async () => {
-        const requests = captureRequests();
-        const wrapper = await mountTarget();
-        await wrapper.find("#admin-quota-name").setValue("New Quota");
-        await wrapper.find("#admin-quota-amount").setValue("10 GB");
+        await wrapper.find(SELECTORS.NAME).setValue("New Quota");
+        await wrapper.find(SELECTORS.AMOUNT).setValue("10 GB");
         await submit(wrapper);
+
         expect(wrapper.text()).toContain("Please enter a name, description and amount.");
         expect(requests.post).toEqual([]);
+        expect(router.currentRoute.value.path).toBe(formPage);
     });
 });

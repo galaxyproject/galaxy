@@ -3,41 +3,45 @@ import { describe, expect, it } from "vitest";
 import { deepEach } from "./utils";
 
 describe("deepEach", () => {
-    it("recurses into every nested object by default", () => {
+    it("visits every nested object in depth-first order without visiting the root", () => {
         const tree = { a: { b: { c: {} } } };
-        const seen: object[] = [];
+        const visited: object[] = [];
+
         deepEach(tree, (node) => {
-            seen.push(node);
+            visited.push(node);
         });
-        // a, b, c => 3 nested objects visited
-        expect(seen).toHaveLength(3);
+
+        expect(visited).toEqual([tree.a, tree.a.b, tree.a.b.c]);
     });
 
-    it("halts recursion into a subtree when the callback returns false", () => {
+    it("skips a subtree when its callback returns false and still visits its siblings", () => {
         const tree = { a: { skip: true, child: { grandchild: {} } }, b: {} };
         const visited: object[] = [];
-        deepEach(tree, (node: any) => {
+
+        deepEach(tree, (node) => {
             visited.push(node);
-            if (node.skip) {
+            if ("skip" in node && node.skip) {
                 return false;
             }
         });
-        // a's `child`/`grandchild` are never walked; only a and b are visited
-        expect(visited).toHaveLength(2);
-        expect(visited.some((n: any) => n.grandchild)).toBe(false);
+
+        expect(visited).toEqual([tree.a, tree.b]);
+        expect(visited).not.toContain(tree.a.child);
+        expect(visited).not.toContain(tree.a.child.grandchild);
     });
 
-    it("treats undefined/true returns as recurse (backward compatible)", () => {
+    it.each([
+        { name: "undefined", callbackResult: undefined },
+        { name: "true", callbackResult: true },
+    ])("recurses when the callback returns $name", ({ callbackResult }) => {
         const tree = { a: { b: {} }, c: { d: {} } };
-        const count = { undef: 0, truthy: 0 };
-        deepEach(tree, () => {
-            count.undef++;
+        const visited: object[] = [];
+
+        deepEach(tree, (node) => {
+            visited.push(node);
+            return callbackResult;
         });
-        deepEach(tree, () => {
-            count.truthy++;
-            return true;
-        });
-        expect(count.undef).toBe(4);
-        expect(count.truthy).toBe(4);
+
+        expect(visited).toEqual([tree.a, tree.a.b, tree.c, tree.c.d]);
     });
 });

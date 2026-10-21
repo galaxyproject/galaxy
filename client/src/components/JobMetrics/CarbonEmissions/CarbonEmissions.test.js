@@ -1,181 +1,48 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import { describe, expect, it } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
 
-import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
+import * as CarbonEmissionsStories from "./CarbonEmissions.stories";
 
-import CarbonEmissions from "./CarbonEmissions.vue";
-
-const localVue = getLocalVue();
-const router = createRouter({ history: createMemoryHistory(), routes: [] });
-
-const oneGibibyteMemoryInMebibyte = 1024;
-const oneHourInSeconds = 3600;
-const testServerInstance = {
-    name: "some-server-name",
-    cpuInfo: {
-        modelName: "some-processor-name",
-        totalAvailableCores: 10,
-        tdp: 100,
-    },
-};
+const stories = composeStories(CarbonEmissionsStories);
+const mountStory = useStoryMount();
 
 describe("CarbonEmissions/CarbonEmissions.vue", () => {
-    it("correctly calculates carbon emissions.", () => {
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                carbonIntensity: worldwideCarbonIntensity,
-                coresAllocated: 1,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: oneHourInSeconds,
-                memoryAllocatedInMebibyte: oneGibibyteMemoryInMebibyte,
-                powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
-                geographicalServerLocationName: "GLOBAL",
-            },
-            global: localVue,
-            router,
-        });
+    it("shows CPU and memory emissions and energy estimates", () => {
+        const wrapper = mountStory(stories.GlobalDefaults);
 
-        const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
-        const memoryEmissions = wrapper.find("#memory-carbon-emissions").text();
-        const cpuEnergyUsage = wrapper.find("#cpu-energy-usage").text();
-        const memoryEnergyUsage = wrapper.find("#memory-energy-usage").text();
+        const cpuEmissions = wrapper.get("#cpu-carbon-emissions").text();
+        const memoryEmissions = wrapper.get("#memory-carbon-emissions").text();
+        const cpuEnergyUsage = wrapper.get("#cpu-energy-usage").text();
+        const memoryEnergyUsage = wrapper.get("#memory-energy-usage").text();
 
-        expect(cpuEmissions).toMatch("8 g CO2e");
-        expect(memoryEmissions).toMatch("295 mg CO2e");
-        expect(cpuEnergyUsage).toMatch("17 mW⋅h");
-        expect(memoryEnergyUsage).toMatch("1 mW⋅h");
+        expect(cpuEmissions).toBe("8 g CO2e");
+        expect(memoryEmissions).toBe("295 mg CO2e");
+        expect(cpuEnergyUsage).toBe("17 mW⋅h");
+        expect(memoryEnergyUsage).toBe("1 mW⋅h");
     });
 
-    it("does not render memory estimates when no value can be determined.", () => {
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                coresAllocated: 1,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: 1,
-                geographicalServerLocationName: "GLOBAL",
-                powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
-                carbonIntensity: worldwideCarbonIntensity,
-            },
-            global: localVue,
-            router,
-        });
+    it("shows zero emissions and energy for zero power usage effectiveness", () => {
+        const wrapper = mountStory(stories.GlobalDefaults, { props: { powerUsageEffectiveness: 0 } });
 
-        expect(wrapper.find("#memory-carbon-emissions").exists()).toBe(false);
-        expect(wrapper.find("#memory-energy-usage").exists()).toBe(false);
+        const cpuEmissions = wrapper.get("#cpu-carbon-emissions").text();
+        const cpuEnergyUsage = wrapper.get("#cpu-energy-usage").text();
+        const memoryEmissions = wrapper.get("#memory-carbon-emissions").text();
+        const memoryEnergyUsage = wrapper.get("#memory-energy-usage").text();
+
+        expect(cpuEmissions).toBe("0 g CO2e");
+        expect(cpuEnergyUsage).toBe("0 kW⋅h");
+        expect(memoryEmissions).toBe("0 g CO2e");
+        expect(memoryEnergyUsage).toBe("0 kW⋅h");
     });
 
-    it("takes the configured `powerUsageEffectiveness` value into account.", () => {
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                carbonIntensity: 1,
-                coresAllocated: 1,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: 1,
-                memoryAllocatedInMebibyte: 1,
-                powerUsageEffectiveness: 0,
-                geographicalServerLocationName: "GLOBAL",
-            },
-            global: localVue,
-            router,
-        });
+    it("shows zero emissions for zero carbon intensity", () => {
+        const wrapper = mountStory(stories.GlobalDefaults, { props: { carbonIntensity: 0 } });
 
-        const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
-        const cpuEnergyUsage = wrapper.find("#cpu-energy-usage").text();
-        const memoryEmissions = wrapper.find("#memory-carbon-emissions").text();
-        const memoryEnergyUsage = wrapper.find("#memory-energy-usage").text();
+        const cpuEmissions = wrapper.get("#cpu-carbon-emissions").text();
+        const memoryEmissions = wrapper.get("#memory-carbon-emissions").text();
 
-        expect(cpuEmissions).toMatch("0 g CO2e");
-        expect(cpuEnergyUsage).toMatch("0 kW⋅h");
-        expect(memoryEmissions).toMatch("0 g CO2e");
-        expect(memoryEnergyUsage).toMatch("0 kW⋅h");
-    });
-
-    it("takes the configured `carbonIntensity` value into account.", () => {
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                carbonIntensity: 0,
-                coresAllocated: 1,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: 1,
-                memoryAllocatedInMebibyte: 1,
-                powerUsageEffectiveness: 1,
-                geographicalServerLocationName: "GLOBAL",
-            },
-            global: localVue,
-            router,
-        });
-
-        const cpuEmissions = wrapper.find("#cpu-carbon-emissions").text();
-        const memoryEmissions = wrapper.find("#memory-carbon-emissions").text();
-
-        expect(cpuEmissions).toMatch("0 g CO2e");
-        expect(memoryEmissions).toMatch("0 g CO2e");
-    });
-
-    it("displays text saying that global values were used when the `geographicalServerLocationName` prop is set to `GLOBAL`.", () => {
-        const carbonIntensity = worldwideCarbonIntensity;
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                carbonIntensity,
-                coresAllocated: 2,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: 2,
-                geographicalServerLocationName: "GLOBAL",
-                powerUsageEffectiveness: worldwidePowerUsageEffectiveness,
-            },
-            global: localVue,
-            router,
-        });
-        const locationText = wrapper.find("#location-explanation").element;
-        expect(locationText).toHaveTextContent(
-            `1. Based off of the global carbon intensity value of ${carbonIntensity}.`,
-        );
-    });
-
-    it("displays text saying that the carbon intensity value corresponding to `geographicalServerLocationName` was used.", () => {
-        const locationName = "Italy";
-        const carbonIntensity = worldwideCarbonIntensity;
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                carbonIntensity,
-                coresAllocated: 2,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: 2,
-                memoryAllocatedInMebibyte: oneGibibyteMemoryInMebibyte,
-                powerUsageEffectiveness: worldwideCarbonIntensity,
-                geographicalServerLocationName: locationName,
-            },
-            global: localVue,
-            router,
-        });
-
-        const locationElement = wrapper.find("#location-explanation").element;
-        expect(locationElement).toHaveTextContent(
-            `1. based off of this galaxy instance's configured location of ${locationName}, which has a carbon intensity value of ${carbonIntensity} gCO2/kWh.`,
-        );
-    });
-
-    it("displays text saying that global average values for PUE where used when `powerUsageEffectiveness` matches the global average.", () => {
-        const powerUsageEffectiveness = worldwidePowerUsageEffectiveness;
-        const wrapper = mount(CarbonEmissions, {
-            props: {
-                carbonIntensity: 1,
-                coresAllocated: 1,
-                estimatedServerInstance: testServerInstance,
-                jobRuntimeInSeconds: 1,
-                memoryAllocatedInMebibyte: 1,
-                powerUsageEffectiveness,
-                geographicalServerLocationName: "GLOBAL",
-            },
-            global: localVue,
-            router,
-        });
-
-        const locationElement = wrapper.find("#pue").element;
-        expect(locationElement).toHaveTextContent(
-            `2. Using the global default power usage effectiveness value of ${powerUsageEffectiveness}.`,
-        );
+        expect(cpuEmissions).toBe("0 g CO2e");
+        expect(memoryEmissions).toBe("0 g CO2e");
     });
 });

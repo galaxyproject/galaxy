@@ -1,43 +1,77 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
+import * as LibraryEditFieldStories from "./LibraryEditField.stories";
+
 import LibraryEditField from "./LibraryEditField.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(LibraryEditFieldStories);
+const mountStory = useStoryMount();
+const sanitizeSpy = vi.mocked(sanitizeHtml);
+const originalSanitizeImplementation = sanitizeSpy.getMockImplementation();
 
-function mountWith(propsData) {
-    return mount(LibraryEditField, { localVue, propsData });
+function mountLibraryEditField(story) {
+    return mountStory(story).getComponent(LibraryEditField);
 }
 
 describe("LibraryEditField", () => {
     beforeEach(() => {
-        vi.mocked(sanitizeHtml).mockClear();
-        vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
+        sanitizeSpy.mockClear();
+        sanitizeSpy.mockImplementation((html) => `<span class="sanitized">${html}</span>`);
     });
 
-    it("linkifies the text and renders the result through v-sanitize-html", () => {
-        const text = "See https://usegalaxy.org <em>now</em>";
-        const wrapper = mountWith({ text });
+    afterEach(() => {
+        sanitizeSpy.mockReset();
+        sanitizeSpy.mockImplementation(originalSanitizeImplementation);
+    });
 
-        const calls = vi.mocked(sanitizeHtml).mock.calls;
-        // the raw text is cleaned before linkify-html sees it, and the linkified result again when rendered
-        expect(calls[0][0]).toBe(text);
-        const [html, profile] = calls[1];
-        expect(profile).toBe("default");
-        expect(html).toContain('<a href="https://usegalaxy.org">https://usegalaxy.org</a>');
-        expect(html).toContain("<em>now</em>");
-        expect(wrapper.find(".sanitized a").attributes("href")).toBe("https://usegalaxy.org");
+    it("sanitizes before linkifying, then sanitizes the rendered HTML with the default profile", () => {
+        const text = stories.LinkedDescription.args.text;
+        const linkifiedHtml =
+            '<span class="sanitized">See <a href="https://usegalaxy.org">https://usegalaxy.org</a> <em>now</em></span>';
+        const wrapper = mountLibraryEditField(stories.LinkedDescription);
+
+        expect(sanitizeSpy.mock.calls).toEqual([[text], [linkifiedHtml, "default"]]);
+        expect(wrapper.get(".sanitized a").attributes("href")).toBe("https://usegalaxy.org");
+        expect(wrapper.get(".sanitized em").text()).toBe("now");
     });
 
     it("sanitizes the shortened text when the description is collapsed", () => {
-        const text = "x".repeat(MAX_DESCRIPTION_LENGTH + 10);
-        const wrapper = mountWith({ text });
+        const text = stories.CollapsedDescription.args.text;
+        const shortenedText = text.substring(0, MAX_DESCRIPTION_LENGTH);
+        const wrapper = mountLibraryEditField(stories.CollapsedDescription);
 
-        expect(sanitizeHtml).toHaveBeenCalledWith("x".repeat(MAX_DESCRIPTION_LENGTH));
-        expect(wrapper.find(".shrinked-description .sanitized").exists()).toBe(true);
+        expect(sanitizeSpy.mock.calls).toEqual([
+            [shortenedText],
+            [`<span class="sanitized">${shortenedText}</span>`, "default"],
+        ]);
+        expect(wrapper.get(".shrinked-description .sanitized").text()).toBe(shortenedText);
+        expect(wrapper.get(".shrinked-description").attributes("title")).toBe(text);
+    });
+
+    it("renders the complete description when expanded", () => {
+        const text = stories.ExpandedDescription.args.text;
+        const wrapper = mountLibraryEditField(stories.ExpandedDescription);
+
+        expect(sanitizeSpy.mock.calls).toEqual([[text], [`<span class="sanitized">${text}</span>`, "default"]]);
+        expect(wrapper.get(".sanitized").text()).toBe(text);
+        expect(wrapper.find(".shrinked-description").exists()).toBe(false);
+    });
+
+    it.each([
+        { state: "collapsed", story: stories.CollapsedDescription, label: "(more)" },
+        { state: "expanded", story: stories.ExpandedDescription, label: "(less)" },
+    ])("emits an expansion toggle when $label is clicked in the $state description", async ({ story, label }) => {
+        const wrapper = mountLibraryEditField(story);
+        const toggleLink = wrapper.get(".more-text-btn");
+        expect(toggleLink.text()).toBe(label);
+
+        await toggleLink.trigger("click");
+
+        expect(wrapper.emitted("toggleDescriptionExpand")).toEqual([[]]);
     });
 });

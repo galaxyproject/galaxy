@@ -1,115 +1,82 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { BSpinner } from "bootstrap-vue";
+import { describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
 import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
-import DescribeObjectStore from "./DescribeObjectStore.vue";
+import * as DescribeObjectStoreStories from "./DescribeObjectStore.stories";
+
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const localVue = getLocalVue();
+const stories = composeStories(DescribeObjectStoreStories);
+const mountStory = useStoryMount();
 
-const DESCRIPTION = "My cool **markdown**";
-
-const TEST_STORAGE_API_RESPONSE_WITHOUT_ID = {
-    object_store_id: null,
-    private: false,
-    description: DESCRIPTION,
-    badges: [],
+// Class hooks for each way of naming the storage; Selenium finds `.display-os-by-name`.
+const SELECTORS = {
+    BY_NAME: ".display-os-by-name",
+    BY_ID: ".display-os-by-id",
+    DEFAULT: ".display-os-default",
 };
 
-const TEST_STORAGE_API_RESPONSE_WITH_ID = {
-    object_store_id: "foobar",
-    private: false,
-    description: DESCRIPTION,
-    badges: [],
-};
-const TEST_STORAGE_API_RESPONSE_WITH_NAME = {
-    object_store_id: "foobar",
-    name: "my cool storage",
-    description: DESCRIPTION,
-    private: true,
-    badges: [],
-};
-const TEST_STORAGE_API_RESPONSE_WITH_QUOTA = {
-    object_store_id: "foobar",
-    private: false,
-    description: DESCRIPTION,
-    badges: [],
-    quota: { enabled: true, source: "lab" },
-};
+function countDescriptionSpans(wrapper) {
+    return Object.fromEntries(
+        Object.entries(SELECTORS).map(([key, selector]) => [key, wrapper.findAll(selector).length]),
+    );
+}
+
+function mountQuotaStorage() {
+    return mountStory(stories.StorageWithId, {
+        props: {
+            storageInfo: { ...stories.StorageWithId.args.storageInfo, quota: { enabled: true, source: "lab" } },
+        },
+        pinia: { stubActions: true },
+    });
+}
 
 describe("DescribeObjectStore.vue", () => {
-    let wrapper;
-    let pinia;
+    it.each([
+        ["the default storage when it has no id", stories.DefaultStorage, { BY_NAME: 0, BY_ID: 0, DEFAULT: 1 }],
+        ["the storage id when it has an id but no name", stories.StorageWithId, { BY_NAME: 0, BY_ID: 1, DEFAULT: 0 }],
+        ["the storage name when it has one", stories.NamedPrivateStorage, { BY_NAME: 1, BY_ID: 0, DEFAULT: 0 }],
+    ])("marks %s with its own class", (_description, story, expectedSpans) => {
+        const wrapper = mountStory(story);
 
-    beforeEach(() => {
-        pinia = createTestingPinia({ createSpy: vi.fn });
-        setActivePinia(pinia);
+        expect(countDescriptionSpans(wrapper)).toEqual(expectedSpans);
     });
 
-    async function mountWithResponse(response, extraProps = {}) {
-        wrapper = shallowMount(DescribeObjectStore, {
-            props: { storageInfo: response, what: "where i am throwing my test dataset", ...extraProps },
-            global: withPlugins(localVue, pinia),
-        });
-    }
+    it.each([
+        ["no id", stories.DefaultStorage],
+        ["an id", stories.StorageWithId],
+        ["a name", stories.NamedPrivateStorage],
+    ])("says no quota is configured, without a usage spinner, for storage with %s", (_description, story) => {
+        const wrapper = mountStory(story);
 
-    it("test dataset storage with object store without id", async () => {
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
-        const byIdSpan = wrapper.findAll(".display-os-by-id");
-        expect(byIdSpan.length).toBe(0);
-        const byNameSpan = wrapper.findAll(".display-os-by-name");
-        expect(byNameSpan.length).toBe(0);
-        const byDefaultSpan = wrapper.findAll(".display-os-default");
-        expect(byDefaultSpan.length).toBe(1);
+        expect(wrapper.text()).toContain("Galaxy has no quota configured for this storage.");
+        expect(wrapper.findComponent(BSpinner).exists()).toBe(false);
     });
-
-    it("test dataset storage with object store id", async () => {
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_ID);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
-        expect(wrapper.vm.storageInfo.object_store_id).toBe("foobar");
-        const byIdSpan = wrapper.findAll(".display-os-by-id");
-        expect(byIdSpan.length).toBe(1);
-        const byNameSpan = wrapper.findAll(".display-os-by-name");
-        expect(byNameSpan.length).toBe(0);
-        expect(wrapper.vm.isPrivate).toBeFalsy();
-    });
-
-    it("test dataset storage with object store name", async () => {
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_NAME);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
-        expect(wrapper.vm.storageInfo.object_store_id).toBe("foobar");
-        const byIdSpan = wrapper.findAll(".display-os-by-id");
-        expect(byIdSpan.length).toBe(0);
-        const byNameSpan = wrapper.findAll(".display-os-by-name");
-        expect(byNameSpan.length).toBe(1);
-        expect(wrapper.vm.isPrivate).toBeTruthy();
-        const configurationMarkupEl = wrapper.find("[markdown]");
-        expect(configurationMarkupEl.attributes("markdown")).toBe(DESCRIPTION);
-    });
-
     it("shows a spinner while the quota usage of its source is loading", async () => {
+        const wrapper = mountQuotaStorage();
         useQuotaUsageStore().loadingBySource = { lab: true };
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_QUOTA);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(1);
+        await nextTick();
+        expect(wrapper.findAllComponents(LoadingSpan)).toHaveLength(1);
         expect(wrapper.text()).not.toContain("Galaxy has no quota configured");
     });
 
     it("hides the spinner once the quota usage of its source has loaded", async () => {
+        const wrapper = mountQuotaStorage();
         useQuotaUsageStore().loadingBySource = { lab: false };
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_QUOTA);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
+        await nextTick();
+        expect(wrapper.findAllComponents(LoadingSpan)).toHaveLength(0);
         expect(wrapper.text()).not.toContain("Galaxy has no quota configured");
     });
 
     it("lets badges open interactive popovers unless told otherwise", async () => {
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_ID);
+        const wrapper = mountStory(stories.StorageWithId);
         expect(wrapper.findComponent(ObjectStoreBadges).props("interactive")).toBe(true);
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITH_ID, { interactive: false });
-        expect(wrapper.findComponent(ObjectStoreBadges).props("interactive")).toBe(false);
+        const nonInteractiveWrapper = mountStory(stories.StorageWithId, { props: { interactive: false } });
+        expect(nonInteractiveWrapper.findComponent(ObjectStoreBadges).props("interactive")).toBe(false);
     });
 });

@@ -1,12 +1,13 @@
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { toRaw } from "vue";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setupTestPinia } from "@/stores/testUtils";
 import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { ensureDefined } from "@/utils/assertions";
+import { cloneRaw, toRawDeep } from "@/utils/toRawDeep";
 
 import { fromSimple, type Workflow } from "../modules/model";
 import {
@@ -44,19 +45,29 @@ import {
 const workflowId = "mock-workflow";
 
 describe("Workflow Undo Redo Actions", () => {
-    vi.useFakeTimers();
-
-    const pinia = createPinia();
-    setActivePinia(pinia);
-
-    let workflow = mockWorkflow();
-    let stores = resetStores();
+    let workflow: Workflow;
+    let stores: ReturnType<typeof createStores>;
+    let commentStore: ReturnType<typeof useWorkflowCommentStore>;
+    let undoRedoStore: ReturnType<typeof useUndoRedoStore>;
+    let stepStore: ReturnType<typeof useWorkflowStepStore>;
+    let stateStore: ReturnType<typeof useWorkflowStateStore>;
+    let connectionStore: ReturnType<typeof useConnectionStore>;
 
     beforeEach(async () => {
+        vi.useFakeTimers();
+        setupTestPinia();
         workflow = mockWorkflow();
-        stores = resetStores();
+        stores = createStores();
+        ({ commentStore, undoRedoStore, stepStore, stateStore, connectionStore } = stores);
 
         await fromSimple(workflowId, workflow);
+    });
+
+    afterEach(() => {
+        undoRedoStore.clearLazyAction();
+        Object.values(stores).forEach((store) => store.$dispose());
+        vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     function testUndoRedo(action: UndoRedoAction | LazyUndoRedoAction, afterApplyCallback?: () => void) {
@@ -85,8 +96,6 @@ describe("Workflow Undo Redo Actions", () => {
         expect(redoSnapshot).toEqual(afterApplyActionSnapshot);
     }
 
-    const { commentStore, undoRedoStore, stepStore, stateStore, connectionStore } = stores;
-
     function addComment() {
         const comment = mockComment(commentStore.highestCommentId + 1);
         commentStore.addComments([comment]);
@@ -106,7 +115,7 @@ describe("Workflow Undo Redo Actions", () => {
     }
 
     describe("Comment Actions", () => {
-        it("AddCommentAction", () => {
+        it("adds a comment", () => {
             expect(commentStore.comments.length).toBe(0);
 
             const comment = mockComment(0);
@@ -115,43 +124,43 @@ describe("Workflow Undo Redo Actions", () => {
             testUndoRedo(insertAction, () => commentStore.addComments([comment]));
         });
 
-        it("DeleteCommentAction", () => {
+        it("deletes a comment", () => {
             const comment = addComment();
             const action = new DeleteCommentAction(commentStore, comment);
             testUndoRedo(action);
         });
 
-        it("ChangeColorAction", () => {
+        it("changes a comment color", () => {
             const comment = addComment();
             const action = new ChangeColorAction(commentStore, comment, "pink");
             testUndoRedo(action);
         });
 
-        it("LazyChangeDataAction", () => {
+        it("changes comment data", () => {
             const comment = addComment();
             const action = new LazyChangeDataAction(commentStore, comment, { text: "abc", size: 1 });
             testUndoRedo(action);
         });
 
-        it("LazyChangePositionAction", () => {
+        it("moves a comment", () => {
             const comment = addComment();
             const action = new LazyChangePositionAction(commentStore, comment, [20, 80]);
             testUndoRedo(action);
         });
 
-        it("LazyChangeSizeAction", () => {
+        it("resizes a comment", () => {
             const comment = addComment();
             const action = new LazyChangeSizeAction(commentStore, comment, [1000, 1000]);
             testUndoRedo(action);
         });
 
-        it("ToggleCommentSelectedAction", () => {
+        it("toggles comment selection", () => {
             const comment = addComment();
             const action = new ToggleCommentSelectedAction(commentStore, comment);
             testUndoRedo(action);
         });
 
-        it("RemoveAllFreehandCommentsAction", () => {
+        it("removes all freehand comments", () => {
             addFreehandComment();
             addFreehandComment();
             addFreehandComment();
@@ -162,7 +171,7 @@ describe("Workflow Undo Redo Actions", () => {
     });
 
     describe("Workflow Actions", () => {
-        it("LazySetValueAction", () => {
+        it("changes workflow tags", () => {
             const setValueCallback = (tags: string[]) => {
                 workflow.tags = tags;
             };
@@ -175,19 +184,22 @@ describe("Workflow Undo Redo Actions", () => {
             expect(showCanvasCallback).toBeCalledTimes(2);
         });
 
-        it("CopyIntoWorkflowAction", () => {
+        it("copies another workflow", () => {
             const other = mockWorkflow();
             const action = new CopyIntoWorkflowAction(workflowId, other, { left: 10, top: 20 });
             testUndoRedo(action);
         });
 
-        it("LazyMoveMultipleAction", () => {
+        it("moves steps and comments together", () => {
             addComment();
             const action = new LazyMoveMultipleAction(
                 commentStore,
-                stores.stepStore,
+                stepStore,
                 commentStore.comments,
-                Object.values(stores.stepStore.steps) as any,
+                Object.values(stepStore.steps).map((step) => ({
+                    ...step,
+                    position: ensureDefined(step.position),
+                })),
                 { x: 0, y: 0 },
                 { x: 500, y: 500 },
             );
@@ -203,31 +215,31 @@ describe("Workflow Undo Redo Actions", () => {
             stateStore.setStepMultiSelected(2, true);
         }
 
-        it("ClearSelectionAction", () => {
+        it("clears selection", () => {
             setupSelected();
             const action = new ClearSelectionAction(commentStore, stateStore);
             testUndoRedo(action);
         });
 
-        it("AddToSelectionAction", () => {
+        it("adds steps and comments to selection", () => {
             setupSelected();
             const action = new AddToSelectionAction(commentStore, stateStore, { comments: [1], steps: [0] });
             testUndoRedo(action);
         });
 
-        it("RemoveFromSelectionAction", () => {
+        it("removes steps and comments from selection", () => {
             setupSelected();
             const action = new RemoveFromSelectionAction(commentStore, stateStore, { comments: [0], steps: [2] });
             testUndoRedo(action);
         });
 
-        it("DuplicateSelectionAction", () => {
+        it("duplicates selected steps and comments", () => {
             setupSelected();
             const action = new DuplicateSelectionAction(workflowId);
             testUndoRedo(action);
         });
 
-        it("DeleteSelectionAction", () => {
+        it("deletes selected steps and comments", () => {
             setupSelected();
             const action = new DeleteSelectionAction(workflowId);
             testUndoRedo(action);
@@ -235,13 +247,13 @@ describe("Workflow Undo Redo Actions", () => {
     });
 
     describe("Step Actions", () => {
-        it("LazyMutateStepAction", () => {
+        it("changes a step annotation", () => {
             const step = addStep();
             const action = new LazyMutateStepAction(stepStore, step.id, "annotation", "", "hello world");
             testUndoRedo(action);
         });
 
-        it("UpdateStepAction", () => {
+        it("updates step outputs", () => {
             const step = addStep();
             const action = new UpdateStepAction(
                 stepStore,
@@ -257,7 +269,7 @@ describe("Workflow Undo Redo Actions", () => {
             testUndoRedo(action);
         });
 
-        it("InsertStepAction", () => {
+        it("inserts a step", () => {
             const step = mockToolStep(1);
             const action = new InsertStepAction(stepStore, stateStore, {
                 contentId: "mock",
@@ -269,25 +281,25 @@ describe("Workflow Undo Redo Actions", () => {
             testUndoRedo(action);
         });
 
-        it("RemoveStepAction", () => {
+        it("removes a step", () => {
             const step = addStep();
             const action = new RemoveStepAction(stepStore, stateStore, connectionStore, step);
             testUndoRedo(action);
         });
 
-        it("CopyStepAction", () => {
+        it("copies a step", () => {
             const step = addStep();
             const action = new CopyStepAction(stepStore, stateStore, step);
             testUndoRedo(action);
         });
 
-        it("LazySetLabelAction", () => {
+        it("changes a step label", () => {
             const step = addStep();
             const action = new LazySetLabelAction(stepStore, stateStore, step.id, step.label, "custom_label");
             testUndoRedo(action);
         });
 
-        it("LazySetOutputLabelAction", () => {
+        it("changes an output label", () => {
             const step = addStep();
             const action = new LazySetOutputLabelAction(stepStore, stateStore, step.id, null, "abc", [
                 {
@@ -299,7 +311,7 @@ describe("Workflow Undo Redo Actions", () => {
             testUndoRedo(action);
         });
 
-        it("ToggleStepSelectedAction", () => {
+        it("toggles step selection", () => {
             const step = addStep();
             const action = new ToggleStepSelectedAction(stateStore, stepStore, step.id);
             testUndoRedo(action);
@@ -307,18 +319,12 @@ describe("Workflow Undo Redo Actions", () => {
     });
 });
 
-function resetStores(id = workflowId) {
+function createStores(id = workflowId) {
     const stepStore = useWorkflowStepStore(id);
     const stateStore = useWorkflowStateStore(id);
     const connectionStore = useConnectionStore(id);
     const commentStore = useWorkflowCommentStore(id);
     const undoRedoStore = useUndoRedoStore(id);
-
-    stepStore.$reset();
-    stateStore.$reset();
-    connectionStore.$reset();
-    commentStore.$reset();
-    undoRedoStore.$reset();
 
     return {
         stepStore,
@@ -329,27 +335,11 @@ function resetStores(id = workflowId) {
     };
 }
 
-function deepToRaw<T>(value: T): T {
-    const raw = toRaw(value);
-    if (raw && typeof raw === "object") {
-        if (Array.isArray(raw)) {
-            return raw.map((item) => deepToRaw(item)) as T;
-        } else {
-            const result: any = {};
-            for (const key in raw) {
-                result[key] = deepToRaw(raw[key]);
-            }
-            return result;
-        }
-    }
-    return raw;
-}
-
 function extractKeys<O extends object>(object: O, keys: (keyof O)[]): Partial<O> {
     const extracted: Partial<O> = {};
 
     keys.forEach((key) => {
-        extracted[key] = deepToRaw(object[key]) as O[typeof key];
+        extracted[key] = toRawDeep(object[key]);
     });
 
     return extracted;
@@ -379,8 +369,8 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "stepToConnections",
         ]),
         commentStoreState: extractKeys(commentStore, ["commentsRecord", "multiSelectedCommentIds"]),
-        workflowState: deepToRaw(workflow),
+        workflowState: workflow,
     };
 
-    return structuredClone(state);
+    return cloneRaw(state);
 }

@@ -1,24 +1,21 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { h, ref } from "vue";
 
 import type { HDASummary } from "@/api";
-import { useServerMock } from "@/api/client/__mocks__";
 import { Toast } from "@/composables/toast";
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 
-import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+import * as PairedOrUnpairedListCollectionCreatorStories from "./PairedOrUnpairedListCollectionCreator.stories";
+import { changeHistory } from "./test-utils";
 
 vi.mock("@/composables/toast");
 
 const toastError = vi.mocked(Toast.error);
 const toastWarning = vi.mocked(Toast.warning);
-
-const localVue = getLocalVue(true);
 
 vi.mock("@/composables/useAgGrid", () => ({
     useAgGrid: () => ({
@@ -40,210 +37,155 @@ vi.mock("@/composables/useAgGrid", () => ({
     }),
 }));
 
-const { server, http } = useServerMock();
+const stories = composeStories(PairedOrUnpairedListCollectionCreatorStories);
+const mountStory = useStoryMount();
+
+const [FORWARD, REVERSE] = stories.ReadPairInHistory.args.history as [HDASummary, HDASummary];
+const [NEXT_RUN_FORWARD] = stories.ReadPairInHistory.args.arriving as [HDASummary];
+const [AWAITING_FORWARD, CONTROL_FORWARD, CONTROL_REVERSE] = stories.ForwardReadsAwaitingMate.args.history as [
+    HDASummary,
+    HDASummary,
+    HDASummary,
+];
+const [AWAITED_REVERSE] = stories.ForwardReadsAwaitingMate.args.arriving as [HDASummary];
+
 beforeEach(() => {
     vi.clearAllMocks();
-    server.use(
-        http.get("/api/configuration", ({ response }) => response(200).json({})),
-        http.get("/api/genomes", ({ response }) => response(200).json([])),
-    );
 });
 
-function buildFakeDataset(id: string, name: string, hid = 1): HDASummary {
-    return {
-        id,
-        name,
-        history_content_type: "dataset",
-        deleted: false,
-        visible: true,
-        state: "ok",
-        extension: "txt",
-        create_time: "2024-01-01T00:00:00",
-        update_time: "2024-01-01T00:00:00",
-        history_id: "history-1",
-        hid,
-        type_id: "dataset",
-        type: "file",
-        tags: [],
-        model_class: "HistoryDatasetAssociation",
-        genome_build: null,
-        purged: false,
-    } as unknown as HDASummary;
-}
-
-async function mountCreator(initialElements: HDASummary[]) {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    setActivePinia(pinia);
-
-    const wrapper = mount(PairedOrUnpairedListCollectionCreator, {
-        props: {
-            historyId: "history-1",
-            initialElements,
-            collectionType: "list:paired",
-            mode: "modal",
-        },
-        global: withPlugins(localVue, pinia),
-    });
-
+async function mountCreator(story: StoryOf<typeof stories>) {
+    const wrapper = mountStory(story);
     await flushPromises();
     return wrapper;
 }
 
 /** Row ids as our AG Grid stub renders them - the `RowT.id` contract the namespacing fix targets. */
-function gridRowIds(wrapper: ReturnType<typeof mount>): string[] {
+function gridRowIds(wrapper: VueWrapper): string[] {
     return wrapper.findAll(".grid-row").map((row) => row.attributes("data-row-id") ?? "");
 }
 
+const pairRow = (forward: HDASummary) => `pair:${forward.id}`;
+const singleRow = (dataset: HDASummary) => `single:${dataset.id}`;
+
+/** The callbacks the creator hands its grid's cell renderers. */
+function gridContext(wrapper: VueWrapper) {
+    return wrapper.findComponent({ name: "AgGridVue" }).vm.$attrs.context as {
+        onUnpair: (pair: { forward: HDASummary; reverse: HDASummary; name: string }) => void;
+        onUnpairedClick: (value: { unpaired: HDASummary }) => void;
+    };
+}
+
+// Pairing on open and as mates arrive, click-pairing, the toasts' text and discarding are played in
+// the stories through the real grid. What stays here: the unlink click the browser drops, the pairing
+// store state no user sees, row ids, toast variants, and the dismiss link Selenium selects by its
+// `data-description`.
 describe("PairedOrUnpairedListCollectionCreator", () => {
-    it("auto-pairs two elements whose names match a common filter (illumina _1/_2) on mount", async () => {
-        const a = buildFakeDataset("a", "sample_1");
-        const b = buildFakeDataset("b", "sample_2");
-
-        const wrapper = await mountCreator([a, b]);
-
-        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
-    });
-
-    it("auto-pairs mates that arrive in separate history updates", async () => {
-        const a = buildFakeDataset("a", "hello world.1.fastq");
-        const b = buildFakeDataset("b", "hello world.2.fastq");
-
-        const wrapper = await mountCreator([]);
-        await wrapper.setProps({ initialElements: [a] });
-        await flushPromises();
-        expect(gridRowIds(wrapper)).toEqual(["single:a"]);
-
-        await wrapper.setProps({ initialElements: [a, b] });
-        await flushPromises();
-
-        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
-    });
-
     it("does not re-pair mates the user unpaired when another element arrives", async () => {
-        const a = buildFakeDataset("a", "sample_1");
-        const b = buildFakeDataset("b", "sample_2");
-        const c = buildFakeDataset("c", "other_1");
+        // The unlink icon does nothing in the browser (BUGS_FOUND), so this calls its callback.
+        const wrapper = await mountCreator(stories.ReadPairInHistory);
+        expect(gridRowIds(wrapper)).toEqual([pairRow(FORWARD)]);
 
-        const wrapper = await mountCreator([a, b]);
-        expect(gridRowIds(wrapper)).toEqual(["pair:a"]);
-
-        const { context } = wrapper.findComponent({ name: "AgGridVue" }).vm.$attrs as unknown as {
-            context: { onUnpair: (pair: { forward: HDASummary; reverse: HDASummary; name: string }) => void };
-        };
-        context.onUnpair({ forward: a, reverse: b, name: "sample" });
+        gridContext(wrapper).onUnpair({ forward: FORWARD, reverse: REVERSE, name: "SRR1553425" });
         await flushPromises();
-        expect(gridRowIds(wrapper)).toEqual(["single:a", "single:b"]);
+        expect(gridRowIds(wrapper)).toEqual([singleRow(FORWARD), singleRow(REVERSE)]);
 
-        await wrapper.setProps({ initialElements: [a, b, c] });
-        await flushPromises();
+        await changeHistory(wrapper, `Add ${NEXT_RUN_FORWARD.name}`);
 
-        expect(gridRowIds(wrapper)).toEqual(["single:a", "single:b", "single:c"]);
+        expect(gridRowIds(wrapper)).toEqual([singleRow(FORWARD), singleRow(REVERSE), singleRow(NEXT_RUN_FORWARD)]);
     });
 
-    it.each(["auto-paired", "removed"])(
-        "allows click-pairing after the selected dataset is %s by a history update",
-        async (change) => {
-            const a = buildFakeDataset("a", "sample_1");
-            const b = buildFakeDataset("b", "sample_2");
-            const c = buildFakeDataset("c", "unmatched-c");
-            const d = buildFakeDataset("d", "unmatched-d");
-            const wrapper = await mountCreator([a, c, d]);
+    it.each([
+        {
+            change: "auto-paired",
+            historyControl: `Add ${AWAITED_REVERSE.name}`,
+            rowsAfterChange: [pairRow(AWAITING_FORWARD), singleRow(CONTROL_FORWARD), singleRow(CONTROL_REVERSE)],
+            rowsAfterClickPairing: [pairRow(AWAITING_FORWARD), pairRow(CONTROL_FORWARD)],
+        },
+        {
+            change: "removed",
+            historyControl: `Delete ${AWAITING_FORWARD.name}`,
+            rowsAfterChange: [singleRow(CONTROL_FORWARD), singleRow(CONTROL_REVERSE)],
+            rowsAfterClickPairing: [pairRow(CONTROL_FORWARD)],
+        },
+    ])(
+        "allows click-pairing after the selected dataset is $change by a history update",
+        async ({ historyControl, rowsAfterChange, rowsAfterClickPairing }) => {
+            const wrapper = await mountCreator(stories.ForwardReadsAwaitingMate);
             const pairingTargetsStore = usePairingDatasetTargetsStore();
-            const { context } = wrapper.findComponent({ name: "AgGridVue" }).vm.$attrs as unknown as {
-                context: { onUnpairedClick: (value: { unpaired: HDASummary }) => void };
-            };
+            const { onUnpairedClick } = gridContext(wrapper);
 
-            context.onUnpairedClick({ unpaired: a });
-            expect(pairingTargetsStore.unpairedTarget).toBe("a");
+            onUnpairedClick({ unpaired: AWAITING_FORWARD });
+            expect(pairingTargetsStore.unpairedTarget).toBe(AWAITING_FORWARD.id);
 
-            await wrapper.setProps({ initialElements: change === "auto-paired" ? [a, b, c, d] : [c, d] });
-            await flushPromises();
-            expect(gridRowIds(wrapper)).toEqual(
-                change === "auto-paired" ? ["pair:a", "single:c", "single:d"] : ["single:c", "single:d"],
-            );
+            await changeHistory(wrapper, historyControl);
+            expect(gridRowIds(wrapper)).toEqual(rowsAfterChange);
             expect(pairingTargetsStore.unpairedTarget).toBeNull();
 
-            context.onUnpairedClick({ unpaired: c });
-            expect(pairingTargetsStore.unpairedTarget).toBe("c");
-            context.onUnpairedClick({ unpaired: d });
+            onUnpairedClick({ unpaired: CONTROL_FORWARD });
+            expect(pairingTargetsStore.unpairedTarget).toBe(CONTROL_FORWARD.id);
+            onUnpairedClick({ unpaired: CONTROL_REVERSE });
             await flushPromises();
 
-            expect(gridRowIds(wrapper)).toEqual(change === "auto-paired" ? ["pair:a", "pair:c"] : ["pair:c"]);
+            expect(gridRowIds(wrapper)).toEqual(rowsAfterClickPairing);
             expect(pairingTargetsStore.unpairedTarget).toBeNull();
         },
     );
 
     it("gives a paired row and its later split-survivor row different AG Grid row ids", async () => {
-        const a = buildFakeDataset("a", "sample_1");
-        const b = buildFakeDataset("b", "sample_2");
-
-        const wrapper = await mountCreator([a, b]);
+        const wrapper = await mountCreator(stories.ReadPairInHistory);
 
         const [pairRowId] = gridRowIds(wrapper);
-        expect(pairRowId).toBe("pair:a");
+        expect(pairRowId).toBe(pairRow(FORWARD));
 
-        // b deleted from history: pair splits, a survives as its own unpaired row
-        await wrapper.setProps({ initialElements: [a] });
-        await flushPromises();
+        // reverse deleted from history: pair splits, forward survives as its own unpaired row
+        await changeHistory(wrapper, `Delete ${REVERSE.name}`);
 
         const [survivorRowId] = gridRowIds(wrapper);
-        expect(survivorRowId).toBe("single:a");
+        expect(survivorRowId).toBe(singleRow(FORWARD));
         expect(survivorRowId).not.toBe(pairRowId);
     });
 
     it("warns rather than errors for the vanished half of a pair that could never have been one", async () => {
-        const a = buildFakeDataset("a", "sample_1", 1);
-        const b = buildFakeDataset("b", "sample_2", 2);
-
         // list:paired - an unpaired survivor never reaches the collection, so it warns rather
         // than claiming the vanished half was "removed from the collection"
-        const wrapper = await mountCreator([a, b]);
-        await wrapper.setProps({ initialElements: [a] });
-        await flushPromises();
+        const wrapper = await mountCreator(stories.ReadPairInHistory);
+        await changeHistory(wrapper, `Delete ${REVERSE.name}`);
 
         expect(toastError).not.toHaveBeenCalled();
         expect(toastWarning).toHaveBeenCalledTimes(1);
         expect(toastWarning).toHaveBeenCalledWith(
-            "2: sample_2 is no longer available and was removed from the pairing list",
+            "2: SRR1553425_2 is no longer available and was removed from the pairing list",
             "Dataset unavailable",
         );
     });
 
     it("describes a wholly vanished pair in one notification rather than one per side", async () => {
-        const a = buildFakeDataset("a", "sample_1", 1);
-        const b = buildFakeDataset("b", "sample_2", 2);
-
-        const wrapper = await mountCreator([a, b]);
-        await wrapper.setProps({ initialElements: [] });
-        await flushPromises();
+        const wrapper = await mountCreator(stories.ReadPairInHistory);
+        // both sides leave in the same history update
+        await changeHistory(wrapper, "Delete all");
 
         expect(toastError).toHaveBeenCalledTimes(1);
         expect(toastError).toHaveBeenCalledWith(
-            "1: sample_1, 2: sample_2 has been removed from the collection",
+            "1: SRR1553425_1, 2: SRR1553425_2 has been removed from the collection",
             "Invalid element",
         );
     });
 
     it("does not resurrect a discarded survivor after history-delete splits an auto-paired pair", async () => {
-        const a = buildFakeDataset("a", "sample_1");
-        const b = buildFakeDataset("b", "sample_2");
+        const wrapper = await mountCreator(stories.ReadPairInHistory);
 
-        const wrapper = await mountCreator([a, b]);
-
-        // b deleted from history: pair splits, a survives as its own unpaired row
-        await wrapper.setProps({ initialElements: [a] });
-        await flushPromises();
-        expect(gridRowIds(wrapper)).toEqual(["single:a"]);
+        // reverse deleted from history: pair splits, forward survives as its own unpaired row
+        await changeHistory(wrapper, `Delete ${REVERSE.name}`);
+        expect(gridRowIds(wrapper)).toEqual([singleRow(FORWARD)]);
 
         await wrapper.find('[data-description="dismiss unmatched datasets"]').trigger("click");
         await flushPromises();
         expect(gridRowIds(wrapper)).toEqual([]);
 
-        // b comes back (undeleted) and a is still in the history: a stays gone because the user
-        // discarded it, b returns because it was only transiently missing
-        await wrapper.setProps({ initialElements: [a, b] });
-        await flushPromises();
+        // reverse comes back (undeleted) and forward is still in the history: forward stays gone
+        // because the user discarded it, reverse returns because it was only transiently missing
+        await changeHistory(wrapper, `Add ${REVERSE.name}`);
 
-        expect(gridRowIds(wrapper)).toEqual(["single:b"]);
+        expect(gridRowIds(wrapper)).toEqual([singleRow(REVERSE)]);
     });
 });

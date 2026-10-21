@@ -1,7 +1,8 @@
+import { getFakeHistorySummary } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import type { HistorySummary, ObjectExportTaskResponse } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -15,23 +16,19 @@ import {
 
 import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 
-const localVue = getLocalVue(true);
+enableAutoUnmount(afterEach);
 
 const TEST_HISTORY_ID = "test-history-id";
-const TEST_HISTORY = {
-    id: TEST_HISTORY_ID,
-    name: "fake-history-name",
-    archived: false,
-};
-
 const EXPORT_RECORD_BTN = "#create-export-record-btn";
 const ARCHIVE_HISTORY_BTN = "#archive-history-btn";
 const CONFIRM_DELETE_CHECKBOX = "input#confirm-delete-checkbox";
 
-async function mountComponentWithHistory(history: HistorySummary) {
+async function mountComponentWithHistory(
+    history: HistorySummary = getFakeHistorySummary({ id: TEST_HISTORY_ID, name: "fake-history-name" }),
+) {
     const wrapper = shallowMount(HistoryArchiveExportSelector as object, {
         props: { history },
-        global: localVue,
+        global: getLocalVue(true),
         stubs: {
             // Render the real checkbox so the tests can check its input
             GCheckbox: false,
@@ -62,7 +59,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should display a button to create an export record if there is no up to date export record", async () => {
         mockGetExportsApiResponse([]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const createExportButton = wrapper.find(EXPORT_RECORD_BTN);
         expect(createExportButton.exists()).toBe(true);
@@ -71,7 +68,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should display a button to create an export record if the most recent export record is not permanent", async () => {
         mockGetExportsApiResponse([RECENT_STS_DOWNLOAD_RESPONSE]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const createExportButton = wrapper.find(EXPORT_RECORD_BTN);
         expect(createExportButton.exists()).toBe(true);
@@ -80,7 +77,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should display a button to create an export record if there are permanent export records but none are up to date", async () => {
         mockGetExportsApiResponse([FILE_SOURCE_STORE_RESPONSE, FAILED_FILE_SOURCE_STORE_RESPONSE]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const createExportButton = wrapper.find(EXPORT_RECORD_BTN);
         expect(createExportButton.exists()).toBe(true);
@@ -89,7 +86,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should not display a button to create an export record if there is an up to date export record", async () => {
         mockGetExportsApiResponse([RECENT_FILE_SOURCE_STORE_RESPONSE]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const createExportButton = wrapper.find(EXPORT_RECORD_BTN);
         expect(createExportButton.exists()).toBe(false);
@@ -103,7 +100,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
             }),
         );
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const createExportButton = wrapper.find(EXPORT_RECORD_BTN);
         expect(createExportButton.exists()).toBe(false);
@@ -112,7 +109,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should disable the Archive button if there is no up to date export record", async () => {
         mockGetExportsApiResponse([]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const archiveButton = wrapper.find(ARCHIVE_HISTORY_BTN);
         expect(archiveButton.attributes("disabled")).toBeTruthy();
@@ -121,7 +118,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should disable the Archive button if the confirm delete checkbox is not checked", async () => {
         mockGetExportsApiResponse([RECENT_FILE_SOURCE_STORE_RESPONSE]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const confirmDeleteCheckbox = wrapper.find(CONFIRM_DELETE_CHECKBOX);
         await confirmDeleteCheckbox.setValue(false);
@@ -134,7 +131,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     it("should enable the Archive button if there is an up to date export record and the confirm delete checkbox is checked", async () => {
         mockGetExportsApiResponse([RECENT_FILE_SOURCE_STORE_RESPONSE]);
 
-        const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
+        const wrapper = await mountComponentWithHistory();
 
         const confirmDeleteCheckbox = wrapper.find(CONFIRM_DELETE_CHECKBOX);
         await confirmDeleteCheckbox.setValue(true);

@@ -1,42 +1,24 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { expect, it } from "vitest";
 
-import WorkflowInvocationSteps from "./WorkflowInvocationSteps.vue";
+import { ensureDefined } from "@/utils/assertions";
+
+import * as WorkflowInvocationStepsStories from "./WorkflowInvocationSteps.stories";
+
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 
-vi.mock("@/composables/useWorkflowInstance", () => ({
-    useWorkflowInstance: () => ({
-        workflow: ref({ id: "workflow_id", version: 0, steps: {} }),
-        loading: ref(false),
-        error: ref(null),
-    }),
-}));
-
-vi.mock("@/composables/useInvocationGraph", () => ({
-    useInvocationGraph: () => ({
-        steps: ref({}),
-        loading: ref(false),
-        loadInvocationGraph: vi.fn().mockRejectedValue(new Error("429 Too Many Requests")),
-    }),
-}));
-
-const localVue = getLocalVue();
+const stories = composeStories(WorkflowInvocationStepsStories);
+const mountStory = useStoryMount();
 
 it("shows an error when the invocation graph fails to load", async () => {
-    const wrapper = shallowMount(WorkflowInvocationSteps as object, {
-        propsData: {
-            invocation: { id: "invocation_id", workflow_id: "workflow_id", steps: [] },
-            stepsJobsSummary: [],
-        },
-        localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
-    });
+    const wrapper = mountStory(stories.GraphRateLimited);
     await flushPromises();
 
-    const alert = wrapper.findAllComponents(GAlert).filter((w) => w.props("variant") === "danger");
-    expect(alert.at(0)!.text()).toContain("429 Too Many Requests");
+    const errorAlert = ensureDefined(
+        wrapper.findAllComponents(GAlert).find((alert) => alert.props("variant") === "danger"),
+    );
+    // nginx's page carries no Galaxy message, so the client describes the status instead.
+    expect(errorAlert.text()).toContain("Too many requests, please wait and try again (429)");
 });

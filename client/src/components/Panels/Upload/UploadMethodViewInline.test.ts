@@ -1,47 +1,25 @@
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { computed, h, ref } from "vue";
+import { composeStories } from "@storybook/vue3-vite";
+import { useStoryMount } from "@tests/vitest/stories";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 
-import UploadMethodViewInline from "./UploadMethodViewInline.vue";
+import * as stories from "./UploadMethodViewInline.stories";
 
-vi.mock("./uploadMethodRegistry", () => ({
-    useFilteredUploadMethods: () =>
-        computed(() => [
-            {
-                id: "paste-links",
-                name: "Paste Links",
-                description: "Paste URLs",
-                icon: "link",
-                component: { name: "PasteLinks", render: () => h("div", { class: "paste-links-method" }) },
-            },
-        ]),
-}));
+import LocalFileUpload from "./methods/LocalFileUpload.vue";
+import GCard from "@/components/Common/GCard.vue";
 
-vi.mock("@/composables/history/useTargetHistoryUploadState", () => ({
-    useTargetHistoryUploadState: () => ({ uploadBlockReason: ref(null) }),
-}));
-
-vi.mock("@/composables/upload/useUploadSubmission", () => ({
-    useUploadSubmission: () => ({ submitPreparedUpload: vi.fn() }),
-}));
-
-const localVue = getLocalVue();
+const { CollectionCreatorUpload } = composeStories(stories);
+const mountStory = useStoryMount();
 
 describe("UploadMethodViewInline", () => {
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
-    it("renders the selected method component without making it reactive", () => {
+    it("renders the selected method component without making it reactive", async () => {
         const warn = vi.spyOn(console, "warn");
+        onTestFinished(() => warn.mockRestore());
 
-        const wrapper = mount(UploadMethodViewInline as object, {
-            props: { config: { targetHistoryId: "history_id" } },
-            global: { ...localVue, stubs: { ...localVue.stubs, GCard: true, GTip: true } },
-        });
+        const wrapper = mountStory(CollectionCreatorUpload);
 
-        expect(wrapper.find(".paste-links-method").exists()).toBe(true);
+        await vi.waitFor(() => expect(wrapper.findComponent(LocalFileUpload).exists()).toBe(true));
+        const selectedCards = wrapper.findAllComponents(GCard).filter((card) => card.props("selected"));
+        expect(selectedCards.map((card) => card.props("title"))).toEqual(["Upload from Computer"]);
         const reactiveComponentWarnings = warn.mock.calls.filter((args) =>
             String(args[0]).includes("Vue received a Component that was made a reactive object"),
         );

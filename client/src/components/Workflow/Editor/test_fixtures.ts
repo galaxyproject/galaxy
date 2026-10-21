@@ -1,6 +1,8 @@
+import type { Decorator } from "@storybook/vue3-vite";
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { reactive, toRefs } from "vue";
+import { h, reactive, toRefs } from "vue";
 
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { InputTerminalSource, NewStep, Steps } from "@/stores/workflowStepStore";
 
 import _advancedSteps from "./test-data/parameter_steps.json";
@@ -57,4 +59,14 @@ export function createTestStep(
         workflow_outputs: [],
         when: options.when,
     };
+}
+
+/** As the workflow editor does, provides the stores of workflow `workflowId` that its step forms and nodes read. */
+export function withWorkflowStores(workflowId: string): Decorator {
+    return (story) => ({
+        setup() {
+            provideScopedWorkflowStores(workflowId);
+            return () => h(story());
+        },
+    });
 }

@@ -1,71 +1,60 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { composeStory } from "@storybook/vue3-vite";
+import { nth } from "@tests/vitest/helpers";
+import { useStoryMount } from "@tests/vitest/stories";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { disposePinia, getActivePinia } from "pinia";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import * as Stories from "./InteractiveTools.stories";
+import { interactiveToolsHandlers } from "./test_fixtures";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse.json";
 
-import InteractiveTools from "./InteractiveTools.vue";
-
 // Mock the rethrowSimple function to prevent test failures
-vi.mock("@/utils/simple-error", () => ({
+vi.mock("@/utils/simple-error", async (importOriginal) => ({
+    ...(await importOriginal()),
     rethrowSimple: vi.fn(),
     errorMessageAsString: vi.fn((error) => error.message),
 }));
 
 const { server, http } = useServerMock();
+const mountStory = useStoryMount();
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
-    const localVue = getLocalVue();
-    let wrapper;
-    let testPinia;
-    let deleteRequests = [];
-
-    beforeEach(async () => {
-        deleteRequests = [];
+    async function mountTools() {
         // Set up the GET response for entry points - use a copy to avoid modifications between tests
-        const testData = JSON.parse(JSON.stringify(testInteractiveToolsResponse));
-        server.use(
-            http.untyped.get("/api/entry_points", () => {
-                return HttpResponse.json(testData);
-            }),
+        const testData = structuredClone(testInteractiveToolsResponse);
+        const story = composeStory(
+            { ...Stories.RunningTools, parameters: { msw: { handlers: interactiveToolsHandlers(testData) } } },
+            Stories.default,
         );
-
-        testPinia = createTestingPinia({
-            createSpy: vi.fn,
-            initialState: {
-                entryPointStore: {
-                    entryPoints: testData,
+        const wrapper = mountStory(story, {
+            pinia: {
+                initialState: {
+                    entryPointStore: { entryPoints: testData },
+                    interactiveToolsStore: { messages: [], activeTools: testData },
                 },
-                interactiveToolsStore: {
-                    messages: [],
-                    activeTools: testData,
-                },
+                stubActions: false,
             },
-            stubActions: false,
         });
-        setActivePinia(testPinia);
-
-        wrapper = mount(InteractiveTools, {
-            global: localVue,
-            pinia: testPinia,
-        });
+        const pinia = getActivePinia();
+        onTestFinished(() => disposePinia(pinia));
 
         // Wait for any async operations to complete
         await flushPromises();
-    });
+        return { wrapper, pinia };
+    }
 
     afterEach(() => {
         vi.clearAllMocks();
     });
 
     it("renders table with interactive tools", async () => {
+        const { wrapper } = await mountTools();
         expect(wrapper.find("#g-table-interactive-tool-table").exists()).toBeTruthy();
         // Each entry has 2 links: one to open inline (rendered as button) and one to open in new tab (rendered as anchor)
         expect(wrapper.findAll("td > button.g-link").length).toBe(2);
@@ -73,7 +62,8 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("filters the table with the search GFormInput", async () => {
-        const firstTool = testInteractiveToolsResponse[0];
+        const { wrapper } = await mountTools();
+        const firstTool = nth(testInteractiveToolsResponse, 0);
         const search = wrapper.get("#interactivetool-search");
         expect(search.classes()).toContain("g-form-input");
         await search.setValue("no tool has this name");
@@ -81,8 +71,9 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("displays interactive tool information correctly", async () => {
-        const firstTool = testInteractiveToolsResponse[0];
-        const toolName = wrapper.find(`#link-${firstTool.id}`);
+        const { wrapper } = await mountTools();
+        const firstTool = nth(testInteractiveToolsResponse, 0);
+        const toolName = wrapper.get(`#link-${firstTool.id}`);
         expect(toolName.text()).toContain(firstTool.name);
 
         // Check if the external link is present
@@ -93,7 +84,8 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("removes the interactive tool when it is gone from store", async () => {
-        const firstTool = testInteractiveToolsResponse[0];
+        const { wrapper, pinia } = await mountTools();
+        const firstTool = nth(testInteractiveToolsResponse, 0);
 
         function checkIfExists(tag, id) {
             return wrapper.find(tag + id).exists();
@@ -102,14 +94,17 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         expect(checkIfExists("#link-", firstTool.id)).toBeTruthy();
 
         // drop the tested tool from store
-        const store = useEntryPointStore();
-        await store.entryPoints.splice(0, 1);
+        const store = useEntryPointStore(pinia);
+        store.entryPoints.splice(0, 1);
+        await nextTick();
 
         expect(checkIfExists("#link-", firstTool.id)).toBeFalsy();
     });
 
     it("sends a delete request after the stop button is pressed", async () => {
-        const firstTool = testInteractiveToolsResponse[0];
+        const { wrapper } = await mountTools();
+        const deleteRequests = [];
+        const firstTool = nth(testInteractiveToolsResponse, 0);
         const toolId = firstTool.id;
 
         server.use(
@@ -118,17 +113,19 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
                 return HttpResponse.json({ status: "ok", message: "ok" });
             }),
         );
+        expect(wrapper.get(`#link-${toolId}`).text()).toContain(firstTool.name);
         await wrapper.get(`#stop-${toolId}`).trigger("click");
         await flushPromises();
 
         expect(deleteRequests.length).toBe(1);
-        expect(deleteRequests[0].url.includes(toolId)).toBeTruthy();
+        expect(nth(deleteRequests, 0).url.includes(toolId)).toBeTruthy();
     });
 
     it("shows an error message if the tool deletion fails", async () => {
-        const firstTool = testInteractiveToolsResponse[0];
+        const { wrapper, pinia } = await mountTools();
+        const firstTool = nth(testInteractiveToolsResponse, 0);
         const toolId = firstTool.id;
-        const interactiveToolsStore = useInteractiveToolsStore();
+        const interactiveToolsStore = useInteractiveToolsStore(pinia);
 
         // Set up the network error for DELETE requests
         server.use(
@@ -138,12 +135,13 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         );
 
         // Try to stop the tool
+        expect(wrapper.get(`#link-${toolId}`).text()).toContain(firstTool.name);
         await wrapper.get(`#stop-${toolId}`).trigger("click");
         await flushPromises();
 
         // The error should be in the interactiveToolsStore messages
         expect(interactiveToolsStore.messages.length).toBeGreaterThan(0);
-        expect(interactiveToolsStore.messages[0]).toMatch(/Network Error|Failed to fetch/);
+        expect(nth(interactiveToolsStore.messages, 0)).toMatch(/Network Error|Failed to fetch/);
 
         // The error should be displayed in the UI
         expect(wrapper.get(".alert-danger").text()).toMatch(/Network Error|Failed to fetch/);

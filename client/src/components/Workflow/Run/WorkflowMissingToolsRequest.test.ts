@@ -1,32 +1,27 @@
-import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { getFakeAnonymousUser } from "@tests/test-data";
+import { type StoryMountOptions, type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setMockConfig } from "@/composables/__mocks__/config";
+import { submitToolInstallationRequest } from "@/api/notifications";
+import { clickModalButton } from "@/components/BaseComponents/test-utils";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
-import WorkflowMissingToolsRequest from "./WorkflowMissingToolsRequest.vue";
-import GModal from "@/components/BaseComponents/GModal.vue";
+import * as WorkflowMissingToolsRequestStories from "./WorkflowMissingToolsRequest.stories";
 
-vi.mock("@/composables/config");
+// Spied, not replaced: requests still reach the stories' handlers.
+vi.mock("@/api/notifications", { spy: true });
 
-const { mockSubmitToolInstallationRequest } = vi.hoisted(() => ({
-    mockSubmitToolInstallationRequest: vi.fn(),
-}));
+const submitRequestMock = vi.mocked(submitToolInstallationRequest);
 
-vi.mock("@/api/notifications", () => ({
-    submitToolInstallationRequest: mockSubmitToolInstallationRequest,
-}));
+const stories = composeStories(WorkflowMissingToolsRequestStories);
+const mountStory = useStoryMount();
 
-const localVue = getLocalVue(true);
-
-const MISSING_TOOL_IDS = [
-    "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17",
-    "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
-];
+const WORKFLOW_ID = stories.MissingTools.args.workflowId;
+const MISSING_TOOL_IDS = stories.MissingTools.args.missingToolIds!;
 
 // The requested-tool entries the component derives from MISSING_TOOL_IDS.
 const EXPECTED_REQUESTED_TOOLS = [
@@ -34,251 +29,131 @@ const EXPECTED_REQUESTED_TOOLS = [
     { tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/samtools", name: "samtools", requested_version: "1.13" },
 ];
 
-const REQUEST_BUTTON = "[data-testid='request-install-btn']";
+const SIXTY_TOOL_IDS = stories.OverRequestLimit.args.missingToolIds!;
 
-const REGISTERED_USER = {
-    id: "user1",
-    username: "testuser",
-    email: "testuser@galaxy.test",
-    is_admin: false,
-    isAnonymous: false,
-    total_disk_usage: 0,
-    nice_total_disk_usage: "0 bytes",
-    quota_percent: null,
-    quota: "0 bytes",
-    preferences: {},
-    active: true,
-    deleted: false,
-    purged: false,
+const SELECTORS = {
+    REQUEST_BUTTON: "[data-testid='request-install-btn']",
+    ROOT: ".workflow-missing-tools-request",
 };
 
-function mountComponent(props: Record<string, unknown> = {}): VueWrapper {
-    const pinia = createTestingPinia({
-        createSpy: vi.fn,
-        initialState: {
-            user: { currentUser: REGISTERED_USER },
-        },
-    });
-    setActivePinia(pinia);
+const SEND_BUTTON_TEXT = "Send Request";
 
-    return mount(WorkflowMissingToolsRequest as object, {
-        localVue,
-        pinia,
-        propsData: {
-            missingToolIds: MISSING_TOOL_IDS,
-            workflowId: "workflow-encoded-id-abc",
-            ...props,
-        },
-        attachTo: document.body,
-    });
+/** Mounts a story once the config the button depends on has loaded. */
+async function mountRequest(story: StoryOf<typeof stories>, options?: StoryMountOptions) {
+    const wrapper = mountStory(story, options);
+    await vi.waitFor(() => expect(useConfigStore().isLoaded).toBe(true));
+    await flushPromises();
+    return wrapper;
+}
+
+async function openRequestModal(wrapper: VueWrapper) {
+    await wrapper.find(SELECTORS.REQUEST_BUTTON).trigger("click");
+    await flushPromises();
+}
+
+async function sendRequest(wrapper: VueWrapper) {
+    await openRequestModal(wrapper);
+    await clickModalButton(wrapper, SEND_BUTTON_TEXT);
+}
+
+function sentRequest() {
+    expect(submitRequestMock).toHaveBeenCalledOnce();
+    const [request] = submitRequestMock.mock.lastCall ?? [];
+    if (!request) {
+        throw new Error("no installation request was sent");
+    }
+    return request;
 }
 
 describe("WorkflowMissingToolsRequest", () => {
     beforeEach(() => {
-        mockSubmitToolInstallationRequest.mockReset();
-        setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
+        submitRequestMock.mockReset();
     });
 
-    afterEach(() => {
-        vi.restoreAllMocks();
+    describe("request button", () => {
+        it.each([
+            { condition: "the feature flag is disabled", story: stories.RequestFormOff },
+            {
+                condition: "the notification system is off, which the request needs",
+                story: stories.NotificationSystemOff,
+            },
+        ])("does not render when $condition", async ({ story }) => {
+            const wrapper = await mountRequest(story);
+
+            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(false);
+        });
+
+        it("does not render when no tool IDs are provided", async () => {
+            const wrapper = await mountRequest(stories.MissingTools, { props: { missingToolIds: [] } });
+
+            expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);
+        });
+
+        it("does not render when user is anonymous", async () => {
+            const wrapper = await mountRequest(stories.AnonymousVisitor);
+
+            expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);
+        });
+
+        it("stops rendering when the current user becomes anonymous", async () => {
+            const wrapper = await mountRequest(stories.MissingTools);
+            // A page that hasn't loaded the user yet still shows the button.
+            useUserStore().currentUser = null;
+            await flushPromises();
+            expect(wrapper.find(SELECTORS.REQUEST_BUTTON).exists()).toBe(true);
+
+            useUserStore().currentUser = getFakeAnonymousUser();
+            await flushPromises();
+
+            expect(wrapper.find(SELECTORS.ROOT).exists()).toBe(false);
+        });
     });
 
-    it("renders the request button when feature is enabled and user is authenticated", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
-        expect(wrapper.find(REQUEST_BUTTON).text()).toBe("Request Installation (2 missing tools)");
-    });
+    describe("sending the request", () => {
+        it("calls submitToolInstallationRequest with correct payload on confirm", async () => {
+            const wrapper = await mountRequest(stories.MissingTools);
 
-    it("does not render when feature flag is disabled", async () => {
-        setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: false });
-        const wrapper = mountComponent();
-        await flushPromises();
-        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
-    });
+            await sendRequest(wrapper);
 
-    it("does not render when the notification system is off, which the request needs", async () => {
-        setMockConfig({ enable_notification_system: false, enable_tool_installation_request_form: true });
-        const wrapper = mountComponent();
-        await flushPromises();
-        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
-    });
+            expect(sentRequest()).toEqual({
+                tools: EXPECTED_REQUESTED_TOOLS,
+                workflow_id: WORKFLOW_ID,
+                additional_remarks: expect.any(String),
+            });
+        });
 
-    it("does not render when no tool IDs are provided", async () => {
-        const wrapper = mountComponent({ missingToolIds: [] });
-        await flushPromises();
-        expect(wrapper.find(".workflow-missing-tools-request").exists()).toBe(false);
-    });
+        it("additional_remarks describes the workflow context without repeating the structured tool ids", async () => {
+            const wrapper = await mountRequest(stories.MissingTools);
 
-    it("calls submitToolInstallationRequest with correct payload on confirm", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
+            await sendRequest(wrapper);
 
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
+            const remarks = sentRequest().additional_remarks;
+            expect(remarks).toContain("required by this workflow");
+            for (const id of MISSING_TOOL_IDS) {
+                expect(remarks).not.toContain(id);
+            }
+        });
 
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        it("caps the request at 50 tools and notes the truncation in the remarks", async () => {
+            const wrapper = await mountRequest(stories.OverRequestLimit);
 
-        expect(mockSubmitToolInstallationRequest).toHaveBeenCalledOnce();
-        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.tools).toEqual(EXPECTED_REQUESTED_TOOLS);
-        expect(payload.workflow_id).toBe("workflow-encoded-id-abc");
-        expect(typeof payload.additional_remarks).toBe("string");
-    });
+            await sendRequest(wrapper);
 
-    it("shows success alert after successful request", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
+            const { tools, additional_remarks } = sentRequest();
+            expect(tools.map(({ name }) => name)).toEqual(SIXTY_TOOL_IDS.slice(0, 50));
+            expect(additional_remarks).toContain("Only the first 50 of 60 missing tools");
+        });
 
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
+        // A role can't tell a success alert from a danger one, so the plays leave variants here.
+        it.each([
+            { outcome: "a sent request", story: stories.MissingTools, variant: "success" },
+            { outcome: "a refused request", story: stories.RequestFails, variant: "danger" },
+        ])("shows $outcome as a $variant alert", async ({ story, variant }) => {
+            const wrapper = await mountRequest(story);
 
-        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
-        expect(wrapper.find(".alert-success").text()).toContain("Installation request sent");
-    });
+            await sendRequest(wrapper);
 
-    it("shows the error inside the still-open dialog when submission fails", async () => {
-        mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Server error"));
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        // The open <dialog> makes the rest of the page inert, so the alert must live inside it.
-        const modal = wrapper.findComponent(GModal);
-        expect(modal.props("show")).toBe(true);
-        expect(modal.find(".alert-danger").exists()).toBe(true);
-        expect(modal.find(".alert-danger").text()).toContain("Server error");
-        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(true);
-    });
-
-    it("clears the error when the dialog is cancelled after a failure", async () => {
-        mockSubmitToolInstallationRequest.mockRejectedValueOnce(new Error("Server error"));
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-        expect(wrapper.find(".alert-danger").exists()).toBe(true);
-
-        wrapper.findComponent(GModal).vm.$emit("cancel");
-        await flushPromises();
-
-        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-        expect(wrapper.find(".alert-danger").exists()).toBe(false);
-    });
-
-    it("uses singular 'tool' for a single missing tool ID", async () => {
-        const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]] });
-        await flushPromises();
-        expect(wrapper.find(REQUEST_BUTTON).text()).toBe("Request Installation (1 missing tool)");
-    });
-
-    it("does not render when user is anonymous", async () => {
-        const wrapper = mountComponent();
-        const userStore = useUserStore();
-        userStore.$patch({ currentUser: { id: "anon1", isAnonymous: true } as any });
-        await flushPromises();
-        expect(wrapper.find(".workflow-missing-tools-request").exists()).toBe(false);
-    });
-
-    it("additional_remarks describes the workflow context without repeating the structured tool ids", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        const remarks = payload.additional_remarks as string;
-        expect(remarks).toContain("required by this workflow");
-        for (const id of MISSING_TOOL_IDS) {
-            expect(remarks).not.toContain(id);
-        }
-    });
-
-    it("tells the submitter in the modal when the request will be truncated to 50 tools", async () => {
-        const manyToolIds = Array.from({ length: 60 }, (_, i) => `tool-${i}`);
-        const wrapper = mountComponent({ missingToolIds: manyToolIds });
-        await flushPromises();
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-
-        const note = wrapper.find("[data-testid='truncation-note']");
-        expect(note.exists()).toBe(true);
-        expect(note.text()).toContain("first 50 of the 60 missing tools");
-    });
-
-    it("caps the request at 50 tools and notes the truncation in the remarks", async () => {
-        const manyToolIds = Array.from({ length: 60 }, (_, i) => `tool-${i}`);
-        const wrapper = mountComponent({ missingToolIds: manyToolIds });
-        await flushPromises();
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        const payload = mockSubmitToolInstallationRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        const tools = payload.tools as { name: string }[];
-        expect(tools).toHaveLength(50);
-        expect(tools[0]?.name).toBe("tool-0");
-        expect(tools[49]?.name).toBe("tool-49");
-        expect(payload.additional_remarks as string).toContain("Only the first 50 of 60 missing tools");
-    });
-
-    it("button is disabled while the submission is in-flight", async () => {
-        let resolveRequest!: () => void;
-        mockSubmitToolInstallationRequest.mockReturnValueOnce(
-            new Promise<void>((resolve) => {
-                resolveRequest = () => resolve();
-            }),
-        );
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.find(REQUEST_BUTTON).attributes("aria-disabled")).toBe("true");
-
-        resolveRequest();
-        await flushPromises();
-    });
-
-    it("modal body shows singular 'tool' and no truncation note for a single missing tool", async () => {
-        const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]] });
-        await flushPromises();
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        const modal = wrapper.findComponent(GModal);
-        expect(modal.find("strong").text()).toBe("1 missing tool");
-        expect(modal.find("[data-testid='truncation-note']").exists()).toBe(false);
-    });
-
-    it("can cancel and then reopen the modal", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
-
-        wrapper.findComponent(GModal).vm.$emit("cancel");
-        await flushPromises();
-        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
-
-        await wrapper.find(REQUEST_BUTTON).trigger("click");
-        await flushPromises();
-        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
+            expect(wrapper.find(`.alert-${variant}`).exists()).toBe(true);
+        });
     });
 });

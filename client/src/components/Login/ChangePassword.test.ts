@@ -1,54 +1,48 @@
-import { getLocalVue, injectTestRouter, nth } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { composeStories } from "@storybook/vue3-vite";
+import { createTestRouter, nth } from "@tests/vitest/helpers";
+import { type StoryOf, useStoryMount } from "@tests/vitest/stories";
+import type { VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
-import MountTarget from "./ChangePassword.vue";
+import * as ChangePasswordStories from "./ChangePassword.stories";
 
-const mockSafePath = vi.fn();
-vi.mock("utils/redirect", () => ({
-    withPrefix: mockSafePath,
-}));
-
-const localVue = getLocalVue(true);
-const router = injectTestRouter(localVue);
+const stories = composeStories(ChangePasswordStories);
+const mountStory = useStoryMount();
 const { server, http } = useServerMock();
 
-interface PostRequest {
-    url: string;
-    data: Record<string, unknown>;
+const resetLink = stories.ResetFromEmailLink.args;
+const passwordExpired = stories.PasswordExpired.args;
+
+/** Records the bodies posted to the legacy password change endpoint; the story still answers. */
+function capturePasswordChanges() {
+    const bodies: Record<string, unknown>[] = [];
+    server.use(
+        http.untyped.post("/user/change_password", async ({ request }) => {
+            bodies.push((await request.clone().json()) as Record<string, unknown>);
+        }),
+    );
+    return bodies;
 }
 
-let postRequests: PostRequest[] = [];
+async function mountChangePassword(story: StoryOf<typeof stories>) {
+    const router = createTestRouter();
+    // Start away from home, so the redirect after a successful change is observable.
+    await router.push("/change-password");
+    const wrapper = mountStory(story, { router });
+    return { wrapper, router, changes: capturePasswordChanges() };
+}
+
+async function submit(wrapper: VueWrapper) {
+    await wrapper.find("button[type='submit']").trigger("submit");
+    await flushPromises();
+}
 
 describe("ChangePassword", () => {
-    let wrapper: VueWrapper;
-
-    beforeEach(async () => {
-        postRequests = [];
-        server.use(
-            http.untyped.post(/.*/, async ({ request }) => {
-                const data = (await request.json()) as Record<string, unknown>;
-                postRequests.push({ url: request.url, data });
-                return HttpResponse.json({});
-            }),
-        );
-        // Navigate to a different route to avoid NavigationDuplicated error
-        // when the component calls router.push("/") on successful submit
-        await router.push("/change-password").catch(() => {});
-        wrapper = mount(MountTarget as object, {
-            props: {
-                messageText: "message_text",
-                messageVariant: "message_variant",
-            },
-            global: localVue,
-        });
-    });
-
     it("associates each password field with its visible label", async () => {
-        await wrapper.setProps({ expiredUser: "expired_user" });
+        const { wrapper } = await mountChangePassword(stories.PasswordExpired);
         const labels = wrapper.findAll("label");
         expect(labels.map((label) => label.text())).toEqual(["Current Password", "New Password", "Confirm password"]);
         const ids = labels.map((label) => label.attributes("for"));
@@ -58,55 +52,51 @@ describe("ChangePassword", () => {
         }
     });
 
-    it("basics", async () => {
-        const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Change your password");
+    it("shows the message it was given as a warning", async () => {
+        const { wrapper } = await mountChangePassword(stories.PasswordExpired);
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+    });
+
+    it("posts the reset token, the new password and its confirmation, then goes home", async () => {
+        const { wrapper, router, changes } = await mountChangePassword(stories.ResetFromEmailLink);
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(2);
+        await nth(inputs, 0).setValue("test_first_pwd");
+        await nth(inputs, 1).setValue("test_second_pwd");
+        await submit(wrapper);
 
-        const firstPwdField = nth(inputs, 0);
-        expect(firstPwdField.attributes("type")).toBe("password");
-
-        await firstPwdField.setValue("test_first_pwd");
-
-        const secondPwdField = nth(inputs, 1);
-        expect(secondPwdField.attributes("type")).toBe("password");
-
-        await secondPwdField.setValue("test_second_pwd");
-
-        const submitButton = wrapper.find("button[type='submit']");
-
-        await submitButton.trigger("submit");
-        await flushPromises();
-
-        expect(postRequests.length).toBe(1);
-        expect(postRequests[0]?.data.password).toBe("test_first_pwd");
-        expect(postRequests[0]?.data.confirm).toBe("test_second_pwd");
+        expect(changes).toHaveLength(1);
+        expect(changes[0]).toMatchObject({
+            token: resetLink.token,
+            password: "test_first_pwd",
+            confirm: "test_second_pwd",
+        });
+        expect(changes[0]).not.toHaveProperty("id");
+        expect(router.currentRoute.value.path).toBe("/");
     });
 
-    it("props", async () => {
-        await wrapper.setProps({
-            token: "test_token",
-            expiredUser: "expired_user",
-        });
+    it("posts the expired user's id and their current password, keeping the message", async () => {
+        const { wrapper, router, changes } = await mountChangePassword(stories.PasswordExpired);
 
-        const input = wrapper.find("input");
-        expect(input.attributes("type")).toBe("password");
+        await wrapper.find("input").setValue("current_password");
+        await submit(wrapper);
 
-        await input.setValue("current_password");
+        expect(changes).toHaveLength(1);
+        expect(changes[0]).toMatchObject({ id: passwordExpired.expiredUser, current: "current_password" });
+        expect(changes[0]).not.toHaveProperty("token");
+        expect(wrapper.find(".alert").text()).toBe(passwordExpired.messageText);
+        expect(router.currentRoute.value.path).toBe("/");
+    });
 
-        const submitButton = wrapper.find("button[type='submit']");
+    it("shows Galaxy's refusal as a danger alert and stays on the form", async () => {
+        const { wrapper, router, changes } = await mountChangePassword(stories.ResetLinkExpired);
 
-        await submitButton.trigger("submit");
-        await flushPromises();
+        await submit(wrapper);
 
-        expect(postRequests.length).toBe(1);
-        expect(postRequests[0]?.data.token).toBe("test_token");
-        expect(postRequests[0]?.data.id).toBe("expired_user");
-        expect(postRequests[0]?.data.current).toBe("current_password");
-
-        const alert = wrapper.find(".alert");
-        expect(alert.text()).toBe("message_text");
+        expect(changes).toHaveLength(1);
+        expect(wrapper.find(".alert-danger").exists()).toBe(true);
+        expect(router.currentRoute.value.path).toBe("/change-password");
     });
 });
