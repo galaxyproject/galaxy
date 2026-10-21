@@ -155,12 +155,7 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     @managed_history
     def test_change_datatype_of_selected_items(self):
-        history_id = self.current_history_id()
-        for content in ("1\t2\n", "3\t4\n", "5\t6\n"):
-            self.dataset_populator.new_dataset(history_id, content=content, file_type="txt", wait=True)
-        self.home()
-        self.history_panel_wait_for_hid_ok(3)
-        self.history_panel_wait_for_and_select([1, 2])
+        history_id = self._select_two_of_three_datasets()
         self.history_panel_change_selected("change data type", "tabular")
 
         for hid in (1, 2):
@@ -173,6 +168,22 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         # hid 3 wasn't selected; check it only once the selected items have changed.
         unselected = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
         assert unselected["extension"] == "txt", unselected
+
+    @selenium_test
+    @managed_history
+    def test_change_dbkey_of_selected_items(self):
+        history_id = self._select_two_of_three_datasets()
+        assert self.dataset_populator.get_history_dataset_details(history_id, hid=1)["genome_build"] == "?"
+        self.history_panel_change_selected("change database build", "apiMel3")
+
+        for hid in (1, 2):
+            self.history_panel_ensure_showing_item_details(hid)
+            self.history_panel_wait_for_hid_dbkey(hid, "apiMel3")
+            details = self.dataset_populator.get_history_dataset_details(history_id, hid=hid)
+            assert details["genome_build"] == "apiMel3", details
+        self.screenshot("history_panel_change_dbkey_of_selected")
+        unselected = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
+        assert unselected["genome_build"] == "?", unselected
 
     @selenium_test
     def test_refresh_preserves_state(self):
@@ -204,6 +215,15 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     def assert_name_changed(self):
         name = self.history_panel_name()
         assert name == NEW_HISTORY_NAME
+
+    def _select_two_of_three_datasets(self):
+        history_id = self.current_history_id()
+        for content in ("1\t2\n", "3\t4\n", "5\t6\n"):
+            self.dataset_populator.new_dataset(history_id, content=content, file_type="txt", wait=True)
+        self.home()
+        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_and_select([1, 2])
+        return history_id
 
     def _refresh(self):
         self.home()
