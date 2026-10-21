@@ -243,7 +243,17 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
         self.screenshot("invocation_mapped_job_previous")
         invocations.job_dialog_close.wait_for_and_click()
         invocations.job_dialog.wait_for_absent_or_hidden()
+
+        @retry_assertion_during_transitions
+        def assert_job_url_removed():
+            assert "job" not in parse_qs(urlparse(self.current_url).query)
+
+        assert_job_url_removed()
         self.screenshot("invocation_mapped_job_dialog_closed")
+        scroll_into_view = "arguments[0].scrollIntoView({block: 'center'})"
+        self.execute_script(scroll_into_view, invocations.step_job_active_page(order_index=1).wait_for_visible())
+        self.screenshot("invocation_mapped_job_table")
+        self.execute_script(scroll_into_view, invocations.graph_canvas.wait_for_visible())
 
         # Track the invocation DOM node identity to detect a route-triggered remount.
         self.execute_script(
