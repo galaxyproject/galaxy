@@ -7,6 +7,7 @@ import collections
 import contextlib
 import json
 import random
+import re
 import string
 import time
 from abc import abstractmethod
@@ -33,6 +34,7 @@ from typing import (
 )
 
 import yaml
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from typing_extensions import ParamSpec
@@ -69,6 +71,7 @@ from .clipboard import (
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
+    exception_indicates_playwright_timeout,
     exception_indicates_stale_element,
     SeleniumTimeoutException,
 )
@@ -166,15 +169,6 @@ class NullTourCallback(TourCallbackProtocol):
         pass
 
 
-def _exception_indicates_playwright_timeout(e):
-    try:
-        from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
-
-        return isinstance(e, PlaywrightTimeoutError)
-    except ImportError:
-        return False
-
-
 def exception_seems_to_indicate_transition(e: Exception) -> bool:
     """True if exception seems to indicate the page state is transitioning.
 
@@ -194,7 +188,7 @@ def exception_seems_to_indicate_transition(e: Exception) -> bool:
         exception_indicates_stale_element(e)
         or exception_indicates_not_clickable(e)
         or exception_indicates_click_intercepted(e)
-        or _exception_indicates_playwright_timeout(e)
+        or exception_indicates_playwright_timeout(e)
     )
 
 
@@ -217,7 +211,7 @@ def retry_call_during_transitions(
                 raise
 
             # A Playwright timeout already spent a whole action timeout retrying; allow one more.
-            if _exception_indicates_playwright_timeout(e):
+            if exception_indicates_playwright_timeout(e):
                 playwright_timeouts += 1
                 if playwright_timeouts > 1:
                     raise
@@ -2710,6 +2704,95 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.set_element_value(tool_form.parameter_color_input(parameter=parameter).wait_for_present(), str(value))
         else:
             self.set_element_value(tool_form.parameter_text_input(parameter=parameter).wait_for_present(), str(value))
+
+    def tool_form_fill(
+        self,
+        values: dict[str, Any] | None = None,
+        data: dict[str, str] | None = None,
+        collections: dict[str, str] | None = None,
+    ) -> None:
+        """Fill the open tool form by parameter path, such as ``cond|param`` or ``repeat_0|param``.
+
+        ``values`` sets non-data parameters, detecting each one's widget. ``data`` and ``collections``
+        select a dataset or collection per parameter by option label, such as ``"3: reads.fq"``. Adds the
+        repeat instances the paths need, expands sections, and retries parameters a conditional reveals late.
+        """
+        values = values or {}
+        data = data or {}
+        collections = collections or {}
+        if not values and not data and not collections:
+            return
+
+        repeat_counts: dict[str, int] = {}
+        for key in [*values, *data, *collections]:
+            if repeat_match := self._parse_repeat_key(key):
+                repeat_name, repeat_index, _child_key = repeat_match
+                repeat_counts[repeat_name] = max(repeat_counts.get(repeat_name, 0), repeat_index + 1)
+        for repeat_name, count in repeat_counts.items():
+            self._add_repeat_instances(repeat_name, count)
+
+        self._expand_collapsed_sections()
+
+        # Shallow parameters first, so conditionals reveal the nested ones; retry what wasn't there yet.
+        deferred = []
+        for key, value in sorted(values.items(), key=lambda kv: kv[0].count("|")):
+            try:
+                self.tool_form_set_parameter(key, value)
+                self.sleep_for(self.wait_types.UX_RENDER)
+            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                deferred.append((key, value))
+
+        if deferred:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            for key, value in deferred:
+                expanded_id = key.replace("|", "-")
+                if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                    continue
+                self.tool_form_set_parameter(key, value)
+
+        for key, label in data.items():
+            is_multiple = self._is_multi_data_param(key)
+            if is_multiple:
+                self._clear_multiselect_tags(key)
+            self.tool_set_value(key, label, expected_type="data", multiple=is_multiple)
+
+        for key, label in collections.items():
+            self.tool_set_value(key, label, expected_type="data")
+
+    def _is_multi_data_param(self, expanded_id: str) -> bool:
+        return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
+
+    def _clear_multiselect_tags(self, expanded_id: str):
+        tag_close = self.components.tool_form.parameter_multiselect_tag_close(parameter=expanded_id)
+        for _ in range(20):
+            close_buttons = tag_close.all()
+            if not close_buttons:
+                break
+            close_buttons[0].click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    @staticmethod
+    def _parse_repeat_key(key: str):
+        if match := re.match(r"^(.+?)_(\d+)\|(.+)$", key):
+            return match.group(1), int(match.group(2)), match.group(3)
+        return None
+
+    def _add_repeat_instances(self, repeat_name: str, count: int):
+        for _ in range(count):
+            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    def _expand_collapsed_sections(self):
+        self.components.tool_form.execute.wait_for_visible()
+        for header in self.components.tool_form.section_header.all():
+            header.click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    def tool_form_set_parameter(self, expanded_parameter_id: str, value: Any) -> None:
+        """Set a non-data parameter of the open tool form by path, detecting its widget type."""
+        if isinstance(value, list) and len(value) == 1:
+            value = value[0]
+        self.form_element_set_value(expanded_parameter_id, value)
 
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
