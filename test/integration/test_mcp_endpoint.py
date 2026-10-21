@@ -108,12 +108,11 @@ class TestMCPApiKey(IntegrationTestCase):
         result = self._call_tool("get_user", {"api_key": key})
         assert self._email_from_get_user(result) == "mcp-argument-only@bx.psu.edu"
 
-    def test_argument_wins_over_header(self) -> None:
-        _, other_key = self._setup_user_get_key("mcp-header-other@bx.psu.edu")
-        result = self._call_tool(
-            "get_user", {"api_key": other_key}, headers={"x-api-key": self.galaxy_interactor.api_key}
-        )
-        assert self._email_from_get_user(result) == "mcp-header-other@bx.psu.edu"
+    def test_header_wins_over_argument(self) -> None:
+        _, header_key = self._setup_user_get_key("mcp-header-wins@bx.psu.edu")
+        _, argument_key = self._setup_user_get_key("mcp-argument-ignored@bx.psu.edu")
+        result = self._call_tool("get_user", {"api_key": argument_key}, headers={"x-api-key": header_key})
+        assert self._email_from_get_user(result) == "mcp-header-wins@bx.psu.edu"
 
     def test_empty_argument_falls_back_to_header(self) -> None:
         _, other_key = self._setup_user_get_key("mcp-header-fallback@bx.psu.edu")

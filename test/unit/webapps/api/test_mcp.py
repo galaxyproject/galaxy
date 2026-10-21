@@ -123,13 +123,14 @@ def test_static_response_implements_abstract_interface():
     response.set_cookie("k", "v")
 
 
-def test_resolve_api_key_prefers_argument():
-    assert _resolve_api_key("arg-key", {"x-api-key": "header-key"}) == "arg-key"
-
-
-def test_resolve_api_key_falls_back_to_header():
+def test_resolve_api_key_prefers_header():
+    assert _resolve_api_key("arg-key", {"x-api-key": "header-key"}) == "header-key"
     assert _resolve_api_key(None, {"x-api-key": "header-key"}) == "header-key"
-    assert _resolve_api_key("", {"x-api-key": "header-key"}) == "header-key"
+
+
+def test_resolve_api_key_falls_back_to_argument():
+    assert _resolve_api_key("arg-key", {}) == "arg-key"
+    assert _resolve_api_key("arg-key", {"x-api-key": ""}) == "arg-key"
 
 
 def test_resolve_api_key_missing():
