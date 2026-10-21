@@ -472,8 +472,6 @@ multi_history_panel:
     _: '.multi-history-panel .content-item${suffix}'
     item: '.multi-history-panel #${history_content_type}-${id}'
     histories: '.multi-history-panel .history-layout'
-    current_label: '.details .name'
-    switch_history: '.switch-to'
     current_history_check: '#history-column-${history_id} .details .name'
     empty_message_check: '#empty-history-message'
     switch_button: '#history-column-${history_id} .switch-to'
