@@ -67,7 +67,7 @@ class BaseShedToolDataTableManager:
         return error, message
 
     def reset_tool_data_tables(self):
-        # Reset the tool_data_tables to an empty dictionary.
+        # Tool Shed only: empties the app's live registry, never call this from Galaxy.
         self.app.tool_data_tables.data_tables = {}
 
 
@@ -148,8 +148,6 @@ class ShedToolDataTableManager(BaseShedToolDataTableManager):
                 if error:
                     # TODO: Do more here than logging an exception.
                     log.debug(message)
-            # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-            self.reset_tool_data_tables()
         return repository_tools_tups
 
     def get_target_install_dir(self, tool_shed_repository: "ToolShedRepository"):
