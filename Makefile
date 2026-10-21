@@ -250,10 +250,7 @@ release-create: ## Create a release branch
 release-create-point: release-create ## Create a point release
 
 mypy:
-	uv run --locked --inexact --all-packages --all-extras --group typecheck bash -ec '\
-	    for source in packages/*/src; do (cd "$$source" && mypy .); done; \
-	    mypy packages/*/tests; \
-	    cd test && mypy .'
+	uv run --locked --inexact --all-packages --all-extras --group typecheck python .ci/mypy_workspace.py
 
 .PHONY: help
 

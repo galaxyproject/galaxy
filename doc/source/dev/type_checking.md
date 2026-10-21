@@ -4,7 +4,16 @@ Galaxy's Python code is type checked with [mypy](https://mypy.readthedocs.io/), 
 
 ## Running mypy
 
-Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks `packages/*/src`, `packages/*/tests` and `test/` exactly as the "Python linting" CI job does; CI runs it on the oldest and newest supported Python versions. The "Test Galaxy packages" job also runs mypy separately inside each package under `packages/`. Each distribution is checked from its `src` directory, and other workspace packages resolve through their installed editable distributions. This preserves public module names such as `galaxy.util.bytesize` without a `mypy_path` list. Exemption pruning uses the same working directories and scope.
+Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks
+`packages/*/src`, `packages/*/tests` and `test/` in one mypy invocation, as the
+"Python linting" CI job does on the oldest and newest supported Python versions.
+`.ci/mypy_workspace.py` reads uv's workspace members from `pyproject.toml`,
+selects their source and test directories, and supplies the source directories
+as `MYPYPATH`, preserving public module names such as `galaxy.util.bytesize`.
+The exemption checker uses the same namespace roots.
+
+The "Test Galaxy packages" job also runs mypy separately inside each distribution
+with only that distribution's dependencies installed.
 
 ## New code must be fully typed
 

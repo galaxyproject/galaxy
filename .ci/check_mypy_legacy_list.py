@@ -26,13 +26,13 @@ Run it with ``tox -e mypy_legacy``, passing arguments after ``--``.
 
 import argparse
 import collections
-import glob
 import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 from dataclasses import (
     dataclass,
     field,
@@ -41,6 +41,11 @@ from dataclasses import (
 from mypy.config_parser import parse_config_file
 from mypy.find_sources import create_source_list
 from mypy.options import Options
+
+from mypy_workspace import (
+    environment,
+    targets,
+)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 MYPY_INI = os.path.join(ROOT, "mypy.ini")
@@ -56,14 +61,6 @@ FLAG_FOR_CODE = {
 STRICT_FLAGS = set(FLAG_FOR_CODE.values())
 # Values configparser reads as False
 FALSE_VALUES = {"false", "no", "off", "0"}
-
-# Use the same source/test scope and working directories as make mypy.
-RUNS = [
-    (os.path.relpath(source, ROOT), ["."]) for source in sorted(glob.glob(os.path.join(ROOT, "packages/*/src")))
-] + [
-    (".", sorted(glob.glob(os.path.join(ROOT, "packages/*/tests")))),
-    ("test", ["."]),
-]
 
 SECTION_RE = re.compile(r"^\[(?P<name>[^\]]+)\]\s*$")
 OPTION_RE = re.compile(r"^(?P<key>[a-z_]+)\s*=\s*(?P<value>.*?)\s*$")
@@ -116,6 +113,7 @@ class ModuleNames:
     def __init__(self, config_file: str) -> None:
         self.options = Options()
         parse_config_file(self.options, lambda: None, config_file, sys.stdout, sys.stderr)
+        self.options.mypy_path = environment(Path(ROOT))["MYPYPATH"].split(os.pathsep)
         self.cache: dict[str, str] = {}
 
     def __call__(self, cwd: str, path: str) -> str:
@@ -138,24 +136,33 @@ def run_mypy(
     """Return the (module, flag) pairs that fail and any errors not caused by a strict flag."""
     failing = set()
     unexpected = []
-    for rel_cwd, paths in RUNS:
-        cwd = os.path.join(ROOT, rel_cwd)
-        cmd = [python, "-m", "mypy", "--config-file", config_file, "--cache-dir", cache_dir, "--output", "json"]
-        print(f"Running {' '.join(cmd + paths)} in {rel_cwd}", file=sys.stderr, flush=True)
-        result = subprocess.run(cmd + paths, cwd=cwd, capture_output=True, text=True)
-        if result.returncode not in (0, 1):
-            sys.exit(f"mypy failed in {rel_cwd}:\n{result.stdout}{result.stderr}")
-        for line in result.stdout.splitlines():
-            if not line.startswith("{"):
-                continue
-            error = json.loads(line)
-            if error["severity"] != "error":
-                continue
-            flag = FLAG_FOR_CODE.get(error["code"])
-            if flag is None:
-                unexpected.append(f"{rel_cwd}/{error['file']}:{error['line']}: {error['message']} [{error['code']}]")
-                continue
-            failing.add((module_names(cwd, error["file"]), flag))
+    cmd = [
+        python,
+        "-m",
+        "mypy",
+        "--config-file",
+        config_file,
+        "--cache-dir",
+        cache_dir,
+        "--output",
+        "json",
+        *targets(Path(ROOT)),
+    ]
+    print(f"Running {' '.join(cmd)} in {ROOT}", file=sys.stderr, flush=True)
+    result = subprocess.run(cmd, cwd=ROOT, env=environment(Path(ROOT)), capture_output=True, text=True)
+    if result.returncode not in (0, 1):
+        sys.exit(f"mypy failed:\n{result.stdout}{result.stderr}")
+    for line in result.stdout.splitlines():
+        if not line.startswith("{"):
+            continue
+        error = json.loads(line)
+        if error["severity"] != "error":
+            continue
+        flag = FLAG_FOR_CODE.get(error["code"])
+        if flag is None:
+            unexpected.append(f"{error['file']}:{error['line']}: {error['message']} [{error['code']}]")
+            continue
+        failing.add((module_names(ROOT, error["file"]), flag))
     return failing, unexpected
 
 
@@ -217,8 +224,16 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as tmp:
         config_file = os.path.join(tmp, "mypy.ini")
+        # Keep config-relative paths anchored to the repository in the temporary copy.
         with open(config_file, "w") as f:
-            f.write("\n".join(line for i, line in enumerate(lines) if i not in entries.values()) + "\n")
+            f.write(
+                "\n".join(
+                    line.replace("$MYPY_CONFIG_FILE_DIR", ROOT)
+                    for i, line in enumerate(lines)
+                    if i not in entries.values()
+                )
+                + "\n"
+            )
         module_names = ModuleNames(config_file)
         failing: set[tuple[str, str]] = set()
         unexpected: list[str] = []
