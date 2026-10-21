@@ -120,6 +120,18 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         return key_value_pairs
 
     @selenium_test
+    def test_tool_form_fill_by_parameter_path(self):
+        history_id = self.current_history_id()
+        first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
+        second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
+        self.home()
+        self.tool_open("cat1")
+        self.tool_form_fill(data={"input1": first["hid"], "queries_0|input2": second["hid"]})
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(3)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\n"
+
+    @selenium_test
     def test_repeat_reordering(self):
         self.home()
         self.tool_open("text_repeat")
