@@ -31,7 +31,10 @@ const historyStore = useHistoryStore();
 
 const viewCollection = ref(false);
 const expandDataset = ref(false);
+// An item the user just toggled is already in view; only scroll to targets expanded from elsewhere.
+let userToggled = false;
 function setExpanded(value: boolean) {
+    userToggled = true;
     expandDataset.value = value;
     emit("update:expanded", value);
 }
@@ -63,6 +66,8 @@ const { stop: stopObserver } = useIntersectionObserver(containerEl, ([entry]) =>
 watch(
     () => props.expanded,
     async (value) => {
+        const scroll = props.scrollOnExpand && !userToggled;
+        userToggled = false;
         if (value === undefined) {
             return;
         }
@@ -75,8 +80,9 @@ watch(
                 view.value = "element";
             }
             await nextTick();
-            if (props.scrollOnExpand) {
-                containerEl.value?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+            if (scroll) {
+                // The target is still loading and will grow, so align its top.
+                containerEl.value?.scrollIntoView?.({ behavior: "smooth", block: "start" });
             }
         }
     },
@@ -127,6 +133,7 @@ function onViewCollection(collection: any) {
     if (view.value === "collection" && collection.model_class === "HistoryDatasetCollectionAssociation") {
         view.value = "element";
     }
+    userToggled = true;
     viewCollection.value = !viewCollection.value;
     emit("update:expanded", viewCollection.value);
 }

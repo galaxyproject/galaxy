@@ -87,7 +87,11 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
     </div>
     <div v-else-if="props.tab === 'outputs'">
         <div v-if="outputs.length">
-            <div v-for="([key, output], index) in outputs" :key="index" data-description="terminal invocation output">
+            <div
+                v-for="([key, output], index) in outputs"
+                :key="index"
+                data-description="terminal invocation output"
+                :data-label="key">
                 <Heading size="text" bold separator>{{ key }}</Heading>
                 <GenericHistoryItem
                     :item-id="output.id ?? ''"
