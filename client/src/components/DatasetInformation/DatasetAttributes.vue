@@ -126,6 +126,7 @@ onMounted(async () => {
 
                         <GButton
                             v-if="!datasetAttributes['metadata_disable']"
+                            id="dataset-attributes-autodetect-metadata"
                             @click="submit('attribute', 'autodetect')">
                             <FontAwesomeIcon :icon="faRedo" class="mr-1" />
                             {{ localize("Auto-detect") }}
