@@ -179,3 +179,15 @@ it("shows the inactivity warning for an inactive user when activation is on", as
     expect(wrapper.find("#inactivebox").text()).toContain("Please verify your email.");
     wrapper.unmount();
 });
+
+it("announces an error message box as an alert", async () => {
+    galaxy.instance.config.message_box_visible = true;
+    galaxy.instance.config.message_box_content = "Maintenance tonight";
+    galaxy.instance.config.message_box_class = "error";
+    const { pinia, localVue, router } = mountApp();
+    await router.push("/");
+    const wrapper = shallowMount(App, { localVue, router, pinia, global: { stubs: { GAlert: false } } });
+    await flushPromises();
+    expect(wrapper.get("#messagebox").attributes("role")).toBe("alert");
+    wrapper.unmount();
+});
