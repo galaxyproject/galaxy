@@ -1,5 +1,9 @@
+from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_object_id_error,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -313,7 +317,8 @@ class TestUsersApi(ApiTestCase):
                 json=True,
             )
             self._assert_status_code_is(response, 400)
-            assert "bed" in response.json()["err_msg"], response.json()
+            self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+            assert_error_message_contains(response, "Conversion from 'bed' to 'len' not possible")
             builds = self._get(f"users/{user_id}/custom_builds").json()
             assert "unconvertible_build" not in [build["id"] for build in builds]
 
