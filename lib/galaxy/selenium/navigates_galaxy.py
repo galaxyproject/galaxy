@@ -3172,7 +3172,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.send_backspace(text_input)
             text_input.send_keys(value)
             self.sleep_for(WAIT_TYPES.UX_RENDER)
-            self.send_enter(text_input)
+            # Enter takes the first match, which may only contain the value (txt -> metacyto_clr.txt).
+            exact = [
+                option
+                for option in container_elem.find_elements(By.CSS_SELECTOR, "[role='option'] .multiselect__option span")
+                if option.text == value and option.is_displayed()
+            ]
+            if exact:
+                exact[0].click()
+            else:
+                self.send_enter(text_input)
             if multiple:
                 self.send_escape(text_input)
         else:
