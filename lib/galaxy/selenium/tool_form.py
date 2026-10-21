@@ -6,7 +6,7 @@ from typing import (
     NamedTuple,
 )
 
-REPEAT_PATH = re.compile(r"^(.+?)_(\d+)\|.+$")
+REPEAT_INSTANCE = re.compile(r"^(.+)_(\d+)$")
 
 
 class ToolFormParameter(NamedTuple):
@@ -22,14 +22,18 @@ class ToolFormParameter(NamedTuple):
     condition: str | None = None
 
 
-def repeat_instance_counts(paths: list[str]) -> dict[str, int]:
-    """How many instances of each repeat the paths need, e.g. ``queries_1|input`` needs two ``queries``."""
-    counts: dict[str, int] = {}
-    for path in paths:
-        if match := REPEAT_PATH.match(path):
-            name, index = match.group(1), int(match.group(2))
-            counts[name] = max(counts.get(name, 0), index + 1)
-    return counts
+def repeat_instance_candidates(path: str) -> list[tuple[str, int]]:
+    """Each ``<name>_<index>`` segment above the field that may be a repeat instance, as (repeat path, index).
+
+    ``outer_1|sec|inner_0|x`` gives ``("outer", 1)`` and ``("outer_1|sec|inner", 0)``, outer first. A conditional
+    or section may also be named like ``options_1``, so only the form can tell which ones are repeats.
+    """
+    segments = path.split("|")[:-1]
+    return [
+        ("|".join([*segments[:depth], match.group(1)]), int(match.group(2)))
+        for depth, segment in enumerate(segments)
+        if (match := REPEAT_INSTANCE.match(segment))
+    ]
 
 
 def tool_form_parameters_from_build(

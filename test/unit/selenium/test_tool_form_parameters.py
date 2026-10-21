@@ -3,7 +3,7 @@
 from typing import Any
 
 from galaxy.selenium.tool_form import (
-    repeat_instance_counts,
+    repeat_instance_candidates,
     tool_form_parameters_from_build,
     ToolFormParameter,
 )
@@ -192,6 +192,12 @@ def test_data_value_from_pinned_collection_element_uses_its_name():
     ]
 
 
-def test_repeat_instance_counts_take_the_highest_index_per_repeat():
-    paths = ["queries_1|input2", "queries_0|input2", "input1", "cond|outer_0|x", "a_b_3|c"]
-    assert repeat_instance_counts(paths) == {"queries": 2, "cond|outer": 1, "a_b": 4}
+def test_repeat_instance_candidates_are_every_numbered_segment_above_the_field_outer_first():
+    assert repeat_instance_candidates("input1") == []
+    assert repeat_instance_candidates("queries_1|input2") == [("queries", 1)]
+    # The field's own name isn't a candidate, and a segment like inner_options_1 may be a conditional.
+    assert repeat_instance_candidates("cond|outer_0|sec|inner_options_1|deep_2|x_3") == [
+        ("cond|outer", 0),
+        ("cond|outer_0|sec|inner_options", 1),
+        ("cond|outer_0|sec|inner_options_1|deep", 2),
+    ]
