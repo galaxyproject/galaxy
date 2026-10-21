@@ -302,6 +302,21 @@ class TestUsersApi(ApiTestCase):
             updated_theme = self._get(url).json()["preferences"]["theme"]
             assert updated_theme == "test_theme"
 
+    def test_custom_build_from_unconvertible_dataset(self):
+        user_id = self._get("users/current").json()["id"]
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content="chr1\t0\t100\n", file_type="bed", wait=True)
+            response = self._put(
+                f"users/{user_id}/custom_builds/unconvertible_build",
+                data={"name": "Unconvertible build", "len|type": "fasta", "len|value": hda["id"]},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            assert "bed" in response.json()["err_msg"], response.json()
+            builds = self._get(f"users/{user_id}/custom_builds").json()
+            assert "unconvertible_build" not in [build["id"] for build in builds]
+
     @requires_admin
     @requires_new_user
     def test_show_delete(self):
