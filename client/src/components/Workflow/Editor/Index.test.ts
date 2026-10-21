@@ -669,6 +669,20 @@ describe("Index", () => {
             return wrapper;
         }
 
+        it("does not mark loaded attributes as unsaved changes", async () => {
+            const wrapper = await mountWithPendingVersions();
+
+            expect(stateStore.hasChanges).toBe(false);
+            wrapper.findComponent(activityBarStub).vm.$emit("activityClicked", "exit");
+            await flushPromises();
+            expect(wrapper.findComponent(SaveChangesModal).props("showModal")).toBe(false);
+            expect(mockPush).toHaveBeenCalledWith("/workflows/list");
+
+            resolveVersions([]);
+            await flushPromises();
+            expect(stateStore.hasChanges).toBe(false);
+        });
+
         it("keeps a workflow upgraded on load marked as changed", async () => {
             mockGetStateUpgradeMessages.mockImplementation(() => [
                 { stepIndex: "0", name: "cat1", details: ["upgraded"], iconType: "tool", label: "" },
