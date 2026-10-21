@@ -25,12 +25,12 @@ from galaxy.model.database_utils import (
     is_postgres,
 )
 
-# GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql+psycopg://postgres@localhost:5432/postgres' pytest test/unit/model
+# GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql+psycopg://postgres@localhost:5432/postgres' pytest packages/data/tests/model
 skip_if_not_postgres_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_POSTGRES_URI"), reason="GALAXY_TEST_CONNECT_POSTGRES_URI not set"
 )
 
-# GALAXY_TEST_CONNECT_MYSQL_URI='mysql+mysqldb://root@localhost/mysql' pytest test/unit/model
+# GALAXY_TEST_CONNECT_MYSQL_URI='mysql+mysqldb://root@localhost/mysql' pytest packages/data/tests/model
 skip_if_not_mysql_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_MYSQL_URI"), reason="GALAXY_TEST_CONNECT_MYSQL_URI not set"
 )

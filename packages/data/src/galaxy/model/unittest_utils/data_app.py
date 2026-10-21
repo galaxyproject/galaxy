@@ -1,9 +1,9 @@
 """Mock GalaxyApp exposing config + functionality required for galaxy-data package.
 
-There is a more expansive MockApp in test/unit/unittest_utils - but it isn't packaged
-and it has dependencies from across the app. This mock application and config is
-more appropriate for testing galaxy-data functionality and will be included with
-galaxy-data.
+There is a more expansive MockApp in :mod:`galaxy.app_unittest_utils.galaxy_mock`, but
+it ships with galaxy-app and has dependencies from across the application. This mock
+application and config are more appropriate for testing galaxy-data functionality and
+are included with galaxy-data.
 """
 
 import os
