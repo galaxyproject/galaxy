@@ -8,8 +8,13 @@ including the ``next`` parameter accepted by ``OIDC.login``.
 from typing import Optional
 
 import pytest
+from routes import (
+    Mapper,
+    request_config,
+)
 
 from galaxy.util.bunch import Bunch
+from galaxy.web import url_for
 from galaxy.webapps.galaxy.controllers import authnz as authnz_module
 from galaxy.webapps.galaxy.controllers.authnz import (
     LOGIN_NEXT_COOKIE_NAME,
@@ -22,11 +27,14 @@ LANDING_PATH = "/tool_landings/1234-5678?public=true"
 class StubTrans:
     """The slice of the transaction interface ``OIDC.callback`` touches before it stops."""
 
-    def __init__(self, login_next_cookie: Optional[str]):
+    def __init__(self, login_next_cookie: Optional[str], allowed_hosts=()):
         self.user = None
         self._cookies = {LOGIN_NEXT_COOKIE_NAME: login_next_cookie}
         self.login_redirect_url: Optional[str] = None
-        self.app = Bunch(authnz_manager=Bunch(callback=self._callback))
+        self.app = Bunch(
+            config=Bunch(allowed_login_redirect_hosts=list(allowed_hosts)),
+            authnz_manager=Bunch(callback=self._callback),
+        )
 
     def get_cookie(self, name):
         return self._cookies.get(name)
@@ -46,8 +54,20 @@ def passthrough_url_for(monkeypatch):
     monkeypatch.setattr(authnz_module, "url_for", lambda path: path)
 
 
-def chosen_redirect_for(cookie_value):
-    trans = StubTrans(cookie_value)
+@pytest.fixture
+def galaxy_url_prefix(monkeypatch):
+    # The real url_for, serving Galaxy under /galaxy.
+    monkeypatch.setattr(authnz_module, "url_for", url_for)
+    config = request_config()
+    config.mapper = Mapper()
+    config.environ = {"SCRIPT_NAME": "/galaxy", "HTTP_HOST": "galaxy.example", "wsgi.url_scheme": "https"}
+    yield
+    for name in ("mapper", "environ", "protocol", "host"):
+        delattr(config, name)
+
+
+def chosen_redirect_for(cookie_value, allowed_hosts=()):
+    trans = StubTrans(cookie_value, allowed_hosts)
     OIDC.callback(None, trans, "keycloak", code="auth-code", state="state-token")
     return trans.login_redirect_url
 
@@ -73,3 +93,17 @@ def test_callback_refuses_to_send_the_user_off_site(hostile):
 @pytest.mark.parametrize("empty", [None, "", "None"])
 def test_callback_falls_back_to_root_without_a_destination(empty):
     assert chosen_redirect_for(empty) == "/"
+
+
+@pytest.mark.parametrize(
+    "cookie_value, expected",
+    [
+        (LANDING_PATH, f"/galaxy{LANDING_PATH}"),
+        ("/workflows/ü?name=ü", "/galaxy/workflows/%C3%BC?name=%C3%BC"),
+        ("/workflows/%C3%BC", "/galaxy/workflows/%C3%BC"),
+        ("https://tools.example.org/back", "https://tools.example.org/back"),
+        ("https://tools.example.org/ü", "https://tools.example.org/%C3%BC"),
+    ],
+)
+def test_callback_encodes_the_destination_for_url_for(galaxy_url_prefix, cookie_value, expected):
+    assert chosen_redirect_for(cookie_value, allowed_hosts=["tools.example.org"]) == expected

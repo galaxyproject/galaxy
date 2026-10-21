@@ -3985,6 +3985,24 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allowed_login_redirect_hosts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated list of other sites' hosts that Galaxy may send
+    users to after they log in, e.g.
+    ``tools.example.org,portal.example.org:8443``.
+    A listed site can send its users to Galaxy's login page with
+    ``/login/start?redirect=<url>``, where ``<url>`` is the
+    percent-encoded page to return to. Hosts must match exactly (no
+    wildcards); add the port if it is not 443. Only https URLs are
+    followed. Every page on a listed host is trusted, so read the
+    authentication documentation before adding one.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_local_account_creation``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

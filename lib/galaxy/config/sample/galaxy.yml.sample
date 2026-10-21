@@ -2225,6 +2225,17 @@ galaxy:
   # registration.
   #prefer_oidc_login: false
 
+  # Comma-separated list of other sites' hosts that Galaxy may send
+  # users to after they log in, e.g.
+  # ``tools.example.org,portal.example.org:8443``.
+  # A listed site can send its users to Galaxy's login page with
+  # ``/login/start?redirect=<url>``, where ``<url>`` is the
+  # percent-encoded page to return to. Hosts must match exactly (no
+  # wildcards); add the port if it is not 443. Only https URLs are
+  # followed. Every page on a listed host is trusted, so read the
+  # authentication documentation before adding one.
+  #allowed_login_redirect_hosts: null
+
   # Allow unregistered users to create new local (non-OIDC) accounts
   # (otherwise, they will have to be created by an admin). This option
   # will be overridden to false in case disable_local_accounts is set to

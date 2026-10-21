@@ -16,7 +16,7 @@ from galaxy.webapps.galaxy.controllers.authnz import OIDC
 def trans(monkeypatch):
     trans = SimpleNamespace(
         app=SimpleNamespace(
-            config=SimpleNamespace(enable_oidc=True),
+            config=SimpleNamespace(enable_oidc=True, allowed_login_redirect_hosts=[]),
             authnz_manager=Mock(spec=AuthnzManager),
         ),
         user=None,
@@ -24,6 +24,7 @@ def trans(monkeypatch):
         response=Response(),
         handle_user_login=Mock(),
         set_cookie=Mock(),
+        get_cookie=Mock(return_value=None),
     )
     trans.check_csrf_token = GalaxyWebTransaction.check_csrf_token.__get__(trans)
     monkeypatch.setattr("galaxy.webapps.galaxy.controllers.authnz.url_for", lambda path: path)
