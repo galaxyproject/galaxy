@@ -4,6 +4,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__/index";
 import { clearRaisedToasts, raisedToasts } from "@/composables/__mocks__/toast";
@@ -51,6 +52,8 @@ const SELECTORS = {
 } as const;
 
 vi.mock("@/composables/toast");
+const { selection } = vi.hoisted(() => ({ selection: { value: undefined as object | undefined } }));
+vi.mock("@/composables/invocationSelection", () => ({ useInvocationSelection: () => selection.value }));
 
 // Mock "@/utils/clipboard"
 const writeText = vi.fn();
@@ -113,7 +116,12 @@ const localVue = getLocalVue();
  * @param ownsHistory Whether the user owns the history associated with the invocation
  * @returns The wrapper object
  */
-async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable = false, ownsHistory = true) {
+async function mountWorkflowInvocationShare(
+    ownsWorkflow = true,
+    bothShareable = false,
+    ownsHistory = true,
+    router?: Router,
+) {
     server.use(
         http.put("/api/workflows/{workflow_id}/enable_link_access", ({ response }) => {
             return response(200).json({
@@ -142,6 +150,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
         },
         global: localVue,
         pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+        ...(router ? { router } : {}),
     });
 
     const userStore = useUserStore();
@@ -189,6 +198,23 @@ describe("WorkflowInvocationShare", () => {
             { variant: "success", message: SHARE_SUCCESS_MSG },
             { variant: "info", message: CLIPBOARD_MSG },
         ]);
+    });
+
+    it("copies the routed page's current selection", async () => {
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: [{ path: "/:path(.*)", component: {} }],
+        });
+        await router.push("/workflows/invocations/invocation-id?step_label=trim&job=job-id");
+        selection.value = {};
+        const { wrapper } = await mountWorkflowInvocationShare(true, false, true, router);
+        await openShareModal(wrapper);
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(writeText).toHaveBeenCalledWith(
+            expect.stringMatching(/\/workflows\/invocations\/invocation-id\?step_label=trim&job=job-id$/),
+        );
+        selection.value = undefined;
     });
 
     it("renders nothing when the user does not own the workflow", async () => {
