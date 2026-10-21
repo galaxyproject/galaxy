@@ -214,6 +214,27 @@ log = logging.getLogger(__name__)
 app = None
 
 
+def build_tool_data_tables(config: GalaxyAppConfiguration, from_shed_config: bool) -> BaseToolDataTableManager:
+    # Initialize tool data tables using the config defined by config.tool_data_table_config_path.
+    tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
+        tool_data_path=config.tool_data_path,
+        config_filename=config.tool_data_table_config_path,
+        other_config_dict=config,
+    )
+    # Load additional entries defined by config.shed_tool_data_table_config into tool data tables.
+    try:
+        tool_data_tables.load_from_config_file(
+            config_filename=config.shed_tool_data_table_config,
+            tool_data_path=tool_data_tables.tool_data_path,
+            from_shed_config=from_shed_config,
+        )
+    except OSError as exc:
+        # Missing shed_tool_data_table_config is okay if it's the default
+        if exc.errno != errno.ENOENT or config.is_set("shed_tool_data_table_config"):
+            raise
+    return tool_data_tables
+
+
 class HaltableContainer(Container):
     haltables: list[tuple[str, Callable]]
 
@@ -459,24 +480,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         )
 
     def _configure_tool_data_tables(self, from_shed_config):
-        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_filename=self.config.tool_data_table_config_path,
-            other_config_dict=self.config,
-        )
-        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        try:
-            tool_data_tables.load_from_config_file(
-                config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=tool_data_tables.tool_data_path,
-                from_shed_config=from_shed_config,
-            )
-        except OSError as exc:
-            # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
-                raise
-        self._tool_data_tables = tool_data_tables
+        self._tool_data_tables = build_tool_data_tables(self.config, from_shed_config)
 
     @property
     def tool_data_tables(self) -> BaseToolDataTableManager:
