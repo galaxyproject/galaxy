@@ -89,17 +89,13 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
 </template>
 
 <style scoped lang="scss">
+@import "@/style/scss/mixins";
+
 .full-page {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;
-    min-height: 0;
+    @include fill-column;
 
     .invocation-graph-container {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 0;
-        min-height: 0;
+        @include fill-column;
     }
 }
 </style>

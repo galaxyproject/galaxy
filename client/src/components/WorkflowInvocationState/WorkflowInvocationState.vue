@@ -572,6 +572,8 @@ async function onCancel() {
 </style>
 
 <style scoped lang="scss">
+@import "@/style/scss/mixins";
+
 .full-page {
     height: 100%;
     min-height: 400px;
@@ -584,10 +586,7 @@ async function onCancel() {
 
 // Overview fills the tab area; the graph and step details size themselves within it.
 .full-page .overview-tab-content {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;
-    min-height: 0;
+    @include fill-column;
 }
 
 .steps-tab-content {
