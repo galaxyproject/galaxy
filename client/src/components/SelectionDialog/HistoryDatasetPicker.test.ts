@@ -4,12 +4,13 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import type { MyHistory } from "@/api/histories";
 
 import HistoryDatasetPicker from "./HistoryDatasetPicker.vue";
 
 const { server, http } = useServerMock();
 
-const HISTORY = {
+const HISTORY: MyHistory = {
     id: "h1",
     name: "Recent History",
     model_class: "History",
@@ -30,8 +31,7 @@ function interceptHistories() {
     server.use(
         http.get("/api/histories", ({ request, response }) => {
             queries.push(Object.fromEntries(new URL(request.url).searchParams.entries()));
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return response(200).json([HISTORY] as any, { headers: { total_matches: "1" } });
+            return response(200).json([HISTORY], { headers: { total_matches: "1" } });
         }),
     );
     return queries;
