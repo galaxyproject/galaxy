@@ -195,7 +195,6 @@ interface Roothistory_panel extends Component {
     options_menu_item: SelectorTemplate;
     options_show_export_history_to_file: SelectorTemplate;
     collection_menu_button: SelectorTemplate;
-    collection_menu_edit_attributes: SelectorTemplate;
     new_history_button: SelectorTemplate;
     histories_operation_menu: SelectorTemplate;
     multi_view_button: SelectorTemplate;
