@@ -301,6 +301,8 @@ history_panel:
       info_button: '${_} .info-btn'
       highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
+      tag_area_button: '${_} .stateless-tags .toggle-button'
+      tag_area_input: '${_} .stateless-tags .headless-multiselect input'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations: '${_} .dataset-actions'
