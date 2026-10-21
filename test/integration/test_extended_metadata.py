@@ -98,6 +98,13 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
         self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=2, access_private=True)
 
+    def test_all_output_types_get_default_permissions(self, history_id):
+        response = self.dataset_populator.run_tool("all_output_types", {}, history_id)
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        # 4 static outputs, discovered_output plus its discovered dataset, discovered_output_replaced,
+        # the static pair's 2 elements, and discovered_list's element.
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=10, access_private=True)
+
     def test_dynamic_collection_elements_get_default_permissions(self, history_id):
         response = self.dataset_populator.run_tool(
             "collection_creates_dynamic_list_of_pairs", {"foo": "bar"}, history_id
