@@ -17,6 +17,7 @@ import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invoca
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
+import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -69,6 +70,7 @@ const pollTimeout = ref<any>(null);
 const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
 const stepExpanded = ref(false);
+const stepModalTargetId = useUid("invocation-step-modal-");
 const detailedViewEnabled = ref(false);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
@@ -106,7 +108,7 @@ watch(
 const stateStore = useWorkflowStateStore(storeId.value);
 const { activeNodeId } = storeToRefs(stateStore);
 
-// Collapse the step card whenever the active step changes
+// Close the expanded-step modal when the active step changes
 watch(
     () => activeNodeId.value,
     () => {
@@ -316,7 +318,7 @@ function toggleDetailedView() {
                     </div>
                 </BCardHeader>
                 <BCardBody body-class="p-2">
-                    <Teleport :to="`#invocation-step-modal-${props.invocation.id}`" :disabled="!stepExpanded" defer>
+                    <Teleport :to="`#${stepModalTargetId}`" :disabled="!stepExpanded" defer>
                         <WorkflowInvocationStep
                             :key="activeNodeId"
                             :invocation="props.invocation"
@@ -340,7 +342,7 @@ function toggleDetailedView() {
                             :graph-step="steps[activeNodeId]"
                             :invocation-step="props.invocation.steps[activeNodeId]" />
                     </template>
-                    <div :id="`invocation-step-modal-${props.invocation.id}`" />
+                    <div :id="stepModalTargetId" />
                 </GModal>
             </BCard>
             <GAlert v-else class="mt-2" show>Click on a step in the workflow graph above to view its details.</GAlert>
