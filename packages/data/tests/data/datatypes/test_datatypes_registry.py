@@ -1,7 +1,6 @@
-from xml.etree import ElementTree
-
 import pytest
 
+import galaxy.util
 from galaxy.datatypes import sniff
 from galaxy.datatypes.assembly import Velvet
 from galaxy.datatypes.registry import (
@@ -158,7 +157,7 @@ def test_load_datatypes_config_without_checkout_root(tmp_path, monkeypatch, as_e
     monkeypatch.chdir(tmp_path)
     registry = Registry()
     registry.load_datatypes(
-        config=ElementTree.parse(config).getroot() if as_element else config,
+        config=galaxy.util.parse_xml(config).getroot() if as_element else config,
         use_converters=False,
         use_display_applications=False,
         use_build_sites=False,
@@ -173,7 +172,7 @@ def test_datatype_asset_paths_require_an_explicit_base(tmp_path, monkeypatch, as
     assets = tmp_path / "assets"
     assets.mkdir()
     monkeypatch.chdir(tmp_path)
-    config = ElementTree.fromstring("<datatypes><registration/></datatypes>")
+    config = galaxy.util.parse_xml_string("<datatypes><registration/></datatypes>")
     registration = config.find("registration")
     assert registration is not None
     path_attribute = "converters_path" if asset_kind == "converters" else "display_path"

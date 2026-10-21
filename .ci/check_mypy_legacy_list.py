@@ -32,16 +32,15 @@ import re
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
 from dataclasses import (
     dataclass,
     field,
 )
+from pathlib import Path
 
 from mypy.config_parser import parse_config_file
 from mypy.find_sources import create_source_list
 from mypy.options import Options
-
 from mypy_workspace import (
     environment,
     targets,
