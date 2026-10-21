@@ -1207,6 +1207,11 @@ async function loadEditorData(data: any) {
     creator.value = data.creator;
     doi.value = data.doi;
 
+    // The attribute watchers just marked these loaded values as changes; undo that now,
+    // not after the versions request, so the editor isn't dirty while it's pending.
+    await nextTick();
+    hasChanges.value = hasStateMessages;
+
     try {
         versions.value = await getVersions(id.value);
     } catch (e) {
