@@ -81,8 +81,9 @@ watch(
             }
             await nextTick();
             if (scroll) {
-                // The target is still loading and will grow, so align its top.
-                containerEl.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+                // The target is still loading and will grow, so align its top. Jump rather than
+                // smooth scroll: lazy items passed mid-scroll load, grow and push the target off screen.
+                containerEl.value?.scrollIntoView({ block: "start" });
             }
         }
     },
