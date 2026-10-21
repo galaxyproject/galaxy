@@ -85,6 +85,7 @@ function onViewCollection(collection: object) {
                     color="blue"
                     outline
                     :disabled="sameToCurrent"
+                    data-description="switch to history button"
                     :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
                     @click="historyStore.setCurrentHistory(source.id)">
                     {{ sameToCurrent ? "Current History" : "Switch to" }}

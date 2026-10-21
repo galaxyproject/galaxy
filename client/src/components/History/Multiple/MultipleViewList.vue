@@ -102,7 +102,8 @@ async function onKeyDown(evt: KeyboardEvent) {
                 <div
                     v-for="{ data: history } in visibleHistories"
                     :key="history.id"
-                    class="history-column d-flex mx-1 mt-1">
+                    class="history-column d-flex mx-1 mt-1"
+                    :data-history-id="history.id">
                     <MultipleViewItem :source="history" :filter="filter" />
                 </div>
             </div>

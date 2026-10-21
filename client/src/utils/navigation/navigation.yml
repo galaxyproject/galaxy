@@ -472,9 +472,9 @@ multi_history_panel:
     _: '.multi-history-panel .content-item${suffix}'
     item: '.multi-history-panel #${history_content_type}-${id}'
     histories: '.multi-history-panel .history-layout'
-    current_history_check: '#history-column-${history_id} .details .name'
+    current_history_check: '.multi-history-panel .history-column[data-history-id="${history_id}"] [data-description="name display"]'
     empty_message_check: '#empty-history-message'
-    switch_button: '#history-column-${history_id} .switch-to'
+    switch_button: '.multi-history-panel .history-column[data-history-id="${history_id}"] [data-description="switch to history button"]'
   history_dropdown_menu:
     selectors:
       _: '[history-dropdown-menu="${history_id}"]'
