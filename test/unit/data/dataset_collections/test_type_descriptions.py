@@ -121,6 +121,8 @@ def test_compound_paired_or_unpaired_has_subcollections():
     Covers collection_semantics.yml examples:
     - MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
     - MAPPING_LIST_LIST_PAIRED_OVER_PAIRED_OR_UNPAIRED (via compound path)
+    - COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED
+    - COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED_NOT_CONSUMES_PAIRED_OR_UNPAIRED
     """
     # list:list can map over list:paired_or_unpaired
     assert c_t("list:list").has_subcollections_of_type("list:paired_or_unpaired")
@@ -139,12 +141,21 @@ def test_compound_paired_or_unpaired_has_subcollections():
     # list cannot map over list:paired_or_unpaired — lower rank
     assert not c_t("list").has_subcollections_of_type("list:paired_or_unpaired")
 
+    # paired_or_unpaired cannot map over list:paired_or_unpaired — lower rank
+    assert not c_t("paired_or_unpaired").has_subcollections_of_type("list:paired_or_unpaired")
+
     # paired cannot map over list:paired_or_unpaired — higher ranks don't align
     assert not c_t("paired").has_subcollections_of_type("list:paired_or_unpaired")
 
     # paired:paired cannot map over list:paired_or_unpaired — higher ranks
     # don't align (paired != list)
     assert not c_t("paired:paired").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # higher ranks must align on a rank boundary - paired_or_unpaired doesn't
+    # end in a paired rank
+    assert not c_t("paired_or_unpaired").has_subcollections_of_type("paired:paired_or_unpaired")
+    assert not c_t("list:paired_or_unpaired").has_subcollections_of_type("paired:paired_or_unpaired")
+    assert c_t("list:paired:paired").has_subcollections_of_type("paired:paired_or_unpaired")
 
 
 def test_compound_paired_or_unpaired_effective_collection_type():
