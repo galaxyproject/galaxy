@@ -115,6 +115,36 @@ class TestHistoryMultiView(SeleniumTestCase):
         assert [item["name"] for item in target_contents] == ["to copy"]
         assert self.current_history_id() == source_history_id
 
+    @selenium_test
+    @managed_history
+    def test_switch_to_history_from_column(self):
+        source_history_id = self.current_history_id()
+        target_history_id = self.dataset_populator.new_history("Multiview switch target")
+        self.home()
+        self.open_history_multi_view()
+        panel = self.components.multi_history_panel
+        target_name = panel.current_history_check(history_id=target_history_id)
+        self._wait_for_text(target_name, "Multiview switch target", "target column name")
+        self._wait_for_switch_button_labels(current_history_id=source_history_id, other_history_id=target_history_id)
+        panel.switch_button(history_id=target_history_id).wait_for_and_click()
+        self._wait_on(lambda *driver: self.current_history_id() == target_history_id, "current history to switch")
+        self._wait_for_switch_button_labels(current_history_id=target_history_id, other_history_id=source_history_id)
+        self.screenshot("multi_history_switch_from_column")
+
+    def _wait_for_switch_button_labels(self, current_history_id: str, other_history_id: str):
+        switch_button = self.components.multi_history_panel.switch_button
+        self._wait_for_text(
+            switch_button(history_id=current_history_id),
+            "Current History",
+            f"'Current History' label on column {current_history_id}",
+        )
+        self._wait_for_text(
+            switch_button(history_id=other_history_id), "Switch to", f"'Switch to' label on column {other_history_id}"
+        )
+
+    def _wait_for_text(self, target, expected: str, description: str):
+        self._wait_on(lambda *driver: target.wait_for_text() == expected, description)
+
     def prepare_multi_history_view(self, collection_populator_method):
         collection = collection_populator_method()
         if "outputs" in collection:
