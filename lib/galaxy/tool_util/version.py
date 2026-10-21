@@ -37,7 +37,7 @@ from packaging.version import (
     Version,
 )
 
-__all__ = ["parse_version", "LegacyVersion"]
+__all__ = ["parse_version", "parse_tool_version", "LegacyVersion"]
 
 LegacyCmpKey = Tuple[int, Tuple[str, ...]]
 
@@ -52,6 +52,24 @@ def parse_version(version: str) -> Union["LegacyVersion", Version]:
         return Version(version)
     except InvalidVersion:
         return LegacyVersion(version)
+
+
+GALAXY_VERSION_SUFFIX = "+galaxy"
+
+
+def parse_tool_version(version: str) -> Union["LegacyVersion", Version]:
+    """
+    Parse a tool version like :func:`parse_version`, comparing the number in a
+    ``+galaxy<N>`` suffix numerically, so that ``1.0+galaxy10`` sorts after
+    ``1.0+galaxy9``.
+    """
+    if GALAXY_VERSION_SUFFIX in version:
+        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
+        if suffix:
+            # PEP 440 compares a local version segment that contains letters as a string,
+            # separating the number into its own segment makes it compare as an integer.
+            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
+    return parse_version(version)
 
 
 class LegacyVersion(_BaseVersion):
