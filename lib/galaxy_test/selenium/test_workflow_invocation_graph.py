@@ -131,6 +131,23 @@ class TestWorkflowInvocationGraph(SeleniumTestCase):
         assert not label_input.is_enabled()
 
     @selenium_test
+    def test_expand_step_to_modal(self):
+        self._open_two_branches_invocation()
+        invocations = self.components.invocations
+        self._click_node("left_cat")
+        invocations.step_card_body_config_tab.wait_for_visible()
+
+        invocations.step_card_expand.wait_for_and_click()
+        invocations.step_card_modal.wait_for_visible()
+        invocations.step_card_modal_config_tab.wait_for_visible()
+        invocations.step_card_body_config_tab.assert_absent()
+        self.screenshot("invocation_graph_step_expanded")
+
+        invocations.step_card_modal_close.wait_for_and_click()
+        invocations.step_card_modal.wait_for_absent()
+        invocations.step_card_body_config_tab.wait_for_visible()
+
+    @selenium_test
     def test_search_selects_step(self):
         self._open_two_branches_invocation()
         invocations = self.components.invocations

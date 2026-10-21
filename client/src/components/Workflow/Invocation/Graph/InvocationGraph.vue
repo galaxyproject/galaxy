@@ -272,6 +272,7 @@ function toggleDetailedView() {
                         <GButton
                             v-if="activeStep.type === 'tool'"
                             title="Expand Step"
+                            data-description="invocation graph expand step button"
                             size="small"
                             transparent
                             @click="stepExpanded = true">
@@ -324,7 +325,12 @@ function toggleDetailedView() {
                         <GLink @click="stepExpanded = false">Click here to view the details here instead.</GLink>
                     </GAlert>
                 </BCardBody>
-                <GModal :show="stepExpanded" fixed-height size="medium" @close="stepExpanded = false">
+                <GModal
+                    :show="stepExpanded"
+                    fixed-height
+                    size="medium"
+                    data-description="invocation graph expanded step modal"
+                    @close="stepExpanded = false">
                     <template v-slot:header>
                         <WorkflowInvocationStepHeader
                             class="mr-2"
