@@ -49,6 +49,31 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         item.datatype.wait_for_visible()
         self._wait_on(lambda *_: item.datatype.wait_for_text() == dataNew)
 
+    @selenium_test
+    @managed_history
+    def test_convert_datatype_simple_list(self):
+        self._create_simple_list_collection("1.fasta", "fasta")
+        self.open_collection_edit_view()
+        self._edit_attributes.convert_tab.wait_for_and_click()
+        alert_element = self._edit_attributes.alert_info.wait_for_visible()
+        assert "This will create a new collection in your History." in alert_element.text
+        self.screenshot("collection_edit_convert_tab")
+        self.collection_edit_convert("Convert FASTA to Tabular")
+        history_id = self.current_history_id()
+        converted = self.history_wait_for_new_collection(3)
+        self.history_panel_wait_for_hid_ok(converted["hid"])
+        original = self.dataset_populator.get_history_collection_details(history_id, hid=3)
+        details = self.dataset_populator.get_history_collection_details(history_id, hid=converted["hid"])
+        assert [e["object"]["file_ext"] for e in original["elements"]] == ["fasta"]
+        assert [e["object"]["file_ext"] for e in details["elements"]] == ["tabular"]
+        assert [e["element_identifier"] for e in details["elements"]] == [
+            e["element_identifier"] for e in original["elements"]
+        ]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=details["elements"][0]["object"]["id"]
+        )
+        assert content.startswith("hg17\tgtttgccatc")
+
     def _create_simple_list_collection(self, filename, ext):
         self.upload_context("local-file").stage_local_file(self.get_filename(filename), {"extension": ext}).start()
         self._wait_for_and_select([1])
