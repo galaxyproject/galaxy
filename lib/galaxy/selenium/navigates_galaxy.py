@@ -1245,17 +1245,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def rule_builder_sort(self, column_label, screenshot_name=None):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
-        with self.rule_builder_rule_editor("sort") as editor_element:
-            column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select_set_value(column_elem, column_label)
+        with self.rule_builder_rule_editor("sort"):
+            self.select_set_value(rule_builder.rule_editor_column_selector(rule_type="sort"), column_label)
             self.screenshot_if(screenshot_name)
 
     def rule_builder_add_regex_groups(self, column_label, group_count, regex, screenshot_name):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-regex") as editor_element:
-            column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select_set_value(column_elem, column_label)
+            self.select_set_value(rule_builder.rule_editor_column_selector(rule_type="add-column-regex"), column_label)
 
             groups_elem = editor_element.find_element(By.CSS_SELECTOR, "input[type='radio'][value='groups']")
             groups_elem.click()
@@ -1274,8 +1272,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-regex") as editor_element:
-            column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select_set_value(column_elem, column_label)
+            self.select_set_value(rule_builder.rule_editor_column_selector(rule_type="add-column-regex"), column_label)
 
             groups_elem = editor_element.find_element(By.CSS_SELECTOR, "input[type='radio'][value='replacement']")
             groups_elem.click()
@@ -1303,10 +1300,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def rule_builder_remove_columns(self, column_labels, screenshot_name=None):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
-        with self.rule_builder_rule_editor("remove-columns") as filter_editor_element:
+        with self.rule_builder_rule_editor("remove-columns"):
+            column_selector = rule_builder.rule_editor_column_selector(rule_type="remove-columns")
             for column_label in column_labels:
-                column_elem = filter_editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-                self.select_set_value(column_elem, column_label, multiple=True)
+                self.select_set_value(column_selector, column_label, multiple=True)
             self.screenshot_if(screenshot_name)
 
     def rule_builder_concatenate_columns(self, column_label_1, column_label_2, screenshot_name=None):
