@@ -372,3 +372,21 @@ class TestUsersApi(ApiTestCase):
         user_roles = response.json()
         assert len(user_roles) == 1
         assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE
+
+    @requires_admin
+    @requires_new_user
+    def test_custom_build_from_inaccessible_dataset(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content=">chr1\nACGT\n", file_type="fasta", wait=True)
+            dataset_populator.make_private(history_id, hda["id"])
+            with self._different_user(email=TEST_USER_EMAIL):
+                user_id = self._get("users/current").json()["id"]
+                response = self._put(
+                    f"users/{user_id}/custom_builds/inaccessible_build",
+                    data={"name": "Inaccessible build", "len|type": "fasta", "len|value": hda["id"]},
+                    json=True,
+                )
+                self._assert_status_code_is(response, 403)
+                builds = self._get(f"users/{user_id}/custom_builds").json()
+                assert "inaccessible_build" not in [build["id"] for build in builds]
