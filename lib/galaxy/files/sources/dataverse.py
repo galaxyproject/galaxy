@@ -502,7 +502,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 # (e.g., when FilePIDsEnabled is false on the Dataverse instance)
                 file_identifier = f"id:{dataFile.get('id')}"
             uri = self.to_plugin_uri(dataset_id, file_identifier)
-            # an ingested tabular file downloads as the converted .tab, but its checksum is of the original upload
+            # an ingested tabular file downloads as the converted .tab; its checksum is of the original (?format=original)
             hashes = None if dataFile.get("originalFileFormat") else self._get_file_hashes(dataFile)
             rval.append(
                 RemoteFile(
