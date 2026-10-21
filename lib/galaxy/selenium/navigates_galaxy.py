@@ -2292,6 +2292,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_history_option_sharing(self):
         self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
 
+    def click_history_option_tool_references(self):
+        """Open History options > Export Tool References and wait for the references."""
+        self.use_bootstrap_dropdown(option="export tool references", menu="history options")
+        self.components.citations._.reference.wait_for_visible()
+
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
 

@@ -158,6 +158,14 @@ dataset_details:
     transform_action: '[data-transform-action="${action}"]'
     deferred_source_uri: '.deferred-dataset-source-uri'
 
+# History options > Export Tool References
+citations:
+  selectors:
+    _: '.citation-card'
+    apa_tab: '[data-description="citations apa tab"]'
+    bibtex_tab: '[data-description="citations bibtex tab"]'
+    reference: '${_} .formatted-reference'
+
 object_store_details:
   selectors:
     _: '[aria-labelledby="dataset-details-heading"]'
