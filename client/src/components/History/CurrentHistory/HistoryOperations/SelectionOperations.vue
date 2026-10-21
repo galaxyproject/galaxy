@@ -87,6 +87,7 @@
         </GModal>
         <GModal
             v-model:show="showChangeDatatypeModal"
+            data-description="change data type modal"
             title="Change data type?"
             confirm
             size="small"

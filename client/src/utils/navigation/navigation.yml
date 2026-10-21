@@ -336,6 +336,15 @@ history_panel:
       action_button: '.history-contents-list-action-menu-btn'
       action_menu: '.list-action-menu .dropdown-menu'
 
+    # Selection menu modals that apply one picked value to the selected items, keyed by the
+    # menu item's data-description (e.g. "change data type")
+    operation_modal:
+      selectors:
+        _: '[data-description="${operation} modal"]'
+        # Only rendered once the modal's options have loaded
+        item_selector: '${_} .single-item-selector'
+        ok: '${_} .g-modal-confirm-buttons button:last-child'
+
     labels:
       build_pair: "Build Dataset Pair"
       build_list: "Build Dataset List"
