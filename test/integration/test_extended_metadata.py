@@ -58,6 +58,8 @@ TEST_TOOL_IDS = [
     "discover_unknown_ext",
     "discover_format_tokens",
     "create_directory_index",
+    "zarr_store_in_wrapper_folder",
+    "discover_zarr_store_in_wrapper_folder",
 ]
 
 
@@ -77,6 +79,7 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
         config["tool_evaluation_strategy"] = "remote"
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
+        config["new_user_dataset_access_role_default_private"] = True
 
     def test_fetch_data_hda(self):
         history_id = self.dataset_populator.new_history()
@@ -95,6 +98,32 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
             dataset_id=new_dataset["id"],
         )
         assert content == upload_content
+
+    def test_fetched_list_elements_get_default_permissions(self, history_id):
+        self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a\n", "b\n"], direct_upload=True, wait=True
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self._assert_history_datasets_private(history_id, expected_count=2)
+
+    def test_discovered_datasets_get_default_permissions(self, history_id):
+        response = self.dataset_populator.run_tool("multi_output", {"input": 7}, history_id)
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        self._assert_history_datasets_private(history_id, expected_count=2)
+
+    def test_dynamic_collection_elements_get_default_permissions(self, history_id):
+        response = self.dataset_populator.run_tool(
+            "collection_creates_dynamic_list_of_pairs", {"foo": "bar"}, history_id
+        )
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        self._assert_history_datasets_private(history_id, expected_count=6)
+
+    def _assert_history_datasets_private(self, history_id, expected_count):
+        role_id = self.dataset_populator.user_private_role_id()
+        datasets = self.dataset_populator.get_history_contents_of_type(history_id, "datasets")
+        assert len(datasets) == expected_count, [d["name"] for d in datasets]
+        permissions = {d["name"]: self._get(f"datasets/{d['id']}").json().get("permissions") for d in datasets}
+        assert permissions == {name: {"manage": [role_id], "access": [role_id]} for name in permissions}
 
     def test_fetch_data_library(self):
         history_id, library, destination = self.library_populator.setup_fetch_to_folder("extended_metadata")
@@ -290,6 +319,20 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
                 "forward",
                 "reverse",
             }, f"Expected forward/reverse but got {identifiers} for '{element.element_identifier}'"
+
+    def test_remote_tool_eval_failure_surfaced_as_job_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.run_tool("cheetah_problem_unbound_var", inputs={}, history_id=history_id)
+            job_id = response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+            job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert job_details["state"] == "error"
+            output = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=response["outputs"][0]["id"], assert_ok=False
+            )
+            assert "Galaxy failed to prepare this job, so the tool was not run" in output["misc_info"]
+            assert "Error occurred while building command line" in output["misc_info"]
+            assert "NotFound: cannot find 'out_file2'" in output["misc_info"]
 
     def test_purge_while_job_running(self):
         # pass extra_sleep, since templating the command line will fail if the output

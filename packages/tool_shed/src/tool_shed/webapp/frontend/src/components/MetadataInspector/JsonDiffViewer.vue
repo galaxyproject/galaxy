@@ -26,7 +26,7 @@ const formattedHtml = computed(() => {
 </script>
 
 <template>
-    <div class="json-diff-viewer" v-html="formattedHtml"></div>
+    <div v-sanitize-html="formattedHtml" class="json-diff-viewer"></div>
 </template>
 
 <style>

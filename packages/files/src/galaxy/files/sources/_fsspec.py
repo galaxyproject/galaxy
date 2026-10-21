@@ -177,7 +177,10 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             # already a Galaxy error with its own status, such as a refused address
             raise
         except FileNotFoundError as e:
-            raise ObjectNotFound(f"{path} was not found in {self.label}.") from e
+            # keep a reason that says more than the path, such as a missing bucket
+            reason = "" if e.filename else str(e)
+            detail = f" Reason: {reason}" if reason and reason.strip("/") != path.strip("/") else ""
+            raise ObjectNotFound(f"{path} was not found in {self.label}.{detail}") from e
         except PermissionError as e:
             raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."

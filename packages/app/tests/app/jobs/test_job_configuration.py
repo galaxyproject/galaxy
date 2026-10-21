@@ -25,6 +25,7 @@ GALAXY_SAMPLES_DIRECTORY = resource_path("galaxy.config", "sample")
 SIMPLE_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_basic"
 ADVANCED_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_advanced"
 ADVANCED_JOB_CONF_YAML = GALAXY_SAMPLES_DIRECTORY / "job_conf.sample.yml"
+SAMPLE_JOB_RESOURCE_PARAMS = GALAXY_SAMPLES_DIRECTORY / "job_resource_params_conf.xml.sample"
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
 
@@ -348,6 +349,21 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         self._with_advanced_config()
         assert self.job_config.default_resource_group == "default"
         assert self.job_config.resource_groups["memoryonly"] == ["memory"]
+
+    def test_sample_resource_parameters_render_for_tool(self):
+        # The sample resource parameters file and the sample job config's "all" group must agree,
+        # and every declared field must render into the tool form conditional.
+        self._with_advanced_config()
+        with as_file(SAMPLE_JOB_RESOURCE_PARAMS) as path:
+            self.config.job_resource_params_file = str(path)
+            conditional = self.job_config.get_tool_resource_xml("longbar", "default")
+        assert conditional is not None
+        fields = {param.get("name"): param for param in conditional.findall("when")[1]}
+        assert set(fields) == set(self.job_config.resource_groups["all"])
+        gpus = fields["gpus"]
+        assert gpus.get("type") == "integer"
+        assert gpus.get("min") == "0"
+        assert gpus.get("optional") == "true"
 
 
 class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):

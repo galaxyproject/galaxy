@@ -1,7 +1,7 @@
 <script setup>
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BLink } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { useResourceWatcher } from "@/composables/resourceWatcher";
@@ -14,6 +14,7 @@ import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -220,7 +221,7 @@ function stopWatchingRepository() {
     <BCard>
         <div class="mb-1">{{ repo.long_description }}</div>
         <div class="mb-3">
-            <BLink :href="repo.repository_url" target="_blank">Show additional details and dependencies.</BLink>
+            <GLink :href="repo.repository_url" target="_blank">Show additional details and dependencies.</GLink>
         </div>
         <div>
             <LoadingSpan v-if="loading" message="Loading repository details" />

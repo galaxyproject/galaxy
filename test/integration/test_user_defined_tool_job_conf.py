@@ -5,7 +5,7 @@ import os
 import yaml
 
 from galaxy.tool_util_models import UserToolSource
-from galaxy_test.api.test_tools import TestsTools
+from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.populators import (
     DatasetPopulator,
     TOOL_WITH_SHELL_COMMAND,

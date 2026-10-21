@@ -19,6 +19,8 @@ on:
       - 'packages/app/src/galaxy/dependencies/**'
       - 'requirements/**'
       - .github/workflows/dependency_exports.yaml
+env:
+  UV_HTTP_RETRIES: '6'
 permissions: {}
 jobs:
   check:

@@ -18,6 +18,8 @@ from typing import (
     Any,
 )
 
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.source_store import populator
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -28,6 +30,9 @@ from galaxy.tools.source_store.populator import (
     send_reload_notification,
     ToolFileWatcher,
 )
+from galaxy.util import galaxy_directory
+
+galaxy_root = Path(galaxy_directory())
 
 # --- Fakes for testing ---
 
@@ -408,6 +413,68 @@ class TestIncrementalFastPath:
         assert entry.panel_section_id == "test_section_multi"
         assert [(item.tool_id, item.section_id) for item in index.panel_items] == [(guid, "test_section_multi")]
 
+    def test_partial_populate_discovers_only_requested_paths(self, tmp_path, monkeypatch):
+        tools_dir = tmp_path / "shed_tools"
+        items = []
+        for i in range(30):
+            _write_tool(tools_dir / f"shed_{i}.xml", f"shed_{i}")
+            items.append(f'<tool file="shed_{i}.xml" guid="toolshed.example.org/repos/iuc/shed_{i}/shed_{i}/1.0"/>')
+        conf = _write_tool_conf(
+            tmp_path / "shed_tool_conf.xml",
+            tools_dir,
+            f'<section id="shed_section" name="Shed Section">{"".join(items)}</section>',
+        )
+        cfg = _populate_config(tmp_path, conf)
+        requested = str(tools_dir / "shed_7.xml")
+
+        discovered_paths: list[str] = []
+
+        def recording_discover_tools(*args, **kwargs):
+            for discovered in actual_discover_tools(*args, **kwargs):
+                discovered_paths.append(discovered.path)
+                yield discovered
+
+        monkeypatch.setattr(populator, "discover_tools", recording_discover_tools)
+
+        _populate_default(cfg, paths=[requested])
+
+        assert discovered_paths == [requested]
+        _, index = _load_default_index(cfg)
+        entry = index.entries["toolshed.example.org/repos/iuc/shed_7/shed_7/1.0"]
+        assert entry.panel_section_id == "shed_section"
+
+    def test_partial_populate_writes_index_only_when_an_entry_changed(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tool = _write_tool(tools_dir / "rescan.xml", "rescan")
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="rescan.xml"/>')
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 0
+
+        _write_tool(tool, "rescan", command="echo changed")
+        assert _populate_default(cfg, paths=[str(tool)], incremental=False)["indexes_written"] == 1
+
+    def test_partial_populate_picks_up_macro_only_change(self, tmp_path):
+        tools_dir = tmp_path / "tools"
+        tools_dir.mkdir()
+        tool = tools_dir / "macro_tool.xml"
+        tool.write_text(
+            '<tool id="macro_tool" name="Macro" version="@TOOL_VERSION@" profile="21.09">'
+            "<macros><import>macros.xml</import></macros><command>echo</command></tool>"
+        )
+        macros = tools_dir / "macros.xml"
+        macros.write_text('<macros><token name="@TOOL_VERSION@">1.0</token></macros>')
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tools_dir, '<tool file="macro_tool.xml"/>')
+        cfg = _populate_config(tmp_path, conf)
+        _populate_default(cfg)
+
+        macros.write_text('<macros><token name="@TOOL_VERSION@">2.0</token></macros>')
+        _populate_default(cfg, paths=[str(tool)], incremental=False)
+
+        _, index = _load_default_index(cfg)
+        assert index.entries["macro_tool"].version == "2.0"
+
     def test_in_process_population_is_atomic_with_tool_removal(self, tmp_path, monkeypatch):
         """A stale scan must commit before a concurrent uninstall can prune it."""
         tools_dir = tmp_path / "tools"
@@ -420,8 +487,6 @@ class TestIncrementalFastPath:
         )
         cfg = _populate_config(tmp_path, conf)
         _populate_default(cfg)
-
-        from galaxy.tools.source_store import populator
 
         scan_complete = threading.Event()
         allow_commit = threading.Event()
@@ -554,3 +619,57 @@ class TestFreshnessStamping:
         _populate_default(cfg, pattern="ftest_", incremental=True)
         store.invalidate_index_cache()
         assert store.index_is_fresh() is True
+
+
+class TestToolsMissingFromReadOnlyStore:
+    """A conf routed to a read-only store can list tools installed after it was published."""
+
+    def _config(self, tmp_path, shed_conf, read_only):
+        return GalaxyAppConfiguration(
+            root=str(galaxy_root),
+            data_dir=str(tmp_path / "data"),
+            override_tempdir=False,
+            tool_config_file=str(shed_conf),
+            tool_source_database_connection=f"sqlite:///{tmp_path}/default.sqlite",
+            tool_source_stores={"published": {"url": f"sqlite:///{tmp_path}/published.sqlite", "read_only": read_only}},
+        )
+
+    def _published_conf(self, tmp_path):
+        tools_dir = tmp_path / "shed_tools"
+        _write_tool(tools_dir / "published.xml", "published")
+        installed = _write_tool(tools_dir / "installed.xml", "installed")
+        shed_conf = tmp_path / "shed_tool_conf.xml"
+        shed_conf.write_text(
+            f'<toolbox tool_path="{tools_dir}" store="published">'
+            '<section id="shed" name="Shed"><tool file="published.xml"/></section></toolbox>'
+        )
+        populate_store_inline(self._config(tmp_path, shed_conf, read_only=False), target="published")
+        # The install appends the new tool to the conf after the store was published.
+        shed_conf.write_text(
+            f'<toolbox tool_path="{tools_dir}" store="published"><section id="shed" name="Shed">'
+            '<tool file="published.xml"/><tool file="installed.xml"/></section></toolbox>'
+        )
+        return shed_conf, installed
+
+    def test_partial_populate_indexes_installed_tool_with_its_panel_placement(self, tmp_path):
+        shed_conf, installed = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+
+        populate_store_inline(config, paths=[str(installed)])
+
+        _, index = _load_default_index(config)
+        entry = index.entries["installed"]
+        assert (entry.in_panel, entry.panel_section_id) == (True, "shed")
+        assert ("installed", "shed") in [(item.tool_id, item.section_id) for item in index.panel_items]
+        assert "published" not in index.entries
+
+    def test_full_populate_keeps_installed_tool(self, tmp_path):
+        shed_conf, installed = self._published_conf(tmp_path)
+        config = self._config(tmp_path, shed_conf, read_only=True)
+        populate_store_inline(config, paths=[str(installed)])
+
+        populate_store_inline(config, prune=True)
+
+        _, index = _load_default_index(config)
+        assert index.entries["installed"].in_panel is True
+        assert "published" not in index.entries

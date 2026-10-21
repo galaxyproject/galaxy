@@ -218,13 +218,22 @@ depot.galaxyproject.org, GitHub) should additionally skip when it is down; see
 ### Continuous Integration
 
 The Python unit tests are run against each pull request to Galaxy using
-CircleCI. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are
-unrelated to the pull request being tested; if this test suite fails on
-a pull request with changes that seem to be unrelated to the pull request -
-ping the Galaxy committers on the pull request and request a re-run. The
-CircleCI test definition for these tests is located in ``.circleci/config.yml``
-below Galaxy's root.
+GitHub Actions, on the newest supported Python only (pull requests to release
+branches also run the oldest). If any of these tests fail, the pull
+request will be marked red. This test suite is moderately prone
+to having tests fail that are unrelated to the pull request being tested; if
+this test suite fails on a pull request with changes that seem to be unrelated
+to the pull request - ping the Galaxy committers on the pull request and
+request a re-run. The GitHub Actions workflow definition for these tests is
+located in ``.github/workflows/unit.yaml`` below Galaxy's root.
+
+The same workflow runs nightly on ``dev`` against every supported Python
+version; it can also be started by hand from the Actions tab. When a nightly
+or manual run on ``dev`` fails, the workflow opens an issue titled "Scheduled
+unit tests are failing" (or comments on the one already open), and closes it
+after the next such run passes. Code too new for the oldest supported Python
+is mostly caught on pull requests by ``ruff`` and by ``mypy`` running on that
+version.
 
 {#es6_unit}
 ## Frontend/ES6 Unit Tests
@@ -268,11 +277,20 @@ section.
 ### Continuous Integration
 
 The Tool framework tests are run against each pull request to Galaxy using
-GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is fairly stable and typically there are not
-transiently failed tests unrelated to the pull request being tested. The
-GitHub actions workflow definition for these tests is located in
-``.github/workflows/framework_tools.yaml`` below Galaxy's root.
+GitHub Actions; pull requests to ``dev`` test through the tool request API.
+Local runs default to the legacy tool API, so set
+``GALAXY_TEST_USE_LEGACY_TOOL_API=never`` to match pull request CI. If any of
+these tests fail, the pull request will be marked red. This test suite is
+fairly stable and typically there are not transiently failed tests unrelated to
+the pull request being tested. The GitHub Actions workflow definition for these
+tests is located in ``.github/workflows/framework_tools.yaml`` below Galaxy's
+root.
+
+The same workflow runs nightly on ``dev`` through both the tool request API and
+the legacy tool API; it can also be started by hand from the Actions tab. When
+a nightly or manual run on ``dev`` fails, the workflow opens an issue titled
+"Scheduled tool framework tests are failing" (or comments on the one already
+open), and closes it after the next such run passes.
 
 {#workflow_framework}
 ## Workflow Framework Tests

@@ -438,7 +438,7 @@ async function onCancel() {
                 Debug
             </BNavItem>
 
-            <div class="ml-auto d-flex align-items-center flex-gapx-1">
+            <li class="ml-auto d-flex align-items-center flex-gapx-1">
                 <WorkflowInvocationSearch
                     v-if="!props.tab"
                     :invocation-id="props.invocationId"
@@ -446,7 +446,12 @@ async function onCancel() {
                 <BBadge v-if="tabsDisabled" v-g-tooltip.hover :title="disabledTabTooltip" variant="primary">
                     <FontAwesomeIcon :icon="faExclamation" />
                 </BBadge>
-                <BBadge v-if="isPolling" v-g-tooltip.hover title="Polling for updates" variant="link">
+                <BBadge
+                    v-if="isPolling"
+                    v-g-tooltip.hover
+                    title="Polling for updates"
+                    variant="link"
+                    data-description="invocation polling indicator">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
                 <GButton
@@ -460,7 +465,7 @@ async function onCancel() {
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
                     Cancel Workflow
                 </GButton>
-            </div>
+            </li>
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto tab-content-container">
@@ -537,7 +542,10 @@ async function onCancel() {
     <GAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </GAlert>
-    <GAlert v-else-if="!invocationLoaded" variant="info" show>
+    <GAlert
+        v-else-if="!invocationLoaded || invocationStore.isLoadingInvocation(props.invocationId)"
+        variant="info"
+        show>
         <LoadingSpan message="Loading invocation" />
     </GAlert>
     <GAlert v-else-if="invocationStore.getInvocationLoadError(props.invocationId)" variant="danger" show>

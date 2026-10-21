@@ -16,7 +16,7 @@ try:
 except ImportError:
     expression = None  # type: ignore[assignment]
 
-from galaxy.tools.expressions import evaluate
+from galaxy_ext.expressions.js_engine import evaluate
 
 logging.basicConfig()
 log = logging.getLogger(__name__)

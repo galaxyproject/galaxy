@@ -76,7 +76,15 @@ onUpdated(() => nextTick(checkClamped));
 
 <template>
     <div v-if="props.separator" class="separator heading word-wrap-break">
-        <GButton v-if="collapsible" transparent size="small" icon-only inline @click="$emit('click')">
+        <GButton
+            v-if="collapsible"
+            :aria-label="collapsed ? 'Expand section' : 'Collapse section'"
+            :aria-expanded="collapsed ? 'false' : 'true'"
+            transparent
+            size="small"
+            icon-only
+            inline
+            @click="$emit('click')">
             <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
             <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
         </GButton>
@@ -114,11 +122,18 @@ onUpdated(() => nextTick(checkClamped));
         ]"
         :style="clampStyle"
         @click="$emit('click')">
-        <GButton v-if="collapsible" transparent size="small" icon-only inline>
+        <GButton
+            v-if="collapsible"
+            :aria-label="collapsed ? 'Expand section' : 'Collapse section'"
+            :aria-expanded="collapsed ? 'false' : 'true'"
+            transparent
+            size="small"
+            icon-only
+            inline>
             <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
             <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
         </GButton>
-        <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
+        <FontAwesomeIcon v-if="props.icon" :icon="props.icon" fixed-width />
         <slot />
     </component>
 </template>

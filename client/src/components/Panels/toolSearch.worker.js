@@ -8,8 +8,8 @@ import { searchTools } from "./utilities";
 self.addEventListener("message", (event) => {
     const { type, payload } = event.data;
     if (type === "searchTools") {
-        const { tools, query, currentPanel } = payload;
-        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel);
+        const { tools, query, currentPanel, favoriteToolIds } = payload;
+        const { results, resultPanel, closestTerm } = searchTools(tools, query, currentPanel, favoriteToolIds);
         // send the result back to the main thread
         self.postMessage({
             type: "searchToolsByKeysResult",

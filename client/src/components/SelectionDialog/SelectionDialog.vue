@@ -2,7 +2,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { RowClickEvent, RowSelectEvent, TableField } from "@/components/Common/GTable.types";
@@ -337,16 +337,15 @@ defineExpose({
                                     <i :class="leafIcon" />
                                     <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
-                                <div
+                                <button
                                     v-else
-                                    role="button"
-                                    tabindex="0"
-                                    @click.stop="onOpen(data.item)"
-                                    @keydown.enter.stop="onOpen(data.item)"
-                                    @keydown.space.stop.prevent="onOpen(data.item)">
+                                    type="button"
+                                    class="selection-dialog-folder"
+                                    :title="`label-${data.item.url}`"
+                                    @click.stop="onOpen(data.item)">
                                     <FontAwesomeIcon :icon="props.folderIcon" />
-                                    <BLink :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
-                                </div>
+                                    {{ data.value ? data.value : "-" }}
+                                </button>
                             </span>
                         </div>
                     </template>
@@ -424,3 +423,14 @@ defineExpose({
         </template>
     </GModal>
 </template>
+
+<style scoped lang="scss">
+.selection-dialog-folder {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    min-height: 24px;
+    text-align: left;
+    color: var(--color-blue-700);
+}
+</style>

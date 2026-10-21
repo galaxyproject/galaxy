@@ -120,7 +120,7 @@ onUnmounted(() => {
 
                 <JobParameters dataset_type="hda" :dataset-id="datasetId" />
 
-                <JobInformation :job-id="dataset.creating_job" />
+                <JobInformation :job-id="dataset.creating_job" include-rerun-indicator />
 
                 <DatasetStorage :dataset-id="datasetId" />
 

@@ -79,25 +79,45 @@ export function rethrowSimple(e: any): never {
 
 export class ApiError extends Error {
     status?: number;
+    /** Server-requested delay from a numeric ``Retry-After`` header. */
+    retryAfterMs?: number;
     constructor(message: string, status?: number) {
         super(message);
         this.status = status;
     }
 }
 
-export function rethrowSimpleWithStatus(e: any, response?: { status: number }): never {
+/** Milliseconds from a numeric (delta-seconds) ``Retry-After`` header; undefined otherwise. */
+export function parseRetryAfterMs(headers?: Headers): number | undefined {
+    const value = headers?.get("Retry-After");
+    if (value && /^\d+$/.test(value.trim())) {
+        return parseInt(value, 10) * 1000;
+    }
+    return undefined;
+}
+
+/** An ``ApiError`` for a failed response, keeping its status and ``Retry-After``. */
+export function apiErrorFromResponse(e: unknown, response?: { status: number; headers?: Headers }): ApiError {
+    const error = new ApiError(errorMessageAsString(e), response?.status);
+    error.retryAfterMs = parseRetryAfterMs(response?.headers);
+    return error;
+}
+
+export function rethrowSimpleWithStatus(e: any, response?: { status: number; headers?: Headers }): never {
     if (isRequestAborted(e)) {
         throw new RequestAbortedError();
     }
     if (process.env.NODE_ENV != "test") {
         console.debug(e);
     }
-    throw new ApiError(errorMessageAsString(e), response?.status);
+    throw apiErrorFromResponse(e, response);
 }
 
 export type GalaxyApiResult<T> = { data: T; error: undefined } | { data: undefined; error: ApiError };
 
 export const MAX_RETRIES = 3;
+export const RETRY_BACKOFF_BASE_MS = 2000;
+export const RETRY_BACKOFF_CAP_MS = 30_000;
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 export function isRetryableApiError(error: Error): boolean {
@@ -105,4 +125,22 @@ export function isRetryableApiError(error: Error): boolean {
         return RETRYABLE_STATUSES.has(error.status);
     }
     return false;
+}
+
+/**
+ * Exponential backoff delay for a 1-based retry attempt: at least half the
+ * backoff and at least ``retryAfterMs``, plus jitter of up to half the backoff
+ * so concurrent failures don't retry in lockstep, even when they all carry the
+ * same ``Retry-After``. Capped at ``capMs``; callers give up instead of retrying
+ * when ``retryAfterMs`` exceeds ``capMs``.
+ */
+export function retryBackoffMs(
+    attempt: number,
+    retryAfterMs = 0,
+    baseMs = RETRY_BACKOFF_BASE_MS,
+    capMs = RETRY_BACKOFF_CAP_MS,
+): number {
+    const capped = Math.min(capMs, baseMs * 2 ** (attempt - 1));
+    const jitter = capped * 0.5 * Math.random();
+    return Math.min(capMs, Math.max(capped * 0.5, retryAfterMs) + jitter);
 }

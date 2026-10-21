@@ -18,6 +18,7 @@ on:
       - '.github/workflows/unit-postgres.yaml'
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/postgres?client_encoding=utf8'  # using postgres as the db
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

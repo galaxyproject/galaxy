@@ -12,6 +12,8 @@ import threading
 from types import SimpleNamespace
 from typing import cast
 
+from whoosh import index as whoosh_index
+
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tools.search import CachedToolboxSearch
 from galaxy.tools.source_store.index import (
@@ -85,3 +87,23 @@ def test_concurrent_build_index_does_not_corrupt(tmp_path, search_config):
     assert not errors, f"Concurrent build_index raised: {errors!r}"
     # The index is intact and queryable after the concurrent hammering.
     assert search.search("mapper", "default", config) == ["mapper"]
+
+
+def test_build_index_blocked_by_another_writer_stays_stale(tmp_path, search_config, monkeypatch):
+    monkeypatch.setattr("galaxy.tools.source_store.search.INDEX_WRITE_LOCK_TIMEOUT", 0.1)
+    index = ToolIndex()
+    index.add_entry(ToolIndexEntry(id="mapper", version="1.0", name="Mapper"))
+    toolbox = _FakeCachedToolbox(index, ["default"])
+    config = search_config(_TUNING, index_dir=str(tmp_path / "tool_search_index"))
+    search = CachedToolboxSearch(cast(GalaxyAppConfiguration, config), toolbox=toolbox)
+    search.build_index(tool_cache=None, toolbox=toolbox)  # type: ignore[arg-type]
+    index.add_entry(ToolIndexEntry(id="trimmer", version="1.0", name="Trimmer"))
+
+    other_writer = whoosh_index.open_dir(search.cached_panel_searches["default"].index_dir).writer()
+    try:
+        search.build_index(tool_cache=None, toolbox=toolbox)  # type: ignore[arg-type]
+    finally:
+        other_writer.cancel()
+
+    assert search.build_index_if_stale(tool_cache=None, toolbox=toolbox)  # type: ignore[arg-type]
+    assert search.search("trimmer", "default", cast(GalaxyAppConfiguration, config)) == ["trimmer"]

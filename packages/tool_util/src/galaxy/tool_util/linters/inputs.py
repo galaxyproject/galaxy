@@ -751,6 +751,27 @@ class InputsSelectDynamicOptions(Linter):
                 )
 
 
+class InputsDrillDownFromFile(Linter):
+    """
+    Lint for drill_down with deprecated from_file attribute
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        for param, param_name, param_type in _iter_param_type(tool_xml):
+            if param_type != "drill_down":
+                continue
+            if param.get("from_file") is not None:
+                lint_ctx.warn(
+                    f"Drill down parameter [{param_name}] uses deprecated 'from_file' attribute.",
+                    linter=cls.name(),
+                    node=param,
+                )
+
+
 class InputsSelectOptionsDef(Linter):
     """
     Lint for valid ways to define select options

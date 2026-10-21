@@ -37,8 +37,10 @@ TEST_PYTHON=${TEST_PYTHON:-"python3"}
 if command -v uv >/dev/null; then
     VENV_CMD="uv venv --python $TEST_PYTHON"
     PIP_CMD="$(command -v uv) pip"
-    BUILD_WHEEL_CMD="$(command -v uv) build"
-    TWINE_CMD="$(command -v uvx) twine"
+    # Building and checking dists does not need Galaxy's wheel index
+    # (--no-config skips the extra index from the root pyproject.toml).
+    BUILD_WHEEL_CMD="env -u UV_EXTRA_INDEX_URL -u UV_INDEX_STRATEGY $(command -v uv) build --no-config"
+    TWINE_CMD="env -u UV_EXTRA_INDEX_URL -u UV_INDEX_STRATEGY $(command -v uvx) twine"
     export UV_EXTRA_INDEX_URL=https://wheels.galaxyproject.org/simple
     export UV_INDEX_STRATEGY=unsafe-best-match
 else

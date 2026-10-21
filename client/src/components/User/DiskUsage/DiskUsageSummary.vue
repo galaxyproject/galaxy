@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BContainer, BRow, BSpinner } from "bootstrap-vue";
+import { BContainer, BRow } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -15,6 +15,7 @@ import { bytesToString } from "@/utils/utils";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
 const { config, isConfigLoaded } = useConfig();
@@ -103,7 +104,7 @@ onMounted(async () => {
         </BContainer>
         <BContainer class="text-center mb-5 w-75">
             <GAlert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
-                <BSpinner small class="mr-2" />
+                <LoadingSpan spinner-only class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
             </GAlert>
             <GButton v-else id="refresh-disk-usage" title="Recalculate disk usage" color="blue" @click="onRefresh">

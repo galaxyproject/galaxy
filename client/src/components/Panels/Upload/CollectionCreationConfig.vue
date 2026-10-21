@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExclamationTriangle, faInfoCircle, faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormInput, BFormSelect } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -9,6 +8,10 @@ import type {
     CollectionTypeOption,
     SupportedCollectionType,
 } from "@/composables/upload/collectionTypes";
+
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 
 interface FileItem {
     name: string;
@@ -118,9 +121,9 @@ defineExpose({ reset });
     <div class="collection-section mt-3">
         <div class="d-flex align-items-center justify-content-between">
             <span data-test-id="collection-toggle">
-                <BFormCheckbox v-model="isCreateCollectionActive" switch>
+                <GCheckbox v-model="isCreateCollectionActive" switch>
                     <strong>Create a collection from these files</strong>
-                </BFormCheckbox>
+                </GCheckbox>
             </span>
             <a
                 href="https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/collections/tutorial.html"
@@ -139,19 +142,19 @@ defineExpose({ reset });
                         Collection Name
                         <span class="text-danger">*</span>
                     </label>
-                    <BFormInput
+                    <GFormInput
                         id="collection-name-input"
                         v-model="collectionName"
-                        size="sm"
+                        size="small"
                         placeholder="Enter collection name"
                         :state="collectionValidation.valid ? null : false" />
                 </div>
                 <div class="col-md-4">
                     <label for="collection-type-select" class="form-label small mb-1"> Collection Type </label>
-                    <BFormSelect
+                    <GSelect
                         id="collection-type-select"
                         v-model="collectionType"
-                        size="sm"
+                        size="small"
                         :options="collectionTypeOptions" />
                 </div>
             </div>

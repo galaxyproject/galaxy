@@ -177,6 +177,8 @@ def discover_tools_from_config(
     default_tool_path: str | None = None,
     enable_beta_formats: bool = False,
     parallel: int = 1,
+    only_paths: Collection[str] | None = None,
+    exclude_paths: Collection[str] | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from a single tool configuration file.
@@ -190,6 +192,11 @@ def discover_tools_from_config(
             filesystems (CVMFS) each stat costs tens of ms, so a shed conf
             listing thousands of tools takes minutes checked serially; the
             populator threads its ``--parallel`` value through here.
+        only_paths: When set, yield only tools at these absolute paths. Other
+            ``<tool>`` items skip their existence check, and ``tool_dir``
+            items are walked only when one of these paths lies under them.
+        exclude_paths: Tools at these absolute paths are skipped, before their
+            existence check.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -230,7 +237,12 @@ def discover_tools_from_config(
         tool_file = string.Template(tool_file).safe_substitute(file_template_kwds)
         if not os.path.isabs(tool_file):
             tool_file = os.path.join(resolved_tool_path, tool_file)
-        file_paths[i] = os.path.normpath(tool_file)
+        tool_file = os.path.normpath(tool_file)
+        if only_paths is not None and tool_file not in only_paths:
+            continue
+        if exclude_paths is not None and tool_file in exclude_paths:
+            continue
+        file_paths[i] = tool_file
     unique_paths = list(set(file_paths.values()))
     if parallel > 1 and unique_paths:
         with ThreadPoolExecutor(max_workers=parallel) as executor:
@@ -245,8 +257,14 @@ def discover_tools_from_config(
             directory = _resolve_tool_dir(item, resolved_tool_path)
             if directory is None:
                 continue
+            if only_paths is not None and not any(p.startswith(directory + os.sep) for p in only_paths):
+                continue
             recursive = _tool_dir_recursive(item)
             for candidate in _walk_tool_dir(directory, recursive):
+                if only_paths is not None and candidate not in only_paths:
+                    continue
+                if exclude_paths is not None and candidate in exclude_paths:
+                    continue
                 if not looks_like_a_tool(candidate, enable_beta_formats=enable_beta_formats):
                     continue
                 yield DiscoveredTool(
@@ -292,12 +310,25 @@ def discover_tools_from_config(
         )
 
 
+def _parse_shed_tool_path(shed_conf_file: str) -> str | None:
+    try:
+        tool_path: str | None = get_toolbox_parser(shed_conf_file).parse_tool_path()
+        return tool_path
+    except Exception as e:
+        log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
+        return None
+
+
 def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[DiscoveredTool]:
     """Yield tool files referenced by data manager configs.
 
     Data manager tools are loaded via ``DataManagers`` -> ``toolbox.load_hidden_tool``
     rather than from a tool_conf, so the normal conf walk misses them.
     """
+    # Every shed data manager names the shed conf it was installed into, and
+    # reading that conf's tool_path parses the whole file — thousands of
+    # entries on a large instance — so parse each conf once.
+    shed_tool_paths: dict[str, str | None] = {}
     conf_files = [f for f in listify(config.data_manager_config_file or "") if f]
     if config.shed_data_manager_config_file:
         conf_files.append(config.shed_data_manager_config_file)
@@ -314,7 +345,9 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
         conf_tool_path = root.get("tool_path") or config.tool_path or "."
         for dm_elem in root.findall("data_manager"):
             tool_path = conf_tool_path
-            data_manager_id = dm_elem.get("id")
+            # ``DataManagers`` registers a manager under ``DataManager.id``:
+            # its guid when the conf has one (every shed install), else its id.
+            data_manager_id = dm_elem.get("guid") or dm_elem.get("id")
             path = dm_elem.get("tool_file")
             guid = None
             if path is None:
@@ -325,12 +358,11 @@ def _iter_data_manager_tools(config: "GalaxyAppConfiguration") -> Iterator[Disco
                 guid = tool_elem.get("guid")
                 shed_conf_file = dm_elem.get("shed_conf_file")
                 if shed_conf_file and os.path.exists(shed_conf_file):
-                    try:
-                        shed_tool_path = get_toolbox_parser(shed_conf_file).parse_tool_path()
-                        if shed_tool_path:
-                            tool_path = shed_tool_path
-                    except Exception as e:
-                        log.warning("Could not resolve tool_path from %s: %s", shed_conf_file, e)
+                    if shed_conf_file not in shed_tool_paths:
+                        shed_tool_paths[shed_conf_file] = _parse_shed_tool_path(shed_conf_file)
+                    shed_tool_path = shed_tool_paths[shed_conf_file]
+                    if shed_tool_path:
+                        tool_path = shed_tool_path
             if not path:
                 continue
             resolved = os.path.abspath(os.path.join(tool_path, path))
@@ -358,6 +390,7 @@ def discover_tools(
     include_converters: bool = True,
     parallel: int = 1,
     only_confs: Collection[str] | None = None,
+    only_paths: Collection[str] | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from Galaxy configuration.
@@ -378,6 +411,9 @@ def discover_tools(
             filesystems, so callers that would drop a conf's tools anyway
             (routed to a read-only or untargeted store) skip its walk
             entirely rather than filter afterwards.
+        only_paths: When set, discover only tools at these absolute paths
+            (see :func:`discover_tools_from_config`). A partial populate of a
+            few files then costs a conf parse, not a stat of every tool.
 
     Yields:
         DiscoveredTool objects for each tool found.
@@ -396,7 +432,7 @@ def discover_tools(
         if only_confs is not None and config_filename not in only_confs:
             continue
         for tool in discover_tools_from_config(
-            config_filename, config.tool_path, config.enable_beta_tool_formats, parallel=parallel
+            config_filename, config.tool_path, config.enable_beta_tool_formats, parallel=parallel, only_paths=only_paths
         ):
             seen_paths.add(tool.path)
             yield tool
@@ -407,6 +443,8 @@ def discover_tools(
         if bundled_dir.exists():
             for xml_file in bundled_dir.rglob("*.xml"):
                 path_str = str(xml_file)
+                if only_paths is not None and path_str not in only_paths:
+                    continue
                 relative_path = xml_file.relative_to(bundled_dir)
                 configured_aliases = {
                     os.path.normpath(os.path.join(config.tool_path, relative_path)),
@@ -428,7 +466,7 @@ def discover_tools(
     # boot via ``toolbox.load_hidden_lib_tool`` rather than from any
     # tool_conf, so the conf walk above misses them; index them too.
     for path in hidden_lib_tool_paths():
-        if path in seen_paths or not os.path.exists(path):
+        if path in seen_paths or (only_paths is not None and path not in only_paths) or not os.path.exists(path):
             continue
         seen_paths.add(path)
         yield DiscoveredTool(
@@ -442,7 +480,11 @@ def discover_tools(
     # Data manager tools are loaded after boot and are not referenced from
     # ordinary tool_conf files.
     for dm_tool in _iter_data_manager_tools(config):
-        if dm_tool.path in seen_paths or not os.path.exists(dm_tool.path):
+        if (
+            dm_tool.path in seen_paths
+            or (only_paths is not None and dm_tool.path not in only_paths)
+            or not os.path.exists(dm_tool.path)
+        ):
             continue
         seen_paths.add(dm_tool.path)
         yield dm_tool
@@ -460,7 +502,11 @@ def discover_tools(
             if registry.converters_path:
                 for tool_config, _src_dt, _tgt_dt in registry.converters:
                     path = os.path.normpath(os.path.join(registry.converters_path, tool_config))
-                    if path in seen_paths or not os.path.exists(path):
+                    if (
+                        path in seen_paths
+                        or (only_paths is not None and path not in only_paths)
+                        or not os.path.exists(path)
+                    ):
                         continue
                     seen_paths.add(path)
                     yield DiscoveredTool(

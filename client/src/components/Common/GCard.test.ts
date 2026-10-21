@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { defineComponent, h, ref } from "vue";
 
 import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
@@ -67,6 +68,103 @@ describe("GCard", () => {
         expect(handler).toHaveBeenCalledOnce();
     });
 
+    describe("keyboard", () => {
+        it.each([" ", "Enter"])("clicks a clickable card on %j", async (key) => {
+            const wrapper = mountCard({ clickable: true });
+            await wrapper.trigger("keydown", { key });
+            expect(wrapper.emitted("click")).toHaveLength(1);
+        });
+
+        it("does not click a card that is not clickable", async () => {
+            const wrapper = mountCard({ selectable: true });
+            await wrapper.trigger("keydown", { key: " " });
+            expect(wrapper.emitted("click")).toBeUndefined();
+        });
+
+        it.each([" ", "Enter"])("leaves %j on the select checkbox to the checkbox", async (key) => {
+            const wrapper = mountCard({ clickable: true, selectable: true });
+            const checkbox = wrapper.get("input#g-card-select-card");
+
+            await checkbox.trigger("keydown", { key });
+            expect(wrapper.emitted("click")).toBeUndefined();
+
+            await checkbox.setValue(true);
+            expect(wrapper.emitted("select")).toHaveLength(1);
+        });
+    });
+
+    describe("select checkbox", () => {
+        const paths: Array<[string, (input: HTMLInputElement) => void]> = [
+            ["a click on the box", (input) => input.click()],
+            ["a click on its label", (input) => input.closest("label")!.click()],
+            [
+                "Space",
+                (input) => {
+                    input.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+                    input.click();
+                    input.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true }));
+                },
+            ],
+        ];
+
+        const mounted: Array<{ unmount: () => void }> = [];
+        afterEach(() => mounted.splice(0).forEach((wrapper) => wrapper.unmount()));
+
+        // The box only fires change when connected, as in the browser.
+        function mountToggleConsumer() {
+            const selected = ref(false);
+            const toggle = () => (selected.value = !selected.value);
+            const Consumer = defineComponent({
+                setup: () => () =>
+                    h(GCard, {
+                        id: "card",
+                        title: "Card",
+                        clickable: true,
+                        selectable: true,
+                        selected: selected.value,
+                        onSelect: toggle,
+                        onClick: toggle,
+                    }),
+            });
+            const wrapper = mount(Consumer as object, {
+                attachTo: document.body,
+                localVue,
+                pinia: createTestingPinia({ createSpy: vi.fn }),
+                stubs: { FontAwesomeIcon: true },
+            });
+            mounted.push(wrapper);
+            return { card: wrapper.findComponent(GCard), selected, wrapper };
+        }
+
+        it.each(paths)("selects without clicking the card on %s", async (_name, activate) => {
+            const { card, selected, wrapper } = mountToggleConsumer();
+            activate(card.get("input#g-card-select-card").element as HTMLInputElement);
+            await wrapper.vm.$nextTick();
+
+            expect(card.emitted("click")).toBeUndefined();
+            expect(card.emitted("select")).toHaveLength(1);
+            expect(selected.value).toBe(true);
+        });
+
+        it("still clicks a clickable card outside the checkbox", async () => {
+            const wrapper = mountCard({ clickable: true, selectable: true });
+            await wrapper.trigger("click");
+
+            expect(wrapper.emitted("click")).toHaveLength(1);
+            expect(wrapper.emitted("select")).toBeUndefined();
+        });
+
+        it.each([
+            ["not clickable", { selectable: true }],
+            ["disabled", { clickable: true, disabled: true, selectable: true }],
+        ])("does not click a card that is %s", async (_name, props) => {
+            const wrapper = mountCard(props);
+            await wrapper.trigger("click");
+
+            expect(wrapper.emitted("click")).toBeUndefined();
+        });
+    });
+
     describe("header", () => {
         function mountHeader() {
             return mountCard({
@@ -114,6 +212,16 @@ describe("GCard", () => {
             );
 
             expect(ids).toEqual(expected);
+        });
+
+        it("emits select from a named selection checkbox", async () => {
+            const wrapper = mountHeader();
+            const checkbox = wrapper.get("input#g-card-select-card");
+
+            expect(checkbox.attributes("aria-label")).toBe("Select for bulk actions");
+            await checkbox.setValue(true);
+
+            expect(wrapper.emitted("select")).toHaveLength(1);
         });
 
         it("sizes the first row for header controls only when the card has them", () => {
@@ -308,5 +416,41 @@ describe("GCard", () => {
 
             expect(wrapper.find("#g-card-title-tooltip-card").attributes("data-show")).toBe("true");
         });
+    });
+
+    it.each(["titleBadges", "badges"])("makes clickable %s reachable and usable from the keyboard", async (prop) => {
+        const handler = vi.fn();
+        const wrapper = mountCard({
+            [prop]: [
+                { id: "clickable", label: "Clickable", title: "Clickable", handler },
+                { id: "static", label: "Static", title: "Static" },
+            ],
+        });
+
+        const clickable = wrapper.find("#g-card-badge-clickable-card");
+        expect(clickable.attributes("role")).toBe("button");
+        expect(clickable.attributes("tabindex")).toBe("0");
+        await clickable.trigger("keydown.enter");
+        await clickable.trigger("keydown.space");
+        expect(handler).toHaveBeenCalledTimes(2);
+        // Otherwise Space also scrolls the page.
+        const space = new KeyboardEvent("keydown", { key: " ", cancelable: true, bubbles: true });
+        clickable.element.dispatchEvent(space);
+        expect(space.defaultPrevented).toBe(true);
+
+        const inert = wrapper.find("#g-card-badge-static-card");
+        expect(inert.attributes("role")).toBeUndefined();
+        expect(inert.attributes("tabindex")).toBeUndefined();
+    });
+
+    it.each(["titleBadges", "badges"])("leaves Enter alone on link %s so they still navigate", (prop) => {
+        const wrapper = mountCard({
+            [prop]: [{ id: "link", label: "Link", title: "Link", href: "https://example.org" }],
+        });
+
+        const event = new KeyboardEvent("keydown", { key: "Enter", cancelable: true, bubbles: true });
+        wrapper.find("#g-card-badge-link-card").element.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
     });
 });

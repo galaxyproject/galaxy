@@ -1,0 +1,21 @@
+# Sample Admin panel extension. Copy this directory, rename this file to
+# config.yml, and set admin_extensions_dir in galaxy.yml to the parent
+# directory. Each extension adds one section to the Admin panel.
+id: sample
+section: Sample Extension
+items:
+  # Shown inside Galaxy's center panel. A URL is either absolute (http:// or
+  # https://) or a path starting with '/', which is resolved against Galaxy's
+  # root so it works behind a URL prefix. External sites can only be framed if
+  # they allow it (X-Frame-Options / Content-Security-Policy frame-ancestors).
+  - id: welcome
+    type: link
+    title: Welcome Page
+    url: /static/welcome.html
+    target: iframe
+  # Opened in a new browser tab.
+  - id: docs
+    type: link
+    title: Galaxy Documentation
+    url: https://docs.galaxyproject.org
+    target: new_tab

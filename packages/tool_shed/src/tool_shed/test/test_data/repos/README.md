@@ -34,6 +34,7 @@ The contents of each numbered directory are the **complete repository state** at
 ### Version Progression Example
 
 In `column_maker/`:
+
 - `1/column_maker.xml` → version="1.1.0", size="40"
 - `2/column_maker.xml` → version="1.2.0", size="50"
 - `3/column_maker.xml` → version="1.3.0", size="50"
@@ -90,34 +91,38 @@ def provides_repositories(shed_app, default_user):
 
 ## Available Test Repositories
 
-| Directory | Description | Revisions |
-|-----------|-------------|-----------|
-| `column_maker` | Simple tool, version progression | 3 |
-| `column_maker_with_download_gaps` | Tool with non-downloadable revisions | 4 |
-| `column_maker_with_readme` | Tool with README file | 1 |
-| `data_manager_gaps` | Data manager with gaps | 3 |
-| `bismark` | Bismark tool | 2 |
-| `emboss_5_0470` | EMBOSS tool suite | 2 |
-| `package_emboss_5_0_0_0470` | Tool dependency definition | 2 |
-| `libx11_proto` | Library dependency | 2 |
-| `0480` | Numbered test case | 1 |
-| `missing_data_ref` | Missing data reference test | 1 |
-| `wrong_data_ref` | Wrong data reference test | 1 |
+| Directory                         | Description                                                       | Revisions |
+| --------------------------------- | ----------------------------------------------------------------- | --------- |
+| `column_maker`                    | Simple tool, version progression                                  | 3         |
+| `column_maker_with_download_gaps` | Tool with non-downloadable revisions                              | 4         |
+| `column_maker_with_readme`        | Tool with README file                                             | 1         |
+| `column_maker_with_rst_readme`    | Tool with an RST README and image; README unchanged in revision 2 | 3         |
+| `data_manager_gaps`               | Data manager with gaps                                            | 3         |
+| `bismark`                         | Bismark tool                                                      | 2         |
+| `emboss_5_0470`                   | EMBOSS tool suite                                                 | 2         |
+| `package_emboss_5_0_0_0470`       | Tool dependency definition                                        | 2         |
+| `libx11_proto`                    | Library dependency                                                | 2         |
+| `0480`                            | Numbered test case                                                | 1         |
+| `missing_data_ref`                | Missing data reference test                                       | 1         |
+| `wrong_data_ref`                  | Wrong data reference test                                         | 1         |
 
 ## Creating New Test Data
 
 1. Create a new directory under `repos/`:
+
    ```
    repos/my_new_tool/
    ```
 
 2. Add numbered subdirectories for each revision:
+
    ```
    repos/my_new_tool/1/   # First revision
    repos/my_new_tool/2/   # Second revision
    ```
 
 3. Place repository files in each revision directory:
+
    ```
    repos/my_new_tool/1/my_tool.xml
    repos/my_new_tool/2/my_tool.xml  # Updated version

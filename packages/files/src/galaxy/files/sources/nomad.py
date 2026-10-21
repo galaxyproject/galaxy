@@ -7,6 +7,7 @@ from typing import (
 )
 
 from fsspec import AbstractFileSystem
+from pydantic import field_validator
 from urllib3.exceptions import LocationParseError
 from urllib3.util import parse_url
 
@@ -47,6 +48,8 @@ DATASETS = "datasets"
 UPLOADS = "uploads"
 # listings kept by the instance that serves a thread; nomad-fsspec drops the oldest past this
 MAX_LISTINGS = 100
+# a listing with more uploads than this, asked for without a page, keeps their ids
+MAX_NAMED = 100
 
 
 class NomadFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -61,6 +64,11 @@ class NomadFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     token: str | None = None
     writable: Literal[False] = False
     max_paths: int | None = MAX_LISTINGS
+
+    @field_validator("token")
+    @classmethod
+    def strip_token(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
 
 
 class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, NomadFileSourceConfiguration]):
@@ -87,12 +95,11 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             raise self.required_package_exception
         config = context.config
         self._refuse_a_private_address(config.base_url)
-        token = config.token or None
         return NomadFileSystem(
             base_url=config.base_url,
-            token=token,
+            token=config.token,
             # fsspec keeps every cached instance for the life of the process, one per token and thread
-            skip_instance_cache=token is not None,
+            skip_instance_cache=config.token is not None,
             **cache_options,
         )
 
@@ -109,8 +116,9 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             validate_non_local(f"{url.scheme}://{host}", self._file_sources_config.fetch_url_allowlist or [])
         except ConfigDoesNotAllowException as e:
             raise ConfigDoesNotAllowException(
-                f"{self.label} points to {host}, an address on this server's own network. Galaxy only "
-                "connects to those if an administrator adds them to fetch_url_allowlist."
+                f"{self.label} points to {host}, an address on this server's own network. An administrator "
+                "can allow it by adding its IP address to fetch_url_allowlist, which applies to every URL "
+                "Galaxy fetches."
             ) from e
         except RequestParameterInvalidException as e:
             raise MessageException(f"Could not find {host}, the address of {self.label}.") from e
@@ -144,9 +152,11 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
         parts = _parts(source_path)
         if len(parts) <= _upload_depth(parts):
             raise folder
-        fs = self._open_fs(context, self._get_cache_options(context.config))
         try:
+            fs = self._open_fs(context, self._get_cache_options(context.config))
             fs.get_file(source_path, native_path)
+        except MessageException:
+            raise
         except IsADirectoryError as e:
             raise folder from e
         except FileNotFoundError as e:
@@ -194,6 +204,8 @@ class NomadFilesSource(FsspecFilesSource[NomadFileSourceTemplateConfiguration, N
             and entry.path.startswith(f"/{DATASETS}/")
             and entry.path.count("/") == 3
         }
+        if len(uploads) > MAX_NAMED:
+            return
         for upload_id, name in cast("NomadFileSystemType", fs).upload_names(uploads).items():
             uploads[upload_id].name = name
 

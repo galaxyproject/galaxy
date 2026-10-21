@@ -54,7 +54,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.screenshot("workflow_run_before_rerun_complete")
 
         # Route to rerun
-        self._invocations_panel_open_latest_invocation()
+        self.invocation_open_latest()
         self.components.invocations.workflow_rerun_button.wait_for_and_click()
 
         # Will trigger confirmation modal
@@ -194,26 +194,3 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     def _assert_history_name_is(self, expected_name=None):
         name = self.history_panel_name()
         assert name == expected_name, f"History name should be {expected_name} but is {name}"
-
-    def _invocations_panel_open_latest_invocation(self):
-        """Open the latest invocation from the invocations panel."""
-        invocations = self.components.invocations
-        invocations.activity.wait_for_and_click()
-        self.components.invocations.invocations_panel_list.wait_for_visible()
-
-        @retry_assertion_during_transitions
-        def assert_has_row():
-            invocations.invocations_panel_list_items.wait_for_visible()
-            invocation_rows = invocations.invocations_panel_list_items.all()
-            assert len(invocation_rows) > 0
-            return invocation_rows[0]
-
-        assert_has_row()
-
-        invocations.state_details.assert_absent()
-        details = invocations.invocations_panel_list_items.all()[0]
-        details.click()
-        invocations.state_details.wait_for_visible()
-
-        # close invocations panel
-        invocations.activity.wait_for_and_click()

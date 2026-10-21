@@ -1247,10 +1247,13 @@ resources:
   groups:
     # Group different parameters defined in job_resource_params_conf.xml
     # together and assign these groups ids. Tool section below can map
-    # tools to different groups.
+    # tools to different groups. Dynamic rules receive the values as the
+    # resource_params argument; some runners also read them directly (the
+    # GCP Batch runner honours gpus ahead of the destination's value).
     default: []
     memoryonly: [memory]
-    all: [processors, memory, time, project]
+    gpu: [processors, memory, gpus]
+    all: [processors, memory, time, project, gpus]
 
 # Certain limits can be defined. The 'concurrent_jobs' limits all
 # control the number of jobs that can be "active" at a time, that

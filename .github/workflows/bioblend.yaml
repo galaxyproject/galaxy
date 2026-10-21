@@ -8,6 +8,8 @@ on:
       - packages/web_apps/src/galaxy/webapps/galaxy/services/**
   workflow_dispatch:
 
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

@@ -11,6 +11,7 @@ import type { HistorySummary } from "@/api";
 import { GALAXY_RESPONSE_HEADERS, useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
+import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useHistoryStore } from "@/stores/historyStore";
 import { buildPreparedUpload } from "@/utils/upload";
 
@@ -150,6 +151,24 @@ describe("UploadMethodView history mismatch alert", () => {
         historyStore.setCurrentHistoryId("hist-a");
         await nextTick();
         expect(mismatchAlert(wrapper).exists()).toBe(false);
+    });
+});
+
+describe("UploadMethodView advanced mode switch", () => {
+    afterEach(() => {
+        // advancedMode is module-level state persisted to localStorage, so reset it even when a test fails
+        useUploadAdvancedMode().advancedMode.value = false;
+    });
+
+    it("binds the advanced mode to the switch", async () => {
+        // advanced mode loads the selectable object stores
+        server.use(http.get("/api/object_stores", () => HttpResponse.json([])));
+        const { advancedMode } = useUploadAdvancedMode();
+        advancedMode.value = false;
+        const { wrapper } = mountView();
+
+        await wrapper.find('input[data-test-id="upload-advanced-mode-toggle"]').setValue(true);
+        expect(advancedMode.value).toBe(true);
     });
 });
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { FieldDict } from "@/api";
@@ -10,6 +9,7 @@ import localize from "@/utils/localization";
 import FormRecordFieldDefinition from "./FormRecordFieldDefinition.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 
 type FieldDefinitions = FieldDict[];
@@ -138,7 +138,7 @@ const emit = defineEmits(["onChange"]);
                     @onChange="onChildUpdate" />
             </template>
         </FormCard>
-        <BLink @click="addField">Add field.</BLink>
+        <GLink @click="addField">Add field.</GLink>
     </div>
 </template>
 

@@ -1,11 +1,13 @@
 <template>
     <div>
-        <BFormCheckbox v-model="currentStatus" class="ui-switch" switch>
+        <!-- ui-switch is the Selenium hook for tool_form.parameter_checkbox -->
+        <GCheckbox v-model="currentStatus" class="ui-switch" switch>
             Set value for this optional select field?
-        </BFormCheckbox>
+        </GCheckbox>
+        <label v-if="currentStatus && !id" :for="inputId" class="sr-only">Optional value</label>
         <FormText
             v-if="currentStatus"
-            :id="id"
+            :id="inputId"
             v-model="currentValue"
             :readonly="readonly"
             :value="value"
@@ -18,14 +20,15 @@
 </template>
 
 <script>
-import { BFormCheckbox } from "bootstrap-vue";
+import { uid } from "@/utils/utils";
 
 import FormText from "./FormText.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 export default {
     components: {
-        BFormCheckbox,
         FormText,
+        GCheckbox,
     },
     props: {
         value: {
@@ -67,9 +70,13 @@ export default {
     data() {
         return {
             status: false,
+            generatedId: `optional-text-${uid()}`,
         };
     },
     computed: {
+        inputId() {
+            return this.id || this.generatedId;
+        },
         currentValue: {
             get() {
                 return this.value;

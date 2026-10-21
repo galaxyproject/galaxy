@@ -59,6 +59,14 @@ describe("ObjectStoreBadge", () => {
         return Array.from(element.querySelectorAll("p")).map((p) => p.textContent);
     }
 
+    it("exposes the badge meaning and administrator message without relying on hover", async () => {
+        const wrapper = mountBadge({ type: "more_secure", message: TEST_MESSAGE, source: "admin" }, false);
+
+        const graphic = wrapper.get('[role="img"]');
+        expect(graphic.attributes("aria-label")).toBe(`${MESSAGES.more_secure} ${TEST_MESSAGE}`);
+        expect(graphic.findAll("svg").every((icon) => icon.attributes("aria-hidden") === "true")).toBe(true);
+    });
+
     it("should render a valid badge for more_secure type", async () => {
         const { shown } = await hoverBadge({ type: "more_secure", message: TEST_MESSAGE, source: "admin" });
         expect(shown.textContent).toContain(TEST_MESSAGE);

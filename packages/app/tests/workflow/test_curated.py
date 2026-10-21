@@ -2,7 +2,7 @@
 
 Everything here runs without a database and without touching the network:
 ``galaxy.workflow.curated`` is deliberately trans-free, and the only network
-call it can make (``iwc_manifest.download_manifest``) is monkeypatched in every test
+call it can make (``iwc_manifest.fetch_manifest``) is monkeypatched in every test
 that reaches it.
 """
 
@@ -14,6 +14,11 @@ import sys
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import (
+    datetime,
+    timezone,
+)
+from email.utils import format_datetime
 from pathlib import Path
 from time import (
     monotonic,
@@ -27,6 +32,7 @@ from typing import (
 
 import pytest
 
+from galaxy.util import requests as galaxy_requests
 from galaxy.workflow import (
     curated,
     iwc_manifest,
@@ -35,6 +41,15 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 # How long a test is willing to wait on a background thread before failing.
 THREAD_TIMEOUT_SECONDS = 10.0
+
+# Older than any projection a test writes, so a HEAD answering this reads as "unchanged".
+LONG_AGO = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+
+def serve_manifest(monkeypatch, download, last_modified: datetime | None = None) -> None:
+    """Stand in for the manifest GET: ``download(timeout)`` gives the body, served with ``last_modified``."""
+    monkeypatch.setattr(iwc_manifest, "fetch_manifest", lambda timeout: (download(timeout), last_modified))
+
 
 # Shaped like the real https://iwc.galaxyproject.org/workflow_manifest.json:
 # a list of repositories, each carrying a list of workflow entries whose
@@ -445,6 +460,16 @@ def test_search_curated_name_term_matches_names_only() -> None:
     assert curated.search_curated(entries, "name:single-cell") == []
 
 
+def test_search_curated_quoted_name_term_is_an_exact_case_sensitive_match() -> None:
+    """The same rule as local-owner mode and the other workflow tabs' help text."""
+    entries = curated.project_manifest(SAMPLE_MANIFEST)
+    assert [entry["id"] for entry in curated.search_curated(entries, "name:'Velocyto on 10x filtered barcodes'")] == [
+        "velocyto-velocyto-on10x-filtered-barcodes"
+    ]
+    assert curated.search_curated(entries, "name:'velocyto on 10x filtered barcodes'") == []
+    assert curated.search_curated(entries, "name:'Velocyto'") == []
+
+
 def test_search_curated_tag_term_is_substring_unless_quoted() -> None:
     entries = curated.project_manifest(SAMPLE_MANIFEST)
     assert [entry["id"] for entry in curated.search_curated(entries, "tag:import")] == [
@@ -572,7 +597,7 @@ def test_request_background_refresh_never_downloads_on_the_calling_thread(projec
         assert release.wait(THREAD_TIMEOUT_SECONDS)
         return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "download_manifest", blocking_download)
+    serve_manifest(monkeypatch, blocking_download)
 
     calling_thread = threading.current_thread()
     try:
@@ -701,21 +726,170 @@ def test_refresh_projection_skips_the_download_when_upstream_is_unchanged(projec
 
     def recording_download(timeout: float) -> list[dict[str, Any]]:
         downloads.append(timeout)
-        return []
+        return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: False)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
+    serve_manifest(monkeypatch, recording_download, last_modified=LONG_AGO)
 
+    # Nothing recorded which upstream version this copy is, so it can't be trusted yet.
+    assert curated.refresh_projection(projection_path) is not None
+    assert len(downloads) == 1
+
+    stat = os.stat(projection_path)
+    os.utime(projection_path, (stat.st_atime - 7200, stat.st_mtime - 7200))
     assert curated.refresh_projection(projection_path) is None
-    assert downloads == [], "an unchanged manifest must not be downloaded"
+    assert len(downloads) == 1, "an unchanged manifest must not be downloaded"
     # Re-stamped, so it stops looking stale and does not re-arm the check forever.
     assert curated.is_projection_stale(projection_path, 3600) is False
 
 
+def test_refresh_projection_sees_a_publish_a_stale_cdn_hid_from_an_earlier_check(
+    projection_path: str, monkeypatch
+) -> None:
+    """GitHub Pages caches the manifest for ten minutes, so a check just after a
+    publish can still be told the old Last-Modified. That check must not move the
+    watermark past the new publish, or the update is skipped until the next one."""
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+    stat = os.stat(projection_path)
+    os.utime(projection_path, (stat.st_atime - 3600, stat.st_mtime - 3600))
+    old_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 7200, tz=timezone.utc), usegmt=True)
+    # Published after the projection was written, but before the stale check below runs.
+    new_publish = format_datetime(datetime.fromtimestamp(stat.st_mtime - 60, tz=timezone.utc), usegmt=True)
+    served = [old_publish]
+    downloads: list[float] = []
+
+    def fake_head(url: str, timeout: float) -> SimpleNamespace:
+        return SimpleNamespace(headers={"Last-Modified": served[0]}, raise_for_status=lambda: None)
+
+    def fake_get(url: str, timeout: float) -> SimpleNamespace:
+        downloads.append(timeout)
+        return SimpleNamespace(
+            headers={"Last-Modified": served[0]}, raise_for_status=lambda: None, json=lambda: SAMPLE_MANIFEST
+        )
+
+    # Faked at the HTTP layer so both requests go through the real date parsing.
+    monkeypatch.setattr(galaxy_requests, "head", fake_head)
+    monkeypatch.setattr(galaxy_requests, "get", fake_get)
+
+    # Learns which upstream version it has.
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
+
+    # The CDN still serves the old Last-Modified: nothing to download yet.
+    assert curated.refresh_projection(projection_path) is None
+    assert len(downloads) == 1
+
+    # Once the CDN catches up, the publish must be picked up.
+    served[0] = new_publish
+    assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
+    assert len(downloads) == 2
+
+    # An edge that still has the old publish must not swap it back in, nor lower the
+    # watermark so the next fresh answer looks like news.
+    served[0] = old_publish
+    assert curated.refresh_projection(projection_path) is None
+    served[0] = new_publish
+    assert curated.refresh_projection(projection_path) is None
+    assert len(downloads) == 2
+
+
+def served_manifest_response(last_modified: str | None) -> SimpleNamespace:
+    headers = {"Last-Modified": last_modified} if last_modified is not None else {}
+    return SimpleNamespace(headers=headers, raise_for_status=lambda: None, json=lambda: SAMPLE_MANIFEST)
+
+
+@pytest.mark.parametrize(
+    "header,expected",
+    [
+        ("Thu, 01 Jan 2026 12:00:00 GMT", datetime(2026, 1, 1, 12, tzinfo=timezone.utc)),
+        (None, None),
+        ("not a date", None),
+    ],
+)
+def test_fetch_manifest_returns_the_last_modified_it_was_served(
+    monkeypatch, header: str | None, expected: datetime | None
+) -> None:
+    monkeypatch.setattr(galaxy_requests, "get", lambda url, timeout: served_manifest_response(header))
+    assert iwc_manifest.fetch_manifest(1.0) == (SAMPLE_MANIFEST, expected)
+
+
+def test_refresh_projection_forgets_the_version_when_a_download_comes_without_one(
+    projection_path: str, monkeypatch
+) -> None:
+    """A dated watermark left beside an undated download would vouch for a body it
+    never described, and a matching HEAD would then keep that copy forever."""
+    publish = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    downloads: list[float] = []
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: publish)
+    serve_manifest(monkeypatch, recording_download, last_modified=publish)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
+
+    # A cold fetch whose GET carries no date.
+    os.unlink(projection_path)
+    serve_manifest(monkeypatch, recording_download, last_modified=None)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 2
+
+    # Nothing says which version that copy is, so the HEAD can't vouch for it.
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 3
+
+
+def test_refresh_projection_stamps_the_version_of_the_body_it_was_served(projection_path: str, monkeypatch) -> None:
+    """The HEAD and the GET are separate CDN requests and can be answered from different
+    cached versions. A body served as the old publish must not be recorded as the new one
+    the HEAD reported, or every later check would call that stale copy current."""
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+    old_publish = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    new_publish = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    downloads: list[float] = []
+
+    def recording_download(timeout: float) -> list[dict[str, Any]]:
+        downloads.append(timeout)
+        return SAMPLE_MANIFEST
+
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: new_publish)
+    serve_manifest(monkeypatch, recording_download, last_modified=old_publish)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 1
+
+    # The HEAD still says the new publish, which this copy is not: fetch again.
+    serve_manifest(monkeypatch, recording_download, last_modified=new_publish)
+    curated.refresh_projection(projection_path)
+    assert len(downloads) == 2
+
+    # Now the copy is the new publish, so the same answer means nothing changed.
+    assert curated.refresh_projection(projection_path) is None
+    assert len(downloads) == 2
+
+
+def test_refresh_projection_keeps_its_copy_when_the_download_is_older(projection_path: str, monkeypatch) -> None:
+    """The HEAD can reach a fresh edge while the GET reaches one still serving an older
+    publish than the copy we have. Writing that body would roll the catalog back."""
+    stored, stale, newest = (datetime(2026, 1, day, tzinfo=timezone.utc) for day in (2, 1, 3))
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST, last_modified=stored)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    curated.refresh_projection(projection_path)
+    kept = curated.load_projection(projection_path)
+
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: newest)
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST[:1], last_modified=stale)
+    assert curated.refresh_projection(projection_path) is None
+
+    assert curated.load_projection(projection_path) == kept
+    assert curated._read_watermark(Path(projection_path)) == stored
+
+
 def test_refresh_projection_downloads_when_upstream_moved(projection_path: str, monkeypatch) -> None:
     curated.write_projection(projection_path, [])
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: True)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: SAMPLE_MANIFEST)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST)
 
     assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
     assert curated.load_projection(projection_path) == curated.project_manifest(SAMPLE_MANIFEST)
@@ -728,8 +902,8 @@ def test_refresh_projection_refuses_to_replace_a_good_catalog_with_an_empty_one(
     healthy = curated.project_manifest(SAMPLE_MANIFEST)
     curated.write_projection(projection_path, healthy)
 
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: True)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: [])
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    serve_manifest(monkeypatch, lambda timeout: [])
 
     with pytest.raises(ValueError):
         curated.refresh_projection(projection_path)
@@ -741,8 +915,8 @@ def test_refresh_projection_refuses_to_replace_a_good_catalog_with_an_empty_one(
 def test_refresh_projection_allows_an_empty_catalog_when_there_is_nothing_to_lose(
     projection_path: str, monkeypatch
 ) -> None:
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: True)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: [])
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: None)
+    serve_manifest(monkeypatch, lambda timeout: [])
 
     assert curated.refresh_projection(projection_path) == 0
     assert curated.load_projection(projection_path) == []
@@ -767,16 +941,16 @@ def test_refresh_projection_skips_without_fetching_while_another_process_refresh
 ) -> None:
     fetches: list[str] = []
 
-    def recording_head(mtime: float, timeout: float | None = None) -> bool:
+    def recording_head(timeout: float | None = None) -> datetime | None:
         fetches.append("head")
-        return True
+        return None
 
     def recording_download(timeout: float) -> list[dict[str, Any]]:
         fetches.append("download")
         return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", recording_head)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", recording_head)
+    serve_manifest(monkeypatch, recording_download)
 
     with refresh_lock_held_elsewhere(projection_path):
         with pytest.raises(curated.RefreshInProgress):
@@ -799,7 +973,7 @@ def test_background_refresh_skipped_for_another_process_does_not_start_the_coold
         downloads.append(timeout)
         return SAMPLE_MANIFEST
 
-    monkeypatch.setattr(iwc_manifest, "download_manifest", recording_download)
+    serve_manifest(monkeypatch, recording_download)
 
     with refresh_lock_held_elsewhere(projection_path):
         assert curated.request_background_refresh(projection_path) is True
@@ -1121,8 +1295,8 @@ def test_refresh_projection_redownloads_an_old_version_file_even_when_upstream_i
     os.makedirs(os.path.dirname(projection_path))
     with open(projection_path, "w") as out:
         json.dump({"version": 1, "workflows": [{"id": "old", "name": "Old"}]}, out)
-    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: False)
-    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: SAMPLE_MANIFEST)
+    monkeypatch.setattr(iwc_manifest, "manifest_last_modified", lambda timeout=None: LONG_AGO)
+    serve_manifest(monkeypatch, lambda timeout: SAMPLE_MANIFEST)
 
     assert curated.load_projection(projection_path) is None
     assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
@@ -1180,8 +1354,38 @@ RUNNABLE_MISSING: dict[str, list[str] | None] = {
 
 def test_sort_curated_puts_runnable_entries_first_by_default() -> None:
     ordered = curated.sort_curated(RUNNABLE_ENTRIES, None, None, RUNNABLE_MISSING)
-    # Runnable group, newest first with the id tiebreaker; then the rest in the same order.
-    assert [entry["id"] for entry in ordered] == ["tie-b", "tie-a", "old-ready", "unknown", "new-blocked"]
+    # Runnable group, newest first with the id tiebreaker; then the blocked one; unchecked last.
+    assert [entry["id"] for entry in ordered] == ["tie-b", "tie-a", "old-ready", "new-blocked", "unknown"]
+
+
+def test_sort_curated_orders_blocked_entries_by_how_many_tools_they_lack() -> None:
+    """On an instance where nothing runs yet, the closest-to-runnable workflows lead.
+
+    Counted per tool, as the card's "Needs N tools" is: two versions of one tool are one install.
+    """
+    fastp = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp"
+    entries = [
+        {"id": "needs-three", "update_time": "2026-03-01T00:00:00"},
+        {"id": "needs-one-old", "update_time": "2024-01-01T00:00:00"},
+        {"id": "needs-one-in-two-versions", "update_time": "2024-06-01T00:00:00"},
+        {"id": "needs-one-new", "update_time": "2025-01-01T00:00:00"},
+        {"id": "needs-two", "update_time": "2026-02-01T00:00:00"},
+    ]
+    missing: dict[str, list[str] | None] = {
+        "needs-three": ["a", "b", "c"],
+        "needs-one-old": ["a"],
+        "needs-one-in-two-versions": [f"{fastp}/0.23.4", f"{fastp}/0.24.0"],
+        "needs-one-new": ["b"],
+        "needs-two": ["a", "b"],
+    }
+    ordered = curated.sort_curated(entries, None, None, missing)
+    assert [entry["id"] for entry in ordered] == [
+        "needs-one-new",
+        "needs-one-in-two-versions",
+        "needs-one-old",
+        "needs-two",
+        "needs-three",
+    ]
 
 
 def test_sort_curated_runnable_first_is_independent_of_input_order() -> None:
@@ -1226,8 +1430,8 @@ def test_list_catalog_reports_missing_tools_and_puts_runnable_entries_first(
     assert [(entry["id"], entry["missing_tools"]) for entry in as_user.entries] == [
         ("middle-runs", []),
         ("newest-missing", ["absent"]),
-        ("oldest-unknown", None),
         ("dm-only", ["dm_fetch"]),
+        ("oldest-unknown", None),
     ]
 
     as_admin = list_sample_catalog(projection_path, toolbox=toolbox, is_admin=True)
@@ -1242,6 +1446,38 @@ def test_list_catalog_reports_missing_tools_and_puts_runnable_entries_first(
     assert [entry["id"] for entry in by_update.entries][0] == "newest-missing"
 
 
+def test_list_catalog_is_runnable_keeps_only_workflows_that_run_here(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, TOOLED_ENTRIES)
+    toolbox = fake_toolbox({"cat1", "dm_fetch"}, data_managers=("dm_fetch",))
+
+    as_user = list_sample_catalog(projection_path, toolbox=toolbox, search="is:runnable")
+    assert [entry["id"] for entry in as_user.entries] == ["middle-runs"]
+    assert as_user.total_matches == 1
+
+    # Data manager tools only count for admins, the same as the badge.
+    as_admin = list_sample_catalog(projection_path, toolbox=toolbox, is_admin=True, search="is:runnable")
+    assert [entry["id"] for entry in as_admin.entries] == ["middle-runs", "dm-only"]
+
+    # ANDs with the rest of the query.
+    assert list_sample_catalog(projection_path, toolbox=toolbox, search="is:runnable newest").entries == []
+
+    # Filter values are case-insensitive, so this must still filter rather than pass everything.
+    shouted = list_sample_catalog(projection_path, toolbox=toolbox, search="is:Runnable")
+    assert [entry["id"] for entry in shouted.entries] == ["middle-runs"]
+
+
+def test_list_catalog_is_runnable_matches_nothing_it_cannot_vouch_for(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, TOOLED_ENTRIES)
+
+    assert list_sample_catalog(projection_path, search="is:runnable").entries == []
+    toolbox = fake_toolbox({"cat1"})
+    assert list_sample_catalog(projection_path, toolbox=toolbox, search="is:published").entries == []
+
+
 def test_list_catalog_without_a_toolbox_leaves_runnability_unknown(
     projection_path: str, recorded_refreshes: list[str]
 ) -> None:
@@ -1251,3 +1487,20 @@ def test_list_catalog_without_a_toolbox_leaves_runnability_unknown(
 
     assert [entry["id"] for entry in page.entries] == [entry["id"] for entry in TOOLED_ENTRIES]
     assert all(entry["missing_tools"] is None for entry in page.entries)
+
+
+def test_entry_trs_tool_id_matches_what_an_import_records() -> None:
+    entries = {entry["id"]: entry for entry in curated.project_manifest(SAMPLE_MANIFEST)}
+    entry = entries["velocyto-velocyto-on10x-filtered-barcodes"]
+
+    # The id a TRS import writes into source_metadata["trs_tool_id"], unquoted.
+    assert curated.entry_trs_tool_id(entry) == "#workflow/github.com/iwc-workflows/velocyto/main"
+    assert curated.entry_trs_tool_id({**entry, "trs_url": None}) == "#workflow/github.com/iwc-workflows/velocyto/main"
+    assert curated.entry_trs_tool_id({"id": "nothing-to-import"}) is None
+
+
+def test_find_imports_keys_the_users_imports_by_entry() -> None:
+    entries = curated.project_manifest(SAMPLE_MANIFEST)
+    imports = {"#workflow/github.com/iwc-workflows/velocyto/main": (42, "v0.1"), "#workflow/unrelated": (7, None)}
+
+    assert curated.find_imports(entries, imports) == {"velocyto-velocyto-on10x-filtered-barcodes": (42, "v0.1")}

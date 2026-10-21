@@ -1,9 +1,13 @@
+import json
 import os
 import xml.etree.ElementTree as ET
 from collections import namedtuple
 
 from sqlalchemy import select
 
+from galaxy.tools.source_store.index import ToolIndex
+from galaxy.tools.source_store.populator import reconcile_index
+from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import UsesShed
@@ -183,3 +187,35 @@ class TestCachedRepositoryInstallIntegrationTestCase(
     TestRepositoryInstallIntegrationTestCase,
 ):
     pass
+
+
+class TestCachedRepositoryInstallIntoReadOnlyStoreConf(TestCachedRepositoryInstallIntegrationTestCase):
+    """The shed conf routes to a read-only store published before these installs."""
+
+    shed_tool_conf_store = "published"
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        url = f"sqlite:///{cls._test_driver.mkdtemp()}/published.sqlite"
+        SqlAlchemyToolSourceStore(url=url).store_index(ToolIndex())
+        config["tool_source_stores"] = {"published": {"url": url, "read_only": True}}
+
+    def test_installed_tool_survives_toolbox_reload_and_full_populate(self):
+        self._install_repository()
+        guid = self.get_tool()["id"]
+
+        self._reload_toolbox()
+        self._assert_in_panel_and_search(guid)
+        reconcile_index(self._app.config, app=self._app)
+        self._reload_toolbox()
+        self._assert_in_panel_and_search(guid)
+
+    def _reload_toolbox(self):
+        self._app.queue_worker.send_control_task("reload_toolbox", get_response=True)
+        assert self._app.toolbox_search.wait_until_current(self._app.toolbox, timeout=60)
+
+    def _assert_in_panel_and_search(self, guid):
+        self._assert_status_code_is_ok(self._get(f"tools/{guid}"))
+        assert guid in json.dumps(self._get("tools", data={"in_panel": True}).json())
+        assert guid in self._get("tools", data={"q": REPO.name}).json()

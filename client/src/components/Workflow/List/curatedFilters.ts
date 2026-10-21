@@ -1,12 +1,14 @@
-import Filtering, { contains, expandNameTag } from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
 
 /**
  * Deliberately decoupled from `workflowFilters.ts`: the curated endpoint only
- * honours name, tag and collection, and `hasInvalidFilters` correctly rejects
- * anything else.
+ * honours name, tag, collection and `is:runnable`, and `hasInvalidFilters`
+ * correctly rejects anything else.
+ *
+ * `collection:` and `is:runnable` stay valid in local mode, where they match
+ * nothing, but are only offered in the menu for the IWC catalog.
  */
-/** `collection:` stays valid in local mode, where it matches nothing, but is only offered in the menu for IWC. */
-export function curatedWorkflowFilters(includeCollections: boolean) {
+export function curatedWorkflowFilters(isIwcCatalog: boolean) {
     const curatedFilters = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
@@ -21,25 +23,35 @@ export function curatedWorkflowFilters(includeCollections: boolean) {
             placeholder: "collection",
             type: String,
             handler: contains("collection"),
-            menuItem: includeCollections,
+            menuItem: isIwcCatalog,
         },
         c: { handler: contains("c"), menuItem: false },
+        runnable: {
+            placeholder: "Ready to run here",
+            type: Boolean,
+            boolType: "is",
+            handler: equals("runnable", "runnable", toBool),
+            menuItem: isIwcCatalog,
+        },
     } as const;
 
     return new Filtering({ ...curatedFilters }, undefined, false);
 }
 
-/** Collections are an IWC grouping, so local mode never advertises them. */
-export function curatedHelpHtml(includeCollections: boolean) {
-    const searchedFields = includeCollections
-        ? "names, descriptions, tags and collections"
-        : "names, descriptions and tags";
-    const collectionFilter = includeCollections
+/** Collections and the tool check are IWC catalog features, so local mode never advertises them. */
+export function curatedHelpHtml(isIwcCatalog: boolean) {
+    const searchedFields = isIwcCatalog ? "names, descriptions, tags and collections" : "names, descriptions and tags";
+    const catalogFilters = isIwcCatalog
         ? `
             <dt><code>collection:____</code></dt>
             <dd>
                 Shows workflows in the given IWC collection. The collection buttons above
                 the search, or a collection badge on a card, set this for you.
+            </dd>
+            <dt><code>is:runnable</code></dt>
+            <dd>
+                Shows only workflows whose tools are all installed on this Galaxy. The
+                "Ready to run here" button above the search sets this for you.
             </dd>`
         : "";
     return `<div>
@@ -67,7 +79,7 @@ export function curatedHelpHtml(includeCollections: boolean) {
             <dd>
                 Shows workflows with the given workflow tag. You may also click
                 on a tag to filter on that tag directly.
-            </dd>${collectionFilter}
+            </dd>${catalogFilters}
         </dl>
     </div>`;
 }

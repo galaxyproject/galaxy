@@ -123,7 +123,7 @@ describe("actionsProvider", () => {
 
     it("routes workflow creation and import", async () => {
         const create = (await search("create workflow", makeCtx())).find((i) => i.id === "actions:create-workflow");
-        expect(create?.to).toBe("/workflows/create");
+        expect(create?.to).toBe("/workflows/edit");
 
         const importItem = (await search("import workflow", makeCtx())).find((i) => i.id === "actions:import-workflow");
         expect(importItem?.to).toBe("/workflows/import");

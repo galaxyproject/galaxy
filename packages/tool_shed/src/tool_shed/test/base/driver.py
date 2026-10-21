@@ -121,6 +121,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         galaxy_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir)
         shed_file_path = os.path.join(shed_db_path, "files")
         whoosh_index_dir = os.path.join(shed_db_path, "toolshed_whoosh_indexes")
+        model_cache_dir = os.path.join(shed_db_path, "model_cache")
         hgweb_config_dir = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         new_repos_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_shed_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
@@ -141,6 +142,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
             hgweb_config_dir=hgweb_config_dir,
             id_secret="changethisinproductiontoo",
             log_destination="stdout",
+            model_cache_dir=model_cache_dir,
             new_file_path=new_repos_path,
             running_functional_tests=True,
             shed_tool_data_table_config=shed_tool_data_table_conf_file,

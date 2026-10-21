@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (black, isort, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=26.2
+RELEASE_CURR:=27.0
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python -m galaxy.config.config_manage
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -189,6 +189,10 @@ update-navigation-schema: client-node-deps
 install-client: ## Install prebuilt client wheel from PyPI matching the current Galaxy version
 	$(IN_VENV) uv pip install "galaxy-web-client==$$(python -c 'from galaxy.version import VERSION; print(VERSION)')"
 
+install-packages: VENV=packages/.venv
+install-packages: ## Build and install Galaxy packages from this checkout into VENV
+	cd packages && VENV="$(abspath $(VENV))" ./package-build-install.sh -m
+
 client: client-node-deps ## Rebuild client-side artifacts for local development.
 	$(IN_VENV) cd client && $(NODE_ENV) pnpm run build
 
@@ -238,7 +242,7 @@ files-sources-lint-verbose: ## Validate file sources configuration (verbose)
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version
-	$(IN_VENV) ./scripts/release.sh -c
+	$(IN_VENV) ./scripts/release.sh -c $(if $(RELEASE_NEXT),-n $(RELEASE_NEXT))
 
 release-create: ## Create a release branch
 	$(IN_VENV) ./scripts/release.sh

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
-import { COLLECTION_TYPE_TO_LABEL } from "@/components/Collections/common/buildCollectionModal";
+import { COLLECTION_TYPE_SHORT_LABELS } from "@/components/Collections/common/knownCollectionTypes";
 import type { UploadModalConfig } from "@/components/Panels/Upload/uploadModalTypes";
 import localize from "@/utils/localization";
 
@@ -78,8 +78,8 @@ const defaultWhatIsBeingCreated = "collection";
 /** Plain language for what is being created */
 const shortWhatIsBeingCreated = computed<string>(() => {
     const collectionType: string | undefined = props.collectionType;
-    if (collectionType && collectionType in COLLECTION_TYPE_TO_LABEL) {
-        return COLLECTION_TYPE_TO_LABEL[collectionType] as string;
+    if (collectionType && collectionType in COLLECTION_TYPE_SHORT_LABELS) {
+        return COLLECTION_TYPE_SHORT_LABELS[collectionType] as string;
     } else {
         return defaultWhatIsBeingCreated;
     }

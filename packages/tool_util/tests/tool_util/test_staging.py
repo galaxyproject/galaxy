@@ -1,9 +1,15 @@
 """How the staging client decides between uploading a file and pointing the
 server at its path."""
 
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
 
-from galaxy.tool_util.client.staging import StagingInterface
+from galaxy.tool_util.client.staging import (
+    InteractorStaging,
+    StagingInterface,
+)
 
 
 class _CapturingStagingInterface(StagingInterface):
@@ -101,3 +107,55 @@ def test_client_local_directory_tar_is_uploaded_with_legacy_api(tmp_path):
     tar_upload_payload = interface.payloads[0]
     assert "files_0|url_paste" not in tar_upload_payload["inputs"]
     assert len(interface.attached) == 1
+
+
+class _Response:
+    status_code = 200
+
+    def __init__(self, body: dict[str, Any]):
+        self._body = body
+
+    def json(self) -> dict[str, Any]:
+        return self._body
+
+
+class _RecordingInteractor:
+    def __init__(self):
+        self.calls: list[tuple[str, str]] = []
+        self._uploads = 0
+
+    def _post(self, api_path: str, payload: dict[str, Any], json: bool = False) -> _Response:
+        self.calls.append(("post", api_path))
+        if api_path == "dataset_collections":
+            return _Response({"id": "hdca1"})
+        self._uploads += 1
+        return _Response({"outputs": [{"id": f"dataset{self._uploads}"}], "jobs": [{"id": f"job{self._uploads}"}]})
+
+    def wait_for_job(self, job_id: str) -> None:
+        self.calls.append(("wait", job_id))
+
+
+def test_interactor_staging_posts_all_uploads_before_waiting():
+    interactor = _RecordingInteractor()
+    collection = {
+        "class": "Collection",
+        "collection_type": "list",
+        "elements": [
+            {"identifier": "a", "class": "File", "contents": "a"},
+            {"identifier": "b", "class": "File", "contents": "b"},
+        ],
+    }
+    InteractorStaging(cast(Any, interactor)).stage(
+        "workflow",
+        history_id="hist1",
+        job={"input1": collection, "input2": {"class": "File", "contents": "c"}},
+    )
+    assert interactor.calls == [
+        ("post", "tools/fetch"),
+        ("post", "tools/fetch"),
+        ("post", "dataset_collections"),
+        ("post", "tools/fetch"),
+        ("wait", "job1"),
+        ("wait", "job2"),
+        ("wait", "job3"),
+    ]

@@ -297,7 +297,9 @@ describe("FilterMenu", () => {
         await expectCorrectEmits("name:myworkflow", myWorkflowFilters);
 
         // -------- Testing deleted filter first:  ---------
-        const deletedFilterCheckbox = wrapper.find("[data-description='filter deleted'] input");
+        const deletedFilterCheckbox = wrapper.find<HTMLInputElement>("[data-description='filter deleted'] input");
+        expect(deletedFilterCheckbox.attributes("aria-label")).toBe("Deleted");
+        expect(deletedFilterCheckbox.element.checked).toBe(false);
         await deletedFilterCheckbox.setValue(true);
         await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);
     });

@@ -1,4 +1,4 @@
-from galaxy_test.api.test_workflows import RunsWorkflowFixtures
+from galaxy_test.base.api_mixins import RunsWorkflowFixtures
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,

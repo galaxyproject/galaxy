@@ -10,10 +10,20 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { CuratedWorkflow, CuratedWorkflowsIndexResponse } from "@/api/curatedWorkflows";
 import { curatedHelpHtml } from "@/components/Workflow/List/curatedFilters";
+import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import CuratedWorkflowList from "./CuratedWorkflowList.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+
+const { mockSubmitToolInstallationRequest } = vi.hoisted(() => ({
+    mockSubmitToolInstallationRequest: vi.fn(),
+}));
+
+vi.mock("@/api/notifications", () => ({
+    submitToolInstallationRequest: mockSubmitToolInstallationRequest,
+}));
 
 const { server, http } = useServerMock();
 
@@ -27,6 +37,8 @@ let catalogQueries: URLSearchParams[] = [];
 
 /** What the mocked /api/configuration reports as curated_workflows_source. */
 let configSource = "iwc";
+/** Anything else the mocked /api/configuration should report. */
+let extraConfig: Record<string, unknown> = {};
 
 /** Records any hit on the badge counts endpoint, which curated cards must never make. */
 const countsRequested = vi.fn();
@@ -135,12 +147,13 @@ describe("CuratedWorkflowList", () => {
         vi.clearAllMocks();
         catalogQueries = [];
         configSource = "iwc";
+        extraConfig = {};
         server.use(
             // WorkflowListTabs and the sort header read the config store, which
             // fetches eagerly when it is first instantiated.
             http.get("/api/configuration", ({ response }) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                return response(200).json({ curated_workflows_source: configSource } as any);
+                return response(200).json({ curated_workflows_source: configSource, ...extraConfig } as any);
             }),
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 countsRequested();
@@ -158,7 +171,9 @@ describe("CuratedWorkflowList", () => {
         const wrapper = await mountCuratedList({ source: "iwc", total_matches: 3, workflows });
 
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(3);
-        expect(wrapper.find("#curated-workflows-source-note").exists()).toBe(true);
+        const sourceNote = wrapper.find("#curated-workflows-source-note");
+        expect(sourceNote.text()).toContain("Intergalactic Workflow Commission");
+        expect(sourceNote.find('a[href="https://iwc.galaxyproject.org"]').attributes("target")).toBe("_blank");
         expect(wrapper.find("#curated-workflows-preparing").exists()).toBe(false);
         expect(wrapper.find("#curated-workflows-unavailable").exists()).toBe(false);
         expect(wrapper.find("#curated-workflows-empty").exists()).toBe(false);
@@ -182,6 +197,9 @@ describe("CuratedWorkflowList", () => {
 
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(2);
         expect(wrapper.find("#g-card-action-curated-run-f2db41e1fa331b3e").exists()).toBe(true);
+        // A local feed is someone's own curation, not IWC's, so nothing points at the IWC gallery.
+        expect(wrapper.find("#curated-workflows-source-note").text()).not.toContain("IWC");
+        expect(wrapper.find('a[href="https://iwc.galaxyproject.org"]').exists()).toBe(false);
         expect(countsRequested).not.toHaveBeenCalled();
     });
 
@@ -437,6 +455,83 @@ describe("CuratedWorkflowList", () => {
         expect(catalogQueries[1]!.get("search")).toBe("collection:'single-cell'");
     });
 
+    it("toggles is:runnable from the Ready to run button, keeping the rest of the query", async () => {
+        const wrapper = await mountCuratedList(iwcPage(["a"]));
+        await setFilterText(wrapper, "flye");
+        const toggle = () => wrapper.find("#curated-runnable-toggle");
+
+        await toggle().trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye is:runnable");
+        expect(toggle().classes()).toContain("g-pressed");
+
+        await toggle().trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye");
+        expect(toggle().classes()).not.toContain("g-pressed");
+    });
+
+    it("explains an empty Ready to run result as this Galaxy lacking tools", async () => {
+        useCatalog((query) => (query.get("search") === "is:runnable" ? iwcPage([]) : iwcPage(["a"])));
+        const wrapper = await mountList();
+
+        await wrapper.find("#curated-runnable-toggle").trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find("#no-curated-workflow-runnable").exists()).toBe(true);
+        expect(wrapper.find("#no-curated-workflow-found").exists()).toBe(false);
+    });
+
+    it("asks the admins for a card's missing tools through one shared dialog", async () => {
+        extraConfig = { enable_notification_system: true, enable_tool_installation_request_form: true };
+        const submission = deferred<undefined>();
+        mockSubmitToolInstallationRequest.mockReturnValue(submission.promise);
+        const toastSuccess = vi.spyOn(Toast, "success").mockImplementation(() => {});
+        const workflows = ["a", "b"].map((id) =>
+            iwcWorkflow({
+                id,
+                name: `Workflow ${id}`,
+                external_url: `https://iwc.example/${id}`,
+                missing_tools: ["bwa"],
+            }),
+        );
+        const wrapper = await mountCuratedList({ source: "iwc", total_matches: 2, workflows });
+        const requestButton = (id: string) => wrapper.find(`#g-card-badge-curated-missing-tools-${id} button`);
+        expect(wrapper.findAllComponents(GModal)).toHaveLength(1);
+
+        await requestButton("b").trigger("click");
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        // Held open while the request is in flight, so its answer can't land on another card's dialog.
+        expect(wrapper.findComponent(GModal).props("cancelDisabled")).toBe(true);
+        submission.resolve(undefined);
+        await flushPromises();
+
+        // A catalog workflow isn't stored here, so the remarks name it instead of a workflow id.
+        const payload = nth(mockSubmitToolInstallationRequest.mock.calls, 0)[0];
+        expect(payload.workflow_id).toBeUndefined();
+        expect(payload.additional_remarks).toContain('"Workflow b" (https://iwc.example/b)');
+        expect(toastSuccess).toHaveBeenCalledWith(expect.stringContaining("Installation request sent"));
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
+        expect(requestButton("b").exists()).toBe(false);
+        expect(requestButton("a").exists()).toBe(true);
+    });
+
+    it("offers the runnable filter only for the iwc catalog", async () => {
+        const iwcWrapper = await mountCuratedList(iwcPage(["a"]));
+        expect(iwcWrapper.find("#curated-runnable-toggle").exists()).toBe(true);
+        expect(iwcWrapper.findComponent(FilterMenu).props("filterClass").validFilters.runnable?.menuItem).toBe(true);
+
+        configSource = "local";
+        const localWrapper = await mountCuratedList({
+            source: "local",
+            total_matches: 1,
+            workflows: [localWorkflow()],
+        });
+        expect(localWrapper.find("#curated-runnable-toggle").exists()).toBe(false);
+        expect(localWrapper.findComponent(FilterMenu).props("filterClass").validFilters.runnable?.menuItem).toBe(false);
+    });
+
     it("shows no collection chips in local mode", async () => {
         configSource = "local";
         const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });
@@ -487,8 +582,10 @@ describe("CuratedWorkflowList", () => {
 });
 
 describe("curatedHelpHtml", () => {
-    it("documents the collection filter only for the iwc catalog", () => {
+    it("documents the collection and runnable filters only for the iwc catalog", () => {
         expect(curatedHelpHtml(true)).toContain("collection:");
+        expect(curatedHelpHtml(true)).toContain("is:runnable");
         expect(curatedHelpHtml(false)).not.toContain("collection");
+        expect(curatedHelpHtml(false)).not.toContain("is:runnable");
     });
 });

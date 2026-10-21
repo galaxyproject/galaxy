@@ -483,6 +483,7 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
                                         }"
                                         :element="element"
                                         not-editable
+                                        selectable
                                         :selected="[pairElements.forward, pairElements.reverse].includes(element)"
                                         @element-is-selected="selectElement"
                                         @onRename="(name: string) => (element.name = name)" />
@@ -535,6 +536,11 @@ function _guessNameForPair(fwd: HDASummary, rev: HDASummary, removeExtensions: b
         line-height: 28px;
         cursor: pointer;
         overflow: hidden;
+
+        // The rename field and its focus ring are taller than the row, so stop clipping while it is open
+        &:has(.input-icon-wrapper) {
+            overflow: visible;
+        }
 
         &:last-of-type {
             margin-bottom: 2px;

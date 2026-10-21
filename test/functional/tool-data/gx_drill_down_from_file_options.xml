@@ -1,0 +1,7 @@
+<options>
+    <option name="Heading 1" value="heading1">
+        <option name="Option 1" value="option1"/>
+        <option name="Option 2" value="option2"/>
+    </option>
+    <option name="Option 3" value="option3"/>
+</options>

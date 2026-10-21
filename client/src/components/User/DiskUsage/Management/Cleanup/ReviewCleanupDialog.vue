@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -9,6 +9,7 @@ import { bytesToString } from "@/utils/utils";
 import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -272,18 +273,20 @@ defineExpose({
             data-test-id="review-table"
             @sort-changed="onSort">
             <template v-slot:head(selected)>
-                <BFormCheckbox
-                    v-model="allSelected"
+                <GCheckbox
+                    :model-value="allSelected"
+                    :aria-label="localize('Select all items')"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
-                    @change="toggleSelectAll" />
+                    @update:model-value="toggleSelectAll" />
             </template>
 
             <template v-slot:cell(selected)="data">
-                <BFormCheckbox
+                <GCheckbox
                     :key="data.index"
-                    :checked="isItemSelected(data.item)"
-                    @change="toggleItemSelection(data.item)" />
+                    :aria-label="`${localize('Select')} ${data.item.name}`"
+                    :model-value="isItemSelected(data.item)"
+                    @update:model-value="toggleItemSelection(data.item)" />
             </template>
 
             <template v-slot:cell(update_time)="data">
@@ -322,9 +325,9 @@ defineExpose({
             ok-color="red"
             :ok-disabled="!confirmChecked"
             @ok="onConfirmCleanupSelectedItems">
-            <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
+            <GCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
-            </BFormCheckbox>
+            </GCheckbox>
         </GModal>
     </GModal>
 </template>

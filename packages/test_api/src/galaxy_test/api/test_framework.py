@@ -13,8 +13,14 @@ class TestApiFramework(ApiTestCase):
 
     def test_xframe_options_on_non_embed_published(self):
         get_response = self._get("/published/page")
-        # Pages served through the WSGI app currently get this from both the WSGI and FastAPI layers
-        assert "SAMEORIGIN" in get_response.headers["x-frame-options"]
+        assert get_response.headers["x-frame-options"] == "SAMEORIGIN"
+
+    def test_xframe_options_sent_once_on_wsgi_pages(self):
+        # requests joins repeated headers with ", ", so equality also catches duplicates
+        for path in ("/", "/histories/list"):
+            response = self._get(path)
+            self._assert_status_code_is(response, 200)
+            assert response.headers["x-frame-options"] == "SAMEORIGIN", path
 
     def test_xframe_options_skipped_for_embed(self):
         get_response = self._get("/published/page", data={"embed": "true"})

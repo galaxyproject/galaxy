@@ -21,7 +21,7 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
-import type { Step } from "@/stores/workflowStepStore";
+import type { ParameterOutput, Step } from "@/stores/workflowStepStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -363,10 +363,14 @@ export function useInvocationGraph(
                 graphStep.nodeText = `${hdca.hid}: <b>${hdca.name}</b>`;
             }
         } else if (inputParam) {
-            if (typeof inputParam.parameter_value === "boolean") {
-                graphStep.nodeText = inputParam.parameter_value;
+            const parameterValue = inputParam.parameter_value;
+            const parameterType = (graphStep.outputs[0] as ParameterOutput | undefined)?.type;
+            if (typeof parameterValue === "boolean") {
+                graphStep.nodeText = parameterValue;
+            } else if (parameterType === "color" && typeof parameterValue === "string") {
+                graphStep.nodeText = parameterValue;
             } else {
-                graphStep.nodeText = `<b>${inputParam.parameter_value}</b>`;
+                graphStep.nodeText = `<b>${parameterValue}</b>`;
             }
         }
         setHeaderClass(graphStep);

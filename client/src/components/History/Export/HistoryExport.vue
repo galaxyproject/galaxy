@@ -94,12 +94,13 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 async function loadHistory() {
     isLoadingHistory.value = true;
     try {
+        let loadError: Error | undefined;
         if (!historyStore.getHistoryById(props.historyId, false)) {
-            await historyStore.loadHistoryById(props.historyId);
+            loadError = await historyStore.loadHistoryById(props.historyId);
         }
         history.value = historyStore.getHistoryById(props.historyId, false) ?? undefined;
         if (!history.value) {
-            const loadError = historyStore.getHistoryLoadError(props.historyId);
+            loadError = loadError ?? historyStore.getHistoryLoadError(props.historyId) ?? undefined;
             if (loadError) {
                 throw loadError;
             }

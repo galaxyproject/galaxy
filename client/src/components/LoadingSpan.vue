@@ -4,14 +4,20 @@
     UI use Common/ButtonSpinner. Do not use bootstrap-vue's BSpinner -- migrate to this.
 -->
 <template>
-    <span>
-        <span :class="spinnerClasses" title="loading"></span>
+    <span :role="insideLiveRegion ? null : 'status'">
+        <span :class="spinnerClasses" title="loading" aria-hidden="true"></span>
         <span v-if="!spinnerOnly" class="loading-message" data-description="loading message"> {{ message }}... </span>
+        <span v-else class="sr-only">{{ message }}...</span>
     </span>
 </template>
 <script>
+import { liveRegionKey } from "@galaxyproject/galaxy-ui";
+
 export default {
     name: "LoadingSpan",
+    inject: {
+        insideLiveRegion: { from: liveRegionKey, default: false },
+    },
     props: {
         classes: {
             type: String,

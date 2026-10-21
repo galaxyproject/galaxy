@@ -40,6 +40,7 @@ function galaxy_version_file() {
 
 : "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' "$(galaxy_version_file)" | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
 RELEASE_NEXT=
+RELEASE_NEXT_OPT=
 RELEASE_CURR_MINOR=
 RELEASE_CURR_MINOR_NEXT=
 RELEASE_CURR_MINOR_NEXT_DEV=
@@ -58,14 +59,18 @@ WORKING_DIR_CLEAN=false
 ERROR=false
 
 NEXT_RELEASE_TEMPLATE="import packaging.version as pv; v = pv.parse('RELEASE_CURR'); print(str(v.release[0]) + '.' + str(v.release[1] + 1))"
+NEXT_EXISTING_RELEASE_TEMPLATE="import sys, packaging.version as pv; c = pv.parse('RELEASE_CURR'); n = sorted((pv.parse(l), l) for l in sys.stdin.read().split() if pv.parse(l) > c); print(n[0][1] if n else '')"
 PACKAGE_VERSION_TEMPLATE="import packaging.version; print('.'.join(map(str, packaging.version.parse('VERSION').release)))"
 PACKAGE_DEV_VERSION_TEMPLATE="import packaging.version; print(packaging.version.parse('VERSION'))"
 
 
-while getopts ":clr:" opt; do
+while getopts ":cln:r:" opt; do
     case "$opt" in
         c)
             RELEASE_TYPE='rc'
+            ;;
+        n)
+            RELEASE_NEXT_OPT="$OPTARG"
             ;;
         r)
             RELEASE_CURR="$OPTARG"
@@ -74,7 +79,7 @@ while getopts ":clr:" opt; do
             RELEASE_TYPE='local'
             ;;
         *)
-            echo "usage: $(basename "$0") [-c (force rc)] [-l (local release)] [-r release version]"
+            echo "usage: $(basename "$0") [-c (force rc)] [-l (local release)] [-n next release version (new release branch only)] [-r release version]"
             exit 1
             ;;
     esac
@@ -234,6 +239,18 @@ function release_next() {
 }
 
 
+# The next newer release that has an upstream branch, falling back to the minor increment when there is none.
+function release_next_existing() {
+    local curr="$1"
+    local next
+    next=$(git for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/${UPSTREAM_REMOTE}/release_[0-9]*.[0-9]*" \
+        | sed -n -E 's/^release_([0-9]+\.[0-9]+)$/\1/p' \
+        | python3 -c "${NEXT_EXISTING_RELEASE_TEMPLATE/RELEASE_CURR/$curr}")
+    [ -n "$next" ] || next=$(release_next "$curr")
+    echo "$next"
+}
+
+
 function packaging_version() {
     local version="$1"
     local dev_release="$2"
@@ -271,7 +288,7 @@ function branch_exists() {
 function _test_forward_merge() {
     local curr="$1"
     local next
-    next=$(release_next "$curr")
+    next=$(release_next_existing "$curr")
     local curr_branch="${UPSTREAM_REMOTE}/release_${curr}"
     local next_branch="${UPSTREAM_REMOTE}/release_${next}"
     local curr_local_branch="__release_merge_test_${curr}"
@@ -331,7 +348,7 @@ function perform_stable_merge() {
 function _perform_forward_merge() {
     local curr="$1"
     local next
-    next="$(release_next "$curr")"
+    next="$(release_next_existing "$curr")"
     local curr_branch="${UPSTREAM_REMOTE}/release_${curr}"
     local next_branch="${UPSTREAM_REMOTE}/release_${next}"
     local curr_local_branch="__release_${curr}"
@@ -494,7 +511,7 @@ function update_package_versions() {
 function perform_version_update() {
     local tag_version=
     update_package_versions
-    git add -- packages/ uv.lock
+    git add -u -- packages/ uv.lock
     log 'Cleaning package dirs...'
     packages_make_all clean
     log 'Building packages (logs in packages/*/make-dist.log)...'
@@ -527,14 +544,14 @@ function perform_version_update_dev() {
     log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
     git add -- "$(galaxy_version_file)"
     update_package_versions
-    git add -- packages/ uv.lock
+    git add -u -- packages/ uv.lock
     log_exec git commit -m "Update version to ${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}"
 }
 
 
 function create_release_rc_initial() {
     RELEASE_TYPE='rc-initial'
-    RELEASE_NEXT="$(release_next "$RELEASE_CURR")"
+    RELEASE_NEXT="${RELEASE_NEXT_OPT:-$(release_next "$RELEASE_CURR")}"
     RELEASE_CURR_MINOR_NEXT='rc1'
     set_package_version_var
     user_verify_release
@@ -562,7 +579,7 @@ function create_release_rc_initial() {
     local package_version
     package_version=$(packaging_version "${RELEASE_NEXT}.0dev0" "true")
     update_package_versions "$package_version"
-    git add -- packages/ uv.lock
+    git add -u -- packages/ uv.lock
     log_exec git commit -m "Update version to ${RELEASE_NEXT}.dev0"
 
     # Resolve merge conflicts

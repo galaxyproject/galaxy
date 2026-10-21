@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { BLink } from "bootstrap-vue";
-
 import { DatasetProvider } from "@/components/providers";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 
 interface LinkType {
     app_name: string;
@@ -47,7 +46,7 @@ function getUrl(link: LinkType) {
                             <span class="font-weight-bold">{{ displayType.label }}</span>
                             <span v-for="(link, linkKey) in displayType.links" :key="`display-type-link-${linkKey}`">
                                 <span v-if="linkKey == 0">(</span>
-                                <BLink :href="link.href" :target="link.target">{{ link.text }}</BLink>
+                                <GLink thin :href="link.href" :target="link.target">{{ link.text }}</GLink>
                                 <span v-if="linkKey != displayType.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>

@@ -11,7 +11,6 @@ import pytest
 
 from galaxy.celery import CELERY_APP_DEFAULTS
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api import (
     AnonymousGalaxyInteractor,
     ApiTestInteractor,
@@ -31,31 +30,14 @@ from galaxy_test.base.populators import (
     TargetHistory,
 )
 from galaxy_test.base.testcase import host_port_and_url
-from galaxy_test.driver.driver_util import GalaxyTestDriver
 from galaxy_test.driver.pytest import (  # noqa: F401, F811
     celery_includes,
+    embedded_driver,
     pytest_configure,
     pytest_plugins,
+    real_driver,
     test_http_server,
 )
-
-
-@pytest.fixture(scope="session")
-def real_driver():
-    if not os.environ.get("GALAXY_TEST_ENVIRONMENT_CONFIGURED"):
-        driver = GalaxyTestDriver()
-        driver.setup(ApiTestCase)
-        try:
-            yield driver
-        finally:
-            driver.tear_down()
-    else:
-        yield None
-
-
-@pytest.fixture(scope="class")
-def embedded_driver(real_driver, request):
-    request.cls._test_driver = real_driver
 
 
 @dataclass

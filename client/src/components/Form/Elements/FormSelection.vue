@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, type PropType, ref, watch } from "vue";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
+import { uid } from "@/utils/utils";
 
 import FormCheck from "./FormCheck.vue";
 import FormRadio from "./FormRadio.vue";
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const props = defineProps({
+    id: { type: String, default: () => `form-selection-${uid()}` },
     value: {
         type: null as unknown as PropType<any>,
         default: null,
@@ -63,6 +65,11 @@ const props = defineProps({
     deferPreference: {
         type: Boolean,
         default: false,
+    },
+    /** Id of the element that names a checkbox or radio group, which a ``<label for>`` cannot reach */
+    ariaLabelledby: {
+        type: String,
+        default: undefined,
     },
 });
 
@@ -153,11 +160,20 @@ defineExpose({
 </script>
 
 <template>
-    <div class="form-selection">
-        <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
-        <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
+    <div :id="`${id}-container`" class="form-selection">
+        <FormCheck
+            v-if="display === 'checkboxes'"
+            v-model="currentValue"
+            :aria-labelledby="ariaLabelledby"
+            :options="currentOptions" />
+        <FormRadio
+            v-else-if="display === 'radio'"
+            v-model="currentValue"
+            :aria-labelledby="ariaLabelledby"
+            :options="currentOptions" />
         <FormSelectMany
             v-else-if="displayMany"
+            :id="id"
             v-model="currentValue"
             :options="currentOptions"
             :total-estimate="totalEstimate"
@@ -168,6 +184,7 @@ defineExpose({
         </FormSelectMany>
         <FormSelect
             v-else
+            :id="id"
             v-model="currentValue"
             :multiple="multiple"
             :optional="optional"

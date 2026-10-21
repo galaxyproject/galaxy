@@ -24,8 +24,6 @@ from galaxy import (
     jobs,
     tools,
 )
-from galaxy.agents.factory import build_registry as build_agent_registry
-from galaxy.agents.registry import AgentRegistry
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskAfterReturn,
@@ -51,7 +49,7 @@ from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
-from galaxy.managers.agents import AgentService
+from galaxy.managers.admin_extensions import AdminExtensionsManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
@@ -66,10 +64,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
 from galaxy.managers.interactivetool import InteractiveToolManager
-from galaxy.managers.jobs import (
-    JobManager as JobQueryManager,
-    JobSearch,
-)
+from galaxy.managers.jobs import JobSearch
 from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
@@ -243,6 +238,7 @@ class HaltableContainer(Container):
 class SentryClientMixin:
     config: GalaxyAppConfiguration
     application_stack: ApplicationStack
+    is_webapp: bool
 
     def configure_sentry_client(self):
         self.sentry_client = None
@@ -257,12 +253,44 @@ class SentryClientMixin:
             ], f"Invalid sentry event level '{self.config.sentry.event_level}'"
 
             import sentry_sdk
+            from sentry_sdk.integrations import (
+                DidNotEnable,
+                Integration,
+            )
+            from sentry_sdk.integrations.celery import CeleryIntegration
             from sentry_sdk.integrations.logging import LoggingIntegration
+            from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+            from sentry_sdk.integrations.starlette import StarletteIntegration
 
             sentry_logging = LoggingIntegration(
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=getattr(logging, event_level),  # Send errors as events
             )
+            integrations: list[Integration] = [
+                sentry_logging,
+                StarletteIntegration(),
+                CeleryIntegration(),
+                SqlalchemyIntegration(),
+            ]
+            try:
+                # galaxy-app installs without the web apps do not ship FastAPI.
+                from sentry_sdk.integrations.fastapi import FastApiIntegration
+            except DidNotEnable:
+                pass
+            else:
+                integrations.append(FastApiIntegration())
+            if self.is_webapp:
+                # The web app serves the agent and MCP APIs, so it loads these libraries anyway.
+                from sentry_sdk.integrations.pydantic_ai import PydanticAIIntegration
+
+                integrations.append(PydanticAIIntegration())
+                try:
+                    # Older sentry-sdk releases do not support the installed MCP SDK.
+                    from sentry_sdk.integrations.mcp import MCPIntegration
+                except DidNotEnable as e:
+                    log.warning("Sentry MCP integration not enabled: %s", e)
+                else:
+                    integrations.append(MCPIntegration())
 
             def before_send(event, hint):
                 if "exc_info" in hint:
@@ -291,7 +319,10 @@ class SentryClientMixin:
             self.sentry_client = sentry_sdk.init(
                 self.config.sentry_dsn,
                 release=f"{self.config.version_major}.{self.config.version_minor}",
-                integrations=[sentry_logging],
+                # Auto-enabling integrations import every installed library Sentry
+                # supports, including the AI SDKs Galaxy only loads when an agent runs.
+                auto_enabling_integrations=False,
+                integrations=integrations,
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
                 ca_certs=self.config.sentry_ca_certs,
                 before_send=before_send,
@@ -330,7 +361,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             logging.basicConfig(level=logging.DEBUG)
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "galaxy"
-        self.is_webapp = False
+        self.is_webapp = kwargs.get("is_webapp", False)
         # Read config file and check for errors
         self.config = self._register_singleton(GalaxyAppConfiguration, GalaxyAppConfiguration(**kwargs))
         self.config.check()
@@ -931,12 +962,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     def error_reports(self) -> ErrorReports:
         return self._error_reports
 
+    @property
+    def writes_tool_search_index(self) -> bool:
+        """Whether this process writes the shared ``tool_search_index_dir``."""
+        return False
+
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed. Defined here rather than on
         # MinimalGalaxyApplication so it wins over the MinimalManagerApp
         # interface stub in the MRO, the same way is_job_handler does.
         # Celery manager apps intentionally have no toolbox or search index.
-        if self.toolbox_or_none is None:
+        if self.toolbox_or_none is None or not self.writes_tool_search_index:
             return
         self.toolbox_search.build_index(
             tool_cache=self.tool_cache,
@@ -947,7 +983,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     def ensure_tool_search_index(self) -> None:
         """Index the toolbox once per toolbox reload."""
-        if self.toolbox_or_none is None:
+        if self.toolbox_or_none is None or not self.writes_tool_search_index:
             return
         if self.toolbox_search.build_index_if_stale(
             tool_cache=self.tool_cache,
@@ -980,8 +1016,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("application stack", self._shutdown_application_stack),
         ]
         self._register_singleton(StructuredApp, self)  # type: ignore[type-abstract]
-        if kwargs.get("is_webapp"):
-            self.is_webapp = kwargs["is_webapp"]
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
@@ -996,14 +1030,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             SSEConnectionManager(
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
-        )
-
-        # AI agent registry and service
-        agent_registry = build_agent_registry(self.config)
-        self._register_singleton(AgentRegistry, agent_registry)
-        self._register_singleton(
-            AgentService,
-            AgentService(self.config, JobQueryManager(self, self.history_manager), agent_registry),
         )
 
         self.dependency_resolvers_view = self._register_singleton(
@@ -1055,6 +1081,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self[ToursRegistry] = tour_registry  # type: ignore[type-abstract]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
+        self._register_singleton(AdminExtensionsManager)
         # Heartbeat for thread profiling
         self.heartbeat = None
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))
@@ -1214,6 +1241,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # this not-yet-elected process, so the new watcher queues its own.
         if is_config_watcher:
             send_local_control_task(self, "rebuild_toolbox_search_index")
+
+    @property
+    def writes_tool_search_index(self) -> bool:
+        # Every process searches the shared tool_search_index_dir and reopens it
+        # per query, so the elected config watcher is its only writer.
+        return bool(self.is_webapp and self.database_heartbeat.is_config_watcher)
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()

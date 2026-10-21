@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
@@ -7,6 +6,8 @@ import type { FileSourceBrowsingMode, FilterFileSourcesOptions } from "@/api/rem
 import { filesDialog } from "@/utils/dataModals";
 
 import type { SelectionItem } from "../SelectionDialog/selectionTypes";
+
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     value: string;
@@ -64,5 +65,5 @@ defineExpose({ selectFile });
 </script>
 
 <template>
-    <BFormInput v-model="currentValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile" />
+    <GFormInput v-model="currentValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile" />
 </template>

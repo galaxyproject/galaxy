@@ -146,7 +146,7 @@ vitessce:
     version: 0.0.5
 vizarr:
     package: "@galaxyproject/vizarr"
-    version: 0.1.8
+    version: 0.1.9
 vtk:
     package: "@galaxyproject/vtk"
     version: 0.0.2

@@ -1011,6 +1011,13 @@ galaxy:
   # crafted for them by the backend.
   #enable_tool_generated_tours: true
 
+  # Admin extensions directory: where to look for extensions that add
+  # sections and links to the Admin panel. Each extension is a
+  # subdirectory containing a config.yml. By default none are shipped,
+  # so nothing is loaded. To use an absolute path begin the path with
+  # '/'. This is a comma-separated list.
+  #admin_extensions_dir: config/plugins/admin
+
   # Webhooks directory: where to store webhooks - plugins to extend the
   # Galaxy UI. By default none will be loaded.  Set to
   # config/plugins/webhooks/demo to load Galaxy's demo webhooks.  To use
@@ -3310,8 +3317,8 @@ galaxy:
   # next query since GTNSearchDB opens a read-only connection per call.
   # Only registered when ``inference_services`` is configured (i.e.
   # GalaxyAI is in use). Set to 0 to disable automatic refresh -- admins
-  # can still refresh on demand via ``python -m galaxy.agents.gtn
-  # --refresh``. Requires celery.
+  # can still refresh on demand via ``python -m galaxy.gtn --refresh``.
+  # Requires celery.
   #gtn_database_refresh_interval: 86400
 
   # Time (in seconds) between celery-beat triggered refreshes of the

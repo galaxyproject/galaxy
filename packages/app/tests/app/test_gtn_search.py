@@ -1,4 +1,4 @@
-"""Unit tests for the GTN search library (packages/app/src/galaxy/agents/gtn).
+"""Unit tests for the GTN search library (packages/app/src/galaxy/gtn).
 
 These exercise the SQLite-backed search interface and the FAQ/tutorial
 result types against tiny in-memory fixture databases built via
@@ -18,16 +18,16 @@ from pathlib import Path
 import pytest
 import responses
 
-from galaxy.agents.gtn import (
+from galaxy.gtn import (
     FAQResult,
     GTNSearchDB,
 )
-from galaxy.agents.gtn.build_database import (
+from galaxy.gtn.build_database import (
     FAQ,
     GTNDatabaseBuilder,
     Tutorial,
 )
-from galaxy.agents.gtn.search import (
+from galaxy.gtn.search import (
     GTN_FAQ_BASE_URL,
     sanitize_fts5_query,
 )

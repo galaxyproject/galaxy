@@ -173,4 +173,38 @@ describe("CollectionDescription", () => {
         });
         expect(wrapper.text()).toBe(`a collection with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
     });
+
+    async function describeType(collectionType: string, elementCount: number) {
+        await wrapper.setProps({
+            hdca: { ...defaultTestHDCA, collection_type: collectionType, element_count: elementCount },
+        });
+        return wrapper.text();
+    }
+
+    it("keeps the wording of sample sheets and mixed lists", async () => {
+        expect(await describeType("sample_sheet", 4)).toBe("a sample sheet with 4 datasets");
+        expect(await describeType("sample_sheet:paired", 4)).toBe("a sample sheet with 4 pairs");
+        expect(await describeType("list:paired_or_unpaired", 4)).toBe("a list with 4 paired and unpaired datasets");
+        expect(await describeType("list:paired_or_unpaired", 1)).toBe("a list with 1 dataset pair or unpaired dataset");
+        expect(await describeType("sample_sheet:paired_or_unpaired", 4)).toBe(
+            "a sample sheet with 4 paired and unpaired datasets",
+        );
+        expect(await describeType("list:list:list", 3)).toBe("a nested list with 3 dataset collections");
+    });
+
+    it("names records and the elements of nested lists", async () => {
+        expect(await describeType("record", 2)).toBe("a record with 2 datasets");
+        expect(await describeType("list:record", 3)).toBe("a list with 3 records");
+        expect(await describeType("list:record", 1)).toBe("a list with 1 record");
+        expect(await describeType("sample_sheet:record", 3)).toBe("a sample sheet with 3 records");
+        expect(await describeType("list:list:paired", 3)).toBe("a nested list with 3 lists of pairs");
+        expect(await describeType("list:list:paired", 1)).toBe("a nested list with 1 list of pairs");
+    });
+
+    it("names the collection type on hover", async () => {
+        await describeType("list:record", 3);
+        expect(wrapper.find(".description").attributes("title")).toBe("List of Records (list:record)");
+        await describeType("paired:paired", 3);
+        expect(wrapper.find(".description").attributes("title")).toBe("paired:paired");
+    });
 });

@@ -1540,18 +1540,16 @@ class XmlInputSource(InputSource):
             return XmlDrillDownDynamicOptions(code_block=dynamic_options)
 
     def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list[DrillDownOptionsDict] | None:
-        if from_file := self.input_elem.get("from_file", None):
-            if not os.path.isabs(from_file):
-                assert tool_data_path, "This tool cannot be parsed outside of a Galaxy context"
-                from_file = os.path.join(tool_data_path, from_file)
-            elem = XML(f"<root>{open(from_file).read()}</root>")
+        from_file = self.input_elem.get("from_file", None)
+        if from_file:
+            if not tool_data_path:
+                # options are unknown, parameter models and the Tool Shed must not read files named by a tool
+                return None
+            # an absolute from_file replaces tool_data_path
+            with open(os.path.join(tool_data_path, from_file)) as f:
+                elem = XML(f"<root>{f.read()}</root>")
         else:
             elem = self.input_elem
-
-        dynamic_options_elem = elem.get("dynamic_options", None)
-        filter_elem = elem.get("filter", None)
-        if dynamic_options_elem is not None and filter_elem is not None:
-            return None
 
         root_options: list[DrillDownOptionsDict] = []
         options_elem = elem.find("options")

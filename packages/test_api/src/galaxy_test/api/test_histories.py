@@ -1,6 +1,3 @@
-import time
-from typing import ClassVar
-from unittest import SkipTest
 from urllib.parse import urljoin
 from uuid import uuid4
 
@@ -18,6 +15,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
 )
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.api_mixins import (
+    BaseHistories,
+    ImportExportTests,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_library,
@@ -27,32 +28,8 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
-    skip_without_tool,
 )
 from ._framework import ApiTestCase
-
-
-class BaseHistories:
-    def _show(self, history_id):
-        return self._get(f"histories/{history_id}").json()
-
-    def _update(self, history_id, data):
-        update_url = self._api_url(f"histories/{history_id}", use_key=True)
-        put_response = put(update_url, json=data)
-        return put_response
-
-    def _create_history(self, name):
-        post_data = dict(name=name)
-        create_response = self._post("histories", data=post_data).json()
-        self._assert_has_keys(create_response, "name", "id")
-        assert create_response["name"] == name
-        return create_response
-
-    def _assert_history_length(self, history_id, n):
-        contents_response = self._get(f"histories/{history_id}/contents")
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        assert len(contents) == n, contents
 
 
 class TestHistoriesApi(ApiTestCase, BaseHistories):
@@ -773,259 +750,6 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert response.json() == expected_count
 
 
-class ImportExportTests(BaseHistories):
-    task_based: ClassVar[bool]
-
-    def _set_up_populators(self):
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
-
-    def test_import_export(self):
-        history_name = f"for_export_default_{uuid4()}"
-        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
-        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
-
-        def upload_job_check(job):
-            assert job["tool_id"] == "__DATA_FETCH__"
-
-        def check_discarded(hda):
-            assert hda["deleted"]
-            assert hda["state"] == "discarded", hda
-            assert hda["purged"] is True
-
-        self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
-        self._check_imported_dataset(
-            history_id=imported_history_id,
-            hid=2,
-            has_job=False,
-            hda_checker=check_discarded,
-            job_checker=upload_job_check,
-        )
-
-        imported_content = self.dataset_populator.get_history_dataset_content(
-            history_id=imported_history_id,
-            hid=1,
-        )
-        assert imported_content == "1 2 3\n"
-
-    def test_import_1901_histories(self):
-        f = open(self.test_data_resolver.get_filename("exports/1901_two_datasets.tgz"), "rb")
-        import_data = dict(archive_source="", archive_file=f)
-        self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
-
-    def test_import_export_include_deleted(self):
-        history_name = f"for_export_include_deleted_{uuid4()}"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
-        self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
-
-        imported_history_id = self._reimport_history(
-            history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": True}
-        )
-        self._assert_history_length(imported_history_id, 2)
-
-        def upload_job_check(job):
-            assert job["tool_id"] == "__DATA_FETCH__"
-
-        def check_deleted_not_purged(hda):
-            assert hda["state"] == "ok", hda
-            assert hda["deleted"] is True, hda
-            assert hda["purged"] is False, hda
-
-        self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
-        self._check_imported_dataset(
-            history_id=imported_history_id, hid=2, hda_checker=check_deleted_not_purged, job_checker=upload_job_check
-        )
-
-        imported_content = self.dataset_populator.get_history_dataset_content(
-            history_id=imported_history_id,
-            hid=1,
-        )
-        assert imported_content == "1 2 3\n"
-
-    @skip_without_tool("job_properties")
-    def test_import_export_failed_job(self):
-        history_name = f"for_export_include_failed_job_{uuid4()}"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.run_tool_raw("job_properties", inputs={"failbool": True}, history_id=history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
-
-        imported_history_id = self._reimport_history(
-            history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": True}
-        )
-        self._assert_history_length(imported_history_id, 4)
-
-        def check_failed(hda_or_job):
-            print(hda_or_job)
-            assert hda_or_job["state"] == "error", hda_or_job
-
-        self.dataset_populator._summarize_history(imported_history_id)
-
-        self._check_imported_dataset(
-            history_id=imported_history_id, hid=1, assert_ok=False, hda_checker=check_failed, job_checker=check_failed
-        )
-
-        # Also check collection state is preserved - regression test for issue #20450
-        imported_collection = self.dataset_populator.get_history_collection_details(
-            history_id=imported_history_id,
-            history_content_type="dataset_collection",
-            assert_ok=False,
-        )
-        assert "job_state_summary" in imported_collection, imported_collection
-        assert imported_collection["job_state_summary"].get("error", 0) == 1, (
-            f"Expected error count of 1 after import, got {imported_collection['job_state_summary']}. "
-            "Collection job state was not preserved during history export/import (issue #20450)."
-        )
-
-    def test_import_metadata_regeneration(self):
-        if self.task_based:
-            raise SkipTest("skipping test_import_metadata_regeneration for task based...")
-        history_name = f"for_import_metadata_regeneration_{uuid4()}"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
-        imported_history_id = self._reimport_history(history_id, history_name)
-        self._assert_history_length(imported_history_id, 1)
-        self._check_imported_dataset(history_id=imported_history_id, hid=1)
-        import_bam_metadata = self.dataset_populator.get_history_dataset_details(
-            history_id=imported_history_id,
-            hid=1,
-        )
-        # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
-        # after the job has entered its final state):
-        # - creates a new dataset with 'ok' state and adds it to the history
-        # - starts a __SET_METADATA__ job to regenerate the dataset metadata, if
-        #   needed
-        # We need to wait a bit for the creation of the __SET_METADATA__ job.
-        time.sleep(1)
-        self.dataset_populator.wait_for_history_jobs(imported_history_id, assert_ok=True)
-        bai_metadata = import_bam_metadata["meta_files"][0]
-        assert bai_metadata["file_type"] == "bam_index"
-        assert "api/" in bai_metadata["download_url"], bai_metadata["download_url"]
-        api_url = bai_metadata["download_url"].split("api/", 1)[1]
-        bai_response = self._get(api_url)
-        self._assert_status_code_is(bai_response, 200)
-        assert len(bai_response.content) > 4
-
-    def test_import_export_collection(self):
-        history_name = f"for_export_with_collections_{uuid4()}"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["Hello", "World"], direct_upload=True, wait=True
-        )
-
-        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
-        self._assert_history_length(imported_history_id, 3)
-
-        def check_elements(elements):
-            assert len(elements) == 2
-            element0 = elements[0]["object"]
-            element1 = elements[1]["object"]
-            for element in [element0, element1]:
-                assert not element["visible"]
-                assert not element["deleted"]
-                assert element["state"] == "ok"
-
-            assert element0["hid"] == 2
-            assert element1["hid"] == 3
-
-        self._check_imported_collection(
-            imported_history_id, hid=1, collection_type="list", elements_checker=check_elements
-        )
-
-    def test_import_export_nested_collection(self):
-        history_name = f"for_export_with_nested_collections_{uuid4()}"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id, wait=True).json()
-        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
-
-        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
-        self._assert_history_length(imported_history_id, 3)
-
-        def check_elements(elements):
-            assert len(elements) == 1
-            element0 = elements[0]["object"]
-            self._assert_has_keys(element0, "elements", "collection_type")
-
-            child_elements = element0["elements"]
-
-            assert len(child_elements) == 2
-            assert element0["collection_type"] == "paired"
-
-        self._check_imported_collection(
-            imported_history_id,
-            hid=dataset_collection["hid"],
-            collection_type="list:paired",
-            elements_checker=check_elements,
-        )
-
-    def _reimport_history(
-        self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds=None
-    ):
-        # Ensure the history is ready to go...
-        export_kwds = export_kwds or {}
-        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
-
-        return self.dataset_populator.reimport_history(
-            history_id,
-            history_name,
-            wait_on_history_length=wait_on_history_length,
-            export_kwds=export_kwds,
-            task_based=self.task_based,
-        )
-
-    def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
-        imported_history_id = self.dataset_populator.import_history_and_wait_for_name(import_data, history_name)
-
-        if wait_on_history_length:
-            self.dataset_populator.wait_on_history_length(imported_history_id, wait_on_history_length)
-
-        return imported_history_id
-
-    def _check_imported_dataset(
-        self, history_id, hid, assert_ok=True, has_job=True, hda_checker=None, job_checker=None
-    ):
-        imported_dataset_metadata = self.dataset_populator.get_history_dataset_details(
-            history_id=history_id,
-            hid=hid,
-            assert_ok=assert_ok,
-        )
-        assert imported_dataset_metadata["history_content_type"] == "dataset"
-        assert imported_dataset_metadata["history_id"] == history_id
-
-        if hda_checker is not None:
-            hda_checker(imported_dataset_metadata)
-
-        assert "creating_job" in imported_dataset_metadata
-        job_id = imported_dataset_metadata["creating_job"]
-        if has_job:
-            assert job_id
-
-            job_details = self.dataset_populator.get_job_details(job_id, full=True)
-            assert job_details.status_code == 200, job_details.content
-            job = job_details.json()
-            assert "history_id" in job, job
-            assert job["history_id"] == history_id, job
-
-            if job_checker is not None:
-                job_checker(job)
-
-    def _check_imported_collection(self, history_id, hid, collection_type=None, elements_checker=None):
-        imported_collection_metadata = self.dataset_populator.get_history_collection_details(
-            history_id=history_id,
-            hid=hid,
-        )
-        assert imported_collection_metadata["history_content_type"] == "dataset_collection"
-        assert imported_collection_metadata["history_id"] == history_id
-        assert "collection_type" in imported_collection_metadata
-        assert "elements" in imported_collection_metadata
-        if collection_type is not None:
-            assert imported_collection_metadata["collection_type"] == collection_type, imported_collection_metadata
-
-        if elements_checker is not None:
-            elements_checker(imported_collection_metadata["elements"])
-
-
 class TestImportExportHistory(ApiTestCase, ImportExportTests):
     task_based = False
 
@@ -1170,7 +894,8 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     @requires_new_user
     def test_sharing_private_history_makes_datasets_public(self):
         history_id = self.dataset_populator.new_history()
-        hda = self.dataset_populator.new_dataset(history_id)
+        # Let the upload job finish first; it still updates the dataset while it runs.
+        hda = self.dataset_populator.new_dataset(history_id, wait=True)
         hda_id = hda["id"]
 
         self.dataset_populator.make_private(history_id, hda_id)
@@ -1309,8 +1034,7 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
             self._assert_status_code_is(restore_response, 403)
 
     def test_archived_histories_index(self):
-        with self._different_user("archived_histories_index_user@bx.psu.edu"):
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history("archived_histories_index_user@bx.psu.edu") as history_id:
 
             archive_response = self.dataset_populator.archive_history(history_id)
             self._assert_status_code_is(archive_response, 200)

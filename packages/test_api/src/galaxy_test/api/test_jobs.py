@@ -10,8 +10,8 @@ from dateutil.parser import isoparse
 
 from galaxy.util import now
 from galaxy.util.unittest_utils import transient_failure
-from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
+from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -1155,8 +1155,7 @@ steps:
     @skip_without_tool("collection_paired_test")
     def test_dce_submission_security(self, history_id):
         rerun_params = self._get_simple_rerun_params(history_id, private=True)
-        with self._different_user():
-            other_history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as other_history_id:
             response = self._run(
                 history_id=other_history_id,
                 tool_id="collection_paired_test",

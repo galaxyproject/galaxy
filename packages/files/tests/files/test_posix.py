@@ -46,6 +46,7 @@ def test_posix():
     assert len(as_dict["file_sources"]) == 1
     file_source_as_dict = as_dict["file_sources"][0]
     assert file_source_as_dict["uri_root"] == "gxfiles://test1"
+    assert file_source_as_dict["supports"]["recursive"] is True
 
     _download_and_check_file(file_sources)
 

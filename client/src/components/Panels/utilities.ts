@@ -23,6 +23,7 @@ import type {
     ToolSectionLabel,
 } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
+import { compareToolVersions } from "@/utils/tool-version";
 
 export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
 
@@ -401,12 +402,13 @@ export function getValidPanelItems(
 
 /**
  * Given toolbox, keys to sort/search results by and a search query,
- * Does a direct string.match() comparison to find results,
+ * Does a direct substring comparison to find results,
  * If that produces nothing, runs Damerau-Levenshtein distance algorithm to allow misspells
  *
  * @param tools - toolbox
  * @param query - a search query
  * @param currentPanel - current ToolPanel with { section_id: { tools: [tool ids] }, ... }
+ * @param favoriteToolIds - the user's favorite tool ids, preferred when collapsing tool versions
  * @returns an object containing
  * - results: array of tool ids that match the query
  * - resultPanel: a ToolPanel with only the results for the currentPanel
@@ -418,6 +420,7 @@ export function searchTools(
     tools: Tool[],
     query: string,
     currentPanel: Record<string, ToolPanelItem>,
+    favoriteToolIds: string[] = [],
 ): {
     results: string[];
     resultPanel: Record<string, Tool | ToolSection>;
@@ -428,7 +431,95 @@ export function searchTools(
         "description",
     ]);
     const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
-    return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
+    // Placed versions of one tool would otherwise render as duplicates (#23151).
+    const orderById = new Map(matchedResults.map((match) => [match.id, match.order]));
+    const { results, resultPanel: dedupedPanel } = dedupeResultsByToolLineage(
+        idResults,
+        resultPanel,
+        tools,
+        orderById,
+        new Set(favoriteToolIds),
+    );
+    return { results, resultPanel: dedupedPanel, closestTerm: closestTerm };
+}
+
+/**
+ * Collapses search results that belong to the same tool lineage (the same tool
+ * installed at multiple versions) down to a single result. The best-ranked version
+ * wins; among equally ranked versions a favorited one wins, then the latest one, so
+ * the result does not depend on the order the tools API lists versions in. Also
+ * prunes the sectioned `resultPanel` so the dropped ids no longer render, removing
+ * any section left empty as a result.
+ *
+ * @param idResults ordered result tool ids from `createSortedResultPanel`
+ * @param resultPanel sectioned result panel from `createSortedResultPanel`
+ * @param tools the searched tools, used to resolve each id's version
+ * @param orderById search rank of each result id (higher ranks first)
+ * @param favoriteToolIds favorited tool ids, preferred over newer versions of equal rank
+ * @returns the de-duplicated `results` and matching `resultPanel`
+ */
+export function dedupeResultsByToolLineage(
+    idResults: string[],
+    resultPanel: Record<string, Tool | ToolSection>,
+    tools: Tool[],
+    orderById: Map<string, number> = new Map(),
+    favoriteToolIds: Set<string> = new Set(),
+): { results: string[]; resultPanel: Record<string, Tool | ToolSection> } {
+    const toolById = new Map(tools.map((tool) => [tool.id, tool]));
+    const keptByLineage = new Map<string, string>();
+    for (const id of idResults) {
+        const lineage = getVersionlessToolId(id, toolById.get(id));
+        const keptId = keptByLineage.get(lineage);
+        if (keptId === undefined || isPreferredLineageResult(id, keptId, toolById, orderById, favoriteToolIds)) {
+            keptByLineage.set(lineage, id);
+        }
+    }
+    // Map keeps first-insertion order, so each lineage stays at its best-ranked slot.
+    const results = Array.from(keptByLineage.values());
+
+    // Nothing collapsed: keep the original panel untouched.
+    if (results.length === idResults.length) {
+        return { results: idResults, resultPanel };
+    }
+
+    const keptIds = new Set(results);
+    const prunedPanel: Record<string, Tool | ToolSection> = {};
+    for (const [key, item] of Object.entries(resultPanel)) {
+        if (isToolSection(item)) {
+            const sectionTools = (item.tools ?? []).filter(
+                (toolId) => typeof toolId !== "string" || keptIds.has(toolId),
+            );
+            if (sectionTools.length > 0) {
+                prunedPanel[key] = { ...item, tools: sectionTools };
+            }
+        } else if (isTool(item)) {
+            if (keptIds.has(item.id)) {
+                prunedPanel[key] = item;
+            }
+        } else {
+            prunedPanel[key] = item;
+        }
+    }
+    return { results, resultPanel: prunedPanel };
+}
+
+function isPreferredLineageResult(
+    candidateId: string,
+    keptId: string,
+    toolById: Map<string, Tool>,
+    orderById: Map<string, number>,
+    favoriteToolIds: Set<string>,
+) {
+    const candidateOrder = orderById.get(candidateId) ?? 0;
+    const keptOrder = orderById.get(keptId) ?? 0;
+    if (candidateOrder !== keptOrder) {
+        return candidateOrder > keptOrder;
+    }
+    const candidateFavorite = favoriteToolIds.has(candidateId);
+    if (candidateFavorite !== favoriteToolIds.has(keptId)) {
+        return candidateFavorite;
+    }
+    return compareToolVersions(toolById.get(candidateId)?.version, toolById.get(keptId)?.version) > 0;
 }
 
 export function searchSections(sections: ToolSection[], query: string) {
@@ -526,8 +617,8 @@ export function searchObjectsByKeys<T extends { id: string }>(
 
                 const wordMatches = Array.from(new Set(actualValueWords.filter((word) => queryWords.includes(word))));
                 if (!usesDL) {
-                    if (actualValue.match(queryValue)) {
-                        // if string.match() returns true, matching searchedObj found
+                    if (actualValue.includes(queryValue)) {
+                        // if actualValue contains the query, matching searchedObj found
                         matchedResults.push({ id: searchedObj.id, order });
                         break;
                     } else if (
@@ -540,7 +631,7 @@ export function searchObjectsByKeys<T extends { id: string }>(
                         break;
                     }
                 } else if (usesDL) {
-                    // if string.match() returns false, try DL distance once to see if there is a closestSubstring
+                    // if there is no substring match, try DL distance once to see if there is a closestSubstring
                     let substring = null;
                     if (nameKeys.includes(key) && queryValue.length >= MINIMUM_DL_LENGTH) {
                         substring = closestSubstring(queryValue, actualValue);
@@ -559,7 +650,7 @@ export function searchObjectsByKeys<T extends { id: string }>(
             }
         }
     }
-    // no results with string.match(): recursive call with usesDL
+    // no substring results: recursive call with usesDL
     if (!filteredQuery && !usesDL && matchedResults.length == 0) {
         return searchObjectsByKeys(objects, keys, query, nameKeys, true);
     }
@@ -675,11 +766,9 @@ function closestSubstring(query: string, actualStr: string) {
 
 // given array and a substring, get the closest matching term for substring
 function matchingTerm(termArray: string[], substring: string) {
-    const sanitized = sanitizeString(substring);
-
     for (const i in termArray) {
         const term = termArray[i];
-        if (term?.match(sanitized)) {
+        if (term?.includes(substring)) {
             return term;
         }
     }
@@ -699,7 +788,7 @@ function sanitizeString(value: string, targets: string[] = [], substitute = "") 
         sanitized = sanitized.replace(new RegExp(rep, "g"), substitute);
     });
 
-    return sanitized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return sanitized;
 }
 
 /**

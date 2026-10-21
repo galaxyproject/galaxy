@@ -17,6 +17,8 @@ from typing_extensions import (
     Self,
 )
 
+from .untrusted import is_loading_untrusted_tools
+
 try:
     import regex
 except ImportError:
@@ -145,6 +147,9 @@ class ExpressionParameterValidatorModel(StaticValidatorModel):
     def expression_validation(
         expression: str, value: Any, validator: "ValidatorDescription", compiled_expression: Any | None = None
     ):
+        if is_loading_untrusted_tools():
+            # expressions are Python, which untrusted tools must not run
+            return
         if compiled_expression is None:
             compiled_expression = ExpressionParameterValidatorModel.ensure_compiled(expression)
         message = None

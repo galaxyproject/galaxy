@@ -1237,7 +1237,8 @@
       -->
       <group id="default"></group>
       <group id="memoryonly">memory</group>
-      <group id="all">processors,memory,time,project</group>
+      <group id="gpu">processors,memory,gpus</group>
+      <group id="all">processors,memory,time,project,gpus</group>
     </resources>
     <tools>
         <!-- Tools can be configured to use specific destinations or handlers,

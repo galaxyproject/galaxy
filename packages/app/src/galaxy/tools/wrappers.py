@@ -13,6 +13,7 @@ from functools import total_ordering
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
     TYPE_CHECKING,
     TypeAlias,
@@ -43,6 +44,7 @@ from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
+from galaxy.tools.runtime import dataset_path
 from galaxy.util import (
     filesystem_safe_string,
     safe_filename_component,
@@ -235,7 +237,9 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
                 # If we infer this is a path, rewrite it if needed.
                 new_values = []
                 for value in values:
-                    rewrite_value = self._compute_environment.unstructured_path_rewrite(value)
+                    rewrite_value = self._bundle_path_rewrite(value, self._compute_environment)
+                    if rewrite_value is None:
+                        rewrite_value = self._compute_environment.unstructured_path_rewrite(value)
                     if rewrite_value:
                         new_values.append(rewrite_value)
                     else:
@@ -243,6 +247,18 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
                 return self._input.separator.join(new_values)
 
             return self._input.separator.join(values)
+
+        def _bundle_path_rewrite(self, value: str, compute_environment: "ComputeEnvironment") -> str | None:
+            # Data table entries from a data manager bundle point into the
+            # bundle dataset's extra files, which the compute environment
+            # rewrites like any other input's extra files.
+            if not isinstance(self._value, DatasetInstance):
+                return None
+            extra_files_path = self._value.extra_files_path
+            if value != extra_files_path and not value.startswith(extra_files_path + os.sep):
+                return None
+            compute_extra_files_path: str = compute_environment.input_extra_files_rewrite(self._value)
+            return compute_extra_files_path + value[len(extra_files_path) :]
 
     def __init__(
         self,
@@ -472,6 +488,27 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def is_deferred(self) -> bool:
         return self.unsanitized.has_deferred_data
+
+    @property
+    def path(self) -> str:
+        """Where the tool finds this dataset's data on disk.
+
+        The dataset's file, or for directory datatypes the folder holding their
+        content. Raises for an unset optional input, and for a deferred dataset
+        passed on as its source URI, which ``$input`` itself renders (see ``is_deferred``).
+        An empty value would turn ``'$input.path'/sub`` into an absolute path.
+        """
+        # Not AttributeError, which Python would hand to __getattr__ and turn into a dataset attribute lookup.
+        if not self:
+            raise ValueError("The dataset input is not set, so it has no path; check '#if $input' first")
+        if self.is_deferred:
+            raise ValueError(
+                "The dataset input is deferred and passed on as its source URI, which '$input' renders; "
+                "check '$input.is_deferred' first"
+            )
+        io_type: Literal["input", "output"] = "output" if self.__io_type == "output" else "input"
+        # Cheetah pastes this into the command line unescaped.
+        return dataset_path(self.unsanitized, self.compute_environment, io_type, shell_quotable=True)
 
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []

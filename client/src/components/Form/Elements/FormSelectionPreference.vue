@@ -30,14 +30,17 @@ const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
 
 <template>
     <div class="d-flex">
-        <button v-if="showManyButton" class="ui-link ml-1" @click="emit('use-many', true)">
+        <button v-if="showManyButton" class="ui-link ml-1 select-preference-switch" @click="emit('use-many', true)">
             switch to column select
         </button>
-        <button v-else-if="showMultiButton" class="ui-link ml-1" @click="emit('use-many', false)">
+        <button
+            v-else-if="showMultiButton"
+            class="ui-link ml-1 select-preference-switch"
+            @click="emit('use-many', false)">
             switch to simple select
         </button>
 
-        <GDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
+        <GDropdown toggle-class="inline-icon-button d-block px-1 select-preference-toggle" variant="link" no-caret>
             <template v-slot:button-content>
                 <FontAwesomeIcon :icon="faCaretDown" />
                 <span class="sr-only">select element preferences</span>
@@ -60,3 +63,11 @@ const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
         </GDropdown>
     </div>
 </template>
+
+<style scoped>
+.select-preference-switch,
+:deep(.select-preference-toggle) {
+    min-width: 24px;
+    min-height: 24px;
+}
+</style>

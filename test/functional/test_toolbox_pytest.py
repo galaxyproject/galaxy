@@ -11,7 +11,7 @@ from galaxy.tool_util.verify.interactor import (
     DEFAULT_USE_LEGACY_API,
     UseLegacyApiT,
 )
-from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.api_testcase import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 from galaxy_test.driver.integration_util import ConfiguresDatabaseVault
 

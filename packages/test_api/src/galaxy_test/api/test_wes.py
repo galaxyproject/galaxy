@@ -15,24 +15,10 @@ import requests
 from galaxy_test.base.api_asserts import assert_status_code_is
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_OUTPUT,
+    WORKFLOW_SIMPLE,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
 )
 from .test_workflows import BaseWorkflowsApiTestCase
-
-WORKFLOW_SIMPLE = """
-class: GalaxyWorkflow
-name: Simple Workflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-"""
 
 
 def workflow_types_parametrize(func):

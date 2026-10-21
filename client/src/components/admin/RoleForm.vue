@@ -163,16 +163,20 @@ fetchData();
             <template v-if="!loadFailed">
                 <FormCard :title="isEditMode ? `Role '${savedName}'` : 'Create a new Role'" icon="fa-file-contract">
                     <template v-slot:body>
-                        <FormElementLabel title="Name" :required="true" :condition="!!name">
+                        <FormElementLabel title="Name" label-for="role-name" :required="true" :condition="!!name">
                             <FormInput id="role-name" v-model="name" />
                         </FormElementLabel>
-                        <FormElementLabel title="Description" :required="!isEditMode" :condition="!!description">
+                        <FormElementLabel
+                            title="Description"
+                            label-for="role-description"
+                            :required="!isEditMode"
+                            :condition="!!description">
                             <FormInput id="role-description" v-model="description" />
                         </FormElementLabel>
-                        <FormElementLabel v-if="!isEditMode" title="Role Type" :required="true">
+                        <FormElementLabel v-if="!isEditMode" title="Role Type" label-for="role-type" :required="true">
                             <FormSelection id="role-type" v-model="roleType" :data="roleTypes" />
                         </FormElementLabel>
-                        <FormElementLabel id="role-groups" title="Groups">
+                        <FormElementLabel id="role-groups" title="Groups" label-for="role-groups-select">
                             <Multiselect
                                 id="role-groups-select"
                                 v-model="selectedGroups"
@@ -184,7 +188,7 @@ fetchData();
                                 track-by="id"
                                 placeholder="Select groups..." />
                         </FormElementLabel>
-                        <FormElementLabel id="role-users" title="Users">
+                        <FormElementLabel id="role-users" title="Users" label-for="role-users-select">
                             <Multiselect
                                 id="role-users-select"
                                 v-model="selectedUsers"

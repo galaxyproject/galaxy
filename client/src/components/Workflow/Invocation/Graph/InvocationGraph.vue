@@ -256,6 +256,7 @@ function toggleDetailedView() {
                         <GButtonGroup>
                             <GButton
                                 title="Previous Step"
+                                data-description="invocation graph previous step button"
                                 :disabled="activeNodeId === 0"
                                 disabled-title="No Previous Step"
                                 transparent
@@ -265,6 +266,7 @@ function toggleDetailedView() {
                             </GButton>
                             <GButton
                                 title="Next Step"
+                                data-description="invocation graph next step button"
                                 :disabled="activeNodeId === Object.keys(props.workflow.steps).length - 1"
                                 disabled-title="No More Steps"
                                 transparent
@@ -273,7 +275,12 @@ function toggleDetailedView() {
                                 Next
                             </GButton>
                         </GButtonGroup>
-                        <GButton title="Hide Step" size="small" transparent @click="activeNodeId = null">
+                        <GButton
+                            title="Hide Step"
+                            data-description="invocation graph hide step button"
+                            size="small"
+                            transparent
+                            @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
                         </GButton>
                     </div>

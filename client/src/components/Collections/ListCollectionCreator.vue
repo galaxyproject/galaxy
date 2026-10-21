@@ -650,6 +650,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                                     :class="{ selected: getSelectedDatasetElements.includes(element.id) }"
                                     :element="element"
                                     has-actions
+                                    selectable
                                     :selected="getSelectedDatasetElements.includes(element.id)"
                                     :show-hid="showHid"
                                     @element-is-selected="elementSelected"
@@ -725,6 +726,11 @@ function selectionAsHdaSummary(value: any): HDASummary {
         overflow: hidden;
         border: 1px solid lightgrey;
         border-radius: 3px;
+
+        // The rename field and its focus ring are taller than the row, so stop clipping while it is open
+        &:has(.input-icon-wrapper) {
+            overflow: visible;
+        }
 
         &.with-actions {
             margin: 2px 4px 0px 4px;

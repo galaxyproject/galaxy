@@ -3,7 +3,6 @@ import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -22,6 +21,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
 import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
@@ -403,10 +403,12 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 
                     <FolderDetails :id="props.folderId" class="mr-1" :metadata="props.metadata" />
 
-                    <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <BFormCheckbox :checked="props.includeDeleted" @change="$emit('update:includeDeleted', $event)">
+                    <div v-if="canDelete" class="logged-dataset-manipulation mr-1">
+                        <GCheckbox
+                            :model-value="props.includeDeleted"
+                            @update:model-value="$emit('update:includeDeleted', $event)">
                             include deleted
-                        </BFormCheckbox>
+                        </GCheckbox>
                     </div>
 
                     <GButton

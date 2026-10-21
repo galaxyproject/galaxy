@@ -237,6 +237,30 @@ Galaxy has very sophisticated job configuration options that allow different too
 
 The two most generic and useful dynamic destination types are `python` and `dtd`. The `python` type allows arbitrary Python functions to define destinations for jobs, while the DTD method (introduced in Galaxy 16.07) defines rules for routing in a YAML file.
 
+#### Detecting reference data table usage
+
+Python destination rules can distinguish tools that declare data table parameters
+from jobs that actually select them:
+
+```python
+def reference_destination(tool, job):
+    if tool.is_using_data_table(job):
+        return "cluster_with_references"
+    return "general_cluster"
+```
+
+`tool.has_data_table` reports whether any select parameter uses `options from_data_table`,
+including parameters in inactive conditional branches. `tool.is_using_data_table(job)`
+checks the job's active parameter state, including repeats and sections. A
+history-reference branch, an empty selection, or a history dataset supplied to a
+table-backed select does not count as installed table usage. Job parameters are
+only decoded from JSON, so datasets are not loaded, and parameter state that no
+longer matches the tool is ignored rather than raising.
+
+This detects populated table-backed selections only. It does not verify that the
+value exists in the table, detect legacy `from_file` options, or detect table
+access in tool templates, output actions or code.
+
 #### Dynamic Destination Mapping (DTD method)
 
 DTD is a special dynamic job destination type that builds up rules given a YAML-based DSL - see `config/tool_destinations.yml.sample` (on [Github](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/tool_destinations.yml.sample)) for a syntax description, examples, and a description of how to validate and debug this file.
@@ -336,6 +360,10 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 ``resource_params``
 : A dictionary of parameters specified by the user using ``job_resource_params_conf.xml`` (if configured).
+  The sample file declares ``processors``, ``memory``, ``gpus``, ``time`` and ``project``. A rule can map these
+  onto destination parameters for any runner. Some runners also read them directly: the GCP Batch runner uses
+  ``processors``, ``mem``, ``walltime`` and ``gpus``, and a ``gpus`` value entered by the user, including 0,
+  takes precedence over the ``gpus`` destination parameter. A blank field falls through to the destination.
 
 ``workflow_invocation_uuid``
 : A randomly generated UUID for the workflow invocation generating this job - this can be

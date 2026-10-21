@@ -17,6 +17,7 @@ export type FormParameterTypes =
     | "text"
     | "password"
     | "select"
+    | "select_or_text"
     | "data_column"
     | "genomebuild"
     | "data"

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -18,6 +17,7 @@ import { getUploadMethod } from "./uploadMethodRegistry";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import TargetHistorySelector from "@/components/History/TargetHistorySelector.vue";
@@ -152,7 +152,7 @@ function handleReadyStateChange(ready: boolean) {
 <template>
     <div class="upload-method-view d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems">
-            <BFormCheckbox
+            <GCheckbox
                 v-model="advancedMode"
                 v-g-tooltip.hover
                 data-test-id="upload-advanced-mode-toggle"
@@ -160,7 +160,7 @@ function handleReadyStateChange(ready: boolean) {
                 class="ml-auto align-self-center"
                 title="Show advanced upload options">
                 <span>Advanced</span>
-            </BFormCheckbox>
+            </GCheckbox>
         </BreadcrumbHeading>
 
         <div v-if="method" class="upload-method-content flex-grow-1 d-flex flex-column overflow-hidden">

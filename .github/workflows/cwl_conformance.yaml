@@ -12,6 +12,7 @@ on:
       - 'packages/test_selenium/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

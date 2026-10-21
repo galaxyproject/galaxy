@@ -4,7 +4,11 @@
 
 import logging
 import os.path
+import threading
 import time
+from typing import (
+    Any,
+)
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -63,33 +67,132 @@ def get_watcher(
         return NullWatcher()
 
 
+class _SharedObserver:
+    """An observer shared by all watchers in this process that use the same observer class.
+
+    Every watched directory costs a native observer an inotify instance and watch (on Linux), and every
+    observer costs a thread, so giving each watcher (or, as TPV does, each watched file) its own observer
+    quickly exhausts ``fs.inotify.max_user_instances`` and ``fs.inotify.max_user_watches`` on hosts running
+    many Galaxy processes. A shared observer creates one emitter per watched directory, no matter how many
+    watchers schedule a handler for it, and removes the emitter once the last of those handlers is gone.
+    """
+
+    def __init__(self, observer_class):
+        self.observer_class = observer_class
+        self.observer = observer_class()
+        # watchdog holds this (reentrant) lock while dispatching events, so a callback can register new
+        # watches; using it to guard our bookkeeping too avoids lock-order inversions with the dispatch thread.
+        self.lock = self.observer._lock
+        self.users = 0
+        self.watch_users = {}
+
+    def schedule(self, event_handler, dir_path, recursive):
+        with self.lock:
+            watch = self.observer.schedule(event_handler, dir_path, recursive=recursive)
+            self.watch_users[watch] = self.watch_users.get(watch, 0) + 1
+            return watch
+
+    def unschedule(self, event_handler, watch):
+        with self.lock:
+            self.observer.remove_handler_for_watch(event_handler, watch)
+            self.watch_users[watch] -= 1
+            if not self.watch_users[watch]:
+                del self.watch_users[watch]
+                self.observer.unschedule(watch)
+
+
+_shared_observers: dict[Any, _SharedObserver] = {}
+_shared_observers_lock = threading.Lock()
+
+
+def _acquire_observer(observer_class):
+    with _shared_observers_lock:
+        shared = _shared_observers.get(observer_class)
+        if shared is None:
+            shared = _shared_observers[observer_class] = _SharedObserver(observer_class)
+            shared.observer.start()
+        shared.users += 1
+        return shared
+
+
+def _release_observer(shared):
+    with _shared_observers_lock:
+        shared.users -= 1
+        if shared.users:
+            return
+        del _shared_observers[shared.observer_class]
+    shared.observer.stop()
+    shared.observer.join()
+
+
+class _ExceptionLoggingEventHandler(FileSystemEventHandler):
+    """Dispatch events to a watcher's current event handler, logging instead of raising exceptions.
+
+    An exception escaping an event handler terminates the observer thread, which would stop
+    every watcher sharing the observer.
+    """
+
+    def __init__(self, watcher):
+        self.watcher = watcher
+
+    def dispatch(self, event):
+        try:
+            self.watcher.event_handler.dispatch(event)
+        except Exception:
+            log.exception("Error handling file system event %s", event)
+
+
 class BaseWatcher:
     def __init__(self, observer_class, event_handler_class, **kwargs):
         self.observer = None
         self.observer_class = observer_class
         self.event_handler = event_handler_class(self)
         self.monitored_dirs = {}
+        self._shared_observer: _SharedObserver | None = None
+        self._dispatch_handler = _ExceptionLoggingEventHandler(self)
+        self._watches = {}
 
     def start(self):
-        if self.observer is None:
-            self.observer = self.observer_class()
-            self.observer.start()
+        if self._shared_observer is None:
+            self._shared_observer = _acquire_observer(self.observer_class)
+            self.observer = self._shared_observer.observer
             self.resume_watching()
 
     def monitor(self, dir_path, recursive=False):
         self.monitored_dirs[dir_path] = recursive
-        if self.observer is not None:
-            self.observer.schedule(self.event_handler, dir_path, recursive=recursive)
+        shared = self._shared_observer
+        if shared is None:
+            return
+        with shared.lock:
+            if self._shared_observer is not shared:
+                # shut down while we were waiting for the lock
+                return
+            watch = self._watches.get(dir_path)
+            if watch is not None:
+                if watch.is_recursive == recursive:
+                    return
+                shared.unschedule(self._dispatch_handler, watch)
+                del self._watches[dir_path]
+            self._watches[dir_path] = shared.schedule(self._dispatch_handler, dir_path, recursive)
 
     def resume_watching(self):
-        for dir_path, recursive in self.monitored_dirs.items():
+        for dir_path, recursive in list(self.monitored_dirs.items()):
             self.monitor(dir_path, recursive)
 
     def shutdown(self):
-        if self.observer is not None:
-            self.observer.stop()
-            self.observer.join()
+        shared = self._shared_observer
+        if shared is None:
+            return
+        with shared.lock:
+            if self._shared_observer is not shared:
+                # concurrently shut down by another thread
+                return
+            for watch in self._watches.values():
+                shared.unschedule(self._dispatch_handler, watch)
+            self._watches.clear()
+            self._shared_observer = None
             self.observer = None
+        _release_observer(shared)
 
 
 class Watcher(BaseWatcher):
@@ -105,11 +208,11 @@ class Watcher(BaseWatcher):
     def watch_file(self, file_path, callback=None):
         file_path = os.path.abspath(file_path)
         dir_path = os.path.dirname(file_path)
+        if callback is not None:
+            self.file_callbacks[file_path] = callback
         if dir_path not in self.monitored_dirs:
-            if callback is not None:
-                self.file_callbacks[file_path] = callback
             self.monitor(dir_path)
-            log.debug("Watching for changes to file: %s", file_path)
+        log.debug("Watching for changes to file: %s", file_path)
 
     def watch_directory(
         self, dir_path, callback=None, recursive=False, ignore_extensions=None, require_extensions=None

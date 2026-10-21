@@ -1,13 +1,19 @@
+import json
+import tarfile
 import tempfile
 
 import pytest
 
 from galaxy.tool_util.cwl.util import (
+    DirectoryUploadTarget,
     FileLiteralTarget,
+    FileUploadTarget,
     galactic_job_json,
     GalaxyOutput,
     output_properties,
     output_to_cwl_json,
+    SECONDARY_FILES_EXTRA_PREFIX,
+    SECONDARY_FILES_INDEX_PATH,
     UploadTarget,
 )
 
@@ -364,3 +370,47 @@ def test_output_to_cwl_json_paired_or_unpaired_paired():
 def test_output_to_cwl_json_unsupported_collection_type():
     with pytest.raises(NotImplementedError, match="not_a_real_type"):
         _output_to_cwl_json(_collection_output("not_a_real_type", ["e1"]))
+
+
+# Sized so part of this file is still in the write buffer (4 KiB to 128 KiB)
+# if the archive is handed to the upload before being flushed.
+ARCHIVED_CONTENT = b"x" * 5376
+
+
+def _archived_member(tar_path, member):
+    with tarfile.open(tar_path) as archive:
+        extracted = archive.extractfile(member)
+        assert extracted is not None
+        return extracted.read()
+
+
+def test_galactic_job_json_directory_archive_is_complete_when_uploaded(tmp_path):
+    (tmp_path / "index").mkdir()
+    (tmp_path / "index" / "reference.ann").write_bytes(ARCHIVED_CONTENT)
+    uploaded = []
+
+    def upload_func(upload_target):
+        assert isinstance(upload_target, DirectoryUploadTarget)
+        uploaded.append(_archived_member(upload_target.tar_path, "./reference.ann"))
+        return _mock_upload_func(upload_target)
+
+    job = {"input1": {"class": "Directory", "path": "index"}}
+    galactic_job_json(job, str(tmp_path), upload_func, _mock_collection_create_func, tool_or_workflow="tool")
+    assert uploaded == [ARCHIVED_CONTENT]
+
+
+def test_galactic_job_json_secondary_files_archive_is_complete_when_uploaded(tmp_path):
+    (tmp_path / "ref.fa").write_text(">chr1\nACGT\n")
+    (tmp_path / "ref.fa.fai").write_bytes(ARCHIVED_CONTENT)
+    uploaded = []
+
+    def upload_func(upload_target):
+        assert isinstance(upload_target, FileUploadTarget)
+        tar_path = upload_target.secondary_files
+        index = json.loads(_archived_member(tar_path, SECONDARY_FILES_INDEX_PATH))
+        uploaded.append((_archived_member(tar_path, f"{SECONDARY_FILES_EXTRA_PREFIX}/ref.fa.fai"), index))
+        return _mock_upload_func(upload_target)
+
+    job = {"input1": {"class": "File", "path": "ref.fa", "secondaryFiles": [{"class": "File", "path": "ref.fa.fai"}]}}
+    galactic_job_json(job, str(tmp_path), upload_func, _mock_collection_create_func, tool_or_workflow="tool")
+    assert uploaded == [(ARCHIVED_CONTENT, {"order": ["ref.fa.fai"]})]

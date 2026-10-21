@@ -1288,6 +1288,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``admin_extensions_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Admin extensions directory: where to look for extensions that add
+    sections and links to the Admin panel. Each extension is a
+    subdirectory containing a config.yml. By default none are shipped,
+    so nothing is loaded. To use an absolute path begin the path with
+    '/'. This is a comma-separated list.
+:Default: ``config/plugins/admin``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~
 ``webhooks_dir``
 ~~~~~~~~~~~~~~~~
@@ -6036,8 +6050,8 @@
     next query since GTNSearchDB opens a read-only connection per
     call. Only registered when ``inference_services`` is configured
     (i.e. GalaxyAI is in use). Set to 0 to disable automatic refresh
-    -- admins can still refresh on demand via ``python -m
-    galaxy.agents.gtn --refresh``. Requires celery.
+    -- admins can still refresh on demand via ``python -m galaxy.gtn
+    --refresh``. Requires celery.
 :Default: ``86400``
 :Type: int
 

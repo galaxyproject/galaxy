@@ -26,6 +26,8 @@ on:
       - mypy.ini
       - pyproject.toml
       - tox.ini
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

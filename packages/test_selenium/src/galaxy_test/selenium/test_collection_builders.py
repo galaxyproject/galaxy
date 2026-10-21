@@ -103,7 +103,7 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         uploader.stage_paste_content("forward content 2", {"name": "bar2.txt"})
         uploader.start()
         self._wait_for_and_select([1, 2, 3, 4])
-        self.history_panel_build_list_of_lists()
+        self.history_panel_build_list_of_lists(screenshot_name="collection_builder_which_builder_list_list")
         self.list_wizard_click_cell_and_send_keys("outerIdentifier", 2, "outer1")
         self.list_wizard_click_cell_and_send_keys("outerIdentifier", 3, "outer1")
         self.list_wizard_click_cell_and_send_keys("outerIdentifier", 4, "outer2")

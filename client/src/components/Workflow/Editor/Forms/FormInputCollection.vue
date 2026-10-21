@@ -134,7 +134,7 @@ emit("onChange", cleanToolState());
 
 <template>
     <div>
-        <FormCollectionType :value="collectionType" :optional="true" @onChange="onCollectionType" />
+        <FormCollectionType :value="collectionType" @onChange="onCollectionType" />
         <FormElement id="optional" :value="toolState.optional" title="Optional" type="boolean" @input="onOptional" />
         <FormDatatype
             id="format"

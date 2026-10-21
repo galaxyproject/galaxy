@@ -296,9 +296,11 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.tool_open("identifier_multiple")
         self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        select_field = self.components.tool_form.parameter_data_select(parameter="input1")
-        self.select_set_value(select_field, "list:list")
-        self.sleep_for(self.wait_types.UX_RENDER)
+        # input1 is a multi-select; multiple=True closes its dropdown so it does not cover the hint
+        self.tool_form_select_data("input1", "list:list", multiple=True)
+        hint = self.tool_form_wait_for_batch_info("input1", "one job per list")
+        assert hint == "The supplied input will be mapped over this tool: one job per list."
+        self.screenshot("tool_form_map_over_nested_collection_hint")
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(7)
         self.history_panel_expand_collection(7)
@@ -310,6 +312,16 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.tool_form_execute()
         self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(9)
+
+    @selenium_test
+    def test_map_over_paired_collection_hint(self):
+        history_id = self.current_history_id()
+        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id, name="paired list", wait=True)
+        self.tool_open("collection_paired_test")
+        self.tool_form_select_data("f1", "paired list")
+        hint = self.tool_form_wait_for_batch_info("f1", "one job per dataset pair")
+        assert hint == "The supplied input will be mapped over this tool: one job per dataset pair."
+        self.screenshot("tool_form_map_over_paired_collection_hint")
 
     @selenium_test
     @flakey

@@ -11,7 +11,6 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
@@ -23,6 +22,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GCard from "@/components/Common/GCard.vue";
 
 const props = defineProps<{
@@ -226,16 +226,16 @@ function markNotificationAsSeen() {
                 <template v-if="props.notification.category === 'new_shared_item'">
                     <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
                     >{{ " " }}<span>shared </span>
-                    <BLink
-                        v-g-tooltip.bottom
+                    <GLink
+                        tooltip
+                        tooltip-placement="bottom"
                         :title="`View ${props.notification.content.item_type} in new tab`"
-                        class="text-primary"
                         :href="absPath(props.notification.content.slug)"
                         target="_blank"
                         @click="markNotificationAsSeen()">
                         {{ props.notification.content.item_name }}
                         <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
-                    </BLink>
+                    </GLink>
                     <em>{{ props.notification.content.item_type }}</em
                     >{{ " " }}<span> with you.</span>
                 </template>
@@ -296,9 +296,9 @@ function markNotificationAsSeen() {
                         <template v-if="props.notification.content.requester_email">
                             <dt>Requested by</dt>
                             <dd>
-                                <BLink :href="`mailto:${props.notification.content.requester_email}`">
+                                <GLink :href="`mailto:${props.notification.content.requester_email}`">
                                     {{ props.notification.content.requester_email }}
-                                </BLink>
+                                </GLink>
                             </dd>
                         </template>
                     </dl>
@@ -321,12 +321,9 @@ function markNotificationAsSeen() {
                         <span class="mx-2">|</span>
                         <strong>Skipped:</strong> {{ props.notification.content.skipped_count }}
                     </p>
-                    <BLink
-                        class="text-primary"
-                        :href="props.notification.content.run_url"
-                        @click="markNotificationAsSeen()">
+                    <GLink :href="props.notification.content.run_url" @click="markNotificationAsSeen()">
                         Open storage operation run status
-                    </BLink>
+                    </GLink>
                 </template>
                 <template v-else>
                     <span

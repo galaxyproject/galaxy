@@ -38,6 +38,8 @@ class FakeNomadFileSystem:
     instances: list[dict] = []
 
     def __init__(self, **kwargs):
+        if "\n" in (kwargs["token"] or ""):
+            raise ValueError("The NOMAD token has a line break; check that it was copied whole")
         self.instances.append(kwargs)
 
     def ls(self, path, detail=True):
@@ -62,6 +64,8 @@ class FakeNomadFileSystem:
         return {upload_id: UPLOAD_NAMES[upload_id] for upload_id in upload_ids if upload_id in UPLOAD_NAMES}
 
     def search_uploads(self, dataset_id, text):
+        if text == "gone":
+            raise FileNotFoundError("/entries/query: Not Found")
         return [upload_id for upload_id, name in UPLOAD_NAMES.items() if text.casefold() in name.casefold()]
 
 
@@ -84,7 +88,7 @@ def _list(source, path, **kwargs):
     return [(entry.name, entry.path) for entry in entries]
 
 
-def test_a_dataset_names_the_page_shown_and_searches_names_in_nomad():
+def test_a_dataset_names_the_page_shown_and_searches_names_in_nomad(monkeypatch):
     source = _source()
     assert _list(source, "/") == [("Public datasets", "/datasets"), ("My uploads", "/uploads")]
     assert _list(source, "/datasets/ds1", limit=25, offset=0) == [
@@ -94,22 +98,29 @@ def test_a_dataset_names_the_page_shown_and_searches_names_in_nomad():
     assert _list(source, "/datasets/ds1", query=" DEMO-data ") == [("nomad-demo-data.zip", "/datasets/ds1/up1")]
     assert len(_list(source, "/datasets/ds1", query="  ")) == 2
     assert _list(source, "/datasets", query="EXAMPLE") == [("demo example data", "/datasets/ds1")]
+    monkeypatch.setattr(nomad, "MAX_NAMED", 1)
+    assert _list(source, "/datasets/ds1") == [("up1", "/datasets/ds1/up1"), ("up2", "/datasets/ds1/up2")]
 
 
 def test_my_uploads_need_a_token_whose_instance_is_not_cached():
-    with pytest.raises(AuthenticationRequired, match="needs a NOMAD token"):
-        _list(_source(), "/uploads")
+    for blank in (None, " \n"):
+        with pytest.raises(AuthenticationRequired, match="needs a NOMAD token"):
+            _list(_source(token=blank), "/uploads")
     _list(_source(), "/")
-    assert _list(_source(token="secret"), "/uploads") == [("My draft", "/uploads/up9")]
+    assert _list(_source(token="secret\n"), "/uploads") == [("My draft", "/uploads/up9")]
     assert [kwargs["skip_instance_cache"] for kwargs in FakeNomadFileSystem.instances] == [False, True]
+    assert FakeNomadFileSystem.instances[-1]["token"] == "secret"
 
 
 def test_refusals_keep_their_status():
     with pytest.raises(ConfigDoesNotAllowException, match="fetch_url_allowlist") as refused:
         _list(_source(base_url="HTTP://169.254.169.254"), "/")
     assert refused.value.status_code == 403
-    with pytest.raises(ObjectNotFound):
+    with pytest.raises(ObjectNotFound, match=r"no-such-dataset was not found in NOMAD\.$"):
         _list(_source(), "/datasets/no-such-dataset")
+    with pytest.raises(ObjectNotFound, match="Reason: /entries/query: Not Found"):
+        _list(_source(), "/datasets/ds1", query="gone")
+    assert _source().to_dict()["supports"]["recursive"] is False
     for path in ("/", "/datasets/ds1", "/datasets/ds1/up1", "/uploads"):
         with pytest.raises(RequestParameterInvalidException, match="Recursive listing is not supported"):
             _list(_source(token="secret"), path, recursive=True)
@@ -125,3 +136,9 @@ def test_only_files_inside_an_upload_are_imported(tmp_path):
             source.realize_to(folder, os.path.join(tmp_path, "x"), user_context=user_context_fixture())
     with pytest.raises(MessageException, match="did not answer in time"):
         source.realize_to("/datasets/ds1/up1/slow.txt", str(target), user_context=user_context_fixture())
+    with pytest.raises(MessageException, match="line break"):
+        _source(token="a\nb").realize_to("/datasets/ds1/up1/a.txt", str(target), user_context=user_context_fixture())
+    with pytest.raises(ConfigDoesNotAllowException):
+        _source(base_url="http://127.0.0.1").realize_to(
+            "/datasets/ds1/up1/a.txt", str(target), user_context=user_context_fixture()
+        )

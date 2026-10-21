@@ -9,7 +9,7 @@ echo "parameter: $parameter" > '$output'
     <inputs>
         <param name="ref_parameter" type="data" ext="tabular" >
         </param>
-g        <param name="parameter" type="drill_down" dynamic_options="collate_table(ref_parameter.dataset.get_file_name())">
+        <param name="parameter" type="drill_down" dynamic_options="collate_table(ref_parameter.dataset.get_file_name())">
         </param>
     </inputs>
     <expand macro="simple_text_output" />

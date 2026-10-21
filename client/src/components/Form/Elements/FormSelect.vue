@@ -6,15 +6,12 @@ import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from
 import Multiselect from "vue-multiselect";
 
 import { useFilterObjectArray } from "@/composables/filter";
-import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
 import { type DataOption, isDataOption, itemUniqueKey } from "./FormData/types";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
 // vue-multiselect's types only allow a string here, but at runtime an explicit null
 // (not just omitting the prop) suppresses the label instead of falling back to its
@@ -280,7 +277,6 @@ function isSelected(item: SelectValue): boolean {
             :name="id"
             :data-filter-pending="filterPending ? 'true' : undefined"
             :allow-empty="optional || multiple"
-            :aria-expanded="ariaExpanded"
             :close-on-select="!multiple"
             :disabled="disabled"
             :deselect-label="noLabel"
@@ -292,9 +288,7 @@ function isSelected(item: SelectValue): boolean {
             :select-label="noLabel"
             :track-by="trackBy"
             :internal-search="false"
-            @search-change="onSearchChange"
-            @open="onOpen"
-            @close="onClose">
+            @search-change="onSearchChange">
             <template v-slot:option="{ option }">
                 <!-- Replace recycled option content when its identity changes. -->
                 <div

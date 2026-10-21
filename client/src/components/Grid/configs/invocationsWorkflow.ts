@@ -69,9 +69,8 @@ function fetchHistories(invocations: Array<WorkflowInvocation>) {
     invocations.forEach((invocation) => {
         historyIds.add(invocation.history_id);
     });
-    historyIds.forEach(
-        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id),
-    );
+    // Loads on a miss, with retry backoff; failures are recorded in the store.
+    historyIds.forEach((history_id) => historyStore.getHistoryById(history_id));
 }
 
 /**

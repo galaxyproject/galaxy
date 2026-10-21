@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { faLevelDownAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, ref, useId, watch } from "vue";
+
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     value: string;
@@ -17,7 +18,9 @@ const emit = defineEmits<{
     (e: "input", value: string): void;
 }>();
 
-const clickToEditInput = ref<HTMLInputElement | null>(null);
+const inputId = `click-to-edit-${useId()}`;
+
+const clickToEditInput = ref<InstanceType<typeof GFormInput> | null>(null);
 const editable = ref(false);
 const localValue = ref(props.value);
 
@@ -61,14 +64,13 @@ function revertToOriginal() {
 
 <template>
     <div v-if="editable" class="d-flex flex-gapx-1 input-icon-wrapper">
-        <BFormInput
-            id="click-to-edit-input"
+        <GFormInput
+            :id="inputId"
             ref="clickToEditInput"
             v-model="localValue"
-            class="w-100 input-with-icon"
+            class="input-with-icon"
             tabindex="0"
             title="Press enter/return to save, esc to revert changes"
-            max-rows="4"
             aria-label="Press enter/return to save, esc to revert changes"
             @blur.prevent.stop="onBlur"
             @keyup.prevent.stop.enter="editable = false"
@@ -80,15 +82,16 @@ function revertToOriginal() {
     </div>
 
     <component
-        :is="props.component || 'label'"
+        :is="props.component || 'button'"
         v-else
         v-g-tooltip.onoverflow
         role="button"
-        for="click-to-edit-input"
+        :type="!props.component || props.component === 'button' ? 'button' : undefined"
         class="click-to-edit-label text-break"
         tabindex="0"
         :title="computedValue || title"
-        @keyup.enter="editable = true"
+        @keydown.enter.stop.prevent="editable = true"
+        @keydown.space.stop.prevent="editable = true"
         @click.stop="editable = true">
         <span v-if="computedValue">{{ computedValue }}</span>
         <i v-else>{{ title }}</i>
@@ -98,9 +101,19 @@ function revertToOriginal() {
 <style scoped lang="scss">
 .click-to-edit-label {
     cursor: text;
+    border: 0;
+    padding: 0;
+    min-height: 24px;
+    background: transparent;
+    color: inherit;
+    text-align: inherit;
     &:hover > * {
         text-decoration: underline;
     }
+}
+
+button.click-to-edit-label {
+    font: inherit;
 }
 
 .input-icon-wrapper {

@@ -19,6 +19,7 @@ on:
 env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -57,9 +58,16 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Run tests
-        run: ./run_tests.sh --coverage --main_tools
+        run: ./run_tests.sh --main_tools -- -n 4
+        env:
+          # Coverage slows the tests down; collect it for pushes and scheduled runs only.
+          GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}
+          # Each xdist worker has its own conda prefix, so a tool's first run builds its conda
+          # environment on a busy runner.
+          GALAXY_TEST_DEFAULT_WAIT: '180'
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
+        if: github.event_name != 'pull_request'
         with:
           flags: main-tools
           working-directory: 'galaxy root'

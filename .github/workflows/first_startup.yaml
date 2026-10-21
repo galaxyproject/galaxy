@@ -7,7 +7,7 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/first_startup.yaml'
-      - '.github/workflows/build_client.yaml'
+      - '.github/workflows/_build_client.yaml'
   pull_request:
     paths:
       - '**'
@@ -15,9 +15,10 @@ on:
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/first_startup.yaml'
-      - '.github/workflows/build_client.yaml'
+      - '.github/workflows/_build_client.yaml'
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -29,7 +30,7 @@ jobs:
       || github.repository_owner != 'galaxyproject'
       || github.ref_name == 'dev'
       || startsWith(github.ref_name, 'release_')
-    uses: ./.github/workflows/build_client.yaml
+    uses: ./.github/workflows/_build_client.yaml
   test:
     if: >-
       github.event_name != 'push'
@@ -66,4 +67,31 @@ jobs:
         run: uv tool install tox --with tox-uv
       - name: run tests
         run: tox -e first_startup
+        working-directory: 'galaxy root'
+  installed-test:
+    name: Installed startup test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version-file: galaxy root/.tool-versions
+      - name: Install release tooling
+        run: uv tool install galaxy-release-util==0.4.2
+      - name: Build and install Galaxy packages
+        run: make install-packages VENV="$RUNNER_TEMP/galaxy-installed"
+        working-directory: 'galaxy root'
+      - name: Start installed Galaxy
+        run: .ci/installed_startup.sh "$RUNNER_TEMP/galaxy-installed"
         working-directory: 'galaxy root'

@@ -1,8 +1,10 @@
 import textwrap
 import zipfile
 from io import BytesIO
+from typing import Any
 from urllib.parse import quote
 
+import pytest
 import requests
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -311,6 +313,15 @@ class TestDatasetsApi(ApiTestCase):
             show_response = self._get(f"datasets/{hda['id']}")
             self._assert_status_code_is(show_response, 403)
 
+    @pytest.mark.parametrize("fetch_data", [True, False])
+    def test_show_upload_permissions(self, history_id, fetch_data):
+        role_id = self.dataset_populator.user_private_role_id()
+        hda = self.dataset_populator.new_dataset(history_id, fetch_data=fetch_data, wait=True)
+        show_response = self._get(f"datasets/{hda['id']}")
+        self._assert_status_code_is(show_response, 200)
+        # New users get private data by default, so the access role is the private role as well.
+        assert show_response.json()["permissions"] == {"manage": [role_id], "access": [role_id]}
+
     @requires_admin
     def test_admin_can_update_permissions(self, history_id):
         # Create private dataset
@@ -326,6 +337,33 @@ class TestDatasetsApi(ApiTestCase):
         # Other users can access the dataset
         with self._different_user():
             show_response = self._get(f"datasets/{hda['id']}")
+            self._assert_status_code_is_ok(show_response)
+
+    @requires_admin
+    def test_permissions_changed_while_queued_survive_job_finish(self, history_id, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://httpstat.us/200?sleep=5000",
+            body="OK",
+            sleep_ms=5000,
+        )
+        payload = {
+            "history_id": history_id,
+            "targets": [{"destination": {"type": "hdas"}, "items": [{"src": "url", "url": url, "ext": "txt"}]}],
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=False)
+        self._assert_status_code_is(fetch_response, 200)
+        response = fetch_response.json()
+        dataset_id = response["outputs"][0]["id"]
+
+        update_response = self._put(
+            f"datasets/{dataset_id}/permissions", {"action": "remove_restrictions"}, admin=True, json=True
+        )
+        self._assert_status_code_is_ok(update_response)
+        assert self.dataset_populator.get_job_details(response["jobs"][0]["id"]).json()["state"] != "ok"
+
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        with self._different_user():
+            show_response = self._get(f"datasets/{dataset_id}")
             self._assert_status_code_is_ok(show_response)
 
     def test_make_private_is_idempotent(self, history_id):
@@ -457,7 +495,7 @@ class TestDatasetsApi(ApiTestCase):
         assert display_response.text.startswith(header)
         assert len(display_response.text) <= 100000
 
-    def test_display_extra_paths(self, history_id: str):
+    def _create_directory_dataset(self, history_id: str) -> tuple[dict[str, Any], str]:
         test_data_resolver = TestDataResolver()
         with open(test_data_resolver.get_filename("1.fasta")) as fh:
             fasta_contents = fh.read()
@@ -465,8 +503,11 @@ class TestDatasetsApi(ApiTestCase):
         response = self.dataset_populator.run_tool(
             "create_directory_index", inputs={"reference": {"src": "hda", "id": hda1["id"]}}, history_id=history_id
         )
-        self.dataset_populator.wait_for_job(response["jobs"][0]["id"])
-        directory_dataset = response["outputs"][0]
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        return response["outputs"][0], fasta_contents
+
+    def test_display_extra_paths(self, history_id: str):
+        directory_dataset, fasta_contents = self._create_directory_dataset(history_id)
         # Check that we can access extra_files/1.fasta via the display endpoint.
         display_response = self._get(
             f"histories/{history_id}/contents/{directory_dataset['id']}/display?filename=/1.fasta"
@@ -477,6 +518,73 @@ class TestDatasetsApi(ApiTestCase):
         extra_files_response = self._get(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
         extra_files_response.raise_for_status()
         assert extra_files_response.text == fasta_contents
+        head_response = self._head(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
+        self._assert_status_code_is(head_response, 200)
+        assert head_response.headers["content-length"] == str(len(fasta_contents.encode()))
+        assert head_response.content == b""
+
+    @pytest.mark.parametrize("datatype", ["bwa_index", "ome_zarr"])
+    def test_directory_subclass_download_is_zip(self, history_id: str, datatype: str):
+        directory_dataset, fasta_contents = self._create_directory_dataset(history_id)
+        update_response = self._put(
+            f"histories/{history_id}/contents/{directory_dataset['id']}", data={"datatype": datatype}, json=True
+        )
+        self._assert_status_code_is(update_response, 200)
+        assert update_response.json()["extension"] == datatype
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        response = self._get(f"datasets/{directory_dataset['id']}/display?to_ext={datatype}")
+        self._assert_status_code_is(response, 200)
+        archive = zipfile.ZipFile(BytesIO(response.content))
+        assert archive.namelist() == ["1.fasta"]
+        assert archive.read("1.fasta").decode() == fasta_contents
+
+    def test_zarr_store_root_recorded_after_datatype_change(self, history_id: str):
+        # A plain directory keeps its wrapper folder. Changing it to zarr sets metadata on an
+        # existing dataset, whose files are left in place, so store_root names the wrapper.
+        with open(TestDataResolver().get_filename("wrapped_store.zarr.zip"), "rb") as archive:
+            payload = {
+                "history_id": history_id,
+                "targets": [
+                    {
+                        "destination": {"type": "hdas"},
+                        "items": [
+                            {
+                                "src": "pasted",
+                                "paste_content": "",
+                                "ext": "directory",
+                                "extra_files": {"items_from": "archive", "src": "files", "fuzzy_root": False},
+                            }
+                        ],
+                    }
+                ],
+                "__files": {"files_0|file_data": archive},
+            }
+            fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        dataset_id = fetch_response.json()["outputs"][0]["id"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        change_response = self._put(
+            f"histories/{history_id}/contents/{dataset_id}", data={"datatype": "zarr"}, json=True
+        )
+        self._assert_status_code_is(change_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id)
+        assert details["extension"] == "zarr"
+        assert str(details["metadata_zarr_format"]) == "2"
+        assert details["metadata_store_root"] == "wrapped.zarr"
+        extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset_id)
+        assert "wrapped.zarr/.zgroup" in {extra_file["path"] for extra_file in extra_files}
+        # Viewers such as Vizarr request files relative to the store root.
+        display_response = self._get(
+            f"histories/{history_id}/contents/{dataset_id}/display?filename=wrapped.zarr/.zgroup"
+        )
+        display_response.raise_for_status()
+        assert "zarr_format" in display_response.text
+        preview_response = self._get(f"histories/{history_id}/contents/{dataset_id}/display?preview=true")
+        preview_response.raise_for_status()
+        assert "zarr_format" in preview_response.text
 
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(
@@ -922,8 +1030,7 @@ class TestDatasetsApi(ApiTestCase):
         num_datasets = 4
         dataset_map: dict[int, str] = {}
 
-        with self._different_user():
-            history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as history_id:
             for index in range(num_datasets):
                 hda = self.dataset_populator.new_dataset(history_id)
                 dataset_map[index] = hda["id"]

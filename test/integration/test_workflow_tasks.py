@@ -13,12 +13,9 @@ from typing import (
 )
 
 from galaxy.util.compression_utils import CompressedFile
-from galaxy_test.api.test_workflows import (
-    RunsWorkflowFixtures,
-    WORKFLOW_SIMPLE,
-)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api import UsesCeleryTasks
+from galaxy_test.base.api_mixins import RunsWorkflowFixtures
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -26,6 +23,7 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 

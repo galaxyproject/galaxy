@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { SampleSheetColumnDefinition, SampleSheetColumnDefinitionType } from "@/api";
 import { columnTitleToTargetType } from "@/components/Collections/wizard/fetchWorkbooks";
 
 import FormColumnDefinitionType from "./FormColumnDefinitionType.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
 interface Props {
@@ -241,7 +241,7 @@ watch(defaultString, setDefaultByType);
             type="text"
             help="Comma-separated list of all suggested values"
             @input="onSuggestions" />
-        <BFormCheckbox :id="prefix + '_optional'" v-model="isOptional"> Is this input optional? </BFormCheckbox>
+        <GCheckbox :id="prefix + '_optional'" v-model="isOptional"> Is this input optional? </GCheckbox>
         <div class="ui-form-title">
             <span class="ui-form-title-text"> Default Value </span>
         </div>

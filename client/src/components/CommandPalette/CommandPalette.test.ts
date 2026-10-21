@@ -44,7 +44,7 @@ const BACKEND_WAIT = DEBOUNCE_WAIT + PALETTE_LIMITS.backendSettle;
 const CONFIG_LOADED = { configurationStore: { config: {} } };
 
 async function settle(wait = DEBOUNCE_WAIT) {
-    await new Promise((resolve) => setTimeout(resolve, wait));
+    await vi.advanceTimersByTimeAsync(wait);
     await flushPromises();
 }
 
@@ -112,6 +112,8 @@ describe("CommandPalette", () => {
     let router: Router;
 
     beforeEach(async () => {
+        // the debounce, the backend pause and the transitions run on the fake clock, so a slow runner cannot outlast a wait
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame"] });
         server.use(
             http.get("/api/unprivileged_tools", ({ response }) => {
                 return response(200).json([]);
@@ -132,6 +134,7 @@ describe("CommandPalette", () => {
         // the MRU list is a module level singleton, shared by every test here
         useRecentPaletteItems().clearRecentItems();
         wrapper?.unmount();
+        vi.useRealTimers();
     });
 
     function input() {
@@ -878,7 +881,9 @@ describe("CommandPalette", () => {
             land();
             await settle();
             expect(wrapper.find("[data-description='palette searching']").exists()).toBe(false);
-            expect(wrapper.find("[data-description='palette empty']").exists()).toBe(true);
+            const empty = wrapper.get("[data-description='palette empty']");
+            expect(empty.element.closest("[role='listbox']")).toBeNull();
+            expect(wrapper.find("[role='group']").exists()).toBe(false);
         } finally {
             workflowsProvider.searchScoped = original;
         }
@@ -956,7 +961,7 @@ describe("CommandPalette", () => {
         (input().element as HTMLInputElement).value = "fastq";
         await input().trigger("input");
         // an ordinary gap between keys: the "fastq" search has started, but not reached the backend yet
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await vi.advanceTimersByTimeAsync(300);
         await type("fastqc", BACKEND_WAIT);
 
         expect(vi.mocked(toolStore.fetchTools)).toHaveBeenCalledWith("fastqc");

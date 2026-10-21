@@ -1,4 +1,4 @@
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 import { defineComponent, h, ref, withDirectives } from "vue";
 
@@ -62,6 +62,50 @@ describe("GCheckbox", () => {
 
         await wrapper.setProps({ indeterminate: false });
         expect(input.indeterminate).toBe(false);
+    });
+
+    it("keeps the box checked when the parent accepts the update", async () => {
+        const { wrapper } = mountWithModel(false);
+        const input = wrapper.get("input").element as HTMLInputElement;
+
+        await wrapper.get("input").setValue(true);
+        await flushPromises();
+        expect(input.checked).toBe(true);
+    });
+
+    it("reverts the box when the parent ignores the update", async () => {
+        const wrapper = mount(GCheckbox, { props: { modelValue: false } });
+        const input = wrapper.get("input").element as HTMLInputElement;
+
+        await wrapper.get("input").setValue(true);
+        await flushPromises();
+        expect(wrapper.emitted("update:modelValue")).toEqual([[true]]);
+        expect(input.checked).toBe(false);
+    });
+
+    it("leaves the box to the user when no modelValue is bound", async () => {
+        const wrapper = mount(GCheckbox);
+        const input = wrapper.get("input").element as HTMLInputElement;
+
+        await wrapper.get("input").setValue(true);
+        await flushPromises();
+        expect(input.checked).toBe(true);
+    });
+
+    it("stays indeterminate after a click when the parent keeps it so", async () => {
+        // Attached, since jsdom fires no change event for a click on a detached checkbox
+        const wrapper = mount(GCheckbox, {
+            props: { modelValue: false, indeterminate: true },
+            attachTo: document.body,
+        });
+        const input = wrapper.get("input").element as HTMLInputElement;
+
+        input.click();
+        await flushPromises();
+        expect(wrapper.emitted("update:modelValue")).toEqual([[true]]);
+        expect(input.checked).toBe(false);
+        expect(input.indeterminate).toBe(true);
+        wrapper.unmount();
     });
 
     it("keeps class, style and title on the label and puts other attributes on the input", () => {
@@ -157,6 +201,15 @@ describe("GCheckbox", () => {
         expect(wrapper.find("input").attributes("role")).toBeUndefined();
     });
 
+    // The label spacing on the input is keyed on :not(:last-child), so an unlabelled box must end with its input
+    it("ends with the input only when there is no label", () => {
+        const unlabelled = mount(GCheckbox, { props: { modelValue: false } });
+        const labelled = mount(GCheckbox, { props: { modelValue: false }, slots: { default: "Include" } });
+
+        expect(unlabelled.element.lastElementChild).toBe(unlabelled.find("input").element);
+        expect(labelled.element.lastElementChild).toBe(labelled.find(".g-checkbox-label").element);
+    });
+
     it("renders name, value and required on the input", () => {
         const wrapper = mount(GCheckbox, {
             props: { modelValue: false, name: "include", required: true, value: "hidden" },
@@ -173,6 +226,15 @@ describe("GCheckbox", () => {
         const wrapper = mount(GCheckbox, { props: { modelValue: false, value: 0 } });
 
         expect(wrapper.find("input").attributes("value")).toBe("0");
+    });
+
+    it("renders no id, name, aria-label or value when they are unset", () => {
+        const input = mount(GCheckbox, { props: { modelValue: false } }).find("input");
+
+        expect(input.attributes("id")).toBeUndefined();
+        expect(input.attributes("name")).toBeUndefined();
+        expect(input.attributes("aria-label")).toBeUndefined();
+        expect(input.attributes("value")).toBeUndefined();
     });
 
     it.each([
@@ -211,6 +273,15 @@ describe("GCheckbox", () => {
             expect(checkbox.emitted("update:modelValue")).toBeUndefined();
             expect(checkbox.emitted("change")).toHaveLength(1);
             expect(wrapper.emitted("update:modelValue")).toEqual([[["b"]]]);
+        });
+
+        it("reverts the box when the group's parent ignores the update", async () => {
+            const { wrapper } = mountInGroup({ value: "b" });
+            const input = wrapper.get("input").element as HTMLInputElement;
+
+            await wrapper.get("input").setValue(true);
+            await flushPromises();
+            expect(input.checked).toBe(false);
         });
 
         it("lets its own name and size win over the group's", () => {

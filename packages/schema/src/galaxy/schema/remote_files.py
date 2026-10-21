@@ -36,6 +36,9 @@ class FilesSourceSupports(Model):
     pagination: Annotated[bool, Field(description="Whether this file source supports server-side pagination.")] = False
     search: Annotated[bool, Field(description="Whether this file source supports server-side search.")] = False
     sorting: Annotated[bool, Field(description="Whether this file source supports server-side sorting.")] = False
+    recursive: Annotated[
+        bool, Field(description="Whether a whole folder of this file source can be selected at once.")
+    ] = False
 
 
 class FilesSourcePlugin(Model):

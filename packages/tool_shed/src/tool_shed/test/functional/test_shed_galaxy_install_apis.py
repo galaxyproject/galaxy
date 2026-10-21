@@ -621,6 +621,33 @@ class TestGalaxyInstallApis(ShedApiTestCase):
         response = requests.get(url)
         assert response.status_code >= 400, f"Expected rejection of non-image file, got {response.status_code}"
 
+    def test_display_image_at_changeset_revision(self):
+        """With changeset_revision, serve the image as of that revision, even where the image is unchanged."""
+        repository = self.populator.setup_test_data_repo("column_maker_with_rst_readme")
+        revisions = list(self.populator.get_metadata(repository).root.values())
+        revision_dirs = TEST_DATA_REPO_FILES.joinpath("repos", "column_maker_with_rst_readme")
+        url = f"{self.url}/repository/static/images/{repository.id}/images%2Flogo.png"
+        for revision, revision_dir in zip(revisions, ["1", "2", "3"], strict=True):
+            response = requests.get(url, params={"changeset_revision": revision.changeset_revision})
+            api_asserts.assert_status_code_is_ok(response)
+            assert response.headers["content-type"] == "image/png"
+            assert "immutable" in response.headers["cache-control"]
+            assert response.content == revision_dirs.joinpath(revision_dir, "images", "logo.png").read_bytes()
+
+    def test_display_image_at_changeset_revision_not_found(self):
+        """A file missing at the requested revision, a non-image file, or an unknown revision should not be served."""
+        repository = self.populator.setup_test_data_repo("column_maker_with_rst_readme")
+        first_revision = list(self.populator.get_metadata(repository).root.values())[0]
+        images_url = f"{self.url}/repository/static/images/{repository.id}"
+        params = {"changeset_revision": first_revision.changeset_revision}
+        response = requests.get(f"{images_url}/nonexistent.png", params=params)
+        assert response.status_code == 404
+        # README.rst is in the revision's manifest, but only images are served.
+        response = requests.get(f"{images_url}/README.rst", params=params)
+        assert response.status_code == 404
+        response = requests.get(f"{images_url}/images%2Flogo.png", params={"changeset_revision": "000000000bad"})
+        assert response.status_code == 404
+
     def test_status_for_installed_repository_redirects(self):
         """Legacy endpoint should 301 redirect to /api/repositories/updates/ with query string preserved."""
         params = dict(name="test_repo", owner="test_owner", changeset_revision="abc123")
