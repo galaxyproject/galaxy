@@ -1245,7 +1245,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         tab_locator = f"div#{tab_id}"
         self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
 
-        textarea = self.wait_for_selector(f"{tab_locator} .upload-row:last-of-type .upload-text-content")
+        # Until the new row renders, the last row may be an uploaded one whose textarea is disabled.
+        textarea = self.wait_for_selector_clickable(
+            f"{tab_locator} .upload-row.upload-init:last-of-type .upload-text-content"
+        )
         textarea.send_keys(pasted_content)
 
     def upload_uri(self, uri, wait=False):
