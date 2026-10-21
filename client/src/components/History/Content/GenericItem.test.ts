@@ -59,12 +59,12 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
         vi.unstubAllGlobals();
     });
 
-    function mountItem(expanded?: boolean) {
+    function mountItem(expanded?: boolean, scrollOnExpand = false) {
         wrapper = mount(GenericItem as object, {
             localVue,
             router: createRouter({ history: createMemoryHistory(), routes: [] }),
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            propsData: { itemId: item.id, itemSrc, expanded },
+            propsData: { itemId: item.id, itemSrc, expanded, scrollOnExpand },
             stubs: { ContentOptions: true, DatasetDetails: true, StatelessTags: true, GenericElement: true },
         });
     }
@@ -131,6 +131,29 @@ describe.each(["hda", "hdca"])("GenericItem (%s)", (itemSrc) => {
             expect(wrapper.findComponent({ name: "GenericElement" }).exists()).toBe(true);
         }
         expect(wrapper.emitted("update:expanded")).toEqual([[true]]);
+    });
+
+    it("scrolls to an item expanded from outside, but not to one the user just toggled", async () => {
+        fetchItem.mockResolvedValue(item as never);
+        vi.mocked(fetchCollectionDetails).mockResolvedValue({ data: item } as never);
+        const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
+        mountItem(false, true);
+        await flushPromises();
+        const content = wrapper.findComponent(ContentItem);
+        if (itemSrc === "hda") {
+            content.vm.$emit("update:expand-dataset", true);
+        } else {
+            content.vm.$emit("view-collection", { model_class: "HistoryDatasetCollectionAssociation" });
+        }
+        // The parent echoes the user's toggle back.
+        await wrapper.setProps({ expanded: true });
+        await flushPromises();
+        expect(scroll).not.toHaveBeenCalled();
+        await wrapper.setProps({ expanded: false });
+        await wrapper.setProps({ expanded: true });
+        await flushPromises();
+        expect(scroll).toHaveBeenCalledOnce();
+        scroll.mockRestore();
     });
 
     it("replaces content with the error when an automatic refresh fails", async () => {
