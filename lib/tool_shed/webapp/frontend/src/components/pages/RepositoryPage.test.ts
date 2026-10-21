@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import { flushPromises, mount } from "@vue/test-utils"
-import { createPinia, setActivePinia } from "pinia"
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest"
+import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils"
+import { createPinia, disposePinia } from "pinia"
 import { useRepositoryStore } from "@/stores"
+import type { components, RevisionMetadata } from "@/schema"
 import RepositoryPage from "./RepositoryPage.vue"
 
 const { readmes, mockGet } = vi.hoisted(() => {
@@ -13,7 +14,9 @@ vi.mock("@/schema", async (importOriginal) => ({
     ToolShedApi: () => ({ GET: mockGet }),
 }))
 
-function repository(overrides: Record<string, unknown> = {}) {
+type Repository = components["schemas"]["DetailedRepository"]
+
+function repository(overrides: Partial<Repository> = {}): Partial<Repository> {
     return {
         id: "repo1",
         name: "concat",
@@ -27,7 +30,7 @@ function repository(overrides: Record<string, unknown> = {}) {
     }
 }
 
-function revision(overrides: Record<string, unknown> = {}, key = "0:abc123") {
+function revision(overrides: Partial<Pick<RevisionMetadata, "malicious">> = {}, key = "0:abc123") {
     return {
         [key]: {
             changeset_revision: key.split(":")[1],
@@ -40,14 +43,24 @@ function revision(overrides: Record<string, unknown> = {}, key = "0:abc123") {
     }
 }
 
+// Preserve partial payloads: the real metadata factory adds tools and fields absent from these inputs.
+interface PageState {
+    repository: Partial<Repository>
+    repositoryMetadata: ReturnType<typeof revision>
+    changesetRevision?: string
+}
+
 // Metadata lands after mount, as it does from the store's fetch, so the page picks the newest revision
-async function mountPage({ repositoryMetadata, changesetRevision, ...state }: Record<string, unknown>) {
-    const store = useRepositoryStore()
+async function mountPage({ repositoryMetadata, repository, changesetRevision }: PageState) {
+    const pinia = createPinia()
+    onTestFinished(() => disposePinia(pinia))
+    const store = useRepositoryStore(pinia)
     vi.spyOn(store, "setId").mockResolvedValue(undefined)
-    store.$patch({ loading: false, empty: false, repositoryPermissions: { can_manage: false }, ...state })
+    store.$patch({ loading: false, empty: false, repositoryPermissions: { can_manage: false }, repository })
     const wrapper = mount(RepositoryPage, {
-        props: { repositoryId: "repo1", changesetRevision: changesetRevision as string | undefined },
+        props: { repositoryId: "repo1", changesetRevision },
         global: {
+            plugins: [pinia],
             stubs: {
                 RouterLink: { template: "<a><slot /></a>" },
                 RevisionSelect: true,
@@ -59,17 +72,20 @@ async function mountPage({ repositoryMetadata, changesetRevision, ...state }: Re
             },
         },
     })
-    store.$patch({ repositoryMetadata } as Record<string, unknown>)
+    store.$patch({ repositoryMetadata })
     await flushPromises()
     return wrapper
 }
 
 describe("RepositoryPage", () => {
     beforeEach(() => {
-        setActivePinia(createPinia())
         readmes.value = {}
         mockGet.mockClear()
     })
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+    enableAutoUnmount(afterEach)
 
     it("flags a deprecated repository and a malicious revision", async () => {
         const wrapper = await mountPage({
@@ -97,7 +113,7 @@ describe("RepositoryPage", () => {
             { params: { path: { encoded_repository_id: "repo1", changeset_revision: "abc123" } } },
         )
         const readme = wrapper.get(".repository-readme-wrapper")
-        expect(readme.find("p").text()).toBe("hello\u00a0readme")
+        expect(readme.get("p").text()).toBe("hello\u00a0readme")
     })
 
     it("loads the READMEs of the revision it is opened at", async () => {

@@ -6,76 +6,61 @@ import {
     updateReferences,
 } from "./object-permission-composables";
 
+function createHistoryReferences() {
+    const refs = initializeObjectReferences();
+    return { refs, historyMaps: initializeObjectToHistoryRefs(refs) };
+}
+
 describe("object-permission-composables", () => {
-    it("should initialize and update refs in a markdown document", () => {
+    it("extracts job references from a Galaxy markdown block", () => {
         const refs = initializeObjectReferences();
-        expect(refs.referencedJobIds.value.length).toBe(0);
+        expect(refs.referencedJobIds.value).toEqual([]);
 
         updateReferences(refs, "some content\n```galaxy\njob_metrics(job_id=THISFAKEID)\n```\nfoo bar\n");
-        expect(refs.referencedJobIds.value.length).toBe(1);
-        expect(refs.referencedJobIds.value[0]).toBe("THISFAKEID");
+
+        expect(refs.referencedJobIds.value).toEqual(["THISFAKEID"]);
     });
 
-    describe("initializeObjectToHistoryRefs", () => {
-        function init() {
-            const refs = initializeObjectReferences();
-            const historyMaps = initializeObjectToHistoryRefs(refs);
-            return { refs, historyMaps };
-        }
+    describe("referenced history IDs", () => {
+        it.each([
+            ["jobs", "referencedJobIds", "jobsToHistories"],
+            ["invocations", "referencedInvocationIds", "invocationsToHistories"],
+            ["collections", "referencedHistoryDatasetCollectionIds", "historyDatasetCollectionsToHistories"],
+        ])("includes histories referenced by %s once their mapping is cached", (_source, referenceKey, mappingKey) => {
+            const { refs, historyMaps } = createHistoryReferences();
+            refs[referenceKey].value = ["THISFAKEID"];
+            expect(historyMaps.historyIds.value).toEqual([]);
 
-        describe("historyIds computed", () => {
-            it("should merge in referenced job histories once they've been cached", async () => {
-                const { refs, historyMaps } = init();
-                refs.referencedJobIds.value = ["THISFAKEID"];
-                expect(historyMaps.historyIds.value.length).toBe(0);
-                historyMaps.jobsToHistories.value["THISFAKEID"] = "THATFAKEID";
-                expect(historyMaps.historyIds.value.length).toBe(1);
-                expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
-            });
+            historyMaps[mappingKey].value["THISFAKEID"] = "THATFAKEID";
 
-            it("should merge in referenced invocation histories once they've been cached", async () => {
-                const { refs, historyMaps } = init();
-                refs.referencedInvocationIds.value = ["THISFAKEID"];
-                expect(historyMaps.historyIds.value.length).toBe(0);
-                historyMaps.invocationsToHistories.value["THISFAKEID"] = "THATFAKEID";
-                expect(historyMaps.historyIds.value.length).toBe(1);
-                expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
-            });
+            expect(historyMaps.historyIds.value).toEqual(["THATFAKEID"]);
+        });
 
-            it("should merge in referenced collections once they've been cached", async () => {
-                const { refs, historyMaps } = init();
-                refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKEID"];
-                expect(historyMaps.historyIds.value.length).toBe(0);
-                historyMaps.historyDatasetCollectionsToHistories.value["THISFAKEID"] = "THATFAKEID";
-                expect(historyMaps.historyIds.value.length).toBe(1);
-                expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
-            });
+        it("merges cached histories from jobs, invocations, and collections", () => {
+            const { refs, historyMaps } = createHistoryReferences();
+            refs.referencedJobIds.value = ["THISFAKEJOBID"];
+            refs.referencedInvocationIds.value = ["THISFAKEINVOCATIONID"];
+            refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKECOLLECTIONID"];
+            historyMaps.jobsToHistories.value.THISFAKEJOBID = "HISTORYID1";
+            historyMaps.invocationsToHistories.value.THISFAKEINVOCATIONID = "HISTORYID2";
+            historyMaps.historyDatasetCollectionsToHistories.value.THISFAKECOLLECTIONID = "HISTORYID3";
 
-            it("should merge in referenced objects across sources once they've been cached", async () => {
-                const { refs, historyMaps } = init();
-                refs.referencedJobIds.value = ["THISFAKEJOBID"];
-                refs.referencedInvocationIds.value = ["THISFAKEINVOCATIONID"];
-                refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKECOLLECTIONID"];
-                historyMaps.jobsToHistories.value["THISFAKEJOBID"] = "HISTORYID1";
-                historyMaps.invocationsToHistories.value["THISFAKEINVOCATIONID"] = "HISTORYID2";
-                historyMaps.historyDatasetCollectionsToHistories.value["THISFAKECOLLECTIONID"] = "HISTORYID3";
-                expect(historyMaps.historyIds.value.length).toBe(3);
-                expect(historyMaps.historyIds.value).toContain("HISTORYID1");
-                expect(historyMaps.historyIds.value).toContain("HISTORYID2");
-                expect(historyMaps.historyIds.value).toContain("HISTORYID3");
-            });
+            expect(historyMaps.historyIds.value).toHaveLength(3);
+            expect(historyMaps.historyIds.value).toEqual(
+                expect.arrayContaining(["HISTORYID1", "HISTORYID2", "HISTORYID3"]),
+            );
+        });
 
-            it("should merge in referenced objects across sources once they've been cached and de-duplicate", async () => {
-                const { refs, historyMaps } = init();
-                refs.referencedJobIds.value = ["THISFAKEJOBID"];
-                refs.referencedInvocationIds.value = ["THISFAKEINVOCATIONID"];
-                refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKECOLLECTIONID"];
-                historyMaps.jobsToHistories.value["THISFAKEJOBID"] = "THATFAKEID";
-                historyMaps.invocationsToHistories.value["THISFAKEINVOCATIONID"] = "THATFAKEID";
-                historyMaps.historyDatasetCollectionsToHistories.value["THISFAKECOLLECTIONID"] = "THATFAKEID";
-                expect(historyMaps.historyIds.value.length).toBe(1);
-                expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
-            });
+        it("de-duplicates a history referenced by all three sources", () => {
+            const { refs, historyMaps } = createHistoryReferences();
+            refs.referencedJobIds.value = ["THISFAKEJOBID"];
+            refs.referencedInvocationIds.value = ["THISFAKEINVOCATIONID"];
+            refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKECOLLECTIONID"];
+            historyMaps.jobsToHistories.value.THISFAKEJOBID = "THATFAKEID";
+            historyMaps.invocationsToHistories.value.THISFAKEINVOCATIONID = "THATFAKEID";
+            historyMaps.historyDatasetCollectionsToHistories.value.THISFAKECOLLECTIONID = "THATFAKEID";
+
+            expect(historyMaps.historyIds.value).toEqual(["THATFAKEID"]);
         });
     });
 });

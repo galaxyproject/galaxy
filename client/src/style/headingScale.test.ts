@@ -21,7 +21,7 @@ function themeFontSizes(): Map<string, string> {
     const source = readFileSync(THEME, "utf-8");
     const base = source.match(/\$font-size-base:\s*([\d.]+)rem/);
     expect(base, "theme no longer declares $font-size-base in rem").toBeTruthy();
-    const baseRem = Number(base![1]);
+    const baseRem = Number(base?.[1]);
 
     const sizes = new Map<string, string>([["$font-size-base", `${baseRem}rem`]]);
     for (const match of source.matchAll(/\$(h[1-6]-font-size):\s*\$font-size-base\s*\*\s*([\d.]+)/g)) {

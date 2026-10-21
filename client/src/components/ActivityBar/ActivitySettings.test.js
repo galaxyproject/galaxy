@@ -1,15 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
+import { disposePinia, setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
+import { ensureDefined } from "@/utils/assertions";
 
-import mountTarget from "./ActivitySettings.vue";
+import ActivitySettings from "./ActivitySettings.vue";
 
 const mockConfig = ref({});
 
@@ -22,6 +24,26 @@ vi.mock("@/composables/config", () => ({
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";
+const localVue = getLocalVue();
+
+function createOwnedPinia() {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    onTestFinished(() => {
+        disposePinia(pinia);
+        setActivePinia(undefined);
+    });
+    return pinia;
+}
+
+function mountActivitySettings(activityBarId, pinia) {
+    return mount(ActivitySettings, {
+        global: {
+            ...withPlugins(localVue, pinia),
+            stubs: { FontAwesomeIcon: { template: "<div></div>" } },
+        },
+        props: { query: "", activityBarId },
+    });
+}
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
@@ -39,7 +61,7 @@ function testActivity(id, newOptions = {}) {
 }
 
 function activityTitle(id) {
-    return defaultActivities.find((activity) => activity.id === id).title;
+    return ensureDefined(defaultActivities.find((activity) => activity.id === id)).title;
 }
 
 async function testSearch(wrapper, query, result) {
@@ -49,32 +71,25 @@ async function testSearch(wrapper, query, result) {
 }
 
 describe("ActivitySettings", () => {
+    enableAutoUnmount(afterEach);
     let activityStore;
     let wrapper;
 
     beforeEach(async () => {
+        const originalConfig = mockConfig.value;
+        onTestFinished(() => {
+            mockConfig.value = originalConfig;
+        });
         mockConfig.value = { interactivetools_enable: true, llm_api_configured: true };
-        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+        const pinia = createOwnedPinia();
         // Mock the response of the API call
         server.use(
-            http.get("/api/unprivileged_tools", ({ params, query, response }) => {
+            http.get("/api/unprivileged_tools", ({ response }) => {
                 return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
             }),
         );
         activityStore = useActivityStore("test-activity-bar");
-        wrapper = mount(mountTarget, {
-            global: {
-                ...getLocalVue(),
-                stubs: {
-                    FontAwesomeIcon: { template: "<div></div>" },
-                },
-            },
-            pinia,
-            props: {
-                query: "",
-                activityBarId: "test-activity-bar",
-            },
-        });
+        wrapper = mountActivitySettings("test-activity-bar", pinia);
         await activityStore.sync();
     });
 
@@ -89,14 +104,14 @@ describe("ActivitySettings", () => {
         await nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[data-title='Hide in Activity Bar']");
+        const checkbox = nth(items, 0).find("[data-title='Hide in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
         const icon = wrapper.find("[icon='activity-test-icon']");
         expect(icon.exists()).toBeTruthy();
-        expect(activityStore.getAll()[0].visible).toBeTruthy();
-        checkbox.trigger("click");
+        expect(nth(activityStore.getAll(), 0).visible).toBeTruthy();
+        await nth(items, 0).get("[data-title='Hide in Activity Bar']").trigger("click");
         await wrapper.vm.$nextTick();
-        expect(activityStore.getAll()[0].visible).toBeFalsy();
+        expect(nth(activityStore.getAll(), 0).visible).toBeFalsy();
     });
 
     it("non-visible but optional activity", async () => {
@@ -109,14 +124,14 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const checkbox = items.at(0).find("[data-title='Show in Activity Bar']");
+        const checkbox = nth(items, 0).find("[data-title='Show in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
-        expect(activityStore.getAll()[0].visible).toBeFalsy();
-        checkbox.trigger("click");
+        expect(nth(activityStore.getAll(), 0).visible).toBeFalsy();
+        await nth(items, 0).get("[data-title='Show in Activity Bar']").trigger("click");
         await wrapper.vm.$nextTick();
-        const visibleCheckbox = items.at(0).find("[data-title='Hide in Activity Bar']");
+        const visibleCheckbox = nth(items, 0).find("[data-title='Hide in Activity Bar']");
         expect(visibleCheckbox.exists()).toBeTruthy();
-        expect(activityStore.getAll()[0].visible).toBeTruthy();
+        expect(nth(activityStore.getAll(), 0).visible).toBeTruthy();
     });
 
     it("removable", async () => {
@@ -124,10 +139,10 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-description='delete activity']");
+        const trash = nth(items, 0).find("[data-description='delete activity']");
         expect(trash.exists()).toBeTruthy();
         expect(activityStore.getAll().length).toBe(1);
-        trash.trigger("click");
+        await nth(items, 0).get("[data-description='delete activity']").trigger("click");
         await wrapper.vm.$nextTick();
         expect(activityStore.getAll().length).toBe(0);
     });
@@ -141,7 +156,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const trash = items.at(0).find("[data-icon='trash']");
+        const trash = nth(items, 0).find("[data-icon='trash']");
         expect(trash.exists()).toBeFalsy();
     });
 
@@ -167,14 +182,10 @@ describe("ActivitySettings", () => {
 
         async function mountSettings(config, { canUseUnprivilegedTools }) {
             mockConfig.value = config;
-            const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            const pinia = createOwnedPinia();
             useUnprivilegedToolStore().canUseUnprivilegedTools = canUseUnprivilegedTools;
             const store = useActivityStore("test-activity-bar-gates");
-            const settings = mount(mountTarget, {
-                global: { ...getLocalVue(), stubs: { FontAwesomeIcon: { template: "<div></div>" } } },
-                pinia,
-                props: { query: "", activityBarId: "test-activity-bar-gates" },
-            });
+            const settings = mountActivitySettings("test-activity-bar-gates", pinia);
             await store.sync();
             await flushPromises();
             return { settings, store };
@@ -193,7 +204,9 @@ describe("ActivitySettings", () => {
 
         it("updates config-gated activities when configuration arrives without changing saved visibility", async () => {
             const { settings, store } = await mountSettings(null, { canUseUnprivilegedTools: false });
-            const interactiveTools = store.getAll().find((activity) => activity.id === "interactivetools");
+            const interactiveTools = ensureDefined(
+                store.getAll().find((activity) => activity.id === "interactivetools"),
+            );
             interactiveTools.visible = false;
             await nextTick();
             expect(renderedTitles(settings)).not.toContain(activityTitle("interactivetools"));

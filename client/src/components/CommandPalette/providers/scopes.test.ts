@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { ensureDefined } from "@/utils/assertions";
+
 import { makeCtx } from "../test-utils";
 import { parsePaletteQuery } from "../utilities";
 import {
@@ -51,19 +53,18 @@ describe("PALETTE_SCOPES", () => {
 });
 
 describe("findScope", () => {
-    it("matches keys exactly, ignoring case", () => {
-        expect(findScope("w")?.label).toBe("My workflows");
-        expect(findScope("W")?.label).toBe("My workflows");
-        expect(findScope("hs")?.variant).toBe("shared");
-        expect(findScope("IT")?.providerId).toBe("interactiveTools");
-        expect(findScope("n")?.providerId).toBe("navigation");
+    it.each([
+        { key: "w", field: "label", expected: "My workflows" },
+        { key: "W", field: "label", expected: "My workflows" },
+        { key: "hs", field: "variant", expected: "shared" },
+        { key: "IT", field: "providerId", expected: "interactiveTools" },
+        { key: "n", field: "providerId", expected: "navigation" },
+    ] as const)("resolves exact key '$key' to $field '$expected', ignoring case", ({ key, field, expected }) => {
+        expect(ensureDefined(findScope(key))[field]).toBe(expected);
     });
 
-    it("never falls back to a shorter or longer key", () => {
-        expect(findScope("wz")).toBeUndefined();
-        expect(findScope("x")).toBeUndefined();
-        expect(findScope("wps")).toBeUndefined();
-        expect(findScope("")).toBeUndefined();
+    it.each(["wz", "x", "wps", ""])("does not fall back to a shorter or longer key for '%s'", (key) => {
+        expect(findScope(key)).toBeUndefined();
     });
 
     it("does not resolve the actions sigil", () => {
@@ -91,21 +92,21 @@ describe("isProviderEnabled", () => {
 describe("isScopeAvailable", () => {
     it("hides login-only scopes from anonymous users", () => {
         const ctx = makeCtx({ isAnonymous: true });
-        expect(isScopeAvailable(findScope("w")!, ctx)).toBe(false);
-        expect(isScopeAvailable(findScope("ws")!, ctx)).toBe(false);
-        expect(isScopeAvailable(findScope("t")!, ctx)).toBe(true);
-        expect(isScopeAvailable(findScope("n")!, ctx)).toBe(true);
+        expect(isScopeAvailable(ensureDefined(findScope("w")), ctx)).toBe(false);
+        expect(isScopeAvailable(ensureDefined(findScope("ws")), ctx)).toBe(false);
+        expect(isScopeAvailable(ensureDefined(findScope("t")), ctx)).toBe(true);
+        expect(isScopeAvailable(ensureDefined(findScope("n")), ctx)).toBe(true);
     });
 
     it("offers the public scopes to anonymous users", () => {
         const ctx = makeCtx({ isAnonymous: true });
-        expect(isScopeAvailable(findScope("wp")!, ctx)).toBe(true);
-        expect(isScopeAvailable(findScope("hp")!, ctx)).toBe(true);
-        expect(isScopeAvailable(findScope("rp")!, ctx)).toBe(true);
+        expect(isScopeAvailable(ensureDefined(findScope("wp")), ctx)).toBe(true);
+        expect(isScopeAvailable(ensureDefined(findScope("hp")), ctx)).toBe(true);
+        expect(isScopeAvailable(ensureDefined(findScope("rp")), ctx)).toBe(true);
     });
 
     it("hides interactive tools unless they are enabled", () => {
-        const scope = findScope("it")!;
+        const scope = ensureDefined(findScope("it"));
         expect(isScopeAvailable(scope, makeCtx())).toBe(false);
         expect(isScopeAvailable(scope, makeCtx({ config: { interactivetools_enable: true } }))).toBe(true);
     });
@@ -117,10 +118,10 @@ describe("isScopeAvailable", () => {
 
     it("hides every scope of a disabled provider, variants included", () => {
         const ctx = makeCtx({ config: { command_palette_disabled_providers: ["workflows"] } });
-        expect(isScopeAvailable(findScope("w")!, ctx)).toBe(false);
-        expect(isScopeAvailable(findScope("ws")!, ctx)).toBe(false);
-        expect(isScopeAvailable(findScope("wp")!, ctx)).toBe(false);
-        expect(isScopeAvailable(findScope("h")!, ctx)).toBe(true);
+        expect(isScopeAvailable(ensureDefined(findScope("w")), ctx)).toBe(false);
+        expect(isScopeAvailable(ensureDefined(findScope("ws")), ctx)).toBe(false);
+        expect(isScopeAvailable(ensureDefined(findScope("wp")), ctx)).toBe(false);
+        expect(isScopeAvailable(ensureDefined(findScope("h")), ctx)).toBe(true);
         expect(availableScopes(ctx).map((scope) => scope.providerId)).not.toContain("workflows");
     });
 
@@ -144,20 +145,20 @@ describe("isScopeAvailable", () => {
 describe("isScopeLoginGated", () => {
     it("names the scopes an account alone stands between", () => {
         const ctx = makeCtx({ isAnonymous: true });
-        expect(isScopeLoginGated(findScope("w")!, ctx)).toBe(true);
-        expect(isScopeLoginGated(findScope("d")!, ctx)).toBe(true);
+        expect(isScopeLoginGated(ensureDefined(findScope("w")), ctx)).toBe(true);
+        expect(isScopeLoginGated(ensureDefined(findScope("d")), ctx)).toBe(true);
         // public, so nothing is being kept from anyone
-        expect(isScopeLoginGated(findScope("wp")!, ctx)).toBe(false);
+        expect(isScopeLoginGated(ensureDefined(findScope("wp")), ctx)).toBe(false);
     });
 
     it("gates nothing for a user who is logged in", () => {
-        expect(isScopeLoginGated(findScope("w")!, makeCtx())).toBe(false);
+        expect(isScopeLoginGated(ensureDefined(findScope("w")), makeCtx())).toBe(false);
     });
 
     it("stays silent about a scope of a provider the instance disabled", () => {
         const ctx = makeCtx({ isAnonymous: true, config: { command_palette_disabled_providers: ["workflows"] } });
-        expect(isScopeLoginGated(findScope("w")!, ctx)).toBe(false);
-        expect(isScopeLoginGated(findScope("h")!, ctx)).toBe(true);
+        expect(isScopeLoginGated(ensureDefined(findScope("w")), ctx)).toBe(false);
+        expect(isScopeLoginGated(ensureDefined(findScope("h")), ctx)).toBe(true);
     });
 
     it("stays silent while a config gate of the scope's own is unmet", () => {

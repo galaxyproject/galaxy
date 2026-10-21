@@ -1,3 +1,4 @@
+import { nth } from "@tests/vitest/helpers";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,9 +10,6 @@ import {
     sectionDiff,
 } from "./sectionDiffUtils";
 
-// ---------------------------------------------------------------------------
-// markdownSections
-// ---------------------------------------------------------------------------
 describe("markdownSections", () => {
     it("returns empty array for empty string", () => {
         expect(markdownSections("")).toEqual([]);
@@ -20,99 +18,105 @@ describe("markdownSections", () => {
     it("returns single preamble section when no headings", () => {
         const sections = markdownSections("Hello world\nSecond line");
         expect(sections).toHaveLength(1);
-        expect(sections[0]!.heading).toBe("");
-        expect(sections[0]!.content).toBe("Hello world\nSecond line");
-        expect(sections[0]!.startLine).toBe(0);
-        expect(sections[0]!.endLine).toBe(1);
+        const firstSection = nth(sections, 0);
+        expect(firstSection.heading).toBe("");
+        expect(firstSection.content).toBe("Hello world\nSecond line");
+        expect(firstSection.startLine).toBe(0);
+        expect(firstSection.endLine).toBe(1);
     });
 
     it("splits on h1 headings", () => {
-        const doc = "# Intro\nSome text\n# Methods\nMore text";
-        const sections = markdownSections(doc);
+        const markdown = "# Intro\nSome text\n# Methods\nMore text";
+        const sections = markdownSections(markdown);
         expect(sections).toHaveLength(2);
-        expect(sections[0]!.heading).toBe("# Intro");
-        expect(sections[0]!.content).toBe("# Intro\nSome text");
-        expect(sections[1]!.heading).toBe("# Methods");
-        expect(sections[1]!.content).toBe("# Methods\nMore text");
+        const firstSection = nth(sections, 0);
+        const secondSection = nth(sections, 1);
+        expect(firstSection.heading).toBe("# Intro");
+        expect(firstSection.content).toBe("# Intro\nSome text");
+        expect(secondSection.heading).toBe("# Methods");
+        expect(secondSection.content).toBe("# Methods\nMore text");
     });
 
     it("splits on mixed heading levels", () => {
-        const doc = "# Title\nText\n## Sub\nMore\n### Deep\nDeep text";
-        const sections = markdownSections(doc);
+        const markdown = "# Title\nText\n## Sub\nMore\n### Deep\nDeep text";
+        const sections = markdownSections(markdown);
         expect(sections).toHaveLength(3);
-        expect(sections[0]!.heading).toBe("# Title");
-        expect(sections[1]!.heading).toBe("## Sub");
-        expect(sections[2]!.heading).toBe("### Deep");
+        const firstSection = nth(sections, 0);
+        const secondSection = nth(sections, 1);
+        const thirdSection = nth(sections, 2);
+        expect(firstSection.heading).toBe("# Title");
+        expect(secondSection.heading).toBe("## Sub");
+        expect(thirdSection.heading).toBe("### Deep");
     });
 
     it("handles preamble before first heading", () => {
-        const doc = "Some preamble\n\n# First Heading\nContent";
-        const sections = markdownSections(doc);
+        const markdown = "Some preamble\n\n# First Heading\nContent";
+        const sections = markdownSections(markdown);
         expect(sections).toHaveLength(2);
-        expect(sections[0]!.heading).toBe("");
-        expect(sections[0]!.content).toBe("Some preamble\n");
-        expect(sections[1]!.heading).toBe("# First Heading");
+        const firstSection = nth(sections, 0);
+        const secondSection = nth(sections, 1);
+        expect(firstSection.heading).toBe("");
+        expect(firstSection.content).toBe("Some preamble\n");
+        expect(secondSection.heading).toBe("# First Heading");
     });
 
     it("handles single heading with no body", () => {
         const sections = markdownSections("# Just a heading");
         expect(sections).toHaveLength(1);
-        expect(sections[0]!.heading).toBe("# Just a heading");
-        expect(sections[0]!.content).toBe("# Just a heading");
+        const firstSection = nth(sections, 0);
+        expect(firstSection.heading).toBe("# Just a heading");
+        expect(firstSection.content).toBe("# Just a heading");
     });
 
     it("does not split on non-heading hash lines", () => {
-        // Lines like "##notaheading" (no space) should not split
-        const doc = "# Real\nText\n##notaheading\nMore";
-        const sections = markdownSections(doc);
+        const markdown = "# Real\nText\n##notaheading\nMore";
+        const sections = markdownSections(markdown);
         expect(sections).toHaveLength(1);
-        expect(sections[0]!.content).toContain("##notaheading");
+        const firstSection = nth(sections, 0);
+        expect(firstSection.content).toContain("##notaheading");
     });
 
     it("handles h6 headings", () => {
-        const doc = "###### Deep heading\nContent";
-        const sections = markdownSections(doc);
+        const markdown = "###### Deep heading\nContent";
+        const sections = markdownSections(markdown);
         expect(sections).toHaveLength(1);
-        expect(sections[0]!.heading).toBe("###### Deep heading");
+        const firstSection = nth(sections, 0);
+        expect(firstSection.heading).toBe("###### Deep heading");
     });
 
     it("tracks correct line numbers", () => {
-        const doc = "# A\nline1\nline2\n# B\nline3";
-        const sections = markdownSections(doc);
-        expect(sections[0]!.startLine).toBe(0);
-        expect(sections[0]!.endLine).toBe(2);
-        expect(sections[1]!.startLine).toBe(3);
-        expect(sections[1]!.endLine).toBe(4);
+        const markdown = "# A\nline1\nline2\n# B\nline3";
+        const sections = markdownSections(markdown);
+        const firstSection = nth(sections, 0);
+        const secondSection = nth(sections, 1);
+        expect(firstSection.startLine).toBe(0);
+        expect(firstSection.endLine).toBe(2);
+        expect(secondSection.startLine).toBe(3);
+        expect(secondSection.endLine).toBe(4);
     });
 });
 
-// ---------------------------------------------------------------------------
-// computeLineDiff
-// ---------------------------------------------------------------------------
 describe("computeLineDiff", () => {
     it("returns no changes for identical text", () => {
         const changes = computeLineDiff("hello\n", "hello\n");
         expect(changes).toHaveLength(1);
-        expect(changes[0]!.added).toBeFalsy();
-        expect(changes[0]!.removed).toBeFalsy();
+        expect(nth(changes, 0).added).toBeFalsy();
+        expect(nth(changes, 0).removed).toBeFalsy();
     });
 
     it("detects added lines", () => {
         const changes = computeLineDiff("a\n", "a\nb\n");
-        const added = changes.filter((c) => c.added);
+        const added = changes.filter((change) => change.added);
         expect(added.length).toBeGreaterThan(0);
     });
 
     it("detects removed lines", () => {
         const changes = computeLineDiff("a\nb\n", "a\n");
-        const removed = changes.filter((c) => c.removed);
+        const removed = changes.filter((change) => change.removed);
         expect(removed.length).toBeGreaterThan(0);
     });
 });
 
-// ---------------------------------------------------------------------------
-// diffStats
-// ---------------------------------------------------------------------------
 describe("diffStats", () => {
     it("counts additions and deletions", () => {
         const changes = computeLineDiff("line1\nline2\n", "line1\nline3\nline4\n");
@@ -129,62 +133,56 @@ describe("diffStats", () => {
     });
 });
 
-// ---------------------------------------------------------------------------
-// sectionDiff
-// ---------------------------------------------------------------------------
 describe("sectionDiff", () => {
     it("detects no changes for identical docs", () => {
-        const doc = "# A\ntext\n# B\nmore";
-        const result = sectionDiff(doc, doc);
-        expect(result.every((s) => !s.hasChanges)).toBe(true);
+        const markdown = "# A\ntext\n# B\nmore";
+        const result = sectionDiff(markdown, markdown);
+        expect(result.every((section) => !section.hasChanges)).toBe(true);
     });
 
     it("detects modified section", () => {
-        const old = "# A\nold text\n# B\nkept";
-        const updated = "# A\nnew text\n# B\nkept";
-        const result = sectionDiff(old, updated);
-        const changed = result.filter((s) => s.hasChanges);
+        const originalMarkdown = "# A\nold text\n# B\nkept";
+        const proposedMarkdown = "# A\nnew text\n# B\nkept";
+        const result = sectionDiff(originalMarkdown, proposedMarkdown);
+        const changed = result.filter((section) => section.hasChanges);
         expect(changed).toHaveLength(1);
-        expect(changed[0]!.newSection!.heading).toBe("# A");
+        expect(nth(changed, 0).newSection).toMatchObject({ heading: "# A" });
     });
 
     it("detects added section", () => {
-        const old = "# A\ntext";
-        const updated = "# A\ntext\n# B\nnew stuff";
-        const result = sectionDiff(old, updated);
-        const added = result.filter((s) => s.oldSection === null);
+        const originalMarkdown = "# A\ntext";
+        const proposedMarkdown = "# A\ntext\n# B\nnew stuff";
+        const result = sectionDiff(originalMarkdown, proposedMarkdown);
+        const added = result.filter((section) => section.oldSection === null);
         expect(added).toHaveLength(1);
-        expect(added[0]!.newSection!.heading).toBe("# B");
-        expect(added[0]!.hasChanges).toBe(true);
+        expect(nth(added, 0).newSection).toMatchObject({ heading: "# B" });
+        expect(nth(added, 0).hasChanges).toBe(true);
     });
 
     it("detects removed section", () => {
-        const old = "# A\ntext\n# B\nmore";
-        const updated = "# A\ntext";
-        const result = sectionDiff(old, updated);
-        const removed = result.filter((s) => s.newSection === null);
+        const originalMarkdown = "# A\ntext\n# B\nmore";
+        const proposedMarkdown = "# A\ntext";
+        const result = sectionDiff(originalMarkdown, proposedMarkdown);
+        const removed = result.filter((section) => section.newSection === null);
         expect(removed).toHaveLength(1);
-        expect(removed[0]!.oldSection!.heading).toBe("# B");
+        expect(nth(removed, 0).oldSection).toMatchObject({ heading: "# B" });
     });
 
     it("handles empty old document", () => {
         const result = sectionDiff("", "# New\ncontent");
         expect(result).toHaveLength(1);
-        expect(result[0]!.oldSection).toBeNull();
-        expect(result[0]!.hasChanges).toBe(true);
+        expect(nth(result, 0).oldSection).toBeNull();
+        expect(nth(result, 0).hasChanges).toBe(true);
     });
 
     it("handles empty new document", () => {
         const result = sectionDiff("# Old\ncontent", "");
         expect(result).toHaveLength(1);
-        expect(result[0]!.newSection).toBeNull();
-        expect(result[0]!.hasChanges).toBe(true);
+        expect(nth(result, 0).newSection).toBeNull();
+        expect(nth(result, 0).hasChanges).toBe(true);
     });
 });
 
-// ---------------------------------------------------------------------------
-// applySectionPatches
-// ---------------------------------------------------------------------------
 describe("applySectionPatches", () => {
     const oldDoc = "# Intro\nOld intro\n# Methods\nOld methods\n# Results\nOld results";
     const newDoc = "# Intro\nNew intro\n# Methods\nNew methods\n# Results\nNew results";

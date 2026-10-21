@@ -1,15 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type VueWrapper } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 
 import FormPickValue from "./FormPickValue.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormSection from "@/components/Workflow/Editor/Forms/FormSection.vue";
 
-const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
 interface EmittedState {
     mode: string;
@@ -28,16 +29,16 @@ function makeStep(overrides: Partial<Step> = {}): Step {
         tool_state: { mode: "first_non_null", num_inputs: 2 },
         workflow_outputs: [],
         ...overrides,
-    } as Step;
+    };
 }
 
-function mountPickValue(step?: Step, datatypes?: unknown[]): VueWrapper {
-    return shallowMount(FormPickValue as any, {
+function mountPickValue(step?: Step, datatypes?: DatatypesMapperModel["datatypes"]): VueWrapper {
+    return shallowMount(FormPickValue, {
         propsData: {
             step: step ?? makeStep(),
             datatypes,
         },
-        localVue,
+        localVue: getLocalVue(),
         pinia: createTestingPinia({ createSpy: vi.fn }),
         provide: {
             workflowId: "mock-workflow",
@@ -116,7 +117,7 @@ describe("FormPickValue", () => {
             const step = makeStep({ tool_state: { mode: "first_non_null", num_inputs: 2 } });
             const wrapper = mountPickValue(step);
 
-            // Simulate connecting to the last empty terminal (input_2, since num_inputs=2)
+            // input_2 is the spare terminal when num_inputs is 2.
             await wrapper.setProps({
                 step: {
                     ...step,
@@ -154,7 +155,6 @@ describe("FormPickValue", () => {
                 },
             });
 
-            // num_inputs stays 3 since input_2 is not the last terminal (input_3)
             expect(getEmittedCount(wrapper)).toBe(countBefore);
         });
     });

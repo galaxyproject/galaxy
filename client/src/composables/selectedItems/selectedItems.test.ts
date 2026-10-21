@@ -1,261 +1,192 @@
-import flushPromises from "flush-promises";
+import { nth } from "@tests/vitest/helpers";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { type EffectScope, effectScope, nextTick, ref } from "vue";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 import { useSelectedItems } from "./selectedItems";
+import type { ComponentInstanceExtends, SelectedItemsProps } from "./types";
 
-const querySelectionBreakMock = vi.fn();
+type Item = { id: number };
 
-type ItemType = { id: number };
+const loadedItemCount = 10;
+const getItemKey = (item: Item) => `item-key-${item.id}`;
+const createItems = (count: number) => Array.from({ length: count }, (_, id) => ({ id }));
 
 describe("useSelectedItems", () => {
-    let selectionReturn: ReturnType<typeof useSelectedItems<ItemType, any>>;
+    let props: SelectedItemsProps<Item>;
+    let selection: ReturnType<typeof useSelectedItems<Item, ComponentInstanceExtends>>;
+    let scope: EffectScope;
+    const querySelectionBreak = vi.fn();
 
-    const numberOfLoadedItems = 10;
-    const allItems = generateTestItems(numberOfLoadedItems);
-    const selectedItemsProps = {
-        scopeKey: ref("scope"),
-        getItemKey: getItemKey,
-        filterText: ref(""),
-        totalItemsInQuery: ref(numberOfLoadedItems),
-        allItems: ref(allItems),
-        filterClass: HistoryFilters, // Can be any, just to satisfy the type
-        selectable: ref(true),
-        querySelectionBreak: () => querySelectionBreakMock(),
-        onDelete: () => {},
-    };
-
-    beforeEach(async () => {
+    beforeEach(() => {
         setActivePinia(createPinia());
-        querySelectionBreakMock.mockClear();
-        selectionReturn = useSelectedItems<ItemType, any>(selectedItemsProps);
-        await flushPromises();
-
-        // We need to enable selection first; note that this is not an enforced behavior for this composable
-        // e.g.: the HistoryPanel uses the `showSelection` ref to determine if it should show the selection
-        //       while the WorkflowList doesn't.
-        enableSelection();
+        querySelectionBreak.mockClear();
+        props = {
+            scopeKey: ref("scope"),
+            getItemKey,
+            filterText: ref(""),
+            totalItemsInQuery: ref(loadedItemCount),
+            allItems: ref(createItems(loadedItemCount)),
+            filterClass: HistoryFilters,
+            selectable: ref(true),
+            querySelectionBreak,
+            onDelete: () => {},
+        };
+        scope = effectScope();
+        scope.run(() => {
+            selection = useSelectedItems<Item, ComponentInstanceExtends>(props);
+        });
+        selection.setShowSelection(true);
     });
 
-    afterEach(() => {
-        if (selectionReturn) {
-            selectionReturn.resetSelection();
-        }
-    });
+    afterEach(() => scope.stop());
 
-    it("should be able to enable/disable selection mode", async () => {
-        // We enabled selection in the beforeEach
-        expectSelectionEnabled();
+    it("exposes selection actions and can disable selection mode", async () => {
+        expect(selection.setShowSelection).toBeInstanceOf(Function);
+        expect(selection.selectItems).toBeInstanceOf(Function);
+        expect(selection.resetSelection).toBeInstanceOf(Function);
+        expect(selection.selectAllInCurrentQuery).toBeInstanceOf(Function);
+        expect(selection.showSelection.value).toBe(true);
 
-        await disableSelection();
-        expectSelectionDisabled();
-    });
-
-    it("should discard the current selection when disabling the selection", async () => {
-        const numberOfExpectedItems = 3;
-        await selectSomeItemsManually(numberOfExpectedItems);
-        expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
-
-        await disableSelection();
-        expectSelectionDisabled();
-    });
-
-    it("should disable/discard the current selection when the `scopeKey` changes", async () => {
-        const numberOfExpectedItems = 3;
-        await selectSomeItemsManually(numberOfExpectedItems);
-        expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
-
-        selectedItemsProps.scopeKey.value = "different-scope";
-        await flushPromises();
+        selection.setShowSelection(false);
+        await nextTick();
 
         expectSelectionDisabled();
     });
 
-    it("should discard (but not disable) the current selection on `reset`", async () => {
-        const numberOfExpectedItems = 3;
-        await selectSomeItemsManually(numberOfExpectedItems);
-        expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
+    it("clears selected items when selection mode is disabled", async () => {
+        selection.selectItems(createItems(3));
+        await nextTick();
+        expect(selection.selectionSize.value).toBe(3);
 
-        await resetSelection();
+        selection.setShowSelection(false);
+        await nextTick();
 
-        expect(selectionReturn.selectionSize.value).toBe(0);
-        expectSelectionEnabled();
+        expectSelectionDisabled();
     });
 
-    describe("Query Selection Mode", () => {
-        it("is considered a query selection when we select `all items` and the query contains more items than we have currently loaded", async () => {
-            const expectedTotalItemsInQuery = 100;
-            await setTotalItemsInQuery(expectedTotalItemsInQuery);
+    it("disables selection and clears selected items when the scope changes", async () => {
+        selection.selectItems(createItems(3));
+        await nextTick();
+        expect(selection.selectionSize.value).toBe(3);
 
-            await selectAllItemsInCurrentQuery();
+        props.scopeKey.value = "different-scope";
+        await nextTick();
 
-            expect(selectionReturn.isQuerySelection.value).toBe(true);
-            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-        });
-
-        it("shouldn't be a query selection when we already have all items loaded", async () => {
-            const expectedTotalItemsInQuery = 10;
-            await setTotalItemsInQuery(expectedTotalItemsInQuery);
-
-            await selectAllItemsInCurrentQuery();
-
-            expect(selectionReturn.isQuerySelection.value).toBe(false);
-            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-        });
-
-        it("should `break` query selection mode when we unselect an item", async () => {
-            const expectedTotalItemsInQuery = 100;
-            await setTotalItemsInQuery(expectedTotalItemsInQuery);
-
-            await selectAllItemsInCurrentQuery();
-            expect(selectionReturn.isQuerySelection.value).toBe(true);
-            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
-            expect(querySelectionBreakMock).not.toHaveBeenCalled();
-
-            if (!allItems.length || !allItems[0]) {
-                throw new Error("allItems is empty or undefined");
-            }
-
-            selectionReturn.setSelected(allItems[0], false);
-
-            expect(selectionReturn.isQuerySelection.value).toBe(false);
-            expect(selectionReturn.selectionSize.value).toBe(numberOfLoadedItems - 1);
-            expect(querySelectionBreakMock).toHaveBeenCalled();
-        });
-
-        it("should `break` query selection mode when the total number of items changes", async () => {
-            await selectAllItemsInCurrentQuery();
-            expect(selectionReturn.isQuerySelection.value).toBe(true);
-            expect(querySelectionBreakMock).not.toHaveBeenCalled();
-
-            selectedItemsProps.totalItemsInQuery.value = 80;
-            await flushPromises();
-
-            expect(selectionReturn.isQuerySelection.value).toBe(false);
-            expect(selectionReturn.selectionSize.value).toBe(numberOfLoadedItems);
-            expect(querySelectionBreakMock).toHaveBeenCalled();
-        });
+        expectSelectionDisabled();
     });
 
-    describe("Selection Size", () => {
-        it("should select/unselect items correctly", async () => {
-            expect(selectionReturn.selectedItems.value.size).toBe(0);
+    it("clears selected items without disabling selection mode on reset", async () => {
+        selection.selectItems(createItems(3));
+        await nextTick();
+        expect(selection.selectionSize.value).toBe(3);
 
-            if (allItems.length && allItems[0] && allItems[1]) {
-                selectionReturn.setSelected(allItems[0], true);
-                expect(selectionReturn.selectedItems.value.size).toBe(1);
+        selection.resetSelection();
 
-                selectionReturn.setSelected(allItems[1], true);
-                expect(selectionReturn.selectedItems.value.size).toBe(2);
+        expect(selection.selectionSize.value).toBe(0);
+        expect(selection.showSelection.value).toBe(true);
+    });
 
-                selectionReturn.setSelected(allItems[0], false);
-                expect(selectionReturn.selectedItems.value.size).toBe(1);
+    describe("query selection", () => {
+        it.each([
+            { name: "counts all query items when more exist than are loaded", totalItems: 100, isQuerySelection: true },
+            {
+                name: "counts loaded items without query selection when all are loaded",
+                totalItems: 10,
+                isQuerySelection: false,
+            },
+        ])("$name", async ({ totalItems, isQuerySelection }) => {
+            props.totalItemsInQuery.value = totalItems;
+            await nextTick();
 
-                expect(selectionReturn.selectedItems.value.has(getItemKey(allItems[0]))).toBe(false);
-                expect(selectionReturn.selectedItems.value.has(getItemKey(allItems[1]))).toBe(true);
-            } else {
-                throw new Error("allItems is empty or undefined");
-            }
+            selection.selectAllInCurrentQuery();
+            await nextTick();
+
+            expect(selection.isQuerySelection.value).toBe(isQuerySelection);
+            expect(selection.selectionSize.value).toBe(totalItems);
         });
 
-        it("should match the number of items explicitly selected (non query)", async () => {
-            const numberOfExpectedItems = 3;
-            const items = generateTestItems(numberOfExpectedItems);
-            selectItems(items);
-            expect(selectionReturn.isQuerySelection.value).toBe(false);
-            expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems);
+        it("breaks query selection and keeps remaining loaded items when an item is deselected", async () => {
+            props.totalItemsInQuery.value = 100;
+            await nextTick();
+            selection.selectAllInCurrentQuery();
+            await nextTick();
+            expect(selection.isQuerySelection.value).toBe(true);
+            expect(selection.selectionSize.value).toBe(100);
+            expect(querySelectionBreak).not.toHaveBeenCalled();
 
-            if (!items.length || !items[0]) {
-                throw new Error("items is empty or undefined");
-            }
-            selectionReturn.setSelected(items[0], false);
+            selection.setSelected(nth(props.allItems.value, 0), false);
 
-            expect(selectionReturn.selectionSize.value).toBe(numberOfExpectedItems - 1);
+            expect(selection.isQuerySelection.value).toBe(false);
+            expect(selection.selectionSize.value).toBe(loadedItemCount - 1);
+            expect(querySelectionBreak).toHaveBeenCalled();
         });
 
-        it("should match the number of items in query when selecting all items", async () => {
-            const expectedTotalItemsInQuery = 100;
-            await setTotalItemsInQuery(expectedTotalItemsInQuery);
+        it("breaks query selection and keeps loaded items when the query count changes", async () => {
+            props.totalItemsInQuery.value = 100;
+            await nextTick();
+            selection.selectAllInCurrentQuery();
+            await nextTick();
+            expect(selection.isQuerySelection.value).toBe(true);
+            expect(querySelectionBreak).not.toHaveBeenCalled();
 
-            selectedItemsProps.allItems.value = generateTestItems(0); // Even if there are no explicit items selected
-            await selectAllItemsInCurrentQuery();
-            expect(selectionReturn.isQuerySelection.value).toBe(true);
-            expect(selectionReturn.selectionSize.value).toBe(expectedTotalItemsInQuery);
+            props.totalItemsInQuery.value = 80;
+            await nextTick();
+
+            expect(selection.isQuerySelection.value).toBe(false);
+            expect(selection.selectionSize.value).toBe(loadedItemCount);
+            expect(querySelectionBreak).toHaveBeenCalled();
         });
     });
 
-    function getItemKey(item: ItemType) {
-        return `item-key-${item.id}`;
-    }
+    describe("selection size", () => {
+        it("tracks individual selection and deselection by item key", () => {
+            const firstItem = nth(props.allItems.value, 0);
+            const secondItem = nth(props.allItems.value, 1);
+            expect(selection.selectedItems.value.size).toBe(0);
 
-    async function setTotalItemsInQuery(totalItems: number) {
-        selectedItemsProps.totalItemsInQuery.value = totalItems;
-        await flushPromises();
-    }
+            selection.setSelected(firstItem, true);
+            expect(selection.selectedItems.value.size).toBe(1);
 
-    function enableSelection() {
-        const { setShowSelection } = selectionReturn;
-        expect(setShowSelection).toBeInstanceOf(Function);
-        setShowSelection(true);
-    }
+            selection.setSelected(secondItem, true);
+            expect(selection.selectedItems.value.size).toBe(2);
 
-    async function disableSelection() {
-        const { setShowSelection } = selectionReturn;
-        expect(setShowSelection).toBeInstanceOf(Function);
-        setShowSelection(false);
-        await flushPromises();
-    }
-
-    function selectItems(items: ItemType[]) {
-        const { selectItems } = selectionReturn;
-        expect(selectItems).toBeInstanceOf(Function);
-
-        selectItems(items);
-    }
-
-    async function selectSomeItemsManually(numberOfItems: number) {
-        const items = generateTestItems(numberOfItems);
-        selectItems(items);
-        await flushPromises();
-    }
-
-    async function resetSelection() {
-        const { resetSelection } = selectionReturn;
-        expect(resetSelection).toBeInstanceOf(Function);
-        resetSelection();
-    }
-
-    async function selectAllItemsInCurrentQuery() {
-        const { selectAllInCurrentQuery } = selectionReturn;
-        expect(selectAllInCurrentQuery).toBeInstanceOf(Function);
-
-        selectAllInCurrentQuery();
-        await flushPromises();
-    }
-
-    function generateTestItems(numberOfItems: number) {
-        return Array.from({ length: numberOfItems }, (_, i) => {
-            return {
-                id: i,
-            };
+            selection.setSelected(firstItem, false);
+            expect(selection.selectedItems.value.size).toBe(1);
+            expect(selection.selectedItems.value.has(getItemKey(firstItem))).toBe(false);
+            expect(selection.selectedItems.value.has(getItemKey(secondItem))).toBe(true);
         });
-    }
+
+        it("counts explicitly selected items outside query selection mode", () => {
+            const items = createItems(3);
+            selection.selectItems(items);
+            expect(selection.isQuerySelection.value).toBe(false);
+            expect(selection.selectionSize.value).toBe(3);
+
+            selection.setSelected(nth(items, 0), false);
+
+            expect(selection.selectionSize.value).toBe(2);
+        });
+
+        it("counts all items in the query even when no items are loaded", async () => {
+            props.totalItemsInQuery.value = 100;
+            await nextTick();
+            props.allItems.value = [];
+
+            selection.selectAllInCurrentQuery();
+            await nextTick();
+
+            expect(selection.isQuerySelection.value).toBe(true);
+            expect(selection.selectionSize.value).toBe(100);
+        });
+    });
 
     function expectSelectionDisabled() {
-        expect(selectionReturn.showSelection.value).toBe(false);
-        expectNothingSelected();
-    }
-
-    function expectSelectionEnabled() {
-        expect(selectionReturn.showSelection.value).toBe(true);
-    }
-
-    function expectNothingSelected() {
-        expect(selectionReturn.selectionSize.value).toBe(0);
-        expect(selectionReturn.selectedItems.value.size).toEqual(selectionReturn.selectionSize.value);
-        expect(selectionReturn.isQuerySelection.value).toBe(false);
+        expect(selection.showSelection.value).toBe(false);
+        expect(selection.selectionSize.value).toBe(0);
+        expect(selection.selectedItems.value.size).toEqual(selection.selectionSize.value);
+        expect(selection.isQuerySelection.value).toBe(false);
     }
 });

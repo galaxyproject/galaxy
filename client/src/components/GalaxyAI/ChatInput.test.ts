@@ -1,6 +1,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { emittedArg } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import GButton from "../BaseComponents/GButton.vue";
 import ChatInput from "./ChatInput.vue";
@@ -13,39 +15,45 @@ vi.mock("@/stores/historyItemsStore", () => ({
 }));
 
 function mountInput(
-    props: Record<string, unknown> = {},
+    props: Partial<InstanceType<typeof ChatInput>["$props"]> = {},
     stubs: Record<string, boolean> = {
         LoadingSpan: true,
         MentionDropdown: true,
     },
 ) {
-    return mount(ChatInput as any, {
-        propsData: {
+    return mount(ChatInput, {
+        props: {
             value: "",
             busy: false,
             ...props,
         },
-        stubs,
+        global: { stubs },
     });
 }
+
+enableAutoUnmount(afterEach);
+afterEach(async () => {
+    // Let the real mention dropdown finish positioning before its owned wrapper is unmounted.
+    await flushPromises();
+});
 
 describe("ChatInput", () => {
     describe("rendering", () => {
         it("renders textarea with provided value", () => {
             const wrapper = mountInput({ value: "hello" });
-            const textarea = wrapper.find("textarea");
-            expect((textarea.element as HTMLTextAreaElement).value).toBe("hello");
+            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
+            expect(textarea.element.value).toBe("hello");
         });
 
         it("renders with default placeholder", () => {
             const wrapper = mountInput();
-            const textarea = wrapper.find("textarea");
+            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
             expect(textarea.attributes("placeholder")).toContain("Ask about tools");
         });
 
         it("renders with custom placeholder", () => {
             const wrapper = mountInput({ placeholder: "Type here..." });
-            expect(wrapper.find("textarea").attributes("placeholder")).toBe("Type here...");
+            expect(wrapper.get<HTMLTextAreaElement>("textarea").attributes("placeholder")).toBe("Type here...");
         });
 
         it("has accessible label", () => {
@@ -57,73 +65,72 @@ describe("ChatInput", () => {
     describe("disabled states", () => {
         it("disables textarea when busy", () => {
             const wrapper = mountInput({ busy: true });
-            expect((wrapper.find("textarea").element as HTMLTextAreaElement).disabled).toBe(true);
+            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.disabled).toBe(true);
         });
 
         it("disables textarea when disabled prop is true", () => {
             const wrapper = mountInput({ disabled: true });
-            expect((wrapper.find("textarea").element as HTMLTextAreaElement).disabled).toBe(true);
+            expect(wrapper.get<HTMLTextAreaElement>("textarea").element.disabled).toBe(true);
         });
 
         it("disables send button when value is empty", () => {
             const wrapper = mountInput({ value: "" });
-            expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
         });
 
         it("disables send button when value is whitespace", () => {
             const wrapper = mountInput({ value: "   " });
-            expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
         });
 
         it("enables send button when value has content", () => {
             const wrapper = mountInput({ value: "hello" });
-            expect(wrapper.findComponent(GButton).props("disabled")).toBe(false);
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(false);
         });
 
         it("disables send button when busy even with content", () => {
             const wrapper = mountInput({ value: "hello", busy: true });
-            expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
         });
 
         it("disables send button when disabled prop is true even with content", () => {
             const wrapper = mountInput({ value: "hello", disabled: true });
-            expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.getComponent(GButton).props("disabled")).toBe(true);
         });
     });
 
     describe("events", () => {
         it("emits input on textarea input", async () => {
             const wrapper = mountInput();
-            const textarea = wrapper.find("textarea");
+            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
             await textarea.setValue("hello");
             expect(wrapper.emitted("input")).toBeTruthy();
-            const emitted = wrapper.emitted("input")!;
-            expect(emitted[emitted.length - 1]![0]).toBe("hello");
+            expect(emittedArg(wrapper, "input", -1)).toBe("hello");
         });
 
         it("emits submit on send button click", async () => {
             const wrapper = mountInput({ value: "hello" });
-            await wrapper.findComponent(GButton).trigger("click");
+            await wrapper.getComponent(GButton).trigger("click");
             expect(wrapper.emitted("submit")).toBeTruthy();
         });
 
         it("emits submit on Enter key (without Shift)", async () => {
             const wrapper = mountInput({ value: "hello" });
-            await wrapper.find("textarea").trigger("keydown", { key: "Enter" });
+            await wrapper.get<HTMLTextAreaElement>("textarea").trigger("keydown", { key: "Enter" });
             expect(wrapper.emitted("submit")).toBeTruthy();
         });
 
         it("does not emit submit on Shift+Enter", async () => {
             const wrapper = mountInput({ value: "hello" });
-            await wrapper.find("textarea").trigger("keydown", { key: "Enter", shiftKey: true });
+            await wrapper.get<HTMLTextAreaElement>("textarea").trigger("keydown", { key: "Enter", shiftKey: true });
             expect(wrapper.emitted("submit")).toBeFalsy();
         });
 
         it("emits submit on Enter when the mention dropdown has no matches", async () => {
             const value = "@dataset:nope";
             const wrapper = mountInput({ value }, { FontAwesomeIcon: true, LoadingSpan: true });
-            const textarea = wrapper.find("textarea");
-            const el = textarea.element as HTMLTextAreaElement;
+            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
+            const el = textarea.element;
             el.selectionStart = value.length;
             el.selectionEnd = value.length;
 
@@ -136,17 +143,17 @@ describe("ChatInput", () => {
         it("closes an empty mention dropdown on Escape", async () => {
             const value = "@dataset:nope";
             const wrapper = mountInput({ value }, { FontAwesomeIcon: true, LoadingSpan: true });
-            const textarea = wrapper.find("textarea");
-            const el = textarea.element as HTMLTextAreaElement;
+            const textarea = wrapper.get<HTMLTextAreaElement>("textarea");
+            const el = textarea.element;
             el.selectionStart = value.length;
             el.selectionEnd = value.length;
 
             await textarea.trigger("input");
-            expect(wrapper.find(".mention-dropdown").attributes("style") ?? "").not.toContain("display: none");
+            expect(wrapper.get(".mention-dropdown").attributes("style") ?? "").not.toContain("display: none");
 
             await textarea.trigger("keydown", { key: "Escape" });
 
-            expect(wrapper.find(".mention-dropdown").attributes("style") ?? "").toContain("display: none");
+            expect(wrapper.get(".mention-dropdown").attributes("style") ?? "").toContain("display: none");
         });
     });
 
@@ -157,7 +164,7 @@ describe("ChatInput", () => {
 
         it("does not set height on mount when value is empty", () => {
             const wrapper = mountInput({ value: "" });
-            const el = wrapper.find("textarea").element as HTMLTextAreaElement;
+            const el = wrapper.get<HTMLTextAreaElement>("textarea").element;
             expect(el.style.height).toBe("");
         });
 
@@ -166,23 +173,22 @@ describe("ChatInput", () => {
             // prototype before mounting and restore it afterwards.
             const proto = window.HTMLTextAreaElement.prototype;
             const original = Object.getOwnPropertyDescriptor(proto, "scrollHeight");
-            Object.defineProperty(proto, "scrollHeight", { configurable: true, get: () => 96 });
-            try {
-                const wrapper = mountInput({ value: "line one\nline two\nline three" });
-                const el = wrapper.find("textarea").element as HTMLTextAreaElement;
-                expect(el.style.height).toBe("96px");
-            } finally {
+            onTestFinished(() => {
                 if (original) {
                     Object.defineProperty(proto, "scrollHeight", original);
                 } else {
-                    delete (proto as { scrollHeight?: number }).scrollHeight;
+                    Reflect.deleteProperty(proto, "scrollHeight");
                 }
-            }
+            });
+            Object.defineProperty(proto, "scrollHeight", { configurable: true, get: () => 96 });
+            const wrapper = mountInput({ value: "line one\nline two\nline three" });
+            const el = wrapper.get<HTMLTextAreaElement>("textarea").element;
+            expect(el.style.height).toBe("96px");
         });
 
         it("grows when the value changes (typing / mention insert)", async () => {
             const wrapper = mountInput({ value: "short" });
-            const el = wrapper.find("textarea").element as HTMLTextAreaElement;
+            const el = wrapper.get<HTMLTextAreaElement>("textarea").element;
 
             mockScrollHeight(el, 120);
             await wrapper.setProps({ value: "much\nlonger\ncontent\nhere" });
@@ -193,7 +199,7 @@ describe("ChatInput", () => {
 
         it("resets height to '' when value is cleared (e.g. after submit)", async () => {
             const wrapper = mountInput({ value: "a\nb\nc\nd\ne" });
-            const el = wrapper.find("textarea").element as HTMLTextAreaElement;
+            const el = wrapper.get<HTMLTextAreaElement>("textarea").element;
 
             mockScrollHeight(el, 140);
             await wrapper.setProps({ value: "a\nb\nc\nd\ne\nf" });
@@ -209,7 +215,7 @@ describe("ChatInput", () => {
     describe("busy state UI", () => {
         it("shows spinner icon when busy", () => {
             const wrapper = mountInput({ busy: true });
-            const buttonIcon = wrapper.findComponent(GButton).findComponent(FontAwesomeIcon);
+            const buttonIcon = wrapper.getComponent(GButton).getComponent(FontAwesomeIcon);
             expect(buttonIcon.classes()).toContain("fa-spinner");
             expect(buttonIcon.classes()).toContain("fa-spin");
             expect(buttonIcon.classes()).not.toContain("fa-paper-plane");
@@ -217,7 +223,7 @@ describe("ChatInput", () => {
 
         it("shows send icon when not busy", () => {
             const wrapper = mountInput({ busy: false });
-            const buttonIcon = wrapper.findComponent(GButton).findComponent(FontAwesomeIcon);
+            const buttonIcon = wrapper.getComponent(GButton).getComponent(FontAwesomeIcon);
             expect(buttonIcon.classes()).toContain("fa-paper-plane");
             expect(buttonIcon.classes()).not.toContain("fa-spinner");
             expect(buttonIcon.classes()).not.toContain("fa-spin");

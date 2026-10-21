@@ -24,18 +24,18 @@ const VERSION_LOCKED_SPECIFIERS = [
 ];
 
 // Skip tests -- this file names the banned specifiers as data.
-const sources = import.meta.glob(["./**/*.{ts,js,vue}", "!./**/*.test.{ts,js}"], {
+const sources = import.meta.glob<string>(["./**/*.{ts,js,vue}", "!./**/*.test.{ts,js}"], {
     query: "?raw",
     import: "default",
     eager: true,
-}) as Record<string, string>;
+});
 
 describe("galaxy-ui source portability", () => {
-    const files = Object.keys(sources);
+    const sourceEntries = Object.entries(sources);
 
     it("finds the package sources to check", () => {
         // An empty list would make every assertion below vacuously true.
-        expect(files.length).toBeGreaterThan(10);
+        expect(sourceEntries.length).toBeGreaterThan(10);
     });
 
     it.each(VERSION_LOCKED_SPECIFIERS)("imports nothing from %s", (specifier) => {
@@ -44,18 +44,17 @@ describe("galaxy-ui source portability", () => {
         // does not read as a violation.
         const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const importPattern = new RegExp(`(?:from|import|require)\\s*\\(?\\s*["']${escaped}["']`);
-        const offenders = files.filter((file) => importPattern.test(sources[file]!));
+        const offenders = sourceEntries.filter(([, source]) => importPattern.test(source)).map(([file]) => file);
         expect(offenders, `${specifier} resolves for only one of the supported peer versions`).toEqual([]);
     });
 
     // `.native` is Vue 2 syntax. @vue/compat honours it, so the client never notices, but plain Vue 3
     // drops the modifier and binds an ordinary listener: next to a plain @click, the handler runs twice.
     it("uses no .native event modifiers", () => {
-        const offenders = files.filter(
-            (file) =>
-                file.endsWith(".vue") &&
-                /@[\w-]+(?:\.[\w-]+)*\.native\b|v-on:[\w-]+(?:\.[\w-]+)*\.native\b/.test(sources[file]!),
-        );
+        const nativeEventModifier = /@[\w-]+(?:\.[\w-]+)*\.native\b|v-on:[\w-]+(?:\.[\w-]+)*\.native\b/;
+        const offenders = sourceEntries
+            .filter(([file, source]) => file.endsWith(".vue") && nativeEventModifier.test(source))
+            .map(([file]) => file);
         expect(offenders, ".native is Vue 2 syntax that plain Vue 3 consumers silently drop").toEqual([]);
     });
 });

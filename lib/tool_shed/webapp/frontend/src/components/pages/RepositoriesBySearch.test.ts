@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { mount, flushPromises } from "@vue/test-utils"
+import { enableAutoUnmount, mount, flushPromises } from "@vue/test-utils"
 import RepositoriesBySearch from "./RepositoriesBySearch.vue"
 
 const mockReplace = vi.fn()
@@ -24,13 +24,16 @@ describe("RepositoriesBySearch", () => {
     })
 
     afterEach(() => {
+        vi.clearAllTimers()
         vi.useRealTimers()
     })
+
+    enableAutoUnmount(afterEach)
 
     it("debounces typing before updating the route and showing results", async () => {
         const wrapper = mount(RepositoriesBySearch)
 
-        const input = wrapper.find("input")
+        const input = wrapper.get<HTMLInputElement>("input")
         await input.setValue("b")
         await input.setValue("bo")
 
@@ -48,7 +51,7 @@ describe("RepositoriesBySearch", () => {
     it("does not show the grid for a single-character query", async () => {
         const wrapper = mount(RepositoriesBySearch)
 
-        await wrapper.find("input").setValue("b")
+        await wrapper.get<HTMLInputElement>("input").setValue("b")
         await vi.advanceTimersByTimeAsync(1000)
         await flushPromises()
 

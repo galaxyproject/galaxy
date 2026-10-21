@@ -1,7 +1,9 @@
+import { getFakeVisualizationSummary } from "@tests/test-data/visualizations";
+import { deferred } from "@tests/vitest/deferred";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { loadVisualizations, type VisualizationSummary } from "@/api/visualizations";
+import { loadVisualizations, type LoadVisualizationsResult, type VisualizationSummary } from "@/api/visualizations";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
 vi.mock("@/api/visualizations", () => ({
@@ -9,19 +11,14 @@ vi.mock("@/api/visualizations", () => ({
 }));
 
 function mockVisualization(id: string, title: string): VisualizationSummary {
-    return {
-        id,
-        title,
-        type: "nvd3_bar",
-        annotation: null,
-        create_time: "2026-01-01T00:00:00",
-        update_time: "2026-01-02T00:00:00",
-        deleted: false,
-        importable: false,
-        published: false,
-        tags: [],
-        username: "test-user",
-    } as VisualizationSummary;
+    return getFakeVisualizationSummary({ id, title });
+}
+
+function mockResult(
+    visualizations: VisualizationSummary[],
+    totalMatches = visualizations.length,
+): LoadVisualizationsResult {
+    return { data: visualizations, totalMatches };
 }
 
 describe("useVisualizationStore", () => {
@@ -34,8 +31,9 @@ describe("useVisualizationStore", () => {
     });
 
     it("stores summaries by id and keeps the returned order per variant", async () => {
-        const data = [mockVisualization("viz-2", "Second"), mockVisualization("viz-1", "First")];
-        vi.mocked(loadVisualizations).mockResolvedValue({ data, totalMatches: 2 });
+        vi.mocked(loadVisualizations).mockResolvedValue(
+            mockResult([mockVisualization("viz-2", "Second"), mockVisualization("viz-1", "First")], 2),
+        );
 
         await store.fetchVisualizations("my");
 
@@ -48,7 +46,7 @@ describe("useVisualizationStore", () => {
     });
 
     it("sends the explicit scope triplet of the requested variant", async () => {
-        vi.mocked(loadVisualizations).mockResolvedValue({ data: [], totalMatches: 0 });
+        vi.mocked(loadVisualizations).mockResolvedValue(mockResult([]));
 
         await store.fetchVisualizations("published", { limit: 5 });
 
@@ -64,14 +62,10 @@ describe("useVisualizationStore", () => {
     });
 
     it("merges repeated fetches into a single cache entry per id", async () => {
-        vi.mocked(loadVisualizations).mockResolvedValueOnce({
-            data: [mockVisualization("viz-1", "First"), mockVisualization("viz-2", "Second")],
-            totalMatches: 2,
-        });
-        vi.mocked(loadVisualizations).mockResolvedValueOnce({
-            data: [mockVisualization("viz-2", "Second renamed")],
-            totalMatches: 1,
-        });
+        vi.mocked(loadVisualizations).mockResolvedValueOnce(
+            mockResult([mockVisualization("viz-1", "First"), mockVisualization("viz-2", "Second")]),
+        );
+        vi.mocked(loadVisualizations).mockResolvedValueOnce(mockResult([mockVisualization("viz-2", "Second renamed")]));
 
         await store.fetchVisualizations("my");
         await store.fetchVisualizations("shared");
@@ -82,14 +76,8 @@ describe("useVisualizationStore", () => {
     });
 
     it("does not redefine the variant list for a filtered fetch", async () => {
-        vi.mocked(loadVisualizations).mockResolvedValueOnce({
-            data: [mockVisualization("viz-1", "First")],
-            totalMatches: 1,
-        });
-        vi.mocked(loadVisualizations).mockResolvedValueOnce({
-            data: [mockVisualization("viz-9", "Ninth")],
-            totalMatches: 1,
-        });
+        vi.mocked(loadVisualizations).mockResolvedValueOnce(mockResult([mockVisualization("viz-1", "First")]));
+        vi.mocked(loadVisualizations).mockResolvedValueOnce(mockResult([mockVisualization("viz-9", "Ninth")]));
 
         await store.fetchVisualizations("my");
         await store.fetchVisualizations("my", { search: "ninth" });
@@ -99,10 +87,7 @@ describe("useVisualizationStore", () => {
     });
 
     it("fetches a variant only once via ensureVariantLoaded", async () => {
-        vi.mocked(loadVisualizations).mockResolvedValue({
-            data: [mockVisualization("viz-1", "First")],
-            totalMatches: 1,
-        });
+        vi.mocked(loadVisualizations).mockResolvedValue(mockResult([mockVisualization("viz-1", "First")]));
 
         const first = await store.ensureVariantLoaded("my");
         const second = await store.ensureVariantLoaded("my");
@@ -113,14 +98,9 @@ describe("useVisualizationStore", () => {
     });
 
     it("shares one request between identical concurrent fetches", async () => {
-        let resolveVisualizations: (value: { data: VisualizationSummary[]; totalMatches: number }) => void = () =>
-            undefined;
-        vi.mocked(loadVisualizations).mockReturnValueOnce(
-            new Promise((resolve) => {
-                resolveVisualizations = resolve;
-            }),
-        );
-        vi.mocked(loadVisualizations).mockResolvedValue({ data: [], totalMatches: 0 });
+        const response = deferred<LoadVisualizationsResult>();
+        vi.mocked(loadVisualizations).mockReturnValueOnce(response.promise);
+        vi.mocked(loadVisualizations).mockResolvedValue(mockResult([]));
 
         const first = store.fetchVisualizations("my");
         const second = store.fetchVisualizations("my");
@@ -128,10 +108,11 @@ describe("useVisualizationStore", () => {
 
         expect(loadVisualizations).toHaveBeenCalledTimes(2);
 
-        resolveVisualizations({ data: [mockVisualization("viz-1", "First")], totalMatches: 1 });
+        response.resolve(mockResult([mockVisualization("viz-1", "First")]));
         const [firstResult, secondResult] = await Promise.all([first, second, other]);
 
-        expect(secondResult).toEqual(firstResult);
+        expect(secondResult).toBe(firstResult);
+        expect(firstResult.map((viz) => viz.id)).toEqual(["viz-1"]);
         expect(store.isLoading).toBe(false);
 
         // settled requests are not reused
@@ -140,16 +121,17 @@ describe("useVisualizationStore", () => {
     });
 
     it("filters the cached variant list by title", async () => {
-        vi.mocked(loadVisualizations).mockResolvedValue({
-            data: [mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot")],
-            totalMatches: 2,
-        });
+        vi.mocked(loadVisualizations).mockResolvedValue(
+            mockResult([mockVisualization("viz-1", "ATAC peaks"), mockVisualization("viz-2", "Coverage plot")]),
+        );
 
         await store.fetchVisualizations("my");
 
         expect(store.searchCachedVisualizations("my", "atac").map((viz) => viz.id)).toEqual(["viz-1"]);
         expect(store.searchCachedVisualizations("my", "").map((viz) => viz.id)).toEqual(["viz-1", "viz-2"]);
-        expect(store.searchCachedVisualizations("my", "cov", 1)).toHaveLength(1);
+        expect(store.searchCachedVisualizations("my", "cov", 1).map((viz) => viz.id)).toEqual(["viz-2"]);
+        // both titles contain "a", so only the limit keeps the second one out
+        expect(store.searchCachedVisualizations("my", "a", 1).map((viz) => viz.id)).toEqual(["viz-1"]);
         expect(store.searchCachedVisualizations("shared", "atac")).toEqual([]);
     });
 

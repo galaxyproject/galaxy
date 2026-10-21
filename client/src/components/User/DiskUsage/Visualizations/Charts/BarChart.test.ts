@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, nth } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it, vi } from "vitest";
+import { disposePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import type { DataValuePoint } from ".";
 
@@ -28,7 +29,7 @@ function buildMockView(dataPoints: DataValuePoint[] = []) {
     const colors = ["#4c78a8", "#f58518", "#e45756", "#72b7b2"];
     formattedData.forEach((d, i) => {
         if (!colorMap[d.id]) {
-            colorMap[d.id] = colors[i % colors.length]!;
+            colorMap[d.id] = nth(colors, i % colors.length);
         }
     });
     return {
@@ -37,7 +38,7 @@ function buildMockView(dataPoints: DataValuePoint[] = []) {
         addSignalListener: mockAddSignalListener,
         runAsync: mockRunAsync,
         scale: vi.fn(() => (value: string) => colorMap[value] ?? "#000"),
-        data: vi.fn((name: string, newData?: any[]) => {
+        data: vi.fn((name: string, newData?: unknown[]) => {
             if (name === "data_0") {
                 return formattedData;
             }
@@ -59,23 +60,29 @@ vi.mock("@vueuse/core", () => ({
     useResizeObserver: vi.fn(),
 }));
 
-interface BarChartProps {
-    title: string;
-    data: DataValuePoint[];
-    description?: string;
-    enableSelection?: boolean;
-    labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
-}
+type BarChartProps = InstanceType<typeof BarChart>["$props"];
+
+const localVue = getLocalVue();
 
 function mountBarChartWrapper(props: BarChartProps) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
-    const localVue = getLocalVue();
-    return mount(BarChart as object, {
-        props: props,
-        global: localVue,
-        pinia,
+    onTestFinished(() => disposePinia(pinia));
+    return mount(BarChart, {
+        props,
+        global: withPlugins(localVue, pinia),
     });
 }
+
+beforeEach(() => {
+    vi.clearAllMocks();
+    currentMockView = buildMockView();
+});
+
+enableAutoUnmount(afterEach);
+afterEach(async () => {
+    // Finish the mock embed while mounted so VegaWrapper owns and finalizes its view.
+    await flushPromises();
+});
 
 describe("BarChart.vue", () => {
     describe("Chart Rendering", () => {
@@ -102,7 +109,7 @@ describe("BarChart.vue", () => {
                 title: "Test Bar Chart",
                 data: TEST_DATA,
             });
-            expect(wrapper.find("h4").text()).toBe("Test Bar Chart");
+            expect(wrapper.get("h4").text()).toBe("Test Bar Chart");
         });
 
         it("should render with the correct description", () => {
@@ -112,7 +119,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
                 description,
             });
-            expect(wrapper.find(".chart-description").text()).toBe(description);
+            expect(wrapper.get(".chart-description").text()).toBe(description);
         });
 
         it("should display empty state message when there is no data", () => {
@@ -143,7 +150,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper);
+            const vegaWrapper = wrapper.getComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
@@ -159,7 +166,7 @@ describe("BarChart.vue", () => {
                 data: TEST_DATA,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper);
+            const vegaWrapper = wrapper.getComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const symbols = wrapper.findAll(".legend-symbol");
@@ -184,10 +191,10 @@ describe("BarChart.vue", () => {
                 enableSelection: false,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper);
+            const vegaWrapper = wrapper.getComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
-            const item = wrapper.find(".legend-item");
+            const item = wrapper.get(".legend-item");
             expect(item.attributes("style")).toContain("cursor: default");
         });
 
@@ -199,10 +206,10 @@ describe("BarChart.vue", () => {
                 enableSelection: true,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper);
+            const vegaWrapper = wrapper.getComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
-            const item = wrapper.find(".legend-item");
+            const item = wrapper.get(".legend-item");
             expect(item.attributes("style")).toContain("cursor: pointer");
         });
 
@@ -214,7 +221,7 @@ describe("BarChart.vue", () => {
                 enableSelection: true,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper);
+            const vegaWrapper = wrapper.getComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
             const items = wrapper.findAll(".legend-item");
@@ -233,10 +240,10 @@ describe("BarChart.vue", () => {
                 enableSelection: false,
             });
             await flushPromises();
-            const vegaWrapper = wrapper.findComponent(VegaWrapper);
+            const vegaWrapper = wrapper.getComponent(VegaWrapper);
             vegaWrapper.vm.$emit("new-view", currentMockView);
             await flushPromises();
-            const item = wrapper.find(".legend-item");
+            const item = wrapper.get(".legend-item");
             await item.trigger("click");
             expect(mockRunAsync).not.toHaveBeenCalled();
         });

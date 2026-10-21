@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { JobStateSummary } from "./JobStateSummary";
 
@@ -9,61 +8,66 @@ import CollectionProgress from "./CollectionProgress.vue";
 
 const localVue = getLocalVue();
 
-async function mountComponent(dsc: object) {
-    const jobStateSummary = new JobStateSummary(dsc);
+enableAutoUnmount(afterEach);
 
-    const wrapper = mount(CollectionProgress, {
-        props: {
-            summary: jobStateSummary,
-        },
+type JobStates = Record<string, number>;
+
+function summaryOf(jobStates: JobStates) {
+    return new JobStateSummary({ job_state_summary: jobStates, populated_state: {} });
+}
+
+function mountWithJobs(jobStates: JobStates) {
+    return mount(CollectionProgress, {
+        props: { summary: summaryOf(jobStates) },
         global: localVue,
     });
+}
 
-    await flushPromises();
-
-    return wrapper;
+/** Rendered progress bars as `{ <bootstrap variant>: <aria-valuenow> }`. */
+function renderedBars(wrapper: VueWrapper) {
+    return Object.fromEntries(
+        wrapper.findAll(".progress .progress-bar").map((bar) => {
+            const variant = bar.classes().find((name) => name.startsWith("bg-"))!;
+            return [variant.replace("bg-", ""), bar.attributes("aria-valuenow")];
+        }),
+    );
 }
 
 describe("CollectionProgress", () => {
-    it("should display the correct number of items", async () => {
-        const dsc = { job_state_summary: { all_jobs: 3, running: 3 }, populated_state: {} };
+    it.each<{ name: string; jobStates: JobStates; bars: Record<string, string> }>([
+        {
+            name: "running jobs as a warning bar",
+            jobStates: { all_jobs: 3, running: 3 },
+            bars: { warning: "3" },
+        },
+        {
+            name: "failed, ok and running jobs as separate bars",
+            jobStates: { all_jobs: 5, running: 3, failed: 1, ok: 1 },
+            bars: { danger: "1", success: "1", warning: "3" },
+        },
+        {
+            name: "queued jobs as a secondary bar",
+            jobStates: { all_jobs: 3, queued: 3 },
+            bars: { secondary: "3" },
+        },
+    ])("shows $name", ({ jobStates, bars }) => {
+        const wrapper = mountWithJobs(jobStates);
 
-        const wrapper = await mountComponent(dsc);
-
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
+        expect(renderedBars(wrapper)).toEqual(bars);
     });
 
-    it("should correctly display states", async () => {
-        const dsc = { job_state_summary: { all_jobs: 5, running: 3, failed: 1, ok: 1 }, populated_state: {} };
+    it("updates the bars as job states change", async () => {
+        const wrapper = mountWithJobs({ all_jobs: 3, running: 3, ok: 0 });
+        expect(renderedBars(wrapper)).toEqual({ warning: "3" });
 
-        const wrapper = await mountComponent(dsc);
+        await wrapper.setProps({ summary: summaryOf({ all_jobs: 3, running: 1, ok: 2 }) });
 
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
-        expect(wrapper.find(".progress").find(".bg-success").attributes("aria-valuenow")).toBe("1");
-        expect(wrapper.find(".progress").find(".bg-danger").attributes("aria-valuenow")).toBe("1");
+        expect(renderedBars(wrapper)).toEqual({ success: "2", warning: "1" });
     });
 
-    it("should update as dataset states change", async () => {
-        const dsc = { job_state_summary: { all_jobs: 3, running: 3, ok: 0 }, populated_state: {} };
+    it("hides the progress bar once every job is terminal", () => {
+        const wrapper = mountWithJobs({ all_jobs: 2, ok: 2 });
 
-        const wrapper = await mountComponent(dsc);
-
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
-
-        dsc["job_state_summary"]["ok"] = 2;
-        dsc["job_state_summary"]["running"] = 1;
-
-        await wrapper.setProps({ summary: new JobStateSummary(dsc) });
-
-        expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("1");
-        expect(wrapper.find(".progress").find(".bg-success").attributes("aria-valuenow")).toBe("2");
-    });
-
-    it("should be visible when all jobs are queued", async () => {
-        const dsc = { job_state_summary: { all_jobs: 3, queued: 3 }, populated_state: {} };
-
-        const wrapper = await mountComponent(dsc);
-
-        expect(wrapper.find(".progress").find(".bg-secondary").attributes("aria-valuenow")).toBe("3");
+        expect(wrapper.find(".progress").exists()).toBe(false);
     });
 });

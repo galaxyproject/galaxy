@@ -1,22 +1,18 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import { createMemoryHistory, createRouter } from "vue-router";
+
+import { createMemoryRouter } from "./test-utils";
 
 import GLink from "./GLink.vue";
 
 const localVue = getLocalVue(true);
 
-const RouteStub = { render: () => null };
-
 describe("GLink.vue link targets", () => {
     // Galaxy can be served under a URL prefix, so a router link's href has to come from
     // the router, which knows the base -- open-in-new-tab and copy-link use it as is.
     it("renders a router link's href with the router base", () => {
-        const router = createRouter({
-            history: createMemoryHistory("/galaxypf/"),
-            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
-        });
+        const router = createMemoryRouter({ base: "/galaxypf/" });
         const wrapper = mount(GLink as object, { propsData: { to: "/pages/create" }, localVue, router });
 
         expect(wrapper.get("a").attributes("href")).toBe("/galaxypf/pages/create");
@@ -45,10 +41,7 @@ describe("GLink.vue link targets", () => {
     });
 
     it("leaves aria-disabled off an enabled router link", () => {
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
-        });
+        const router = createMemoryRouter();
         const wrapper = mount(GLink as object, { propsData: { to: "/pages/create" }, localVue, router });
 
         expect(wrapper.get("a").attributes("aria-disabled")).toBeUndefined();
@@ -66,10 +59,7 @@ describe("GLink.vue link targets", () => {
     // A styled tooltip replaces the native title. RouterLink runs in Vue 3 mode, where a
     // `false` attribute renders as the string "false" instead of being dropped.
     it("leaves the native title off a router link with a tooltip", () => {
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
-        });
+        const router = createMemoryRouter();
         const wrapper = mount(GLink as object, {
             propsData: { to: "/pages/create", title: "Create a page", tooltip: true },
             localVue,
@@ -84,10 +74,7 @@ describe("GLink.vue clicks", () => {
     // The click listener reaches the RouterLink's rendered anchor by fallthrough, alongside
     // RouterLink's own navigation handler.
     it("emits click exactly once from a router link", async () => {
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: ["/", "/pages/create"].map((path) => ({ path, component: RouteStub })),
-        });
+        const router = createMemoryRouter();
         const wrapper = mount(GLink as object, { propsData: { to: "/pages/create" }, localVue, router });
 
         await wrapper.get("a").trigger("click");

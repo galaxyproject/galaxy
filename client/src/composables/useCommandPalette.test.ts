@@ -1,22 +1,15 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getFakeRegisteredUser } from "@tests/test-data";
+import { getFakeAnonymousUser, getFakeRegisteredUser } from "@tests/test-data";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AnonymousUser, AnyUser } from "@/api";
+import type { AnyUser } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { useCommandPalette } from "./useCommandPalette";
 
-const REGISTERED_USER = getFakeRegisteredUser();
-const ANONYMOUS_USER: AnonymousUser = {
-    isAnonymous: true,
-    total_disk_usage: 0,
-    nice_total_disk_usage: "0.0 bytes",
-};
-
-function setupConfig(config: Record<string, unknown>, isLoaded = true) {
-    useConfigStore().config = isLoaded ? config : null;
+function loadConfig(config: Record<string, unknown>) {
+    useConfigStore().config = config;
 }
 
 function login(user: AnyUser) {
@@ -26,7 +19,8 @@ function login(user: AnyUser) {
 describe("useCommandPalette", () => {
     beforeEach(() => {
         createTestingPinia({ createSpy: vi.fn, initialState: { configurationStore: { config: {} } } });
-        login(REGISTERED_USER);
+        login(getFakeRegisteredUser());
+        // The open state is shared module state, so it outlives each test's pinia.
         useCommandPalette().closePalette();
     });
 
@@ -47,31 +41,36 @@ describe("useCommandPalette", () => {
     });
 
     it.each([
-        [true, "a registered", REGISTERED_USER, true],
-        [true, "an anonymous", ANONYMOUS_USER, true],
-        [false, "a registered", REGISTERED_USER, false],
-        [false, "an anonymous", ANONYMOUS_USER, false],
-    ])("is %s for %s user: %s", (enablePalette, _who, user, expected) => {
-        setupConfig({ enable_command_palette: enablePalette });
+        [true, true, "registered", getFakeRegisteredUser()],
+        [true, true, "anonymous", getFakeAnonymousUser()],
+        [false, false, "registered", getFakeRegisteredUser()],
+        [false, false, "anonymous", getFakeAnonymousUser()],
+    ])("with enable_command_palette %s, paletteEnabled is %s for %s users", (enablePalette, expected, _who, user) => {
+        loadConfig({ enable_command_palette: enablePalette });
         login(user);
 
         expect(useCommandPalette().paletteEnabled.value).toBe(expected);
     });
 
     it("treats the option as on while it is unset", () => {
-        login(ANONYMOUS_USER);
+        loadConfig({});
+        login(getFakeAnonymousUser());
 
         expect(useCommandPalette().paletteEnabled.value).toBe(true);
     });
 
-    it("stays disabled until the configuration has landed", () => {
-        setupConfig({ enable_command_palette: true }, false);
+    it("stays disabled and refuses to open until the configuration has loaded", () => {
+        useConfigStore().config = null;
+        const { isPaletteOpen, paletteEnabled, openPalette } = useCommandPalette();
 
-        expect(useCommandPalette().paletteEnabled.value).toBe(false);
+        expect(paletteEnabled.value).toBe(false);
+
+        openPalette();
+        expect(isPaletteOpen.value).toBe(false);
     });
 
     it("refuses to open while it is disabled", () => {
-        setupConfig({ enable_command_palette: false });
+        loadConfig({ enable_command_palette: false });
         const { isPaletteOpen, openPalette, togglePalette } = useCommandPalette();
 
         openPalette();

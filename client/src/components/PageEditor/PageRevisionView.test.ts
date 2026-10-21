@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
+import { afterEach, describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
 import type { PageRevisionDetails } from "@/api/pages";
 import type GButton from "@/components/BaseComponents/GButton.vue";
@@ -8,8 +9,11 @@ import type GButton from "@/components/BaseComponents/GButton.vue";
 import PageRevisionView from "./PageRevisionView.vue";
 
 const localVue = getLocalVue();
+enableAutoUnmount(afterEach);
 
-const REVISION: PageRevisionDetails = {
+type RevisionViewProps = InstanceType<typeof PageRevisionView>["$props"];
+
+const REVISION = {
     id: "rev-1",
     page_id: "page-1",
     edit_source: "user",
@@ -19,15 +23,15 @@ const REVISION: PageRevisionDetails = {
     content: "# Title\nOld line 1\nOld line 2",
     content_editor: "# Title\nOld line 1\nOld line 2",
     content_format: "markdown",
-};
+} satisfies PageRevisionDetails;
 
 const CURRENT_CONTENT = "# Title\nNew line 1\nNew line 2\nExtra line";
 const PREVIOUS_CONTENT = "# Title\nPrevious line 1";
 
-function mountComponent(overrides: Record<string, unknown> = {}) {
-    return shallowMount(PageRevisionView as object, {
-        localVue,
-        propsData: {
+function mountRevisionView(overrides: Partial<RevisionViewProps> = {}) {
+    return shallowMount(PageRevisionView, {
+        global: localVue,
+        props: {
             revision: REVISION,
             currentContent: CURRENT_CONTENT,
             previousContent: PREVIOUS_CONTENT,
@@ -43,7 +47,7 @@ function mountComponent(overrides: Record<string, unknown> = {}) {
 describe("PageRevisionView", () => {
     describe("preview mode (default)", () => {
         it("renders Markdown component, no diff elements", () => {
-            const wrapper = mountComponent();
+            const wrapper = mountRevisionView();
             // Markdown is shallow-stubbed; locate via its markdownconfig prop
             const markdownStub = wrapper.find("[markdownconfig]");
             expect(markdownStub.exists()).toBe(true);
@@ -53,27 +57,27 @@ describe("PageRevisionView", () => {
 
     describe("changes_current mode", () => {
         it("renders diff stats and diff lines, no Markdown component", () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
+            const wrapper = mountRevisionView({ viewMode: "changes_current" });
             expect(wrapper.find("[markdownconfig]").exists()).toBe(false);
             expect(wrapper.find('[data-description="revision diff view"]').exists()).toBe(true);
-            const text = wrapper.find(".diff-stats").text();
+            const text = wrapper.get(".diff-stats").text();
             expect(text).toContain("+3");
             expect(text).toContain("-2");
             expect(text).toContain("lines");
         });
 
         it("shows added lines with diff-added class", () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
+            const wrapper = mountRevisionView({ viewMode: "changes_current" });
             expect(wrapper.findAll(".diff-added").length).toBeGreaterThan(0);
         });
 
         it("shows removed lines with diff-removed class", () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
+            const wrapper = mountRevisionView({ viewMode: "changes_current" });
             expect(wrapper.findAll(".diff-removed").length).toBeGreaterThan(0);
         });
 
         it("shows 'No changes' when revision matches current content", () => {
-            const wrapper = mountComponent({
+            const wrapper = mountRevisionView({
                 viewMode: "changes_current",
                 currentContent: REVISION.content,
             });
@@ -86,7 +90,7 @@ describe("PageRevisionView", () => {
 
     describe("changes_previous mode", () => {
         it("renders diff vs previous content", () => {
-            const wrapper = mountComponent({ viewMode: "changes_previous" });
+            const wrapper = mountRevisionView({ viewMode: "changes_previous" });
             expect(wrapper.find('[data-description="revision diff view"]').exists()).toBe(true);
             expect(wrapper.find(".diff-stats").exists()).toBe(true);
             expect(wrapper.findAll(".diff-added").length).toBeGreaterThan(0);
@@ -94,7 +98,7 @@ describe("PageRevisionView", () => {
         });
 
         it("shows 'No changes' when revision matches previous content", () => {
-            const wrapper = mountComponent({
+            const wrapper = mountRevisionView({
                 viewMode: "changes_previous",
                 previousContent: REVISION.content,
             });
@@ -105,106 +109,72 @@ describe("PageRevisionView", () => {
 
     describe("toggle buttons", () => {
         it("preview button is always visible", () => {
-            const wrapper = mountComponent();
+            const wrapper = mountRevisionView();
             expect(wrapper.find('[data-description="revision preview button"]').exists()).toBe(true);
         });
 
         it("both compare buttons visible when not newest/oldest", () => {
-            const wrapper = mountComponent();
+            const wrapper = mountRevisionView();
             expect(wrapper.find('[data-description="revision compare current button"]').exists()).toBe(true);
             expect(wrapper.find('[data-description="revision compare previous button"]').exists()).toBe(true);
         });
 
         it("'Compare to Current' hidden when isNewestRevision", () => {
-            const wrapper = mountComponent({ isNewestRevision: true });
+            const wrapper = mountRevisionView({ isNewestRevision: true });
             expect(wrapper.find('[data-description="revision compare current button"]').exists()).toBe(false);
             expect(wrapper.find('[data-description="revision compare previous button"]').exists()).toBe(true);
         });
 
         it("'Compare to Previous' hidden when isOldestRevision", () => {
-            const wrapper = mountComponent({ isOldestRevision: true });
+            const wrapper = mountRevisionView({ isOldestRevision: true });
             expect(wrapper.find('[data-description="revision compare current button"]').exists()).toBe(true);
             expect(wrapper.find('[data-description="revision compare previous button"]').exists()).toBe(false);
         });
 
-        it("preview button is pressed in preview mode", () => {
-            const wrapper = mountComponent({ viewMode: "preview" });
-            const previewBtn = wrapper.findComponent<typeof GButton>('[data-description="revision preview button"]');
-            expect(previewBtn.props("pressed")).toBe(true);
+        it.each([
+            ["preview", "revision preview button"],
+            ["changes_current", "revision compare current button"],
+            ["changes_previous", "revision compare previous button"],
+        ] as const)("presses the selected toggle in %s mode", (viewMode, description) => {
+            const wrapper = mountRevisionView({ viewMode });
+            const button = wrapper.getComponent<typeof GButton>(`[data-description="${description}"]`);
+            expect(button.props("pressed")).toBe(true);
         });
 
-        it("compare current button is pressed in changes_current mode", () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
-            const btn = wrapper.findComponent<typeof GButton>('[data-description="revision compare current button"]');
-            expect(btn.props("pressed")).toBe(true);
-        });
-
-        it("compare previous button is pressed in changes_previous mode", () => {
-            const wrapper = mountComponent({ viewMode: "changes_previous" });
-            const btn = wrapper.findComponent<typeof GButton>('[data-description="revision compare previous button"]');
-            expect(btn.props("pressed")).toBe(true);
-        });
-
-        it("clicking Compare to Current emits update:viewMode with 'changes_current'", async () => {
-            const wrapper = mountComponent({ viewMode: "preview" });
-            wrapper
-                .findComponent<typeof GButton>('[data-description="revision compare current button"]')
-                .vm.$emit("click");
-            await wrapper.vm.$nextTick();
-            expect(wrapper.emitted("update:viewMode")).toEqual([["changes_current"]]);
-        });
-
-        it("clicking Compare to Previous emits update:viewMode with 'changes_previous'", async () => {
-            const wrapper = mountComponent({ viewMode: "preview" });
-            wrapper
-                .findComponent<typeof GButton>('[data-description="revision compare previous button"]')
-                .vm.$emit("click");
-            await wrapper.vm.$nextTick();
-            expect(wrapper.emitted("update:viewMode")).toEqual([["changes_previous"]]);
-        });
-
-        it("clicking Preview emits update:viewMode with 'preview'", async () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
-            wrapper.findComponent<typeof GButton>('[data-description="revision preview button"]').vm.$emit("click");
-            await wrapper.vm.$nextTick();
-            expect(wrapper.emitted("update:viewMode")).toEqual([["preview"]]);
+        it.each([
+            ["changes_current", "preview", "revision compare current button"],
+            ["changes_previous", "preview", "revision compare previous button"],
+            ["preview", "changes_current", "revision preview button"],
+        ] as const)("emits %s when its toggle is clicked from %s", async (nextMode, viewMode, description) => {
+            const wrapper = mountRevisionView({ viewMode });
+            wrapper.getComponent<typeof GButton>(`[data-description="${description}"]`).vm.$emit("click");
+            await nextTick();
+            expect(wrapper.emitted("update:viewMode")).toEqual([[nextMode]]);
         });
     });
 
     describe("action buttons", () => {
-        it("restore button is visible in preview mode", () => {
-            const wrapper = mountComponent({ viewMode: "preview" });
-            expect(wrapper.find('[data-description="revision restore button"]').exists()).toBe(true);
-        });
-
-        it("restore button is visible in changes_current mode", () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
+        it.each(["preview", "changes_current"] as const)("shows Restore in %s mode", (viewMode) => {
+            const wrapper = mountRevisionView({ viewMode });
             expect(wrapper.find('[data-description="revision restore button"]').exists()).toBe(true);
         });
 
         it("restore button is disabled when reverting", () => {
-            const wrapper = mountComponent({ isReverting: true });
-            expect(wrapper.find('[data-description="revision restore button"]').attributes("disabled")).toBe("true");
+            const wrapper = mountRevisionView({ isReverting: true });
+            expect(wrapper.get('[data-description="revision restore button"]').attributes("disabled")).toBe("true");
         });
 
         it("restore button emits restore with revision id", async () => {
-            const wrapper = mountComponent();
-            wrapper.findComponent<typeof GButton>('[data-description="revision restore button"]').vm.$emit("click");
-            await wrapper.vm.$nextTick();
+            const wrapper = mountRevisionView();
+            wrapper.getComponent<typeof GButton>('[data-description="revision restore button"]').vm.$emit("click");
+            await nextTick();
             expect(wrapper.emitted("restore")).toEqual([[REVISION.id]]);
         });
 
-        it("back button emits back in preview mode", async () => {
-            const wrapper = mountComponent({ viewMode: "preview" });
-            wrapper.findComponent<typeof GButton>('[data-description="revision back button"]').vm.$emit("click");
-            await wrapper.vm.$nextTick();
-            expect(wrapper.emitted("back")).toHaveLength(1);
-        });
-
-        it("back button emits back in changes_current mode", async () => {
-            const wrapper = mountComponent({ viewMode: "changes_current" });
-            wrapper.findComponent<typeof GButton>('[data-description="revision back button"]').vm.$emit("click");
-            await wrapper.vm.$nextTick();
+        it.each(["preview", "changes_current"] as const)("emits back from %s mode", async (viewMode) => {
+            const wrapper = mountRevisionView({ viewMode });
+            wrapper.getComponent<typeof GButton>('[data-description="revision back button"]').vm.$emit("click");
+            await nextTick();
             expect(wrapper.emitted("back")).toHaveLength(1);
         });
     });

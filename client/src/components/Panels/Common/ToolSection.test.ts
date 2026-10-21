@@ -1,7 +1,8 @@
-import { getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { getFakeTool } from "@tests/test-data/tools";
+import { emittedArg, getLocalVue, nth, withPlugins } from "@tests/vitest/helpers";
+import { enableAutoUnmount, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import type { Tool, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
@@ -15,50 +16,49 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-const localVue = getLocalVue();
-const pinia = createPinia();
+enableAutoUnmount(afterEach);
+
+function createSection(elems: (ToolSectionType | ToolSectionLabel | Tool)[]): ToolSectionType {
+    return {
+        model_class: "ToolSection",
+        id: "tool_section",
+        name: "tool_section",
+        title: "tool_section",
+        // Labels render in sections although the store's elems type omits them.
+        elems: elems as ToolSectionType["elems"],
+    };
+}
+
+function mountCategory(category: Tool | ToolSectionType, props: { queryFilter?: string; sortItems?: boolean } = {}) {
+    return mount(ToolSection, {
+        props: { category, ...props },
+        global: withPlugins(getLocalVue(), createPinia()),
+    });
+}
+
+function toolAndLabel() {
+    return createSection([
+        getFakeTool({ name: "name" }),
+        { model_class: "ToolSectionLabel", id: "label", text: "text" },
+    ]);
+}
 
 function sectionIsOpened(wrapper: VueWrapper) {
     return wrapper.find("[data-description='opened tool panel section']").exists();
 }
 
 describe("ToolSection", () => {
-    test("test tool section", () => {
-        const wrapper = mount(ToolSection, {
-            props: {
-                category: {
-                    name: "name",
-                } as Tool,
-            },
-            global: withPlugins(localVue, pinia),
-        });
-        const nameElement = wrapper.findAll(".name");
-        expect(nameElement[0]?.text()).toBe("name");
-        nameElement[0]?.trigger("click");
-        expect(wrapper.emitted("onClick")).toBeDefined();
+    it("forwards a clicked tool through the onClick event", async () => {
+        const tool = getFakeTool({ name: "name" });
+        const wrapper = mountCategory(tool);
+        const nameElement = wrapper.get(".name");
+        expect(nameElement.text()).toBe("name");
+        await nameElement.trigger("click");
+        expect(emittedArg(wrapper, "onClick")).toEqual(tool);
     });
 
-    test("test tool section title", async () => {
-        const wrapper = mount(ToolSection, {
-            props: {
-                category: {
-                    model_class: "ToolSection",
-                    id: "tool_section",
-                    name: "tool_section",
-                    title: "tool_section",
-                    // The store types elems without labels, but ToolSection.vue renders them.
-                    elems: [
-                        { name: "name" } as Tool,
-                        {
-                            model_class: "ToolSectionLabel",
-                            id: "label",
-                            text: "text",
-                        } as ToolSectionLabel,
-                    ] as ToolSectionType["elems"],
-                },
-            },
-            global: withPlugins(localVue, pinia),
-        });
+    it("shows a section title and collapses its tools after toggling", async () => {
+        const wrapper = mountCategory(toolAndLabel());
         expect(sectionIsOpened(wrapper)).toBe(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).toBe("tool_section");
@@ -71,27 +71,8 @@ describe("ToolSection", () => {
         expect(wrapper.findAll(".name").length).toBe(1);
     });
 
-    test("test tool slider state", async () => {
-        const wrapper = mount(ToolSection, {
-            props: {
-                category: {
-                    model_class: "ToolSection",
-                    id: "tool_section",
-                    name: "tool_section",
-                    title: "tool_section",
-                    elems: [
-                        { name: "name" } as Tool,
-                        {
-                            model_class: "ToolSectionLabel",
-                            id: "label",
-                            text: "text",
-                        } as ToolSectionLabel,
-                    ] as ToolSectionType["elems"],
-                },
-                queryFilter: "test",
-            },
-            global: withPlugins(localVue, pinia),
-        });
+    it("updates expanded state when the filter changes or the section is toggled", async () => {
+        const wrapper = mountCategory(toolAndLabel(), { queryFilter: "test" });
         expect(sectionIsOpened(wrapper)).toBe(true);
         const $sectionName = wrapper.find(".name");
         await $sectionName.trigger("click");
@@ -112,55 +93,37 @@ describe("ToolSection", () => {
 });
 
 describe("ToolSection element ordering", () => {
-    function mountSection(
-        elems: (ToolSectionType | ToolSectionLabel | Tool)[],
-        propsOverrides: { sortItems?: boolean } = {},
-    ) {
-        return mount(ToolSection, {
-            props: {
-                category: {
-                    model_class: "ToolSection",
-                    id: "test_section",
-                    name: "test_section",
-                    title: "test_section",
-                    // Labels aren't in the store's elems type; see above.
-                    elems: elems as ToolSectionType["elems"],
-                },
-                ...propsOverrides,
-            },
-            global: withPlugins(localVue, pinia),
-        });
+    function makeTools() {
+        return [
+            getFakeTool({ id: "z_tool", name: "Zebra" }),
+            getFakeTool({ id: "a_tool", name: "Apple" }),
+            getFakeTool({ id: "m_tool", name: "Mango" }),
+        ];
     }
-
-    const tools = [
-        { id: "z_tool", name: "Zebra" },
-        { id: "a_tool", name: "Apple" },
-        { id: "m_tool", name: "Mango" },
-    ] as Tool[];
 
     function getRenderedToolIds(wrapper: VueWrapper) {
         return wrapper.findAll("[data-tool-id]").map((w) => w.attributes("data-tool-id"));
     }
 
-    test("renders tools alphabetically by default", async () => {
-        const wrapper = mountSection(tools);
+    it("renders tools alphabetically by default", async () => {
+        const wrapper = mountCategory(createSection(makeTools()));
         await wrapper.find(".name").trigger("click");
         expect(getRenderedToolIds(wrapper)).toEqual(["a_tool", "m_tool", "z_tool"]);
     });
 
-    test("preserves original order when sortItems is false", async () => {
-        const wrapper = mountSection(tools, { sortItems: false });
+    it("preserves original order when sortItems is false", async () => {
+        const wrapper = mountCategory(createSection(makeTools()), { sortItems: false });
         await wrapper.find(".name").trigger("click");
         expect(getRenderedToolIds(wrapper)).toEqual(["z_tool", "a_tool", "m_tool"]);
     });
 
-    test("does not render ToolSectionLabels as tools", async () => {
-        const elemsWithLabel = [
-            { id: "z_tool", name: "Zebra" },
+    it("does not render ToolSectionLabels as tools", async () => {
+        const elemsWithLabel: (ToolSectionLabel | Tool)[] = [
+            getFakeTool({ id: "z_tool", name: "Zebra" }),
             { model_class: "ToolSectionLabel", id: "label_1", text: "A Label" },
-            { id: "a_tool", name: "Apple" },
-        ] as (ToolSectionLabel | Tool)[];
-        const wrapper = mountSection(elemsWithLabel);
+            getFakeTool({ id: "a_tool", name: "Apple" }),
+        ];
+        const wrapper = mountCategory(createSection(elemsWithLabel));
         await wrapper.find(".name").trigger("click");
         expect(getRenderedToolIds(wrapper)).toEqual(["z_tool", "a_tool"]);
     });

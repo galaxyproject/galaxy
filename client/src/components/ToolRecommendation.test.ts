@@ -1,9 +1,10 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type VueWrapper } from "@vue/test-utils";
+import { enableAutoUnmount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getDatatypesMapper } from "@/components/Datatypes";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
 import { getCompatibleRecommendations } from "@/components/Workflow/Editor/modules/utilities";
 
@@ -24,27 +25,31 @@ const predictions = {
 };
 
 describe("ToolRecommendation", () => {
-    let wrapper: VueWrapper;
+    enableAutoUnmount(afterEach);
 
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(getToolPredictions).mockResolvedValue(predictions);
-        vi.mocked(getDatatypesMapper).mockResolvedValue({} as Awaited<ReturnType<typeof getDatatypesMapper>>);
+        vi.mocked(getDatatypesMapper).mockResolvedValue(
+            new DatatypesMapperModel({
+                datatypes: [],
+                datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
+            }),
+        );
         vi.mocked(getCompatibleRecommendations).mockReturnValue(predictions.predicted_data.children);
     });
 
-    afterEach(() => wrapper?.unmount());
-
     async function mountRecommendation() {
-        wrapper = shallowMount(ToolRecommendation as object, {
-            propsData: { toolId: "cat1" },
+        const wrapper = shallowMount(ToolRecommendation, {
+            props: { toolId: "cat1" },
             global: getLocalVue(),
         });
         await flushPromises();
+        return wrapper;
     }
 
     it("renders compatible recommendations", async () => {
-        await mountRecommendation();
+        const wrapper = await mountRecommendation();
         expect(getToolPredictions).toHaveBeenCalledWith({ tool_sequence: "cat1" });
         expect(wrapper.text()).toContain("For further analysis");
         // root node ("cat1") plus one child node ("Cut") rendered by d3
@@ -56,7 +61,7 @@ describe("ToolRecommendation", () => {
         "handles prediction failure: %s",
         async (message) => {
             vi.mocked(getToolPredictions).mockRejectedValue(new Error(message));
-            await mountRecommendation();
+            const wrapper = await mountRecommendation();
             expect(wrapper.text()).toContain("Tool recommendations could not be loaded");
             expect(wrapper.text()).toContain(message);
             expect(getDatatypesMapper).not.toHaveBeenCalled();
@@ -66,14 +71,14 @@ describe("ToolRecommendation", () => {
 
     it("handles datatype loading failure", async () => {
         vi.mocked(getDatatypesMapper).mockRejectedValue(new Error("Datatypes unavailable"));
-        await mountRecommendation();
+        const wrapper = await mountRecommendation();
         expect(wrapper.text()).toContain("Datatypes unavailable");
         expect(wrapper.findAll("g.node")).toHaveLength(0);
     });
 
     it("handles an unconfigured prediction model", async () => {
         vi.mocked(getToolPredictions).mockResolvedValue(null);
-        await mountRecommendation();
+        const wrapper = await mountRecommendation();
         expect(getDatatypesMapper).not.toHaveBeenCalled();
         expect(wrapper.findAll("g.node")).toHaveLength(0);
         expect(wrapper.text()).not.toContain("For further analysis");
