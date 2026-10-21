@@ -37,7 +37,6 @@ from urllib.parse import (
 )
 
 import yaml
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from typing_extensions import ParamSpec
@@ -84,10 +83,10 @@ from .smart_components import (
     SmartTarget,
 )
 from .tool_form import (
-    repeat_instance_counts,
     tool_form_parameters_from_build,
     ToolFormParameter,
 )
+from .tool_form_filler import ToolFormFiller
 from .web_element_protocol import WebElementProtocol
 
 P = ParamSpec("P")
@@ -163,13 +162,6 @@ class TourCallbackProtocol(Protocol):
 class NullTourCallback(TourCallbackProtocol):
     def handle_step(self, step: dict[str, Any], step_index: int, element: WebElementProtocol | None = None) -> None:
         pass
-
-
-def _exception_indicates_parameter_not_shown(e: Exception) -> bool:
-    """True if setting a tool form parameter failed because the form doesn't show it (yet), on either backend."""
-    return isinstance(e, (NoSuchElementException, SeleniumTimeoutException, AssertionError)) or (
-        exception_indicates_playwright_timeout(e)
-    )
 
 
 def exception_seems_to_indicate_transition(e: Exception) -> bool:
@@ -2259,167 +2251,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         instances the paths need, expands sections, and retries parameters a conditional reveals late.
         ``values`` paths the form never shows, such as inactive conditional cases, are skipped.
         """
-        values = values or {}
-        data = data or {}
-        if not values and not data:
-            return
-
-        for repeat_name, count in repeat_instance_counts([*values, *data]).items():
-            self._add_repeat_instances(repeat_name, count)
-
-        self._expand_collapsed_sections()
-
-        # Shallow parameters first, so conditionals reveal the nested ones; retry what wasn't there yet.
-        deferred = []
-        for key, value in sorted(values.items(), key=lambda kv: kv[0].count("|")):
-            try:
-                self.tool_form_set_parameter(key, value)
-                # Nothing signals which parameters a change reveals, so give conditionals time to render.
-                self.sleep_for(self.wait_types.UX_RENDER)
-            except Exception as e:
-                if not _exception_indicates_parameter_not_shown(e):
-                    raise
-                deferred.append((key, value))
-
-        if deferred:
-            # Parameters that never appear are skipped, so there is no element to wait for here.
-            self.sleep_for(self.wait_types.UX_RENDER)
-            for key, value in deferred:
-                if self.components.tool_form.parameter_div(parameter=key).is_absent:
-                    continue
-                self.tool_form_set_parameter(key, value)
-
-        for key, value in data.items():
-            label = f"{value}: " if isinstance(value, int) else value
-            is_multiple = self._is_multi_data_param(key)
-            if is_multiple:
-                self._clear_multiselect_tags(key)
-            self.tool_set_value(key, label, expected_type="data", multiple=is_multiple)
-
-    def _is_multi_data_param(self, expanded_id: str) -> bool:
-        return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
-
-    def _clear_multiselect_tags(self, expanded_id: str):
-        tag_close = self.components.tool_form.parameter_multiselect_tag_close(parameter=expanded_id)
-        for _ in range(20):
-            close_buttons = tag_close.all()
-            if not close_buttons:
-                break
-            close_buttons[0].click()
-            remaining = len(close_buttons) - 1
-            self._wait_on(
-                lambda remaining=remaining: len(tag_close.all()) <= remaining,
-                f"tag removed from {expanded_id}",
-                wait_type=WAIT_TYPES.UX_RENDER,
-            )
-
-    def _add_repeat_instances(self, repeat_name: str, count: int):
-        """Make sure ``count`` instances exist; a repeat with a minimum already renders some."""
-        tool_form = self.components.tool_form
-        insert = tool_form.repeat_insert_named(name=repeat_name)
-        insert.wait_for_visible()
-        existing = 0
-        while tool_form.repeat_instance_parameter(name=repeat_name, index=existing).all():
-            existing += 1
-        for index in range(existing, count):
-            insert.wait_for_and_click()
-            tool_form.repeat_instance_parameter(name=repeat_name, index=index).wait_for_present()
-
-    def _expand_collapsed_sections(self):
-        # The header, not the execute button: a workflow editor step's tool form has no execute button.
-        self.components.tool_form.tool_version.wait_for_visible()
-        for header in self.components.tool_form.section_header.all():
-            header.click()
-            # Expanding a section has no per-section target to wait on.
-            self.sleep_for(self.wait_types.UX_RENDER)
-
-    def _detect_param_type(self, expanded_id: str) -> str:
-        """Inspect DOM to determine param type.
-
-        Detection order matters:
-        - drilldown before checkbox_select (drilldown also has checkboxes)
-        - checkbox_select before boolean (both have input[type='checkbox'])
-        """
-        tf = self.components.tool_form
-
-        param_div = tf.parameter_div(parameter=expanded_id).wait_for_visible()
-        if param_div.find_elements(By.CSS_SELECTOR, tf.drilldown_option.selector):
-            return "drilldown"
-
-        checkboxes = tf.parameter_checkbox_input(parameter=expanded_id).all()
-        if len(checkboxes) > 1:
-            return "checkbox_select"
-        if checkboxes:
-            return "boolean"
-
-        if not tf.parameter_color_input(parameter=expanded_id).is_absent:
-            return "color"
-        if not tf.parameter_select(parameter=expanded_id).is_absent:
-            return "select"
-
-        return "text"
+        ToolFormFiller(self).fill(values, data)
 
     def tool_form_set_parameter(self, expanded_parameter_id: str, value: Any) -> None:
         """Set a non-data parameter of the open tool form by path, detecting its widget type."""
-        key = expanded_parameter_id
-        if isinstance(value, list) and len(value) == 1:
-            value = value[0]
-
-        param_type = self._detect_param_type(key)
-
-        if param_type == "drilldown":
-            values = value if isinstance(value, list) else [value]
-            self._set_drilldown_value(key, values)
-        elif param_type == "checkbox_select":
-            values = value if isinstance(value, list) else [value]
-            self._set_checkbox_select_value(key, values)
-        elif param_type == "boolean":
-            self._set_boolean_value(key, value)
-        elif param_type == "color":
-            self._set_color_value(key, value)
-        elif param_type == "select":
-            self.tool_set_value(key, str(value), expected_type="select")
-        else:
-            self._set_text_value(key, str(value))
-
-    def _set_boolean_value(self, expanded_id: str, value):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
-        is_checked = checkbox.is_selected()
-        want_checked = str(value).lower() in ("true", "1", "yes")
-        if is_checked != want_checked:
-            self.execute_script("arguments[0].click();", checkbox)
-
-    def _set_checkbox_select_value(self, expanded_id: str, values: list):
-        all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
-        for val in values:
-            matched = [cb for cb in all_checkboxes if cb.get_attribute("value") == val]
-            assert matched, f"No checkbox with value '{val}' in param {expanded_id}"
-            if not matched[0].is_selected():
-                self.execute_script("arguments[0].click();", matched[0])
-
-    def _set_drilldown_value(self, expanded_id: str, values: list):
-        """Set drill-down param by clicking option checkboxes.
-
-        TODO: DOM id is ``drilldown-option-{option.name}`` but test API returns
-        option *values*. Works only when name == value. If a tool has
-        ``<option name="Label" value="key">``, the lookup will fail.
-        Fixing requires changing FormDrilldownOption.vue (breaks library export)
-        or adding a value->name mapping step here.
-        """
-        for val in values:
-            checkbox = self.components.tool_form.parameter_drilldown_option(
-                parameter=expanded_id, value=val
-            ).wait_for_present()
-            if not checkbox.is_selected():
-                self.execute_script("arguments[0].click();", checkbox)
-
-    def _set_color_value(self, expanded_id: str, value: str):
-        color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(color_input, value)
-
-    def _set_text_value(self, expanded_id: str, value: str):
-        input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(input_element, value)
+        ToolFormFiller(self).set_parameter(expanded_parameter_id, value)
 
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
