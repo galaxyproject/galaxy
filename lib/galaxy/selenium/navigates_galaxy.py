@@ -7,6 +7,7 @@ import collections
 import contextlib
 import json
 import random
+import re
 import string
 import time
 from abc import abstractmethod
@@ -33,6 +34,7 @@ from typing import (
 )
 
 import yaml
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from typing_extensions import ParamSpec
@@ -69,6 +71,7 @@ from .clipboard import (
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
+    exception_indicates_playwright_timeout,
     exception_indicates_stale_element,
     SeleniumTimeoutException,
 )
@@ -154,15 +157,6 @@ class NullTourCallback(TourCallbackProtocol):
         pass
 
 
-def _exception_indicates_playwright_timeout(e):
-    try:
-        from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
-
-        return isinstance(e, PlaywrightTimeoutError)
-    except ImportError:
-        return False
-
-
 def exception_seems_to_indicate_transition(e: Exception) -> bool:
     """True if exception seems to indicate the page state is transitioning.
 
@@ -182,7 +176,7 @@ def exception_seems_to_indicate_transition(e: Exception) -> bool:
         exception_indicates_stale_element(e)
         or exception_indicates_not_clickable(e)
         or exception_indicates_click_intercepted(e)
-        or _exception_indicates_playwright_timeout(e)
+        or exception_indicates_playwright_timeout(e)
     )
 
 
@@ -205,7 +199,7 @@ def retry_call_during_transitions(
                 raise
 
             # A Playwright timeout already spent a whole action timeout retrying; allow one more.
-            if _exception_indicates_playwright_timeout(e):
+            if exception_indicates_playwright_timeout(e):
                 playwright_timeouts += 1
                 if playwright_timeouts > 1:
                     raise
@@ -2222,6 +2216,177 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             # Clear default value
             input_element.clear()
             input_element.send_keys(value)
+
+    def tool_form_fill(
+        self,
+        values: dict[str, Any] | None = None,
+        data: dict[str, str] | None = None,
+        collections: dict[str, str] | None = None,
+    ) -> None:
+        """Fill the open tool form by parameter path, such as ``cond|param`` or ``repeat_0|param``.
+
+        ``values`` sets non-data parameters, detecting each one's widget. ``data`` and ``collections``
+        select a dataset or collection per parameter by option label, such as ``"3: reads.fq"``. Adds the
+        repeat instances the paths need, expands sections, and retries parameters a conditional reveals late.
+        """
+        values = values or {}
+        data = data or {}
+        collections = collections or {}
+        if not values and not data and not collections:
+            return
+
+        repeat_counts: dict[str, int] = {}
+        for key in [*values, *data, *collections]:
+            if repeat_match := self._parse_repeat_key(key):
+                repeat_name, repeat_index, _child_key = repeat_match
+                repeat_counts[repeat_name] = max(repeat_counts.get(repeat_name, 0), repeat_index + 1)
+        for repeat_name, count in repeat_counts.items():
+            self._add_repeat_instances(repeat_name, count)
+
+        self._expand_collapsed_sections()
+
+        # Shallow parameters first, so conditionals reveal the nested ones; retry what wasn't there yet.
+        deferred = []
+        for key, value in sorted(values.items(), key=lambda kv: kv[0].count("|")):
+            try:
+                self.tool_form_set_parameter(key, value)
+                self.sleep_for(self.wait_types.UX_RENDER)
+            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+                deferred.append((key, value))
+
+        if deferred:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            for key, value in deferred:
+                expanded_id = key.replace("|", "-")
+                if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                    continue
+                self.tool_form_set_parameter(key, value)
+
+        for key, label in data.items():
+            is_multiple = self._is_multi_data_param(key)
+            if is_multiple:
+                self._clear_multiselect_tags(key)
+            self.tool_set_value(key, label, expected_type="data", multiple=is_multiple)
+
+        for key, label in collections.items():
+            self.tool_set_value(key, label, expected_type="data")
+
+    def _is_multi_data_param(self, expanded_id: str) -> bool:
+        return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
+
+    def _clear_multiselect_tags(self, expanded_id: str):
+        tag_close = self.components.tool_form.parameter_multiselect_tag_close(parameter=expanded_id)
+        for _ in range(20):
+            close_buttons = tag_close.all()
+            if not close_buttons:
+                break
+            close_buttons[0].click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    @staticmethod
+    def _parse_repeat_key(key: str):
+        if match := re.match(r"^(.+?)_(\d+)\|(.+)$", key):
+            return match.group(1), int(match.group(2)), match.group(3)
+        return None
+
+    def _add_repeat_instances(self, repeat_name: str, count: int):
+        for _ in range(count):
+            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    def _expand_collapsed_sections(self):
+        self.components.tool_form.execute.wait_for_visible()
+        for header in self.components.tool_form.section_header.all():
+            header.click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+
+    def _detect_param_type(self, expanded_id: str) -> str:
+        """Inspect DOM to determine param type.
+
+        Detection order matters:
+        - drilldown before checkbox_select (drilldown also has checkboxes)
+        - checkbox_select before boolean (both have input[type='checkbox'])
+        """
+        tf = self.components.tool_form
+
+        param_div = tf.parameter_div(parameter=expanded_id).wait_for_visible()
+        if param_div.find_elements(By.CSS_SELECTOR, tf.drilldown_option.selector):
+            return "drilldown"
+
+        checkboxes = tf.parameter_checkbox_input(parameter=expanded_id).all()
+        if len(checkboxes) > 1:
+            return "checkbox_select"
+        if checkboxes:
+            return "boolean"
+
+        if not tf.parameter_color_input(parameter=expanded_id).is_absent:
+            return "color"
+        if not tf.parameter_select(parameter=expanded_id).is_absent:
+            return "select"
+
+        return "text"
+
+    def tool_form_set_parameter(self, expanded_parameter_id: str, value: Any) -> None:
+        """Set a non-data parameter of the open tool form by path, detecting its widget type."""
+        key = expanded_parameter_id
+        if isinstance(value, list) and len(value) == 1:
+            value = value[0]
+
+        param_type = self._detect_param_type(key)
+
+        if param_type == "drilldown":
+            values = value if isinstance(value, list) else [value]
+            self._set_drilldown_value(key, values)
+        elif param_type == "checkbox_select":
+            values = value if isinstance(value, list) else [value]
+            self._set_checkbox_select_value(key, values)
+        elif param_type == "boolean":
+            self._set_boolean_value(key, value)
+        elif param_type == "color":
+            self._set_color_value(key, value)
+        elif param_type == "select":
+            self.tool_set_value(key, str(value), expected_type="select")
+        else:
+            self._set_text_value(key, str(value))
+
+    def _set_boolean_value(self, expanded_id: str, value):
+        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
+        is_checked = checkbox.is_selected()
+        want_checked = str(value).lower() in ("true", "1", "yes")
+        if is_checked != want_checked:
+            self.execute_script("arguments[0].click();", checkbox)
+
+    def _set_checkbox_select_value(self, expanded_id: str, values: list):
+        all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
+        for val in values:
+            matched = [cb for cb in all_checkboxes if cb.get_attribute("value") == val]
+            assert matched, f"No checkbox with value '{val}' in param {expanded_id}"
+            if not matched[0].is_selected():
+                self.execute_script("arguments[0].click();", matched[0])
+
+    def _set_drilldown_value(self, expanded_id: str, values: list):
+        """Set drill-down param by clicking option checkboxes.
+
+        TODO: DOM id is ``drilldown-option-{option.name}`` but test API returns
+        option *values*. Works only when name == value. If a tool has
+        ``<option name="Label" value="key">``, the lookup will fail.
+        Fixing requires changing FormDrilldownOption.vue (breaks library export)
+        or adding a value->name mapping step here.
+        """
+        for val in values:
+            checkbox = self.components.tool_form.parameter_drilldown_option(
+                parameter=expanded_id, value=val
+            ).wait_for_present()
+            if not checkbox.is_selected():
+                self.execute_script("arguments[0].click();", checkbox)
+
+    def _set_color_value(self, expanded_id: str, value: str):
+        color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
+        self.set_element_value(color_input, value)
+
+    def _set_text_value(self, expanded_id: str, value: str):
+        input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
+        self.set_element_value(input_element, value)
 
     def tool_form_generate_tour(self):
         self.components.tool_form.options.wait_for_and_click()
