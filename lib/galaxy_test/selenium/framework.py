@@ -903,8 +903,8 @@ class RunsToolTests(NavigatesGalaxyMixin):
         """Fill the tool form from a test definition's inputs, selecting staged data by hid."""
         collection_hid_map = collection_hid_map or {}
         values: dict = {}
-        data: dict[str, str] = {}
-        collections: dict[str, str] = {}
+        data: dict[str, int | str] = {}
+        collections: dict[str, int | str] = {}
         for key, value in test_def.get("inputs", {}).items():
             raw_value = value[0] if isinstance(value, list) and len(value) == 1 else value
             if isinstance(raw_value, dict) and raw_value.get("model_class") == "TestCollectionDef":
@@ -917,7 +917,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
                 data[key] = f"{hid}: {raw_value}"
             else:
                 values[key] = value
-        self.tool_form_fill(values, data, collections)
+        self.tool_form_fill(values, {**data, **collections})
 
     # -- Output verification --
 

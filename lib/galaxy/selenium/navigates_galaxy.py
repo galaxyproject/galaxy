@@ -157,6 +157,13 @@ class NullTourCallback(TourCallbackProtocol):
         pass
 
 
+def _exception_indicates_parameter_not_shown(e: Exception) -> bool:
+    """True if setting a tool form parameter failed because the form doesn't show it (yet), on either backend."""
+    return isinstance(e, (NoSuchElementException, SeleniumTimeoutException, AssertionError)) or (
+        exception_indicates_playwright_timeout(e)
+    )
+
+
 def exception_seems_to_indicate_transition(e: Exception) -> bool:
     """True if exception seems to indicate the page state is transitioning.
 
@@ -2316,26 +2323,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # multiple=True sends escape so the select's dropdown closes rather than lingering open
         self.tool_form_select_data(expanded_parameter_id, name, multiple=True)
 
-    def tool_form_fill(
-        self,
-        values: dict[str, Any] | None = None,
-        data: dict[str, str] | None = None,
-        collections: dict[str, str] | None = None,
-    ) -> None:
+    def tool_form_fill(self, values: dict[str, Any] | None = None, data: dict[str, int | str] | None = None) -> None:
         """Fill the open tool form by parameter path, such as ``cond|param`` or ``repeat_0|param``.
 
-        ``values`` sets non-data parameters, detecting each one's widget. ``data`` and ``collections``
-        select a dataset or collection per parameter by option label, such as ``"3: reads.fq"``. Adds the
-        repeat instances the paths need, expands sections, and retries parameters a conditional reveals late.
+        ``values`` sets non-data parameters, detecting each one's widget. ``data`` selects a dataset or
+        collection per parameter, by hid or by option label such as ``"3: reads.fq"``. Adds the repeat
+        instances the paths need, expands sections, and retries parameters a conditional reveals late.
+        ``values`` paths the form never shows, such as inactive conditional cases, are skipped.
         """
         values = values or {}
         data = data or {}
-        collections = collections or {}
-        if not values and not data and not collections:
+        if not values and not data:
             return
 
         repeat_counts: dict[str, int] = {}
-        for key in [*values, *data, *collections]:
+        for key in [*values, *data]:
             if repeat_match := self._parse_repeat_key(key):
                 repeat_name, repeat_index, _child_key = repeat_match
                 repeat_counts[repeat_name] = max(repeat_counts.get(repeat_name, 0), repeat_index + 1)
@@ -2350,25 +2352,24 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             try:
                 self.tool_form_set_parameter(key, value)
                 self.sleep_for(self.wait_types.UX_RENDER)
-            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
+            except Exception as e:
+                if not _exception_indicates_parameter_not_shown(e):
+                    raise
                 deferred.append((key, value))
 
         if deferred:
             self.sleep_for(self.wait_types.UX_RENDER)
             for key, value in deferred:
-                expanded_id = key.replace("|", "-")
-                if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                if self.components.tool_form.parameter_div(parameter=key).is_absent:
                     continue
                 self.tool_form_set_parameter(key, value)
 
-        for key, label in data.items():
+        for key, value in data.items():
+            label = f"{value}: " if isinstance(value, int) else value
             is_multiple = self._is_multi_data_param(key)
             if is_multiple:
                 self._clear_multiselect_tags(key)
             self.tool_set_value(key, label, expected_type="data", multiple=is_multiple)
-
-        for key, label in collections.items():
-            self.tool_set_value(key, label, expected_type="data")
 
     def _is_multi_data_param(self, expanded_id: str) -> bool:
         return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
