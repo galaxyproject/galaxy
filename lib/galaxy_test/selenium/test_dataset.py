@@ -26,6 +26,13 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
             assert before_latest_history_item.id != after_latest_history_item.id
         return after_latest_history_item
 
+    def _click_and_assert_success_alert(self, button):
+        """Click an Edit Dataset Attributes ``button`` and assert its alert reports success."""
+        button.wait_for_and_click()
+        alert = self.components.edit_dataset_attributes.alert
+        alert.wait_for_visible()
+        assert alert.has_class("alert-success")
+
     @selenium_test
     @managed_history
     def test_history_dataset_display_text(self):
@@ -82,11 +89,9 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
             "critical", excludes=FORMS_VIOLATIONS
         )
         name_component.wait_for_and_clear_and_send_keys(new_name)
-        edit_dataset_attributes.save_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
+        self._click_and_assert_success_alert(edit_dataset_attributes.save_button)
 
-        # assert success message, name updated in form and in history panel
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        # assert name updated in form and in history panel
         assert name_component.wait_for_value() == new_name
 
         # the history panel picks up the new name on its next history poll
@@ -113,11 +118,7 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         info_component = edit_dataset_attributes.info_input
         info_component.wait_for_and_clear_and_send_keys(TEST_INFO)
 
-        edit_dataset_attributes.save_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
-
-        # assert success message, name updated in form and in history panel
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        self._click_and_assert_success_alert(edit_dataset_attributes.save_button)
 
         # reopen and check that attributes are updated
         self.home()
@@ -142,11 +143,7 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         datatypes_tab.wait_for_and_click()
         assert datatype_component.wait_for_text() == provided_datatype
 
-        # click auto detect datatype button
-        edit_dataset_attributes.auto_detect_datatype_button.wait_for_and_click()
-        edit_dataset_attributes.alert.wait_for_visible()
-
-        assert edit_dataset_attributes.alert.has_class("alert-success")
+        self._click_and_assert_success_alert(edit_dataset_attributes.auto_detect_datatype_button)
 
         # reopen and check that datatype is updated
         self.home()
