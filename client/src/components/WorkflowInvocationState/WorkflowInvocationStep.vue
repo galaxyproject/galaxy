@@ -3,7 +3,7 @@ import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
 import { faInfoCircle, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { computed, nextTick, onBeforeUnmount, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onUnmounted, ref, watch, watchEffect } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
@@ -198,6 +198,23 @@ watch(
     },
     { immediate: true },
 );
+// A terminal step won't gain jobs or outputs, so drop link targets it can't show.
+watchEffect(() => {
+    const details = stepDetails.value;
+    if (!selection || selection.stepIndex.value !== props.workflowStep.id || !details || !stepIsTerminal.value) {
+        return;
+    }
+    if (selection.stepTab.value && !availableTabs.value.includes(selection.stepTab.value)) {
+        selection.stepTab.value = undefined;
+    }
+    if (selection.job.value && !details.jobs.some((job) => job.id === selection.job.value)) {
+        selection.job.value = undefined;
+    }
+    const output = selection.output.value;
+    if (output && !(output in details.outputs) && !(output in details.output_collections)) {
+        selection.output.value = undefined;
+    }
+});
 
 const jobsTabIcon = computed(() =>
     hasOutputDatasets.value || hasOutputCollections.value ? faInfoCircle : faTimesCircle,

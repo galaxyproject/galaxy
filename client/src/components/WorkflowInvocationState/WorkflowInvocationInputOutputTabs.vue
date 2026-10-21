@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { useInvocationSelection } from "@/composables/invocationSelection";
@@ -67,6 +67,13 @@ const outputs = computed(() => {
     const outputEntries = Object.entries(props.invocation.outputs);
     const outputCollectionEntries = Object.entries(props.invocation.output_collections);
     return [...outputEntries, ...outputCollectionEntries];
+});
+// A terminal invocation won't gain outputs, so drop a link to one it doesn't have.
+watchEffect(() => {
+    const output = selection?.output.value;
+    if (props.tab === "outputs" && props.terminal && output && !outputs.value.some(([key]) => key === output)) {
+        selection!.output.value = undefined;
+    }
 });
 
 const parameters = computed(() => Object.values(props.invocation.input_step_parameters));

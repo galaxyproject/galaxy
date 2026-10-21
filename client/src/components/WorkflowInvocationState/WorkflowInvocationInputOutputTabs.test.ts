@@ -239,6 +239,29 @@ describe("workflow output URL selection", () => {
         selection.output.value = "unknown";
         await flushPromises();
         expect(items.every((item) => !item.props("expanded"))).toBe(true);
+        expect(selection.output.value).toBeUndefined();
+        wrapper.unmount();
+        vi.mocked(useInvocationSelection).mockReturnValue(undefined);
+    });
+
+    it("keeps an output link that a running invocation may still produce", async () => {
+        const selection: InvocationSelection = {
+            stepIndex: ref(null),
+            stepTab: ref(undefined),
+            job: ref(undefined),
+            output: ref("later"),
+        };
+        vi.mocked(useInvocationSelection).mockReturnValue(selection);
+        const wrapper = mount(WorkflowInvocationInputOutputTabs, {
+            props: {
+                invocation: { ...invocationData, outputs: {}, output_collections: {} } as WorkflowInvocationElementView,
+                tab: "outputs",
+                terminal: false,
+            },
+            global: { plugins: [createTestingPinia({ createSpy: vi.fn })] },
+        });
+        await flushPromises();
+        expect(selection.output.value).toBe("later");
         wrapper.unmount();
         vi.mocked(useInvocationSelection).mockReturnValue(undefined);
     });

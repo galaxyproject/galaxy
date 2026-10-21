@@ -25,6 +25,7 @@ vi.mock("@/stores/invocationStore", () => ({
                 output_collections: {},
                 outputs: { first: { id: "first-id", src: "hda" }, second: { id: "second-id", src: "hda" } },
             },
+        fetchInvocationStepById: vi.fn(),
     }),
 }));
 
@@ -191,6 +192,56 @@ it("preserves named tabs when a running step gains outputs", async () => {
     selection.stepTab.value = "outputs";
     await flushPromises();
     expect(selectedTab()).toBe("Outputs");
+    wrapper.unmount();
+    invocationStepDetails.value = undefined;
+});
+
+it("drops a tab, job or output link once the step is terminal and cannot show it", async () => {
+    invocationStepDetails.value = reactive({
+        state: "scheduled",
+        jobs: [{ id: "job-1", state: "running" }],
+        outputs: {},
+        output_collections: {},
+    });
+    const selection: InvocationSelection = {
+        stepIndex: ref(1),
+        stepTab: ref("outputs"),
+        job: ref("missing-job"),
+        output: ref("missing-output"),
+    };
+    vi.mocked(useInvocationSelection).mockReturnValue(selection);
+    const wrapper = mount(WorkflowInvocationStep, {
+        props: {
+            invocation: {
+                id: "invocation",
+                inputs: {},
+                input_step_parameters: {},
+                steps: [{ id: "step-1", order_index: 1 }],
+            } as WorkflowInvocationElementView,
+            workflowStep: { id: 1, type: "tool" } as WorkflowStepTyped,
+            expanded: true,
+        },
+        global: {
+            plugins: [createTestingPinia({ createSpy: vi.fn })],
+            stubs: { GenericHistoryItem: true, WorkflowInvocationStepHeader: true, JobStep: true },
+        },
+    });
+    await flushPromises();
+    expect([selection.stepTab.value, selection.job.value, selection.output.value]).toEqual([
+        "outputs",
+        "missing-job",
+        "missing-output",
+    ]);
+    invocationStepDetails.value.jobs[0].state = "ok";
+    await flushPromises();
+    expect([selection.stepTab.value, selection.job.value, selection.output.value]).toEqual([
+        undefined,
+        undefined,
+        undefined,
+    ]);
+    selection.job.value = "job-1";
+    await flushPromises();
+    expect(selection.job.value).toBe("job-1");
     wrapper.unmount();
     invocationStepDetails.value = undefined;
 });
