@@ -45,21 +45,14 @@ class TestPrivateDefaultPermissionsIntegration(TestDefaultPermissionsIntegration
             history_id, contents=["a\n", "b\n"], direct_upload=True, wait=True
         )
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        self._assert_history_datasets_private(history_id, expected_count=2)
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=2, access_private=True)
 
     def test_dynamic_collection_elements_get_default_permissions(self, history_id: str) -> None:
         response = self.dataset_populator.run_tool(
             "collection_creates_dynamic_list_of_pairs", {"foo": "bar"}, history_id
         )
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
-        self._assert_history_datasets_private(history_id, expected_count=6)
-
-    def _assert_history_datasets_private(self, history_id: str, expected_count: int) -> None:
-        role_id = self.dataset_populator.user_private_role_id()
-        datasets = self.dataset_populator.get_history_contents_of_type(history_id, "datasets")
-        assert len(datasets) == expected_count, [d["name"] for d in datasets]
-        permissions = {d["name"]: self._get(f"datasets/{d['id']}").json().get("permissions") for d in datasets}
-        assert permissions == {name: {"manage": [role_id], "access": [role_id]} for name in permissions}
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=6, access_private=True)
 
 
 class TestPublicDefaultPermissionsIntegration(TestDefaultPermissionsIntegration):
