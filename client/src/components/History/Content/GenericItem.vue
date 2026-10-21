@@ -82,7 +82,7 @@ watch(
             await nextTick();
             if (scroll) {
                 // The target is still loading and will grow, so align its top.
-                containerEl.value?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+                containerEl.value?.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         }
     },
