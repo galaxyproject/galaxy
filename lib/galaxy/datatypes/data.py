@@ -500,7 +500,7 @@ class Data(metaclass=DataMeta):
                 file_paths.append(fpath)
         else:
             file_name = dataset.get_file_name(auth=auth)
-            rel_paths.append(f"{name or file_name}.{dataset.extension}")
+            rel_paths.append(f"{name or file_name}.{self.get_download_extension(dataset)}")
             file_paths.append(file_name)
         return zip(file_paths, rel_paths)
 
@@ -706,6 +706,16 @@ class Data(metaclass=DataMeta):
 
         return open(filename, mode="rb")
 
+    def get_download_extension(self, dataset: DatasetProtocol) -> str:
+        """Return the file extension to use in the filename of a downloaded dataset.
+
+        Datatypes whose ``file_ext`` is a generic container extension can override
+        this if the concrete content has a more specific extension, e.g. VTK XML
+        files are stored with the generic ``vtkxml`` extension but downloaded as
+        ``.vtu``, ``.vtp``, ... depending on the dataset type they contain.
+        """
+        return dataset.extension
+
     def _download_filename(
         self,
         dataset: DatasetHasHidProtocol,
@@ -714,10 +724,11 @@ class Data(metaclass=DataMeta):
         element_identifier: str | None = None,
         filename_pattern: str | None = None,
     ) -> str:
-        if not to_ext or to_ext == "data":
-            # If a client requests to_ext with the extension 'data', they are
-            # deferring to the server, set it based on datatype.
-            to_ext = dataset.extension
+        if not to_ext or to_ext in ("data", dataset.extension):
+            # If a client requests to_ext with the extension 'data' (or simply
+            # repeats the extension of the dataset), they are deferring to the
+            # server, set it based on datatype.
+            to_ext = self.get_download_extension(dataset)
 
         template_values = {
             "name": dataset.name,

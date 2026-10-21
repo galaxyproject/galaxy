@@ -814,8 +814,38 @@ def get_next_line(fh):
     return line.strip()
 
 
+# Mapping of the value of the ``type`` attribute of the root ``VTKFile`` element to the
+# file extension VTK uses for the respective dataset type.
+# https://docs.vtk.org/en/latest/vtk_file_formats/vtkxml_file_format.html
+VTK_XML_FILE_EXTENSIONS: dict[str, str] = {
+    # serial formats
+    "ImageData": "vti",
+    "PolyData": "vtp",
+    "RectilinearGrid": "vtr",
+    "StructuredGrid": "vts",
+    "UnstructuredGrid": "vtu",
+    # parallel formats
+    "PImageData": "pvti",
+    "PPolyData": "pvtp",
+    "PRectilinearGrid": "pvtr",
+    "PStructuredGrid": "pvts",
+    "PUnstructuredGrid": "pvtu",
+    # further dataset types with a dedicated extension
+    "Table": "vtt",
+    "HyperTreeGrid": "vth",
+    "ExplicitStructuredGrid": "vtex",
+    "PartitionedDataSetCollection": "vtpc",
+    "vtkPartitionedDataSetCollection": "vtpc",
+    "MultiBlockDataSet": "vtm",
+    "vtkMultiBlockDataSet": "vtm",
+}
+
+
 class VtkXml(GenericXml):
-    """Format for defining VTK (XML based) and its sub-datatypes. https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html"""
+    """Format for defining VTK (XML based) and its sub-datatypes.
+
+    https://docs.vtk.org/en/latest/vtk_file_formats/vtkxml_file_format.html
+    """
 
     edam_format = "edam:format_2332"
     file_ext = "vtkxml"
@@ -855,6 +885,28 @@ class VtkXml(GenericXml):
         else:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disk"
+
+    def get_download_extension(self, dataset: DatasetProtocol) -> str:
+        """Return the extension VTK uses for the dataset type stored in the file.
+
+        The datatype uses the generic ``vtkxml`` extension for all VTK XML files,
+        but a more specific extension can be derived from the ``type`` attribute of
+        the file, which is collected as metadata (e.g. ``.vtu`` for
+        ``UnstructuredGrid`` or ``.vtp`` for ``PolyData``). If the dataset type is
+        unknown, the extension of the dataset is used.
+
+        >>> from galaxy.util.bunch import Bunch
+        >>> dataset = Bunch(extension="vtkxml", metadata=Bunch(dataset_type="UnstructuredGrid"))
+        >>> VtkXml().get_download_extension(dataset)
+        'vtu'
+        >>> dataset = Bunch(extension="vtkxml", metadata=Bunch(dataset_type=None))
+        >>> VtkXml().get_download_extension(dataset)
+        'vtkxml'
+        """
+        dataset_type = getattr(dataset.metadata, "dataset_type", None)
+        if not isinstance(dataset_type, str):
+            return dataset.extension
+        return VTK_XML_FILE_EXTENSIONS.get(dataset_type, dataset.extension)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Check for the key string 'VTKFile' to determine if this is a VTK dataset file.
