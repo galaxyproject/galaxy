@@ -1,0 +1,14 @@
+<tool id="runtime_environment_parallelism" name="Runtime environment for split jobs" version="1.0" profile="24.0">
+    <requirements>
+        <runtime_environment_variable name="EMPTY_VAR" required="true" />
+        <runtime_environment_variable name="MISSING_VAR" required="true" />
+    </requirements>
+    <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out" />
+    <command detect_errors="exit_code"><![CDATA[
+cat '$input1' > '$out'
+    ]]></command>
+    <inputs><param name="input1" type="data" format="txt" /></inputs>
+    <outputs><data name="out" format="txt" /></outputs>
+    <tests><test><param name="input1" value="simple_line_x2.txt" /><output name="out" file="simple_line_x2.txt" /></test></tests>
+    <help>Check runtime warnings for jobs split into tasks.</help>
+</tool>
