@@ -6,7 +6,7 @@
 // (AdminRequired), but could be used for other client errors that need to be
 // presented to the user interrupting the normal flow and context of the app.
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     message?: string;
@@ -14,7 +14,7 @@ const props = defineProps<{
 </script>
 <template>
     <div class="container error-container">
-        <Alert :message="props.message || 'Something went wrong.'" variant="error" />
+        <GAlert variant="danger">{{ props.message || "Something went wrong." }}</GAlert>
     </div>
 </template>
 <style scoped>

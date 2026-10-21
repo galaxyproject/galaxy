@@ -4,7 +4,7 @@ import { computed, ref, watch } from "vue";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 
@@ -50,7 +50,7 @@ const breadcrumbItems = computed(() => [
     <div>
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <GAlert v-if="loadError" variant="danger">{{ loadError }}</GAlert>
         <GridInvocation
             v-else
             hide-heading

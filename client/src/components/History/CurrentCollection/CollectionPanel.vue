@@ -25,7 +25,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
-import Alert from "@/components/Alert.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
@@ -140,9 +139,9 @@ watch(rootCollectionStates, refreshCollectionElements);
 </script>
 
 <template>
-    <Alert v-if="error" variant="error">
+    <GAlert v-if="error" variant="danger">
         {{ errorMessageAsString(error) }}
-    </Alert>
+    </GAlert>
     <ExpandedItems v-else v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="getItemKey">
         <section class="dataset-collection-panel w-100 d-flex flex-column" :class="{ 'compact-panel': multiView }">
             <section>
