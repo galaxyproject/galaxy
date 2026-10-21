@@ -322,3 +322,31 @@ def test_task_metrics(make_task):
     assert task.text_metrics[1].metric_name == "BIG_PATH"
     # Ensure big values truncated
     assert len(task.text_metrics[1].metric_value) <= 1023
+
+
+def test_ok_to_edit_metadata_ldda_ignores_hda_job_associations(session, make_hda, make_ldda, make_job):
+    hda = make_hda(create_dataset=True, sa_session=session)
+    ldda = make_ldda(id=hda.id, create_dataset=True, sa_session=session)
+    hda_job = make_job()
+    hda_job.state = m.Job.states.RUNNING
+    hda_job.add_input_dataset("input", hda)
+    session.commit()
+
+    assert not hda.ok_to_edit_metadata()
+    assert ldda.ok_to_edit_metadata()
+
+
+@pytest.mark.parametrize("add_association", ["add_input_library_dataset", "add_output_library_dataset"])
+def test_ok_to_edit_metadata_ldda_in_use(session, make_ldda, make_job, add_association):
+    ldda = make_ldda(create_dataset=True, sa_session=session)
+    job = make_job()
+    job.state = m.Job.states.RUNNING
+    getattr(job, add_association)("dataset", ldda)
+    session.commit()
+
+    assert not ldda.ok_to_edit_metadata()
+
+    job.state = m.Job.states.OK
+    session.commit()
+
+    assert ldda.ok_to_edit_metadata()

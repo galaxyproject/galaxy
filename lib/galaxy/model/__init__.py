@@ -5330,22 +5330,26 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return `False` if there exists an associated job with a non-terminal state.
         """
 
-        def exists_clause(assoc_model):
+        def exists_clause(dataset_id_column):
             return (
-                select(assoc_model.job_id)
+                select(dataset_id_column)
                 .join(Job)
-                .where(assoc_model.dataset_id == self.id)
+                .where(dataset_id_column == self.id)
                 .where(Job.state.not_in(Job.terminal_states))
                 .exists()
             )
 
+        input_dataset_id, output_dataset_id = self._job_association_dataset_id_columns()
         stmt = select(
             or_(
-                exists_clause(JobToInputDatasetAssociation),
-                exists_clause(JobToOutputDatasetAssociation),
+                exists_clause(input_dataset_id),
+                exists_clause(output_dataset_id),
             )
         )
         return not required_object_session(self).scalar(stmt)
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputDatasetAssociation.dataset_id, JobToOutputDatasetAssociation.dataset_id
 
     def change_datatype(self, new_ext):
         self.clear_associated_files()
@@ -6572,6 +6576,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
     def purged(self):
         # For uniformity with HistoryDatasetAssociation
         return self.dataset and self.dataset.purged
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputLibraryDatasetAssociation.ldda_id, JobToOutputLibraryDatasetAssociation.ldda_id
 
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
