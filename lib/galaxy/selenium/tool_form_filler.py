@@ -13,6 +13,7 @@ from .has_driver import (
     SeleniumTimeoutException,
 )
 from .tool_form import repeat_instance_counts
+from .web_element_protocol import WebElementProtocol
 
 if TYPE_CHECKING:
     from .navigates_galaxy import NavigatesGalaxy
@@ -23,6 +24,11 @@ def _exception_indicates_parameter_not_shown(e: Exception) -> bool:
     return isinstance(e, (NoSuchElementException, SeleniumTimeoutException, AssertionError)) or (
         exception_indicates_playwright_timeout(e)
     )
+
+
+def _button_is_pressed(button: WebElementProtocol) -> bool:
+    """True if a toggle button shows as pressed: g-pressed on GButton, active on older servers' BButton."""
+    return bool({"g-pressed", "active"} & set((button.get_attribute("class") or "").split()))
 
 
 class ToolFormFiller:
@@ -68,12 +74,39 @@ class ToolFormFiller:
                     continue
                 self.set_parameter(key, value)
 
+        collection_hids = None
         for key, value in data.items():
             label = f"{value}: " if isinstance(value, int) else value
+            if isinstance(value, int):
+                if collection_hids is None:
+                    collection_hids = {
+                        item["hid"]
+                        for item in self._navigator.history_contents()
+                        if item["history_content_type"] == "dataset_collection"
+                    }
+                # A dataset field lists collections only in its collection (map over) mode.
+                collection_mode = self._navigator.components.tool_form.parameter_data_input_collection(parameter=key)
+                if value in collection_hids and not collection_mode.is_absent:
+                    button = collection_mode.wait_for_visible()
+                    button.click()
+                    # Wait on the button itself: its tooltip blanks the title the target matches on.
+                    self._navigator._wait_on(
+                        lambda button=button: _button_is_pressed(button),
+                        f"collection mode for {key}",
+                        wait_type=self._navigator.wait_types.UX_RENDER,
+                    )
             is_multiple = self._is_multi_data_param(key)
             if is_multiple:
                 self._clear_multiselect_tags(key)
             self._navigator.tool_set_value(key, label, expected_type="data", multiple=is_multiple)
+            if isinstance(value, int):
+                self._assert_data_selected(key, label)
+
+    def _assert_data_selected(self, expanded_id: str, label: str) -> None:
+        tool_form = self._navigator.components.tool_form
+        tool_form.parameter_data_select(parameter=expanded_id).wait_for_visible()
+        selected = [e.text for e in tool_form.parameter_data_selected(parameter=expanded_id).all()]
+        assert any(text.startswith(label) for text in selected), f"{expanded_id} shows {selected}, not hid {label}"
 
     def _is_multi_data_param(self, expanded_id: str) -> bool:
         return not self._navigator.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
