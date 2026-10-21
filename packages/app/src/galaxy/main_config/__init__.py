@@ -1,6 +1,7 @@
 """Utilities for finding Galaxy's configuration file.
 
-This is for use by web framework code and scripts (e.g. scripts/galaxy_main.py).
+This is for use by web framework code and the installed ``galaxy-main``
+entry point (see :mod:`galaxy.main`).
 """
 
 import os
