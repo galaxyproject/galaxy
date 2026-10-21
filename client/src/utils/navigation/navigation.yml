@@ -900,12 +900,29 @@ tool_form:
     parameter_batch_info: 'div.ui-form-element[id="form-element-${parameter}"] .info'
 
     repeat_insert: '[data-description="repeat insert"]'
-    repeat_insert_named: '[data-description="repeat insert"][data-repeat-name="${name}"]'
-    repeat_instance_parameter: 'div.ui-form-element[id^="form-element-${name}_${index}|"]'
+    # Insert buttons carry only the repeat's own name; scope them to the top level or to an enclosing instance.
+    repeat_insert_top_level:
+      type: xpath
+      selector: '//*[@data-description="repeat insert"][@data-repeat-name="${name}"][not(ancestor::*[@data-description="repeat block"])]'
+    repeat_insert_in_instance:
+      type: xpath
+      selector: '//*[@id="${instance}_up"]/ancestor::*[@data-description="repeat block"][1]//*[@data-description="repeat insert"][@data-repeat-name="${name}"]'
+    # A repeat instance by its move-up button, which every instance has, even one holding no field.
+    repeat_instance:
+      type: xpath
+      selector: '//*[@id="${instance}_up"]'
     repeat_move_up: '#${parameter}_up'
     repeat_move_down: '#${parameter}_down'
     repeat_clone: '#${parameter}_clone'
     section_header: '.ui-portlet-section .portlet-header'
+    # A collapsed section's content is v-show'n out; skip headers that are themselves hidden in one.
+    section_header_collapsed:
+      type: xpath
+      selector: '//*[contains(@class, "ui-portlet-section")]/*[contains(@class, "portlet-header")][following-sibling::*[contains(@class, "portlet-content")][contains(@style, "display: none")]][not(ancestor::*[contains(@style, "display: none")])]'
+    # Relative to a section header: the content its click shows or hides.
+    section_header_content:
+      type: xpath
+      selector: 'following-sibling::*[contains(@class, "portlet-content")]'
     reference: '.formatted-reference'
     about: '.tool-footer'
     creator: '.tool-footer .creative-work-creator'

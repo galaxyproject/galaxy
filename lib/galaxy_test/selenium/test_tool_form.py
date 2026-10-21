@@ -163,17 +163,63 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert checkbox.is_selected()
 
     @selenium_test
-    def test_tool_form_fill_counts_rendered_repeat_instances(self):
+    def test_tool_form_fill_adds_repeat_instances_in_conditional(self):
         history_id = self.current_history_id()
         first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
         second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
         self.home()
-        self.tool_open("min_repeat")
-        # queries has min="1", so the form already renders queries_0.
-        self.tool_form_fill(data={"queries_0|input": first["hid"], "queries_1|input": second["hid"]})
-        tool_form = self.components.tool_form
-        tool_form.parameter_div(parameter="queries_1|input").wait_for_visible()
-        tool_form.parameter_div(parameter="queries_2|input").assert_absent()
+        self.tool_open("async_conditional_no_default_nested_data")
+        # rep_level sits in the select_data conditional and has min="1", so rep_level_0 is already rendered.
+        self.tool_form_fill(
+            data={
+                "select_data|rep_level_0|countsFile": first["hid"],
+                "select_data|rep_level_1|countsFile": second["hid"],
+            }
+        )
+        self.components.tool_form.parameter_div(parameter="select_data|rep_level_2|countsFile").assert_absent()
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(3)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\ndone\n"
+
+    @selenium_test
+    def test_tool_form_fill_adds_repeat_instances_in_the_conditional_case_it_selects(self):
+        history_id = self.current_history_id()
+        first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
+        second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
+        self.home()
+        self.tool_open("async_conditional_no_default_nested_data")
+        # Leave the case holding rep_level, so its insert button isn't rendered until the fill selects it again.
+        self.tool_form_fill(values={"select_data|how": "Group tags"})
+        self.components.tool_form.parameter_div(parameter="select_data|rep_level_0|countsFile").wait_for_absent()
+        self.tool_form_fill(
+            values={"select_data|how": "Datasets per level"},
+            data={
+                "select_data|rep_level_0|countsFile": first["hid"],
+                "select_data|rep_level_1|countsFile": second["hid"],
+            },
+        )
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(3)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\ndone\n"
+
+    @selenium_test
+    def test_tool_form_fill_conditional_named_like_a_repeat_instance(self):
+        self.home()
+        self.tool_open("conditional_name_digit_suffix")
+        self.tool_form_fill(values={"outer|inner_options_1|mode": "By Name", "outer|inner_options_1|label": "lbl"})
+        label = self.components.tool_form.parameter_text_input(parameter="outer|inner_options_1|label")
+        assert label.wait_for_value() == "lbl"
+
+    @selenium_test
+    def test_tool_form_fill_expands_only_collapsed_sections(self):
+        history_id = self.current_history_id()
+        self.home()
+        self.tool_open("section")
+        # The int section starts expanded and the float section collapsed; both must end up open.
+        self.tool_form_fill(values={"int|inttest": 12456, "float|floattest": 6.789})
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=1) == "12456\n6.789\n"
 
     @selenium_test
     def test_repeat_reordering(self):
