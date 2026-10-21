@@ -10,7 +10,7 @@
             ref="popper"
             class="popper-element"
             :class="`popper-element-${mode}`"
-            @keydown.esc="close">
+            @keydown.esc="onEscape">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
@@ -65,21 +65,39 @@ const reference = props.referenceEl ? ref(props.referenceEl) : ref();
 
 const popper = ref();
 
-const { visible } = usePopper(reference, popper, {
+const { hide, visible } = usePopper(reference, popper, {
     hoverDelay: props.hoverDelay,
     interactive: props.interactive,
     placement: props.placement,
     trigger: props.trigger,
 });
 
+function isTabbable(element: Element | null | undefined): element is HTMLElement {
+    return element instanceof HTMLElement && element.tabIndex >= 0 && !element.matches(":disabled");
+}
+
+function focusReturnTarget(): HTMLElement | undefined {
+    if (props.referenceEl) {
+        return isTabbable(props.referenceEl) ? props.referenceEl : undefined;
+    }
+    const candidates = reference.value?.querySelectorAll("button, a[href], input, select, textarea, [tabindex]");
+    return Array.from<Element>(candidates ?? []).find(isTabbable);
+}
+
 function close() {
     const restoreFocus = popper.value?.contains(document.activeElement);
-    visible.value = false;
+    hide();
     if (restoreFocus) {
-        const trigger =
-            props.referenceEl ?? reference.value?.querySelector("button, a[href], input, select, textarea, [tabindex]");
-        trigger?.focus();
+        focusReturnTarget()?.focus();
     }
+}
+
+function onEscape() {
+    // Hiding a non-click popover with no focusable reference would drop focus to <body>.
+    if (props.trigger !== "click" && !focusReturnTarget()) {
+        return;
+    }
+    close();
 }
 
 defineExpose({

@@ -142,6 +142,60 @@ describe("PopperComponent.vue", () => {
         wrapper.unmount();
     });
 
+    test("keeps a hover popup open on Escape when its reference cannot take focus back", async () => {
+        const wrapper = mount(PopperComponent, {
+            props: { interactive: true },
+            slots: {
+                reference: "<span>Icon</span>",
+                default: '<a href="#more">Read more</a>',
+            },
+            attachTo: container,
+        });
+        await wrapper.get(".popper-reference-container").trigger("mouseover");
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const link = wrapper.get("a");
+        link.element.focus();
+        await link.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        expect(document.activeElement).toBe(link.element);
+        wrapper.unmount();
+    });
+
+    test("keeps a hover popup open on Escape when its external reference is not focusable", async () => {
+        const reference = document.createElement("span");
+        container.append(reference);
+        const wrapper = mount(PopperComponent, {
+            props: { referenceEl: reference, interactive: true },
+            slots: { default: '<a href="#more">Read more</a>' },
+            attachTo: container,
+        });
+        reference.dispatchEvent(new MouseEvent("mouseover"));
+        await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const link = wrapper.get("a");
+        link.element.focus();
+        await link.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(true);
+        wrapper.unmount();
+    });
+
+    test("returns focus to the first enabled, tabbable control in the reference", async () => {
+        const wrapper = mount(PopperComponent, {
+            props: { title: "Details", trigger: "click" },
+            slots: {
+                reference:
+                    '<span><button disabled>Disabled</button><span tabindex="-1">Skipped</span><button class="target">Open</button></span>',
+            },
+            attachTo: container,
+        });
+        await wrapper.get(".target").trigger("click");
+        const close = wrapper.get(".popper-close");
+        close.element.focus();
+        await close.trigger("keydown", { key: "Escape" });
+        expect(wrapper.get(".popper-element").isVisible()).toBe(false);
+        expect(document.activeElement).toBe(wrapper.get(".target").element);
+        wrapper.unmount();
+    });
+
     test("renders component with default props", async () => {
         const wrapper = mountTarget();
         expect(wrapper.find(".popper-element").exists()).toBe(true);
