@@ -168,17 +168,22 @@ def test_assert_data_table_consistency_raises_column_mismatch(tdt_manager):
     assert exc_info.value.table_name == "testalpha"
 
 
-def test_load_from_config_file_raises_column_mismatch(tdt_manager, tmp_path):
+@pytest.fixture
+def divergent_conf(tmp_path):
     loc_path = tmp_path / "divergent.loc"
     loc_path.write_text("data9\tdata9name\t/data9\textra9\n")
     conf = tmp_path / "divergent_tool_data_table_conf.xml"
     conf.write_text(COLUMN_DIVERGENT_TABLE_CONF_XML.format(loc_path=loc_path))
+    return conf
+
+
+def test_load_from_config_file_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
     with pytest.raises(DataTableColumnMismatch) as exc_info:
-        tdt_manager.load_from_config_file(conf, tmp_path)
+        tdt_manager.load_from_config_file(divergent_conf, tmp_path)
     assert exc_info.value.table_name == "testalpha"
-    assert exc_info.value.config_filename == conf
+    assert exc_info.value.config_filename == divergent_conf
     assert exc_info.value.repository_info is None
-    assert str(conf) in str(exc_info.value)
+    assert str(divergent_conf) in str(exc_info.value)
 
 
 def test_load_from_config_file_column_mismatch_names_repository(tdt_manager, tmp_path):
@@ -196,6 +201,19 @@ def test_load_from_config_file_column_mismatch_names_repository(tdt_manager, tmp
     }
     assert "installed by repository iuc/data_manager_example revision abc123" in str(exc_info.value)
     assert tdt_manager["testalpha"].columns == {"value": 0, "name": 1, "path": 2}
+
+
+def test_merge_tool_data_table_raises_column_mismatch(tdt_manager, tmp_path, divergent_conf):
+    divergent = ToolDataTableManager(tmp_path, divergent_conf)["testalpha"]
+    table = tdt_manager["testalpha"]
+    original_data = list(table.data)
+    original_filenames = dict(table.filenames)
+    with pytest.raises(DataTableColumnMismatch) as exc_info:
+        table.merge_tool_data_table(divergent)
+    assert exc_info.value.table_name == "testalpha"
+    assert exc_info.value.incoming_columns == divergent.columns
+    assert table.data == original_data
+    assert table.filenames == original_filenames
 
 
 def test_get_filename_for_source_falls_back_to_shared_filename(tdt_manager):

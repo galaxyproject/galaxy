@@ -543,9 +543,8 @@ class TabularToolDataTable(ToolDataTable):
                 tmp_file.close()
 
     def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, **kwd):
-        assert (
-            self.columns == other_table.columns
-        ), f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
+        if self.columns != other_table.columns:
+            raise DataTableColumnMismatch(self.name, self.columns, other_table.columns)
         # merge filename info
         for filename, info in other_table.filenames.items():
             if filename not in self.filenames:
