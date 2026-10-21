@@ -69,6 +69,7 @@
 
         <GModal
             v-model:show="showChangeDbKeyModal"
+            data-description="change database build modal"
             title="Change Database/Build?"
             confirm
             size="small"

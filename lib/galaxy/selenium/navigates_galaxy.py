@@ -830,6 +830,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         datatype_component = self.history_panel_item_component(hid=hid).datatype
         self._wait_on(lambda: datatype_component.wait_for_text() == datatype, f"hid {hid} datatype to be [{datatype}]")
 
+    def history_panel_wait_for_hid_dbkey(self, hid: int, dbkey: str):
+        dbkey_component = self.history_panel_item_component(hid=hid).dbkey
+        self._wait_on(lambda: dbkey_component.wait_for_text() == dbkey, f"hid {hid} dbkey to be [{dbkey}]")
+
     def history_panel_wait_for_and_select(self, hids: list[int]):
         """
         Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
