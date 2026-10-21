@@ -42,6 +42,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
+from galaxy.exceptions import ConfigurationError
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
@@ -168,7 +169,10 @@ from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
 from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
-from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
+from galaxy.tool_util.data import (
+    DataTableColumnMismatch,
+    ToolDataTableManager as BaseToolDataTableManager,
+)
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -232,6 +236,12 @@ def build_tool_data_tables(config: GalaxyAppConfiguration, from_shed_config: boo
         # Missing shed_tool_data_table_config is okay if it's the default
         if exc.errno != errno.ENOENT or config.is_set("shed_tool_data_table_config"):
             raise
+    except DataTableColumnMismatch as e:
+        raise ConfigurationError(
+            f"{e} To start Galaxy, remove this <table name=\"{e.table_name}\"> element from '{e.config_filename}' "
+            f"or remove the other definition of {e.table_name!r}; tools that rely on the removed definition will "
+            "not work until the conflict is resolved."
+        ) from e
     return tool_data_tables
 
 
