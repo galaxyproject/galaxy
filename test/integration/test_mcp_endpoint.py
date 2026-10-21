@@ -95,18 +95,18 @@ class TestMCPApiKey(IntegrationTestCase):
         tools = mcp_request(f"{self.url}api/mcp", "tools/list", {})["tools"]
         assert tools
         for tool in tools:
-            properties = tool["inputSchema"].get("properties", {})
-            if "api_key" in properties:
-                assert "api_key" not in tool["inputSchema"].get("required", []), tool["name"]
+            assert "api_key" in tool["inputSchema"].get("properties", {}), tool["name"]
+            assert "api_key" not in tool["inputSchema"].get("required", []), tool["name"]
 
     def test_header_only(self) -> None:
         _, key = self._setup_user_get_key("mcp-header-only@bx.psu.edu")
-        result = self._call_tool("get_user", {}, headers={"x-api-key": key})
+        result = self._call_tool("get_user", {}, headers={"X-API-Key": key})
         assert self._email_from_get_user(result) == "mcp-header-only@bx.psu.edu"
 
     def test_argument_only(self) -> None:
-        result = self._call_tool("get_user", {"api_key": self.galaxy_interactor.api_key})
-        assert self._email_from_get_user(result)
+        _, key = self._setup_user_get_key("mcp-argument-only@bx.psu.edu")
+        result = self._call_tool("get_user", {"api_key": key})
+        assert self._email_from_get_user(result) == "mcp-argument-only@bx.psu.edu"
 
     def test_argument_wins_over_header(self) -> None:
         _, other_key = self._setup_user_get_key("mcp-header-other@bx.psu.edu")
