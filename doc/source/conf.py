@@ -24,10 +24,6 @@ SKIP_VIEW_CODE = os.environ.get("GALAXY_DOCS_SKIP_VIEW_CODE", False) == "1"
 SKIP_SOURCE = os.environ.get("GALAXY_DOCS_SKIP_SOURCE", False) == "1"
 SKIP_RELEASES = os.environ.get("GALAXY_DOCS_SKIP_RELEASES", False) == "1"
 
-# REQUIRED GALAXY INCLUDES
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.

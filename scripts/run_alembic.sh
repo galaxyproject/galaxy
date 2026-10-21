@@ -16,7 +16,7 @@
 # For help, run `sh run_alembic.sh -h`. 
 #
 # Further information:
-# Galaxy migration documentation: lib/galaxy/model/migrations/README.md
+# Galaxy migration documentation: packages/data/src/galaxy/model/migrations/README.md
 # Alembic documentation: https://alembic.sqlalchemy.org
 #######
 

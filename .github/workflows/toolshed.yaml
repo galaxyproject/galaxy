@@ -4,7 +4,6 @@ on:
     paths:
       - '**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
@@ -13,7 +12,6 @@ on:
     paths:
       - '**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/toolshed.yaml'
@@ -78,7 +76,7 @@ jobs:
         working-directory: 'galaxy root'
       - name: Read Node.js version
         id: node-version
-        run: echo "version=$(cat 'galaxy root/lib/tool_shed/webapp/frontend/.node_version')" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat 'galaxy root/packages/tool_shed/src/tool_shed/webapp/frontend/.node_version')" >> $GITHUB_OUTPUT
       - name: Setup node
         uses: actions/setup-node@v7.1.0
         with:
@@ -86,11 +84,11 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          package_json_file: 'galaxy root/lib/tool_shed/webapp/frontend/package.json'
+          package_json_file: 'galaxy root/packages/tool_shed/src/tool_shed/webapp/frontend/package.json'
       - name: Build Frontend
         run: |
           . .venv/bin/activate
-          cd lib/tool_shed/webapp/frontend
+          cd packages/tool_shed/src/tool_shed/webapp/frontend
           pnpm install --frozen-lockfile
           make client
         working-directory: 'galaxy root'
@@ -100,7 +98,7 @@ jobs:
           playwright install
         working-directory: 'galaxy root'
       - name: Run tests
-        run: ./run_tests.sh -toolshed ./lib/tool_shed/test/functional -- -n 3 --dist loadscope
+        run: ./run_tests.sh -toolshed ./packages/tool_shed/src/tool_shed/test/functional -- -n 3 --dist loadscope
         env:
           TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
         working-directory: 'galaxy root'

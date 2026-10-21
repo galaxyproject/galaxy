@@ -1316,7 +1316,7 @@ Fixes
 * Fix Pesky warning with PersistentTaskProgressMonitorAlert.test.ts
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 19180`_
-* Bump tornado from 6.4.1 to 6.4.2 in /lib/galaxy/dependencies
+* Bump tornado from 6.4.1 to 6.4.2 in /packages/app/src/galaxy/dependencies
   (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
   `Pull Request 19189`_
 * Update PR title handling for changing base ref
@@ -1325,13 +1325,13 @@ Fixes
 * Create harmonized collections from correct tool outputs
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 19222`_
-* Bump python-multipart from 0.0.17 to 0.0.18 in /lib/galaxy/dependencies
+* Bump python-multipart from 0.0.17 to 0.0.18 in /packages/app/src/galaxy/dependencies
   (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
   `Pull Request 19233`_
 * Require importlib-resources also for Python 3.9-3.11
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 19358`_
-* Bump jinja2 from 3.1.4 to 3.1.5 in /lib/galaxy/dependencies
+* Bump jinja2 from 3.1.4 to 3.1.5 in /packages/app/src/galaxy/dependencies
   (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
   `Pull Request 19369`_
 * Node 22 unreachable fixes

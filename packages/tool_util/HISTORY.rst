@@ -84,7 +84,7 @@ Enhancements
 Other changes
 =============
 
-* Bump pydantic-ai from 1.44.0 to 1.56.0 in /lib/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21782 <https://github.com/galaxyproject/galaxy/pull/21782>`_
+* Bump pydantic-ai from 1.44.0 to 1.56.0 in /packages/app/src/galaxy/dependencies by `@dependabot <https://github.com/dependabot>`_ in `#21782 <https://github.com/galaxyproject/galaxy/pull/21782>`_
 * Backport architecture-aware mulled builds by `@paperbenni <https://github.com/paperbenni>`_ in `#23070 <https://github.com/galaxyproject/galaxy/pull/23070>`_
 
 -------------------

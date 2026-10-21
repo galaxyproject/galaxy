@@ -567,7 +567,7 @@ Fixes
 * Fix citation ids and vue unit test in ToolsView
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 9538`_
-* Bump tensorflow from 1.12.2 to 1.15.2 in /lib/galaxy/dependencies
+* Bump tensorflow from 1.12.2 to 1.15.2 in /packages/app/src/galaxy/dependencies
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 9540`_
 * Incremental indexing for tool shed whoosh indexes

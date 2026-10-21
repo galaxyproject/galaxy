@@ -29,7 +29,6 @@ RUN /venv/bin/python -m pip install --no-cache-dir \
     "galaxy-job-execution==${GALAXY_VERSION}"
 
 FROM build-base AS source-build
-COPY lib /galaxy/lib
 COPY packages /galaxy/packages
 # setuptools-scm cannot discover package data without the Git checkout.
 RUN for package in util tool_util_models config schema tool_util files objectstore data job_execution; do \

@@ -8,7 +8,4 @@ if [ -d "$GALAXY_VIRTUAL_ENV" ]; then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
-PYTHONPATH=lib:$PYTHONPATH
-export PYTHONPATH
-
-python -c "import galaxy.tours.validate; galaxy.tours.validate.main()" $*
+python -m galaxy.tours.validate "$@"

@@ -2,12 +2,12 @@ name: Tool Shed frontend
 on:
   push:
     paths:
-      - 'lib/tool_shed/webapp/frontend/**'
+      - 'packages/tool_shed/src/tool_shed/webapp/frontend/**'
       - 'client/packages/ui/**'
       - '.github/workflows/toolshed_frontend.yaml'
   pull_request:
     paths:
-      - 'lib/tool_shed/webapp/frontend/**'
+      - 'packages/tool_shed/src/tool_shed/webapp/frontend/**'
       - 'client/packages/ui/**'
       - '.github/workflows/toolshed_frontend.yaml'
 concurrency:
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: lib/tool_shed/webapp/frontend
+        working-directory: packages/tool_shed/src/tool_shed/webapp/frontend
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -40,7 +40,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          package_json_file: lib/tool_shed/webapp/frontend/package.json
+          package_json_file: packages/tool_shed/src/tool_shed/webapp/frontend/package.json
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run vue-tsc

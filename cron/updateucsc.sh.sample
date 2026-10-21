@@ -13,9 +13,6 @@ if [ -d "$GALAXY_VIRTUAL_ENV" ]; then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
-PYTHONPATH=${GALAXY}/lib
-export PYTHONPATH
-
 # Setup directories
 echo "Creating required directories."
 DIRS="

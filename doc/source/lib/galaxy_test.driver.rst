@@ -48,3 +48,19 @@ galaxy\_test.driver.testcase module
    :members:
    :undoc-members:
    :show-inheritance:
+
+galaxy_test.driver.pytest module
+-------------------------------
+
+.. automodule:: galaxy_test.driver.pytest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Galaxy test sharding
+-------------------
+
+.. automodule:: galaxy_test.driver.shard
+   :members:
+   :undoc-members:
+   :show-inheritance:

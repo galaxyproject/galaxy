@@ -141,15 +141,25 @@ setup_python() {
 }
 
 set_galaxy_config_file_var() {
+    # Config discovery runs against the environment's installed galaxy-util
+    # (workspace sync happens first in common_startup.sh).
     if [ -z "$GALAXY_CONFIG_FILE" ]; then
-        GALAXY_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['galaxy', 'universe_wsgi']) or '')")
+        GALAXY_CONFIG_FILE=$(python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['galaxy', 'universe_wsgi']) or '')") || {
+            echo "ERROR: cannot import galaxy.util for config discovery; sync the workspace first (see common_startup.sh)." >&2
+            return 1
+        }
         export GALAXY_CONFIG_FILE
     fi
 }
 
 set_tool_shed_config_file_var() {
+    # Config discovery runs against the environment's installed galaxy-util
+    # (workspace sync happens first in common_startup.sh).
     if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
-        TOOL_SHED_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['tool_shed', 'tool_shed_wsgi'], include_samples=True) or '')")
+        TOOL_SHED_CONFIG_FILE=$(python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['tool_shed', 'tool_shed_wsgi'], include_samples=True) or '')") || {
+            echo "ERROR: cannot import galaxy.util for config discovery; sync the workspace first (see common_startup.sh)." >&2
+            return 1
+        }
         export TOOL_SHED_CONFIG_FILE
     fi
 }
@@ -168,20 +178,23 @@ find_server() {
             ;;
         reports)
             # TODO: is this really the only way to configure the port?
-            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9001 --config lib/galaxy/web_stack/gunicorn_config.py"}
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9001 --config packages/web_stack/src/galaxy/web_stack/gunicorn_config.py"}
             ;;
         tool_shed)
-            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9009 --config lib/galaxy/web_stack/gunicorn_config.py"}
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9009 --config packages/web_stack/src/galaxy/web_stack/gunicorn_config.py"}
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
     if [ "$APP_WEBSERVER" = "gunicorn" ]; then
         run_server="gunicorn"
         export GUNICORN_CMD_ARGS
+        # Workers resolve galaxy/tool_shed from installed workspace packages
+        # (uv sync in common_startup.sh); no --pythonpath lib needed since
+        # lib/galaxy has moved (lib/ only retains galaxy_test leftovers).
         if [ "$server_app" = "tool_shed" ]; then
-            server_args="'${server_app}.webapp.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
+            server_args="'${server_app}.webapp.fast_factory:factory()' -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         else
-            server_args="'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
+            server_args="'galaxy.webapps.${server_app}.fast_factory:factory()' -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         fi
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""

@@ -1,6 +1,6 @@
 [project]
 name = "galaxy-workspace"
-version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version/__init__.py
+version = "0.1.0"  # Not the real version, which is instead defined in packages/util/src/galaxy/version/__init__.py
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = [
     {name = "Galaxy Contributors"},
@@ -126,6 +126,7 @@ Documentation = "https://docs.galaxyproject.org/"
 Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
+# See packages/README.md for workspace development profiles and requirement exports.
 [dependency-groups]
 test = [
     "aiocop",
@@ -208,9 +209,9 @@ line-length = 120
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
-  | packages
-  | lib/tool_shed/test/test_data/repos
-  | lib/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
+  | packages/tool_shed/src/tool_shed/test/test_data/repos
+  | packages/tool_util/src/galaxy/tool_util/unittest_utils/functional_tools/cwl_tools
+  | test/functional/tools/cwl_tools
 )/
 '''
 
@@ -219,11 +220,10 @@ isort = true
 
 [tool.ruff]
 exclude = [
-    "lib/tool_shed/test/test_data/repos"
+    "packages/tool_shed/src/tool_shed/test/test_data/repos"
 ]
 line-length = 120
-src = ["lib"]
-namespace-packages = ["lib/galaxy"]
+src = ["packages/*/src"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
@@ -242,6 +242,7 @@ ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.isort]
+known-first-party = ["galaxy", "galaxy_ext", "galaxy_test", "tool_shed", "tool_shed_client"]
 # We are not selecting "I" rules in ruff yet because the isort option
 # force_grid_wrap=2 is not currently supported:
 # https://github.com/astral-sh/ruff/issues/2601
@@ -260,14 +261,12 @@ keep-runtime-typing = true
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
 # Don't check pyupgrade rules on generated files
-"lib/galaxy/schema/bco/*" = ["UP"]
-"lib/galaxy/schema/drs/*" = ["UP"]
-"lib/tool_shed_client/schema/trs.py" = ["UP"]
-"lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
+"packages/schema/src/galaxy/schema/bco/*" = ["UP"]
+"packages/schema/src/galaxy/schema/drs/*" = ["UP"]
+"packages/tool_shed_schema/src/tool_shed_client/schema/trs.py" = ["UP"]
+"packages/tool_shed_schema/src/tool_shed_client/schema/trs_service_info.py" = ["UP"]
 
 [tool.uv]
-# Build settings shared by workspace members.
-config-settings = { editable_mode = "compat" }
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949

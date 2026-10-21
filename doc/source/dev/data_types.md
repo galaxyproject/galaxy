@@ -132,11 +132,11 @@ the sniff order.
 ### Step 3: Data Type Class
 
 We'll now add the `Foobar` class to
-`lib/galaxy/datatypes/tabular.py`. Keep in mind that
+`packages/data/src/galaxy/datatypes/tabular.py`. Keep in mind that
 your new data type class should be placed in a file
 that is appropriate (based on its superclass), and
 that the file will need to be imported by
-`lib/galaxy/datatypes/registry.py`. You will need to
+`packages/data/src/galaxy/datatypes/registry.py`. You will need to
 include a `file_ext` attribute to your class and
 create any necessary functions to override the
 functions in your new data type's superclass (in our
@@ -209,12 +209,12 @@ your new data type within your Galaxy instance.
 ## Adding a New Data Type (completely new)
 
 ### Basic Datatypes
-In this [real life example](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/datatypes/sequence.py),
+In this [real life example](https://github.com/galaxyproject/galaxy/blob/dev/packages/data/src/galaxy/datatypes/sequence.py),
 we'll add a datatype named `Genbank`, to support
 GenBank files.
 
 First, we'll set up a file named `sequence.py` in
-`lib/galaxy/datatypes/sequence.py`. This file could
+`packages/data/src/galaxy/datatypes/sequence.py`. This file could
 contain some of the standard sequence types, though
 we'll only implement GenBank.
 
@@ -410,7 +410,7 @@ class Genbank(data.Text):
 
 ## Composite Datatypes
 
-Composite datatypes can be used as a more structured way to contain individual history items which are composed of multiple files. The `Rgenetics` package for Galaxy has been implemented using Composite Datatypes; for real-life examples, examine the configuration files (particularly `lib/galaxy/datatypes/genetics.py`) included with the distribution.
+Composite datatypes can be used as a more structured way to contain individual history items which are composed of multiple files. The `Rgenetics` package for Galaxy has been implemented using Composite Datatypes; for real-life examples, examine the configuration files (particularly `packages/data/src/galaxy/datatypes/genetics.py`) included with the distribution.
 
 In composite datatypes, there is one "primary" data file and any number of specified "component" files. The primary data file is a base dataset object and the component files are all located in a directory associated with that base dataset. There are two types of composite datatypes: basic and auto_primary_file. In **basic** composite datatypes, the primary data file must be written by tools or provided directly during upload. In **auto_primary_file** composite datatypes, the primary data file is generated automatically by the Framework; all tool-writable or uploadable files are stored in the directory associated with the primary file.
 

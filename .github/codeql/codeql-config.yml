@@ -1,2 +1,2 @@
 paths-ignore:
-  - 'lib/galaxy/datatypes/test/*.bcsl.ts'
+  - 'packages/data/src/galaxy/datatypes/test/*.bcsl.ts'

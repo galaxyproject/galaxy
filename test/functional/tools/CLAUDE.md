@@ -69,8 +69,8 @@ Most test tools are Galaxy Tool XML files with a root `<tool>` tag.
 ```
 
 **Key documentation:**
-- XML Schema: `lib/galaxy/tool_util/xsd/galaxy.xsd`
-- Parser: `lib/galaxy/tool_util/parser/xml.py` (produces ToolSource objects)
+- XML Schema: `packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd`
+- Parser: `packages/tool_util/src/galaxy/tool_util/parser/xml.py` (produces ToolSource objects)
 
 ### YAML Format (Newer)
 
@@ -104,14 +104,14 @@ tests:
 ```
 
 **Key documentation:**
-- Parser: `lib/galaxy/tool_util/parser/yaml.py`
+- Parser: `packages/tool_util/src/galaxy/tool_util/parser/yaml.py`
 
 ## Test Tool Conventions
 
 1. **No help sections**: Test tools typically don't contain help documentation
 2. **Filename matches tool ID**: The filename should match the tool ID defined in the tool
 3. **Test cases are optional**: Not all test tools need test cases defined within them
-   - Some tools are used for lower-level API testing in `lib/galaxy_test/api/test_tool_execute.py`
+   - Some tools are used for lower-level API testing in `packages/test_api/src/galaxy_test/api/test_tool_execute.py`
    - Parameter specification tools may only be used for model validation tests
    - Tests are expensive to run - only include when testing something specific
 
@@ -195,7 +195,7 @@ Tests defined within tool files are run via the framework test system. These val
 
 ### 2. Unit Tests
 
-Located in `test/unit/tool_util/`, these test various parsing and modeling aspects:
+Located in `packages/tool_util/tests/tool_util/`, these test various parsing and modeling aspects:
 
 #### Key Unit Test Files
 
@@ -209,8 +209,8 @@ Located in `test/unit/tool_util/`, these test various parsing and modeling aspec
 | Test Type | Use Case | Location |
 |-----------|----------|----------|
 | In-tool tests | Validate tool execution, outputs, collections | Tool file's `<tests>` section |
-| API tests | Test exact JSON syntax for Galaxy API tool execution | `lib/galaxy_test/api/test_tool_execute.py` |
-| Unit tests | Test parsing, parameter modeling, test definition generation | `test/unit/tool_util/` |
+| API tests | Test exact JSON syntax for Galaxy API tool execution | `packages/test_api/src/galaxy_test/api/test_tool_execute.py` |
+| Unit tests | Test parsing, parameter modeling, test definition generation | `packages/tool_util/tests/tool_util/` |
 
 **Cost consideration**: Framework tests are expensive to run. For parsing, API structure, or model validation, use unit tests or API tests instead.
 
@@ -242,7 +242,7 @@ sh scripts/validate_tools.sh test/functional/tools/tool1.xml test/functional/too
 
 **What this does:**
 - Loads the tool using the Galaxy tool loader
-- Validates the XML structure against the Galaxy XSD schema (`lib/galaxy/tool_util/xsd/galaxy.xsd`)
+- Validates the XML structure against the Galaxy XSD schema (`packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd`)
 - Reports any schema validation errors
 
 **Example output:**
@@ -267,7 +267,7 @@ To validate YAML tools programmatically using the Galaxy parser (useful for conf
 ```bash
 cd /path/to/galaxy
 source .venv/bin/activate
-PYTHONPATH=lib:$PYTHONPATH python -c "
+python -c "
 from galaxy.tool_util.parser.factory import get_tool_source
 
 tool_path = 'test/functional/tools/parameters/your_tool.yml'
@@ -279,9 +279,8 @@ print(f'Version: {tool_source.parse_version()}')
 ```
 
 **Important**: When running Galaxy Python code:
-1. **Activate the virtual environment**: `source .venv/bin/activate` (from Galaxy root)
-2. **Set PYTHONPATH**: `PYTHONPATH=lib:$PYTHONPATH` to ensure Galaxy modules can be imported
-3. Run from the Galaxy root directory
+1. **Activate the virtual environment**: `source .venv/bin/activate` (from Galaxy root) — the workspace's editable installs provide the Galaxy modules
+2. Run from the Galaxy root directory
 
 This approach works for both XML and YAML tools and validates that the tool can be successfully parsed by Galaxy's tool loading system.
 
@@ -289,22 +288,22 @@ This approach works for both XML and YAML tools and validates that the tool can 
 
 ### Parsing and Schema
 
-- **`lib/galaxy/tool_util/xsd/galaxy.xsd`**: XML Schema Definition for Galaxy tools
-- **`lib/galaxy/tool_util/parser/xml.py`**: XML parser producing ToolSource objects
-- **`lib/galaxy/tool_util/parser/yaml.py`**: YAML parser producing ToolSource objects
-- **`lib/galaxy/tool_util/parser/interface.py`**: ToolSource interface definition
+- **`packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd`**: XML Schema Definition for Galaxy tools
+- **`packages/tool_util/src/galaxy/tool_util/parser/xml.py`**: XML parser producing ToolSource objects
+- **`packages/tool_util/src/galaxy/tool_util/parser/yaml.py`**: YAML parser producing ToolSource objects
+- **`packages/tool_util/src/galaxy/tool_util/parser/interface.py`**: ToolSource interface definition
 
 ### Unit Tests
 
-- **`test/unit/tool_util/test_parsing.py`**: Basic parsing tests
-- **`test/unit/tool_util/test_test_definition_parsing.py`**: Test definition parsing
-- **`test/unit/tool_util/test_parameter_specification.py`**: Parameter specification modeling (uses specifications from `test/unit/tool_util/parameter_specification.yml`)
-- **`test/unit/tool_util/parameter_specification.yml`**: YAML file containing parameter validation test specifications for various tools (e.g., `gx_boolean`, `gx_int`, etc.)
-- **`test/unit/tool_util/test_parameter_test_cases.py`**: Parameter test cases
+- **`packages/tool_util/tests/tool_util/test_parsing.py`**: Basic parsing tests
+- **`packages/tool_util/tests/tool_util/test_test_definition_parsing.py`**: Test definition parsing
+- **`packages/tool_util/tests/tool_util/test_parameter_specification.py`**: Parameter specification modeling (uses specifications from `packages/tool_util/tests/tool_util/parameter_specification.yml`)
+- **`packages/tool_util/tests/tool_util/parameter_specification.yml`**: YAML file containing parameter validation test specifications for various tools (e.g., `gx_boolean`, `gx_int`, etc.)
+- **`packages/tool_util/tests/tool_util/test_parameter_test_cases.py`**: Parameter test cases
 
 ### API Tests
 
-- **`lib/galaxy_test/api/test_tool_execute.py`**: Lower-level API testing for exact JSON syntax validation
+- **`packages/test_api/src/galaxy_test/api/test_tool_execute.py`**: Lower-level API testing for exact JSON syntax validation
 
 ### Tool Configuration
 
@@ -339,7 +338,7 @@ Galaxy tools use profile versions to control behavior changes. Common profiles i
 - **23.0**: Text parameter optional inference changes
 - **24.0**: Data source tool environment changes
 
-See `lib/galaxy/tool_util/xsd/galaxy.xsd` for complete profile documentation.
+See `packages/tool_util/src/galaxy/tool_util/xsd/galaxy.xsd` for complete profile documentation.
 
 ## Examples by Category
 

@@ -2,11 +2,7 @@
 This script is intended to be invoked by the scripts/db_dev.sh script.
 """
 
-import os
-import sys
 from argparse import ArgumentParser
-
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.migrations.dbscript import ParserBuilder
 

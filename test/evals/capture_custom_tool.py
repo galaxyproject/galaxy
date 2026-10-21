@@ -2,7 +2,7 @@
 the rejected first attempt, so we can see WHY validation fails.
 
     cd test
-    PYTHONPATH=../lib:. python evals/capture_custom_tool.py gpt-oss-120b-llmlb boxplot_welch_ttest
+    python -m evals.capture_custom_tool gpt-oss-120b-llmlb boxplot_welch_ttest
 """
 
 import asyncio

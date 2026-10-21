@@ -1,4 +1,6 @@
 [run]
 branch = True
-include = lib/galaxy/*
+include =
+    packages/*/src/galaxy/*
+    packages/*/src/galaxy_test/*
 disable_warnings = include-ignored

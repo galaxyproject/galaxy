@@ -21,9 +21,9 @@ Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without exp
 
 1. Register the Galaxy instance as a client with an OIDC identity provider (IdP). The IdP issues a _client ID_ and a _client secret_, and needs to be told the callback URL `<galaxy_url>/authnz/<provider>/callback`.
 
-2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. Samples for both files are in [oidc_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_config.xml.sample) and [oidc_backends_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample).
+2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. Samples for both files are in [oidc_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/oidc_config.xml.sample) and [oidc_backends_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/oidc_backends_config.xml.sample).
 
-Each `<provider>` entry in `oidc_backends_config_file` is one of the backends Galaxy ships: `google`, `globus`, `okta`, `azure`, `keycloak`, `cilogon`, `auth0`, `egi_checkin`, `lifescience` (LS Login), `einfracz`, `nfdi`, `tapis`, the deprecated `elixir`, and the generic `oidc` backend for any standards-compliant provider. Per-provider options such as `label`, `require_create_confirmation`, `require_user_activation` and `require_session_refresh` are documented in [oidc_backends_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample).
+Each `<provider>` entry in `oidc_backends_config_file` is one of the backends Galaxy ships: `google`, `globus`, `okta`, `azure`, `keycloak`, `cilogon`, `auth0`, `egi_checkin`, `lifescience` (LS Login), `einfracz`, `nfdi`, `tapis`, the deprecated `elixir`, and the generic `oidc` backend for any standards-compliant provider. Per-provider options such as `label`, `require_create_confirmation`, `require_user_activation` and `require_session_refresh` are documented in [oidc_backends_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/oidc_backends_config.xml.sample).
 
 The configuration is explained with provider-specific details at [User Authentication Configuration](https://galaxyproject.org/authnz/config/oidc/). How to authenticate from the user perspective we describe [here](https://galaxyproject.org/authnz/use/oidc/).
 
@@ -113,14 +113,14 @@ On the other hand, `ldap3` is a pure-Python implementation of the OpenLDAP clien
 These same mechanisms can also be configured by proxies serving Galaxy (e.g. nginx or Apache), but configuring them
 within Galaxy allows users to use the Galaxy UI for logging in instead of relying on a proxy.
 
-To configure one or more authentication plugins, simply copy [auth_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/auth_conf.xml.sample) to `config/auth_conf.xml`.
+To configure one or more authentication plugins, simply copy [auth_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/auth_conf.xml.sample) to `config/auth_conf.xml`.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
 
 It is relatively straight-forward to add a custom authenticator to the framework. In this example, we will demonstrate
 a new authenticator based on the LDAP authenticator that performs custom checks besides password verification for
 authenticating a user on the Galaxy instance. First, we will create an authenticator source file
-`lib/galaxy/auth/providers/ldap_custom.py` with the following content:
+`packages/auth/src/galaxy/auth/providers/ldap_custom.py` with the following content:
 
 ```
 import logging
@@ -238,7 +238,7 @@ Smtp server takes care of the email sending and the `email_from` is used as the 
 
 ### Email template
 
-You can modify the activation email body by modifying the provided templates. You can use them in [html](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/templates/mail/activation-email.html) or [txt](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/templates/mail/activation-email.txt) depending on your emailing configuration.
+You can modify the activation email body by modifying the provided templates. You can use them in [html](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/templates/mail/activation-email.html) or [txt](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/templates/mail/activation-email.txt) depending on your emailing configuration.
 
 The mapping of mentioned templates' variables to config options is as follows:
 
@@ -264,7 +264,7 @@ In case you want the account activation feature but don't want to disable login 
 activation_grace_period: 3
 ```
 
-Accounts created through an OIDC login are activated immediately, because the e-mail address verified by the identity provider is trusted. A provider can opt out of this with `require_user_activation` in [oidc_backends_config.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample), in which case its users go through the same activation flow as password accounts.
+Accounts created through an OIDC login are activated immediately, because the e-mail address verified by the identity provider is trusted. A provider can opt out of this with `require_user_activation` in [oidc_backends_config.xml](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/oidc_backends_config.xml.sample), in which case its users go through the same activation flow as password accounts.
 
 However with inactive account the user won't be able to run jobs and warning message will be shown to them at the top of the page. It is customizable via the `inactivity_box_content` parameter.
 
@@ -306,15 +306,15 @@ The domain allowlist can be turned on through the `email_domain_allowlist_file` 
 
 ## Authentication Related Code
 
-Password login, registration, account activation and logout for database-backed accounts live in the `User` controller in `lib/galaxy/webapps/galaxy/controllers/user.py` (`login`, `create`, `activate`, `logout`) and in `lib/galaxy/managers/users.py`. Password checks are delegated to the plugins in `lib/galaxy/auth/`, which is where the [Authentication Framework](#authentication-framework) providers (`localdb`, `ldap`, `ldap3`, `activedirectory`, `PAM`, `alwaysreject`) are implemented.
+Password login, registration, account activation and logout for database-backed accounts live in the `User` controller in `packages/web_apps/src/galaxy/webapps/galaxy/controllers/user.py` (`login`, `create`, `activate`, `logout`) and in `packages/app/src/galaxy/managers/users.py`. Password checks are delegated to the plugins in `packages/auth/src/galaxy/auth/`, which is where the [Authentication Framework](#authentication-framework) providers (`localdb`, `ldap`, `ldap3`, `activedirectory`, `PAM`, `alwaysreject`) are implemented.
 
-OIDC login is handled by the `authnz` controller in `lib/galaxy/webapps/galaxy/controllers/authnz.py` together with `lib/galaxy/authnz/managers.py` (provider configuration, token refresh) and `lib/galaxy/authnz/psa_authnz.py` (the [Python Social Auth](https://python-social-auth.readthedocs.io/) pipeline that creates users and associates identities).
+OIDC login is handled by the `authnz` controller in `packages/web_apps/src/galaxy/webapps/galaxy/controllers/authnz.py` together with `packages/app/src/galaxy/authnz/managers.py` (provider configuration, token refresh) and `packages/app/src/galaxy/authnz/psa_authnz.py` (the [Python Social Auth](https://python-social-auth.readthedocs.io/) pipeline that creates users and associates identities).
 
-Remote user headers are consumed in `lib/galaxy/webapps/base/webapp.py` when the session for a request is established.
+Remote user headers are consumed in `packages/web_apps/src/galaxy/webapps/base/webapp.py` when the session for a request is established.
 
 ### Database Tables
 
-The database employs a `galaxy_user` table which records the details of all registered users, and this table is exposed to the code through the `User` class in `lib/galaxy/model/__init__.py`. Each logged-in user is assigned a session which references the user in the `galaxy_session` table (exposed via `GalaxySession`). Users created through remote user authentication are flagged with `galaxy_user.external`.
+The database employs a `galaxy_user` table which records the details of all registered users, and this table is exposed to the code through the `User` class in `packages/data/src/galaxy/model/__init__.py`. Each logged-in user is assigned a session which references the user in the `galaxy_session` table (exposed via `GalaxySession`). Users created through remote user authentication are flagged with `galaxy_user.external`.
 
 External OIDC identities are stored in `oidc_user_authnz_tokens` (exposed via `UserAuthnzToken`). Each row links one external identity to one Galaxy user and carries the provider's backend name, the subject identifier (`uid`) issued by the provider, and the access, refresh and ID tokens in `extra_data`.
 

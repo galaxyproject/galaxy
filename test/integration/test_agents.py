@@ -70,7 +70,7 @@ class TestAgentsApi(AgentIntegrationTestCase):
     """Test the Galaxy AI agents API endpoints.
 
     These tests verify API structure and static backend responses.
-    For tests of actual agent logic with mocked LLMs, see test/unit/app/test_agents.py.
+    For tests of actual agent logic with mocked LLMs, see packages/app/tests/app/test_agents.py.
     """
 
     def test_list_agents(self):

@@ -4,7 +4,7 @@ on:
     paths:
       - '.ci/check_test_class_names.sh'
       - .github/workflows/check_test_class_names.yaml
-      - 'lib/galaxy_test/**'
+      - 'packages/test_*/src/galaxy_test/**'
       - 'packages/test_*/**'
       - 'test/**'
 env:
@@ -31,9 +31,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Python dependencies
         run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install -r requirements.txt -r lib/galaxy/dependencies/pinned-test-requirements.txt
+          uv sync --locked --all-packages --all-extras --group test
       - name: Run tests
         run: |
           . .venv/bin/activate

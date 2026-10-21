@@ -1,14 +1,8 @@
 # Location of virtualenv used for development.
 VENV?=.venv
-# Open resource on Mac OS X or Linux
-OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+# Source virtualenv to execute commands that need the root environment.
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
-UPSTREAM?=galaxyproject
 SOURCE_DIR?=src/galaxy
-BUILD_SCRIPTS_DIR=scripts
-DEV_RELEASE?=0
-VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
 PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 # Distribution name used to scope uv to this package in the single root
@@ -23,6 +17,10 @@ BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
 DIST=dist
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
+# Hooks for members that must generate bundled assets before packaging
+# (packages/web_client builds the client and checks its artifacts).
+DIST_PREREQS?=
+DIST_CHECK_EXTRA?=
 
 .PHONY: clean-pyc clean-build docs clean
 
@@ -58,57 +56,30 @@ setup-venv:
 	uv sync --locked --inexact --package $(UV_PACKAGE) --all-extras
 
 _test:
-	uv run --locked --package $(UV_PACKAGE) pytest $(TESTS)
+	uv run --locked --inexact --package $(UV_PACKAGE) --all-extras --group test pytest $(TESTS)
 
 test: setup-venv _test
 
-_dist:
+_dist: $(DIST_PREREQS)
 	uv build -o $(DIST)
 	ls -l $(DIST)
 
 dist: clean _dist
 
-_setup-mypy-venv: setup-venv
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-
 _mypy:
-	uv run --locked --package $(UV_PACKAGE) mypy .
+	@if [ -n "$(wildcard src tests)" ]; then \
+	    uv run --locked --inexact --package $(UV_PACKAGE) --all-extras --group typecheck bash -ec '\
+	        if [ -d src ]; then (cd src && mypy .); fi; \
+	        if [ -d tests ]; then (cd ../.. && mypy packages/$(notdir $(CURDIR))/tests); fi'; \
+	fi
 
-mypy: _setup-mypy-venv _mypy
-
-_setup-lint-venv: setup-venv
-	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
+mypy: _mypy
 
 _lint:
-	uv run --locked --package $(UV_PACKAGE) ruff check .
+	uvx --with-requirements ../../requirements/pinned-lint-requirements.txt ruff check .
 
-lint: _setup-lint-venv _lint
+lint: _lint
 
 lint-dist:
-	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
-
-# black doesn't actually work on symlinked files because they are outside
-# the current directory
-
-#_setup-format-venv: setup-venv
-#	uv pip install isort black
-#_isort:
-#	uv run isort --sp ../../.isort.cfg .
-#_black:
-#	uv run black --config ../pyproject.toml .
-#format: _setup-format-venv _isort _black
-
-commit-version:
-	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
-
-new-version:
-	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/new_version.py $(VERSION)
-
-release-local: commit-version release-artifacts new-version
-
-push-release:
-	# git push $(UPSTREAM) $(BRANCH)
-	# git push upstream $(PROJECT_NAME)-$(VERSION)
-	echo "Makefile doesn't manually push release."
-
-release: release-local push-release
+	uvx --from twine==6.2.0 twine check $(DIST)/*
+	$(DIST_CHECK_EXTRA)

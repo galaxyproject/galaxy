@@ -18,7 +18,7 @@ $ARGUMENTS
    - Determine return type
    - Understand the browser behavior to implement
 
-2. **Add to HasDriverProtocol** (`lib/galaxy/selenium/has_driver_protocol.py`):
+2. **Add to HasDriverProtocol** (`packages/selenium/src/galaxy/selenium/has_driver_protocol.py`):
    - Add abstract method with proper signature
    - Include comprehensive docstring with:
      * Description of what the operation does
@@ -27,14 +27,14 @@ $ARGUMENTS
      * Usage example if helpful
    - Add `ContextManager` import if method returns a context manager
 
-3. **Implement in HasDriver** (`lib/galaxy/selenium/has_driver.py`):
+3. **Implement in HasDriver** (`packages/selenium/src/galaxy/selenium/has_driver.py`):
    - Implement using Selenium WebDriver API
    - Use `self.driver` for page-level operations
    - Use element methods for element-specific operations
    - Handle any Selenium-specific quirks or edge cases
    - Add appropriate error handling
 
-4. **Implement in HasPlaywrightDriver** (`lib/galaxy/selenium/has_playwright_driver.py`):
+4. **Implement in HasPlaywrightDriver** (`packages/selenium/src/galaxy/selenium/has_playwright_driver.py`):
    - Implement using Playwright API
    - Use `self.page` for page-level operations
    - For element operations, follow the wrapper pattern:
@@ -44,12 +44,12 @@ $ARGUMENTS
    - Use `self._frame_or_page` instead of `self.page` if operation should work within frames
    - Handle any Playwright-specific patterns
 
-5. **Update HasDriverProxy** (`lib/galaxy/selenium/has_driver_proxy.py`):
+5. **Update HasDriverProxy** (`packages/selenium/src/galaxy/selenium/has_driver_proxy.py`):
    - Add delegation method that forwards to `self._driver_impl`
    - Include docstring (can be brief, main docs are in protocol)
    - Ensure type hints match the protocol
 
-6. **Add comprehensive unit tests** (`test/unit/selenium/test_has_driver.py`):
+6. **Add comprehensive unit tests** (`packages/selenium/tests/seleniumtests/test_has_driver.py`):
    - Create new test class or add to existing relevant class
    - Test the operation with `has_driver_instance` fixture (parametrized for both backends)
    - Include tests for:
@@ -67,8 +67,8 @@ $ARGUMENTS
 
 8. **Update WebElementProtocol if needed**:
    - If the operation is element-specific and should be callable on elements directly
-   - Add to `lib/galaxy/selenium/web_element_protocol.py`
-   - Implement in `lib/galaxy/selenium/playwright_element.py` for Playwright
+   - Add to `packages/selenium/src/galaxy/selenium/web_element_protocol.py`
+   - Implement in `packages/selenium/src/galaxy/selenium/playwright_element.py` for Playwright
    - Selenium's WebElement will implement it natively if it's a standard method
 
 ## Example Workflow

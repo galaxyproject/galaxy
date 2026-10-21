@@ -4,13 +4,11 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
       - 'packages/test_selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
-      - 'lib/galaxy_test/selenium/**'
       - 'packages/test_selenium/**'
 env:
   UV_HTTP_RETRIES: '6'
@@ -39,7 +37,7 @@ jobs:
           version-file: galaxy root/.tool-versions
           python-version: ${{ matrix.python-version }}
       - name: Install Apptainer's singularity
-        uses: './galaxy root/.github/actions/install_apptainer'
+        uses: '$/.github/actions/install_apptainer'
       - name: Install ffmpeg
         run: |
           sudo apt-get update

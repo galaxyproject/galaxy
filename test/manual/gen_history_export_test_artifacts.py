@@ -1,12 +1,7 @@
-import os
 import random
-import sys
 from argparse import ArgumentParser
 
 from bioblend import galaxy
-
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 from galaxy_test.base.populators import GiDatasetPopulator
 

@@ -11,8 +11,8 @@
      input slot), e.g. mappingConstraints in terminals.ts.
 
    Mirrors the Python implementation in
-   lib/galaxy/model/dataset_collections/type_description.py — keep in sync.
-   See lib/galaxy/model/dataset_collections/types/collection_semantics.yml
+   packages/data/src/galaxy/model/dataset_collections/type_description.py — keep in sync.
+   See packages/data/src/galaxy/model/dataset_collections/types/collection_semantics.yml
    "Type Compatibility Algebra" for the lattice diagram and worked examples.
 
    Type variants:

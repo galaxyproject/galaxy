@@ -4,9 +4,9 @@ By default, jobs in Galaxy are run locally on the server on which the Galaxy app
 
 This document is a reference for the job configuration file. [Detailed documentation](cluster.md) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.md) and [cluster configuration documentation](cluster.md) be read before making changes to the job configuration.
 
-**The most up-to-date details of job configuration features can be found in the [job_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.sample.yml) found in the Galaxy distribution.**
+**The most up-to-date details of job configuration features can be found in the [job_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/job_conf.sample.yml) found in the Galaxy distribution.**
 
-Configuration of where to run jobs is performed in the `job_conf.yml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations can be found at `config/job_conf.sample.yml`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used. Examples of XML job configuration files are also available in [basic](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_basic) and [advanced](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) forms. 
+Configuration of where to run jobs is performed in the `job_conf.yml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations can be found at `config/job_conf.sample.yml`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used. Examples of XML job configuration files are also available in [basic](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/job_conf.xml.sample_basic) and [advanced](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/job_conf.xml.sample_advanced) forms.
 
 For metadata runtime images, including Pulsar staging, versioning and custom datatype dependencies, see [Containerized metadata collection](containerized_metadata.md).
 
@@ -133,7 +133,7 @@ destination
 
 Galaxy can be configured to run jobs in container runtimes. Currently the supported runtimes are [Docker](https://www.docker.com), [Singularity](https://sylabs.io/) and [Apptainer](https://apptainer.org/). Each ``<destination>`` can enable container support
 with ``<param id="docker_enabled">true</param>`` and/or ``<param id="singularity_enabled">true</param>``, as documented
-in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced).
+in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/job_conf.xml.sample_advanced).
 In the case of Docker, containers are run using **sudo** unless ``<param id="docker_sudo">false</param>`` is specified, thus
 the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
 work.
@@ -141,8 +141,8 @@ work.
 The images used for containers can either be specified explicitly in the ``<destination>`` using the ``docker_default_container_id``, ``docker_container_id_override``, ``singularity_default_container_id`` and
 ``singularity_container_id_override`` parameters, but (perhaps more commonly) the image to use can be derived from the
 ``<requirements>`` of the Galaxy tool being executed. In the latter case the image is specified either explicitly
-using a ``<container>`` tag or a mulled (multi package) container is implied for the set 
-of packages specified by the tool's ``<requirement>`` tags. 
+using a ``<container>`` tag or a mulled (multi package) container is implied for the set
+of packages specified by the tool's ``<requirement>`` tags.
 In either case the container to be used is determined using container resolvers that can be specified
 globally for an instance and/or per execution environment, see [Container resolvers](container_resolvers).
 
@@ -159,7 +159,7 @@ it is increasingly improved and it will soon be production-grade ready.
 In order to setup Galaxy to use the "two-container" architecture, you may
 take the following steps:
 
-1. In the `galaxy.yml` set the following attributes: 
+1. In the `galaxy.yml` set the following attributes:
 
 - `job_config_file: job_conf.yml`
 - Appropriately configure `galaxy_infrastructure_url`; for example,
@@ -198,7 +198,7 @@ execution:
 The job configuration XML file may contain any number of macro definitions using the same
 XML macro syntax used by [Galaxy tools](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements).
 
-See [Pull Request #362](https://github.com/galaxyproject/galaxy/pull/362) for implementation details and the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) for examples.
+See [Pull Request #362](https://github.com/galaxyproject/galaxy/pull/362) for implementation details and the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/job_conf.xml.sample_advanced) for examples.
 
 ## Mapping Tools To Destinations
 
@@ -263,7 +263,7 @@ access in tool templates, output actions or code.
 
 #### Dynamic Destination Mapping (DTD method)
 
-DTD is a special dynamic job destination type that builds up rules given a YAML-based DSL - see `config/tool_destinations.yml.sample` (on [Github](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/tool_destinations.yml.sample)) for a syntax description, examples, and a description of how to validate and debug this file.
+DTD is a special dynamic job destination type that builds up rules given a YAML-based DSL - see `config/tool_destinations.yml.sample` (on [Github](https://github.com/galaxyproject/galaxy/blob/dev/packages/config/src/galaxy/config/sample/tool_destinations.yml.sample)) for a syntax description, examples, and a description of how to validate and debug this file.
 
 To define and use rules, copy this sample file to `config/tool_destinations.yml` and add your rules. Anything routed with a `dynamic` runner of type `dtd` will then use this file (such as the destination defined with the following XML block in `job_conf.xml`).
 
@@ -293,9 +293,9 @@ Next for any tool one wants to dynamically assign job destinations for, this `bl
     <tool id="ncbi_blastn_wrapper" destination="blast" />
 ```
 
-Finally, you will need to define a function that describes how `ncbi_blastn_wrapper` should be executed. To do this, one must create a python source file in `lib/galaxy/jobs/rules`, for instance `destinations.py` (though the name of this file is largely unimportant, one can distribute any number of functions across any number of files and they will be automatically detected by Galaxy).
+Finally, you will need to define a function that describes how `ncbi_blastn_wrapper` should be executed. To do this, one must create a python source file in `packages/app/src/galaxy/jobs/rules`, for instance `destinations.py` (though the name of this file is largely unimportant, one can distribute any number of functions across any number of files and they will be automatically detected by Galaxy).
 
-So open `lib/galaxy/jobs/rules/destinations.py` and define a `ncbi_blastn_wrapper` function. A couple possible examples may be:
+So open `packages/app/src/galaxy/jobs/rules/destinations.py` and define a `ncbi_blastn_wrapper` function. A couple possible examples may be:
 
 ```python
 from galaxy.jobs import JobDestination

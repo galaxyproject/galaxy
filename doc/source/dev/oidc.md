@@ -41,7 +41,7 @@ provider callback; the browser supplies only an opaque confirmation identifier.
 
 ## State and validation boundaries
 
-`FlowState`, in `lib/galaxy/authnz/flow_state.py`, stores records in `PSAPartial`
+`FlowState`, in `packages/app/src/galaxy/authnz/flow_state.py`, stores records in `PSAPartial`
 under a separate namespace from ordinary python-social-auth partials. Records
 are bound to the Galaxy session, canonical provider, and purpose
 (`authentication` or `confirmation`). They expire after at most ten minutes;
@@ -69,7 +69,7 @@ PKCE to cover deferred creation, POST/CSRF enforcement, session refresh,
 cancellation, browser isolation, and callback replay. The other classes cover
 ordinary login and account linking.
 
-The tests in `test/unit/authnz/` retain state persistence and concurrency
+The tests in `packages/auth/tests/authnz/` retain state persistence and concurrency
 (`test_flow_state.py`), identity validation, provider-specific behavior, activation,
 and account-creation failures (`test_deferred_user_creation.py`), and HTTP guards
 (`test_authnz_controller.py`). These run without a Galaxy server. The PostgreSQL

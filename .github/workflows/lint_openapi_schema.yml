@@ -5,7 +5,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
+      - '!packages/test_selenium/src/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/lint_openapi_schema.yml'
@@ -22,7 +22,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
-      - '!lib/galaxy_test/selenium/**'
+      - '!packages/test_selenium/src/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/lint_openapi_schema.yml'
@@ -77,6 +77,9 @@ jobs:
         run: uv python install
       - name: Install dependencies
         run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
+        working-directory: 'galaxy root'
+      - name: Install Tool Shed for schema generation
+        run: uv sync --locked --inexact --package galaxy-tool-shed --all-extras
         working-directory: 'galaxy root'
       - name: Lint schema
         run: make lint-api-schema

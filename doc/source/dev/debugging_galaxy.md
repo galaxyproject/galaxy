@@ -29,7 +29,7 @@ should work fine.
                 "type": "python",
                 "request": "launch",
                 "module": "uvicorn",
-                "args": ["--app-dir", "lib",  "--factory", "galaxy.webapps.galaxy.fast_factory:factory"],
+                "args": ["--factory", "galaxy.webapps.galaxy.fast_factory:factory"],
                 "env": {
                     "GALAXY_CONFIG_FILE": "${workspaceFolder}/config/galaxy.yml"
                 }
@@ -42,3 +42,9 @@ should work fine.
 4. Select Run and Debug on Activity Bar, on the far left hand side. In the RUN AND DEBUG drop down, select `GalaxyFastAPI uvicorn`, and click the Start Debugging button (green arrow)
 5. Galaxy should stop right on the breakpoint you added.
 6. Enjoy your debugging session :-)
+
+Galaxy's source code lives under `packages/*/src` and is installed (editable)
+into the workspace environment created by running `uv sync --locked --group dev`
+at the repository root, so `galaxy.webapps.galaxy.fast_factory` is importable
+directly once you select that `.venv` interpreter (see
+[debugging tests](./debugging_tests.md)) and no `--app-dir` is needed.

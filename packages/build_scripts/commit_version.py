@@ -7,6 +7,24 @@ import subprocess
 import sys
 
 
+def _project_version_file(project_directory):
+    # Prefer pyproject.toml; support setup.cfg for release branches that use it.
+    for name in ("pyproject.toml", "setup.cfg"):
+        path = os.path.join(project_directory, name)
+        if os.path.exists(path):
+            return path
+    raise FileNotFoundError(f"No pyproject.toml or setup.cfg found in {project_directory}")
+
+
+def _set_version(text, pattern, new_version):
+    # Preserve the manifest's version quoting.
+    def repl(match):
+        quote = match.group(1)
+        return f"version = {quote}{new_version}{quote}"
+
+    return re.sub(pattern, repl, text, count=1, flags=re.MULTILINE)
+
+
 def main(argv):
     DEV_RELEASE = os.environ.get("DEV_RELEASE", None) == "1"
     PROJECT_DIRECTORY = os.getcwd()
@@ -14,7 +32,7 @@ def main(argv):
     PROJECT_NAME = PROJECT_DIRECTORY_NAME.replace("_", "-")
 
     version = argv[1]
-    setup_cfg_path = os.path.join(PROJECT_DIRECTORY, "setup.cfg")
+    project_file = _project_version_file(PROJECT_DIRECTORY)
 
     if not DEV_RELEASE:
         history_path = os.path.join(PROJECT_DIRECTORY, "HISTORY.rst")
@@ -25,15 +43,17 @@ def main(argv):
         history = history.replace(".dev0", f" ({today_str})")
         with open(history_path, "w") as f:
             f.write(history)
-        with open(setup_cfg_path) as f:
-            setup_cfg = f.read()
-        setup_cfg = re.sub(
-            r"^version = [\d\.]+\.dev\d+", f"version = {version}", setup_cfg, count=1, flags=re.MULTILINE
+        with open(project_file) as f:
+            project_metadata = f.read()
+        project_metadata = _set_version(
+            project_metadata,
+            r'^version\s*=\s*("?)[\d.]+\.dev\d+"?',
+            version,
         )
-        with open(setup_cfg_path, "w") as f:
-            f.write(setup_cfg)
+        with open(project_file, "w") as f:
+            f.write(project_metadata)
     tag = f"galaxy-{PROJECT_NAME}-{version}"
-    shell(["git", "commit", "-m", f"Version {version} of {PROJECT_NAME} (tag {tag}).", "HISTORY.rst", setup_cfg_path])
+    shell(["git", "commit", "-m", f"Version {version} of {PROJECT_NAME} (tag {tag}).", "HISTORY.rst", project_file])
     shell(["git", "tag", tag])
 
 

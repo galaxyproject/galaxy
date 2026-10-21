@@ -4,8 +4,6 @@ import argparse
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
-
 import galaxy.config
 from galaxy import model
 from galaxy.model.mapping import init_models_from_config
