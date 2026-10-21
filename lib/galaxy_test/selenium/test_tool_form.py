@@ -132,6 +132,20 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\n"
 
     @selenium_test
+    def test_tool_form_fill_maps_over_collection(self):
+        history_id = self.current_history_id()
+        single = self.dataset_populator.new_dataset(history_id, content="single\n", wait=True)
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a1\n", "a2\n"], wait=True
+        ).json()["output_collections"][0]
+        self.home()
+        self.tool_open("cat1")
+        self.tool_form_fill(data={"input1": hdca["hid"], "queries_0|input2": single["hid"]})
+        hint = self.tool_form_wait_for_batch_info("input1", "mapped over")
+        assert hint.startswith("The supplied input will be mapped over this tool"), hint
+        self.screenshot("tool_form_fill_maps_over_collection")
+
+    @selenium_test
     def test_tool_form_parameters_match_form(self):
         self.home()
         self.tool_open("gx_conditional_select")
