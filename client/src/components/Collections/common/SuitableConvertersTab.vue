@@ -5,7 +5,7 @@
             <div class="text-right">
                 <button
                     class="run-tool-collection-edit btn btn-primary"
-                    :disabled="selectedConverter == {}"
+                    :disabled="!selectedConverter?.tool_id"
                     @click="clickedConvert">
                     {{ l("Convert Collection") }}
                 </button>
