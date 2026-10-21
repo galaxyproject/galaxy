@@ -1148,6 +1148,7 @@ workflow_editor:
     node_inspector: '.tool-inspector'
     node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
+    canvas_loading: '#workflow-canvas .galaxy-loading-shade'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
     license_selector: '[data-description="license select"]'
