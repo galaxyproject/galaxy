@@ -1297,6 +1297,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
             self.screenshot_if(screenshot_name)
 
+    def rule_builder_add_column_basename(self, column_label, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_column.wait_for_and_click()
+        with self.rule_builder_rule_editor("add-column-basename"):
+            self.select_set_value(
+                rule_builder.rule_editor_column_selector(rule_type="add-column-basename"), column_label
+            )
+            self.screenshot_if(screenshot_name)
+
     def rule_builder_remove_columns(self, column_labels, screenshot_name=None):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
