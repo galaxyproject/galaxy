@@ -216,6 +216,9 @@ interface Rootedit_collection_attributes extends Component {
     alert_info: SelectorTemplate;
     database_genome_tab: SelectorTemplate;
     datatypes_tab: SelectorTemplate;
+    convert_tab: SelectorTemplate;
+    converter_select: SelectorTemplate;
+    convert_btn: SelectorTemplate;
     data_value: SelectorTemplate;
     save_dbkey_btn: SelectorTemplate;
     save_datatype_btn: SelectorTemplate;

@@ -684,6 +684,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # stops on anything but None, so a condition returning False would not wait at all.
         return wait_on(lambda: f() or None, on_str or "custom wait", timeout)
 
+    def history_wait_for_new_collection(self, after_hid: int) -> dict[str, Any]:
+        """Wait for a collection with a hid above ``after_hid`` in the current history; return the newest."""
+
+        def new_collection():
+            collections = [
+                item
+                for item in self.history_contents()
+                if item["history_content_type"] == "dataset_collection" and item["hid"] > after_hid
+            ]
+            return collections[-1] if collections else None
+
+        return self._wait_on(new_collection, f"a collection after hid {after_hid}")
+
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
             contents = self.api_get(f"histories/{history_id}/contents")
@@ -2698,6 +2711,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         edit.datatype_select_search.wait_for_and_send_keys(new)
         edit.datatype_select_search.wait_for_and_send_enter()
         edit.save_datatype_btn.wait_for_and_click()
+
+    def collection_edit_convert(self, converter: str):
+        """On the collection edit view's Convert tab, run the converter named ``converter`` on every element."""
+        edit = self.components.edit_collection_attributes
+        edit.convert_tab.wait_for_and_click()
+        self.select_set_value(edit.converter_select, converter)
+        edit.convert_btn.wait_for_and_click()
 
     def display_dataset(self, hid):
         item = self.history_panel_item_component(hid=hid)

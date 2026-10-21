@@ -426,6 +426,9 @@ edit_collection_attributes:
     alert_info: 'div.alert-info'
     database_genome_tab: '.collection-edit-change-genome-nav'
     datatypes_tab: '.collection-edit-change-datatype-nav'
+    convert_tab: '.collection-edit-convert-datatype-nav'
+    converter_select: '.multiselect:has(#converter-tool)'
+    convert_btn: '.run-tool-collection-edit'
     data_value:
       type: xpath
       selector: '//span[text()[contains(., "${data_change}")]]'
