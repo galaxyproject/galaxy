@@ -145,12 +145,10 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         const sortBy: HistorySortByLiteral =
             ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
 
-        // Always pass a search string: without one the index endpoint falls back to a
-        // legacy listing that ignores sorting and doesn't report the total for paging.
         const { data, total } = await getMyHistories({
             limit,
             offset,
-            search: filter ?? "",
+            search: filter,
             sortBy,
             sortDesc: ctx.sortDesc ?? true,
         });
