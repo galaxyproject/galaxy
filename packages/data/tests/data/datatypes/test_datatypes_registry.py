@@ -5,6 +5,7 @@ import pytest
 from galaxy.datatypes import sniff
 from galaxy.datatypes.assembly import Velvet
 from galaxy.datatypes.registry import (
+    ConfigurationError,
     example_datatype_registry_for_sample,
     Registry,
 )
@@ -164,3 +165,38 @@ def test_load_datatypes_config_without_checkout_root(tmp_path, monkeypatch, as_e
     )
     assert isinstance(registry.get_datatype_by_extension("velvet"), Velvet)
     assert isinstance(registry.get_datatype_by_extension("custom_json"), Json)
+
+
+@pytest.mark.parametrize("asset_kind", ["converters", "display_applications"])
+@pytest.mark.parametrize("path_mode", ["missing_root", "explicit_root", "absolute"])
+def test_datatype_asset_paths_require_an_explicit_base(tmp_path, monkeypatch, asset_kind, path_mode):
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    monkeypatch.chdir(tmp_path)
+    config = ElementTree.fromstring("<datatypes><registration/></datatypes>")
+    registration = config.find("registration")
+    assert registration is not None
+    path_attribute = "converters_path" if asset_kind == "converters" else "display_path"
+    registration.set(path_attribute, str(assets) if path_mode == "absolute" else "assets")
+    registry = Registry()
+
+    def load(root_dir):
+        registry.load_datatypes(
+            root_dir=root_dir,
+            config=config,
+            use_converters=asset_kind == "converters",
+            use_display_applications=asset_kind == "display_applications",
+            use_build_sites=False,
+        )
+
+    if path_mode == "missing_root":
+        # Even an existing path in the worker's cwd must not supply an implicit root.
+        with pytest.raises(ConfigurationError, match="root_dir is required"):
+            load(None)
+    else:
+        unrelated = tmp_path / "unrelated"
+        unrelated.mkdir()
+        monkeypatch.chdir(unrelated)
+        load(tmp_path if path_mode == "explicit_root" else None)
+        resolved = registry.converters_path if asset_kind == "converters" else registry.display_applications_path
+        assert resolved == str(assets)

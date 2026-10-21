@@ -138,7 +138,15 @@ class Registry:
         Parse a datatypes XML file located at root_dir/config (if processing the Galaxy distributed config) or contained within
         an installed Tool Shed repository. An explicit config is also supported
         without a checkout root, as used by isolated metadata workers.
+        Relative converter and display application paths require an explicit root_dir.
         """
+
+        def resolve_asset_path(path: str) -> str:
+            if os.path.isabs(path):
+                return path
+            if root_dir is None:
+                raise ConfigurationError(f"root_dir is required to resolve relative datatype asset path: {path}")
+            return os.path.join(root_dir, path)
 
         def __import_module(full_path: str, datatype_module: str):
             path_entry_finder = pkgutil.get_importer(full_path)
@@ -168,7 +176,7 @@ class Registry:
                     self.converters_path_attr = registration.get(
                         "converters_path", "packages/data/src/galaxy/datatypes/converters"
                     )
-                    self.converters_path = os.path.join(root_dir or os.curdir, self.converters_path_attr)
+                    self.converters_path = resolve_asset_path(self.converters_path_attr)
                     if (
                         self.converters_path_attr == "packages/data/src/galaxy/datatypes/converters"
                         and not os.path.isdir(self.converters_path)
@@ -185,7 +193,7 @@ class Registry:
             if use_display_applications:
                 if not self.display_applications_path:
                     self.display_path_attr = registration.get("display_path", "display_applications")
-                    self.display_applications_path = os.path.join(root_dir or os.curdir, self.display_path_attr)
+                    self.display_applications_path = resolve_asset_path(self.display_path_attr)
                     if self.display_path_attr == "display_applications" and not os.path.isdir("display_applications"):
                         # Ditto as with converters_path
                         self.display_path_attr = os.path.abspath(
