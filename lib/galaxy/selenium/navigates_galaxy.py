@@ -2896,6 +2896,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Flip the builder's "Remove file extensions?" switch (on by default)."""
         self.components.collection_builders.list_wizard.remove_extensions.wait_for_and_click()
 
+    def collection_builder_rename_element(self, hid: int, name: str):
+        """Rename list element ``hid`` in the flat list builder (click its name, type, enter)."""
+        list_wizard = self.components.collection_builders.list_wizard
+        list_wizard.element_name(hid=hid).wait_for_and_click()
+        field = list_wizard.element_name_input(hid=hid).wait_for_visible()
+        self.aggressive_clear(field)
+        field.send_keys(name)
+        self.send_enter(field)
+
     def collection_builder_create(self):
         list_wizard_create = self.components.collection_builders.list_wizard.create
         modal_create = self.components.collection_builders.modals.create
