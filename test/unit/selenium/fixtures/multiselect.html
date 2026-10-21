@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Multiselect Test Page</title>
+  </head>
+  <body>
+    <!-- Shaped like an unranked vue-multiselect, as on servers whose selectors don't rank exact matches
+         first yet: typing filters by substring, the list keeps its order and Enter picks the first match. -->
+    <div class="multiselect" id="extension">
+      <div class="multiselect__select">open</div>
+      <input class="multiselect__input" />
+      <ul>
+        <li role="option">
+          <span class="multiselect__option"><span>metacyto_clr.txt</span></span>
+        </li>
+        <li role="option">
+          <span class="multiselect__option"><span>txt</span></span>
+        </li>
+        <li role="option">
+          <span class="multiselect__option"><span>tabular</span></span>
+        </li>
+      </ul>
+      <span id="selected"></span>
+    </div>
+    <script>
+      const input = document.querySelector(".multiselect__input");
+      const options = [...document.querySelectorAll("[role='option']")];
+      const select = (option) =>
+        (document.getElementById("selected").textContent =
+          option.textContent.trim());
+      input.addEventListener("input", () =>
+        options.forEach(
+          (o) =>
+            (o.style.display = o.textContent.includes(input.value)
+              ? ""
+              : "none"),
+        ),
+      );
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter")
+          select(options.find((o) => o.style.display !== "none"));
+      });
+      options.forEach((o) => o.addEventListener("click", () => select(o)));
+    </script>
+  </body>
+</html>
