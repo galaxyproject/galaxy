@@ -331,7 +331,7 @@ onUnmounted(() => {
                                         <fieldset v-else-if="activeStepWithConfig" disabled>
                                             <FormTool
                                                 v-if="workflowStepType === 'tool'"
-                                                style="overflow-x: hidden"
+                                                class="overflow-x-hidden"
                                                 :step="activeStepWithConfig"
                                                 :datatypes="datatypes" />
                                             <FormDefault v-else :step="activeStepWithConfig" :datatypes="datatypes" />
