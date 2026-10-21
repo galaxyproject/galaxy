@@ -342,6 +342,7 @@ function toggleDetailedView() {
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/mixins";
 
 .container-root {
     container-type: inline-size;
@@ -382,19 +383,13 @@ function toggleDetailedView() {
 
 // Full page: graph fills the space, splits 50/50 with the step card, and only the step body scrolls.
 .full-page {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;
-    min-height: 0;
+    @include fill-column;
     overflow: hidden;
 
     .graph-layout,
     .graph-wrapper,
     .graph-wrapper > .card {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 0;
-        min-height: 0;
+        @include fill-column;
     }
 
     .graph-pane {
