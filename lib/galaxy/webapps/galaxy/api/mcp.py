@@ -53,8 +53,8 @@ ApiKey = Annotated[
     str | None,
     Field(
         description=(
-            f"Galaxy API key. Leave unset when the MCP client sends it in an {API_KEY_HEADER} header; "
-            "if both are present, this argument wins."
+            "Galaxy API key. Omit it: the MCP client usually sends the key in an "
+            f"{API_KEY_HEADER} header. Only ask the user for a key if a call fails with 'API key required'."
         )
     ),
 ]
@@ -254,8 +254,9 @@ def get_mcp_app(gx_app):
         """Verify connection to Galaxy and return server + user information.
 
         Run this once per session to confirm the API key is valid and learn
-        the user's identity, the server URL, and basic capabilities. If the
-        MCP client sends the key in an x-api-key header, don't pass api_key.
+        the user's identity, the server URL, and basic capabilities. Call it
+        without api_key first; the MCP client usually sends the key in an
+        x-api-key header.
 
         Returns:
             Dict with `connected`, `user` (current user info), and `url`.
