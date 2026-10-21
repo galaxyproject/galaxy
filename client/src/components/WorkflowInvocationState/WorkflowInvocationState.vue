@@ -69,6 +69,8 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+// Selection sync drops `success` from the URL without remounting; keep the banner for this visit.
+const justInvoked = props.success;
 
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("invocation-header-collapsed");
 
@@ -321,7 +323,7 @@ async function onCancel() {
             v-if="props.isFullPage"
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
-            :success="props.success"
+            :success="justInvoked"
             collapsible
             :collapsed="headerCollapsed"
             @toggle="toggleHeaderCollapse">
