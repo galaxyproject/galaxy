@@ -120,4 +120,15 @@ describe("GAlert", () => {
         expect(wrapper.find(".alert").attributes("role")).toBe(role);
         expect(wrapper.find("[data-live-region]").attributes("data-live-region")).toBe("false");
     });
+
+    it("passes listeners it does not emit, like dblclick, to the alert", async () => {
+        const onDblclick = vi.fn();
+        const wrapper = mount(defineComponent({ render: () => h(GAlert, { show: true, onDblclick }, () => "Error") }), {
+            global: localVue,
+        });
+
+        await wrapper.get(".alert").trigger("dblclick");
+
+        expect(onDblclick).toHaveBeenCalledTimes(1);
+    });
 });
