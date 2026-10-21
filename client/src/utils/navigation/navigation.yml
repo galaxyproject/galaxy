@@ -1348,6 +1348,11 @@ invocations:
     step_card_hide: '[data-description="invocation graph hide step button"]'
     step_card_config_tab: '.invocation-step-card .invocation-step-config-tab > a.nav-link'
     step_card_config_form: '.invocation-step-card .invocation-view-step-config fieldset[disabled]'
+    step_card_expand: '[data-description="invocation graph expand step button"]'
+    step_card_modal: 'dialog[open][data-description="invocation graph expanded step modal"]'
+    step_card_modal_close: 'dialog[open][data-description="invocation graph expanded step modal"] .g-modal-close-button'
+    step_card_modal_config_tab: 'dialog[open][data-description="invocation graph expanded step modal"] .invocation-step-config-tab > a.nav-link'
+    step_card_body_config_tab: '.invocation-step-card > .card-body .invocation-step-config-tab > a.nav-link'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
     # Click the card title: until the RO-Crate logo loads, the card's centre is its "Learn more" link.
