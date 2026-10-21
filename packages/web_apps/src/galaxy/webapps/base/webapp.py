@@ -70,7 +70,9 @@ from galaxy.web.framework.middleware.static import CacheableStaticURLParser as S
 def _web_client_dist_dir() -> str | None:
     try:
         import galaxy.web_client
-    except ImportError:
+    except ModuleNotFoundError as exc:
+        if exc.name != "galaxy.web_client":
+            raise
         return None
     dist = os.path.join(os.path.dirname(galaxy.web_client.__file__), "dist")
     # Workspace syncs also install this package editable, without wheel assets.

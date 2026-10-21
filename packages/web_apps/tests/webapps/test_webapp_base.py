@@ -2,6 +2,7 @@
 Unit tests for ``galaxy.web.framework.webapp``
 """
 
+import builtins
 import logging
 import re
 import sys
@@ -10,6 +11,8 @@ from types import ModuleType
 from typing import (
     cast,
 )
+
+import pytest
 
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
@@ -150,3 +153,29 @@ def test_editable_client_without_bundled_assets(monkeypatch, tmp_path):
     dist = tmp_path / "dist"
     dist.mkdir()
     assert webapp_module._web_client_dist_dir() == str(dist)
+
+
+def test_missing_optional_client_package(monkeypatch):
+    monkeypatch.setitem(sys.modules, "galaxy.web_client", None)
+    assert webapp_module._web_client_dist_dir() is None
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        ImportError("client import failed"),
+        ModuleNotFoundError("client dependency missing", name="client_dependency"),
+    ],
+)
+def test_broken_client_package_import_is_not_hidden(monkeypatch, error):
+    original_import = builtins.__import__
+
+    def import_module(name, *args, **kwargs):
+        if name == "galaxy.web_client":
+            raise error
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", import_module)
+    with pytest.raises(type(error)) as raised:
+        webapp_module._web_client_dist_dir()
+    assert raised.value is error
