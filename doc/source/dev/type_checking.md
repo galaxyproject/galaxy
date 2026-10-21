@@ -4,7 +4,7 @@ Galaxy's Python code is type checked with [mypy](https://mypy.readthedocs.io/), 
 
 ## Running mypy
 
-Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks `packages/*/src`, `packages/*/tests`, `lib/` and `test/` exactly as the "Python linting" CI job does; CI runs it on the oldest and newest supported Python versions. The "Test Galaxy packages" job also runs mypy separately inside each package under `packages/`. The shared `mypy_path` in `mypy.ini` declares each package source root, so modules retain public names such as `galaxy.util.bytesize`; exemption pruning uses the same roots.
+Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks `packages/*/src`, `packages/*/tests` and `test/` exactly as the "Python linting" CI job does; CI runs it on the oldest and newest supported Python versions. The "Test Galaxy packages" job also runs mypy separately inside each package under `packages/`. Each distribution is checked from its `src` directory, and other workspace packages resolve through their installed editable distributions. This preserves public module names such as `galaxy.util.bytesize` without a `mypy_path` list. Exemption pruning uses the same working directories and scope.
 
 ## New code must be fully typed
 
@@ -35,7 +35,7 @@ mypy doesn't report red list entries that are no longer needed, so they can outl
 
 ## Test code
 
-Test code is generally exempt from the strict defaults: `galaxy_test`, `tool_shed.test` and the packages under `test/` (which are seen as `tests.*` in the per-package runs). The exemptions appear between the general `[mypy]` section and the green list. Test modules already on the green list explicitly retain the strict flags. Annotating other tests is still welcome.
+Test code is generally exempt from the strict defaults: `galaxy_test`, `tool_shed.test`, the packages under `test/`, and member tests checked from the repository root as `packages.*.tests.*`. The exemptions appear between the general `[mypy]` section and the green list. Test modules already on the green list explicitly retain the strict flags. Annotating other tests is still welcome.
 
 ## The green list
 
