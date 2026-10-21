@@ -1,0 +1,131 @@
+import logging
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
+
+import pytest
+
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    User,
+)
+from galaxy.tools.data import ToolDataTableManager
+from galaxy.tools.parameters.basic import SelectToolParameter
+from galaxy.tools.wrappers import SelectToolParameterWrapper
+from galaxy.util import XML
+from galaxy.util.bunch import Bunch
+from galaxy.work.context import WorkRequestContext
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
+
+@pytest.fixture
+def table_select(tmp_path):
+    loc = tmp_path / "refs.loc"
+    loc.write_text(
+        "hg38\tHuman old\t4.3\t/a/hg38.fa\n"
+        "hg38\tHuman current\t5.0\t/b/hg38.fa\n"
+        "hg38\tHuman alternate\t5.0\t/c/hg38.fa\n"
+        "mm10\tMouse\t5.0\t/mouse.fa\n"
+    )
+    config = tmp_path / "tables.xml"
+    config.write_text(f"""<tables><table name="refs">
+        <columns>value, name, version, path</columns><file path="{loc}" />
+    </table></tables>""")
+    app = MockApp()
+    app.tool_data_tables = ToolDataTableManager(tmp_path, str(config))
+    trans = WorkRequestContext(app=app)
+    tool = cast("Tool", Bunch(app=app, profile=26.1))
+
+    def build(options_xml='<options from_data_table="refs"/>', multiple=False):
+        param = SelectToolParameter(
+            tool, XML(f'<param name="ref" type="select" multiple="{multiple}">{options_xml}</param>')
+        )
+        return param, trans
+
+    return build
+
+
+@pytest.mark.parametrize("multiple", [False, True])
+@pytest.mark.parametrize(
+    "filters, expected_options, path, count",
+    [
+        ("", [("Human old", "hg38", False), ("Mouse", "mm10", False)], "/a/hg38.fa", 4),
+        (
+            '<filter type="static_value" column="version" value="5.0"/>',
+            [("Human current", "hg38", False), ("Mouse", "mm10", False)],
+            "/b/hg38.fa",
+            3,
+        ),
+        (
+            '<filter type="static_value" column="version" value="5.0"/>'
+            '<filter type="sort_by" column="path" reverse_sort_order="True"/>',
+            [("Mouse", "mm10", False), ("Human alternate", "hg38", False)],
+            "/c/hg38.fa",
+            3,
+        ),
+    ],
+)
+def test_table_dropdown_collapses_after_filters(table_select, caplog, multiple, filters, expected_options, path, count):
+    param, trans = table_select(f'<options from_data_table="refs">{filters}</options>', multiple=multiple)
+    for reload in (False, True):
+        if reload:
+            trans.app.tool_data_tables.reload_tables()
+        options = param.to_dict(trans)["options"]
+        assert options == expected_options
+        raw_options = param.get_options(trans, {})
+        assert len(raw_options) == count
+        assert len(trans.app.tool_data_tables["refs"].data) == 4
+        # Both labels remain valid aliases, even when hidden in the dropdown.
+        expected = ["hg38"] if multiple else "hg38"
+        for alias in ("Human current", "Human alternate"):
+            assert param.from_json([alias] if multiple else alias, trans) == expected
+        assert param.from_json(expected, trans) == expected
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            assert SelectToolParameterWrapper(param, expected).fields.path == path
+        assert any(
+            record.levelno == logging.WARNING and "using the first one" in record.message for record in caplog.records
+        )
+
+
+def test_table_dropdown_uses_configured_value_column(table_select):
+    param, trans = table_select("""<options from_data_table="refs">
+        <column name="value" index="3"/><column name="name" index="1"/><column name="path" index="3"/>
+    </options>""")
+    assert [option[1] for option in param.to_dict(trans)["options"]] == [
+        "/a/hg38.fa",
+        "/b/hg38.fa",
+        "/c/hg38.fa",
+        "/mouse.fa",
+    ]
+    assert SelectToolParameterWrapper(param, "/c/hg38.fa").fields.path == "/c/hg38.fa"
+
+
+def test_table_dropdown_keeps_dataset_choices(table_select, monkeypatch):
+    param, trans = table_select()
+    trans = WorkRequestContext(app=trans.app, user=User())
+    datasets = [HistoryDatasetAssociation(id=1), HistoryDatasetAssociation(id=2)]
+    # User bundles append the HDA after the configured table columns.
+    monkeypatch.setattr(
+        param.options,
+        "get_user_options",
+        lambda user: [["hg38", f"Bundle {hda.id}", "5.0", "/bundle/hg38.fa", hda] for hda in datasets],
+    )
+    assert param.to_dict(trans)["options"] == [
+        ("Human old", "hg38", False),
+        ("Mouse", "mm10", False),
+        ("Bundle 1", {"src": "hda", "id": trans.security.encode_id(1)}, False),
+        ("Bundle 2", {"src": "hda", "id": trans.security.encode_id(2)}, False),
+    ]
+
+
+def test_static_dropdown_is_unchanged(table_select):
+    param, trans = table_select(
+        '<option value="hg38">First</option><option value="hg38" selected="true">Second</option>'
+    )
+    # XML static option parsing already keeps the last option for a duplicated value.
+    assert param.to_dict(trans)["options"] == [("Second", "hg38", True)]

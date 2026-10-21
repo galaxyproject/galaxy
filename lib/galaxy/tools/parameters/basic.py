@@ -1225,6 +1225,18 @@ class SelectToolParameter(ToolParameter):
 
         # Get options, value.
         options = cast(list[ParameterOption], self.get_options(trans, other_values))
+        if self.options and self.options.tool_data_table_name:
+            # Collapse displayed choices after filtering, using the tool's submitted value.
+            # Keep raw options for validation aliases and ambiguous field lookup warnings.
+            seen_values: set[str] = set()
+            display_options = []
+            for option in options:
+                if option.dataset is None:
+                    if option.value in seen_values:
+                        continue
+                    seen_values.add(option.value)
+                display_options.append(option)
+            options = display_options
         d["options"] = serialize_options(trans.security, options)
         d["display"] = self.display
         d["multiple"] = self.multiple
