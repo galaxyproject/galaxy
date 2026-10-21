@@ -207,7 +207,7 @@ pulsar-relay-client==0.2.2
 py-key-value-aio==0.4.6
 pyasn1==0.6.4
 pyasn1-modules==0.4.2
-pycparser==3.11 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
+pycparser==3.11 ; implementation_name == 'pypy' or (implementation_name != 'PyPy' and implementation_name != 'pypy' and platform_python_implementation != 'PyPy')
 pycryptodome==4.0.0
 pydantic==2.14.1
 pydantic-ai==2.54.0 ; python_full_version < '3.11'

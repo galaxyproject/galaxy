@@ -78,6 +78,9 @@ jobs:
       - name: Install dependencies
         run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
+      - name: Install Tool Shed for schema generation
+        run: uv sync --locked --inexact --package galaxy-tool-shed --all-extras
+        working-directory: 'galaxy root'
       - name: Lint schema
         run: make lint-api-schema
         working-directory: 'galaxy root'

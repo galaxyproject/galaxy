@@ -169,18 +169,25 @@ def test_galaxy_directory(monkeypatch):
     assert os.path.isfile(os.path.join(galaxy_dir, "run.sh"))
 
 
-def test_galaxy_directory_from_package_and_unrelated_cwd(monkeypatch, tmp_path):
+def test_galaxy_directory_from_editable_install(monkeypatch, tmp_path):
     root = Path(util.galaxy_directory())
     assert util.is_galaxy_root(root)
+    # A wheel install has no source checkout. Model the editable install
+    # explicitly so this test also runs in the isolated wheel test suite.
+    monkeypatch.setattr(util, "_source_checkout", root)
+    monkeypatch.setattr(util, "GALAXY_INCLUDES_ROOT", None)
     for cwd in (root, root / "packages/util", tmp_path):
         monkeypatch.chdir(cwd)
         assert util.galaxy_directory() == str(root)
-        assert util.galaxy_root_path == root
 
 
 def test_galaxy_directory_without_checkout(monkeypatch, tmp_path):
+    root = Path(util.galaxy_directory())
     monkeypatch.setattr(util, "_source_checkout", None)
     monkeypatch.setattr(util, "GALAXY_INCLUDES_ROOT", None)
+    for cwd in (root, root / "packages/util"):
+        monkeypatch.chdir(cwd)
+        assert util.galaxy_directory() == str(root)
     monkeypatch.chdir(tmp_path)
     with pytest.raises(util.GalaxyRootNotFound):
         util.galaxy_directory()

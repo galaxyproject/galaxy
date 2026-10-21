@@ -136,7 +136,8 @@ class Registry:
     ) -> None:
         """
         Parse a datatypes XML file located at root_dir/config (if processing the Galaxy distributed config) or contained within
-        an installed Tool Shed repository.
+        an installed Tool Shed repository. An explicit config is also supported
+        without a checkout root, as used by isolated metadata workers.
         """
 
         def __import_module(full_path: str, datatype_module: str):
@@ -149,7 +150,7 @@ class Registry:
             spec.loader.exec_module(module)
             return module
 
-        if root_dir and config:
+        if config is not None:
             compressed_sniffers: dict[type[Data], list[Data]] = {}
             if isinstance(config, (str, os.PathLike)):
                 # Parse datatypes_conf.xml
@@ -167,7 +168,7 @@ class Registry:
                     self.converters_path_attr = registration.get(
                         "converters_path", "packages/data/src/galaxy/datatypes/converters"
                     )
-                    self.converters_path = os.path.join(root_dir, self.converters_path_attr)
+                    self.converters_path = os.path.join(root_dir or os.curdir, self.converters_path_attr)
                     if (
                         self.converters_path_attr == "packages/data/src/galaxy/datatypes/converters"
                         and not os.path.isdir(self.converters_path)
@@ -184,7 +185,7 @@ class Registry:
             if use_display_applications:
                 if not self.display_applications_path:
                     self.display_path_attr = registration.get("display_path", "display_applications")
-                    self.display_applications_path = os.path.join(root_dir, self.display_path_attr)
+                    self.display_applications_path = os.path.join(root_dir or os.curdir, self.display_path_attr)
                     if self.display_path_attr == "display_applications" and not os.path.isdir("display_applications"):
                         # Ditto as with converters_path
                         self.display_path_attr = os.path.abspath(

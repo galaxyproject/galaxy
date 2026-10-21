@@ -73,10 +73,9 @@ jobs:
           planemo lint --skip CitationsMissing,HelpEmpty,HelpMissing --report_level warn "${TOOL_ARRAY[@]}"
       - name: Run tests
         run: |
-          mapfile -t TOOL_ARRAY < tool_list.txt
-          planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
+          uv run --no-project --python ${{ matrix.python-version }} 'galaxy root/scripts/test_converters.py' tool_list.txt
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: Converter test results (${{ matrix.python-version }})
-          path: tool_test_output.html
+          path: 'galaxy root/run_converter_tests.html'

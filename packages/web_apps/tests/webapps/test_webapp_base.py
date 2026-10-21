@@ -4,6 +4,9 @@ Unit tests for ``galaxy.web.framework.webapp``
 
 import logging
 import re
+import sys
+from pathlib import Path
+from types import ModuleType
 from typing import (
     cast,
 )
@@ -11,6 +14,7 @@ from typing import (
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.structured_app import BasicSharedApp
+from galaxy.webapps.base import webapp as webapp_module
 from galaxy.webapps.base.webapp import (
     GalaxyWebTransaction,
     WebApplication,
@@ -111,3 +115,38 @@ class TestGalaxyWebTransactionHeaders:
         trans.request.headers["Origin"] = "http://öbb.at"
         trans.set_cors_headers()
         assert trans.response.headers["access-control-allow-origin"] == "http://öbb.at"
+
+
+def test_static_dist_falls_back_to_checkout_for_editable_client(monkeypatch, tmp_path):
+    static = tmp_path / "static"
+    dist = static / "dist"
+    dist.mkdir(parents=True)
+    asset = dist / "analysis.bundled.js"
+    asset.write_text("window.galaxy = {};")
+    # An editable galaxy-web-client has no bundled dist directory.
+    monkeypatch.setattr(webapp_module, "default_static_dist_dir", None)
+    mapping = webapp_module.build_url_map(None, {"static_dir": str(static)})
+    assert Path(mapping["/static/dist"].directory) == dist
+
+
+def test_static_dist_prefers_installed_client_and_allows_override(monkeypatch, tmp_path):
+    bundled = tmp_path / "wheel" / "dist"
+    bundled.mkdir(parents=True)
+    monkeypatch.setattr(webapp_module, "default_static_dist_dir", str(bundled))
+    mapping = webapp_module.build_url_map(None, {})
+    assert Path(mapping["/static/dist"].directory) == bundled
+    custom = tmp_path / "custom"
+    custom.mkdir()
+    mapping = webapp_module.build_url_map(None, {"static_dist_dir": str(custom)})
+    assert Path(mapping["/static/dist"].directory) == custom
+
+
+def test_editable_client_without_bundled_assets(monkeypatch, tmp_path):
+    client = ModuleType("galaxy.web_client")
+    client.__file__ = str(tmp_path / "__init__.py")
+    monkeypatch.setitem(sys.modules, "galaxy.web_client", client)
+    monkeypatch.setattr(galaxy, "web_client", client, raising=False)
+    assert webapp_module._web_client_dist_dir() is None
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    assert webapp_module._web_client_dist_dir() == str(dist)

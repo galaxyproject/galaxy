@@ -66,12 +66,19 @@ from galaxy.web.framework import (
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
 
-try:
-    import galaxy.web_client
 
-    default_static_dist_dir = os.path.join(os.path.dirname(galaxy.web_client.__file__), "dist")
-except ImportError:
-    default_static_dist_dir = None  # type: ignore[assignment]
+def _web_client_dist_dir() -> str | None:
+    try:
+        import galaxy.web_client
+    except ImportError:
+        return None
+    dist = os.path.join(os.path.dirname(galaxy.web_client.__file__), "dist")
+    # Workspace syncs also install this package editable, without wheel assets.
+    # In that case serve the client staged in the checkout's static/dist.
+    return dist if os.path.isdir(dist) else None
+
+
+default_static_dist_dir = _web_client_dist_dir()
 
 log = logging.getLogger(__name__)
 

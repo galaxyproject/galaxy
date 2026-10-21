@@ -1,5 +1,13 @@
+from xml.etree import ElementTree
+
+import pytest
+
 from galaxy.datatypes import sniff
-from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.datatypes.assembly import Velvet
+from galaxy.datatypes.registry import (
+    example_datatype_registry_for_sample,
+    Registry,
+)
 from galaxy.datatypes.text import Json
 
 
@@ -135,3 +143,24 @@ def test_rmsx_manifest_visualization_registration():
     assert registry.mimetypes_by_extension["rmsx.json"] == "application/json"
     assert "rmsx.json" in registry.upload_file_formats
     assert registry.get_all_visualization_mappings()["rmsx.json"]["visualization"] == "rmsxflipbook"
+
+
+@pytest.mark.parametrize("as_element", [False, True])
+def test_load_datatypes_config_without_checkout_root(tmp_path, monkeypatch, as_element):
+    config = tmp_path / "registry.xml"
+    config.write_text(
+        "<datatypes><registration>"
+        '<datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet"/>'
+        '<datatype extension="custom_json" type="galaxy.datatypes.text:Json"/>'
+        "</registration></datatypes>"
+    )
+    monkeypatch.chdir(tmp_path)
+    registry = Registry()
+    registry.load_datatypes(
+        config=ElementTree.parse(config).getroot() if as_element else config,
+        use_converters=False,
+        use_display_applications=False,
+        use_build_sites=False,
+    )
+    assert isinstance(registry.get_datatype_by_extension("velvet"), Velvet)
+    assert isinstance(registry.get_datatype_by_extension("custom_json"), Json)
