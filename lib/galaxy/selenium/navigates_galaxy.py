@@ -793,6 +793,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def history_panel_wait_for_hid_datatype(self, hid: int, datatype: str):
+        datatype_component = self.history_panel_item_component(hid=hid).datatype
+        self._wait_on(lambda: datatype_component.wait_for_text() == datatype, f"hid {hid} datatype to be [{datatype}]")
+
     def history_panel_wait_for_and_select(self, hids: list[int]):
         """
         Waits for uploads to pass through queued, running, ok. Not all the states are not guaranteed
