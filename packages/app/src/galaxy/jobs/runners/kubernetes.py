@@ -560,8 +560,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
         this has been set.
         $GALAXY_VIRTUAL_ENV is set to None to avoid the galaxy virtualenv inside the tool container.
-        $GALAXY_LIB is set to None to avoid changing the python path inside the container.
-        Setting these variables changes the described behaviour in the job file shell script
+        Setting this variable changes the described behaviour in the job file shell script
         used to execute the tool inside the container.
         """
         container = self._find_container(ajs.job_wrapper)

@@ -165,11 +165,6 @@ client/docs/dist
 # Webpack stats
 client/webpack-stats.json
 
-# Packages
-packages/*/build
-packages/*/dist
-packages/meta/requirements.txt
-
 # Standalone script + main, or build into dist
 config/plugins/**/static/dist
 config/plugins/**/static/script.js

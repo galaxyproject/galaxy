@@ -46,7 +46,6 @@ class MockJobWrapper:
         self.tool_working_directory = tool_working_directory
         self.requires_setting_metadata = True
         self.job_destination = JobDestination(id=destination_id, params=destination_params or {})
-        self.galaxy_lib_dir = os.path.abspath("lib")
         self.job = model.Job()
         self.job_id = job_id
         self.job.id = job_id

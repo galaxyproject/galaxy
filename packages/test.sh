@@ -103,7 +103,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         mypy .
         cd ..
         if [ -d tests ]; then
-            mypy tests
+            (cd ../.. && mypy "packages/$package_dir/tests")
         fi
 
         ${BUILD_WHEEL_CMD} -o dist

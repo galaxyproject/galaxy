@@ -57,15 +57,12 @@ STRICT_FLAGS = set(FLAG_FOR_CODE.values())
 # Values configparser reads as False
 FALSE_VALUES = {"false", "no", "off", "0"}
 
-# Use the same source and test scope as make mypy; mypy.ini defines the
-# package import roots for both this command and module-name lookup.
+# Use the same source/test scope and working directories as make mypy.
 RUNS = [
-    (
-        ".",
-        sorted(glob.glob(os.path.join(ROOT, "packages/*/src")))
-        + sorted(glob.glob(os.path.join(ROOT, "packages/*/tests")))
-        + ["test"],
-    )
+    (os.path.relpath(source, ROOT), ["."]) for source in sorted(glob.glob(os.path.join(ROOT, "packages/*/src")))
+] + [
+    (".", sorted(glob.glob(os.path.join(ROOT, "packages/*/tests")))),
+    ("test", ["."]),
 ]
 
 SECTION_RE = re.compile(r"^\[(?P<name>[^\]]+)\]\s*$")
@@ -221,14 +218,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         config_file = os.path.join(tmp, "mypy.ini")
         with open(config_file, "w") as f:
-            f.write(
-                "\n".join(
-                    line.replace("$MYPY_CONFIG_FILE_DIR", ROOT)
-                    for i, line in enumerate(lines)
-                    if i not in entries.values()
-                )
-                + "\n"
-            )
+            f.write("\n".join(line for i, line in enumerate(lines) if i not in entries.values()) + "\n")
         module_names = ModuleNames(config_file)
         failing: set[tuple[str, str]] = set()
         unexpected: list[str] = []

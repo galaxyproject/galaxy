@@ -434,7 +434,7 @@ def _validate_framework_test_ref(label: str, ref: str, workflow_dir: str) -> str
 def validate_api_test_refs(examples: list["Example"]) -> list[str]:
     errors: list[str] = []
     api_test_dir = os.path.join(galaxy_directory(), "packages", "test_api", "src", "galaxy_test", "api")
-    workflow_dir = os.path.join(galaxy_directory(), "lib", "galaxy_test", "workflow")
+    workflow_dir = os.path.join(galaxy_directory(), "test", "workflow")
     for ex in examples:
         if ex.tests and ex.tests.tool_runtime and isinstance(ex.tests.tool_runtime, ToolRuntimeApi):
             error = _validate_api_test_ref(ex.label, ex.tests.tool_runtime.api_test, api_test_dir)

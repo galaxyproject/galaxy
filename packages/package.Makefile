@@ -1,14 +1,8 @@
 # Location of virtualenv used for development.
 VENV?=.venv
-# Open resource on Mac OS X or Linux
-OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+# Source virtualenv to execute commands that need the root environment.
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
-UPSTREAM?=galaxyproject
 SOURCE_DIR?=src/galaxy
-BUILD_SCRIPTS_DIR=../build_scripts
-DEV_RELEASE?=0
-VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
 PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 # Distribution name used to scope uv to this package in the single root
@@ -23,6 +17,10 @@ BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
 DIST=dist
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
+# Hooks for members that must generate bundled assets before packaging
+# (packages/web_client builds the client and checks its artifacts).
+DIST_PREREQS?=
+DIST_CHECK_EXTRA?=
 
 .PHONY: clean-pyc clean-build docs clean
 
@@ -62,7 +60,7 @@ _test:
 
 test: setup-venv _test
 
-_dist:
+_dist: $(DIST_PREREQS)
 	uv build -o $(DIST)
 	ls -l $(DIST)
 
@@ -70,7 +68,9 @@ dist: clean _dist
 
 _mypy:
 	@if [ -n "$(wildcard src tests)" ]; then \
-	    cd ../.. && uv run --locked --inexact --package $(UV_PACKAGE) --all-extras --group typecheck mypy $(addprefix packages/$(notdir $(CURDIR))/, $(wildcard src tests)); \
+	    uv run --locked --inexact --package $(UV_PACKAGE) --all-extras --group typecheck bash -ec '\
+	        if [ -d src ]; then (cd src && mypy .); fi; \
+	        if [ -d tests ]; then (cd ../.. && mypy packages/$(notdir $(CURDIR))/tests); fi'; \
 	fi
 
 mypy: _mypy
@@ -82,18 +82,4 @@ lint: _lint
 
 lint-dist:
 	uvx --from twine==6.2.0 twine check $(DIST)/*
-
-commit-version:
-	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
-
-new-version:
-	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/new_version.py $(VERSION)
-
-release-local: commit-version release-artifacts new-version
-
-push-release:
-	# git push $(UPSTREAM) $(BRANCH)
-	# git push upstream $(PROJECT_NAME)-$(VERSION)
-	echo "Makefile doesn't manually push release."
-
-release: release-local push-release
+	$(DIST_CHECK_EXTRA)

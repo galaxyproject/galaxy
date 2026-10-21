@@ -68,5 +68,5 @@ jobs:
       - name: Run OIDC flow-state tests with PostgreSQL
         env:
           GALAXY_TEST_OIDC_DATABASE_URL: ${{ env.GALAXY_TEST_DBURI }}
-        run: ./run_tests.sh -unit packages/auth/tests/authnz/test_flow_state.py
+        run: ./run_tests.sh -unit packages/web_apps/tests/authnz/test_flow_state.py
         working-directory: 'galaxy root'

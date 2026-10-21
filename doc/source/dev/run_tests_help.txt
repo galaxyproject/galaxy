@@ -40,8 +40,7 @@ The main test types are as follows:
    quickly test just a component or a few components of Galaxy's backend code.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in packages/test_selenium/src/galaxy_test/selenium.
-- ToolShed: These are web tests that use the older Python web testing
-   framework twill to test ToolShed related functionality. These are
+- ToolShed: These are tests that test ToolShed related functionality. These are
    located in packages/tool_shed/src/tool_shed/test.
 
 Python testing is done via pytest. Specific tests can be selected
@@ -149,7 +148,7 @@ Selenium can also be setup a remote service - to target a service set
 GALAXY_TEST_SELENIUM_REMOTE to 1. The target service may be configured
 with GALAXY_TEST_SELENIUM_REMOTE_PORT and
 GALAXY_TEST_SELENIUM_REMOTE_HOST. By default Galaxy will assume the
-remote service being targetted is CHROME - but this can be overridden
+remote service being targeted is CHROME - but this can be overridden
 with GALAXY_TEST_SELENIUM_BROWSER.
 
 In this remote mode, please ensure that GALAXY_TEST_HOST is set to a
@@ -197,8 +196,9 @@ Extra options:
                        be used, and reported on stderr at the end of the run.
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy
                        functional tests).
- --skip-venv           Do not create .venv (passes this flag to
-                       common_startup.sh)
+ --no-sync             Use the existing test environment without syncing it.
+                       By default uv creates/syncs .venv; set
+                       UV_PROJECT_ENVIRONMENT to choose another environment.
  --external_url        External URL to use for Galaxy testing (only certain
                        tests).
  --external_master_key Master API key used to configure external tests.
@@ -246,7 +246,7 @@ GALAXY_TEST_VERBOSE_ERRORS      Enable more verbose errors during API tests.
 GALAXY_TEST_UPLOAD_ASYNC        Upload tool test inputs asynchronously (may
                                 overwhelm sqlite database).
 GALAXY_TEST_RAW_DIFF            Don't slice up tool test diffs to keep output
-                                managable - print all output. (default off)
+                                manageable - print all output. (default off)
 GALAXY_TEST_DEFAULT_WAIT        Max time allowed for a tool test before Galaxy
                                 gives up (default 86400) - tools may define a
                                 maxseconds attribute to extend this.
@@ -293,12 +293,14 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
-GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
+GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages.
+GALAXY_TEST_LOG_LEVEL           Set Galaxy server log level for tests
+                                (default: DEBUG). E.g. WARNING to reduce output.
 GALAXY_TEST_AXE_SCRIPT_URL      URL of aXe script to use for accessibility testing.
-GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibilty testing when
+GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibility testing when
                                 running selenium tests.
 
-We're tyring annotate API and Selenium tests with the resources they require
+We're trying annotate API and Selenium tests with the resources they require
 and create to make them more appropriate to run on established Galaxy instances.
 The following variables can be used to disable certain classes of properly tests.
 

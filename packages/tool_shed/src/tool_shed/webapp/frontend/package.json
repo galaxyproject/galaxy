@@ -49,7 +49,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.5.0",
     "@fortawesome/vue-fontawesome": "^3.0.6",
     "@galaxyproject/brand-tokens": "^0.1.0",
-    "@galaxyproject/galaxy-ui": "file:../../../../client/packages/ui",
+    "@galaxyproject/galaxy-ui": "file:../../../../../../client/packages/ui",
     "@quasar/extras": "^1.12.4",
     "@vueuse/core": "^11.0.0",
     "date-fns": "^2.29.3",

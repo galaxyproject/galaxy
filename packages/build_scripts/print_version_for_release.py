@@ -7,13 +7,10 @@ _version_re = re.compile(r"^version\s*=\s*\"?([^\"\s]+)\"?", flags=re.MULTILINE)
 
 
 def _project_version_file(project_directory):
-    # pyproject.toml is canonical after the setup.cfg -> pyproject.toml migration;
-    # setup.cfg is kept as a fallback for packages that have not migrated yet.
-    for name in ("pyproject.toml", "setup.cfg"):
-        path = os.path.join(project_directory, name)
-        if os.path.exists(path):
-            return path
-    raise FileNotFoundError(f"No pyproject.toml or setup.cfg found in {project_directory}")
+    path = os.path.join(project_directory, "pyproject.toml")
+    if os.path.exists(path):
+        return path
+    raise FileNotFoundError(f"No pyproject.toml found in {project_directory}")
 
 
 def main():

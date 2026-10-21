@@ -1,4 +1,4 @@
-GALAXY_ROOT=../../../..
+GALAXY_ROOT=../../../../../../
 
 client:
 	pnpm build

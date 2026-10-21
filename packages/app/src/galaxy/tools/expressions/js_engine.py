@@ -42,9 +42,8 @@ MEMORY_LIMIT_BYTES = 200 * 1024 * 1024
 
 # Absolute path to the out-of-process worker, launched under an isolation command
 # (e.g. bubblewrap) when one is configured. It is run by path rather than with
-# ``-m`` so it works even when ``galaxy_ext`` is not importable in a bare subprocess
-# (e.g. run-from-source deployments that add lib/ to sys.path without exporting
-# PYTHONPATH). The worker itself imports no Galaxy code.
+# ``-m`` so it works even when ``galaxy_ext`` is not importable in a bare
+# subprocess. The worker itself imports no Galaxy code.
 WORKER_SCRIPT = os.path.abspath(sandbox_worker.__file__)
 
 # Extra time granted to the jailed subprocess over the in-VM timeout before it is

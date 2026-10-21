@@ -124,7 +124,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
-from galaxy.util.properties import running_from_source
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
@@ -1026,7 +1025,6 @@ class MinimalJobWrapper(HasResourceParameters):
         self._dependency_shell_commands = None
         # Tool versioning variables
         self.version_string = ""
-        self.__galaxy_lib_dir = None
         # If the job has an object_store_id ensure working directory is setup, otherwise
         # wait for that to be assigned before configuring it. Either way the working
         # directory does not to be configured on this object before prepare() is called.
@@ -1218,12 +1216,6 @@ class MinimalJobWrapper(HasResourceParameters):
         return self.__commands_in_new_shell
 
     @property
-    def galaxy_lib_dir(self):
-        if self.__galaxy_lib_dir is None and running_from_source:
-            self.__galaxy_lib_dir = os.path.abspath("lib")  # cwd = galaxy root
-        return self.__galaxy_lib_dir
-
-    @property
     def galaxy_virtual_env(self):
         if virtual_env := os.environ.get("VIRTUAL_ENV"):
             return virtual_env
@@ -1339,8 +1331,6 @@ class MinimalJobWrapper(HasResourceParameters):
                 return False
         job.command_line = self.command_line
 
-        # Ensure galaxy_lib_dir is set in case there are any later chdirs
-        self.galaxy_lib_dir  # noqa: B018
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, "registry.xml"))
@@ -3050,9 +3040,6 @@ class TaskWrapper(JobWrapper):
                 *_,
             ) = tool_evaluator.build()
             self.extra_filenames.extend(extra_filenames)
-
-        # Ensure galaxy_lib_dir is set in case there are any later chdirs
-        self.galaxy_lib_dir  # noqa: B018
 
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished

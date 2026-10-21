@@ -93,7 +93,6 @@ JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = (
 )
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
-GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
 GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
 
 
@@ -501,9 +500,8 @@ class BaseJobRunner:
                     log.exception("Metadata task failed")
                     return
             else:
-                lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
                 venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-                external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
+                external_metadata_script = f"{venv} {external_metadata_script}"
                 if resolve_requirements:
                     set_metadata_tool = self.app.datatypes_registry.set_external_metadata_tool
                     assert set_metadata_tool is not None
@@ -543,7 +541,6 @@ class BaseJobRunner:
         options = dict(
             tmp_dir_creation_statement=tmp_dir_creation_statement,
             job_instrumenter=job_instrumenter,
-            galaxy_lib=job_wrapper.galaxy_lib_dir,
             galaxy_virtual_env=job_wrapper.galaxy_virtual_env,
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath(job_wrapper.working_directory),

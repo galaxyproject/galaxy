@@ -57,7 +57,6 @@ DEFAULT_INTEGRITY_COUNT = 35
 DEFAULT_INTEGRITY_SLEEP = 0.25
 REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command"]
 OPTIONAL_TEMPLATE_PARAMS: dict[str, Any] = {
-    "galaxy_lib": None,
     "galaxy_virtual_env": None,
     "headers": "",
     "env_setup_commands": [],
@@ -83,8 +82,8 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec')
     >>> '\\nuptime\\n' in script
     True
-    >>> 'GALAXY_LIB="None"' in script
-    True
+    >>> "GALAXY_LIB" in script
+    False
     >>> script.startswith('#!/bin/sh\\n#PBS -test\\n')
     False
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', headers='#PBS -test')

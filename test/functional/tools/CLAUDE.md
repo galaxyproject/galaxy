@@ -267,7 +267,7 @@ To validate YAML tools programmatically using the Galaxy parser (useful for conf
 ```bash
 cd /path/to/galaxy
 source .venv/bin/activate
-PYTHONPATH=lib:$PYTHONPATH python -c "
+python -c "
 from galaxy.tool_util.parser.factory import get_tool_source
 
 tool_path = 'test/functional/tools/parameters/your_tool.yml'
@@ -279,9 +279,8 @@ print(f'Version: {tool_source.parse_version()}')
 ```
 
 **Important**: When running Galaxy Python code:
-1. **Activate the virtual environment**: `source .venv/bin/activate` (from Galaxy root)
-2. **Set PYTHONPATH**: `PYTHONPATH=lib:$PYTHONPATH` to ensure Galaxy modules can be imported
-3. Run from the Galaxy root directory
+1. **Activate the virtual environment**: `source .venv/bin/activate` (from Galaxy root) — the workspace's editable installs provide the Galaxy modules
+2. Run from the Galaxy root directory
 
 This approach works for both XML and YAML tools and validates that the tool can be successfully parsed by Galaxy's tool loading system.
 

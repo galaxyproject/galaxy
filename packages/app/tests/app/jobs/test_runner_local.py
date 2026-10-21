@@ -1,11 +1,15 @@
 import os
 import signal
+import sys
 import threading
 from typing import (
     cast,
     TYPE_CHECKING,
 )
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import psutil
 import pytest
@@ -15,7 +19,10 @@ from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs import MinimalJobWrapper
-from galaxy.jobs.runners import local
+from galaxy.jobs.runners import (
+    JobState,
+    local,
+)
 from galaxy.util.unittest import TestCase
 
 if TYPE_CHECKING:
@@ -89,11 +96,25 @@ class TestLocalJobRunner(TestCase, UsesTools):
         assert self.job_wrapper.exit_code == 4
         assert not hasattr(self.job_wrapper, "fail_message")
 
-    def test_galaxy_lib_on_path(self):
-        self.job_wrapper.command_line = '''python -c "import galaxy.util"'''
-        runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+    def test_galaxy_importable_without_source_path(self):
+        # Framework tools must activate Galaxy's environment without relying on
+        # an inherited Python search path or virtualenv activation.
+        self.job_wrapper.galaxy_virtual_env = sys.prefix
+        self.job_wrapper.command_line = '''python -c "import galaxy.util; import sys; print(sys.prefix)"'''
+        with patch.object(type(self.job_wrapper.tool), "requires_galaxy_python_environment", True):
+            runner = local.LocalJobRunner(self.app, 1)
+            runner._environ["PATH"] = os.defpath
+            for name in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"):
+                runner._environ.pop(name, None)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.exit_code == 0
+        assert self.job_wrapper.stdout.strip() == sys.prefix
+
+        # The successful import must not depend on retired source-path plumbing.
+        job_file = JobState.default_job_file(self.job_wrapper.working_directory, self.job_wrapper.get_id_tag())
+        with open(job_file) as fh:
+            script = fh.read()
+        assert "GALAXY_LIB" not in script
 
     def test_default_slots(self):
         self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""

@@ -10,7 +10,7 @@ from galaxy.tool_util_models.test_job import Job
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest_utils import skip_unless_environ
 
-TEST_WORKFLOW_DIRECTORY = os.path.join(galaxy_directory(), "lib", "galaxy_test", "workflow")
+TEST_WORKFLOW_DIRECTORY = os.path.join(galaxy_directory(), "test", "workflow")
 IWC_WORKFLOWS_USING_UNVERIFIED_SYNTAX: list[str] = []
 
 # replacement_parameters_legacy.gxwf-tests.yml is a deliberate regression test
@@ -69,7 +69,10 @@ def test_job_negative_fixtures(fixture: str) -> None:
 
 def test_validate_workflow_tests():
     path = Path(TEST_WORKFLOW_DIRECTORY)
-    test_files = path.glob("*.gxwf-tests.yml")
+    test_files = sorted(path.glob("*.gxwf-tests.yml"))
+    # Guard against the directory moving or being renamed: an empty glob would
+    # otherwise make this test pass without validating anything.
+    assert test_files, f"No framework workflow test files found under {path}"
     for test_file in test_files:
         if test_file.name in WORKFLOW_TESTS_SKIP_STRICT_VALIDATION:
             continue

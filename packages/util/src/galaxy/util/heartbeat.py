@@ -149,15 +149,15 @@ class Heartbeat(threading.Thread):
 
         Interesting being::
 
-          inside the galaxy source code ("/lib/galaxy"),
-          prefreably not an egg.
+          inside the galaxy source code ("/galaxy/"),
+          preferably not an installed dependency.
         """
         for _filename, _line, _funcname, _text in reversed(stack_frames):
             idx = _filename.find("/galaxy/")
             if idx != -1:
                 relative_filename = _filename[idx:]
                 return (relative_filename, _line, _funcname, _text)
-        # no "/lib/galaxy" code found, return the innermost frame
+        # no "/galaxy/" code found, return the innermost frame
         return stack_frames[-1]
 
     def print_nonsleeping(self, threads_object_dict):

@@ -105,11 +105,11 @@ The ``Makefile`` can also be used for typechecking.
     $ cd galaxy/packages/auth
     $ make mypy
 
-This runs mypy from the workspace root with the package's extras and the
-declared typecheck group. Config discovery uses the root `mypy.ini`; member
-directories no longer contain config symlinks. From the repository root:
-
-    $ uv run --locked --inexact --package galaxy-auth --all-extras --group typecheck mypy packages/auth/src packages/auth/tests
+This checks sources from the package's `src` directory, then checks its tests,
+using the declared typecheck group and the root `mypy.ini`. Mypy resolves other
+workspace packages through their installed editable distributions; no source
+search-path list is needed. Run `make mypy` at the repository root to check all
+packages and repository-level tests.
 
 The ``Makefile`` can also be used for linting:
 

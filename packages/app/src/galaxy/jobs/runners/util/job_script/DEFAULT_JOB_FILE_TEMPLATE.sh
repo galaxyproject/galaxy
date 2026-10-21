@@ -12,14 +12,6 @@ _galaxy_setup_environment() {
     fi
 
     $env_setup_commands
-    if [ "$GALAXY_LIB" != "None" -a "$_use_framework_galaxy" = "True" ]; then
-        if [ -n "$PYTHONPATH" ]; then
-            PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-        else
-            PYTHONPATH="$GALAXY_LIB"
-        fi
-        export PYTHONPATH
-    fi
     # These don't get cleaned on a re-run but may in the future.
     [ -z "$_GALAXY_JOB_TMP_DIR" -a ! -f "$_GALAXY_JOB_TMP_DIR" ] || mkdir -p "$_GALAXY_JOB_TMP_DIR"
     [ -z "$_GALAXY_JOB_HOME_DIR" -a ! -f "$_GALAXY_JOB_HOME_DIR" ] || mkdir -p "$_GALAXY_JOB_HOME_DIR"
@@ -35,7 +27,6 @@ export PYTHONWARNINGS="ignore"
 GALAXY_VIRTUAL_ENV="$galaxy_virtual_env"
 _GALAXY_VIRTUAL_ENV="$galaxy_virtual_env"
 PRESERVE_GALAXY_ENVIRONMENT="$preserve_python_environment"
-GALAXY_LIB="$galaxy_lib"
 _galaxy_setup_environment "$PRESERVE_GALAXY_ENVIRONMENT"
 export _GALAXY_JOB_HOME_DIR
 export _GALAXY_JOB_TMP_DIR

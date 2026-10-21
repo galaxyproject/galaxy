@@ -123,7 +123,7 @@ docker build -f packages/job_execution/Dockerfile \
 To build this checkout, including uncommitted development changes:
 
 ```sh
-version=$(PYTHONPATH=lib python3 -c 'from galaxy.version import VERSION; print(VERSION)')
+version=$(python3 -c 'from galaxy.version import VERSION; print(VERSION)')
 revision=$(git rev-parse HEAD)
 docker build -f packages/job_execution/Dockerfile \
   --build-arg RUNTIME_SOURCE=source \
