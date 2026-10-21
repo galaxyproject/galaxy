@@ -42,6 +42,19 @@ from galaxy.util import (
 from galaxy.util.user_agent import get_default_headers
 
 
+def build_title_search_query(query: Optional[str]) -> str:
+    """Build a Dataverse search query matching datasets whose title contains every word of ``query``.
+
+    Each word is matched as a prefix, so partial words like ``Handwr`` find ``Handwritten``.
+    Only word characters are kept, which also prevents Solr query syntax from being injected.
+    """
+    terms = re.findall(r"\w+", query or "")
+    if not terms:
+        return "*"
+    prefix_terms = " ".join(f"+{term}*" for term in terms)
+    return f"title:({prefix_terms})"
+
+
 class DataverseDataset(TypedDict):
     name: str
     type: str
@@ -333,7 +346,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             "type": "dataset",
             "per_page": limit or DEFAULT_PAGE_LIMIT,
             "start": offset,
-            "q": f"title:{query}" if query else "*",
+            "q": build_title_search_query(query),
             "sort": sort_by or "date",
         }
         if write_intent:
@@ -359,7 +372,8 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def _filter_files_by_name(self, files: list[RemoteFile], query: Optional[str] = None) -> list[RemoteFile]:
         if not query:
             return files
-        return [file for file in files if query in file.name]
+        query = query.lower()
+        return [file for file in files if query in file.name.lower()]
 
     def create_draft_file_container(
         self, title: str, public_name: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
