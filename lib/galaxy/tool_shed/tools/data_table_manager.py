@@ -295,7 +295,7 @@ class ShedToolDataTableManager(BaseShedToolDataTableManager):
             incoming_columns = _parse_table_columns(elem)
             self.app.tool_data_tables.assert_data_table_consistency(table_name, incoming_columns)
             existing = registered_tables.get(table_name) if table_name else None
-            if isinstance(existing, TabularToolDataTable) and existing.columns is not None:
+            if isinstance(existing, TabularToolDataTable):
                 # Already registered with matching columns. Merge any rows from this install's
                 # .loc.sample(s) into the shared loc file.
                 self._merge_loc_sample_entries(existing, elem, loc_basename_to_source, tool_shed_repository)
