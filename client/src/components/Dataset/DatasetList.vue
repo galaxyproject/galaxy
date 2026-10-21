@@ -129,20 +129,23 @@ async function load(showOverlay = false) {
     }
 }
 
-function tagSavesFor(id: string) {
-    let saveTags = tagSaves.get(id);
+function tagSavesFor(item: HistoryItemSummary) {
+    const { history_content_type: contentType, id } = item;
+    // an HDA and an HDCA can share an id
+    const key = `${contentType}-${id}`;
+    let saveTags = tagSaves.get(key);
     if (!saveTags) {
         saveTags = useSerialTagSaves({
             // looked up by id: a list load during the saves replaces the rows
             setTags: (tags) => {
-                const row = rows.value.find((entry) => entry.id === id);
+                const row = rows.value.find((entry) => entry.history_content_type === contentType && entry.id === id);
                 if (row) {
                     row.tags = tags;
                 }
             },
             onFailed: () => load(true),
         }).saveTags;
-        tagSaves.set(id, saveTags);
+        tagSaves.set(key, saveTags);
     }
     return saveTags;
 }
@@ -150,7 +153,7 @@ function tagSavesFor(id: string) {
 function onTags(tags: string[], item: HistoryItemSummary) {
     const itemClass =
         item.history_content_type === "dataset" ? "HistoryDatasetAssociation" : "HistoryDatasetCollectionAssociation";
-    tagSavesFor(item.id)(tags, async () => {
+    tagSavesFor(item)(tags, async () => {
         await updateTags(item.id, itemClass, tags);
         return tags;
     });
