@@ -22,7 +22,7 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         dataNew = "hg17"
         self.change_dbkey_value_and_click_submit(dataValue, dataNew)
         self.history_panel_wait_for_hid_ok(5)
-        self.open_collection_edit_view()
+        self.open_collection_edit_view(5)
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
 
@@ -40,7 +40,7 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         dataValue = "txt"
         self.check_current_data_value(dataValue)
         dataNew = "tabular"
-        self.change_datatype_value_and_click_submit(dataValue, dataNew)
+        self.collection_edit_change_datatype(dataValue, dataNew)
         self.check_current_data_value(dataNew)
         self.wait_for_history()
         self.history_panel_expand_collection(3)
@@ -59,8 +59,8 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
 
-    def open_collection_edit_view(self):
-        self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
+    def open_collection_edit_view(self, hid=3):
+        self.history_panel_collection_edit(hid)
 
     def navigate_to_database_tab(self):
         self._edit_attributes.database_genome_tab.wait_for_and_click()
@@ -76,12 +76,6 @@ class TestCollectionEdit(SeleniumTestCase, UsesUploadActivity):
         self._edit_attributes.genome_select_search.wait_for_and_send_keys(dataNew)
         self._edit_attributes.genome_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_dbkey_btn.wait_for_and_click()
-
-    def change_datatype_value_and_click_submit(self, dataValue, dataNew):
-        self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
-        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.datatype_select_search.wait_for_and_send_enter()
-        self._edit_attributes.save_datatype_btn.wait_for_and_click()
 
     @property
     def _edit_attributes(self):

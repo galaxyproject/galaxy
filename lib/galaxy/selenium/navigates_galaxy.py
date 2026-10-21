@@ -2685,6 +2685,20 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         _click_edit_tab()
         self.components.edit_dataset_attributes._.wait_for_visible()
 
+    def history_panel_collection_edit(self, hid: int):
+        """Open collection ``hid``'s Edit Collection Attributes view (its pencil)."""
+        self.history_panel_item_component(hid=hid).edit_button.wait_for_and_click()
+        return self.components.edit_collection_attributes
+
+    def collection_edit_change_datatype(self, current: str, new: str):
+        """On the collection edit view's Datatypes tab, change every element from ``current`` to ``new``."""
+        edit = self.components.edit_collection_attributes
+        edit.datatypes_tab.wait_for_and_click()
+        edit.data_value(data_change=current).wait_for_and_click()
+        edit.datatype_select_search.wait_for_and_send_keys(new)
+        edit.datatype_select_search.wait_for_and_send_enter()
+        edit.save_datatype_btn.wait_for_and_click()
+
     def display_dataset(self, hid):
         item = self.history_panel_item_component(hid=hid)
         item.display_button.wait_for_and_click()
