@@ -474,6 +474,29 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_has_key(display, "data")
         assert "\nA" in display["data"][0]
 
+    def _raw_data_column_meta(self, history_id, contents, column):
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data", "columns": f"[{column}]"})
+        self._assert_status_code_is(response, 200)
+        return response.json()["meta"][0]
+
+    def test_raw_data_tabular_numeric_column_stats(self, history_id):
+        meta = self._raw_data_column_meta(history_id, "1\t2\n3\t4\n5\t6\n", 1)
+        assert meta["min"] == 2
+        assert meta["max"] == 6
+        assert meta["mean"] == 4
+        assert meta["median"] == 4
+
+    def test_raw_data_tabular_numeric_column_even_count_median(self, history_id):
+        meta = self._raw_data_column_meta(history_id, "1\t2\n3\t4\n", 1)
+        assert meta["median"] == 3
+
+    def test_raw_data_tabular_numeric_column_with_uncastable_value(self, history_id):
+        meta = self._raw_data_column_meta(history_id, "1\t2\n3\tNA\n5\t4\n", 1)
+        assert meta["count"] == 3
+        assert meta["mean"] == 3
+        assert meta["median"] == 3
+
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data
         # in the bam datatype. This is the endpoint is very close to the legacy non-API
