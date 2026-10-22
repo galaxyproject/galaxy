@@ -94,6 +94,11 @@ EditorNodeReference = int | str  # order_index (int, from 0; changes on save) or
 EditorTerminalReference = str | tuple[EditorNodeReference, str]  # "label#terminal" or (node, terminal)
 
 
+def css_attribute_value(value: str) -> str:
+    """Escape ``value`` for use inside a single-quoted CSS attribute selector."""
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
 class HistoryEntry(NamedTuple):
     id: str
     hid: str
@@ -1398,8 +1403,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self, source: EditorTerminalReference, sink: EditorTerminalReference
     ) -> tuple[str, str]:
         source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
-        source_id = source_element.get_attribute("id").replace("|", r"\|")
-        sink_id = sink_element.get_attribute("id").replace("|", r"\|")
+        source_id = css_attribute_value(source_element.get_attribute("id"))
+        sink_id = css_attribute_value(sink_element.get_attribute("id"))
         return source_id, sink_id
 
     def workflow_editor_source_sink_terminal_elements(
