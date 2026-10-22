@@ -37,7 +37,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutputCollection,
 )
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
-from galaxy.tool_util.version import parse_version
+from galaxy.tool_util.version import parse_tool_version
 from galaxy.util import (
     parse_xml_string_to_etree,
     rst_to_html,
@@ -83,15 +83,6 @@ class RawToolSource(NamedTuple):
 
     raw_tool_source: str
     tool_source_class: str
-
-
-def parse_tool_version_for_comparison(version: str) -> "LegacyVersion | Version":
-    """Parse Galaxy's numeric ``+galaxyN`` suffix as a PEP 440 version."""
-    if (suffix_marker := "+galaxy") in version:
-        base, suffix = version.split(suffix_marker, 1)
-        if suffix:
-            version = f"{base}{suffix_marker}.{suffix.lstrip('.')}"
-    return parse_version(version)
 
 
 class AbstractTool:
@@ -143,7 +134,7 @@ class AbstractTool:
     @property
     def version_object(self) -> "LegacyVersion | Version":
         """Parse version string, handling special Galaxy version format."""
-        return parse_tool_version_for_comparison(self.version)
+        return parse_tool_version(self.version)
 
     def to_raw_tool_source(self) -> RawToolSource:
         """Return a compact representation of this tool's source for external processing.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { GalaxyApi, type HDADetailed, isAdminUser } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
@@ -33,23 +33,20 @@ const { config, isConfigLoaded } = useConfig();
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
-const loading = ref(false);
 const jobTimeOut = ref<any>(null);
 const jobDetails = ref<JobDetails>();
 const dataset = ref<HDADetailed | null>(null);
 const jobLoadingError = ref<string | null>(null);
 let isUnmounted = false;
 const datasetLoadingError = ref<string | null>(null);
+const loading = computed(() => !dataset.value && !datasetLoadingError.value);
 
 async function getDatasetDetails() {
-    loading.value = true;
     try {
         const data = await fetchDatasetDetails({ id: props.datasetId });
         dataset.value = data;
     } catch (e) {
         datasetLoadingError.value = errorMessageAsString(e) || "Unable to fetch available dataset details.";
-    } finally {
-        loading.value = false;
     }
 }
 

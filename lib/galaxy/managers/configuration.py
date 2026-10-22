@@ -156,6 +156,7 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_oidc": _use_config,
             "oidc": _use_config,
             "prefer_oidc_login": _use_config,
+            "allowed_login_redirect_hosts": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
             "post_user_logout_href": _use_config,
