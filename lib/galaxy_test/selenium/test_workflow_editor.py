@@ -1175,7 +1175,6 @@ steps:
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
         self.workflow_editor_add_subworkflow(child_workflow_name)
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow["steps"]["2"]

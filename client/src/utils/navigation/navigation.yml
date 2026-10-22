@@ -1078,6 +1078,7 @@ workflow_editor:
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
+      loading: '${_} .card-header .loading-icon'
       output_data_row:
         type: xpath
         selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'

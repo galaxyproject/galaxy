@@ -1481,7 +1481,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def workflow_editor_add_subworkflow(self, name: str):
         self._workflow_editor_panel_card_action(name, self.navigation.workflows.workflow_insert_sub_workflow)
 
-        self.components.workflow_editor.node._(label=name).wait_for_visible()
+        node = self.components.workflow_editor.node._(label=name)
+        node.wait_for_visible()
+        # The node renders before its module request fills in inputs and outputs.
+        node.loading.wait_for_absent(wait_type=self.wait_types.DATABASE_OPERATION)
 
     def workflow_editor_enter_column_definitions(self, column_definitions: list[ColumnDefinition]):
         for index, column_definition in enumerate(column_definitions):
