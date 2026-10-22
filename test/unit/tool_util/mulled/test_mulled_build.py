@@ -1,4 +1,5 @@
 import os.path
+import shlex
 from argparse import (
     ArgumentParser,
     Namespace,
@@ -142,6 +143,36 @@ def test_mull_targets_dry_run_uses_target_platform(capsys):
     output = capsys.readouterr().out
     assert "--platform linux/arm64" in output
     assert "REPO=quay.io/biocontainers/samtools:1.3--0-arm64" in output
+
+
+def _dry_run_argv(capsys):
+    """Parse the shlex.join'd involucro command printed by a dry run."""
+    return shlex.split(capsys.readouterr().out.split("Executing: ", 1)[1])
+
+
+def test_mull_targets_dry_run_emits_conda_override_cuda(capsys):
+    target = build_target("samtools", version="1.3", build="0")
+    assert mull_targets([target], conda_override_cuda="99", determine_base_image=False, dry_run=True) == 0
+    assert "PREINSTALL=export CONDA_OVERRIDE_CUDA='99'" in _dry_run_argv(capsys)
+
+
+def test_mull_targets_dry_run_conda_override_cuda_precedes_specs(capsys):
+    # The export must run before any spec installation (e.g. mamba) so the
+    # override is in effect for the environment solve itself.
+    target = build_target("samtools", version="1.3", build="0")
+    assert (
+        mull_targets([target], conda_override_cuda="12.4", use_mamba=True, determine_base_image=False, dry_run=True)
+        == 0
+    )
+    preinstall = next(a for a in _dry_run_argv(capsys) if a.startswith("PREINSTALL="))
+    assert preinstall.startswith("PREINSTALL=export CONDA_OVERRIDE_CUDA='12.4' && conda install")
+
+
+def test_mull_targets_dry_run_no_conda_override_cuda(capsys):
+    target = build_target("samtools", version="1.3", build="0")
+    assert mull_targets([target], determine_base_image=False, dry_run=True) == 0
+    output = capsys.readouterr().out
+    assert "PREINSTALL" not in output
 
 
 def test_mull_targets_rejects_target_platform_with_singularity():
