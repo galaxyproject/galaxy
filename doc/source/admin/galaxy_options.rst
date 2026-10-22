@@ -6425,8 +6425,12 @@
     enabled, Galaxy exposes an MCP endpoint that provides tools for
     searching, executing tools, managing histories, and more.
     The MCP server requires API key authentication and uses the
-    existing Galaxy REST API internally. This feature is experimental
-    and disabled by default.
+    existing Galaxy REST API internally. Clients should send the key
+    in an `x-api-key` header from their MCP server configuration (e.g.
+    `"headers": {"x-api-key": "..."}`), which keeps it out of the
+    model's context. Tools also accept an optional `api_key` argument,
+    which is ignored when the header is set. This feature is
+    experimental and disabled by default.
 :Default: ``false``
 :Type: bool
 
