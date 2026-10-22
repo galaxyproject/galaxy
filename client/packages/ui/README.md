@@ -18,8 +18,15 @@ So a change has to work in both. In particular:
 - Bootstrap styles the client's markup for free. Anything a component needs to look right has to be
   in its own styles; baselines that only restate Bootstrap go in `:where()` so they stay at zero
   specificity and the client keeps Bootstrap's look.
-- Read colours, spacing, fonts and field sizes from the tokens in `src/styles/tokens.css`
-  (`var(--color-blue-600)` and so on) rather than literal values, so both consumers can theme them.
+- Read colours, spacing, fonts and field sizes from the design tokens (`var(--color-primary)`,
+  `var(--spacing-2)` and so on) rather than literal values, so both consumers can theme them. Prefer
+  the semantic colour names over raw palette shades.
+
+## Design tokens
+
+`src/styles/theme.css` is the only token file to edit. `src/styles/tokens.css`, which both consumers
+load, is generated from it: run `pnpm --filter @galaxyproject/galaxy-ui build:tokens` after a change.
+`src/styles/tokens.test.ts` fails when `tokens.css` is out of date.
 
 ## Public class names
 
