@@ -22,7 +22,6 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
@@ -320,10 +319,7 @@ function toggleDetailedView() {
                             :graph-step="steps[activeNodeId]"
                             expanded />
                     </Teleport>
-                    <GAlert v-if="stepExpanded">
-                        The step details are currently being shown in a modal.
-                        <GLink @click="stepExpanded = false">Click here to view the details here instead.</GLink>
-                    </GAlert>
+                    <GAlert v-if="stepExpanded"> The step details are currently being shown in a modal. </GAlert>
                 </BCardBody>
                 <GModal
                     :show="stepExpanded"
