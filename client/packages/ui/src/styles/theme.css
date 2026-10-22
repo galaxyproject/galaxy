@@ -105,6 +105,7 @@
     --color-sidebar-ring: var(--color-ring);
 
     /* interaction: `accent` is the hover surface, `selected` a persistent selection */
+    /* not brand-tokens' gold --color-accent; the Tool Shed loads both, and this one wins */
     --color-accent: var(--color-blue-100);
     --color-accent-foreground: var(--color-foreground);
     --color-selected: var(--color-blue-200);
