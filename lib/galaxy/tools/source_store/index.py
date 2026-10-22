@@ -130,7 +130,8 @@ class ToolIndex(BaseModel):
 
     entries: dict[str, ToolIndexEntry] = Field(default_factory=dict)
     # Every indexed version; ``entries`` stores the default per id. Both maps
-    # hold the same default entry object.
+    # hold the same default entry object. Includes storage-only versions:
+    # lookups that offer versions to users use :meth:`configured_versions`.
     entries_by_version: dict[str, dict[str, ToolIndexEntry]] = Field(default_factory=dict)
     by_section: dict[str, list[str]] = Field(default_factory=dict)
     # Configuration-order placements, including repeated tool ids.
@@ -214,7 +215,8 @@ class ToolIndex(BaseModel):
 
         ``tool_version=None`` returns the default entry (see :meth:`add_entry`).
         ``tool_version`` provided returns the matching version's entry, or
-        ``None`` if that exact version isn't indexed.
+        ``None`` if that exact version isn't indexed, storage-only ones
+        included; toolbox lookups use :meth:`get_configured`.
         """
         if tool_version is not None:
             versions = self.entries_by_version.get(tool_id)

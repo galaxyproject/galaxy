@@ -944,10 +944,10 @@ class CachedToolBox(ToolBox):
         populate_store_inline(self.app.config, app=self.app)
 
     def _index_versions_for(self, tool_id: str) -> list[str]:
-        """Return every version present in the index for ``tool_id``.
+        """Return every offered version of ``tool_id`` in the index.
 
         Hooked into ``CachedLineageMap.versions_for`` so a lineage lookup
-        sources its data straight from ``_tool_index.entries_by_version``.
+        sources its data straight from ``_tool_index.configured_versions``.
         Empty list (no versions) tells the lineage map to fall through to
         the standard ``LineageMap.get`` toolbox path.
 
@@ -1736,7 +1736,7 @@ class CachedToolBox(ToolBox):
                 bucket.append(stub)  # type: ignore[arg-type]
         if entry.uuid:
             self._tools_by_uuid[UUID(entry.uuid)] = stub  # type: ignore[assignment]
-        # Lineage: CachedLineageMap builds it from entries_by_version, which the
+        # Lineage: CachedLineageMap builds it from configured_versions, which the
         # populator wrote on the previous step, so .get() returns the right
         # ToolLineage; register() is the fallback for an as-yet-unseen id.
         stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)  # type: ignore[arg-type]
@@ -1992,6 +1992,7 @@ class CachedToolBox(ToolBox):
             entries = self._tool_index.entries_by_version.get(tool_id)
             if entries is not None:
                 if tool_version is None:
+                    # Raw is fine here: an id with any version has a configured view.
                     return bool(entries) or tool_id in self._tool_index.entries
                 if str(tool_version) in self._tool_index.configured_versions(tool_id):
                     return True
