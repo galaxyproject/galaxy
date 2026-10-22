@@ -229,6 +229,64 @@ describe("useCollectionElementsStore collection loading", () => {
     });
 });
 
+describe("useCollectionElementsStore invalidation", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it("refetches elements invalidated while a fetch of them is in flight", async () => {
+        let serverState = "running";
+        let releaseResponse = () => {};
+        let holdResponse = false;
+        const requestedStates: string[] = [];
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", async ({ response, params }) => {
+                // The response reflects the state at the time the request reached the server.
+                const state = serverState;
+                requestedStates.push(state);
+                if (holdResponse) {
+                    await new Promise<void>((resolve) => (releaseResponse = resolve));
+                }
+                const elements = [0, 1, 2].map((i) => ({
+                    ...mockElement(params.hdca_id, i),
+                    object: { ...mockElement(params.hdca_id, i).object, state },
+                }));
+                return response(200).json(elements as DCESummary[]);
+            }),
+        );
+        const store = useCollectionElementsStore();
+        const collection = mockCollection("1", 3);
+
+        await store.fetchMissingElements(collection, 0);
+        await vi.advanceTimersByTimeAsync(1500);
+
+        // A refresh starts, and the server answers it before the elements finish.
+        holdResponse = true;
+        store.invalidateCollectionElements(collection);
+        store.fetchMissingElements(collection, 0);
+        await vi.advanceTimersByTimeAsync(0);
+        expect(requestedStates).toEqual(["running", "running"]);
+
+        // The elements finish and the history watcher reports it before that response arrives.
+        holdResponse = false;
+        serverState = "ok";
+        store.invalidateCollectionElements(collection);
+        store.fetchMissingElements(collection, 0);
+        releaseResponse();
+        await vi.advanceTimersByTimeAsync(1500);
+        await flushPromises();
+
+        expect(requestedStates).toEqual(["running", "running", "ok"]);
+        const elements = getRealElements(store.getCollectionElements(collection));
+        expect(elements?.map((element) => (element.object as { state: string }).state)).toEqual(["ok", "ok", "ok"]);
+    });
+});
+
 function mockCollection(id: string, numElements = 10): HDCASummary {
     return {
         id: id,
