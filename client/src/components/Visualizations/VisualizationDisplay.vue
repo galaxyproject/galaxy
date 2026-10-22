@@ -6,6 +6,7 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -23,15 +24,25 @@ const emit = defineEmits<{
     (e: "load"): void;
 }>();
 
-const { currentUser } = storeToRefs(useUserStore());
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
 
 const errorMessage = ref<string>("");
 const isLoading = ref<boolean>(true);
 const hasUnsavedChanges = ref<boolean>(false);
 const visualizationConfig = ref();
 const visualizationTitle = ref<string | undefined>();
+const visualizationOwnerId = ref<string | undefined>();
 // Only an owner can save in place; for anyone else the plugin creates their own copy.
-const ownedVisualizationId = ref<string | undefined>();
+const ownedVisualizationId = computed(() =>
+    isRegisteredUser(currentUser.value) && visualizationOwnerId.value === currentUser.value.id
+        ? props.visualizationId
+        : undefined,
+);
+// The frame reads the id once at mount, so a saved visualization waits until the viewer is known.
+const showFrame = computed(
+    () => Boolean(visualizationConfig.value) && (!props.visualizationId || currentUser.value !== null),
+);
 
 // Remount the iframe when its visualization identity changes.
 const frameKey = computed(() => `${props.visualization}:${props.visualizationId ?? props.datasetId}`);
@@ -62,9 +73,23 @@ onBeforeRouteLeave(confirmDiscard);
 // Switching tab or dataset keeps the same route record, so it arrives as an update.
 onBeforeRouteUpdate(confirmDiscard);
 
+// Embedded views (iframe, ?embed=true) skip the app's user load, so the frame would wait forever.
+async function loadViewer() {
+    try {
+        await userStore.loadUser(false);
+    } catch (e) {
+        // The load is shared with the app's, whose history load can fail after the viewer is already set.
+        if (currentUser.value === null) {
+            // Without the viewer an owner's save would create a copy, so show no frame at all.
+            errorMessage.value = errorMessageAsString(e);
+        }
+    }
+}
+
 onMounted(async () => {
     window.addEventListener("beforeunload", onUnload);
     if (props.visualizationId) {
+        loadViewer();
         const { data, error } = await GalaxyApi().GET("/api/visualizations/{id}", {
             params: { path: { id: props.visualizationId } },
         });
@@ -73,8 +98,7 @@ onMounted(async () => {
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
             visualizationTitle.value = data.title;
-            const owner = isRegisteredUser(currentUser.value) && data.user_id === currentUser.value.id;
-            ownedVisualizationId.value = owner ? props.visualizationId : undefined;
+            visualizationOwnerId.value = data.user_id;
         } else {
             errorMessage.value = "Failed to access visualization details.";
         }
@@ -96,7 +120,7 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", onUnload));
         </div>
 
         <VisualizationFrame
-            v-if="visualizationConfig"
+            v-if="showFrame"
             :key="frameKey"
             :config="visualizationConfig"
             :name="props.visualization"

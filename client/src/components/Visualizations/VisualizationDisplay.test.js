@@ -6,6 +6,8 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { h } from "vue";
 
+import { useUserStore } from "@/stores/userStore";
+
 import VisualizationDisplay from "./VisualizationDisplay.vue";
 
 const guards = { leave: undefined, update: undefined };
@@ -17,10 +19,12 @@ vi.mock("vue-router", () => ({
 
 const ME = "user-1";
 const SIGNED_IN = { id: ME, email: "me@example.org" };
+const ANONYMOUS = { isAnonymous: true };
 
 let signedIn;
 let stored;
 let respond;
+let loadingViewer;
 
 vi.mock("@/api", async (importOriginal) => ({
     ...(await importOriginal()),
@@ -47,6 +51,19 @@ function savedBy(userId) {
 function mountDisplay(propsData = { visualization: "example", datasetId: "d1" }) {
     const pinia = createTestingPinia({ createSpy: vi.fn, initialState: { userStore: { currentUser: signedIn } } });
     setActivePinia(pinia);
+    if (loadingViewer) {
+        const userStore = useUserStore();
+        // Stands in for the store's own load, which sets the user once the request returns.
+        // The load is shared with the app's, whose history load can still fail after that.
+        userStore.loadUser.mockImplementation(() =>
+            loadingViewer.then((historiesError) => {
+                userStore.currentUser = SIGNED_IN;
+                if (historiesError) {
+                    throw historiesError;
+                }
+            }),
+        );
+    }
     wrapper = mount(VisualizationDisplay, {
         propsData,
         localVue,
@@ -99,6 +116,7 @@ beforeEach(() => {
     guards.leave = guards.update = undefined;
     stored = savedBy(ME);
     signedIn = SIGNED_IN;
+    loadingViewer = undefined;
 });
 
 afterEach(() => {
@@ -169,7 +187,7 @@ describe("saving a visualization the viewer did not make", () => {
     });
 
     it("names nothing for a viewer who is not signed in, who can own nothing", async () => {
-        signedIn = null;
+        signedIn = ANONYMOUS;
         await openSaved(ME);
         expect(wrapper.findComponent(FRAME).props("visualizationId")).toBeUndefined();
     });
@@ -178,6 +196,89 @@ describe("saving a visualization the viewer did not make", () => {
         await openSaved("someone-else");
         expect(wrapper.findComponent(FRAME).props("title")).toBe("Saved chart");
         expect(wrapper.findComponent(FRAME).props("config")).toEqual({ a: 1 });
+    });
+});
+
+describe("opening a saved visualization before the viewer is known", () => {
+    beforeEach(() => {
+        signedIn = null;
+    });
+
+    it("holds the frame back, so a save cannot make the owner a copy", async () => {
+        await openSaved(ME);
+        expect(wrapper.findComponent(FRAME).exists()).toBe(false);
+        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
+    });
+
+    it("names the saved visualization once the viewer turns out to own it", async () => {
+        await openSaved(ME);
+        useUserStore().currentUser = SIGNED_IN;
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBe("v1");
+    });
+
+    it("names nothing once the viewer turns out to be someone else", async () => {
+        await openSaved("someone-else");
+        useUserStore().currentUser = SIGNED_IN;
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).exists()).toBe(true);
+        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBeUndefined();
+    });
+
+    it("does not hold back a dataset preview, which has nothing to save in place", async () => {
+        mountDisplay();
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).exists()).toBe(true);
+    });
+});
+
+describe("opening a saved visualization where the app has not loaded the viewer", () => {
+    let viewerLoaded;
+    let viewerFailed;
+
+    beforeEach(() => {
+        signedIn = null;
+        loadingViewer = new Promise((resolve, reject) => {
+            viewerLoaded = resolve;
+            viewerFailed = reject;
+        });
+    });
+
+    it("loads the viewer itself, without their histories", async () => {
+        await openSaved(ME);
+        expect(useUserStore().loadUser).toHaveBeenCalledWith(false);
+        expect(wrapper.findComponent(FRAME).exists()).toBe(false);
+    });
+
+    it("shows the frame once the viewer has loaded", async () => {
+        await openSaved(ME);
+        expect(wrapper.findComponent(FRAME).exists()).toBe(false);
+        viewerLoaded();
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBe("v1");
+    });
+
+    it("shows an error instead of a frame that would save a copy when the viewer cannot be loaded", async () => {
+        await openSaved(ME);
+        viewerFailed(new Error("Network down"));
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).exists()).toBe(false);
+        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
+        expect(wrapper.text()).toContain("Network down");
+    });
+
+    it("shows the frame without an error when the viewer loaded but the shared load failed later", async () => {
+        await openSaved(ME);
+        viewerLoaded(new Error("Histories unavailable"));
+        await flushPromises();
+        expect(wrapper.findComponent(FRAME).props("visualizationId")).toBe("v1");
+        expect(wrapper.text()).not.toContain("Histories unavailable");
+    });
+
+    it("leaves the viewer alone for a dataset preview", async () => {
+        mountDisplay();
+        await flushPromises();
+        expect(useUserStore().loadUser).not.toHaveBeenCalled();
     });
 });
 
