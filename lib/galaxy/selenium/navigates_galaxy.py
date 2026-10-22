@@ -2709,6 +2709,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         _click_action_in_menu()
 
+    def history_panel_item_delete(self, hid):
+        """Delete history item ``hid`` with its trash button."""
+        self.history_panel_item_component(hid=hid).delete_button.wait_for_and_click()
+
     def open_history_multi_view(self):
         self.components.history_panel.histories_operation_menu.wait_for_and_click()
         self.components.history_panel.multi_view_button.wait_for_and_click()
