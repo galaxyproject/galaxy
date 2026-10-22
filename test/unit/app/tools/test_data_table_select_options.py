@@ -3,6 +3,7 @@ from typing import (
     cast,
     TYPE_CHECKING,
 )
+from unittest import mock
 
 import pytest
 
@@ -17,6 +18,10 @@ from galaxy.tools.wrappers import SelectToolParameterWrapper
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.work.context import WorkRequestContext
+from galaxy.workflow.modules import (
+    InputParameterModule,
+    ToolModule,
+)
 
 if TYPE_CHECKING:
     from galaxy.tools import Tool
@@ -129,3 +134,16 @@ def test_static_dropdown_is_unchanged(table_select):
     )
     # XML static option parsing already keeps the last option for a duplicated value.
     assert param.to_dict(trans)["options"] == [("Second", "hg38", True)]
+
+
+def test_workflow_restricted_options_collapse_table_choices(table_select):
+    param, trans = table_select()
+    tool_module = mock.Mock(spec=ToolModule)
+    tool_module.tool = Bunch(inputs={"ref": param})
+    tool_module.state = Bunch(inputs={})
+    connection = Bunch(input_step=Bunch(module=tool_module), input_name="ref")
+    options = InputParameterModule(trans).restrict_options(None, [connection], "hg38")
+    assert options == [
+        {"label": "Human old", "value": "hg38", "selected": True},
+        {"label": "Mouse", "value": "mm10", "selected": False},
+    ]
