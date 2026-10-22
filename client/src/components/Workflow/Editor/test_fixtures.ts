@@ -1,7 +1,7 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
 import { reactive, toRefs } from "vue";
 
-import type { InputTerminalSource, NewStep, Steps } from "@/stores/workflowStepStore";
+import type { InputTerminalSource, NewStep, Step, Steps } from "@/stores/workflowStepStore";
 
 import _advancedSteps from "./test-data/parameter_steps.json";
 import _simpleSteps from "./test-data/simple_steps.json";
@@ -36,12 +36,18 @@ export function createTestStep(
         outputs?: NewStep["outputs"];
         when?: string;
         inputConnections?: NewStep["input_connections"];
+        type?: NewStep["type"];
+        label?: string;
+        configForm?: NewStep["config_form"];
+        postJobActions?: NewStep["post_job_actions"];
     } = {},
-): NewStep {
+): Step {
     return {
         id,
         name: `Step ${id}`,
-        type: "tool",
+        type: options.type ?? "tool",
+        label: options.label,
+        config_form: options.configForm,
         inputs: options.inputs ?? [],
         outputs: options.outputs ?? [
             {
@@ -52,7 +58,7 @@ export function createTestStep(
         ],
         input_connections: options.inputConnections ?? {},
         position: { left: id * 200, top: 100 },
-        post_job_actions: {},
+        post_job_actions: options.postJobActions ?? {},
         tool_state: {},
         workflow_outputs: [],
         when: options.when,
