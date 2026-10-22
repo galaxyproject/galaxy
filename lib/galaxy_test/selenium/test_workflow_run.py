@@ -1,6 +1,9 @@
 import json
 from functools import partial
-from typing import Literal
+from typing import (
+    Any,
+    Literal,
+)
 from uuid import uuid4
 
 import yaml
@@ -745,9 +748,7 @@ steps:
         workflow_run.simplified_value_list_input(label="columns", index=2).wait_for_and_send_keys("2")
         self.screenshot("workflow_run_multiple_integer_parameter")
         self.workflow_run_submit()
-        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
-        invocation = self.workflow_populator.get_invocation(invocation_id)
+        invocation = self._wait_for_single_invocation(history_id)
         assert invocation["input_step_parameters"]["columns"]["parameter_value"] == [1, 2]
         content = self.dataset_populator.get_history_dataset_content(
             history_id, dataset_id=invocation["outputs"]["output"]["id"]
@@ -778,9 +779,7 @@ steps:
         workflow_run.simplified_value_list_input(label="options", index=2).wait_for_and_send_keys("ex2")
         self.screenshot("workflow_run_multiple_text_parameter")
         self.workflow_run_submit()
-        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
-        invocation = self.workflow_populator.get_invocation(invocation_id)
+        invocation = self._wait_for_single_invocation(history_id)
         assert invocation["input_step_parameters"]["options"]["parameter_value"] == ["--ex1", "ex2"]
         content = self.dataset_populator.get_history_dataset_content(
             history_id, dataset_id=invocation["outputs"]["output"]["id"]
@@ -836,9 +835,8 @@ steps:
             ensure_expanded=True,
         )
         self.screenshot("workflow_run_invocation_report")
-        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-        invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
-        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
+        invocation = self._wait_for_single_invocation(history_id)
+        self.get(f"workflows/invocations/report?id={invocation['id']}")
         self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_custom_1")
 
@@ -852,9 +850,8 @@ steps:
             ensure_expanded=True,
         )
         self.screenshot("workflow_run_images_in_report_invocation")
-        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-        invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
-        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
+        invocation = self._wait_for_single_invocation(history_id)
+        self.get(f"workflows/invocations/report?id={invocation['id']}")
         self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_images_rendered")
         # Wait for the table to be present - this verifies the inline ${galaxy ...} syntax works
@@ -1131,6 +1128,10 @@ steps: {}
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_run_submit()
-        history_id = self.current_history_id()
+        return self._wait_for_single_invocation(self.current_history_id())
+
+    def _wait_for_single_invocation(self, history_id: str) -> dict[str, Any]:
+        """Wait for the history's one invocation to finish and return its details."""
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-        return self.workflow_populator.history_invocations(history_id)[0]
+        invocation_id = self.workflow_populator.history_invocations(history_id)[0]["id"]
+        return self.workflow_populator.get_invocation(invocation_id)
