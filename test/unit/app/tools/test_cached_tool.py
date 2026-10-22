@@ -1326,7 +1326,7 @@ def test_reindex_edited_tool_files_reindexes_selected_files(monkeypatch):
     "read_only_member, message",
     [
         (UnavailableToolSourceStore("no compatible external tool source store for 'cloud'"), "no compatible"),
-        (MagicMock(read_only=True, **{"load_index.return_value": None}), "'cloud' has no loadable index"),
+        (_IndexStore(read_only=True, index=None), "'cloud' has no loadable index"),
     ],
 )
 def test_toolbox_refuses_to_build_without_read_only_store_index(monkeypatch, read_only_member, message):
