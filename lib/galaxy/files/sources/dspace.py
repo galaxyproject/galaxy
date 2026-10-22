@@ -120,7 +120,14 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
             if query:
                 # DSpace matches whole words only; a trailing * also finds partial ones, but breaks words like "a-b"
                 params["query"] = " ".join(f"{word}*" if re.fullmatch(r"\w+", word) else word for word in query.split())
-            items, total = self._objects(config, "discover/search/objects", params, "searchResult", limit, offset)
+            try:
+                items, total = self._objects(config, "discover/search/objects", params, "searchResult", limit, offset)
+            except RequestParameterInvalidException as e:
+                if not query:
+                    raise
+                raise RequestParameterInvalidException(
+                    f'DSpace could not search for {query}. Try it without symbols like ( or ".'
+                ) from e
             return self._directories("items", items), total
         if len(parts) == 2 and parts[0] == "items":
             bitstreams = self._bitstreams(config, parts[1])
@@ -276,6 +283,8 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
                 if response.status_code == 400 and "Authorization" in headers:
                     # DSpace answers 400 to a login token it no longer accepts
                     raise self._token_not_accepted()
+                if response.status_code == 422:
+                    raise RequestParameterInvalidException(f"DSpace could not process the request [{response.url}].")
                 if response.status_code == 404:
                     raise ObjectNotFound(f"DSpace object not found [{response.url}].")
                 if response.status_code in (401, 403):
