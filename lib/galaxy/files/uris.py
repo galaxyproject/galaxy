@@ -20,10 +20,13 @@ from urllib.parse import (
 
 import requests
 from requests import HTTPError as RequestsHTTPError
+from urllib3.exceptions import LocationParseError
+from urllib3.util import parse_url
 
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
+    MessageException,
     RequestParameterInvalidException,
 )
 from galaxy.files import (
@@ -337,3 +340,28 @@ def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str
                 # Otherwise, we deny access.
                 raise ConfigDoesNotAllowException("Access to this address in not permitted by server configuration")
     return url
+
+
+def refuse_a_private_address(url: str, ip_allowlist: list[IpAllowedListEntryT], label: str, example_url: str) -> None:
+    """Refuse a URL that points into the network Galaxy itself sits on, with messages that name the file source.
+
+    The URL is parsed as requests parses it, because ``validate_non_local`` needs a lowercase scheme and a bare
+    IPv6 host.
+    """
+    try:
+        parsed = parse_url(url.strip())
+    except LocationParseError:
+        parsed = None
+    if parsed is None or parsed.scheme not in ("http", "https") or not parsed.host:
+        raise MessageException(f"{label} needs an http or https URL like {example_url}, not {url}.")
+    host = parsed.host.strip("[]")
+    try:
+        validate_non_local(f"{parsed.scheme}://{host}", ip_allowlist)
+    except ConfigDoesNotAllowException as e:
+        raise ConfigDoesNotAllowException(
+            f"{label} points to {host}, an address on this server's own network. An administrator "
+            "can allow it by adding its IP address to fetch_url_allowlist, which applies to every URL "
+            "Galaxy fetches."
+        ) from e
+    except RequestParameterInvalidException as e:
+        raise MessageException(f"Could not find {host}, the address of {label}.") from e

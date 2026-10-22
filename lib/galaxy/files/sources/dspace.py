@@ -12,12 +12,10 @@ from typing import (
 from urllib.parse import urljoin
 
 from pydantic import Field
-from urllib3.exceptions import LocationParseError
 from urllib3.util import parse_url
 
 from galaxy.exceptions import (
     AuthenticationRequired,
-    ConfigDoesNotAllowException,
     MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -31,7 +29,7 @@ from galaxy.files.models import (
     RemoteFile,
     RemoteFileHash,
 )
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import refuse_a_private_address
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
@@ -43,6 +41,7 @@ from . import BaseFilesSource
 PAGE_SIZE = 100
 CONTENT_BUNDLE = "ORIGINAL"
 MAX_REDIRECTS = 5
+EXAMPLE_API_URL = "https://demo.dspace.org/server/api"
 
 
 class DSpaceFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -56,7 +55,7 @@ class DSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
         str,
         Field(
             title="DSpace REST API URL",
-            description="The REST API of a DSpace 7 or newer server, e.g. https://demo.dspace.org/server/api.",
+            description=f"The REST API of a DSpace 7 or newer server, e.g. {EXAMPLE_API_URL}.",
         ),
     ]
     token: Annotated[
@@ -261,7 +260,9 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         try:
             # redirects are followed here, so every address is checked before it is requested
             for _ in range(MAX_REDIRECTS + 1):
-                self._refuse_a_private_address(url)
+                refuse_a_private_address(
+                    url, self._file_sources_config.fetch_url_allowlist or [], self.label, EXAMPLE_API_URL
+                )
                 headers = {"Accept": accept, "User-Agent": "Galaxy DSpace file source"}
                 if token and self._origin(url) == self._origin(config.api_url):
                     headers["Authorization"] = f"Bearer {token}"
@@ -301,26 +302,6 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
             f"DSpace did not accept the token of {self.label}; it may have expired. "
             "Log in to DSpace again and update the token."
         )
-
-    def _refuse_a_private_address(self, url: str) -> None:
-        # parsed as requests parses it; validate_non_local needs a lowercase scheme and a bare IPv6 host
-        try:
-            parsed = parse_url(url.strip())
-        except LocationParseError:
-            parsed = None
-        if parsed is None or parsed.scheme not in ("http", "https") or not parsed.host:
-            raise MessageException(f"{self.label} needs an api_url like https://demo.dspace.org/server/api.")
-        host = parsed.host.strip("[]")
-        try:
-            validate_non_local(f"{parsed.scheme}://{host}", self._file_sources_config.fetch_url_allowlist or [])
-        except ConfigDoesNotAllowException as e:
-            raise ConfigDoesNotAllowException(
-                f"{self.label} points to {host}, an address on this server's own network. An administrator "
-                "can allow it by adding its IP address to fetch_url_allowlist, which applies to every URL "
-                "Galaxy fetches."
-            ) from e
-        except RequestParameterInvalidException as e:
-            raise MessageException(f"Could not find {host}, the address of {self.label}.") from e
 
     def _origin(self, url: str) -> tuple[str | None, str | None, int | None]:
         parsed = parse_url(url.strip())
