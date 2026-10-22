@@ -299,8 +299,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
         assert annotation == "my cool annotation", annotation
-        data_input_node.destroy.wait_for_and_click()
-        data_input_node.wait_for_absent()
+        self.workflow_editor_remove_node("input1")
         self.screenshot("workflow_editor_data_input_deleted")
 
     @selenium_test
@@ -323,8 +322,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
         assert annotation == "my cool annotation", annotation
-        data_input_node.destroy.wait_for_and_click()
-        data_input_node.wait_for_absent()
+        self.workflow_editor_remove_node("input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
@@ -416,8 +414,7 @@ steps:
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
         assert annotation == "my cool annotation", annotation
-        data_input_node.destroy.wait_for_and_click()
-        data_input_node.wait_for_absent()
+        self.workflow_editor_remove_node("input1")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
 
@@ -445,8 +442,7 @@ steps:
         tool_node = editor.node._(label="tool_exec")
         tool_node.wait_for_and_click()
         tool_input = tool_node.input_terminal(name="inttest")
-        self.hover_over(tool_input.wait_for_visible())
-        tool_node.connector_destroy_callout(name="inttest").wait_for_and_click()
+        self.workflow_editor_destroy_connection("tool_exec#inttest")
         self.workflow_editor_assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
@@ -1699,9 +1695,7 @@ steps:
         conditional_node.input_terminal(name="when").wait_for_present()
         # Output connection should be invalid, as output from conditional step is potentially null
         self.workflow_editor_assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
-        downstream_step = editor.node._(label="downstream_step")
-        downstream_step.destroy.wait_for_and_click()
-        downstream_step.wait_for_absent()
+        self.workflow_editor_remove_node("downstream_step")
         # Connect boolean input to when
         self.workflow_editor_connect("param_input#output", "conditional_step#when")
         self.workflow_editor_assert_connected("param_input#output", "conditional_step#when")
