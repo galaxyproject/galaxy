@@ -1018,7 +1018,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        self.workflow_editor_set_tool_vesrion("0.2", node="multiple_versions")
+        self.workflow_editor_set_tool_version("0.2", node="multiple_versions")
         self.screenshot("workflow_editor_version_update")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
@@ -1040,7 +1040,7 @@ steps:
         self.workflow_create_new(annotation=annotation)
         self.workflow_editor_add_tool_step("multiple_versions")
         self.workflow_editor_set_node_label(label="target label")
-        self.workflow_editor_set_tool_vesrion("0.1")
+        self.workflow_editor_set_tool_version("0.1")
         self.assert_workflow_has_changes_and_save()
 
         editor.tool_bar.upgrade_all.wait_for_and_click()
