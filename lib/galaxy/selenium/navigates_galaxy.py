@@ -90,7 +90,8 @@ GALAXY_MAIN_FRAME_ID = "galaxy_main"
 GALAXY_VISUALIZATION_FRAME_ID = "galaxy_visualization"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
-EditorNodeReference = int | str  # can reference nodes by order_index (starting at 0 as int or label)
+EditorNodeReference = int | str  # order_index (int, from 0; changes on save) or label (str)
+EditorTerminalReference = str | tuple[EditorNodeReference, str]  # "label#terminal" or (node, terminal)
 
 
 class HistoryEntry(NamedTuple):
@@ -1326,7 +1327,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         editor.inputs.input(id=item_name).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def workflow_editor_connect(self, source, sink, screenshot_partial=None):
+    def workflow_editor_connect(
+        self, source: EditorTerminalReference, sink: EditorTerminalReference, screenshot_partial: str | None = None
+    ):
         source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
 
         if screenshot_partial:
@@ -1357,18 +1360,29 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.screenshot(screenshot_partial)
         self.drag_and_drop(source_element, sink_element)
 
-    def workflow_editor_node_and_terminal(self, terminal: str) -> tuple[SmartComponent, str]:
-        """Split a ``label#terminal`` reference into the step's node component and terminal name."""
-        node_label, terminal_name = terminal.split("#", 1)
-        return self.components.workflow_editor.node._(label=node_label), terminal_name
+    def workflow_editor_node(self, node_ref: EditorNodeReference) -> SmartComponent:
+        node = self.components.workflow_editor.node
+        return node._(id=node_ref) if isinstance(node_ref, int) else node._(label=node_ref)
 
-    def workflow_editor_source_sink_terminal_ids(self, source, sink):
+    def workflow_editor_node_and_terminal(self, terminal: EditorTerminalReference) -> tuple[SmartComponent, str]:
+        """Resolve a ``label#terminal`` or ``(node, terminal)`` reference to a node component and terminal name."""
+        if isinstance(terminal, tuple):
+            node_ref, terminal_name = terminal
+        else:
+            node_ref, terminal_name = terminal.split("#", 1)
+        return self.workflow_editor_node(node_ref), terminal_name
+
+    def workflow_editor_source_sink_terminal_ids(
+        self, source: EditorTerminalReference, sink: EditorTerminalReference
+    ) -> tuple[str, str]:
         source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
         source_id = source_element.get_attribute("id").replace("|", r"\|")
         sink_id = sink_element.get_attribute("id").replace("|", r"\|")
         return source_id, sink_id
 
-    def workflow_editor_source_sink_terminal_elements(self, source, sink):
+    def workflow_editor_source_sink_terminal_elements(
+        self, source: EditorTerminalReference, sink: EditorTerminalReference
+    ):
         source_node, source_output = self.workflow_editor_node_and_terminal(source)
         sink_node, sink_input = self.workflow_editor_node_and_terminal(sink)
         return (
@@ -1376,13 +1390,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             sink_node.input_terminal(name=sink_input).wait_for_present(),
         )
 
-    def workflow_editor_destroy_connection(self, sink):
+    def workflow_editor_destroy_connection(self, sink: EditorTerminalReference):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
         sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
         self.hover_over(sink_input)
         sink_node.connector_destroy_callout(name=sink_input_name).wait_for_and_click()
 
-    def workflow_editor_assert_connected(self, source, sink):
+    def workflow_editor_assert_connected(self, source: EditorTerminalReference, sink: EditorTerminalReference):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         # SVG <g> elements are considered "hidden" by Playwright even when
         # rendered, so use wait_for_present instead of wait_for_visible
@@ -1393,19 +1407,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             connector.wait_for_visible()
 
-    def workflow_editor_assert_connection_invalid(self, source, sink):
+    def workflow_editor_assert_connection_invalid(self, source: EditorTerminalReference, sink: EditorTerminalReference):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_present()
 
-    def workflow_editor_assert_not_connected(self, source, sink):
+    def workflow_editor_assert_not_connected(self, source: EditorTerminalReference, sink: EditorTerminalReference):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
 
-    def workflow_editor_assert_input_mapped(self, sink):
+    def workflow_editor_assert_input_mapped(self, sink: EditorTerminalReference):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
         sink_node.input_mapping_icon(name=sink_input_name).wait_for_visible()
 
-    def workflow_editor_assert_input_not_mapped(self, sink):
+    def workflow_editor_assert_input_not_mapped(self, sink: EditorTerminalReference):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
         sink_node.input_mapping_icon(name=sink_input_name).wait_for_absent_or_hidden()
 
@@ -1474,11 +1488,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # if node is_empty just assume current tool step is open
         editor = self.components.workflow_editor
         if node is not None:
-            if isinstance(node, int):
-                node_component = editor.node.by_id(id=node)
-            else:
-                node_component = editor.node._(label=node)
-            node_component.wait_for_and_click()
+            self.workflow_editor_node(node).wait_for_and_click()
         editor.node_inspector.wait_for_visible()
 
     def workflow_editor_click_option(self, option_label):

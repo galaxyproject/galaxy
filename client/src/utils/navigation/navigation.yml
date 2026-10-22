@@ -1130,7 +1130,9 @@ workflow_run:
 workflow_editor:
   node:
     selectors:
-      _: "[node-label='${label}']"
+      _:
+      - "[node-label='${label}']"
+      - "#wf-node-step-${id}"
       by_id: "#wf-node-step-${id}"
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
