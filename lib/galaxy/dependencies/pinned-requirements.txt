@@ -44,7 +44,7 @@ cachetools==7.2.2
 caio==0.9.25 ; python_full_version < '3.11'
 caio==0.12.9 ; python_full_version >= '3.11'
 celery==5.6.3
-certifi==2026.7.22
+certifi==2026.10.19
 cffi==2.1.1 ; implementation_name == 'pypy' or platform_python_implementation != 'PyPy'
 charset-normalizer==3.5.2
 circus==0.19.0

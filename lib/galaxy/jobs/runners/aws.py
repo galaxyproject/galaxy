@@ -89,6 +89,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     in `config/job_conf.sample.yml`.
     """
 
+    runs_job_script_in_container = True
+
     runner_name = "AWSBatchRunner"
     RUNNER_PARAM_SPEC_KEY = "runner_param_specs"
     JOB_NAME_PREFIX = "galaxy-"

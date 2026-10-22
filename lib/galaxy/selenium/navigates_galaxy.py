@@ -1865,9 +1865,45 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.get("workflows/import")
 
     def workflow_index_open_with_name(self, name: str):
+        """Open the workflow titled ``name`` (else the only one whose title contains it) in the editor."""
+        self._workflow_card_action(name, self.navigation.workflows.edit_button)
+
+    def _workflow_card_action(self, name: str, action: Target):
+        """Search the workflow list for ``name``, click ``action`` in its card and return the card."""
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.components.workflows.edit_button.wait_for_and_click()
+
+        def click_action():
+            card = self._wait_on(
+                lambda: self._workflow_card_named(name),
+                f"search results with a workflow titled or uniquely containing [{name}]",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+            card.find_element(*action.element_locator).click()
+            return card
+
+        # Cards stay mounted under a loading overlay while the search reloads them.
+        return retry_call_during_transitions(click_action)
+
+    def _workflow_card_named(self, name: str):
+        """Card titled exactly ``name``, else the only card, once every listed title contains ``name``.
+
+        Until then the list still shows unfiltered workflows (search input is debounced). Like the
+        server's search, containment ignores case.
+        """
+        cards = self.components.workflows.workflow_card.all()
+        title_locator = self.navigation.workflows.workflow_card_title.element_locator
+        try:
+            titles = [card.find_element(*title_locator).text for card in cards]
+        except Exception as e:
+            if not exception_indicates_stale_element(e):
+                raise
+            return None
+        if not titles or any(name.lower() not in title.lower() for title in titles):
+            return None
+        if name in titles:
+            return cards[titles.index(name)]
+        return cards[0] if len(cards) == 1 else None
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1920,16 +1956,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
         self.rename_modal_rename("workflow", new_name)
 
-    def workflow_delete_by_name(self, name):
-        self.workflow_index_search_for(name)
-        self.components.workflows.workflow_drop_down.wait_for_and_click()
-        self.components.workflows.delete_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+    def workflow_delete_by_name(self, name: str):
+        """Delete the workflow titled ``name`` (else the only one whose title contains it)."""
+        workflows = self.navigation.workflows
+        card = self._workflow_card_action(name, workflows.workflow_drop_down)
+        # Every card renders its own (hidden) menu, so the item must come from this card.
+        delete_item = card.find_element(*workflows.delete_button.element_locator)
+        self._wait_on(
+            delete_item.is_displayed, f"delete item of workflow [{name}]", wait_type=self.wait_types.UX_RENDER
+        )
+        delete_item.click()
         self.components.confirm_dialog.ok_button.wait_for_and_click()
 
-    def workflow_bookmark_by_name(self, name):
-        self.workflow_index_search_for(name)
-        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
+    def workflow_bookmark_by_name(self, name: str):
+        """Bookmark the workflow titled ``name`` (else the only one whose title contains it)."""
+        self._workflow_card_action(name, self.navigation.workflows.bookmark_link(action="add"))
 
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
@@ -2022,9 +2063,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_with_name(self, name: str):
-        self.workflow_index_open()
-        self.workflow_index_search_for(name)
-        self.components.workflows.run_button.wait_for_and_click()
+        """Open the run form of the workflow titled ``name`` (else the only one whose title contains it)."""
+        self._workflow_card_action(name, self.navigation.workflows.run_button)
+        # Callers expect the run form rendered; they don't all wait on the same element.
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: dict[str, Any]):

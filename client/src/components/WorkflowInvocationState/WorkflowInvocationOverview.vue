@@ -16,7 +16,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 interface Props {
     invocation: WorkflowInvocationElementView;
     stepsJobsSummary?: StepJobSummary[];
-    invocationAndJobTerminal: boolean;
     isFullPage?: boolean;
     isSubworkflow?: boolean;
     invocationMessages?: InvocationMessage[];
@@ -80,7 +79,6 @@ function showSubworkflowInvocation(invocationId: string, stepId: number) {
                 :invocation="invocation"
                 :steps-jobs-summary="props.stepsJobsSummary"
                 :workflow="workflow"
-                :is-terminal="invocationAndJobTerminal"
                 :is-full-page="isFullPage"
                 :show-minimap="isFullPage" />
         </div>

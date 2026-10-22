@@ -658,6 +658,35 @@ practice.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:simpleType name="RuntimeEnvironmentVariableName">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="RuntimeEnvironmentVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Installed tools can consume explicitly named variables from the job environment:
+``<runtime_environment_variable name="_JAVA_OPTIONS" required="false" description="JVM options" />``.
+Place this declaration under ``requirements``, beside ``credentials``. No profile gating
+is needed; older Galaxy releases simply do not forward these names. User-defined tools
+cannot declare runtime environment variables. Use ``credentials`` for secrets.
+
+Galaxy forwards declared names into wrapped Docker and Singularity/Apptainer containers.
+An unset variable is omitted; an empty string is set. Missing required variables produce
+a warning job message, without failing the job, for all runners and execution environments.
+The optional description documents the variable for administrators and tool linting.
+
+Reserved exact names: PATH, HOME, USER, LOGNAME, SHELL, PWD, OLDPWD, HOSTNAME, TMPDIR,
+TMP, TEMP, PYTHONPATH, PYTHONHOME, BASH_ENV, ENV, IFS, PS4.
+Reserved prefixes: LD_, GALAXY_, _GALAXY_, SINGULARITY_, SINGULARITYENV_, APPTAINER_,
+APPTAINERENV_. The loader and linter enforce these exclusions.
+      ]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="RuntimeEnvironmentVariableName" use="required"/>
+    <xs:attribute name="required" type="xs:boolean" default="false"/>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
   <xs:complexType name="Requirements">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -674,6 +703,7 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement"/>
       <xs:element name="container" type="Container"/>
       <xs:element name="resource" type="Resource"/>
+      <xs:element name="runtime_environment_variable" type="RuntimeEnvironmentVariable"/>
       <xs:element name="credentials" type="Credentials">
         <!-- Ensure unique credential names across variables and secrets -->
         <xs:unique name="uniqueCredentialNames">

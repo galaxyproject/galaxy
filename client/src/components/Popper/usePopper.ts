@@ -43,6 +43,11 @@ export function usePopper(
             visible.value = false;
         });
     };
+    const hide = () => {
+        openDelay.clear();
+        closeDelay.clear();
+        visible.value = false;
+    };
     const doCloseDocument = (e: Event) => {
         if (!reference.value?.contains(e.target as Node) && !popper.value?.contains(e.target as Node)) {
             openDelay.clear();
@@ -116,5 +121,5 @@ export function usePopper(
 
     watch([instance, visible], () => instance.value?.update());
 
-    return { instance, visible };
+    return { hide, instance, visible };
 }

@@ -17,6 +17,7 @@ from galaxy.model.metadata import (
     MetadataTempFile,
 )
 from galaxy.model.store import DirectoryModelExportStore
+from galaxy.tool_util.runtime_environment import required_variable_names
 from galaxy.util import safe_makedirs
 
 if TYPE_CHECKING:
@@ -261,6 +262,9 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             tool_as_dict: dict[str, Any] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
+            tool_as_dict["required_runtime_environment_variables"] = required_variable_names(
+                tool.runtime_environment_variables
+            )
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}
             tool_as_dict["output_collections"] = {
                 name: output.to_dict() for name, output in tool.output_collections.items()
