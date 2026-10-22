@@ -2128,9 +2128,7 @@ steps:
 
     @retry_assertion_during_transitions
     def assert_node_output_is(self, label: str, output_type: str, subcollection_type: str | None = None):
-        editor = self.components.workflow_editor
-        node_label, output_name = label.split("#")
-        node = editor.node._(label=node_label)
+        node, output_name = self.workflow_editor_node_and_terminal(label)
         node.wait_for_present()
         # Dismiss any stale tooltip before hovering so retry gets fresh text
         self.click_center()
