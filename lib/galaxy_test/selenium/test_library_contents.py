@@ -176,6 +176,27 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     @selenium_test
     @requires_admin
     @requires_new_library
+    def test_add_datasets_to_selected_history(self):
+        self.admin_login()
+        self.create_new_library()
+        self.home()
+        target_history_id = self.dataset_populator.new_history(name=self._get_random_name())
+        self.history_panel_create_new()
+        other_history_id = self.current_history_id()
+        self.populate_library_folder_from_import_dir(self.name, ["1.bed", "1.axt"])
+        self.libraries_folder_add_to_history(
+            ["1.bed", "1.axt"],
+            history_id=target_history_id,
+            screenshot_name="libraries_add_datasets_to_selected_history",
+        )
+        self.wait_for_current_history_id(target_history_id)
+        contents = self.dataset_populator.get_history_contents(target_history_id)
+        assert sorted(item["name"] for item in contents) == ["1.axt", "1.bed"]
+        assert self.dataset_populator.get_history_contents(other_history_id) == []
+
+    @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_show_details(self):
         self.admin_login()
         self.navigate_to_new_library()

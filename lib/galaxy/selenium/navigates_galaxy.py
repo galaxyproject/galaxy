@@ -541,6 +541,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def current_history_id(self) -> str:
         return self.current_history()["id"]
 
+    def wait_for_current_history_id(self, history_id: str):
+        """Wait until ``history_id`` is the user's current history."""
+        self._wait_on(
+            lambda: self.current_history_id() == history_id,
+            f"history [{history_id}] to become current",
+            wait_type=WAIT_TYPES.DATABASE_OPERATION,
+        )
+
     def current_history_publish(self):
         self.click_history_option_sharing()
         self.make_accessible_and_publishable()
@@ -1961,9 +1969,53 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
         self.select_dataset_from_lib_import_modal(filenames)
 
+    def libraries_folder_wait_for_datasets(self, names) -> list[str]:
+        """Wait until the open library folder lists ``names``; returns every row's name in display order."""
+        folder = self.components.libraries.folder
+
+        def rows_loaded():
+            row_count = len(self.libraries_table_elements())
+            row_names = [folder.row_name(row_index=index).wait_for_present().text.strip() for index in range(row_count)]
+            return row_names if set(names) <= set(row_names) else None
+
+        return self._wait_on(rows_loaded, f"datasets {sorted(names)} in the library folder")
+
+    def libraries_folder_select_datasets(self, names):
+        """Tick the open library folder's datasets named ``names``."""
+        folder = self.components.libraries.folder
+        row_names = self.libraries_folder_wait_for_datasets(names)
+        for index, row_name in enumerate(row_names):
+            if row_name in names:
+                folder.select_dataset(row_index=index).wait_for_and_click()
+                folder.selected_dataset_row(row_index=index).wait_for_present()
+
+    def libraries_folder_add_to_history(self, names, history_id=None, screenshot_name=None):
+        """Add the open folder's datasets ``names`` via Add to History > as Datasets, into ``history_id`` if given."""
+        folder = self.components.libraries.folder
+        self.libraries_folder_select_datasets(names)
+        folder.add_to_history.wait_for_and_click()
+        folder.add_to_history_datasets.wait_for_and_click()
+        if history_id:
+            folder.import_to_history_select.select_by_value(history_id)
+        if screenshot_name:
+            self.wait_for_fade_in(folder.add_to_history_modal)
+            self.screenshot(screenshot_name)
+        folder.import_datasets_ok_button.wait_for_and_click()
+        # the dialog closes once every dataset is added; its progress bar starts at zero width, so reads as hidden
+        folder.import_datasets_ok_button.wait_for_absent_or_hidden(wait_type=WAIT_TYPES.DATABASE_OPERATION)
+
     def navigate_to_new_library(self):
         self.create_new_library()
         self.libraries_open_with_name(self.name)
+
+    def wait_for_fade_in(self, target):
+        """Wait until ``target`` is visible and has finished fading in to full opacity."""
+        element = target.wait_for_visible()
+        self._wait_on(
+            lambda: self.execute_script("return getComputedStyle(arguments[0]).opacity;", element) == "1",
+            f"{target} to fade in",
+            wait_type=WAIT_TYPES.UX_TRANSITION,
+        )
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
