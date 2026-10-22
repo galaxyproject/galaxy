@@ -1944,7 +1944,12 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             and hasattr(self.app, "job_config")
             and hasattr(self.app.job_config, "get_tool_resource_xml")
         ):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get("id", "").lower(), self.tool_type)
+            tool_ids = [root.get("id", "").lower()]
+            if self.guid:
+                # Handle tool shed guids, matching the ids used for destination lookup
+                guid = self.guid.lower()
+                tool_ids = [guid, guid.rsplit("/", 1)[0], *tool_ids]
+            resource_xml = self.app.job_config.get_tool_resource_xml(tool_ids, self.tool_type)
             if resource_xml is not None:
                 inputs = root.find("inputs")
                 if inputs is None:

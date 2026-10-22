@@ -662,17 +662,20 @@ class JobConfiguration(ConfiguresHandlers):
         """Given a tool id, return XML elements describing parameters to
         insert into job resources.
 
-        :tool id: A tool ID (a string)
+        :tool id: A tool ID (a string) or a list of tool IDs, as accepted by
+            :meth:`get_job_tool_configurations`. The first ID with a tool
+            definition is used.
         :tool type: A tool type (a string)
 
         :returns: List of parameter elements.
         """
-        if tool_id and tool_type in ("default", "manage_data"):
-            # TODO: Only works with exact matches, should handle different kinds of ids
-            # the way destination lookup does.
+        tool_ids = [i for i in util.listify(tool_id) if i]
+        if tool_ids and tool_type in ("default", "manage_data"):
             resource_group = None
-            if tool_id in self.tools:
-                resource_group = self.tools[tool_id][0].get_resource_group()
+            for id in tool_ids:
+                if id in self.tools:
+                    resource_group = self.tools[id][0].get_resource_group()
+                    break
             resource_group = resource_group or self.default_resource_group
             if resource_group and resource_group in self.resource_groups:
                 fields_names = self.resource_groups[resource_group]
