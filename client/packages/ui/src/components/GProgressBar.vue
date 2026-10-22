@@ -58,6 +58,8 @@ const max = computed(() => {
 const precision = computed(() => Math.max(Math.floor(toNumber(props.precision, progress?.precision.value ?? 0)), 0));
 const percent = computed(() => (100 * value.value) / max.value);
 const width = computed(() => `${Math.min(Math.max(percent.value, 0), 100)}%`);
+// aria-valuenow must lie within aria-valuemin and aria-valuemax
+const valueNow = computed(() => Math.min(Math.max(value.value, 0), max.value).toFixed(precision.value));
 
 const variant = computed(() => props.variant ?? progress?.variant.value ?? "primary");
 const animated = computed(() => props.animated ?? progress?.animated.value ?? false);
@@ -92,7 +94,7 @@ const classes = computed(() => ({
         role="progressbar"
         aria-valuemin="0"
         :aria-valuemax="max"
-        :aria-valuenow="value.toFixed(precision)"
+        :aria-valuenow="valueNow"
         :aria-valuetext="props.label">
         <slot>{{ text }}</slot>
     </div>

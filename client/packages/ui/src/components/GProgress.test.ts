@@ -37,17 +37,14 @@ describe("GProgress", () => {
         ).toBe("100");
     });
 
-    it("keeps the bar within the track", () => {
-        expect(
-            mount(GProgress, { props: { value: 150 } })
-                .get('[role="progressbar"]')
-                .attributes("style"),
-        ).toContain("width: 100%");
-        expect(
-            mount(GProgress, { props: { value: -5 } })
-                .get('[role="progressbar"]')
-                .attributes("style"),
-        ).toContain("width: 0%");
+    it("keeps the bar and its announced value within the range", () => {
+        const over = mount(GProgress, { props: { value: 150 } }).get('[role="progressbar"]');
+        expect(over.attributes("style")).toContain("width: 100%");
+        expect(over.attributes("aria-valuenow")).toBe("100");
+
+        const under = mount(GProgress, { props: { value: -5 } }).get('[role="progressbar"]');
+        expect(under.attributes("style")).toContain("width: 0%");
+        expect(under.attributes("aria-valuenow")).toBe("0");
     });
 
     it("names the single bar with the label given to the progress", () => {
