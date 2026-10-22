@@ -2709,9 +2709,31 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         _click_action_in_menu()
 
+    def history_panel_delete_selected(self, purge: bool = False):
+        """Delete the selected history items from the Selection menu, permanently with ``purge``, and confirm."""
+        self.use_bootstrap_dropdown(option="purge option" if purge else "delete option", menu="selected content menu")
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_absent_or_hidden()
+
     def history_panel_item_delete(self, hid):
         """Delete history item ``hid`` with its trash button."""
         self.history_panel_item_component(hid=hid).delete_button.wait_for_and_click()
+
+    def history_panel_item_undelete(self, hid):
+        """Undelete history item ``hid`` with its Undelete button; deleted items must be shown."""
+        self.history_panel_item_component(hid=hid).undelete_button.wait_for_and_click()
+
+    def history_panel_include_deleted(self):
+        """Toggle the history panel's Include deleted filter (the deleted-items counter)."""
+        self.components.history_panel.include_deleted_button.wait_for_and_click()
+
+    def history_panel_item_unhide(self, hid):
+        """Unhide history item ``hid`` with its Unhide button; hidden items must be shown."""
+        self.history_panel_item_component(hid=hid).unhide_button.wait_for_and_click()
+
+    def history_panel_include_hidden(self):
+        """Toggle the history panel's Include hidden filter (the hidden-items counter)."""
+        self.components.history_panel.include_hidden_button.wait_for_and_click()
 
     def open_history_multi_view(self):
         self.components.history_panel.histories_operation_menu.wait_for_and_click()
