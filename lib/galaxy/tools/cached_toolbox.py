@@ -6,7 +6,6 @@ lightweight index in memory and loads full Tool objects on-demand with
 LRU eviction.
 """
 
-import itertools
 import logging
 import os
 import threading
@@ -826,9 +825,7 @@ class CachedToolBox(ToolBox):
             index = store.load_index()
             index_hashes: set[str] = set()
             if index is not None:
-                index_hashes.update(entry.source_hash for entry in index.entries.values() if entry.source_hash)
-                for versions in index.entries_by_version.values():
-                    index_hashes.update(entry.source_hash for entry in versions.values() if entry.source_hash)
+                index_hashes.update(entry.source_hash for entry in index.iter_entries() if entry.source_hash)
             dangling = index_hashes - source_hashes
             if dangling:
                 log.info(
@@ -1300,11 +1297,8 @@ class CachedToolBox(ToolBox):
                 stored_hashes[path] = stored.hash
         if not stored_hashes:
             return False
-        entries = itertools.chain(
-            index.entries.values(), *(versions.values() for versions in index.entries_by_version.values())
-        )
         held_hashes: dict[str, set[str]] = {}
-        for entry in entries:
+        for entry in index.iter_entries():
             if entry.source_path in stored_hashes:
                 held_hashes.setdefault(entry.source_path, set()).add(entry.source_hash)
         return any(stored_hashes[path] not in hashes for path, hashes in held_hashes.items())
@@ -1324,14 +1318,7 @@ class CachedToolBox(ToolBox):
         cached = self._index_source_paths_cache
         if cached is not None and cached[0] is index:
             return cached[1]
-        paths: set[str] = set()
-        for versions in index.entries_by_version.values():
-            for entry in versions.values():
-                if entry.source_path:
-                    paths.add(entry.source_path)
-        for entry in index.entries.values():
-            if entry.source_path:
-                paths.add(entry.source_path)
+        paths = {entry.source_path for entry in index.iter_entries() if entry.source_path}
         self._index_source_paths_cache = (index, paths)
         return paths
 

@@ -143,6 +143,14 @@ def test_validation_shares_default_entries_with_version_map(index_entry, tool_in
     assert loaded.entries_by_version["multi"]["0.1"].version == "0.1"
 
 
+def test_iter_entries_yields_each_entry_once(index_entry, tool_index):
+    index = tool_index(index_entry("multi", version="0.1"), index_entry("multi", version="0.2"))
+    legacy = ToolIndex(entries={"old": index_entry("old", version="1.0")})
+
+    assert sorted(entry.version for entry in index.iter_entries()) == ["0.1", "0.2"]
+    assert [entry.id for entry in legacy.iter_entries()] == ["old"]
+
+
 def test_index_schema_hash_is_pinned():
     # Published tool source store bundles are matched on this hash; a change
     # discards every deployed index until the bundles are republished.
