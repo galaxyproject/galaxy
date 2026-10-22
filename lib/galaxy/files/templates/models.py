@@ -51,6 +51,7 @@ FileSourceTemplateType = Literal[
     "rspace",
     "dataverse",
     "cbioportal",
+    "hal",
     "huggingface",
     "github",
     "iiif",
@@ -467,6 +468,20 @@ class CBioPortalFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class HALFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["hal"]
+    api_url: str | TemplateExpansion = "https://api.hal.science/search/"
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class HALFileSourceConfiguration(StrictModel):
+    type: Literal["hal"]
+    api_url: str = "https://api.hal.science/search/"
+    writable: bool = False
+
+
 class HuggingFaceFileSourceTemplateConfiguration(StrictModel):
     type: Literal["huggingface"]
     token: str | TemplateExpansion | None = None
@@ -694,6 +709,7 @@ FileSourceTemplateConfiguration = Annotated[
     | RSpaceFileSourceTemplateConfiguration
     | DataverseFileSourceTemplateConfiguration
     | CBioPortalFileSourceTemplateConfiguration
+    | HALFileSourceTemplateConfiguration
     | HuggingFaceFileSourceTemplateConfiguration
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
@@ -729,6 +745,7 @@ FileSourceConfiguration = Annotated[
     | RSpaceFileSourceConfiguration
     | DataverseFileSourceConfiguration
     | CBioPortalFileSourceConfiguration
+    | HALFileSourceConfiguration
     | HuggingFaceFileSourceConfiguration
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
@@ -824,6 +841,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "rspace": RSpaceFileSourceConfiguration,
     "dataverse": DataverseFileSourceConfiguration,
     "cbioportal": CBioPortalFileSourceConfiguration,
+    "hal": HALFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
