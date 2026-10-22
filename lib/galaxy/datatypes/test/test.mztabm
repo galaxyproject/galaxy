@@ -1,0 +1,85 @@
+COM	Meta data section
+MTD	mzTab-version	2.1.0-M
+MTD	mzTab-ID	ISAS-2018-1234
+MTD	mzTab-profile	M+F+E
+MTD	description	Minimal proposed sample file for identification and quantification of lipids
+MTD	publication[1]	pubmed:29039908 | doi:10.1021/acs.analchem.7b03576
+MTD	cv[1]-label	MS
+MTD	cv[1]-full_name	PSI-MS controlled vocabulary
+MTD	cv[1]-version	4.0.18
+MTD	cv[1]-uri	https://github.com/HUPO-PSI/psi-ms-CV/blob/master/psi-ms.obo
+MTD	cv[2]-label	MSIO
+MTD	cv[2]-uri	https://www.ebi.ac.uk/ols/ontologies/msio
+MTD	cv[2]-version	1.0.1
+MTD	cv[2]-full_name	Metabolomics Standards Initiative Ontology (MSIO)
+MTD	cv[3]-label	UO
+MTD	cv[3]-full_name	Units of Measurement Ontology
+MTD	cv[3]-version	 2017-09-25
+MTD	cv[3]-uri	http://purl.obolibrary.org/obo/uo.owl
+MTD	quantification_method	[MS, MS:1001838, SRM quantitation analysis, ]
+MTD	sample_processing[1]	[MSIO, MSIO:0000148, high performance liquid chromatography, ]
+MTD	instrument[1]-name	[MS, MS:1001911, Q Exactive , ]
+MTD	instrument[1]-source	[MS, MS:1000073, electrospray ionization, ]
+MTD	instrument[1]-analyzer[1]	[MS, MS:1000081, quadrupole, ]
+MTD	instrument[1]-analyzer[2]	[MS, MS:1000484, orbitrap, ]
+MTD	instrument[1]-detector	[MS, MS:1000624, inductive detector, ]
+MTD	software[1]	[MS, MS:1000532, Xcalibur,2.8-280502/2.8.1.2806]
+MTD	software[1]-setting[1]	ScheduledSRMWindow: 2 min
+MTD	software[1]-setting[2]	CycleTime: 2 s
+MTD	software[2]	[MS, MS:1000922, Skyline, 3.5.0.9319]
+MTD	software[2]-setting[1]	MSMSmassrange: (50.0, 1800.0)
+MTD	sample[1]	QEx-1273-prm-sp1
+MTD	sample[1]-description	Sphingolipids with concentration reported as picomolar per mg of protein, abundances are reported after calibration correction.
+MTD	ms_run[1]-location	file:///C:/data/QEx-1273-prm-sp1.mzML
+MTD	ms_run[1]-format	[MS, MS:1000584, mzML file, ]
+MTD	ms_run[1]-id_format	[MS, MS:1000768, Thermo nativeID format, ]
+MTD	ms_run[1]-scan_polarity[1]	[MS, MS:1000130, positive scan, ]
+MTD	ms_run[1]-instrument_ref	instrument[1]
+MTD	assay[1]	Description of assay 1
+MTD	assay[1]-sample_ref	sample[1]
+MTD	assay[1]-ms_run_ref	ms_run[1]
+MTD	study_variable[1]	Sphingolipid SRM Quantitation
+MTD	study_variable[1]-assay_refs	assay[1]
+MTD	study_variable[1]-description	sphingolipid srm quantitation
+MTD	study_variable[1]-average_function	[MS, MS:1002883, median, ]
+MTD	study_variable[1]-variation_function	[MS, MS:1002885, standard error, ]
+MTD	small_molecule-quantification_unit	[UO, UO:0000072, picomolal, ]
+MTD	small_molecule_feature-quantification_unit	[UO, UO:0000072, picomolal, ]
+MTD	small_molecule-identification_reliability	[MS, MS:1002896, compound identification confidence level, ]
+MTD	database[1]	[,, Pubchem, ]
+MTD	database[1]-prefix	PUBCHEM-CPD
+MTD	database[1]-version	02.12.2017
+MTD	database[1]-uri	https://www.ncbi.nlm.nih.gov/pccompound
+MTD	database[2]	[,, LipidMaps, ]
+MTD	database[2]-prefix	LM
+MTD	database[2]-version	2017-12
+MTD	database[2]-uri	http://www.lipidmaps.org/
+MTD	database[3]	[,, LipidCreator Transitions, ]
+MTD	database[3]-prefix	LCTR
+MTD	database[3]-version	2018-07
+MTD	database[3]-uri	https://lifs.isas.de/lipidcreator
+COM	MTD	colunit-small_molecule	retention_time=[UO, UO:0000010, second, ]
+MTD	colunit-small_molecule_evidence	opt_global_mass_error=[UO, UO:0000169, parts per million, ]
+MTD	id_confidence_measure[1]	[MS, MS:1002890, fragmentation score, ]
+MTD	external_study_uri[1]	file:///C:/data/prm.sky.zip
+
+COM	"MzTab 2.0.0-M ""proposed"" specification"
+COM	Summary rows. 
+COM	Evidences (e.g. multiple modifications, adducts incl. charge variants are summarized). 
+COM	For most use cases this summary lines may be sufficient.
+COM	Negative and positive scan polarities are currently not explicitly included, this is still under debate in the mzTAB community.
+
+COM	MS feature rows , used to report m/z and individual abundance information for quantification
+SFH	SMF_ID	SME_ID_REFS	SME_ID_REF_ambiguity_code	adduct_ion	isotopomer	exp_mass_to_charge	charge	retention_time_in_seconds	retention_time_in_seconds_start	retention_time_in_seconds_end	abundance_assay[1]	opt_global_quantifiers_SMF_ID_REFS
+SMF	1	1	null	[M+H]1+	null	650.6432	1	821.2341	756.0000	954.0000	4.448784E-05	3
+SMF	2	2	null	null	null	252.2677	1	821.2341	756.0000	954.0000	6.673176E-06	null
+SMF	3	3	null	null	null	264.2689	1	821.2341	756.0000	954.0000	1.3346352E-05	null
+SMF	4	4	null	null	null	282.2788	1	821.2341	756.0000	954.0000	9.831813E-06	null
+
+COM	Evidence rows for parent / fragment ions.
+COM	Primary use case: report single hits from spectral library or accurate mass searches without quantification. -> Qualification
+SEH	SME_ID	evidence_input_id	database_identifier	chemical_formula	smiles	inchi	chemical_name	uri	derivatized_form	adduct_ion	exp_mass_to_charge	charge	theoretical_mass_to_charge	opt_global_mass_error	spectra_ref	identification_method	ms_level	id_confidence_measure[1]	rank	opt_global_qualifiers_evidence_grouping_ID_REFS
+SME	1	1	LM:LMSP0501AB02	C42H83NO3	CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)/C=C/CCCCCCCCCCCCC	InChI=1S/C42H83NO3/c1-3-5-7-9-11-13-15-17-18-19-20-21-22-23-24-26-28-30-32-34-36-38-42(46)43-40(39-44)41(45)37-35-33-31-29-27-25-16-14-12-10-8-6-4-2/h35,37,40-41,44-45H,3-34,36,38-39H2,1-2H3,(H,43,46)/b37-35+/t40-,41+/m0/s1	LacCer d18:1/12:0	http://www.lipidmaps.org/data/LMSDRecord.php?LM_ID=LMSP02010012	null	[M+H]1+	650.6432	1	650.6446	-2.1517	ms_run[1]:controllerType=0 controllerNumber=1 scan=731	[,, qualifier ions exact mass,]	[MS,MS:1000511, ms level, 1]	0.958	1	2
+SME	2	2	LCTR:LCTR0809812	C17H33N	null	null	Cer d18:1/24:0 W' - CHO	null	null	null	252.2677	1	252.2686	-3.5676	ms_run[1]:controllerType=0 controllerNumber=1 scan=732	[,, exact mass, ]	[MS,MS:1000511, ms level, 2]	0.9780	1	null
+SME	3	2	LCTR:LCTR0871245	C18H33N	null	null	Cer d18:1/24:0 W''	null	null	null	264.2689	1	264.2686	-1.1352	ms_run[1]:controllerType=0 controllerNumber=1 scan=732	[,, exact mass, ]	[MS,MS:1000511, ms level, 2]	0.7500	1	null
+SME	4	2	LCTR:LCTR0809711	C18H35NO	null	null	Cer d18:1/24:0 W'	null	null	null	282.2788	1	282.2791	-1.0628	ms_run[1]:controllerType=0 controllerNumber=1 scan=732	[,, exact mass, ]	[MS,MS:1000511, ms level, 2]	0.8760	1	null
