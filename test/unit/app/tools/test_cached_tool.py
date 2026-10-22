@@ -6,7 +6,6 @@ from datetime import (
     datetime,
     timezone,
 )
-from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -15,6 +14,7 @@ from cachetools import LRUCache
 
 import galaxy.queue_worker as queue_worker_mod
 import galaxy.tools.cached_toolbox as mod
+from galaxy.app_unittest_utils.tool_source_support import PopulateConfig
 from galaxy.tool_util.toolbox.base import NullToolTagManager
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.panel import (
@@ -569,28 +569,6 @@ def test_index_tool_files_reloads_a_stale_index_another_populate_already_wrote(t
     assert entry.source_hash == "after-update"
 
 
-def _populate_config(tmp_path, conf):
-    return SimpleNamespace(
-        enable_beta_tool_formats=False,
-        tool_source_stores={},
-        tool_search_index_dir=None,
-        root=str(tmp_path),
-        tool_path=str(tmp_path),
-        tool_source_database_connection=f"sqlite:///{tmp_path}/ts.sqlite",
-        data_manager_config_file=None,
-        shed_data_manager_config_file=None,
-        biotools_content_directory=None,
-        biotools_use_api=False,
-        biotools_service_cache_type="memory",
-        biotools_service_cache_data_dir=None,
-        biotools_service_cache_lock_dir=None,
-        biotools_service_cache_url=None,
-        biotools_service_cache_table_name=None,
-        biotools_service_cache_schema_name=None,
-        all_tool_config_files=lambda: [str(conf)],
-    )
-
-
 GUID = "toolshed.example.com/repos/owner/repo/updated/1.0"
 
 
@@ -608,7 +586,7 @@ def _indexed_shed_tool_box(tmp_path, monkeypatch, tool_xml):
     path = str(tool_file)
     conf = tmp_path / "shed_tool_conf.xml"
     conf.write_text(f'<toolbox tool_path="{tools_dir}"></toolbox>')
-    config = _populate_config(tmp_path, conf)
+    config = PopulateConfig(tmp_path, conf)
     populator.populate_store_inline(config, paths=[path], path_guids={path: GUID})
     box = _seam_box()
     box.app.config = config
