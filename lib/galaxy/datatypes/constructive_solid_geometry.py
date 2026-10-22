@@ -830,14 +830,19 @@ VTK_XML_FILE_EXTENSIONS: dict[str, str] = {
     "PRectilinearGrid": "pvtr",
     "PStructuredGrid": "pvts",
     "PUnstructuredGrid": "pvtu",
+    "PTable": "pvtt",
+    "PHyperTreeGrid": "phtg",
     # further dataset types with a dedicated extension
     "Table": "vtt",
-    "HyperTreeGrid": "vth",
-    "ExplicitStructuredGrid": "vtex",
-    "PartitionedDataSetCollection": "vtpc",
-    "vtkPartitionedDataSetCollection": "vtpc",
-    "MultiBlockDataSet": "vtm",
+    "HyperTreeGrid": "htg",
+    # composite datasets use the VTK class name as type
     "vtkMultiBlockDataSet": "vtm",
+    "vtkPartitionedDataSet": "vtpd",
+    "vtkPartitionedDataSetCollection": "vtpc",
+    "vtkOverlappingAMR": "vth",
+    "vtkNonOverlappingAMR": "vth",
+    "vtkHierarchicalBoxDataSet": "vth",
+    "HierarchicalBoxDataSet": "vth",
 }
 
 

@@ -46,6 +46,11 @@ def _vtk_xml_dataset(dataset_type: str | None) -> Any:
         ("PRectilinearGrid", "pvtr"),
         ("PStructuredGrid", "pvts"),
         ("PUnstructuredGrid", "pvtu"),
+        ("Table", "vtt"),
+        ("HyperTreeGrid", "htg"),
+        ("vtkMultiBlockDataSet", "vtm"),
+        ("vtkPartitionedDataSetCollection", "vtpc"),
+        ("vtkOverlappingAMR", "vth"),
     ],
 )
 def test_vtkXml_download_extension(dataset_type, expected_extension):
