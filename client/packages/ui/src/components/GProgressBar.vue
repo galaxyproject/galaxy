@@ -102,12 +102,15 @@ const classes = computed(() => ({
 
 <style scoped lang="scss">
 .g-progress-bar {
+    // Darkening stripes keep text and fill contrast; dark and info set light ones
+    --g-progress-stripe: rgb(0% 0% 0% / 0.15);
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     box-sizing: border-box;
     overflow: hidden;
-    // Page-colour text keeps 4.5:1 on every fill; info, the one light fill, sets dark text
+    // Page-colour text keeps 4.5:1 on every fill and stripe; info, the one light fill, sets dark text
     color: var(--background-color);
     text-align: center;
     white-space: nowrap;
@@ -117,7 +120,7 @@ const classes = computed(() => ({
         transition: none;
     }
 
-    // Each fill keeps 3:1 against the grey-200 track, and its text 4.5:1 against the fill
+    // Each fill and its stripes keep 3:1 against the grey-200 track, and the text 4.5:1 against both
     &.g-primary {
         background-color: var(--color-blue-600);
     }
@@ -141,20 +144,23 @@ const classes = computed(() => ({
     &.g-info {
         background-color: var(--color-blue-500);
         color: var(--color-blue-900);
+        // blue-500 sits just inside both limits, so its stripes can only be faint
+        --g-progress-stripe: rgb(100% 100% 100% / 0.05);
     }
 
     &.g-dark {
         background-color: var(--color-grey-800);
+        --g-progress-stripe: rgb(100% 100% 100% / 0.15);
     }
 
     &.g-progress-bar-striped {
         background-image: linear-gradient(
             45deg,
-            rgb(100% 100% 100% / 0.15) 25%,
+            var(--g-progress-stripe) 25%,
             transparent 25%,
             transparent 50%,
-            rgb(100% 100% 100% / 0.15) 50%,
-            rgb(100% 100% 100% / 0.15) 75%,
+            var(--g-progress-stripe) 50%,
+            var(--g-progress-stripe) 75%,
             transparent 75%,
             transparent
         );
