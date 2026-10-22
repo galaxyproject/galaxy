@@ -1673,9 +1673,6 @@ class InputParameterModule(WorkflowModule):
                             )
 
             options: list[OptionDict] | None = None
-            if isinstance(default_value, list):
-                # YAML can load numeric text defaults as numbers, while connected option values are strings.
-                default_value = [str(value) for value in default_value]
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
@@ -1718,6 +1715,10 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
         is_text = parameter_type == "text"
+        if is_text and default_value is not None and parameter_def.get("multiple"):
+            default_values = default_value if isinstance(default_value, list) else [default_value]
+            if any(not isinstance(value, str) for value in default_values):
+                raise ParameterValueError("the attribute 'value' must be text", "input")
         restricted_inputs = False
 
         # Really is just an attempt - tool module may not be available (small problem), get_options may really depend on other
