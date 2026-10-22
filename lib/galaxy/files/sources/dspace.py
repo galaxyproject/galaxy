@@ -96,7 +96,7 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         if recursive:
-            raise MessageException("Recursive listing is not supported for DSpace file sources.")
+            raise RequestParameterInvalidException("Recursive listing is not supported for DSpace file sources.")
         parts = self._split(path)
         if len(parts) == 2:
             parts[1] = self._uuid(parts[1], path)
@@ -298,7 +298,7 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
                     raise ObjectNotFound(f"DSpace object not found [{response.url}].")
                 if response.status_code in (401, 403):
                     hint = "Check the token of" if token else "It is not public, and there is no token in"
-                    raise MessageException(f"DSpace refused access to {response.url}. {hint} {self.label}.")
+                    raise AuthenticationRequired(f"DSpace refused access to {response.url}. {hint} {self.label}.")
                 response.raise_for_status()
                 response.raw.decode_content = True
                 yield response.raw
