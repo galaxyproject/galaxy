@@ -1359,14 +1359,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.screenshot(screenshot_partial)
         self.drag_and_drop(source_element, sink_element)
 
+    def workflow_editor_node_and_terminal(self, terminal: str) -> tuple[SmartComponent, str]:
+        """Split a ``label#terminal`` reference into the step's node component and terminal name."""
+        node_label, terminal_name = terminal.split("#", 1)
+        return self.components.workflow_editor.node._(label=node_label), terminal_name
+
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
-        editor = self.components.workflow_editor
-
-        source_node_label, source_output = source.split("#", 1)
-        sink_node_label, sink_input = sink.split("#", 1)
-
-        source_node = editor.node._(label=source_node_label)
-        sink_node = editor.node._(label=sink_node_label)
+        source_node, source_output = self.workflow_editor_node_and_terminal(source)
+        sink_node, sink_input = self.workflow_editor_node_and_terminal(sink)
 
         source_node.wait_for_present()
         sink_node.wait_for_present()
@@ -1383,10 +1383,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return source_id, sink_id
 
     def workflow_editor_destroy_connection(self, sink):
-        editor = self.components.workflow_editor
-
-        sink_node_label, sink_input_name = sink.split("#", 1)
-        sink_node = editor.node._(label=sink_node_label)
+        sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
         sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
         self.hover_over(sink_input)
         sink_node.connector_destroy_callout(name=sink_input_name).wait_for_and_click()
@@ -1411,18 +1408,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
 
     def workflow_editor_assert_input_mapped(self, sink):
-        editor = self.components.workflow_editor
-        sink_node_label, sink_input_name = sink.split("#", 1)
-        sink_node = editor.node._(label=sink_node_label)
-        sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
-        sink_mapping_icon.wait_for_visible()
+        sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
+        sink_node.input_mapping_icon(name=sink_input_name).wait_for_visible()
 
     def workflow_editor_assert_input_not_mapped(self, sink):
-        editor = self.components.workflow_editor
-        sink_node_label, sink_input_name = sink.split("#", 1)
-        sink_node = editor.node._(label=sink_node_label)
-        sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
-        sink_mapping_icon.wait_for_absent_or_hidden()
+        sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
+        sink_node.input_mapping_icon(name=sink_input_name).wait_for_absent_or_hidden()
 
     def workflow_editor_set_license(self, license: str) -> None:
         license_selector = self.components.workflow_editor.license_selector
