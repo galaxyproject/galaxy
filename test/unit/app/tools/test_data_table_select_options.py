@@ -128,12 +128,16 @@ def test_table_dropdown_keeps_dataset_choices(table_select, monkeypatch):
     ]
 
 
-def test_static_dropdown_is_unchanged(table_select):
-    param, trans = table_select(
-        '<option value="hg38">First</option><option value="hg38" selected="true">Second</option>'
+def test_non_table_dropdown_keeps_duplicate_values(table_select):
+    _, trans = table_select()
+    tool = cast("Tool", Bunch(app=trans.app, profile=26.1, ref_lines=["hg38\tFirst\n", "hg38\tSecond\n"]))
+    param = SelectToolParameter(
+        tool,
+        XML("""<param name="ref" type="select"><options from_parameter="tool.ref_lines">
+            <column name="value" index="0"/><column name="name" index="1"/>
+        </options></param>"""),
     )
-    # XML static option parsing already keeps the last option for a duplicated value.
-    assert param.to_dict(trans)["options"] == [("Second", "hg38", True)]
+    assert param.to_dict(trans)["options"] == [("First", "hg38", False), ("Second", "hg38", False)]
 
 
 def test_workflow_restricted_options_collapse_table_choices(table_select):
