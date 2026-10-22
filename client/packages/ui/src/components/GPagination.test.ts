@@ -98,6 +98,21 @@ describe("GPagination", () => {
         ]);
     });
 
+    it("shows no ellipses with a limit of 3 or less", () => {
+        expect(visibleItems(mountPagination({ limit: 3, modelValue: 1 }))).toEqual(["«", "‹", "1", "2", "3", "›", "»"]);
+        expect(visibleItems(mountPagination({ limit: 3, modelValue: 5 }))).toEqual(["«", "‹", "4", "5", "6", "›", "»"]);
+        expect(visibleItems(mountPagination({ limit: 3, modelValue: 10 }))).toEqual([
+            "«",
+            "‹",
+            "8",
+            "9",
+            "10",
+            "›",
+            "»",
+        ]);
+        expect(visibleItems(mountPagination({ limit: 1, modelValue: 5 }))).toEqual(["«", "‹", "5", "›", "»"]);
+    });
+
     it("keeps a compact pager to the current page between the pinned ends", () => {
         const props = { limit: 3, firstNumber: true, lastNumber: true, hideGotoEndButtons: true };
 
@@ -106,16 +121,25 @@ describe("GPagination", () => {
             "1",
             "2",
             "3",
-            "…",
+            "4",
             "10",
             "›",
         ]);
         expect(visibleItems(mountPagination({ ...props, modelValue: 5 }))).toEqual([
             "‹",
             "1",
-            "…",
+            "4",
             "5",
-            "…",
+            "6",
+            "10",
+            "›",
+        ]);
+        expect(visibleItems(mountPagination({ ...props, modelValue: 10 }))).toEqual([
+            "‹",
+            "1",
+            "7",
+            "8",
+            "9",
             "10",
             "›",
         ]);
