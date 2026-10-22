@@ -1,19 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { generateTokens, parseCustomProperties, readTokenSources } from "../../scripts/generateTokens.mjs";
+import {
+    generateTokens,
+    parseCustomProperties,
+    readTokenSources,
+    resolveToken as resolveIn,
+} from "../../scripts/generateTokens.mjs";
 
 const { theme: themeSource, tokens: tokensSource, brandTokens: brandTokensSource } = readTokenSources();
 
 const tokens = parseCustomProperties(themeSource);
 
-function resolveToken(name: string, seen: string[] = []): string {
-    const value = tokens.get(name);
-    if (value === undefined) {
-        throw new Error(`${[...seen, name].join(" -> ")}: not declared`);
-    }
-    const reference = value.match(/^var\((--[\w-]+)\)$/);
-    return reference ? resolveToken(reference[1] as string, [...seen, name]) : value.toLowerCase();
-}
+const resolveToken = (name: string) => resolveIn(tokens, name);
 
 // WCAG 2.x contrast ratio between two #rrggbb colors.
 function contrast(first: string, second: string): number {
