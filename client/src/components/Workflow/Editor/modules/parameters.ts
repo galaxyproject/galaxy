@@ -79,6 +79,12 @@ function replacementParameterNames(value: string): string[] {
 
 export function getUntypedWorkflowParameters(steps: Steps) {
     const untypedParameters = new UntypedParameters();
+    // Runtime fills rename ${label} from the parameter input with that label.
+    const parameterInputLabels = new Set(
+        Object.values(steps)
+            .filter((step) => step.type == "parameter_input" && step.label)
+            .map((step) => step.label),
+    );
     Object.values(steps).forEach((step) => {
         if (step.config_form?.inputs) {
             // TODO: with new tool state we could type this and drop the any
@@ -90,14 +96,16 @@ export function getUntypedWorkflowParameters(steps: Steps) {
                 }
             });
         }
+        // Only rename actions substitute ${...} at runtime.
         Object.values(step.post_job_actions ?? {}).forEach((pja) => {
-            Object.values(pja.action_arguments ?? {}).forEach((actionArgument) => {
-                if (typeof actionArgument === "string") {
-                    for (const name of replacementParameterNames(actionArgument)) {
+            const newname = pja.action_type == "RenameDatasetAction" ? pja.action_arguments?.newname : undefined;
+            if (typeof newname === "string") {
+                for (const name of replacementParameterNames(newname)) {
+                    if (!parameterInputLabels.has(name)) {
                         new PjaUntypedParameterReference(untypedParameters.getParameter(name), step, pja);
                     }
                 }
-            });
+            }
         });
     });
     return untypedParameters;
