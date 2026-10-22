@@ -75,13 +75,20 @@ class TestMCPEndpointWithCustomPath(TestMCPEndpointWithUrlPrefix):
 class TestMCPApiKey(IntegrationTestCase):
     """Tools accept the API key from an ``x-api-key`` header as well as the ``api_key`` argument."""
 
+    mcp_server_path = "/api/mcp"
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["enable_mcp_server"] = True
+        config["mcp_server_path"] = cls.mcp_server_path
+
+    @property
+    def _mcp_url(self) -> str:
+        return f"{self.url}{self.mcp_server_path.strip('/')}"
 
     def _call_tool(self, name: str, arguments: dict, headers: dict | None = None) -> dict:
-        return mcp_request(f"{self.url}api/mcp", "tools/call", {"name": name, "arguments": arguments}, headers)
+        return mcp_request(self._mcp_url, "tools/call", {"name": name, "arguments": arguments}, headers)
 
     def _email_from_get_user(self, result: dict) -> str:
         assert not result.get("isError"), result
@@ -92,7 +99,7 @@ class TestMCPApiKey(IntegrationTestCase):
         return result["content"][0]["text"]
 
     def test_api_key_not_required_in_tool_schemas(self) -> None:
-        tools = mcp_request(f"{self.url}api/mcp", "tools/list", {})["tools"]
+        tools = mcp_request(self._mcp_url, "tools/list", {})["tools"]
         assert tools
         for tool in tools:
             assert "api_key" in tool["inputSchema"].get("properties", {}), tool["name"]
