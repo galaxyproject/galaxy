@@ -32,6 +32,7 @@ from galaxy.model import (
     LandingRequestToWorkflowInvocationAssociation,
     Page,
     StoredWorkflow,
+    Workflow,
     WorkflowInvocation,
     WorkflowLandingRequest,
 )
@@ -159,6 +160,15 @@ def _validate_extraction_labels(
                 f"workflow step label collides with another input name or step label: {label!r}"
             )
         seen.add(label)
+
+
+def _describe_tool_references(tools: list[dict[str, Any]], require_exact_tool_versions: bool) -> str:
+    # Versions only distinguish references in exact mode; list each description once.
+    if require_exact_tool_versions:
+        descriptions = [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in tools]
+    else:
+        descriptions = [tool["tool_id"] for tool in tools]
+    return ", ".join(dict.fromkeys(descriptions))
 
 
 class WorkflowsService(ServiceBase):
@@ -350,33 +360,11 @@ class WorkflowsService(ServiceBase):
             raise exceptions.RequestParameterInvalidException(
                 f"Unknown workflow scheduler '{workflow_scheduler_id}' specified."
             )
+        self._check_workflow_tools(trans, workflow, bool(payload.require_exact_tool_versions))
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
-
-        require_exact_tool_versions = payload.require_exact_tool_versions
-        tools = self._workflow_contents_manager.get_all_tools(workflow)
-        missing_tools = [
-            tool
-            for tool in tools
-            if not trans.app.toolbox.has_tool(
-                tool["tool_id"],
-                tool_version=tool["tool_version"],
-                tool_uuid=tool["tool_uuid"],
-                exact=bool(require_exact_tool_versions),
-                user=trans.user,
-            )
-        ]
-        if missing_tools:
-            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-            if require_exact_tool_versions:
-                missing_tools_message += ", ".join(
-                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-                )
-            else:
-                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-            raise exceptions.MessageException(missing_tools_message)
 
         invocations = []
         for run_config in run_configs:
@@ -653,6 +641,45 @@ class WorkflowsService(ServiceBase):
             if url in shed_url:
                 return shed_url
         return None
+
+    def _check_workflow_tools(
+        self, trans: ProvidesHistoryContext, workflow: Workflow, require_exact_tool_versions: bool
+    ) -> None:
+        tools = self._workflow_contents_manager.get_all_tools(workflow)
+        missing_tools = []
+        incompatible_tools = []
+        toolbox = trans.app.toolbox
+        for tool_reference in tools:
+            # Availability comes from has_tool: for exact requests the cached
+            # toolbox's get_tool can resolve a different version of the tool.
+            if not toolbox.has_tool(
+                tool_reference["tool_id"],
+                tool_version=tool_reference["tool_version"],
+                tool_uuid=tool_reference["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
+            ):
+                missing_tools.append(tool_reference)
+                continue
+            tool = toolbox.get_tool(
+                tool_reference["tool_id"],
+                tool_version=tool_reference["tool_version"],
+                tool_uuid=tool_reference["tool_uuid"],
+                exact=require_exact_tool_versions,
+                user=trans.user,
+            )
+            if tool and not tool.is_workflow_compatible:
+                incompatible_tools.append(tool_reference)
+        if missing_tools:
+            raise exceptions.MessageException(
+                "Workflow was not invoked; the following required tools are not installed: "
+                + _describe_tool_references(missing_tools, require_exact_tool_versions)
+            )
+        if incompatible_tools:
+            raise exceptions.MessageException(
+                "Workflow was not invoked; the following tools are not workflow-compatible: "
+                + _describe_tool_references(incompatible_tools, require_exact_tool_versions)
+            )
 
     def _create_landing_request_association(
         self, trans: ProvidesUserContext, landing_uuid: UUID4 | None, invocations: list[WorkflowInvocation]
