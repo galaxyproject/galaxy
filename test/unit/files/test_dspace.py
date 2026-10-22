@@ -138,3 +138,15 @@ def test_a_search_dspace_cannot_parse_is_an_invalid_request():
     file_source = _source().get_file_source_path("gxfiles://dspace").file_source
     with pytest.raises(RequestParameterInvalidException, match=r"could not search for \("):
         file_source.list(f"/collections/{COLLECTION}", limit=10, offset=0, query="(")
+
+
+@responses.activate
+def test_refused_access_asks_for_a_token_and_recursive_listing_is_invalid():
+    responses.get(f"{API}/core/items/{ITEM}/bundles", status=401)
+    responses.get(f"{API}/authn/status", json={"authenticated": True})
+    with pytest.raises(AuthenticationRequired, match="there is no token in"):
+        _source().get_file_source_path("gxfiles://dspace").file_source.list(f"/items/{ITEM}")
+    with pytest.raises(AuthenticationRequired, match="Check the token of"):
+        _source(token="secret").get_file_source_path("gxfiles://dspace").file_source.list(f"/items/{ITEM}")
+    with pytest.raises(RequestParameterInvalidException, match="Recursive listing"):
+        _source().get_file_source_path("gxfiles://dspace").file_source.list("/", recursive=True)
