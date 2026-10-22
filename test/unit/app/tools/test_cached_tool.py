@@ -40,6 +40,7 @@ from galaxy.tools.source_store.index import (
 )
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
 from galaxy.tools.source_store.unavailable import UnavailableToolSourceStore
+from galaxy.util.hash_util import md5_hash_file
 
 
 def _entry(**overrides):
@@ -1263,8 +1264,6 @@ def test_invalidate_index_cache_drops_versions_a_reindex_removed():
 
 
 def test_reindex_edited_tool_files_reindexes_only_changed_files(tmp_path, monkeypatch):
-    from galaxy.util.hash_util import md5_hash_file
-
     edited = tmp_path / "edited.xml"
     untouched = tmp_path / "untouched.xml"
     edited.write_text("<tool id='edited' version='1.1'/>")
