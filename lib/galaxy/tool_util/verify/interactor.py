@@ -295,6 +295,18 @@ def raise_for_status(response: Response) -> None:
         raise requests.exceptions.HTTPError(f"{e} - Response body: {body}", response=response) from e
 
 
+def split_declared_job_outputs(job_outputs: list[dict[str, Any]]) -> tuple[OutputsDict, dict[str, Any]]:
+    """Split job outputs into declared datasets and collections."""
+    outputs = OutputsDict()
+    output_collections: dict[str, Any] = {}
+    for job_output in job_outputs:
+        if "dataset" in job_output:
+            outputs[job_output["name"]] = job_output["dataset"]
+        else:
+            output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+    return outputs, output_collections
+
+
 class GalaxyInteractorApi:
     # api_key and cookies can also be manually set by UsesApiTestCaseMixin._different_user()
     api_key: str | None
@@ -1032,13 +1044,7 @@ class GalaxyInteractorApi:
                 )
             job_id = job_refs[0]["id"]
             jobs = [self.__get_job(job_id).json()]
-            outputs = OutputsDict()
-            output_collections: dict[str, Any] = {}
-            for job_output in self.job_outputs(job_id):
-                if "dataset" in job_output:
-                    outputs[job_output["name"]] = job_output["dataset"]
-                else:
-                    output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+            outputs, output_collections = split_declared_job_outputs(self.job_outputs(job_id))
         else:
             outputs = self.__dictify_outputs(submit_response_object)
             output_collections = self.__dictify_output_collections(submit_response_object)
