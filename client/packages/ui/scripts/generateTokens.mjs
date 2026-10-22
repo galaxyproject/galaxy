@@ -41,6 +41,22 @@ export function parseCustomProperties(source) {
     return properties;
 }
 
+/**
+ * Follows `var(--name)` aliases to the declared value, lower-cased.
+ * @param {Map<string, string>} properties
+ * @param {string} name
+ * @param {string[]} [seen]
+ * @returns {string}
+ */
+export function resolveToken(properties, name, seen = []) {
+    const value = properties.get(name);
+    if (value === undefined) {
+        throw new Error(`${[...seen, name].join(" -> ")}: not declared`);
+    }
+    const reference = value.match(/^var\((--[\w-]+)\)$/);
+    return reference ? resolveToken(properties, reference[1], [...seen, name]) : value.toLowerCase();
+}
+
 // The token tests read their sources through here: the package has no Node
 // types to type-check fs against, and vitest empties CSS imports, even ?raw.
 export function readTokenSources() {
