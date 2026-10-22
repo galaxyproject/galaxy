@@ -466,6 +466,7 @@ export const supportedLanguages = {
     ja: true,
     fr: true,
     zh: true,
+    "zh-tw": true,
     es: true,
     de: true,
 };
