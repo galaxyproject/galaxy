@@ -1327,9 +1327,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
-        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.find_element_by_selector(f"#{source_id}")
-        sink_element = self.find_element_by_selector(f"#{sink_id}")
+        source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
 
         if screenshot_partial:
             if self._driver_impl.backend_type == "playwright":
@@ -1365,22 +1363,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.components.workflow_editor.node._(label=node_label), terminal_name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
+        source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
+        source_id = source_element.get_attribute("id").replace("|", r"\|")
+        sink_id = sink_element.get_attribute("id").replace("|", r"\|")
+        return source_id, sink_id
+
+    def workflow_editor_source_sink_terminal_elements(self, source, sink):
         source_node, source_output = self.workflow_editor_node_and_terminal(source)
         sink_node, sink_input = self.workflow_editor_node_and_terminal(sink)
-
-        source_node.wait_for_present()
-        sink_node.wait_for_present()
-
-        output_terminal = source_node.output_terminal(name=source_output)
-        input_terminal = sink_node.input_terminal(name=sink_input)
-
-        output_element = output_terminal.wait_for_present()
-        input_element = input_terminal.wait_for_present()
-
-        source_id = output_element.get_attribute("id").replace("|", r"\|")
-        sink_id = input_element.get_attribute("id").replace("|", r"\|")
-
-        return source_id, sink_id
+        return (
+            source_node.output_terminal(name=source_output).wait_for_present(),
+            sink_node.input_terminal(name=sink_input).wait_for_present(),
+        )
 
     def workflow_editor_destroy_connection(self, sink):
         sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
