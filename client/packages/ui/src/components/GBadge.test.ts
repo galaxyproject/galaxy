@@ -101,6 +101,15 @@ describe("GBadge", () => {
         expect(wrapper.attributes("rel")).toBeUndefined();
     });
 
+    it("calls a click handler once per click on an href badge", async () => {
+        const onClick = vi.fn();
+        const wrapper = mount(GBadge, { props: { href: "#" }, attrs: { onClick } });
+
+        await wrapper.trigger("click");
+
+        expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
     it("renders a router link for to, with the router's own href", async () => {
         const router = makeRouter();
         router.push("/");
@@ -116,6 +125,35 @@ describe("GBadge", () => {
         await wrapper.trigger("click");
         await flushPromises();
         expect(router.currentRoute.value.fullPath).toBe("/storage/history/abc");
+    });
+
+    it("calls a click handler once per click on a router link badge and still navigates", async () => {
+        const router = makeRouter();
+        router.push("/");
+        await router.isReady();
+        const onClick = vi.fn();
+        const wrapper = mount(GBadge, {
+            props: { to: "/workflows/list" },
+            attrs: { onClick },
+            global: { plugins: [router] },
+        });
+
+        await wrapper.trigger("click");
+        await flushPromises();
+
+        expect(onClick).toHaveBeenCalledTimes(1);
+        expect(router.currentRoute.value.fullPath).toBe("/workflows/list");
+    });
+
+    it("prefers button over to and href", () => {
+        const router = makeRouter();
+        const wrapper = mount(GBadge, {
+            props: { button: true, to: "/workflows/list", href: "https://example.org" },
+            global: { plugins: [router] },
+        });
+
+        expect(wrapper.element.tagName).toBe("BUTTON");
+        expect(wrapper.attributes("href")).toBeUndefined();
     });
 
     it("prefers to over href", async () => {
