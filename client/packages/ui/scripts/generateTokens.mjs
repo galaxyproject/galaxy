@@ -28,6 +28,19 @@ export function generateTokens(themeSource) {
     return HEADER + body.replace("@theme {", ":root,\n.reset-theme-variables {");
 }
 
+/**
+ * Maps each `--name: value;` declaration in a stylesheet to its value.
+ * @param {string} source
+ * @returns {Map<string, string>}
+ */
+export function parseCustomProperties(source) {
+    const properties = new Map();
+    for (const match of source.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+        properties.set(match[1], match[2].trim());
+    }
+    return properties;
+}
+
 // The token tests read their sources through here: the package has no Node
 // types to type-check fs against, and vitest empties CSS imports, even ?raw.
 export function readTokenSources() {

@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { generateTokens, readTokenSources } from "../../scripts/generateTokens.mjs";
+import { generateTokens, parseCustomProperties, readTokenSources } from "../../scripts/generateTokens.mjs";
 
 const { theme: themeSource, tokens: tokensSource, brandTokens: brandTokensSource } = readTokenSources();
-
-function parseCustomProperties(source: string): Map<string, string> {
-    const properties = new Map<string, string>();
-    for (const match of source.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
-        properties.set(match[1] as string, (match[2] as string).trim());
-    }
-    return properties;
-}
 
 const tokens = parseCustomProperties(themeSource);
 

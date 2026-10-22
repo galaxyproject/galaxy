@@ -2,25 +2,21 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, expect, it } from "vitest";
 
+import { parseCustomProperties, readTokenSources } from "../../packages/ui/scripts/generateTokens.mjs";
+
 /**
  * The client gets its design tokens from galaxy-ui's tokens.css, loaded by the
  * analysis entry. custom_theme_variables.scss only adds app-level tokens; a
  * redeclared package token would be a second copy that can drift.
  */
-function declaredProperties(source: string): string[] {
-    return [...source.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1] as string);
-}
-
 describe("client design tokens", () => {
-    const packageTokens = new Set(
-        declaredProperties(readFileSync(resolve(__dirname, "../../packages/ui/src/styles/tokens.css"), "utf8")),
-    );
+    const packageTokens = parseCustomProperties(readTokenSources().tokens);
 
     it("does not redeclare galaxy-ui tokens in custom_theme_variables.scss", () => {
-        const clientTokens = declaredProperties(
+        const clientTokens = parseCustomProperties(
             readFileSync(resolve(__dirname, "scss/custom_theme_variables.scss"), "utf8"),
         );
-        expect(clientTokens.filter((name) => packageTokens.has(name))).toEqual([]);
+        expect([...clientTokens.keys()].filter((name) => packageTokens.has(name))).toEqual([]);
     });
 
     it("loads galaxy-ui's tokens in the analysis entry", () => {
