@@ -5,7 +5,7 @@ import { computed, onMounted, ref, unref, watch } from "vue";
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
-import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getClientFilters, HistoryFilters, itemPassesFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -287,7 +287,7 @@ async function loadHistoryItems() {
 
 async function onDelete(item: HistoryItemSummary, recursive = false) {
     isLoading.value = true;
-    setInvisible(item);
+    hideIfFilteredOut(item, { deleted: true });
 
     try {
         await deleteContent(item, { recursive: recursive });
@@ -311,7 +311,7 @@ function onScroll(newOffset: number) {
 }
 
 async function onUndelete(item: HistoryItemSummary) {
-    setInvisible(item);
+    hideIfFilteredOut(item, { deleted: false });
     isLoading.value = true;
 
     try {
@@ -323,7 +323,7 @@ async function onUndelete(item: HistoryItemSummary) {
 }
 
 async function onUnhide(item: HistoryItemSummary) {
-    setInvisible(item);
+    hideIfFilteredOut(item, { visible: true });
     isLoading.value = true;
 
     try {
@@ -348,6 +348,13 @@ function reloadContents() {
 
 function setInvisible(item: HistoryItemSummary) {
     unref(invisibleHistoryItems)[item.hid] = true;
+}
+
+/** Optimistically hides `item` if `change` takes it out of the current filter. */
+function hideIfFilteredOut(item: HistoryItemSummary, change: Partial<HistoryItemSummary>) {
+    if (!itemPassesFilters(getClientFilters(filterText.value), { ...item, ...change })) {
+        setInvisible(item);
+    }
 }
 
 function onTagChange(item: HistoryItemSummary, newTags: string[]) {

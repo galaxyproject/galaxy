@@ -50,7 +50,7 @@ function create_history(historyId, userId, purged = false, archived = false) {
     };
 }
 
-function create_datasets(historyId, count) {
+function create_datasets(historyId, count, overrides = {}) {
     const contents = [];
     for (let index = 1; index <= count; index++) {
         contents.push({
@@ -61,6 +61,7 @@ function create_datasets(historyId, count) {
             history_content_type: "dataset",
             deleted: false,
             visible: true,
+            ...overrides[index],
         });
     }
     return {
@@ -71,10 +72,10 @@ function create_datasets(historyId, count) {
     };
 }
 
-async function createWrapper(localVue, currentUserId, history) {
+async function createWrapper(localVue, currentUserId, history, itemOverrides = {}) {
     getHistoryByIdFromServer.mockResolvedValue({ data: history, error: undefined });
     setCurrentHistoryOnServer.mockResolvedValue(history);
-    const history_contents_result = create_datasets(history.id, history.count);
+    const history_contents_result = create_datasets(history.id, history.count, itemOverrides);
 
     setupMockConfig({});
     server.use(
@@ -169,6 +170,46 @@ describe("History center panel View", () => {
         expect(wrapper.findComponent(FilterMenu).props("loading")).toBe(false);
         expect(wrapper.findAllComponents(ContentItem).length).toBe(9);
         expect(wrapper.findComponent(OperationErrorDialog).exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it.each([
+        ["undelete", "include deleted", true, 1, { 1: { deleted: true } }],
+        ["delete", "include deleted", true, 3, {}],
+        ["unhide", "include hidden", true, 2, { 2: { visible: false } }],
+        ["delete", "include hidden", false, 3, {}],
+        ["delete", "show active", false, 3, {}],
+    ])("%s with %s filter keeps item shown: %s", async (operation, filter, kept, hid, overrides) => {
+        const history = create_history("history_1", "user_1");
+        const wrapper = await createWrapper(localVue, "user_1", history, overrides);
+        const historyStore = useHistoryStore();
+        vi.spyOn(historyStore, "updateContentStats").mockResolvedValue();
+        const contentRequest = vi.fn(() => HttpResponse.json({}));
+        server.use(
+            http.put("/api/histories/{history_id}/contents/{type}s/{id}", contentRequest),
+            http.delete("/api/histories/{history_id}/contents/{type}s/{id}", contentRequest),
+        );
+        const renderedHids = () => wrapper.findAllComponents(ContentItem).map((item) => item.props("id"));
+
+        await wrapper.find(`[data-description='${filter} items button']`).trigger("click");
+        await flushPromises();
+        const before = renderedHids();
+        expect(before).toContain(hid);
+
+        const target = wrapper.findAllComponents(ContentItem).find((item) => item.props("id") === hid);
+        if (operation === "delete") {
+            target.vm.$emit("delete", target.props("item"), false);
+        } else {
+            target.vm.$emit(operation);
+        }
+        await flushPromises();
+
+        expect(contentRequest).toHaveBeenCalledTimes(1);
+        if (kept) {
+            expect(renderedHids()).toEqual(before);
+        } else {
+            expect(renderedHids()).toEqual(before.filter((renderedHid) => renderedHid !== hid));
+        }
         wrapper.unmount();
     });
 
