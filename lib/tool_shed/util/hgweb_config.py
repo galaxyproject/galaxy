@@ -33,7 +33,7 @@ class HgWebConfigManager:
             # Add the new entry into memory.
             in_memory_config.set("paths", lhs, rhs)
             # Persist our in-memory configuration.
-            self.write_config()
+            self.write_config(in_memory_config)
         except Exception:
             log.exception("Exception in HgWebConfigManager.add_entry()")
         finally:
@@ -50,7 +50,7 @@ class HgWebConfigManager:
             # Add the new entry.
             in_memory_config.set("paths", new_lhs, new_rhs)
             # Persist our in-memory configuration.
-            self.write_config()
+            self.write_config(in_memory_config)
         except Exception:
             log.exception("Exception in HgWebConfigManager.change_entry()")
         finally:
@@ -64,7 +64,9 @@ class HgWebConfigManager:
         except configparser.NoOptionError:
             try:
                 # We have a multi-threaded front-end, so one of the threads may not have the latest version of the hgweb.config file.
-                in_memory_config = self.read_config(force_read=True)
+                # Re-read under the lock so we never parse a file that add_entry or change_entry is rewriting.
+                with self.lock:
+                    in_memory_config = self.read_config(force_read=True)
                 entry = in_memory_config.get("paths", lhs)
             except configparser.NoOptionError:
                 raise Exception(f"Entry for repository {lhs} missing in file {self.hgweb_config}.")
@@ -99,11 +101,11 @@ class HgWebConfigManager:
             self._in_memory_config = config
         return self._in_memory_config
 
-    def write_config(self) -> None:
-        """Writing the in-memory configuration to the hgweb.config file on disk."""
-        assert self._in_memory_config is not None
+    def write_config(self, config: configparser.ConfigParser) -> None:
+        """Write the configuration to the hgweb.config file on disk and use it as the in-memory configuration."""
         with open(self.hgweb_config, "w") as config_file:
-            self._in_memory_config.write(config_file)
+            config.write(config_file)
+        self._in_memory_config = config
 
 
 hgweb_config_manager = HgWebConfigManager()

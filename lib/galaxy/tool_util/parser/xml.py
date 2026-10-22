@@ -29,6 +29,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_PIN_LABELS,
     DEFAULT_SORT,
 )
+from galaxy.tool_util.runtime_environment import parse_runtime_environment_variables
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
@@ -434,6 +435,12 @@ class XmlToolSource(ToolSource):
         as_dict["includes"] = parse_include_exclude_list("include")
         as_dict["excludes"] = parse_include_exclude_list("exclude")
         return RequiredFiles.from_dict(as_dict)
+
+    def parse_runtime_environment_variables(self, *, strict: bool = True):
+        return parse_runtime_environment_variables(
+            (dict(element.items()) for element in self.root.findall("requirements/runtime_environment_variable")),
+            strict=strict,
+        )
 
     def parse_requirements(self):
         return requirements.parse_requirements_from_xml(self.root, parse_resources_and_credentials=True)
@@ -1540,18 +1547,16 @@ class XmlInputSource(InputSource):
             return XmlDrillDownDynamicOptions(code_block=dynamic_options)
 
     def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list[DrillDownOptionsDict] | None:
-        if from_file := self.input_elem.get("from_file", None):
-            if not os.path.isabs(from_file):
-                assert tool_data_path, "This tool cannot be parsed outside of a Galaxy context"
-                from_file = os.path.join(tool_data_path, from_file)
-            elem = XML(f"<root>{open(from_file).read()}</root>")
+        from_file = self.input_elem.get("from_file", None)
+        if from_file:
+            if not tool_data_path:
+                # options are unknown, parameter models and the Tool Shed must not read files named by a tool
+                return None
+            # an absolute from_file replaces tool_data_path
+            with open(os.path.join(tool_data_path, from_file)) as f:
+                elem = XML(f"<root>{f.read()}</root>")
         else:
             elem = self.input_elem
-
-        dynamic_options_elem = elem.get("dynamic_options", None)
-        filter_elem = elem.get("filter", None)
-        if dynamic_options_elem is not None and filter_elem is not None:
-            return None
 
         root_options: list[DrillDownOptionsDict] = []
         options_elem = elem.find("options")

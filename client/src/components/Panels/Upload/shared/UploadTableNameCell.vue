@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BFormInput } from "bootstrap-vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 
 interface Props {
     /** Current name value */
@@ -20,8 +20,8 @@ const emit = defineEmits<{
     (e: "blur"): void;
 }>();
 
-function handleInput(value: string) {
-    emit("input", value);
+function handleInput(value: string | null) {
+    emit("input", value ?? "");
 }
 
 function handleBlur() {
@@ -30,12 +30,12 @@ function handleBlur() {
 </script>
 
 <template>
-    <BFormInput
+    <GFormInput
         v-g-tooltip.hover
-        :value="value"
-        size="sm"
+        :model-value="value"
+        size="small"
         :state="state"
         :title="tooltip"
-        @input="handleInput"
+        @update:model-value="handleInput"
         @blur="handleBlur" />
 </template>

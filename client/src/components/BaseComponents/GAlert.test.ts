@@ -1,10 +1,19 @@
+import { liveRegionKey } from "@galaxyproject/galaxy-ui";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { defineComponent, h, inject } from "vue";
 
 import GAlert from "./GAlert.vue";
 
 const localVue = getLocalVue();
+
+const LiveRegionProbe = defineComponent({
+    setup() {
+        const insideLiveRegion = inject(liveRegionKey, null);
+        return () => h("span", { "data-live-region": String(insideLiveRegion) });
+    },
+});
 
 describe("GAlert", () => {
     beforeEach(() => {
@@ -95,5 +104,20 @@ describe("GAlert", () => {
             attrs: { role: "status" },
         });
         expect(wrapper.find(".alert").attributes("role")).toBe("status");
+    });
+
+    it("tells its content that it sits inside a live region", () => {
+        const wrapper = mount(GAlert, { global: localVue, slots: { default: () => h(LiveRegionProbe) } });
+        expect(wrapper.find("[data-live-region]").attributes("data-live-region")).toBe("true");
+    });
+
+    it.each(["none", "presentation"])("does not claim a live region when the call site sets role=%s", (role) => {
+        const wrapper = mount(GAlert, {
+            global: localVue,
+            attrs: { role },
+            slots: { default: () => h(LiveRegionProbe) },
+        });
+        expect(wrapper.find(".alert").attributes("role")).toBe(role);
+        expect(wrapper.find("[data-live-region]").attributes("data-live-region")).toBe("false");
     });
 });

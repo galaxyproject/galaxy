@@ -1288,6 +1288,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``admin_extensions_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Admin extensions directory: where to look for extensions that add
+    sections and links to the Admin panel. Each extension is a
+    subdirectory containing a config.yml. By default none are shipped,
+    so nothing is loaded. To use an absolute path begin the path with
+    '/'. This is a comma-separated list.
+:Default: ``config/plugins/admin``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~
 ``webhooks_dir``
 ~~~~~~~~~~~~~~~~
@@ -4101,6 +4115,24 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allowed_login_redirect_hosts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Comma-separated list of other sites' hosts that Galaxy may send
+    users to after they log in, e.g.
+    ``tools.example.org,portal.example.org:8443``.
+    A listed site can send its users to Galaxy's login page with
+    ``/login/start?redirect=<url>``, where ``<url>`` is the
+    percent-encoded page to return to. Hosts must match exactly (no
+    wildcards); add the port if it is not 443. Only https URLs are
+    followed. Every page on a listed host is trusted, so read the
+    authentication documentation before adding one.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_local_account_creation``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -6036,8 +6068,8 @@
     next query since GTNSearchDB opens a read-only connection per
     call. Only registered when ``inference_services`` is configured
     (i.e. GalaxyAI is in use). Set to 0 to disable automatic refresh
-    -- admins can still refresh on demand via ``python -m
-    galaxy.agents.gtn --refresh``. Requires celery.
+    -- admins can still refresh on demand via ``python -m galaxy.gtn
+    --refresh``. Requires celery.
 :Default: ``86400``
 :Type: int
 
@@ -6393,8 +6425,12 @@
     enabled, Galaxy exposes an MCP endpoint that provides tools for
     searching, executing tools, managing histories, and more.
     The MCP server requires API key authentication and uses the
-    existing Galaxy REST API internally. This feature is experimental
-    and disabled by default.
+    existing Galaxy REST API internally. Clients should send the key
+    in an `x-api-key` header from their MCP server configuration (e.g.
+    `"headers": {"x-api-key": "..."}`), which keeps it out of the
+    model's context. Tools also accept an optional `api_key` argument,
+    which is ignored when the header is set. This feature is
+    experimental and disabled by default.
 :Default: ``false``
 :Type: bool
 

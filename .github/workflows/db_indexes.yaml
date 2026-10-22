@@ -5,6 +5,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/db_indexes.yaml'
@@ -13,9 +14,12 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/db_indexes.yaml'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

@@ -14,6 +14,8 @@ on:
       - '!doc/**'
       - '!.github/workflows/**'
       - '.github/workflows/test_galaxy_packages.yaml'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

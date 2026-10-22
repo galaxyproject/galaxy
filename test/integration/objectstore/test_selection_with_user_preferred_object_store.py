@@ -8,7 +8,11 @@ from typing import (
 
 from sqlalchemy import select
 
-from galaxy.model import Dataset
+from galaxy.model import (
+    Dataset,
+    History,
+)
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_OUTPUT,
@@ -196,6 +200,76 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def test_setting_unselectable_object_store_id_not_allowed(self):
         response = self.dataset_populator.update_user_raw({"preferred_object_store_id": "dynamic_s3"})
         assert response.status_code == 400
+
+    def test_running_with_unselectable_object_store_id_not_allowed(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+            hda_input = {"src": "hda", "id": hda["id"]}
+            response = self.dataset_populator.run_tool_raw(
+                "multi_data_param",
+                {"f1": hda_input, "f2": hda_input},
+                history_id,
+                preferred_object_store_id="dynamic_s3",
+            )
+            api_asserts.assert_status_code_is(response, 400)
+            api_asserts.assert_error_message_contains(response, "object store")
+
+            response = self.dataset_populator.tool_request_raw(
+                "multi_data_param",
+                {"f1": hda_input, "f2": hda_input},
+                history_id,
+                strict=False,
+                preferred_object_store_id="dynamic_s3",
+            )
+            api_asserts.assert_status_code_is(response, 400)
+            api_asserts.assert_error_message_contains(response, "object store")
+
+            workflow_id = self.workflow_populator.upload_yaml_workflow(TEST_WORKFLOW)
+            for key in (
+                "preferred_object_store_id",
+                "preferred_outputs_object_store_id",
+                "preferred_intermediate_object_store_id",
+            ):
+                request = {
+                    "history_id": history_id,
+                    "inputs": {"input1": hda_input},
+                    "inputs_by": "name",
+                    key: "dynamic_s3",
+                }
+                response = self.workflow_populator.invoke_workflow_raw(workflow_id, request)
+                api_asserts.assert_status_code_is(response, 400)
+                api_asserts.assert_error_message_contains(response, "object store")
+
+    def test_stale_unselectable_preferences_ignored(self):
+        # Preferences may have been valid when stored but the backend may no longer
+        # allow selection (e.g. an admin deprecated it), so simulate that by writing
+        # them to the database directly - the API would reject them.
+        with self.dataset_populator.test_history() as history_id:
+
+            def _run_tool_get_storage_info(hda_input):
+                response = self.dataset_populator.run_tool(
+                    "multi_data_param", {"f1": hda_input, "f2": hda_input}, history_id
+                )
+                self.dataset_populator.wait_for_history(history_id)
+                return self._storage_info_for_job_output(response)
+
+            self._set_stored_preferred_object_store_ids(history_id, user_store_id="dynamic_s3")
+            storage_info, hda1 = self._create_hda_get_storage_info(history_id)
+            assert_storage_name_is(storage_info, "Default Store")
+
+            hda1_input = {"src": "hda", "id": hda1["id"]}
+            assert_storage_name_is(_run_tool_get_storage_info(hda1_input), "Default Store")
+
+            self._set_stored_preferred_object_store_ids(history_id, history_store_id="dynamic_s3")
+            assert_storage_name_is(_run_tool_get_storage_info(hda1_input), "Default Store")
+
+            # a stale history preference falls back to a valid user preference
+            self._set_stored_preferred_object_store_ids(
+                history_id, history_store_id="dynamic_s3", user_store_id="static"
+            )
+            assert_storage_name_is(_run_tool_get_storage_info(hda1_input), "Static Storage")
+
+            self._set_stored_preferred_object_store_ids(history_id)
 
     def test_index_query(self):
         selectable_object_store_ids = self.dataset_populator.selectable_object_store_ids()
@@ -566,6 +640,16 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
 
     def _reset_user_preferred_object_store_id(self):
         self._set_user_preferred_object_store_id(None)
+
+    def _set_stored_preferred_object_store_ids(
+        self, history_id: str, history_store_id: str | None = None, user_store_id: str | None = None
+    ) -> None:
+        session = self._app.model.session
+        history = session.get(History, self._app.security.decode_id(history_id))
+        assert history and history.user
+        history.preferred_object_store_id = history_store_id
+        history.user.preferred_object_store_id = user_store_id
+        session.commit()
 
     def _create_hda_get_storage_info(self, history_id: str):
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")

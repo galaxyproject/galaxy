@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,14 +11,30 @@ const localVue = getLocalVue();
 
 const RECOMMENDED = { label: "Recommended", title: "Server order" };
 
-function mountHeader(propsData: Record<string, unknown> = {}) {
+const COLUMN_MENU = {
+    listId: "datasets",
+    showSortOptions: false,
+    columnOptions: [
+        { key: "name", label: "Name" },
+        { key: "size", label: "Size" },
+    ],
+    visibleColumns: ["name"],
+};
+
+function mountHeader(propsData: Record<string, unknown> = {}, options: { attachTo?: HTMLElement } = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
     return mount(ListHeader as object, {
         localVue,
         pinia,
         propsData: { listId: "test", showSortOptions: true, ...propsData },
+        ...options,
     });
+}
+
+async function pressKey(target: Element, key: string) {
+    target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+    await flushPromises();
 }
 
 function pressedSortIds(wrapper: ReturnType<typeof mountHeader>) {
@@ -105,5 +122,41 @@ describe("ListHeader", () => {
         const header = group.get(".dropdown-header");
         expect(header.attributes("role")).toBe("presentation");
         expect(header.find("button").exists()).toBe(true);
+    });
+
+    it("emits select-all from the select all checkbox", async () => {
+        const wrapper = mountHeader({ showSelectAll: true });
+        const checkbox = wrapper.get("input#list-header-select-all");
+
+        await checkbox.setValue(true);
+
+        expect(wrapper.emitted("select-all")).toHaveLength(1);
+    });
+
+    it("toggles a column once from its menu item and leaves the checked state to the prop", async () => {
+        const wrapper = mountHeader(COLUMN_MENU);
+        const items = () => wrapper.findAll("[role='menuitemcheckbox']");
+        expect(items().map((item) => item.text())).toEqual(["Name", "Size"]);
+        expect(items().map((item) => item.attributes("aria-checked"))).toEqual(["true", "false"]);
+
+        await items()[1]!.trigger("click");
+
+        expect(wrapper.emitted("toggle-column")).toEqual([["size"]]);
+        expect(items()[1]!.attributes("aria-checked")).toBe("false");
+
+        await wrapper.setProps({ visibleColumns: ["name", "size"] } as object);
+
+        expect(items()[1]!.attributes("aria-checked")).toBe("true");
+        expect(items()[1]!.get<HTMLInputElement>("input[type='checkbox']").element.checked).toBe(true);
+    });
+
+    it("toggles a column once with Space", async () => {
+        const wrapper = mountHeader(COLUMN_MENU, { attachTo: document.body });
+
+        await pressKey(wrapper.get(".dropdown-toggle").element, "ArrowDown");
+        await pressKey(document.activeElement!, " ");
+        expect(wrapper.emitted("toggle-column")).toEqual([["size"]]);
+
+        wrapper.unmount();
     });
 });

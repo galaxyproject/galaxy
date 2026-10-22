@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { SampleSheetColumnDefinition, SampleSheetColumnDefinitions } from "@/api";
@@ -12,6 +11,7 @@ import localize from "@/utils/localization";
 import FormColumnDefinition from "./FormColumnDefinition.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import DownloadWorkbookButton from "@/components/Collections/sheet/DownloadWorkbookButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 
@@ -146,7 +146,7 @@ const emit = defineEmits(["onChange"]);
                     @onChange="onChildUpdate" />
             </template>
         </FormCard>
-        <BLink data-description="edit column definitions add" @click="addColumn">Add column.</BLink>
+        <GLink data-description="edit column definitions add" @click="addColumn">Add column.</GLink>
     </div>
 </template>
 

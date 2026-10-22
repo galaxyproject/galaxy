@@ -3,6 +3,7 @@ from typing import (
     Any,
 )
 
+from galaxy.util.wait import wait_on
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
     requires_admin,
@@ -831,6 +832,23 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_has_keys(new_forward, "history_id")
         assert new_forward["history_id"] == second_history_id
 
+    def test_hdca_copy_preserves_nested_element_tags(self, history_id):
+        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        forward_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        self.dataset_populator.tag_dataset(history_id, forward_id, tags=["name:sample1", "group:condition:a"])
+
+        second_history_id = self.dataset_populator.new_history()
+        copied_hdca = self.dataset_collection_populator.copy_collection(second_history_id, hdca["id"]).json()
+
+        copied_forward_id = copied_hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        assert copied_forward_id != forward_id
+        copied_forward = self.dataset_populator.get_history_dataset_details(
+            history_id=second_history_id, dataset_id=copied_forward_id
+        )
+        assert copied_forward["history_id"] == second_history_id
+        assert sorted(copied_forward["tags"]) == ["group:condition:a", "name:sample1"]
+
     def __get_paired_response_elements(self, history_id: str, contents):
         hdca = self.__show(history_id, contents).json()
         self._assert_has_keys(hdca, "name", "deleted", "visible", "elements")
@@ -879,8 +897,7 @@ class TestHistoryContentsApi(ApiTestCase):
             element_identifiers=element_identifiers,
             collection_type="list",
         )
-        with self._different_user():
-            second_history_id = self.dataset_populator.new_history()
+        with self._different_user_history() as second_history_id:
             create_response = self._post(
                 f"histories/{second_history_id}/contents/dataset_collections", create_data, json=True
             )
@@ -1010,6 +1027,179 @@ class TestHistoryContentsApi(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related-eq&qv={related_qv}")
         assert contents_response.status_code == 400
         assert contents_response.json()["err_msg"] == "unparsable value for related filter"
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_items_copied_history(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        self.dataset_populator.new_dataset(history_id)
+        output_hid = self._run_cat(history_id, input_hda)["hid"]
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+
+        for hid in (input_hda["hid"], output_hid):
+            assert self._related_hids(copied_history_id, hid) == [input_hda["hid"], output_hid]
+
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
+    def test_index_filter_by_related_collections_copied_history(self, history_id):
+        input_hdca = self._new_list(history_id)
+        unrelated_hdca = self._new_list(history_id)
+        output_hid = self._run_filter_failed(history_id, input_hdca)["hid"]
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+
+        for hid in (input_hdca["hid"], output_hid):
+            assert self._related_hids(copied_history_id, hid) == [input_hdca["hid"], output_hid]
+        assert self._related_hids(copied_history_id, unrelated_hdca["hid"]) == [unrelated_hdca["hid"]]
+
+    @skip_without_tool("cat_data_and_sleep")
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
+    def test_index_filter_by_related_items_copied_with_new_hids(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        unrelated_hda = self.dataset_populator.new_dataset(history_id)
+        output_hda = self._run_cat(history_id, input_hda)
+        input_hdca = self._new_list(history_id)
+        output_hdca = self._run_filter_failed(history_id, input_hdca)
+        target_history_id = self.dataset_populator.new_history()
+        # outputs are copied before their inputs, so the copies' hids can't match the originals'
+        copied_hid = {}
+        for hda in (unrelated_hda, output_hda, input_hda):
+            copy_response = self._post(
+                f"histories/{target_history_id}/contents", {"source": "hda", "content": hda["id"]}, json=True
+            )
+            self._assert_status_code_is(copy_response, 200)
+            copied_hid[hda["hid"]] = copy_response.json()["hid"]
+        for hdca in (output_hdca, input_hdca):
+            copy_response = self.dataset_collection_populator.copy_collection(target_history_id, hdca["id"])
+            copied_hid[hdca["hid"]] = copy_response.json()["hid"]
+
+        related_pairs = [(input_hda["hid"], output_hda["hid"]), (input_hdca["hid"], output_hdca["hid"])]
+        for input_hid, output_hid in related_pairs:
+            assert input_hid < output_hid and copied_hid[input_hid] > copied_hid[output_hid]
+            expected = sorted([copied_hid[input_hid], copied_hid[output_hid]])
+            for hid in (input_hid, output_hid):
+                assert self._related_hids(target_history_id, copied_hid[hid]) == expected
+        unrelated_copy_hid = copied_hid[unrelated_hda["hid"]]
+        assert self._related_hids(target_history_id, unrelated_copy_hid) == [unrelated_copy_hid]
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_items_jobs_on_copies(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        output_hid = self._run_cat(history_id, input_hda)["hid"]
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+        copied_input_hda = self.dataset_populator.get_history_dataset_details(copied_history_id, hid=input_hda["hid"])
+        new_output_hid = self._run_cat(copied_history_id, copied_input_hda)["hid"]
+        copy_of_copy_history_id = self.dataset_populator.copy_history(copied_history_id).json()["id"]
+
+        expected = {
+            input_hda["hid"]: sorted([input_hda["hid"], output_hid, new_output_hid]),
+            output_hid: sorted([input_hda["hid"], output_hid]),
+            new_output_hid: sorted([input_hda["hid"], new_output_hid]),
+        }
+        for related_history_id in (copied_history_id, copy_of_copy_history_id):
+            for hid, related in expected.items():
+                assert self._related_hids(related_history_id, hid) == related
+        # jobs run on a copy don't show up in the original history
+        assert self._related_hids(history_id, input_hda["hid"]) == sorted([input_hda["hid"], output_hid])
+
+    @skip_without_tool("cat_data_and_sleep")
+    @skip_without_tool("pick_value")
+    def test_index_filter_by_related_items_passthrough(self, history_id):
+        grandparent = self.dataset_populator.new_dataset(history_id)
+        parent = self._run_cat(history_id, grandparent)
+        self._run_cat(history_id, parent)
+        inputs = {
+            "style_cond|pick_style": "first",
+            "style_cond|type_cond|param_type": "data",
+            "style_cond|type_cond|pick_from_0|value": {"src": "hda", "id": parent["id"]},
+        }
+        run = self.dataset_populator.run_tool("pick_value", inputs, history_id)
+        self.dataset_populator.wait_for_history(history_id)
+        output = run["outputs"][0]
+        expected = sorted([parent["hid"], output["hid"]])
+        assert self._related_hids(history_id, output["hid"], visible_only=False) == expected
+        assert self._related_hids(history_id, grandparent["hid"], visible_only=False) == sorted(
+            [grandparent["hid"], parent["hid"]]
+        )
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+        assert self._related_hids(copied_history_id, output["hid"], visible_only=False) == expected
+
+    @skip_without_tool("cat1")
+    def test_index_filter_by_related_items_cached_job(self, history_id):
+        input_hda = self.dataset_populator.new_dataset(history_id)
+        inputs = {"input1": {"src": "hda", "id": input_hda["id"]}}
+        original_run = self.dataset_populator.run_tool("cat1", inputs, history_id)
+        self.dataset_populator.wait_for_history(history_id)
+        original_output = original_run["outputs"][0]
+        downstream_run = self.dataset_populator.run_tool(
+            "cat1", {"input1": {"src": "hda", "id": original_output["id"]}}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        cached_run = self.dataset_populator.run_tool("cat1", inputs, history_id, use_cached_job=True)
+        self.dataset_populator.wait_for_history(history_id)
+        cached_job = self.dataset_populator.get_job_details(cached_run["jobs"][0]["id"], full=True).json()
+        assert cached_job["copied_from_job_id"] == original_run["jobs"][0]["id"]
+        cached_output = cached_run["outputs"][0]
+        expected = sorted([input_hda["hid"], cached_output["hid"]])
+        assert self._related_hids(history_id, cached_output["hid"], visible_only=False) == expected
+        downstream = downstream_run["outputs"][0]
+        assert self._related_hids(history_id, downstream["hid"], visible_only=False) == sorted(
+            [original_output["hid"], downstream["hid"]]
+        )
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+        assert self._related_hids(copied_history_id, cached_output["hid"], visible_only=False) == expected
+
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_collections_including_hidden_items(self, history_id):
+        input_hdca = self._new_list(history_id)
+        unrelated_hdca = self._new_list(history_id)
+        run = self.dataset_populator.run_tool(
+            "__FILTER_FAILED_DATASETS__", {"input": {"src": "hdca", "id": input_hdca["id"]}}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        output_hdca = run["output_collections"][0]
+        output_hids = [output["hid"] for output in run["outputs"]]
+        expected = sorted([input_hdca["hid"], output_hdca["hid"], *output_hids])
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+        for related_history_id in (history_id, copied_history_id):
+            assert self._related_hids(related_history_id, input_hdca["hid"], visible_only=False) == expected
+            assert self._related_hids(related_history_id, unrelated_hdca["hid"], visible_only=False) == [
+                unrelated_hdca["hid"]
+            ]
+            assert self._related_hids(related_history_id, output_hdca["hid"]) == sorted(
+                [input_hdca["hid"], output_hdca["hid"]]
+            )
+        collection = self.dataset_populator.get_history_collection_details(history_id, content_id=input_hdca["id"])
+        element = collection["elements"][0]["object"]
+        output = self._run_cat(history_id, element)
+        expected_element_hids = sorted([element["hid"], output["hid"]])
+        # The filter tool's hidden outputs share the input elements' data, but belong to another job.
+        assert self._related_hids(history_id, output["hid"], visible_only=False) == expected_element_hids
+        copied_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
+        assert self._related_hids(copied_history_id, output["hid"], visible_only=False) == expected_element_hids
+
+    def _related_hids(self, history_id: str, hid: int, visible_only: bool = True) -> list[int]:
+        url = f"histories/{history_id}/contents?v=dev&q=related&qv={hid}"
+        if visible_only:
+            url += "&q=visible&qv=true"
+        response = self._get(url)
+        self._assert_status_code_is(response, 200)
+        return sorted(c["hid"] for c in response.json())
+
+    def _run_cat(self, history_id: str, hda: dict) -> dict:
+        run_response = self.dataset_populator.run_tool(
+            "cat_data_and_sleep", {"input1": {"src": "hda", "id": hda["id"]}, "sleep_time": 0}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        return run_response["outputs"][0]
+
+    def _new_list(self, history_id: str) -> dict:
+        return self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()["outputs"][0]
+
+    def _run_filter_failed(self, history_id: str, hdca: dict) -> dict:
+        run_response = self.dataset_populator.run_tool(
+            "__FILTER_FAILED_DATASETS__", {"input": {"src": "hdca", "id": hdca["id"]}}, history_id
+        )
+        self.dataset_populator.wait_for_history(history_id)
+        return run_response["output_collections"][0]
 
     def test_elements_datatypes_field(self, history_id):
         collection_name = "homogeneous"
@@ -1206,6 +1396,36 @@ class TestHistoryContentsApi(ApiTestCase):
         update_response = self._update(history_id, hda1["id"], dict(name="Updated Name"))
         self._assert_status_code_is(update_response, 403)
         assert update_response.json()["err_msg"] == "History is immutable"
+
+    def test_contents_from_store_async_accepts_only_web_links(self, history_id):
+        for payload in (
+            {"store_content_uri": "/tmp/store.tgz"},
+            {"store_content_uri": "file:///tmp/store.tgz"},
+            {"store_content_uri": "gxfiles://test/store.tgz"},
+            {"store_dict": {}},
+        ):
+            response = self._post(f"histories/{history_id}/contents_from_store_async", payload, json=True)
+            self._assert_status_code_is(response, 403)
+        response = self._post(f"histories/{history_id}/contents_from_store_async", {}, json=True)
+        self._assert_status_code_is(response, 400)
+
+    def test_contents_from_store_async_refuses_a_private_address(self, history_id):
+        response = self._post(
+            f"histories/{history_id}/contents_from_store_async",
+            {"store_content_uri": "http://10.0.0.1/store.tgz"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 403)
+
+    def test_contents_from_store_async_needs_a_history_you_can_change(self):
+        with self._different_user():
+            other_history_id = self.dataset_populator.new_history()
+        response = self._post(
+            f"histories/{other_history_id}/contents_from_store_async",
+            {"store_content_uri": "https://example.org/store.tgz"},
+            json=True,
+        )
+        self._assert_status_code_is(response, 403)
 
 
 class TestHistoryContentsApiBulkOperation(ApiTestCase):
@@ -1595,16 +1815,23 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
-            new_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "tabular"
                     assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                     assert "metadata_column_names" in item
-                if item["history_content_type"] == "dataset_collection":
-                    new_collection_update_times.append(item["update_time"])
 
-            assert original_collection_update_times != new_collection_update_times
+            # The collection's update_time is touched by the last task in the chain, after the datasets change.
+            def collection_update_times_changed():
+                history_contents = self._get_history_contents(history_id, query="?v=dev&keys=update_time")
+                update_times = [
+                    item["update_time"]
+                    for item in history_contents
+                    if item["history_content_type"] == "dataset_collection"
+                ]
+                return update_times != original_collection_update_times or None
+
+            wait_on(collection_update_times_changed, "collection update times to change", timeout=30)
 
     def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
         with self.dataset_populator.test_history() as history_id:

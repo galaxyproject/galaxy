@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
-import { BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BForm, BFormGroup } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -18,6 +18,7 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -104,7 +105,8 @@ async function clickCILogonLogin() {
     loading.value = true;
 
     try {
-        const redirectUri = await submitCILogon(true, selected.value.EntityID);
+        const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+        const redirectUri = await submitCILogon(true, selected.value.EntityID, redirectParam);
 
         localStorage.setItem("galaxy-provider", "cilogon");
 
@@ -188,9 +190,7 @@ function getIdpPreference() {
                     </BFormGroup>
 
                     <BFormGroup v-if="props.loginPage">
-                        <BFormCheckbox id="remember-idp" v-model="rememberIdp">
-                            Remember institution selection
-                        </BFormCheckbox>
+                        <GCheckbox id="remember-idp" v-model="rememberIdp"> Remember institution selection </GCheckbox>
                     </BFormGroup>
 
                     <GButton :disabled="loading || selected === null" @click="clickCILogonLogin">

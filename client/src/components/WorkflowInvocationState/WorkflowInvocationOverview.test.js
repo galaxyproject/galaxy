@@ -50,7 +50,6 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
     async function loadWrapper(invocationData) {
         const propsData = {
             invocation: invocationData,
-            invocationAndJobTerminal: true,
             invocationSchedulingTerminal: true,
             stepsJobsSummary: [],
             jobStatesSummary: {},

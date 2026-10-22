@@ -15,7 +15,7 @@ import sys
 
 import pytest
 
-from galaxy.tools.expressions.js_engine import resolve_isolation_command
+from galaxy_ext.expressions.js_engine import resolve_isolation_command
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,

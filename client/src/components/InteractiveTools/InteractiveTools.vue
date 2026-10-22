@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -9,6 +8,7 @@ import { useRouter } from "vue-router";
 import type { TableField } from "@/components/Common/GTable.types";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -117,7 +117,7 @@ onMounted(() => {
 
         <Heading id="interactive-tools-heading" h1 separator inline size="lg"> Active Interactive Tools </Heading>
 
-        <BFormInput
+        <GFormInput
             id="interactivetool-search"
             v-model="filter"
             class="m-1"

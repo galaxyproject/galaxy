@@ -11,7 +11,7 @@ import {
     faStopCircle,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
@@ -21,8 +21,9 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
-import type { Step } from "@/stores/workflowStepStore";
+import type { ParameterOutput, Step } from "@/stores/workflowStepStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
+import { rerunWhileBusy } from "@/utils/sharedPromise";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
@@ -115,8 +116,6 @@ export function useInvocationGraph(
     const stepsPopulated = ref(false);
     const storeId = computed(() => `invocation-${invocation.value.id}`);
 
-    const lastStepsJobsSummary = ref<StepJobSummary[]>([]);
-
     /** The full invocation mapped onto the original workflow.
      * _(Needed to map the invocation onto the workflow editor graph.)_
      */
@@ -130,6 +129,24 @@ export function useInvocationGraph(
     const loading = ref(true);
 
     provideScopedWorkflowStores(storeId);
+
+    /** Update the steps from the latest polled data; a poll landing mid-update makes it run again */
+    const refreshSteps = rerunWhileBusy(async () => {
+        if (stepsJobsSummary.value) {
+            await updateSteps(stepsJobsSummary.value);
+        }
+    });
+
+    // Follow the invocation and job summaries polled by the parent, once the workflow has loaded.
+    watch([invocation, stepsJobsSummary], async () => {
+        if (loadedWorkflow.value) {
+            try {
+                await refreshSteps();
+            } catch (e) {
+                console.error("Failed to update invocation graph steps", e);
+            }
+        }
+    });
 
     /** Load the invocation graph and steps onto the editor canvas.
      * @param loadOntoEditor - If set to false, initializes graph steps but does not load them onto the editor.
@@ -160,9 +177,7 @@ export function useInvocationGraph(
                 };
             }
 
-            if (stepsJobsSummary.value) {
-                await updateSteps(stepsJobsSummary.value);
-            }
+            await refreshSteps();
 
             // Load the invocation graph into the editor the first time
             if (!stepsPopulated.value && loadOntoEditor) {
@@ -180,15 +195,20 @@ export function useInvocationGraph(
     /** Update the steps of the invocation graph with the step job summaries, or initialize the steps
      * if they haven't been populated yet.
      * @param stepsJobsSummary - The job summary for each step in the invocation
+     * @throws The first input that failed to load, after all other steps are updated
      * */
     async function updateSteps(stepsJobsSummary: StepJobSummary[]) {
         /** Initialize with the original steps of the workflow, else update the existing graph steps */
         const fullSteps: Record<string, Step | GraphStep> = !stepsPopulated.value
             ? { ...loadedWorkflow.value.steps }
             : steps.value;
+        const stepCount = Object.keys(fullSteps).length;
+        const findStepJobSummary = stepJobSummaryLookup(stepsJobsSummary);
+        /** The first failed input fetch */
+        let inputError: Error | undefined;
 
         // for each step, store the state and status of jobs
-        for (let i = 0; i < Object.keys(fullSteps).length; i++) {
+        for (let i = 0; i < stepCount; i++) {
             /** An invocation graph step (initialized with the original workflow step) */
             let graphStepFromWfStep;
             if (!steps.value[i]) {
@@ -201,26 +221,16 @@ export function useInvocationGraph(
             /** The raw invocation step */
             const invocationStep = invocation.value.steps[i];
 
-            // TODO: What if the state of something not in the stepsJobsSummary has changed? (e.g.: subworkflows...)
-            /** if the steps have not been populated or the job states have changed, update the step */
-            const updateNonInputStep =
-                !stepsPopulated.value ||
-                JSON.stringify(stepsJobsSummary) !== JSON.stringify(lastStepsJobsSummary.value);
-
-            if (updateNonInputStep && !isWorkflowInput(graphStepFromWfStep.type)) {
-                let invocationStepSummary: StepJobSummary | undefined;
-                if (invocationStep) {
-                    invocationStepSummary = stepsJobsSummary.find((stepJobSummary: StepJobSummary) => {
-                        if (stepJobSummary.model === "ImplicitCollectionJobs") {
-                            return stepJobSummary.id === invocationStep.implicit_collection_jobs_id;
-                        } else {
-                            return stepJobSummary.id === invocationStep.job_id;
-                        }
-                    });
-                }
-                updateStep(graphStepFromWfStep, invocationStep, invocationStepSummary);
+            // `updateStep` only writes what changed, so unchanged steps don't re-render
+            if (!isWorkflowInput(graphStepFromWfStep.type)) {
+                updateStep(graphStepFromWfStep, invocationStep, invocationStep && findStepJobSummary(invocationStep));
             } else if (invocationStep && graphStepFromWfStep.nodeText === undefined) {
-                await initializeGraphInput(graphStepFromWfStep, invocationStep);
+                try {
+                    await initializeGraphInput(graphStepFromWfStep, invocationStep);
+                } catch (e) {
+                    // `nodeText` stays unset, so the next update retries this input
+                    inputError ??= e as Error;
+                }
             }
 
             // add the graph step to the steps object if it doesn't exist yet
@@ -229,7 +239,9 @@ export function useInvocationGraph(
             }
         }
 
-        lastStepsJobsSummary.value = stepsJobsSummary;
+        if (inputError) {
+            throw inputError;
+        }
     }
 
     /**
@@ -362,14 +374,18 @@ export function useInvocationGraph(
                 graphStep.state = getContentItemState(hdca) as GraphStep["state"];
                 graphStep.nodeText = `${hdca.hid}: <b>${hdca.name}</b>`;
             }
+            setHeaderClass(graphStep);
         } else if (inputParam) {
-            if (typeof inputParam.parameter_value === "boolean") {
-                graphStep.nodeText = inputParam.parameter_value;
+            const parameterValue = inputParam.parameter_value;
+            const parameterType = (graphStep.outputs[0] as ParameterOutput | undefined)?.type;
+            if (typeof parameterValue === "boolean") {
+                graphStep.nodeText = parameterValue;
+            } else if (parameterType === "color" && typeof parameterValue === "string") {
+                graphStep.nodeText = parameterValue;
             } else {
-                graphStep.nodeText = `<b>${inputParam.parameter_value}</b>`;
+                graphStep.nodeText = `<b>${parameterValue}</b>`;
             }
         }
-        setHeaderClass(graphStep);
     }
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
@@ -389,6 +405,25 @@ export function useInvocationGraph(
         loadInvocationGraph,
         loading,
     };
+}
+
+/** Index step job summaries once, for finding the summary of each invocation step.
+ * @param stepsJobsSummary - The job summary for each step in the invocation
+ * @returns A function that returns the job summary for an invocation step, if any
+ */
+export function stepJobSummaryLookup(stepsJobsSummary: StepJobSummary[]) {
+    const jobSummaries = new Map<string, StepJobSummary>();
+    const implicitCollectionJobsSummaries = new Map<string, StepJobSummary>();
+    for (const summary of stepsJobsSummary) {
+        const summaries = summary.model === "ImplicitCollectionJobs" ? implicitCollectionJobsSummaries : jobSummaries;
+        if (!summaries.has(summary.id)) {
+            summaries.set(summary.id, summary);
+        }
+    }
+    return (invocationStep: InvocationStep): StepJobSummary | undefined =>
+        (invocationStep.implicit_collection_jobs_id &&
+            implicitCollectionJobsSummaries.get(invocationStep.implicit_collection_jobs_id)) ||
+        (invocationStep.job_id ? jobSummaries.get(invocationStep.job_id) : undefined);
 }
 
 export function getHeaderClass(state: GraphStepState | undefined) {

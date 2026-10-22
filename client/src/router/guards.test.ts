@@ -2,10 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RouteLocationNormalized } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
+import { redirectToUrl } from "@/utils/redirect";
 
 import { redirectLoggedIn } from "./guards";
 
 vi.mock("@/app");
+vi.mock("@/utils/redirect", async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    redirectToUrl: vi.fn(),
+}));
 
 const LANDING_PATH = "/tool_landings/1234-5678?public=true";
 
@@ -14,7 +19,10 @@ function runGuard(query: RouteLocationNormalized["query"] = {}) {
 }
 
 function setUser(id: string | null) {
-    vi.mocked(getGalaxyInstance).mockReturnValue({ user: { id } } as ReturnType<typeof getGalaxyInstance>);
+    vi.mocked(getGalaxyInstance).mockReturnValue({
+        user: { id },
+        config: { allowed_login_redirect_hosts: ["tools.example.org"] },
+    } as ReturnType<typeof getGalaxyInstance>);
 }
 
 describe("redirectLoggedIn", () => {
@@ -46,6 +54,13 @@ describe("redirectLoggedIn", () => {
         setUser("f2db41e1fa331b3e");
         expect(runGuard({ redirect: "https://evil.example.com/" })).toBe("/");
         expect(runGuard({ redirect: "//evil.example.com/" })).toBe("/");
+    });
+
+    it("sends logged-in users on to an allowed external site", () => {
+        setUser("f2db41e1fa331b3e");
+        const target = "https://tools.example.org/back?item=1";
+        expect(runGuard({ redirect: target })).toBe(false);
+        expect(redirectToUrl).toHaveBeenCalledWith(target);
     });
 
     it("does not bounce a logged-in user back to the login route", () => {

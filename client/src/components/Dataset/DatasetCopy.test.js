@@ -239,6 +239,19 @@ it("shows success for new history creation", async () => {
     expect(wrapper.text()).toContain("New History");
 });
 
+it("clears the target history selections when a new history name is typed", async () => {
+    const wrapper = await setupBase(
+        [{ id: "h1", name: "H1" }],
+        [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
+    );
+    const targetCheckbox = wrapper.findAll("input[type='checkbox']").at(-1);
+    await targetCheckbox.setValue(true);
+    const nameInput = wrapper.get("input[data-description='copy history name']");
+    expect(nameInput.classes()).toContain("g-form-input");
+    await nameInput.setValue("New History");
+    expect(targetCheckbox.element.checked).toBe(false);
+});
+
 it("labels the history search inputs with their visible captions", async () => {
     const wrapper = await setupBase([{ id: "h1", name: "H1" }], []);
     const labels = wrapper.findAll("input.multiselect__input").map((input) => {
@@ -246,4 +259,30 @@ it("labels the history search inputs with their visible captions", async () => {
         return wrapper.find(`label[for="${input.attributes("id")}"]`).text();
     });
     expect(labels).toEqual(["Select a Source History:", "Select a Target History:"]);
+});
+
+it("keeps the selection hook on the content checkbox input", async () => {
+    const wrapper = await setupBase(
+        [{ id: "h1", name: "H1" }],
+        [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
+    );
+    const checkbox = wrapper.get("[data-description='copy dataset|d1']");
+    expect(checkbox.element.tagName).toBe("INPUT");
+    expect(checkbox.element.checked).toBe(true);
+});
+
+it("clears the new history name when a target history is checked", async () => {
+    const wrapper = await setupBase(
+        [
+            { id: "h1", name: "H1" },
+            { id: "h2", name: "H2" },
+        ],
+        [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
+    );
+    const nameInput = wrapper.find("input[data-description='copy history name']");
+    await nameInput.setValue("New History");
+    const targetCheckbox = wrapper.findAll("input[type='checkbox']").at(-1);
+    await targetCheckbox.setValue(true);
+    expect(nameInput.element.value).toBe("");
+    expect(wrapper.vm.targetMultiSelections).toEqual({ h2: true });
 });

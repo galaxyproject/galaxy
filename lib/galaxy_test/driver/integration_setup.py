@@ -145,7 +145,7 @@ class CuratedWorkflowsNetworkGuard:
 
         self._download_patch = patch.object(
             iwc_manifest,
-            "download_manifest",
+            "fetch_manifest",
             side_effect=AssertionError("curated workflow tests must never contact iwc.galaxyproject.org"),
         )
         self.download_mock = self._download_patch.start()

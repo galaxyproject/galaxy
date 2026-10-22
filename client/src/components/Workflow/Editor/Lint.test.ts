@@ -3,7 +3,7 @@ import { emittedArg, getLocalVue, nth } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -111,5 +111,67 @@ describe("Lint", () => {
             { action_type: "extract_input" },
             { action_type: "remove_unlabeled_workflow_outputs" },
         ]);
+    });
+});
+
+describe("Lint conditional gates", () => {
+    async function mountLint(when: string | undefined, inputConnections: Record<string, unknown>): Promise<VueWrapper> {
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+        setActivePinia(pinia);
+
+        const gatedSteps = {
+            ...(JSON.parse(JSON.stringify(steps)) as Steps),
+            3: {
+                id: 3,
+                name: "Concatenate datasets",
+                label: "gated",
+                type: "tool",
+                content_id: "cat1",
+                inputs: [],
+                outputs: [],
+                input_connections: inputConnections,
+                position: { left: 0, top: 0 },
+                tool_state: {},
+                workflow_outputs: [],
+                when,
+            },
+        } as unknown as Steps;
+        const gatedStepsRef = ref(gatedSteps);
+
+        const wrapper = mount(Lint as object, {
+            props: {
+                lintData: useLintData(ref("1"), gatedStepsRef, ref(testDatatypesMapper)),
+                steps: gatedSteps,
+                datatypesMapper: testDatatypesMapper,
+                hasChanges: false,
+            },
+            global: { ...localVue, provide: { workflowId: "mock-workflow" } },
+            pinia,
+        });
+
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        Object.values(gatedSteps).map((step) => stepStore.addStep(step));
+        await nextTick();
+        return wrapper;
+    }
+
+    function sectionStatus(wrapper: VueWrapper): string | undefined {
+        return wrapper.find("[data-description='linting conditional gates']").attributes("data-lint-status");
+    }
+
+    it("says nothing when no step is gated", async () => {
+        const wrapper = await mountLint(undefined, {});
+        expect(wrapper.find("[data-description='linting conditional gates']").exists()).toBe(false);
+    });
+
+    it("passes when a gate reads a connected input", async () => {
+        const wrapper = await mountLint("$(inputs.when)", { when: { id: 0, output_name: "output" } });
+        expect(sectionStatus(wrapper)).toBe("ok");
+    });
+
+    it("warns when a gate reads an input nothing is connected to", async () => {
+        const wrapper = await mountLint("$(inputs.when)", {});
+        expect(sectionStatus(wrapper)).toBe("warning");
+        expect(wrapper.find("[data-description='linting conditional gates']").text()).toContain("gated: when");
     });
 });

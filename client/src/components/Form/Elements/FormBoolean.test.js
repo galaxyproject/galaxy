@@ -1,44 +1,55 @@
 import { emittedArg, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { BFormCheckbox } from "bootstrap-vue";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import FormBoolean from "./FormBoolean.vue";
 
 const localVue = getLocalVue();
 
-describe("FormBoolean", () => {
-    let wrapper;
+function mountFormBoolean(props, attrs = {}) {
+    return mount(FormBoolean, { props, attrs, global: localVue });
+}
 
-    beforeEach(() => {
-        wrapper = mount(FormBoolean, {
-            props: {
-                value: false,
-            },
-            global: localVue,
-        });
+describe("FormBoolean", () => {
+    it("check initial value and value change", async () => {
+        const wrapper = mountFormBoolean({ value: false });
+        const input = wrapper.find("input[type='checkbox']");
+        expect(input.element.checked).toBe(false);
+        await wrapper.setProps({ value: "true" });
+        expect(input.element.checked).toBe(true);
+        await wrapper.setProps({ value: "false" });
+        expect(input.element.checked).toBe(false);
+        await wrapper.setProps({ value: true });
+        expect(input.element.checked).toBe(true);
+        expect(wrapper.emitted("input")).toBeUndefined();
+        await input.setValue(false);
+        expect(emittedArg(wrapper, "input")).toBe(false);
+        await wrapper.setProps({ value: emittedArg(wrapper, "input") });
+        expect(input.element.checked).toBe(false);
+        await input.setValue(true);
+        expect(emittedArg(wrapper, "input", 1)).toBe(true);
     });
 
-    it("check initial value and value change", async () => {
-        const switchComponent = wrapper.findComponent(BFormCheckbox);
+    it("renders a Yes/No switch with the parameter id on its input", async () => {
+        const wrapper = mountFormBoolean({ value: true }, { id: "param" });
         const input = wrapper.find("input[type='checkbox']");
-        expect(switchComponent.props().checked).toBe(false);
-        await wrapper.setProps({ value: "true" });
-        expect(emittedArg(wrapper, "input")).toBe(true);
-        await wrapper.setProps({ value: "false" });
-        expect(emittedArg(wrapper, "input", 1)).toBe(false);
-        await wrapper.setProps({ value: true });
-        expect(emittedArg(wrapper, "input", 2)).toBe(true);
-        await input.setValue(false);
-        expect(emittedArg(wrapper, "input", 3)).toBe(false);
-        await input.setValue(true);
-        expect(emittedArg(wrapper, "input", 4)).toBe(true);
+        expect(input.attributes("id")).toBe("param");
+        expect(input.attributes("role")).toBe("switch");
+        expect(wrapper.classes()).toContain("no-highlight");
+        expect(wrapper.find(".g-checkbox-label").text()).toBe("Yes");
+        await wrapper.setProps({ value: false });
+        expect(wrapper.find(".g-checkbox-label").text()).toBe("No");
+    });
+
+    it("renders no label when noLabel is set", () => {
+        const wrapper = mountFormBoolean({ value: true, noLabel: true });
+        expect(wrapper.find(".g-checkbox-label").exists()).toBe(false);
     });
 
     it("renders an unset optional value without changing it", async () => {
-        const unset = mount(FormBoolean, { propsData: { value: null }, localVue });
-        await unset.vm.$nextTick();
-        expect(unset.find("input").element.checked).toBe(false);
-        expect(unset.emitted("input")).toBeUndefined();
+        const wrapper = mountFormBoolean({ value: null });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find("input").element.checked).toBe(false);
+        expect(wrapper.emitted("input")).toBeUndefined();
     });
 });

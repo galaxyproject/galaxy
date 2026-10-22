@@ -38,6 +38,7 @@ from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
     and_,
     func,
+    or_,
     select,
     update,
 )
@@ -59,6 +60,7 @@ from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
+    PermissionProvider,
 )
 from galaxy.job_execution.setup import (
     ensure_configs_directory,
@@ -67,6 +69,12 @@ from galaxy.job_execution.setup import (
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
     validate_working_directory_path,
+)
+from galaxy.jobs.environment import (
+    DestinationEnvironmentEntry,
+    EnvironmentScope,
+    EnvironmentStatement,
+    normalize_environment_entry,
 )
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
@@ -102,10 +110,14 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    MaxDiscoveredFilesJobMessage,
     output_discovery_job_message,
+    OutputCollectionSecurityJobMessage,
+    runtime_environment_job_messages,
     unknown_datatype_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util.runtime_environment import required_variable_names
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
@@ -239,7 +251,8 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
 
         # TODO: handle enabled/disabled in configure_from
         environment["params"] = params
-        environment["env"] = JobConfiguration.get_envs(destination)
+        environment["_scoped_env"] = JobConfiguration.get_envs(destination)
+        environment["_job_env_configured"] = bool(destination.findall("job_env"))
         destination_resubmits = JobConfiguration.get_resubmits(destination)
         if destination_resubmits:
             environment["resubmit"] = destination_resubmits
@@ -494,24 +507,43 @@ class JobConfiguration(ConfiguresHandlers):
                         metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
                         job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
 
-            destination_kwds = {}
-
+            xml_env = environment_dict.pop("_scoped_env", None)
+            job_env_configured = environment_dict.pop("_job_env_configured", False) or bool(
+                environment_dict.get("job_env")
+            )
             params = environment_dict.get("params")
             if params is None:
                 # Treat the excess keys in the environment as the destination parameters
                 # allowing a flat configuration of these things.
                 params = {}
                 for key, value in environment_dict.items():
-                    if key in ["id", "tags", "runner", "shell", "env", "resubmit"]:
+                    if key in ["id", "tags", "runner", "shell", "env", "job_env", "tool_env", "resubmit"]:
                         continue
                     params[key] = value
                 environment_dict["params"] = params
 
-            for key in ["tags", "runner", "shell", "env", "resubmit", "params"]:
-                if key in environment_dict:
-                    destination_kwds[key] = environment_dict[key]
-            destination_kwds["id"] = environment_id
-            job_destination = JobDestination(**destination_kwds)
+            env_entries: list[DestinationEnvironmentEntry] = xml_env or []
+            for key, entries in environment_dict.items():
+                scope: EnvironmentScope
+                if key == "env":
+                    scope = "job"
+                elif key == "job_env":
+                    scope = "job"
+                elif key == "tool_env":
+                    scope = "tool"
+                else:
+                    continue
+                env_entries.extend(normalize_environment_entry(entry, scope) for entry in entries)
+            job_destination = JobDestination(
+                id=environment_id,
+                tags=environment_dict.get("tags"),
+                runner=environment_dict.get("runner"),
+                shell=environment_dict.get("shell"),
+                resubmit=environment_dict.get("resubmit", []),
+                params=params,
+                env=env_entries,
+                job_env_configured=job_env_configured,
+            )
             if not self.__is_enabled(job_destination.params):
                 continue
 
@@ -711,26 +743,29 @@ class JobConfiguration(ConfiguresHandlers):
         return JobConfiguration.get_params(self.app.config, parent)
 
     @staticmethod
-    def get_envs(parent):
-        """Parses any child <env> tags in to a dictionary suitable for persistence.
+    def get_envs(parent: "Element") -> list[DestinationEnvironmentEntry]:
+        """Parse XML environment setup elements directly into an ordered scoped list.
 
-        :param parent: Parent element in which to find child <env> tags.
-        :type parent: ``lxml.etree._Element``
-
-        :returns: dict
+        ``env`` is the legacy alias for ``job_env``. Both produce job-scoped
+        entries; ``tool_env`` produces tool-scoped name/value assignments.
+        These entries remain separate from persisted runner parameters.
         """
-        rval = []
-        for param in parent.findall("env"):
-            rval.append(
-                dict(
-                    name=param.get("id"),
-                    file=param.get("file"),
-                    execute=param.get("exec"),
-                    value=param.text,
-                    raw=util.asbool(param.get("raw", "false")),
-                )
-            )
-        return rval
+        entries: list[DestinationEnvironmentEntry] = []
+        for element in parent:
+            if element.tag not in ("env", "job_env", "tool_env"):
+                continue
+            statement: EnvironmentStatement = {
+                "name": element.get("id"),
+                "value": element.text or "",
+                "raw": util.asbool(element.get("raw", "false")),
+            }
+            if "file" in element.attrib:
+                statement["file"] = element.get("file")
+            if "exec" in element.attrib:
+                statement["execute"] = element.get("exec")
+            scope: EnvironmentScope = "tool" if element.tag == "tool_env" else "job"
+            entries.append(normalize_environment_entry(statement, scope))
+        return entries
 
     @staticmethod
     def get_resubmits(parent: "Element") -> list[ResubmitConfigDict]:
@@ -924,8 +959,20 @@ class JobConfiguration(ConfiguresHandlers):
                         class_name,
                     )
                     rval[id] = runner_class(self.app)
+                self._warn_on_container_native_job_env(id, runner_class)
                 log.debug(f"Loaded job runner '{module_name}:{class_name}' as '{id}'")
         return rval
+
+    def _warn_on_container_native_job_env(self, runner_id: str, runner_class: type["BaseJobRunner"]) -> None:
+        if not runner_class.runs_job_script_in_container:
+            return
+        destinations = {destination for entries in self.destinations.values() for destination in entries}
+        for destination in destinations:
+            if destination.runner == runner_id and destination.job_env_configured:
+                log.warning(
+                    "Destination %s uses job_env with a container-native runner; these variables also reach the tool container",
+                    destination.id,
+                )
 
     def is_id(self, collection):
         """Given a collection of handlers or destinations, indicate whether the collection represents a real ID
@@ -1698,6 +1745,21 @@ class MinimalJobWrapper(HasResourceParameters):
                     destination_tag_limits[tag] = tag_limit
 
         conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
+        # The job being queued must not take up a slot itself. This only matters for
+        # resubmitted jobs: new jobs aren't in a counted state. A resubmitted job only
+        # counts resubmitted jobs with a lower id, so resubmitted jobs drain in order
+        # instead of blocking each other forever when there are more than the limit.
+        # A lower-id resubmitted job that isn't ready yet (still waiting out
+        # __resubmit_delay_seconds, or assigned to a handler that isn't running) holds up
+        # higher-id resubmitted jobs sharing a limit, including other users' jobs under
+        # destination total or tag limits.
+        if job.state == Job.states.RESUBMITTED:
+            other_jobs = or_(
+                Job.state != Job.states.RESUBMITTED,
+                Job.id < job.id,
+            )
+        else:
+            other_jobs = Job.id != job.id
 
         if job.user_id:
             user_job_count = (
@@ -1712,6 +1774,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ]
                         ),
                         Job.user_id == job.user_id,
+                        other_jobs,
                     )
                 )
                 .scalar_subquery()
@@ -1733,6 +1796,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ),
                             Job.destination_id == job_destination.id,
                             Job.user_id == job.user_id,
+                            other_jobs,
                         )
                     )
                     .scalar_subquery()
@@ -1752,6 +1816,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ]
                         ),
                         Job.session_id == job.galaxy_session.id,
+                        other_jobs,
                     )
                 )
                 .scalar_subquery()
@@ -1771,6 +1836,7 @@ class MinimalJobWrapper(HasResourceParameters):
                             ]
                         ),
                         Job.destination_id == job_destination.id,
+                        other_jobs,
                     )
                 )
                 .scalar_subquery()
@@ -1792,6 +1858,7 @@ class MinimalJobWrapper(HasResourceParameters):
                                 ]
                             ),
                             Job.destination_id.in_(destination_ids),
+                            other_jobs,
                         )
                     )
                     .scalar_subquery()
@@ -1928,6 +1995,26 @@ class MinimalJobWrapper(HasResourceParameters):
                     working_directory,
                 )
 
+    def _validated_stored_preferred_object_store_id(
+        self, user, object_store_id: str | None, owner_type: str, owner_id: int
+    ) -> str | None:
+        # Preferences stored on users and histories are validated when they are set,
+        # but the object store configuration may have changed since (e.g. a backend
+        # no longer allows selection), so ignore stale preferences here.
+        if object_store_id is None:
+            return None
+        validation_error = self.app.object_store.validate_selected_object_store_id(user, object_store_id)
+        if validation_error:
+            log.warning(
+                "Ignoring preferred object store id '%s' of %s %s: %s",
+                object_store_id,
+                owner_type,
+                owner_id,
+                validation_error,
+            )
+            return None
+        return object_store_id
+
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
@@ -1982,10 +2069,14 @@ class MinimalJobWrapper(HasResourceParameters):
         if object_store_id is None:
             history = job.history
             if history is not None:
-                object_store_id = history.preferred_object_store_id
+                object_store_id = self._validated_stored_preferred_object_store_id(
+                    user, history.preferred_object_store_id, "history", history.id
+                )
         if object_store_id is None:
             if user is not None:
-                object_store_id = user.preferred_object_store_id
+                object_store_id = self._validated_stored_preferred_object_store_id(
+                    user, user.preferred_object_store_id, "user", user.id
+                )
 
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
         if split_object_stores is None:
@@ -2141,15 +2232,15 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def finish(
         self,
-        tool_stdout,
-        tool_stderr,
-        tool_exit_code=None,
-        job_stdout=None,
-        job_stderr=None,
-        check_output_detected_state=None,
-        remote_metadata_directory=None,
-        job_metrics_directory=None,
-    ):
+        tool_stdout: str,
+        tool_stderr: str,
+        tool_exit_code: int | None = None,
+        job_stdout: str | None = None,
+        job_stderr: str | None = None,
+        check_output_detected_state: str | None = None,
+        remote_metadata_directory: str | None = None,
+        job_metrics_directory: str | None = None,
+    ) -> None:
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
@@ -2162,7 +2253,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # default post job setup
         job = self.get_job()
 
-        def fail(message=job.info, exception=None):
+        def fail(message: str = job.info or "Unknown error", exception: Exception | None = None) -> None:
             if not isinstance(exception, (AssertionError, MessageException)):
                 # Only attach MessageException and AssertionErrors to job.traceback
                 exception = None
@@ -2241,6 +2332,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
+        assert self.tool is not None
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
@@ -2252,6 +2344,10 @@ class MinimalJobWrapper(HasResourceParameters):
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                # Datasets discovered by the job are created by the import, without permissions.
+                permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
+                for hda in [*object_import_tracker.hdas_by_key.values(), *object_import_tracker.hdas_by_id.values()]:
+                    permission_provider.set_default_hda_permissions(hda)
                 # The import leaves job.state untouched so nothing polling the job can see it finish before
                 # exec_after_process and the final commit below have run.
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
@@ -2278,18 +2374,18 @@ class MinimalJobWrapper(HasResourceParameters):
             except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError, OutputCollectionSecurityError) as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
                 final_job_state = job.states.ERROR
-                message_type = (
-                    "output_collection_security"
+                message = (
+                    OutputCollectionSecurityJobMessage(
+                        type="output_collection_security", desc=str(e), error_level=StdioErrorLevel.FATAL
+                    )
                     if isinstance(e, OutputCollectionSecurityError)
-                    else "max_discovered_files"
+                    else MaxDiscoveredFilesJobMessage(
+                        type="max_discovered_files", desc=str(e), error_level=StdioErrorLevel.FATAL
+                    )
                 )
                 job.job_messages = [
                     *(job.job_messages or []),
-                    {
-                        "type": message_type,
-                        "desc": str(e),
-                        "error_level": StdioErrorLevel.FATAL,
-                    },
+                    message,
                 ]
             except MessageException as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
@@ -2313,20 +2409,25 @@ class MinimalJobWrapper(HasResourceParameters):
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
                 # need to update all associated output hdas, i.e. history was shared with job running
-                for dataset in (
+                assert dataset_assoc.dataset.dataset is not None
+                for hda_or_ldda in (
                     dataset_assoc.dataset.dataset.history_associations
                     + dataset_assoc.dataset.dataset.library_associations
                 ):
                     if is_discovered_dataset:
-                        if dataset is dataset_assoc.dataset:
+                        if hda_or_ldda is dataset_assoc.dataset:
                             continue
-                        elif dataset.extension == dataset_assoc.dataset.extension or dataset.extension == "auto":
-                            copy_dataset_instance_metadata_attributes(dataset_assoc.dataset, dataset)
+                        elif (
+                            hda_or_ldda.extension == dataset_assoc.dataset.extension or hda_or_ldda.extension == "auto"
+                        ):
+                            copy_dataset_instance_metadata_attributes(dataset_assoc.dataset, hda_or_ldda)
                             continue
                     output_name = dataset_assoc.name
 
                     # Handles retry internally on error for instance...
-                    self._finish_dataset(output_name, dataset, job, context, final_job_state, remote_metadata_directory)
+                    self._finish_dataset(
+                        output_name, hda_or_ldda, job, context, final_job_state, remote_metadata_directory
+                    )
                 if (
                     not final_job_state == job.states.ERROR
                     and not dataset_assoc.dataset.dataset.state == job.states.ERROR
@@ -2337,6 +2438,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
+                assert dataset_assoc.dataset.dataset is not None
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = Dataset.states.ERROR
@@ -2363,6 +2465,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset = dataset_assoc.dataset.dataset
+            assert dataset is not None
             # assume all datasets in a job get written to the same objectstore
             quota_source_info = dataset.quota_source_info
             collected_bytes += dataset.set_total_size()
@@ -2376,6 +2479,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if final_job_state == job.states.OK:
             for dataset_assoc in output_dataset_associations:
                 dataset = dataset_assoc.dataset.dataset
+                assert dataset is not None
                 if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
                     if self.app.config.calculate_dataset_hash == "always" or (
                         self.app.config.calculate_dataset_hash == "upload"
@@ -2491,6 +2595,12 @@ class MinimalJobWrapper(HasResourceParameters):
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
         state, tool_stdout, tool_stderr, job_messages = check_output(
             self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
+        )
+
+        job_messages.extend(
+            runtime_environment_job_messages(
+                self.working_directory, required_variable_names(self.tool.runtime_environment_variables)
+            )
         )
 
         # Store the modified stdout and stderr in the job:
@@ -3105,7 +3215,7 @@ class TaskWrapper(JobWrapper):
         self.sa_session.add(task)
         self.sa_session.commit()
 
-    def finish(self, stdout, stderr, tool_exit_code=None, **kwds):
+    def finish(self, stdout: str, stderr: str, tool_exit_code: int | None = None, **kwds):  # type: ignore[override]
         # DBTODO integrate previous finish logic.
         # Simple finish for tasks.  Just set the flag OK.
         """

@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref } from "vue";
 
+import {
+    describeKnownCollectionType,
+    KNOWN_COLLECTION_TYPES,
+} from "@/components/Collections/common/knownCollectionTypes";
 import { isValidCollectionTypeStr } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import CollectionTypeCards from "@/components/Collections/common/CollectionTypeCards.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
 interface Props {
@@ -11,57 +18,84 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const currentValue = ref<string | undefined>(undefined);
-const warning = ref<string | null>(null);
-const error = ref<string | null>(null);
+const emit = defineEmits<{
+    (e: "onChange", collectionType: string | null): void;
+}>();
 
-function onInput(newCollectionType: string | undefined) {
-    if (newCollectionType && !isValidCollectionTypeStr(newCollectionType)) {
-        error.value = "Invalid collection type";
-        // don't emit an invalid collection type
-        return;
-    } else {
-        emit("onChange", newCollectionType);
+const showHelp = ref(false);
+// re-mounting the element after a pick from the dialog drops any custom text being typed, even when the
+// pick is the saved type and so doesn't change the value
+const elementKey = ref(0);
+
+// a legacy "" means any collection type
+const currentValue = computed(() => props.value || null);
+
+const attributes = {
+    data: [
+        { label: "Any collection type", value: null },
+        ...KNOWN_COLLECTION_TYPES.map((known) => ({
+            label: `${known.label} (${known.collectionType})`,
+            value: known.collectionType,
+            help: describeKnownCollectionType(known, "workflow_input"),
+        })),
+    ],
+    other_label: "Custom collection type...",
+    other_help:
+        "Nest list, paired, paired_or_unpaired, and record with colons, from the outermost level in (e.g. list:list:paired).",
+    validate: validateCollectionType,
+};
+
+function validateCollectionType(collectionType: string): string | undefined {
+    if (!collectionType) {
+        return "Enter a collection type such as list:list:paired.";
+    } else if (!isValidCollectionTypeStr(collectionType)) {
+        return "Invalid collection type";
     }
+    return undefined;
 }
 
-const collectionTypeOptions = [
-    { value: "list", label: "List of Datasets" },
-    { value: "paired", label: "Dataset Pair" },
-    { value: "record", label: "Record" },
-    { value: "list:record", label: "List of Records" },
-    { value: "list:paired", label: "List of Dataset Pairs" },
-    { value: "list:paired_or_unpaired", label: "Mixed List of Paired and Unpaired Datasets" },
-    { value: "sample_sheet", label: "Sample Sheet of Datasets" },
-    { value: "sample_sheet:paired", label: "Sample Sheet of Dataset Pairs" },
-    { value: "sample_sheet:paired_or_unpaired", label: "Sample Sheet of Paired and Unpaired Datasets" },
-    { value: "sample_sheet:record", label: "Sample Sheet of Dataset Records" },
-];
-
-function updateValue(newValue: string | undefined) {
-    currentValue.value = newValue;
-    warning.value = null;
-    error.value = null;
-    if (!newValue) {
-        warning.value = "Typically, a value for this collection type should be specified.";
-    } else if (!isValidCollectionTypeStr(newValue)) {
-        error.value = "Invalid collection type";
+const warning = computed(() => {
+    if (!currentValue.value) {
+        return "Typically, a value for this collection type should be specified.";
     }
+    return undefined;
+});
+
+// Emits null, not undefined, for any collection type - an undefined value is dropped from the
+// saved tool state and the server falls back to "list".
+function onInput(collectionType: string | null) {
+    emit("onChange", collectionType ?? null);
 }
 
-watch(() => props.value, updateValue, { immediate: true });
-const emit = defineEmits(["onChange"]);
+function onChooseFromHelp(collectionType: string) {
+    showHelp.value = false;
+    elementKey.value++;
+    onInput(collectionType);
+}
 </script>
 
 <template>
-    <FormElement
-        id="collection_type"
-        :value="currentValue"
-        :attributes="{ datalist: collectionTypeOptions }"
-        :warning="warning ?? undefined"
-        :error="error ?? undefined"
-        title="Collection type"
-        :optional="true"
-        type="text"
-        @input="onInput" />
+    <div class="form-collection-type">
+        <FormElement
+            id="collection_type"
+            :key="elementKey"
+            :value="currentValue"
+            :attributes="attributes"
+            :warning="warning"
+            title="Collection type"
+            type="select_or_text"
+            @input="onInput" />
+        <div class="mb-3">
+            <GLink data-description="collection type help" @click="showHelp = true">
+                Not sure which collection type to use?
+            </GLink>
+        </div>
+        <GModal v-model:show="showHelp" title="Collection Types" size="large">
+            <p>
+                Collections group datasets so a workflow can process many samples at once. Choose the structure this
+                workflow input expects.
+            </p>
+            <CollectionTypeCards :value="currentValue" context="workflow_input" @select="onChooseFromHelp" />
+        </GModal>
+    </div>
 </template>

@@ -1,7 +1,12 @@
-import { GalaxyApi, type SampleSheetColumnDefinition, type SampleSheetColumnDefinitions } from "@/api";
+import {
+    GalaxyApi,
+    type HDCADetailed,
+    type SampleSheetColumnDefinition,
+    type SampleSheetColumnDefinitions,
+} from "@/api";
 import { createWorkbook, createWorkbookForCollection, type SampleSheetCollectionType } from "@/api/datasetCollections";
 import { stripExtension } from "@/components/Collections/common/stripExtension";
-import type { PrefixColumnsType } from "@/components/Collections/wizard/types";
+import type { ParsedSampleSheetWorkbook, PrefixColumnsType } from "@/components/Collections/wizard/types";
 
 export async function downloadWorkbook(
     columnDefinitions: SampleSheetColumnDefinitions,
@@ -111,4 +116,20 @@ function createAndClickDownloadLink(blob: Blob, filename: string) {
     link.click();
     document.body.removeChild(link); // Clean up the temporary link
     window.URL.revokeObjectURL(url); // Release the object URL
+}
+
+/** Keep loaded dataset and pair objects while applying workbook metadata in workbook row order. */
+export function workbookForCollection(workbook: ParsedSampleSheetWorkbook, collection: HDCADetailed) {
+    const byIdentifier = new Map(collection.elements.map((element) => [element.element_identifier, element]));
+    const seen = new Set<string>();
+    const elements = workbook.rows.map((row) => {
+        const identifier = row.list_identifiers as string;
+        const element = byIdentifier.get(identifier);
+        if (!element || seen.has(identifier)) {
+            throw new Error(`Unknown or duplicate collection identifier in workbook: ${identifier}`);
+        }
+        seen.add(identifier);
+        return element;
+    });
+    return { ...workbook, elements };
 }

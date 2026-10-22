@@ -8,17 +8,17 @@
                 <BForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
-                    <BFormSelect
+                    <GSelect
                         id="manage-container-type"
                         v-model="containerType"
-                        class="mb-2 mr-sm-2 mb-sm-0"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions" />
 
                     <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
-                    <BFormSelect
+                    <GSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
-                        class="mb-2 mr-sm-2 mb-sm-0"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
                 </BForm>
             </BRow>
@@ -27,30 +27,33 @@
                 <BForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <BFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
+                    <GSelect
+                        id="manage-filter-resolution"
+                        v-model="filterResolution"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </BFormSelect>
+                    </GSelect>
 
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type">
                         Containers of type
                     </label>
-                    <BFormSelect
+                    <GSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
-                        class="mb-2 mr-sm-2 mb-sm-0"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions" />
 
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type">
                         Resolvers of type
                     </label>
-                    <BFormSelect
+                    <GSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
-                        class="mb-2 mr-sm-2 mb-sm-0"
+                        class="w-auto mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
                 </BForm>
             </BRow>
@@ -74,7 +77,7 @@
                 :items="items"
                 @row-click="showRowDetails($event)">
                 <template v-slot:cell(selected)="data">
-                    <BFormCheckbox v-model="data.item.selected" />
+                    <GCheckbox v-model="data.item.selected" :aria-label="`Select ${data.item.tool_id}`" @click.stop />
                 </template>
 
                 <template v-slot:cell(requirement)="row">
@@ -108,7 +111,8 @@
 <script>
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BForm, BFormCheckbox, BFormSelect, BRow } from "bootstrap-vue";
+import { BForm, BRow } from "bootstrap-vue";
+import { reactive } from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -121,6 +125,8 @@ import Requirements from "@/components/admin/Dependencies/Requirements.vue";
 import StatusDisplay from "@/components/admin/Dependencies/StatusDisplay.vue";
 import ToolDisplay from "@/components/admin/Dependencies/ToolDisplay.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GSelect from "@/components/BaseComponents/GSelect.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 const RESOLVER_TYPE_OPTIONS = Object.keys(DESCRIPTION).map((resolverType) => ({
@@ -132,8 +138,6 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 export default {
     components: {
         BForm,
-        BFormCheckbox,
-        BFormSelect,
         BRow,
         ContainerDescription,
         ContainerResolutionDetails,
@@ -141,6 +145,8 @@ export default {
         DependencyIndexWrapper,
         FontAwesomeIcon,
         GButton,
+        GCheckbox,
+        GSelect,
         GTable,
         Requirements,
         StatusDisplay,
@@ -176,7 +182,7 @@ export default {
     },
     computed: {
         items: function () {
-            return this.resolutions
+            const items = this.resolutions
                 .filter((resolution) => {
                     if (this.filterResolution == "unresolved" && resolution.status.dependency_type != null) {
                         return false;
@@ -211,6 +217,8 @@ export default {
                         _showDetails: false,
                     };
                 });
+            // Reactive rows, so ticking a row's checkbox re-renders it and updates the selection.
+            return reactive(items);
         },
     },
     watch: {

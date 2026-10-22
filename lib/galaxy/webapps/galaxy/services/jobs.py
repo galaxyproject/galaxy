@@ -248,6 +248,12 @@ class JobsService(ServiceBase):
     def create(self, trans: ProvidesHistoryContext, job_request: JobRequest) -> JobCreateResponse:
         tool_run_reference = ToolRunReference(job_request.tool_id, job_request.tool_uuid, job_request.tool_version)
         tool = validate_tool_for_running(trans, tool_run_reference)
+        if preferred_object_store_id := job_request.preferred_object_store_id:
+            validation_error = trans.app.object_store.validate_selected_object_store_id(
+                trans.user, preferred_object_store_id
+            )
+            if validation_error:
+                raise exceptions.RequestParameterInvalidException(validation_error)
         target_history = None
         if (history_id := job_request.history_id) is not None:
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)

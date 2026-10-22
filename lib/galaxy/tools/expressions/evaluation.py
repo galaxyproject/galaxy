@@ -17,11 +17,7 @@ from cwl_utils.types import (
 
 from galaxy.exceptions import MessageException
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
-from .js_engine import (
-    build_evaluate_program,
-    evaluate_program,
-    register,
-)
+from galaxy_ext.expressions.js_engine import register
 
 # How much of an unparseable template is quoted back to its author.
 TEMPLATE_SNIPPET_LENGTH = 80
@@ -102,23 +98,3 @@ def do_eval(
         cwlVersion="v1.2.1",
         sandbox_command=sandbox_command,
     )
-
-
-def evaluate(config, input):
-    # ``config`` is retained for backwards compatibility but is no longer used: the
-    # expression runs in the Python worker with QuickJS.
-    register()
-
-    default_context = {
-        "engineConfig": [],
-        "job": {},
-        "context": None,
-        "outdir": None,
-        "tmpdir": None,
-    }
-
-    new_input = default_context
-    new_input.update(input)
-
-    program = build_evaluate_program(new_input)
-    return evaluate_program(program)

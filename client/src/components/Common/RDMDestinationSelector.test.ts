@@ -109,6 +109,7 @@ describe("RDMDestinationSelector", () => {
                     pagination: false,
                     search: false,
                     sorting: false,
+                    recursive: true,
                 },
             };
             wrapper = await initWrapper(specificFileSource);

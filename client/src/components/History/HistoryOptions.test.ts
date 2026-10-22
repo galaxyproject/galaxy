@@ -1,7 +1,6 @@
 import { getFakeHistorySummary, getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, withPlugins } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,7 +74,8 @@ async function createWrapper(
 
     const wrapper = shallowMount(HistoryOptions, {
         props: { history },
-        global: withPlugins(localVue, pinia),
+        // The real GCheckbox renders inside the stubbed modal, so the purge checkbox can be clicked
+        global: { ...withPlugins(localVue, pinia), stubs: { ...localVue.stubs, GCheckbox: false } },
     });
 
     const userStore = useUserStore();
@@ -179,7 +179,9 @@ describe("History Navigation", () => {
 
     it("purge checkbox is not disabled for an active history", async () => {
         const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        expect(wrapper.find('[data-description="delete history checkbox"]').attributes("disabled")).toBeUndefined();
+        const checkbox = wrapper.get('[data-description="delete history checkbox"]');
+        expect(checkbox.element.tagName).toBe("INPUT");
+        expect(checkbox.attributes("disabled")).toBeUndefined();
     });
 
     it("purge checkbox is disabled for an already-deleted history", async () => {
@@ -196,10 +198,7 @@ describe("History Navigation", () => {
 
     it("calls deleteHistory with purge=true when purge checkbox is manually checked", async () => {
         const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
-        // BFormCheckbox is stubbed under shallowMount, so there's no real
-        // checkbox input to interact with -- drive it through its stub instead.
-        wrapper.findComponent(BFormCheckbox).vm.$emit("input", true);
-        await flushPromises();
+        await wrapper.get('[data-description="delete history checkbox"]').setValue(true);
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
         expect(historyStore.deleteHistory).toHaveBeenCalledWith("history_a", true);

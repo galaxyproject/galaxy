@@ -17,6 +17,7 @@ from galaxy.model.metadata import (
     MetadataTempFile,
 )
 from galaxy.model.store import DirectoryModelExportStore
+from galaxy.tool_util.runtime_environment import required_variable_names
 from galaxy.util import safe_makedirs
 
 if TYPE_CHECKING:
@@ -84,6 +85,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         max_metadata_value_size=0,
         max_discovered_files=None,
         validate_outputs: bool = False,
+        groom_directory_content: bool = True,
         object_store_conf=None,
         tool=None,
         job: galaxy.model.Job | None = None,
@@ -166,6 +168,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         max_metadata_value_size=0,
         max_discovered_files=None,
         validate_outputs: bool = False,
+        groom_directory_content: bool = True,
         object_store_conf=None,
         tool=None,
         job: galaxy.model.Job | None = None,
@@ -205,6 +208,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             outputs[name] = {
                 "filename_override": _get_filename_override(output_fnames, dataset.get_file_name(sync_cache=False)),
                 "validate": validate_outputs,
+                # False for existing datasets, whose content must stay where it is.
+                "groom_directory_content": groom_directory_content,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
                 "model_class": (
@@ -257,6 +262,9 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             tool_as_dict: dict[str, Any] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
+            tool_as_dict["required_runtime_environment_variables"] = required_variable_names(
+                tool.runtime_environment_variables
+            )
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}
             tool_as_dict["output_collections"] = {
                 name: output.to_dict() for name, output in tool.output_collections.items()

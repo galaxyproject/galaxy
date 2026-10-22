@@ -88,6 +88,7 @@ describe("HistoryArchiveWizard.vue", () => {
                             pagination: false,
                             search: false,
                             sorting: false,
+                            recursive: true,
                         },
                     },
                 ]);

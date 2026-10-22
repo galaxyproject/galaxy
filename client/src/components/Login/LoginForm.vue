@@ -117,7 +117,7 @@ async function submitLogin() {
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
-            window.location.href = withPrefix(encodeURI(response.data.redirect));
+            window.location.href = withPrefix(response.data.redirect);
         } else {
             window.location.href = withPrefix("/");
         }

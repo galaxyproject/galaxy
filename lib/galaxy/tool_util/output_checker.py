@@ -1,6 +1,10 @@
+import os
 import re
+import stat
+from collections.abc import Iterable
 from enum import Enum
 from logging import getLogger
+from pathlib import Path
 from typing import (
     Literal,
     TYPE_CHECKING,
@@ -12,6 +16,7 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tool_util.runtime_environment import RUNTIME_ENVIRONMENT_WARNING_FILE
 
 if TYPE_CHECKING:
     from galaxy.tool_util.parser.stdio import (
@@ -39,6 +44,7 @@ JobMessageTypeLiteral = Literal[
     "output_discovery",
     "stdio_read_error",
     "unknown_datatype",
+    "runtime_environment_warning",
 ]
 
 
@@ -82,6 +88,11 @@ class UnknownDatatypeJobMessage(JobMessage):
     extension: str
 
 
+class RuntimeEnvironmentWarningJobMessage(JobMessage):
+    type: Literal["runtime_environment_warning"]
+    variable_names: list[str]
+
+
 AnyJobMessage = (
     ExitCodeJobMessage
     | RegexJobMessage
@@ -90,6 +101,7 @@ AnyJobMessage = (
     | OutputDiscoveryJobMessage
     | StdioReadErrorJobMessage
     | UnknownDatatypeJobMessage
+    | RuntimeEnvironmentWarningJobMessage
 )
 
 
@@ -284,3 +296,67 @@ def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex") -> Re
         "match": match_str,
         "error_level": regex.error_level,
     }
+
+
+# The warning file holds only variable names; anything larger is not ours.
+MAX_RUNTIME_ENVIRONMENT_WARNING_BYTES = 64 * 1024
+
+
+def _read_runtime_environment_warning_file(path: Path) -> str:
+    """Read a file the tool could have replaced: no symlinks, regular files only, bounded size."""
+    try:
+        link_stat = os.lstat(path)
+        if not stat.S_ISREG(link_stat.st_mode):
+            return ""
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    except OSError:
+        return ""
+    with os.fdopen(fd, "rb") as warning_file:
+        # Without O_NOFOLLOW the path could be swapped for a symlink after lstat.
+        if not os.path.samestat(link_stat, os.fstat(warning_file.fileno())):
+            return ""
+        return warning_file.read(MAX_RUNTIME_ENVIRONMENT_WARNING_BYTES).decode("utf-8", errors="replace")
+
+
+def _runtime_environment_variable_names(job_directory: str, required_names: Iterable[str]) -> list[str]:
+    """Read the recorded unset names, keeping only names the tool declares as required."""
+    required = set(required_names)
+    if not required:
+        return []
+    names: list[str] = []
+    for directory in ("outputs", "metadata"):
+        contents = _read_runtime_environment_warning_file(
+            Path(job_directory) / directory / RUNTIME_ENVIRONMENT_WARNING_FILE
+        )
+        names.extend(name for name in contents.splitlines() if name in required)
+    return list(dict.fromkeys(names))
+
+
+def merge_runtime_environment_warnings(
+    job_directory: str, task_directories: Iterable[str], required_names: Iterable[str]
+) -> None:
+    """Publish task warnings before the parent job's metadata and output checks."""
+    required = list(required_names)
+    names = list(
+        dict.fromkeys(
+            name for directory in task_directories for name in _runtime_environment_variable_names(directory, required)
+        )
+    )
+    path = Path(job_directory) / "outputs" / RUNTIME_ENVIRONMENT_WARNING_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(f"{name}\n" for name in names))
+
+
+def runtime_environment_job_messages(
+    job_directory: str, required_names: Iterable[str]
+) -> list[RuntimeEnvironmentWarningJobMessage]:
+    names = _runtime_environment_variable_names(job_directory, required_names)
+    if not names:
+        return []
+    desc = f"Required runtime environment variables are unset: {', '.join(names)}"
+    log.info(desc)
+    return [
+        RuntimeEnvironmentWarningJobMessage(
+            type="runtime_environment_warning", variable_names=names, desc=desc, error_level=StdioErrorLevel.WARNING
+        )
+    ]

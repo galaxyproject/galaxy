@@ -32,6 +32,7 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.managers.favorites import FavoritesManager
+from galaxy.managers.hdas import HDAManager
 from galaxy.model import (
     Dataset,
     FormDefinition,
@@ -179,6 +180,7 @@ class FastAPIUsers:
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     favorites_manager: FavoritesManager = depends(FavoritesManager)
     extra_preferences_manager: ExtraPreferencesManager = depends(ExtraPreferencesManager)
+    hda_manager: HDAManager = depends(HDAManager)
 
     @router.put(
         "/api/users/current/recalculate_disk_usage",
@@ -572,8 +574,7 @@ class FastAPIUsers:
                 build_dict["count"] = str(counter)
             else:
                 build_dict["fasta"] = trans.security.decode_id(len_value)
-                dataset = trans.sa_session.get(HistoryDatasetAssociation, int(build_dict["fasta"]))
-                assert dataset
+                dataset = self.hda_manager.get_accessible(build_dict["fasta"], trans.user)
                 try:
                     new_len = dataset.get_converted_dataset(trans, "len")
                     new_linecount = new_len.get_converted_dataset(trans, "linecount")

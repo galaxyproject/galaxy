@@ -7149,7 +7149,10 @@ export interface operations {
     }
     legacy_install__display_image: {
         parameters: {
-            query?: never
+            query?: {
+                /** @description Serve the file as of this repository revision instead of the current repository files. */
+                changeset_revision?: string | null
+            }
             header?: never
             path: {
                 repository_id: string

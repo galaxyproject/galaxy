@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faFolder, faGlobe, faPlus, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { watch } from "vue";
 import { useRouter } from "vue-router";
 
@@ -14,6 +14,7 @@ import { USER_FILE_PREFIX } from "@/utils/url";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 import GTable from "@/components/Common/GTable.vue";
 import RemoteEntryMetadata from "@/components/Panels/Upload/shared/RemoteEntryMetadata.vue";
@@ -226,19 +227,21 @@ defineExpose({
                 @row-click="handleRowClick">
                 <!-- Select-all checkbox in header -->
                 <template v-slot:head(select)>
-                    <BFormCheckbox
+                    <GCheckbox
                         v-if="!urlTracker.isAtRoot.value && selectableItemsOnCurrentPage.length > 0"
-                        :checked="allSelectableSelected"
+                        aria-label="Select all items on this page"
                         :indeterminate="someSelectableSelected"
+                        :model-value="allSelectableSelected"
                         @change="toggleSelectAll"
                         @click.stop />
                 </template>
 
                 <!-- Per-row selection checkbox -->
                 <template v-slot:cell(select)="{ item }">
-                    <BFormCheckbox
+                    <GCheckbox
                         v-if="isItemSelectable(item)"
-                        :checked="isSelected(item)"
+                        :aria-label="`Select ${item.label}`"
+                        :model-value="isSelected(item)"
                         @change="toggleSelection(item)"
                         @click.stop />
                 </template>

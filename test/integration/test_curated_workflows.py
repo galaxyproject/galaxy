@@ -22,6 +22,7 @@ from typing import (
 from uuid import uuid4
 
 from galaxy.exceptions import error_codes
+from galaxy.model import StoredWorkflow
 from galaxy.webapps.galaxy.services.workflows import (
     PREPARING_MESSAGE,
     UNAVAILABLE_MESSAGE,
@@ -65,10 +66,6 @@ RUNNABLE_IDS = {entry["id"] for entry in CATALOG_ENTRIES if entry["tool_ids"] ==
 NEWEST_FIRST_IDS = [
     entry["id"]
     for entry in sorted(CATALOG_ENTRIES, key=lambda entry: (entry["update_time"], entry["id"]), reverse=True)
-]
-# The default ordering: what will run here first, newest-first within each group.
-CATALOG_IDS = [i for i in NEWEST_FIRST_IDS if i in RUNNABLE_IDS] + [
-    i for i in NEWEST_FIRST_IDS if i not in RUNNABLE_IDS
 ]
 
 
@@ -252,6 +249,17 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         config["curated_workflow_owners"] = CURATED_OWNER_USERNAME
         config["curated_workflows_path"] = cls.projection_path
 
+    def _recommended_ids(self) -> list[str]:
+        """The default ordering: fewest missing tools first (runnable ones lead), newest first within a count.
+
+        Counted from what the server reports rather than restated here, since
+        which of the catalog's tools this test Galaxy happens to ship isn't
+        something the ordering test should pin.
+        """
+        missing = {workflow["id"]: workflow["missing_tools"] for workflow in self._curated_index(limit=10)["workflows"]}
+        assert {i for i, tools in missing.items() if tools == []} == RUNNABLE_IDS
+        return sorted(NEWEST_FIRST_IDS, key=lambda i: len(missing[i]))
+
     def test_catalog_ignores_owners_outside_local_mode(self):
         assert self._get("configuration", anon=True).json()["curated_workflows_source"] == "iwc"
         index = self._curated_index(limit=10)
@@ -262,7 +270,7 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         index = self._curated_index(limit=10)
         assert index["source"] == "iwc"
         assert index["total_matches"] == len(CATALOG_ENTRIES)
-        assert [workflow["id"] for workflow in index["workflows"]] == CATALOG_IDS
+        assert [workflow["id"] for workflow in index["workflows"]] == self._recommended_ids()
         assert index["message"] is None
 
         for workflow in index["workflows"]:
@@ -284,6 +292,32 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
                 assert workflow["missing_tools"]
                 assert set(workflow["missing_tools"]) <= tool_ids[workflow["id"]]
 
+    def test_catalog_is_runnable_lists_only_what_runs_here(self):
+        index = self._curated_index(search="is:runnable", limit=10)
+        assert {workflow["id"] for workflow in index["workflows"]} == RUNNABLE_IDS
+        assert index["total_matches"] == len(RUNNABLE_IDS)
+
+    def test_catalog_marks_the_users_own_import(self):
+        entry = next(entry for entry in CATALOG_ENTRIES if entry["id"] not in RUNNABLE_IDS)
+        workflow_id = self.workflow_populator.simple_workflow(f"imported {uuid4().hex}")
+        # Recorded straight into the database: a real TRS import would reach Dockstore.
+        stored_workflow = self._app.model.session.get(StoredWorkflow, self._app.security.decode_id(workflow_id))
+        assert stored_workflow is not None
+        stored_workflow.latest_workflow.source_metadata = {
+            "trs_tool_id": curated.entry_trs_tool_id(entry),
+            "trs_version_id": "v0.0.1",
+        }
+        self._app.model.session.commit()
+
+        by_id = {workflow["id"]: workflow for workflow in self._curated_index(limit=10)["workflows"]}
+        assert by_id[entry["id"]]["imported_workflow_id"] == workflow_id
+        assert by_id[entry["id"]]["imported_version"] == "v0.0.1"
+        assert all(workflow["imported_workflow_id"] is None for i, workflow in by_id.items() if i != entry["id"])
+
+        # Only ever the requester's own: an anonymous caller sees no imports at all.
+        anonymous = self._curated_index(anon=True, limit=10)["workflows"]
+        assert all(workflow["imported_workflow_id"] is None for workflow in anonymous)
+
     def test_catalog_explicit_sort_ignores_runnability(self):
         index = self._curated_index(sort_by="update_time", sort_desc=True, limit=10)
         assert [workflow["id"] for workflow in index["workflows"]] == NEWEST_FIRST_IDS
@@ -295,7 +329,7 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
             assert page["total_matches"] == len(CATALOG_ENTRIES)
             assert page["source"] == "iwc"
             seen.extend(workflow["id"] for workflow in page["workflows"])
-        assert seen == CATALOG_IDS
+        assert seen == self._recommended_ids()
 
     def test_catalog_search_name_and_tag(self):
         by_name = self._curated_index(search="name:assembly", limit=10)

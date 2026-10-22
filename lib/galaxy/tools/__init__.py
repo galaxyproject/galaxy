@@ -10,18 +10,27 @@ import re
 import tarfile
 import tempfile
 from collections.abc import (
+    Iterator,
     Mapping,
     MutableMapping,
     Sequence,
 )
+from contextlib import (
+    contextmanager,
+    nullcontext,
+)
 from datetime import datetime
+from itertools import chain
 from typing import (
     Any,
     cast,
     Optional,
     TYPE_CHECKING,
 )
-from urllib.parse import unquote_plus
+from urllib.parse import (
+    unquote_plus,
+    urlencode,
+)
 from uuid import UUID
 
 import webob.exc
@@ -70,10 +79,7 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
-from galaxy.tool_util.abstract_tool import (
-    AbstractTool,
-    parse_tool_version_for_comparison,
-)
+from galaxy.tool_util.abstract_tool import AbstractTool
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     CachedDependencyManager,
@@ -134,6 +140,7 @@ from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
+    parse_tool_version,
     parse_version,
 )
 from galaxy.tool_util.version_updates import WORKFLOW_SAFE_TOOL_VERSION_UPDATES
@@ -150,6 +157,10 @@ from galaxy.tool_util_models.tool_source import (
     HelpContent,
     JavascriptRequirement,
 )
+from galaxy.tool_util_models.untrusted import (
+    is_loading_untrusted_tools,
+    loading_untrusted_tools,
+)
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -158,7 +169,10 @@ from galaxy.tools.actions import (
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.evaluation import (
+    global_tool_errors,
+    OUTPUT_PARAMETER_JSON_NAME,
+)
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.expressions.labels import render_yaml_tool_label
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
@@ -186,6 +200,11 @@ from galaxy.tools.parameters.basic import (
     SelectTagParameter,
     SelectToolParameter,
     ToolParameter,
+)
+from galaxy.tools.parameters.data_tables import (
+    conditional_selectors,
+    is_data_table_select,
+    uses_data_table,
 )
 from galaxy.tools.parameters.dataset_matcher import (
     set_dataset_matcher_factory,
@@ -361,7 +380,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": parse_version("1.0.1"),
     "substitutions1": parse_version("1.0.1"),
     "winSplitter": parse_version("1.0.1"),
-    "Interval2Maf1": parse_version("1.0.1+galaxy0"),
+    "Interval2Maf1": parse_tool_version("1.0.1+galaxy0"),
 }
 
 
@@ -401,7 +420,7 @@ def tool_requires_galaxy_python_environment(
     fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
     if fixed_version is None:
         return False
-    parsed_version = parse_tool_version_for_comparison(version or "")
+    parsed_version = parse_tool_version(version or "")
     return parsed_version < fixed_version
 
 
@@ -424,6 +443,16 @@ def tool_produces_real_jobs(tool_type: str, action_module: tuple[str, str] | Non
     else:
         action_class = tool_types.get(tool_type, Tool).default_tool_action
     return action_class.produces_real_jobs
+
+
+def tool_runner_link(url_prefix: str, tool_id: str, is_data_source: bool) -> str:
+    """Return the panel link for a tool; data sources go through the redirect.
+
+    Built from ``galaxy_url_prefix`` rather than routes' ``url_for`` so the
+    link does not depend on per-request state and can be cached across requests.
+    """
+    path = "tool_runner/data_source_redirect" if is_data_source else "tool_runner"
+    return f"{url_prefix.rstrip('/')}/{path}?{urlencode({'tool_id': tool_id})}"
 
 
 REQUIRE_FULL_DIRECTORY = {
@@ -713,6 +742,11 @@ class ToolBox(AbstractToolBox):
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
+
+    @contextmanager
+    def batch_index_writes(self) -> Iterator[None]:
+        """Group the tool index writes made inside the block (``CachedToolBox`` persists an index)."""
+        yield
 
     @property
     def all_requirements(self):
@@ -1273,6 +1307,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.credentials: list[CredentialsRequirement] | None = None
         self._tests: str | None = None
         self._tests_parsed: bool = False
+        # tests are parsed later, in the same trust context as the tool itself
+        self._loaded_untrusted = is_loading_untrusted_tools()
         self.parameters: list[ToolParameterT] | None = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1502,7 +1538,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                     break
         self.home_target = home_target
         self.tmp_target = tmp_target
+        self.runtime_environment_variables = tool_source.parse_runtime_environment_variables(strict=False)
+        if self.tool_type == "user_defined" and self.runtime_environment_variables:
+            raise ValueError("User-defined tools cannot declare runtime_environment_variable")
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
+        self.docker_env_pass_through.extend(variable.name for variable in self.runtime_environment_variables)
         if self.environment_variables:
             if not self.docker_env_pass_through:
                 self.docker_env_pass_through = []
@@ -1676,7 +1716,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         # seconds-long) validation cost on first access rather than at
         # construction.
         if not self._tests_parsed and self.app.is_webapp:
-            self.parse_tests()
+            with loading_untrusted_tools() if self._loaded_untrusted else nullcontext():
+                self.parse_tests()
         if self._tests:
             return [ToolTestDescription(d) for d in json.loads(self._tests)]
         return None
@@ -2477,6 +2518,20 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
             return False, message
 
     @property
+    def has_data_table(self) -> bool:
+        """Whether any select input, including inactive branches, uses ``from_data_table`` options."""
+        params = chain(self.input_params, conditional_selectors(self.inputs))
+        return any(is_data_table_select(param) for param in params)
+
+    def is_using_data_table(self, job: Job) -> bool:
+        """Whether the job selected an installed data table entry in its active parameter state.
+
+        History datasets supplied to a table-backed select do not count. Job
+        parameters are only read for tools that have data table inputs.
+        """
+        return self.has_data_table and uses_data_table(self.inputs, job.raw_param_dict())
+
+    @property
     def params_with_missing_data_table_entry(self):
         """
         Return all parameters that are dynamically generated select lists whose
@@ -2734,6 +2789,10 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         pass
 
+    def output_parameter_json(self, out_data: OutDataDictT, param_dict) -> tuple[str, str] | None:
+        """Return the compute-side output path to seed with JSON parameters, and that JSON."""
+        return None
+
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: str | None = None):
         pass
 
@@ -2905,10 +2964,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         panel_section_id, panel_section_name = self.get_panel_section()
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
         regular_form = self.__class__ == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
-        if isinstance(self, DataSourceTool):
-            link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
-        else:
-            link = self.app.url_for(controller="tool_runner", tool_id=self.id)
+        assert self.id, "Tool id must be set to build the panel entry"
+        link = tool_runner_link(self.app.config.galaxy_url_prefix, self.id, isinstance(self, DataSourceTool))
         kwargs: dict[str, Any] = self._dictify_view_keys()
         kwargs.update(
             icon=self.icon,
@@ -3244,9 +3301,7 @@ class OutputParameterJSONTool(Tool):
                 rval[key] = str(value)
         return rval
 
-    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
-        if param_dict is None:
-            param_dict = {}
+    def output_parameter_json(self, out_data: OutDataDictT, param_dict) -> tuple[str, str]:
         json_params = {}
         json_params["param_dict"] = self._prepare_json_param_dict(
             param_dict
@@ -3277,9 +3332,8 @@ class OutputParameterJSONTool(Tool):
             if json_filename is None:
                 json_filename = file_name
         if json_filename is None:
-            raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
-        with open(json_filename, "w") as out:
-            out.write(json.dumps(json_params))
+            raise Exception("Must call 'output_parameter_json' with 'out_data' containing at least one entry.")
+        return json_filename, json.dumps(json_params)
 
 
 class UserDefinedTool(Tool):
@@ -3477,21 +3531,7 @@ class DataSourceTool(OutputParameterJSONTool):
         data_type = param_dict.get("data_type")
         name = param_dict.get("name")
 
-        json_params = {}
-        json_params["param_dict"] = self._prepare_json_param_dict(
-            param_dict
-        )  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
-        json_params["output_data"] = []
-        json_params["job_config"] = dict(
-            GALAXY_DATATYPES_CONF_FILE=param_dict.get("GALAXY_DATATYPES_CONF_FILE"),
-            GALAXY_ROOT_DIR=param_dict.get("GALAXY_ROOT_DIR"),
-            TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file,
-        )
-        json_filename = None
         for out_name, data in out_data.items():
-            # use wrapped dataset to access certain values
-            wrapped_data = param_dict.get(out_name)
-            # allow multiple files to be created
             cur_base_param_name = f"GALAXY|{out_name}|"
             cur_name = param_dict.get(f"{cur_base_param_name}name", name)
             cur_dbkey = param_dict.get(f"{cur_base_param_name}dkey", dbkey)
@@ -3505,24 +3545,6 @@ class DataSourceTool(OutputParameterJSONTool):
                 data.dbkey = cur_dbkey
             if cur_data_type:
                 data.extension = cur_data_type
-            file_name = str(wrapped_data)
-            extra_files_path = str(wrapped_data.files_path)
-            assert data.dataset is not None
-            data_dict = dict(
-                out_data_name=out_name,
-                ext=data.ext,
-                dataset_id=data.dataset.id,
-                hda_id=data.id,
-                file_name=file_name,
-                extra_files_path=extra_files_path,
-            )
-            json_params["output_data"].append(data_dict)
-            if json_filename is None:
-                json_filename = file_name
-        if json_filename is None:
-            raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
-        with open(json_filename, "w") as out:
-            out.write(json.dumps(json_params))
 
 
 class AsyncDataSourceTool(DataSourceTool):
@@ -3660,21 +3682,32 @@ class InteractiveTool(Tool):
         self.__remove_interactivetool_by_job(job)
 
 
-def _data_manager_bundle_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
-    """Return the compute-side extra-files roots for bundle outputs.
+def _data_manager_source_extra_files_paths(app, job, out_data: dict[str, Any]) -> dict[str, str]:
+    """Return the compute-side extra-files roots for data manager outputs.
 
-    Data managers running with ``outputs_to_working_directory`` receive an
-    extra-files path derived from the job working directory, not the path the
-    handler later obtains from the object store. Reconstruct that same path
-    here, using the rules in ``OutputsToWorkingDirectoryPathRewriter``.
+    Data managers running with ``outputs_to_working_directory`` or on a remote
+    compute environment receive an extra-files path that differs from the path
+    the handler later obtains from the object store. The staged output parameter
+    JSON records the paths handed to the job. Jobs prepared without it fall back
+    to the rules in ``OutputsToWorkingDirectoryPathRewriter``.
     """
+    job_working_directory = JobWorkingDirectory(job, app.object_store).resolve()
+    staged_parameters = os.path.join(job_working_directory, "configs", OUTPUT_PARAMETER_JSON_NAME)
+    if os.path.exists(staged_parameters):
+        with open(staged_parameters) as f:
+            output_data = json.load(f)["output_data"]
+        return {
+            output["out_data_name"]: output["extra_files_path"]
+            for output in output_data
+            if out_data[output["out_data_name"]].ext == "data_manager_json"
+        }
+
     outputs_to_working_directory = asbool(
         job.get_destination_configuration({}, app.config, "outputs_to_working_directory", False)
     )
     if not outputs_to_working_directory:
         return {}
 
-    job_working_directory = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
     outputs_directory = None if Version(job.galaxy_version or "19.05") < Version("20.01") else "outputs"
     if outputs_directory is not None:
         job_working_directory = os.path.join(job_working_directory, outputs_directory)
@@ -3716,11 +3749,11 @@ class DataManagerTool(OutputParameterJSONTool):
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
         data_manager_mode = param_dict.get("__data_manager_mode", "populate")
         if data_manager_mode == "populate":
-            data_manager.process_result(out_data)
+            data_manager.process_result(out_data, _data_manager_source_extra_files_paths(app, job, out_data))
         elif data_manager_mode == "dry_run":
             pass
         elif data_manager_mode == "bundle":
-            source_extra_files_paths = _data_manager_bundle_source_extra_files_paths(app, job, out_data)
+            source_extra_files_paths = _data_manager_source_extra_files_paths(app, job, out_data)
             for bundle_path, dataset in data_manager.write_bundle(out_data, source_extra_files_paths).items():
                 hda = cast(HistoryDatasetAssociation, dataset)
                 assert hda.dataset is not None

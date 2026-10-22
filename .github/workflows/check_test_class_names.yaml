@@ -4,8 +4,11 @@ on:
     paths:
       - '.ci/check_test_class_names.sh'
       - .github/workflows/check_test_class_names.yaml
+      - 'lib/galaxy_test/**'
       - 'packages/test_*/**'
       - 'test/**'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

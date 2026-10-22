@@ -18,7 +18,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -31,6 +30,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
@@ -285,13 +285,13 @@ watch(
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
 
-            <BFormCheckbox
+            <GCheckbox
                 id="purge-history"
                 v-model="purgeHistory"
                 :disabled="isDeletedNotPurged"
                 data-description="delete history checkbox">
                 <span v-localize>Yes, permanently delete this history.</span>
-            </BFormCheckbox>
+            </GCheckbox>
         </GModal>
     </div>
 </template>

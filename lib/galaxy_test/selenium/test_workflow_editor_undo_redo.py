@@ -72,7 +72,7 @@ class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows, UsesWorkflowAs
 
         # for annotation we want to reset the change stack to dismiss
         # the original setting of the annotation
-        name = self.workflow_index_open_with_name(name)
+        self.workflow_index_open_with_name(name)
 
         annotation_modified = "change_stack_test_set_attributes modified!!!"
 

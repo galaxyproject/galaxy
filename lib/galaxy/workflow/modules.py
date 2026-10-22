@@ -33,6 +33,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.datatypes.data import Directory
 from galaxy.exceptions import (
     ToolInputsNotReadyException,
     ToolMissingException,
@@ -155,6 +156,7 @@ from galaxy.tools.parameters.workflow_utils import (
     workflow_building_modes,
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tools.runtime import dataset_path
 from galaxy.util import (
     listify,
     unicodify,
@@ -312,7 +314,11 @@ def replace_expression_json_dataset(
 
 
 def to_cwl(
-    value, hda_references, step: WorkflowStep | None = None, compute_environment: ComputeEnvironment | None = None
+    value,
+    hda_references,
+    step: WorkflowStep | None = None,
+    compute_environment: ComputeEnvironment | None = None,
+    shell_quotable: bool = False,
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -348,12 +354,22 @@ def to_cwl(
             return read_expression_json(value, step=step)
         else:
             hda_references.append(value)
-            properties = {
+            properties: dict[str, Any] = {
                 "class": "File",
                 "location": f"step_input://{len(hda_references)}",
                 "format": value.extension,
-                "path": compute_environment.input_path_rewrite(value) if compute_environment else value.get_file_name(),
             }
+            if value.has_deferred_data:
+                # As in runtimeify, the tool consumes the source URI and there is no local path.
+                if not (source_uri := value.deferred_source_uri):
+                    raise ValueError(f"Deferred dataset {value.id} has no source to read it from")
+                properties["location"] = source_uri
+            else:
+                # The same path as runtimeify and $input.path give.
+                properties["path"] = dataset_path(value, compute_environment, shell_quotable=shell_quotable)
+            if isinstance(value.datatype, Directory):
+                properties["class"] = "Directory"
+                properties["listing"] = []
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
@@ -361,7 +377,13 @@ def to_cwl(
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
             return [
-                to_cwl(dce, hda_references=hda_references, step=step, compute_environment=compute_environment)
+                to_cwl(
+                    dce,
+                    hda_references=hda_references,
+                    step=step,
+                    compute_environment=compute_environment,
+                    shell_quotable=shell_quotable,
+                )
                 for dce in value.dataset_elements
             ]
         else:
@@ -373,18 +395,32 @@ def to_cwl(
                     hda_references=hda_references,
                     step=step,
                     compute_environment=compute_environment,
+                    shell_quotable=shell_quotable,
                 )
             return rval
     elif isinstance(value, list):
         return [
-            to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment) for v in value
+            to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                shell_quotable=shell_quotable,
+            )
+            for v in value
         ]
     elif is_runtime_value(value):
         return None
     elif isinstance(value, dict):
         # Nested tool state, such as conditionals
         return {
-            k: to_cwl(v, hda_references=hda_references, step=step, compute_environment=compute_environment)
+            k: to_cwl(
+                v,
+                hda_references=hda_references,
+                step=step,
+                compute_environment=compute_environment,
+                shell_quotable=shell_quotable,
+            )
             for k, v in value.items()
         }
     else:

@@ -5,6 +5,7 @@ from typing import (
 
 from galaxy.model import (
     History,
+    HistoryDatasetAssociation,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -125,8 +126,6 @@ class ModelOperationToolAction(DefaultToolAction):
             output_collections,
             incoming=incoming,
             history=history,
-            tags=preserved_tags,
-            hdca_tags=preserved_hdca_tags,
             skip=skip,
         )
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
@@ -153,8 +152,6 @@ class ModelOperationToolAction(DefaultToolAction):
         output_collections,
         incoming,
         history,
-        tags,
-        hdca_tags,
         skip,
     ):
         tool.produce_outputs(
@@ -163,8 +160,6 @@ class ModelOperationToolAction(DefaultToolAction):
             output_collections,
             incoming,
             history=history,
-            tags=tags,
-            hdca_tags=hdca_tags,
         )
         if mapped_over_elements := output_collections.dataset_collection_elements:
             for name, value in out_data.items():
@@ -178,8 +173,19 @@ class ModelOperationToolAction(DefaultToolAction):
             for output_collection in output_collections.out_collections.values():
                 output_collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
+            # Collections in out_collections are the outputs of a mapped over execution.
+            collections = list(output_collections.out_collections.values())
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
-                for data in hdca.dataset_instances:
+                collections.append(hdca.collection)
+            for collection in collections:
+                for dce in collection.dataset_elements:
+                    data = dce.element_object
+                    if isinstance(data, HistoryDatasetAssociation) and data.id is not None:
+                        # Outputs are created without flushing, so this dataset existed before this execution,
+                        # e.g. an input dataset of a nested collection copied without copying its datasets.
+                        data = data.copy(copy_tags=data.tags, flush=False)
+                        history.stage_addition(data)
+                        dce.element_object = data
                     data.set_skipped(object_store_populator, replace_dataset=True)
         trans.sa_session.add_all(out_data.values())

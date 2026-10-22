@@ -11,7 +11,7 @@ transferring the body.
 
 Deliberately trans-free and database-free so it unit-tests without either.
 The module-level cache and refresh state deliberately follow the GTN search
-DB pattern (``galaxy.agents.gtn.search``).
+DB pattern (``galaxy.gtn.search``).
 """
 
 import fcntl
@@ -49,6 +49,7 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.workflow import iwc_manifest
+from galaxy.workflow.trs_proxy import parse_trs_url
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +71,9 @@ CURATED_SEARCH_FILTERS = {
     "t": "tag",
     "collection": "collection",
     "c": "collection",
+    "is": "is",
 }
+RUNNABLE_FLAG = "runnable"
 # ``filter_terms`` only caps unquoted raw terms, and the endpoint is anonymous, so
 # without this a long run of ``name:x`` terms becomes one SQL predicate each in
 # local-owner mode -- enough to overflow SQLite's expression tree.
@@ -200,7 +203,7 @@ def extract_tool_ids(definition: dict[str, Any]) -> list[str] | None:
 def _iter_manifest_workflows(manifest: Any) -> Iterator[dict[str, Any]]:
     """Yield workflow objects from the manifest, skipping malformed containers.
 
-    ``galaxy.agents.iwc.all_workflows`` assumes the manifest is well formed; here it is
+    ``galaxy.workflow.iwc.all_workflows`` assumes the manifest is well formed; here it is
     third-party input, and a repository that is not an object -- or a
     ``workflows`` value that is not a list -- must not take the whole
     projection down with it, since the projection is all-or-nothing.
@@ -370,7 +373,7 @@ def refresh_projection(path: str, timeout: float = DEFAULT_FETCH_TIMEOUT_SECONDS
     """Refresh the projection at ``path``, downloading only when upstream changed.
 
     Returns the number of projected workflows, or None when the local copy was
-    already current and nothing was downloaded. Raises ``RefreshInProgress``
+    kept: already current, or newer than what the download turned out to be. Raises ``RefreshInProgress``
     without touching the network when another process is already refreshing.
     Other exceptions propagate too -- the celery task and the background thread
     each decide how to report them.
@@ -398,15 +401,30 @@ def _refresh_projection_locked(path: str, timeout: float) -> int | None:
     # wrong-version file is exactly the case that must re-fetch, and asking
     # "modified since this file's mtime?" about it would answer no and strand it.
     current = load_projection(path)
-    if current is not None and not iwc_manifest.manifest_modified_since(target.stat().st_mtime, timeout):
+    # Which upstream publish this copy is, compared by Last-Modified rather than the
+    # file's mtime: the manifest sits behind a CDN that can answer with the old date
+    # for minutes after a publish, and stamping "now" during that window would read
+    # as newer than the publish and hide it until the next one.
+    seen = _read_watermark(target) if current is not None else None
+    remote = iwc_manifest.manifest_last_modified(timeout) if current is not None else None
+    # Strictly newer only: an edge still serving the previous publish answers with an older date.
+    if seen is not None and remote is not None and remote <= seen:
         # Nothing new upstream. Stamp the file so it stops looking stale, or every
         # subsequent request would re-arm this check until the manifest happens to
-        # change -- turning a once-an-interval HEAD into a permanent poll.
+        # change -- turning a once-an-interval HEAD into a permanent poll. The
+        # watermark, not this mtime, is what the next check compares against, and
+        # it stays put: a stale edge's older date must not lower it.
         os.utime(target, None)
         log.debug("Curated catalog at %s is already current", path)
         return None
 
-    manifest = iwc_manifest.download_manifest(timeout)
+    manifest, served = iwc_manifest.fetch_manifest(timeout)
+    if seen is not None and served is not None and served < seen:
+        # The GET reached an edge still serving an older publish than the copy we have,
+        # though the HEAD saw a newer one (or failed). Keep ours and leave the file stale,
+        # so the next check, once the edge has caught up, fetches again.
+        log.debug("Curated catalog download at %s was older than the copy we have; keeping ours", path)
+        return None
     entries = project_manifest(manifest)
     if not entries and current:
         # An upstream generation failure that returns HTTP 200 with an empty or
@@ -414,7 +432,35 @@ def _refresh_projection_locked(path: str, timeout: float) -> int | None:
         # with nothing, and the tab would look legitimately empty for an hour.
         raise ValueError(f"refusing to replace the curated catalog at {path} with an empty projection")
     write_projection(path, entries)
+    if served is not None:
+        # The date of the body we stored, not the HEAD's: the CDN can answer the two
+        # from different cached versions, and stamping an old body with the new date
+        # would make every later check think it is current.
+        _write_watermark(target, served)
+    else:
+        # Nothing says which version this is, so the next check downloads once more.
+        _watermark_path(target).unlink(missing_ok=True)
     return len(entries)
+
+
+def _watermark_path(target: Path) -> Path:
+    return target.with_name(f"{target.name}.last-modified")
+
+
+def _read_watermark(target: Path) -> datetime | None:
+    """The Last-Modified of the publish the projection at ``target`` was built from, if recorded.
+
+    None means nothing says which upstream version the copy is. Its mtime only says
+    when it was fetched, and a CDN can serve a body older than that, so it re-fetches once.
+    """
+    try:
+        return datetime.fromisoformat(_watermark_path(target).read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _write_watermark(target: Path, remote: datetime) -> None:
+    _watermark_path(target).write_text(remote.isoformat())
 
 
 def request_background_refresh(path: str, timeout: float = DEFAULT_FETCH_TIMEOUT_SECONDS) -> bool:
@@ -505,8 +551,16 @@ def parse_curated_search(search: str) -> ParsedSearch:
     return capped
 
 
-def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[dict[str, Any]]:
-    """Filter projected entries by a name/tag/collection search string, ANDing the terms."""
+def search_curated(
+    entries: list[dict[str, Any]],
+    search: str | None,
+    missing_tools: dict[str, list[str] | None] | None = None,
+) -> list[dict[str, Any]]:
+    """Filter projected entries by a name/tag/collection search string, ANDing the terms.
+
+    ``is:runnable`` keeps the entries ``missing_tools`` says lack nothing; without
+    it nothing can be vouched for, so nothing qualifies.
+    """
     if not search:
         return entries
     parsed = parse_curated_search(search)
@@ -515,7 +569,11 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
         needle = term.text.lower()
         if isinstance(term, FilteredTerm):
             if term.filter == "name":
-                matched = [item for item in matched if needle in item.name_text]
+                if term.quoted:
+                    # Exact and case-sensitive, as local-owner mode's StoredWorkflow.name equality is.
+                    matched = [item for item in matched if item.entry.get("name") == term.text]
+                else:
+                    matched = [item for item in matched if needle in item.name_text]
             elif term.filter == "tag":
                 if term.quoted:
                     matched = [item for item in matched if needle in item.tags]
@@ -526,6 +584,10 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
                     matched = [item for item in matched if needle in item.collections]
                 else:
                     matched = [item for item in matched if any(needle in c for c in item.collections)]
+            elif term.filter == "is":
+                # Any flag other than runnable is unknown and matches nothing.
+                runs_here = missing_tools if needle == RUNNABLE_FLAG else None
+                matched = [item for item in matched if runs_here and runs_here.get(item.entry.get("id") or "") == []]
         elif isinstance(term, RawTextTerm):
             matched = [item for item in matched if needle in item.all_text]
     return [item.entry for item in matched]
@@ -551,6 +613,29 @@ def toolbox_availability(toolbox: CuratedToolbox, is_admin: bool) -> Callable[[s
     materialising tools.
     """
     return hide_data_manager_tools(toolbox.has_tool, toolbox.data_manager_tools, is_admin)
+
+
+def entry_trs_tool_id(entry: dict[str, Any]) -> str | None:
+    """The TRS tool id an import of ``entry`` records as ``source_metadata["trs_tool_id"]``.
+
+    Read back out of the projected TRS URL rather than stored separately, so
+    projections written before this existed still work.
+    """
+    url = entry.get("trs_url") or entry.get("trs_fallback_url")
+    parts = parse_trs_url(url) if isinstance(url, str) else None
+    return parts["tool_id"] if parts else None
+
+
+def find_imports(
+    entries: list[dict[str, Any]], imports: dict[str, tuple[int, str | None]]
+) -> dict[str, tuple[int, str | None]]:
+    """Map each entry id to the (stored workflow id, version) of the user's import of it, if any."""
+    found: dict[str, tuple[int, str | None]] = {}
+    for entry in entries:
+        trs_tool_id = entry_trs_tool_id(entry)
+        if trs_tool_id and trs_tool_id in imports:
+            found[entry.get("id") or ""] = imports[trs_tool_id]
+    return found
 
 
 def find_missing_tools(
@@ -618,13 +703,25 @@ def sort_curated(
     """Order projected entries, defaulting to most-recently-updated first.
 
     When ``missing_tools`` is given and no explicit sort was asked for, entries
-    that will run here as-is come first, each group keeping the default order.
+    that will run here as-is come first, then the rest by how many tools they
+    still need, each group keeping the default order.
     """
     ordered = _sort_curated(entries, sort_by, sort_desc)
     if sort_by is None and missing_tools is not None:
+
+        def tools_needed(entry: dict[str, Any]) -> float:
+            missing = missing_tools.get(entry.get("id") or "")
+            # Unknown goes last: no badge vouches for it.
+            if missing is None:
+                return float("inf")
+            # By tool, not by version: two missing versions of one tool are one install,
+            # and the card's "Needs N tools" counts them as one too.
+            return len({_tool_lineage(tool_id) for tool_id in missing})
+
         # Stable, so the id tiebreaker inside each group survives and pagination
-        # stays deterministic. Unknown counts as not runnable: no badge vouches for it.
-        ordered.sort(key=lambda entry: missing_tools.get(entry.get("id") or "") != [])
+        # stays deterministic. Counting rather than just runnable-or-not matters
+        # on a fresh instance, where nothing runs and a plain split is no order at all.
+        ordered.sort(key=tools_needed)
     return ordered
 
 
@@ -700,8 +797,10 @@ def list_catalog(
     if is_projection_stale(path, max_age_seconds):
         request_background_refresh(path)
 
-    matched = search_curated(entries, search)
-    missing = find_missing_tools(matched, toolbox_availability(toolbox, is_admin)) if toolbox is not None else None
+    # Checked before searching so is:runnable can filter on it. The unfiltered
+    # default view checks every entry anyway, so a search never costs more than that.
+    missing = find_missing_tools(entries, toolbox_availability(toolbox, is_admin)) if toolbox is not None else None
+    matched = search_curated(entries, search, missing)
     ordered = sort_curated(matched, sort_by, sort_desc, missing)
     page = [
         {**entry, "missing_tools": (missing or {}).get(entry.get("id") or "")}

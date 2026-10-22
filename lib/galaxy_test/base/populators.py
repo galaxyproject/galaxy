@@ -1258,13 +1258,22 @@ class BaseDatasetPopulator(BasePopulator):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
-    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str, strict: bool = True) -> Response:
+    def tool_request_raw(
+        self,
+        tool_id: str,
+        inputs: dict[str, Any],
+        history_id: str,
+        strict: bool = True,
+        preferred_object_store_id: str | None = None,
+    ) -> Response:
         payload = {
             "tool_id": tool_id,
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if preferred_object_store_id is not None:
+            payload["preferred_object_store_id"] = preferred_object_store_id
         response = self._post("jobs", data=payload, json=True)
         return response
 
@@ -2861,6 +2870,19 @@ class BaseWorkflowPopulator(BasePopulator):
         invocation_response = self.invoke_workflow_raw(workflow_id, request)
         return invocation_response
 
+    def invoke_single_input_workflow_raw(self, history_id: str, src: str, input_id: str) -> Response:
+        """Invoke a step-less workflow whose only input, ``input1``, is the referenced dataset or collection."""
+        input_type = "collection" if src == "hdca" else "data"
+        workflow_id = self.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  input1: {input_type}
+steps: []
+""")
+        return self.invoke_workflow(
+            workflow_id, history_id=history_id, inputs={"input1": {"src": src, "id": input_id}}, inputs_by="name"
+        )
+
     def invoke_workflow_and_assert_ok(
         self,
         workflow_id: str,
@@ -3427,98 +3449,6 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator):
         response = self._post("workflows/build_module", data=payload, json=True)
         assert response.status_code == 200, response
         return response.json()
-
-    def scaling_workflow_yaml(self, **kwd):
-        workflow_dict = self._scale_workflow_dict(**kwd)
-        has_workflow = yaml.dump(workflow_dict)
-        return has_workflow
-
-    def _scale_workflow_dict(self, workflow_type="simple", **kwd) -> dict[str, Any]:
-        if workflow_type == "two_outputs":
-            return self._scale_workflow_dict_two_outputs(**kwd)
-        elif workflow_type == "wave_simple":
-            return self._scale_workflow_dict_wave(**kwd)
-        else:
-            return self._scale_workflow_dict_simple(**kwd)
-
-    def _scale_workflow_dict_simple(self, **kwd) -> dict[str, Any]:
-        collection_size = kwd.get("collection_size", 2)
-        workflow_depth = kwd.get("workflow_depth", 3)
-
-        scale_workflow_steps = [
-            {"tool_id": "create_input_collection", "state": {"collection_size": collection_size}, "label": "wf_input"},
-            {"tool_id": "cat", "state": {"input1": self._link("wf_input", "output")}, "label": "cat_0"},
-        ]
-
-        for i in range(workflow_depth):
-            link = f"cat_{str(i)}/out_file1"
-            scale_workflow_steps.append(
-                {"tool_id": "cat", "state": {"input1": self._link(link)}, "label": f"cat_{str(i + 1)}"}
-            )
-
-        workflow_dict = {
-            "class": "GalaxyWorkflow",
-            "inputs": {},
-            "steps": scale_workflow_steps,
-        }
-        return workflow_dict
-
-    def _scale_workflow_dict_two_outputs(self, **kwd) -> dict[str, Any]:
-        collection_size = kwd.get("collection_size", 10)
-        workflow_depth = kwd.get("workflow_depth", 10)
-
-        scale_workflow_steps = [
-            {"tool_id": "create_input_collection", "state": {"collection_size": collection_size}, "label": "wf_input"},
-            {
-                "tool_id": "cat",
-                "state": {"input1": self._link("wf_input"), "input2": self._link("wf_input")},
-                "label": "cat_0",
-            },
-        ]
-
-        for i in range(workflow_depth):
-            link1 = f"cat_{str(i)}#out_file1"
-            link2 = f"cat_{str(i)}#out_file2"
-            scale_workflow_steps.append(
-                {"tool_id": "cat", "state": {"input1": self._link(link1), "input2": self._link(link2)}}
-            )
-        workflow_dict = {
-            "class": "GalaxyWorkflow",
-            "inputs": {},
-            "steps": scale_workflow_steps,
-        }
-        return workflow_dict
-
-    def _scale_workflow_dict_wave(self, **kwd) -> dict[str, Any]:
-        collection_size = kwd.get("collection_size", 10)
-        workflow_depth = kwd.get("workflow_depth", 10)
-
-        scale_workflow_steps = [
-            {"tool_id": "create_input_collection", "state": {"collection_size": collection_size}, "label": "wf_input"},
-            {"tool_id": "cat_list", "state": {"input1": self._link("wf_input", "output")}, "label": "step_1"},
-        ]
-
-        for i in range(workflow_depth):
-            step = i + 2
-            if step % 2 == 1:
-                step_dict = {"tool_id": "cat_list", "state": {"input1": self._link(f"step_{step - 1}", "output")}}
-            else:
-                step_dict = {"tool_id": "split", "state": {"input1": self._link(f"step_{step - 1}", "out_file1")}}
-            step_dict["label"] = f"step_{step}"
-            scale_workflow_steps.append(step_dict)
-
-        workflow_dict = {
-            "class": "GalaxyWorkflow",
-            "inputs": {},
-            "steps": scale_workflow_steps,
-        }
-        return workflow_dict
-
-    @staticmethod
-    def _link(link: str, output_name: str | None = None) -> dict[str, Any]:
-        if output_name is not None:
-            link = f"{str(link)}/{output_name}"
-        return {"$link": link}
 
     def make_public(self, workflow_id: str) -> dict:
         using_requirement("new_published_objects")

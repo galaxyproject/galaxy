@@ -27,6 +27,7 @@ from galaxy.tools.cached_toolbox import (
     ToolMaterializationError,
 )
 from galaxy.tools.source_store import StoredToolSource
+from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.index import (
     ToolIndex,
     ToolIndexEntry,
@@ -53,7 +54,7 @@ def _entry(**overrides):
     return ToolIndexEntry(**base)
 
 
-def _stub(entry=None, materialize=None, is_admin=None):
+def _stub(entry=None, materialize=None, is_admin=None, url_prefix="/"):
     if materialize is None:
 
         def materialize(_e, _reason):  # noqa: E306
@@ -63,6 +64,7 @@ def _stub(entry=None, materialize=None, is_admin=None):
         entry or _entry(),
         materialize_callback=materialize,
         is_admin_user=is_admin or (lambda u: False),
+        url_prefix=url_prefix,
     )
 
 
@@ -178,6 +180,26 @@ def test_old_id_short_circuits_for_shed_ids():
     e = _entry(id="toolshed.example.com/repos/owner/repo/cat_tool/1.0")
     assert _stub(e).old_id == "cat_tool"
     assert _stub(_entry(id="local_tool")).old_id == "local_tool"
+
+
+@pytest.mark.parametrize(
+    ("url_prefix", "expected_prefix"),
+    [("/", ""), ("/galaxy", "/galaxy"), ("/galaxy/", "/galaxy"), ("/nested/galaxy", "/nested/galaxy")],
+)
+@pytest.mark.parametrize("tool_id", ["bowtie2", "toolshed.example.com/repos/owner/repo/tool/1.0+galaxy0"])
+def test_to_panel_entry_link_respects_prefix_and_encodes_tool_id(url_prefix, expected_prefix, tool_id):
+    tool = _stub(_entry(id=tool_id), url_prefix=url_prefix)
+    encoded_id = tool_id.replace("/", "%2F").replace("+", "%2B")
+
+    # _stub raises if URL generation tries to materialize the tool.
+    assert tool.to_panel_entry()["link"] == f"{expected_prefix}/tool_runner?tool_id={encoded_id}"
+
+
+@pytest.mark.parametrize("tool_type", ["data_source", "data_source_async"])
+def test_to_panel_entry_data_source_link_uses_redirect(tool_type):
+    tool = _stub(_entry(id="ucsc_table", tool_type=tool_type), url_prefix="/galaxy")
+
+    assert tool.to_panel_entry()["link"] == "/galaxy/tool_runner/data_source_redirect?tool_id=ucsc_table"
 
 
 def test_to_panel_entry_does_not_materialise():
@@ -369,6 +391,7 @@ def _seam_box():
     box._store = MagicMock()
     box._store.get_by_source_path.return_value = None
     box._shed_short_id_to_guids = {}
+    box._deferred_index_entries = None
     box.app = MagicMock()
     box.app.config.is_admin_user = lambda u: False
     box.app.config.preserve_python_environment = "legacy_only"
@@ -475,6 +498,7 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     def fake_populate(config, paths, path_guids=None, **kwargs):
         calls["paths"] = paths
         calls["path_guids"] = path_guids
+        return {"indexes_written": 1}
 
     monkeypatch.setattr(mod, "populate_for_paths", fake_populate)
     tool = box.create_tool(config_file=str(tool_file), guid=guid)
@@ -486,6 +510,27 @@ def test_create_tool_populates_adhoc_for_existing_file(tmp_path, monkeypatch):
     assert calls["paths"] == [expected_path]
     assert calls["path_guids"] == {expected_path: guid}
     box._store.invalidate_index_cache.assert_called()
+
+
+@pytest.mark.parametrize("indexes_written", [0, 1])
+def test_index_tool_files_parses_indexed_files_and_reloads_after_a_write(tmp_path, monkeypatch, indexes_written):
+    # A repository update rewrites indexed tool files in place, possibly only
+    # in the macros they import, so every file is parsed again.
+    guid = "toolshed.example.com/repos/owner/repo/updated/1.0"
+    tool_file = tmp_path / "updated.xml"
+    tool_file.write_text("<tool id='updated' version='1.0'/>")
+    box = _seam_box()
+    box._tool_index.add_entry(_entry(id=guid))
+    calls = []
+
+    def fake_populate(config, paths, path_guids=None, incremental=True, **kwargs):
+        calls.append((paths, incremental))
+        return {"indexes_written": indexes_written}
+
+    monkeypatch.setattr(mod, "populate_for_paths", fake_populate)
+    box.index_tool_files({str(tool_file): guid})
+    assert calls == [([str(tool_file)], False)]
+    assert box._store.invalidate_index_cache.called is bool(indexes_written)
 
 
 def test_create_tool_stamps_data_manager_conf_id_on_entry():
@@ -501,6 +546,30 @@ def test_create_tool_stamps_data_manager_conf_id_on_entry():
     assert e.data_manager_id == "test_data_manager"
     assert twin.data_manager_id == "test_data_manager"
     box._store.update_index_entry.assert_called_once_with(e)
+
+
+def test_create_tool_replaces_indexed_data_manager_id_with_registry_id():
+    box = _seam_box()
+    guid = "toolshed.g2.bx.psu.edu/repos/iuc/data_manager_repeatmasker/repeatmasker_download/0.0.1"
+    e = _entry(id="dm_tool", tool_type="manage_data", data_manager_id="repeatmasker_download")
+    box._tool_index.entries["dm_tool"] = e
+    box.create_tool(config_file=None, guid="dm_tool", data_manager_id=guid)
+    assert e.data_manager_id == guid
+    box._store.update_index_entry.assert_called_once_with(e)
+
+
+def test_batch_index_writes_persists_stamped_entries_once():
+    box = _seam_box()
+    first = _entry(id="dm_one", tool_type="manage_data")
+    second = _entry(id="dm_two", tool_type="manage_data")
+    box._tool_index.entries.update({"dm_one": first, "dm_two": second})
+    with box.batch_index_writes():
+        box.create_tool(config_file=None, guid="dm_one", data_manager_id="registry/dm_one")
+        box.create_tool(config_file=None, guid="dm_two", data_manager_id="registry/dm_two")
+        assert first.data_manager_id == "registry/dm_one"
+        box._store.update_index_entries.assert_not_called()
+    box._store.update_index_entry.assert_not_called()
+    box._store.update_index_entries.assert_called_once_with([first, second])
 
 
 def test_index_reload_refreshes_existing_stub_entries():
@@ -621,6 +690,37 @@ def test_invalidate_index_cache_keeps_unindexed_tools():
     box._store.load_index.return_value = ToolIndex()
     box.invalidate_index_cache()
     assert box._tools_by_id["__SET_METADATA__"] is internal
+
+
+def test_invalidate_index_cache_rereads_read_only_member_only_when_republished(tmp_path):
+    published_url = f"sqlite:///{tmp_path / 'published.sqlite'}"
+    publisher = SqlAlchemyToolSourceStore(published_url)
+    published_index = ToolIndex()
+    published_index.add_entry(_entry(id="published_tool"))
+    publisher.store_index(published_index)
+    published = SqlAlchemyToolSourceStore(published_url, read_only=True)
+    local = SqlAlchemyToolSourceStore(f"sqlite:///{tmp_path / 'local.sqlite'}")
+    local.store_index(ToolIndex())
+    store = CompositeToolSourceStore(members=[("published", published), ("local", local)], default="local")
+    box = _registry_box()
+    box._store = store
+    box._tool_index = store.load_index()
+    loaded_published = published.load_index()
+
+    peer_index = ToolIndex()
+    peer_index.add_entry(_entry(id="peer_tool"))
+    SqlAlchemyToolSourceStore(f"sqlite:///{tmp_path / 'local.sqlite'}").store_index(peer_index)
+    box.invalidate_index_cache()
+
+    assert published.load_index() is loaded_published
+    assert {"published_tool", "peer_tool"} <= set(box._tool_index.entries)
+
+    published_index.add_entry(_entry(id="republished_tool"))
+    publisher.store_index(published_index)
+    box.invalidate_index_cache()
+
+    assert "republished_tool" in box._tool_index.entries
+    assert "republished_tool" in box._tools_by_id
 
 
 def test_remove_tool_by_id_broadcasts_reload_to_peers(monkeypatch):

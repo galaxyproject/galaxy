@@ -154,4 +154,18 @@
     --font-size-small: var(--text-xs);
     --font-size-medium: var(--text-sm);
     --font-size-large: var(--text-base);
+
+    /* form fields: the height is one line plus the vertical padding and two 1px borders */
+    --field-height-medium: calc(1.5em + 2 * var(--field-padding-y-medium) + 2px);
+    --field-height-small: calc(1.5em + 2 * var(--field-padding-y-small) + 2px);
+    --field-height-large: calc(1.5em + 2 * var(--field-padding-y-large) + 2px);
+    --field-padding-y-medium: 0.375rem;
+    --field-padding-x-medium: 0.75rem;
+    --field-padding-y-small: 0.25rem;
+    --field-padding-x-small: 0.5rem;
+    --field-padding-y-large: 0.5rem;
+    --field-padding-x-large: 1rem;
+    --field-radius-medium: var(--spacing-1);
+    --field-radius-small: 0.2rem;
+    --field-radius-large: 0.3rem;
 }

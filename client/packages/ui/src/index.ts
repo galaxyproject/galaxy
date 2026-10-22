@@ -16,8 +16,11 @@ export { dropdownHideKey } from "./components/dropdownContext";
 export { default as GForm } from "./components/Form/GForm.vue";
 export { default as GFormInput } from "./components/Form/GFormInput.vue";
 export { default as GFormLabel } from "./components/Form/GFormLabel.vue";
+export { default as GRadio } from "./components/Form/GRadio.vue";
+export { default as GRadioGroup } from "./components/Form/GRadioGroup.vue";
 export { type SelectOption } from "./components/Form/GSelect.types";
 export { default as GSelect } from "./components/Form/GSelect.vue";
+export { type RadioButtonVariant, type RadioGroupOption } from "./components/Form/radioGroupContext";
 export { default as GAlert } from "./components/GAlert.vue";
 export { default as GButton } from "./components/GButton.vue";
 export { default as GButtonGroup } from "./components/GButtonGroup.vue";
@@ -58,6 +61,7 @@ export { default as GTip } from "./components/GTip.vue";
 export { default as GToast } from "./components/GToast.vue";
 export { default as GTooltip } from "./components/GTooltip.vue";
 export { type CustomIconDefinition, type IconLike } from "./components/iconTypes";
+export { liveRegionKey } from "./components/liveRegionContext";
 export { useAccessibleHover } from "./composables/accessibleHover";
 export { type ClickableProps, useClickableElement } from "./composables/clickableElement";
 export { type HasTitleProps, useCurrentTitle } from "./composables/currentTitle";
@@ -66,7 +70,9 @@ export { useResolveElement } from "./composables/resolveElement";
 export { type ToastOptions, type ToastProps, type ToastVariant, useToast } from "./composables/toast";
 export { activeToastHost, registerToastHost, unregisterToastHost } from "./composables/toastHost";
 export { useUid } from "./composables/uid";
+export { PROFILE_CONFIGS, sanitizeHtml, type SanitizeHtmlProfile } from "./directives/sanitizeHtml";
 export { vGTooltip } from "./directives/vGTooltip";
+export { type SanitizeHtmlBinding, vSanitizeHtml } from "./directives/vSanitizeHtml";
 export {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,

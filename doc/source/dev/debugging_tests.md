@@ -37,11 +37,17 @@ The following instructions assume that you have cloned your Galaxy fork into ~/g
 
 Sometimes it is necessary to debug tests that work locally. There are a few different strategies one could employ.
 For the broadly filtered test workflows, a change confined to their workflow
-file selects that workflow without starting the other broadly filtered suites. Changes to the shared
-`build_client.yaml` workflow also run its callers: Playwright, integration
-Selenium, startup tests, and the tool form harness. A change that also touches
-source files still runs the suites selected by those source files. Scheduled
-and manually dispatched runs are independent of these path filters.
+file selects that workflow without starting the other broadly filtered suites.
+Reusable workflows, which only run through `workflow_call`, have a leading
+underscore; changes to one also run its callers. `_build_client.yaml` is called
+by Playwright, integration Selenium, startup tests, and the tool form harness;
+`_report_scheduled_result.yaml` by the unit, Tool Shed and tool framework
+tests. On pull requests and pushes, these path filters load the reporter
+definition and run its callers' test jobs; they do not exercise reporting.
+The reporting job only runs on schedules and manual dispatches. A change
+that also touches source files still runs the suites selected by those source
+files. Scheduled and manually dispatched runs are independent
+of these path filters.
 
 When editing these filters, use ordered `paths` entries: include `**`, exclude
 unneeded directories and `.github/workflows/**`, then include the workflow's

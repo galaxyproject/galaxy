@@ -6,7 +6,7 @@ import { useGenericMonitor } from "./genericTaskMonitor";
 export const DEFAULT_POLL_DELAY = 10000;
 const DEFAULT_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
-const READY_STATE = "READY";
+export const READY_STATE = "READY";
 const PENDING_STATE = "PENDING";
 const VALID_STATES = [READY_STATE, PENDING_STATE];
 

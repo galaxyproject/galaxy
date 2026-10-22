@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
-
 import type { HeaderOptionDescriptor } from "@/composables/upload/uploadOptionBindings";
 import type { UploadOptionKey } from "@/composables/upload/uploadOptionModel";
+
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 interface Props {
     /** Bulk option descriptors to render in order */
@@ -24,17 +24,17 @@ function handleToggle(key: UploadOptionKey) {
     <div class="options-header">
         <span class="options-title">Upload Settings</span>
         <div class="options-controls d-inline-flex align-items-center flex-nowrap">
-            <BFormCheckbox
+            <GCheckbox
                 v-for="option in options"
                 :key="option.key"
                 v-g-tooltip.hover
-                :checked="option.checked"
+                size="small"
                 :indeterminate="option.indeterminate"
-                size="sm"
+                :model-value="option.checked"
                 :title="option.title"
                 @change="handleToggle(option.key)">
                 <span class="small">{{ option.label }}</span>
-            </BFormCheckbox>
+            </GCheckbox>
         </div>
     </div>
 </template>

@@ -90,6 +90,7 @@ api_tags_metadata = [
     {"name": "libraries"},
     {"name": "data libraries folders"},
     {"name": "job_lock"},
+    {"name": "admin_extensions", "description": "Operations with Admin panel extensions."},
     {"name": "default"},
     {"name": "users"},
     {"name": "jobs"},
@@ -154,7 +155,8 @@ class XFrameOptionsMiddleware:
             if message["type"] == "http.response.start":
                 if not _is_embed_request(request.url.path, str(request.url.query)):
                     headers = MutableHeaders(scope=message)
-                    headers.append("X-Frame-Options", self.x_frame_options)
+                    # Don't override a header the wrapped app (e.g. the mounted WSGI app) already set
+                    headers.setdefault("X-Frame-Options", self.x_frame_options)
             await send(message)
 
         await self.app(scope, receive, send_with_header)

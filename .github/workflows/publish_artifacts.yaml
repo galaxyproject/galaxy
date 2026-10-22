@@ -16,6 +16,8 @@ on:
         description: 'Specify tag to build for'
         required: true
         type: string
+env:
+  UV_HTTP_RETRIES: '6'
 permissions: {}
 jobs:
   check-permissions:
@@ -103,7 +105,7 @@ jobs:
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat client/.node_version)" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           package-manager-cache: false

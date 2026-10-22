@@ -2,7 +2,6 @@
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useIntersectionObserver } from "@vueuse/core";
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import {
@@ -19,18 +18,17 @@ import {
 import type { CollectionType } from "@/api/datasetCollections";
 import type { HistoryContentType } from "@/api/datasets";
 import { getGalaxyInstance } from "@/app";
-import {
-    COLLECTION_TYPE_TO_LABEL,
-    type CollectionBuilderType,
-} from "@/components/Collections/common/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
+import { COLLECTION_TYPE_SHORT_LABELS } from "@/components/Collections/common/knownCollectionTypes";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
 import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, isDataOption } from "./types";
-import { BATCH, SOURCE, VARIANTS } from "./variants";
+import { BATCH, isBatchSelection, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
 import FormSelectionPreference from "../FormSelectionPreference.vue";
@@ -38,6 +36,7 @@ import FormDataContextButtons from "./FormDataContextButtons.vue";
 import FormDataExtensions from "./FormDataExtensions.vue";
 import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
@@ -210,6 +209,45 @@ const currentVariant = computed(() => {
         return null;
     }
 });
+
+/**
+ * Whether a selected value is flagged for map over, e.g. a `list:paired` collection selected for a
+ * `paired` collection input. Tool form only: workflow run forms set a `flavor`, and a collection
+ * given to a workflow input is passed to the workflow whole.
+ */
+const selectionMapsOver = computed(() => !props.flavor && !!currentValue.value?.some((v) => !!v.map_over_type));
+
+/**
+ * Whether the input is mapped over this tool: a collection on a `data` input, or a selection
+ * flagged for map over
+ */
+const mapsOver = computed(
+    () => (props.type == "data" && currentVariant.value?.src == SOURCE.COLLECTION) || selectionMapsOver.value,
+);
+
+/**
+ * What each mapped over job receives for a single selected collection, e.g. a "dataset pair",
+ * a `paired_or_unpaired` (`code`) collection or a dataset; unknown for multiple selections
+ */
+const mapOverUnit = computed((): { code?: string; text: string } | null => {
+    const [single, ...rest] = currentValue.value ?? [];
+    if (!mapsOver.value || !single || rest.length > 0) {
+        return null;
+    }
+    const type = single.map_over_type;
+    if (!type || type === "single_datasets") {
+        return { text: localize("dataset") };
+    }
+    const label = COLLECTION_TYPE_SHORT_LABELS[type];
+    return label ? { text: localize(label) } : { code: type, text: localize("collection") };
+});
+
+/**
+ * Show batch info for a batch variant or a selection mapped over this tool
+ */
+const showBatchInfo = computed(
+    () => !!currentVariant.value && (currentVariant.value.batch !== BATCH.DISABLED || selectionMapsOver.value),
+);
 
 /**
  * Converts and populates options for the shown select field
@@ -432,7 +470,6 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
         values = values.filter((value, index, self) => index === self.findIndex((v) => v.id === value.id));
 
         if (variant.value && values.length > 0 && values[0]) {
-            const hasMapOverType = values.find((v) => !!v.map_over_type);
             const isMultiple = values.length > 1;
 
             // Determine source representation (uses only the initial value)
@@ -459,7 +496,7 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
             }
             // Emit new value
             return {
-                batch: batch !== BATCH.DISABLED || !!hasMapOverType,
+                batch: isBatchSelection(batch, values),
                 product: batch === BATCH.ENABLED && !currentLinked.value,
                 values: values.map((entry) => ({
                     id: entry.id,
@@ -1100,11 +1137,7 @@ const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
 
 function collectionTypeToText(collectionType: string): string {
-    if (COLLECTION_TYPE_TO_LABEL[collectionType]) {
-        return COLLECTION_TYPE_TO_LABEL[collectionType].toLowerCase();
-    } else {
-        return collectionType;
-    }
+    return COLLECTION_TYPE_SHORT_LABELS[collectionType] ?? collectionType;
 }
 
 const warningListAmount = 4;
@@ -1237,9 +1270,9 @@ const noOptionsWarningMessage = computed(() => {
         </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
-            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
-                <BFormCheckbox
-                    v-if="currentVariant.batch === BATCH.ENABLED"
+            <div v-if="showBatchInfo">
+                <GCheckbox
+                    v-if="currentVariant?.batch === BATCH.ENABLED"
                     v-model="currentLinked"
                     class="checkbox no-highlight"
                     switch>
@@ -1253,12 +1286,16 @@ const noOptionsWarningMessage = computed(() => {
                         <b v-localize class="mr-1">Unlinked:</b>
                         <span v-localize>Dataset will be run against *all* other datasets.</span>
                     </span>
-                </BFormCheckbox>
+                </GCheckbox>
                 <div class="info text-info">
                     <FontAwesomeIcon :icon="faExclamation" />
-                    <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                    <span v-if="mapsOver" class="ml-1">
                         The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
-                        tool.
+                        tool<template v-if="mapOverUnit"
+                            >: {{ localize("one job per") }}
+                            <code v-if="mapOverUnit.code">{{ mapOverUnit.code }}</code>
+                            {{ mapOverUnit.text }}</template
+                        >.
                     </span>
                     <span v-else v-localize class="ml-1">
                         This is a batch mode input field. Individual jobs will be triggered for each dataset.

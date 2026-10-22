@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { BLink } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
 
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 
 const props = defineProps<{
     value: DataUriCollectionElement;
@@ -35,14 +35,15 @@ const expanded = ref(false);
                 <strong data-description="uri element identifier">{{ props.value.identifier || "Dataset" }}</strong>
                 <i v-if="props.value.ext" data-description="uri element ext">({{ props.value.ext }})</i>
             </div>
-            <BLink
+            <GLink
                 v-if="props.value.location"
+                thin
                 class="location-link w-50"
                 :href="props.value.location"
                 target="_blank"
                 data-description="uri location">
                 <i>{{ props.value.location }}</i>
-            </BLink>
+            </GLink>
         </div>
     </div>
 </template>

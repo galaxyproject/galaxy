@@ -74,6 +74,19 @@ describe("RegisterForm", () => {
         expect(postRequests[0]?.data.password).toBe("test_pwd");
     });
 
+    it("sends the mailing list subscription when its checkbox is checked", async () => {
+        await wrapper.setProps({ mailingJoinAddr: "announce@example.org", serverMailConfigured: true });
+
+        await wrapper.get("input#register-form-subscribe").setValue(true);
+        await wrapper.get("input#register-form-email").setValue("test_user");
+
+        await wrapper.get("button[type='submit']").trigger("submit");
+        await flushPromises();
+
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.data.subscribe).toBe(true);
+    });
+
     // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
     // it("switching from Register to Login", async () => {
     //     const cardHeader = await wrapper.find(".card-header");

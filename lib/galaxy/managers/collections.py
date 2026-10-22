@@ -349,9 +349,9 @@ class DatasetCollectionManager:
         # values.
         if isinstance(tags, list):
             assert implicit_inputs is None, implicit_inputs
-            tags = trans.tag_handler.add_tags_from_list(trans.user, dataset_collection_instance, tags, flush=False)
+            trans.tag_handler.add_tags_from_list(trans.user, dataset_collection_instance, tags, flush=False)
         else:
-            tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
+            self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance, flush=flush)
 
     def create_dataset_collection(
@@ -484,8 +484,8 @@ class DatasetCollectionManager:
             )
         return elements
 
-    def _append_tags(self, dataset_collection_instance, implicit_inputs=None, tags=None):
-        tags = tags or {}
+    def _append_tags(self, dataset_collection_instance, implicit_inputs=None, tags=None) -> None:
+        tags = dict(tags or {})
         implicit_inputs = implicit_inputs or []
         for _, v in implicit_inputs:
             for tag in v.auto_propagated_tags:

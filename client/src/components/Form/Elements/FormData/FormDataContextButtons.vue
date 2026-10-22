@@ -5,10 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/api/datasetCollections";
-import {
-    COLLECTION_TYPE_TO_LABEL,
-    type CollectionBuilderType,
-} from "@/components/Collections/common/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
+import { COLLECTION_TYPE_SHORT_LABELS } from "@/components/Collections/common/knownCollectionTypes";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import localize from "@/utils/localization";
 import { capitalizeFirstLetter } from "@/utils/strings";
@@ -49,7 +47,7 @@ const emit = defineEmits<{
 const createTitle = computed(() => {
     const defaultBuilderType = defaultCollectionBuilderType.value;
     return sourceIsCollection.value
-        ? `Create a new ${COLLECTION_TYPE_TO_LABEL[defaultBuilderType]}`
+        ? `Create a new ${COLLECTION_TYPE_SHORT_LABELS[defaultBuilderType]}`
         : "Upload dataset(s)";
 });
 
@@ -144,7 +142,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                     v-for="colType in availableCollectionBuilders"
                     :key="colType"
                     @click="createCollectionType(colType)">
-                    {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
+                    {{ capitalizeFirstLetter(COLLECTION_TYPE_SHORT_LABELS[colType] || "collection") }}
                 </GDropdownItem>
             </GDropdown>
             <GButton

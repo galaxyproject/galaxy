@@ -413,6 +413,25 @@ describe("GDropdown.vue", () => {
             expect(focusedText()).toBe("Five");
         });
 
+        it("navigates to checkbox and radio items and activates them with Space", async () => {
+            const onCheck = vi.fn();
+            const onRadio = vi.fn();
+            const wrapper = mountDropdown(
+                `<GDropdownItem role="menuitemcheckbox" aria-checked="true" @click="onCheck">Check</GDropdownItem>
+                <GDropdownItem role="menuitemradio" aria-checked="false" @click="onRadio">Radio</GDropdownItem>`,
+                { onCheck, onRadio },
+            );
+
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+            expect(focusedText()).toBe("Check");
+            await press(document.activeElement!, "ArrowDown");
+            expect(focusedText()).toBe("Radio");
+
+            await press(document.activeElement!, " ");
+            expect(onRadio).toHaveBeenCalledOnce();
+            expect(onCheck).not.toHaveBeenCalled();
+        });
+
         it("marks the active item as the current one", () => {
             const wrapper = mountDropdown(`
                 <GDropdownItem active>One</GDropdownItem>

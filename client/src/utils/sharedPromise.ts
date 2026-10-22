@@ -39,3 +39,41 @@ export function dedupeInFlight<K, T>(fn: (key: K) => Promise<T>): (key: K) => Pr
         return promise;
     };
 }
+
+/**
+ * Run `fn` one call at a time. Calls made while it runs make it run once more afterwards, so the
+ * last call always sees the latest state; they share the promise of that run.
+ * A failed run doesn't stop the run for those calls. Callers get the last run's result, and the
+ * next call runs `fn` again.
+ */
+export function rerunWhileBusy(fn: () => Promise<void>): () => Promise<void> {
+    let running: Promise<void> | undefined;
+    let rerun = false;
+    return () => {
+        if (running) {
+            rerun = true;
+        } else {
+            running = (async () => {
+                let failure: { error: unknown } | undefined;
+                try {
+                    do {
+                        rerun = false;
+                        try {
+                            await callAsync(fn);
+                            failure = undefined;
+                        } catch (error) {
+                            failure = { error };
+                        }
+                    } while (rerun);
+                } finally {
+                    // in the same microtask as the last `rerun` check, so no call is dropped in between
+                    running = undefined;
+                }
+                if (failure) {
+                    throw failure.error;
+                }
+            })();
+        }
+        return running;
+    };
+}

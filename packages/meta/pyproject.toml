@@ -48,8 +48,5 @@ Homepage = "https://github.com/galaxyproject/galaxy"
 [tool.setuptools.dynamic]
 readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
 
-[tool.setuptools.packages.find]
-where = ["src"]
-exclude = [
-    "tests*",
-]
+[tool.setuptools]
+packages = []

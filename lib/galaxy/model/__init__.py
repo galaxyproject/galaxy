@@ -882,7 +882,7 @@ class User(Base, Dictifiable, RepresentById):
     last_password_change: Mapped[datetime | None] = mapped_column(default=now)
     external: Mapped[bool | None] = mapped_column(default=False)
     form_values_id: Mapped[int | None] = mapped_column(ForeignKey("form_values.id"), index=True)
-    preferred_object_store_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    preferred_object_store_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
     purged: Mapped[bool | None] = mapped_column(index=True, default=False)
     disk_usage: Mapped[Decimal | None] = mapped_column(Numeric(15, 0), index=True)
@@ -5632,14 +5632,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     def set_skipped(self, object_store_populator: "ObjectStorePopulator", replace_dataset: bool) -> None:
         assert self.dataset
-        object_store_populator.set_object_store_id(self)
         if replace_dataset:
-            replacement = Dataset(state=Dataset.states.NEW)
-            replacement.object_store_id = self.dataset.object_store_id
-            self.dataset = replacement
+            # Replace the dataset before touching the object store, the current one may be shared with an input.
+            self.dataset = Dataset(state=Dataset.states.NEW)
             self.dataset_id = None
-            assert self.dataset.object_store is not None
-            self.dataset.object_store.create(self.dataset)
+        object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
@@ -5744,22 +5741,26 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return `False` if there exists an associated job with a non-terminal state.
         """
 
-        def exists_clause(assoc_model):
+        def exists_clause(dataset_id_column):
             return (
-                select(assoc_model.job_id)
+                select(dataset_id_column)
                 .join(Job)
-                .where(assoc_model.dataset_id == self.id)
+                .where(dataset_id_column == self.id)
                 .where(Job.state.not_in(Job.terminal_states))
                 .exists()
             )
 
+        input_dataset_id, output_dataset_id = self._job_association_dataset_id_columns()
         stmt = select(
             or_(
-                exists_clause(JobToInputDatasetAssociation),
-                exists_clause(JobToOutputDatasetAssociation),
+                exists_clause(input_dataset_id),
+                exists_clause(output_dataset_id),
             )
         )
         return not required_object_session(self).scalar(stmt)
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputDatasetAssociation.dataset_id, JobToOutputDatasetAssociation.dataset_id
 
     def change_datatype(self, new_ext):
         self.clear_associated_files()
@@ -5857,9 +5858,22 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     if include_errored
                     else Dataset.valid_input_states
                 )
-                if not item.deleted and item.state in valid_states:
+                if not item.deleted and item.state in valid_states and not item._blocked_on_failed_input():
                     return item
         return None
+
+    def _blocked_on_failed_input(self) -> bool:
+        """Whether this dataset's pending job is blocked by an unrecoverable input."""
+        if self.state not in (Dataset.states.NEW, Dataset.states.QUEUED, Dataset.states.PAUSED) or not (
+            job := self.creating_job
+        ):
+            return False
+        return any(
+            assoc.dataset.state in (Dataset.states.ERROR, Dataset.states.DISCARDED)
+            or assoc.dataset._blocked_on_failed_input()
+            for assoc in job.input_datasets
+            if assoc.dataset
+        )
 
     def get_converted_dataset_deps(self, trans: "ProvidesUserContext", target_ext, use_cached_job=False):
         """
@@ -5882,8 +5896,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         use_cached_job=False,
     ):
         """
-        Return converted dataset(s) if they exist, along with a dict of dependencies.
-        If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
+        Return the converted dataset, starting the conversion (and any conversions it
+        depends on) if it does not exist yet. If unconvertible, raise exception.
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
@@ -5905,15 +5919,17 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # Check if we have dependencies
         try:
             for dependency in depends_list:
-                dep_dataset = self.get_converted_dataset(trans, dependency, use_cached_job=use_cached_job)
-                if dep_dataset is None:
-                    # None means converter is running first time
-                    return None
-                elif dep_dataset.state == Job.states.ERROR:
+                dep_dataset = self.get_converted_dataset(
+                    trans,
+                    dependency,
+                    target_context=target_context,
+                    history=history,
+                    include_errored=include_errored,
+                    use_cached_job=use_cached_job,
+                )
+                if dep_dataset.state == Job.states.ERROR:
                     raise ConverterDependencyException(f"A dependency ({dependency}) was in an error state.")
-                elif dep_dataset.state != Job.states.OK:
-                    # Pending
-                    return None
+                # A pending dependency is fine, the converter job waits for its inputs.
                 deps[dependency] = dep_dataset
         except NoConverterException:
             raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
@@ -6294,7 +6310,14 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
         if old_dataset:
             old_dataset.full_delete(user=self.user)
 
-    def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
+    def copy(
+        self,
+        parent_id=None,
+        copy_tags: Iterable["ItemTagAssociation"] | None = None,
+        flush=True,
+        copy_hid=True,
+        new_name=None,
+    ):
         """
         Create a copy of this HDA.
         """
@@ -6328,10 +6351,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
             session.commit()
         return hda
 
-    def copy_tags_to(self, copy_tags=None):
+    def copy_tags_to(self, copy_tags: Iterable["ItemTagAssociation"] | None = None):
         if copy_tags is not None:
-            if isinstance(copy_tags, dict):
-                copy_tags = copy_tags.values()
             existing = {(t.tag_id, t.value) for t in self.tags}
             for tag in copy_tags:
                 if (tag.tag_id, tag.value) not in existing:
@@ -7014,6 +7035,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
     def purged(self):
         # For uniformity with HistoryDatasetAssociation
         return self.dataset and self.dataset.purged
+
+    def _job_association_dataset_id_columns(self):
+        return JobToInputLibraryDatasetAssociation.ldda_id, JobToOutputLibraryDatasetAssociation.ldda_id
 
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
@@ -8385,6 +8409,7 @@ class HistoryDatasetCollectionAssociation(
             hid=self.hid,
             collection=self.collection.serialize(id_encoder, serialization_options),
             implicit_output_name=self.implicit_output_name,
+            tags=self.make_tag_string_list(),
         )
         if self.history:
             rval["history_encoded_id"] = serialization_options.get_identifier(id_encoder, self.history)
@@ -10096,12 +10121,15 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         session = object_session(self)
         priority_states = (WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED)
         if session and self.id and state not in priority_states:
-            # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
+            # generate statement that will not revert CANCELLING, CANCELLED or COMPLETED. Scheduling a
+            # parent's subworkflow step runs the child's invoker again, and a child whose completion
+            # was already recorded must stay completed for the parent to complete.
+            final_states = (*priority_states, WorkflowInvocation.states.COMPLETED)
             session.execute(
                 update(WorkflowInvocation)
                 .where(
                     WorkflowInvocation.id == self.id,
-                    or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
+                    or_(~WorkflowInvocation.state.in_(final_states), WorkflowInvocation.state.is_(None)),
                 )
                 .values(state=state)
             )
@@ -12160,7 +12188,9 @@ class Tag(Base, RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ["id", "user_tname", "user_value"]
     dict_element_visible_keys = dict_collection_visible_keys
+    tag_id: Mapped[int | None]
     user_tname: Mapped[str | None]
+    value: Mapped[str | None]
     user_value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
 
     def __init_subclass__(cls, **kwargs):
@@ -12183,7 +12213,7 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12199,7 +12229,7 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12215,7 +12245,7 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     library_dataset_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12231,7 +12261,7 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12245,7 +12275,7 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12259,7 +12289,7 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12273,7 +12303,7 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12289,7 +12319,7 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12305,7 +12335,7 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
@@ -12319,7 +12349,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tool_id: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
+    tag_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)

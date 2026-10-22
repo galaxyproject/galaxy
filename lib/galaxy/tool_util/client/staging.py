@@ -298,9 +298,23 @@ class StagingInterface(metaclass=abc.ABCMeta):
 
 
 class InteractorStaging(StagingInterface):
+    """Stage inputs through the API test interactor.
+
+    Upload jobs are submitted together and run concurrently; ``stage`` returns
+    once all of them have finished.
+    """
+
     def __init__(self, galaxy_interactor: "ApiTestInteractor", use_fetch_api: bool = DEFAULT_USE_FETCH_API) -> None:
         self.galaxy_interactor = galaxy_interactor
         self._use_fetch_api = use_fetch_api
+        self._job_ids: list[str] = []
+
+    def stage(self, *args, **kwds) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        self._job_ids = []
+        result = super().stage(*args, **kwds)
+        for job_id in self._job_ids:
+            self.galaxy_interactor.wait_for_job(job_id)
+        return result
 
     def _post(self, api_path: str, payload: dict[str, Any]) -> dict[str, Any]:
         response = self.galaxy_interactor._post(api_path, payload, json=True)
@@ -308,7 +322,7 @@ class InteractorStaging(StagingInterface):
         return response.json()
 
     def _handle_job(self, job_response: dict[str, Any]):
-        self.galaxy_interactor.wait_for_job(job_response["id"])
+        self._job_ids.append(job_response["id"])
 
     @property
     def use_fetch_api(self):

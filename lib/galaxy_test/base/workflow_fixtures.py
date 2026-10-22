@@ -1,3 +1,18 @@
+WORKFLOW_SIMPLE = """
+class: GalaxyWorkflow
+name: Simple Workflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+"""
+
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
@@ -222,6 +237,21 @@ test_data:
     samp2\t40.0
 """
 
+
+WORKFLOW_WHEN_NOT_CONNECTED = """
+class: GalaxyWorkflow
+inputs:
+  some_file:
+    type: data
+  should_run:
+    type: boolean
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: some_file
+    when: $(inputs.when)
+"""
 
 WORKFLOW_SIMPLE_MAPPING = """
 class: GalaxyWorkflow
@@ -1288,21 +1318,26 @@ WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
 WORKFLOW_KEEP_SUCCESSFUL_DATASETS = """
 class: GalaxyWorkflow
 inputs:
-  input_c: collection
+  input_c:
+    type: collection
+    position: {left: 0, top: 0}
 
 steps:
   mixed_collection:
     tool_id: exit_code_from_file
+    position: {left: 230, top: 0}
     in:
        input: input_c
 
   filtered_collection:
     tool_id: "__KEEP_SUCCESS_DATASETS__"
+    position: {left: 460, top: 0}
     in:
       input: mixed_collection/out_file1
 
   cat:
     tool_id: cat
+    position: {left: 690, top: 0}
     in:
       input1: filtered_collection/output
 """

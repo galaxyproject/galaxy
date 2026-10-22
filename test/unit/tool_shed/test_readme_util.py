@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -69,13 +70,14 @@ def _upload_revision(
     tmp_path: Path,
     column_maker_version: str,
     label: str,
+    newline: str = "\n",
 ):
-    revision_dir = tmp_path / column_maker_version
+    revision_dir = tmp_path / f"{column_maker_version}_{label}"
     revision_dir.mkdir()
     tool_xml = COLUMN_MAKER_REVISIONS / column_maker_version / "column_maker.xml"
     (revision_dir / "column_maker.xml").write_text(tool_xml.read_text())
-    readme = f"{label} **bold** text.\n\n.. raw:: html\n\n   <script>alert(1)</script>\n"
-    (revision_dir / "README.rst").write_text(readme)
+    readme = f"{label} **bold** text.\n\n.. image:: images/logo.png\n\n.. raw:: html\n\n   <script>alert(1)</script>\n"
+    (revision_dir / "README.rst").write_bytes(readme.replace("\n", newline).encode())
     upload(provides_repositories, repository, revision_dir, arcname="readme_repo")
 
 
@@ -100,3 +102,79 @@ def test_readmes_renders_rst_readme_of_each_downloadable_revision(
     assert f"{label} <strong>bold</strong> text." in html
     assert other_label not in html
     assert "<script" not in html
+    encoded_id = app.security.encode_id(new_repository.id)
+    # Old revisions point at the image as of that revision; the latest is served from disk.
+    query = f"?changeset_revision={old}" if label == "Old" else ""
+    assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png{query}"' in html
+
+
+def test_readmes_renders_readme_unchanged_in_old_revision(
+    provides_repositories: ProvidesRepositoriesContext,
+    new_repository: Repository,
+    tmp_path: Path,
+):
+    app = provides_repositories.app
+    # The README-only "Mid" upload moves the first downloadable revision forward, so the
+    # column_maker 2 revision's nearest README change is "Mid" and its earliest is "Old".
+    revisions = []
+    for column_maker_version, label in [("1", "Old"), ("1", "Mid"), ("2", "Mid"), ("3", "New")]:
+        _upload_revision(provides_repositories, new_repository, tmp_path, column_maker_version, label)
+        revisions.append(get_latest_downloadable_changeset_revision(app, new_repository))
+    downloadable = {m.changeset_revision for m in new_repository.downloadable_revisions}
+    assert downloadable == set(revisions[1:])
+
+    html = readmes(app, new_repository, revisions[2])["README.rst"]
+
+    assert "Mid <strong>bold</strong> text." in html
+    assert "Old" not in html
+    assert "New" not in html
+
+
+def test_readmes_keeps_crlf_readme_images_on_old_revision(
+    provides_repositories: ProvidesRepositoriesContext,
+    new_repository: Repository,
+    tmp_path: Path,
+):
+    app = provides_repositories.app
+    _upload_revision(provides_repositories, new_repository, tmp_path, "1", "Old", newline="\r\n")
+    _upload_revision(provides_repositories, new_repository, tmp_path, "2", "New")
+    latest = get_latest_downloadable_changeset_revision(app, new_repository)
+    (old,) = [m.changeset_revision for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    assert old
+
+    html = readmes(app, new_repository, old)["README.rst"]
+
+    encoded_id = app.security.encode_id(new_repository.id)
+    assert f'src="/repository/static/images/{encoded_id}/images%2Flogo.png?changeset_revision={old}"' in html
+    assert "<p>?changeset_revision" not in html
+
+
+def test_readmes_reads_old_revision_readme_at_its_own_path(
+    provides_repositories: ProvidesRepositoriesContext,
+    new_repository: Repository,
+    tmp_path: Path,
+):
+    app = provides_repositories.app
+    for column_maker_version, label in [("1", "Old"), ("2", "New")]:
+        revision_dir = tmp_path / f"{column_maker_version}_{label}"
+        revision_dir.mkdir()
+        tool_xml = COLUMN_MAKER_REVISIONS / column_maker_version / "column_maker.xml"
+        (revision_dir / "column_maker.xml").write_text(tool_xml.read_text())
+        for subdir in ["first", "second"]:
+            (revision_dir / subdir).mkdir()
+            (revision_dir / subdir / "README.rst").write_text(f"{label} {subdir} readme.\n")
+        upload(provides_repositories, new_repository, revision_dir, arcname="readme_repo")
+    latest = get_latest_downloadable_changeset_revision(app, new_repository)
+    (old_metadata,) = [m for m in new_repository.downloadable_revisions if m.changeset_revision != latest]
+    assert old_metadata.metadata is not None
+    assert old_metadata.changeset_revision
+    readme_paths = old_metadata.metadata["readme_files"]
+    assert len(readme_paths) == 2
+    # Both READMEs share a file name and key, so the one listed last is the one returned.
+    expected_subdir = os.path.basename(os.path.dirname(readme_paths[-1]))
+    other_subdir = os.path.basename(os.path.dirname(readme_paths[0]))
+
+    html = readmes(app, new_repository, old_metadata.changeset_revision)["README.rst"]
+
+    assert f"Old {expected_subdir} readme." in html
+    assert other_subdir not in html

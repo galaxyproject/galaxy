@@ -1,4 +1,4 @@
-from galaxy_test.api.test_tools import TestsTools
+from galaxy_test.base.api_mixins import TestsTools
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,

@@ -246,6 +246,20 @@ class TestNestedWorkflowCompletion:
 
         assert manager.poll_pending_completions(limit=1, handler="handler_a") == []
 
+    def test_parent_completes_after_rescheduling_completed_subworkflow(self, completion_tree):
+        manager, invocations = completion_tree
+        child = invocations[-1]
+        assert manager.check_and_record_completion(child.id) is not None
+
+        # Scheduling the parent's subworkflow step runs the child's invoker again.
+        child.set_state(InvocationState.SCHEDULED)
+        manager.sa_session.commit()
+
+        assert child.state == InvocationState.COMPLETED.value
+        for invocation in reversed(invocations[:-1]):
+            assert manager.poll_pending_completions(limit=1, handler="handler_a") == [invocation.id]
+            assert manager.check_and_record_completion(invocation.id) is not None
+
 
 class TestWorkflowCompletionManagerHandlerFiltering:
     """Tests for WorkflowCompletionManager.poll_pending_completions handler filtering."""

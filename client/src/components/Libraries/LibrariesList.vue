@@ -17,17 +17,22 @@
 
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
 
-            <BFormCheckbox
+            <GCheckbox
                 v-if="currentUser && currentUser.is_admin"
                 v-localize
                 class="mr-1"
-                @input="toggle_include_deleted($event)">
+                :model-value="includeDeleted"
+                @update:model-value="toggle_include_deleted($event)">
                 include deleted
-            </BFormCheckbox>
+            </GCheckbox>
 
-            <BFormCheckbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
+            <GCheckbox
+                v-localize
+                class="mr-1"
+                :model-value="exclude_restricted"
+                @update:model-value="toggle_exclude_restricted($event)">
                 exclude restricted
-            </BFormCheckbox>
+            </GCheckbox>
         </div>
 
         <GCollapse v-model="isNewLibFormVisible">
@@ -212,17 +217,7 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-    BCard,
-    BCol,
-    BContainer,
-    BForm,
-    BFormCheckbox,
-    BFormInput,
-    BInputGroup,
-    BPagination,
-    BRow,
-} from "bootstrap-vue";
+import { BCard, BCol, BContainer, BForm, BFormInput, BInputGroup, BPagination, BRow } from "bootstrap-vue";
 import { mapState } from "pinia";
 
 import { DEFAULT_PER_PAGE, onError } from "@/components/Libraries/library-utils";
@@ -235,6 +230,7 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -247,13 +243,13 @@ export default {
         BCol,
         BContainer,
         BForm,
-        BFormCheckbox,
         BFormInput,
         BInputGroup,
         BPagination,
         BRow,
         FontAwesomeIcon,
         GButton,
+        GCheckbox,
         GCollapse,
         GLink,
         GTable,

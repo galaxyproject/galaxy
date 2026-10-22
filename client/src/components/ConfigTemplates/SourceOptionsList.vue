@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { BFormInput } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
 import { faNetworkWired } from "font-awesome-6";
 import { computed, ref } from "vue";
@@ -9,6 +8,7 @@ import type { ObjectStoreTemplateSummaries } from "@/api/objectStores.templates"
 import type { BreadcrumbItem } from "@/components/Common/index";
 import Filtering, { type ValidFilter } from "@/utils/filtering";
 
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -68,7 +68,7 @@ function getOptionType(type: string) {
                 Select {{ title }} to create new sources. These options are configured by your Galaxy administrator.
             </Heading>
 
-            <BFormInput v-model="filterText" :placeholder="`Search ${title}`" />
+            <GFormInput v-model="filterText" :placeholder="`Search ${title}`" />
 
             <ListHeader :list-id="listId" show-view-toggle />
         </div>

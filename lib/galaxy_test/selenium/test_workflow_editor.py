@@ -22,6 +22,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
+    WORKFLOW_WHEN_NOT_CONNECTED,
     WORKFLOW_WITH_INVALID_STATE,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -122,6 +123,25 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         self.workflow_index_open_with_name(name)
         assert "MIT" in self.workflow_editor_license_text()
+
+    @selenium_test
+    def test_open_and_run_workflow_by_exact_title(self):
+        # The newer sibling also matches a search for ``name`` and is listed first.
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=name)
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=f"{name} (copy)")
+
+        self.workflow_index_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        # Loading briefly marks the workflow changed; leaving then would raise the unsaved-changes prompt.
+        editor.canvas_loading.wait_for_absent()
+        assert editor.edit_name.wait_for_visible().get_attribute("value") == name
+        assert self.current_url.endswith(f"id={workflow_id}")
+
+        self.workflow_run_with_name(name)
+        self.components.workflow_run.run_workflow.wait_for_visible()
+        assert self.current_url.endswith(f"id={workflow_id}")
 
     @selenium_test
     def test_parameter_regex_validation(self):
@@ -289,7 +309,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("chipseq example input")
         self.sleep_for(self.wait_types.UX_RENDER)
-        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+        self.workflow_editor_set_collection_type("sample_sheet:paired")
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_type_selected")
 
         self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
 
@@ -317,6 +338,103 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert control["name"] == "Control"
         assert control["type"] == "element_identifier"
         assert control["optional"] is True
+
+    @selenium_test
+    def test_collection_input_custom_and_any_collection_type_round_trip(self):
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+        self.workflow_editor_set_collection_type("list:list:list", custom=True)
+        self.screenshot("workflow_editor_collection_type_custom")
+        # each change rebuilds the step through an async server call with no UI marker - let it land before saving
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() == "list:list:list"
+
+        self.refresh()
+        input_node.title.wait_for_and_click()
+        assert editor.collection_type_selected.wait_for_text() == "Custom collection type..."
+        assert editor.collection_type_custom_input.wait_for_value() == "list:list:list"
+
+        self.workflow_editor_set_collection_type(None)
+        editor.collection_type_custom_input.wait_for_absent()
+        # see above - the step rebuild is async with no UI marker
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() is None
+
+        self.refresh()
+        input_node.title.wait_for_and_click()
+        assert editor.collection_type_selected.wait_for_text() == "Any collection type"
+        editor.collection_type_custom_input.assert_absent()
+
+    @selenium_test
+    def test_collection_input_bare_collection_types(self):
+        # "paired" and "list" also match "list:paired" - each must still save as itself
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+
+        for collection_type in ["paired", "list"]:
+            self.workflow_editor_set_collection_type(collection_type)
+            # the step rebuild is async with no UI marker - let it land before saving
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.assert_workflow_has_changes_and_save()
+            assert self._current_collection_type() == collection_type
+
+    @selenium_test
+    def test_collection_input_collection_type_help_modal(self):
+        editor = self.components.workflow_editor
+        input_node = editor.node._(label="input1")
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        input_node.wait_for_visible()
+
+        editor.collection_type_select_toggle.wait_for_and_click()
+        editor.collection_type_select_options.wait_for_visible()
+        self.screenshot("workflow_editor_collection_type_select_open")
+        editor.collection_type_select_toggle.wait_for_and_click()
+        editor.collection_type_select_options.wait_for_absent_or_hidden()
+
+        # new collection inputs default to list, so pick something else
+        self.workflow_editor_set_collection_type("list:list")
+        assert editor.collection_type_selected.wait_for_text() == "Nested List of Datasets (list:list)"
+        assert editor.collection_type_selected_help.wait_for_text().startswith(
+            "A list where each element is in turn a list of datasets"
+        )
+        self.screenshot("workflow_editor_collection_type_described")
+
+        editor.collection_type_help_link.wait_for_and_click()
+        editor.collection_type_help_modal.wait_for_visible()
+        current_card = editor.collection_type_card(collection_type="list:list")
+        other_card = editor.collection_type_card(collection_type="list:paired")
+        current_card.wait_for_visible()
+        assert current_card.has_class("border-primary")
+        assert not editor.collection_type_card(collection_type="list").has_class("border-primary")
+        assert not other_card.has_class("border-primary")
+        self.screenshot("workflow_editor_collection_type_help_modal")
+        self.scroll_into_view(editor.collection_type_card(collection_type="sample_sheet:record").wait_for_present())
+        self.screenshot("workflow_editor_collection_type_help_modal_sample_sheets")
+
+        other_card.wait_for_and_click()
+        editor.collection_type_help_modal.wait_for_absent()
+        self.workflow_editor_wait_for_collection_type_selected("list:paired")
+        assert editor.collection_type_selected.wait_for_text() == "List of Paired Datasets (list:paired)"
+        self.screenshot("workflow_editor_collection_type_chosen_from_help")
+        # the step rebuild is async with no UI marker - let it land before saving
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        assert self._current_collection_type() == "list:paired"
 
     @selenium_test
     def test_data_column_input_editing(self):
@@ -790,6 +908,28 @@ steps:
         assert_linting_input_metadata_okay()
 
     @selenium_test
+    def test_best_practices_dangling_conditional_gate(self):
+        editor = self.components.workflow_editor
+        self.open_in_workflow_editor(WORKFLOW_WHEN_NOT_CONNECTED)
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item_text = best_practices.item_conditional_gate(index=0).wait_for_present().text
+        assert "cat1" in item_text
+        assert "when" in item_text
+
+        self.workflow_editor_connect("should_run#output", "cat1#when")
+        self.assert_connected("should_run#output", "cat1#when")
+
+        @retry_assertion_during_transitions
+        def assert_linting_conditional_gates_okay():
+            section_element = best_practices.section_conditional_gates.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_conditional_gates_okay()
+
+    @selenium_test
     def test_rendering_rules_workflow_1(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_1)
         rule_output = "apply#output"
@@ -1164,6 +1304,10 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self._download_current_workflow()
         assert len(workflow["steps"]) == 3
+
+    def _current_collection_type(self):
+        workflow = self._download_current_workflow()
+        return json.loads(workflow["steps"]["0"]["tool_state"])["collection_type"]
 
     def _download_current_workflow(self):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
@@ -1577,11 +1721,10 @@ steps:
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
-        # Assert save button is disabled because of disconnected when
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        # TODO: hook up best practice panel, disable save when "when" not connected
-        # assert save_button.has_class("g-disabled")
+        # Best practices flag the gate that reads nothing
+        editor.tool_bar.best_practices.wait_for_and_click()
+        section_element = editor.best_practices.section_conditional_gates.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
 
     @selenium_test
     def test_conditional_subworkflow_step(self):

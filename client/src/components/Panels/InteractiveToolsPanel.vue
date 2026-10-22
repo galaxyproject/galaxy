@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop, faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSpinner } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -14,6 +13,7 @@ import { useToolStore } from "@/stores/toolStore";
 import { filterLatestToolVersions } from "@/utils/tool-version";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -113,8 +113,7 @@ function openInteractiveTool(toolId: string) {
 
         <div>
             <div v-if="loading" class="p-3 text-center">
-                <BSpinner label="Loading interactive tools..."></BSpinner>
-                <p class="mt-2">Loading interactive tools...</p>
+                <LoadingSpan message="Loading interactive tools" />
             </div>
             <div v-else-if="filteredTools.length === 0" class="p-3 text-center">
                 <p>No matching interactive tools found</p>

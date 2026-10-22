@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BFormCheckbox, BFormCheckboxGroup, BFormGroup, BFormTextarea } from "bootstrap-vue";
+import { BFormGroup, BFormTextarea } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -10,6 +10,8 @@ import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GCheckboxGroup from "@/components/BaseComponents/GCheckboxGroup.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
@@ -290,15 +292,19 @@ watch(
                 All files within the given folders and their sub-folders will be imported into the current folder.
             </GAlert>
 
-            <BFormCheckboxGroup v-model="preserveOptions" switches class="directory-dataset-picker-options">
-                <BFormCheckbox value="link_files">Link files instead of copying </BFormCheckbox>
-                <BFormCheckbox value="to_posix_lines">Convert line endings to POSIX</BFormCheckbox>
-                <BFormCheckbox value="space_to_tab">Convert spaces to tabs</BFormCheckbox>
-                <BFormCheckbox value="tags_from_filenames">Tag datasets based on file names</BFormCheckbox>
-                <BFormCheckbox v-if="!filesMode || pathMode" value="preserve_directory_structure">
+            <GCheckboxGroup
+                v-model="preserveOptions"
+                switches
+                aria-label="Import options"
+                class="directory-dataset-picker-options">
+                <GCheckbox value="link_files">Link files instead of copying</GCheckbox>
+                <GCheckbox value="to_posix_lines">Convert line endings to POSIX</GCheckbox>
+                <GCheckbox value="space_to_tab">Convert spaces to tabs</GCheckbox>
+                <GCheckbox value="tags_from_filenames">Tag datasets based on file names</GCheckbox>
+                <GCheckbox v-if="!filesMode || pathMode" value="preserve_directory_structure">
                     Preserve directory structure
-                </BFormCheckbox>
-            </BFormCheckboxGroup>
+                </GCheckbox>
+            </GCheckboxGroup>
 
             <hr />
 
@@ -352,9 +358,10 @@ watch(
     display: grid;
     grid-template-rows: max-content 1fr;
 
-    .directory-dataset-picker-options {
+    .directory-dataset-picker-options :deep(.g-checkbox-group-options) {
         display: grid;
         grid-template-columns: 1fr 1fr;
+        row-gap: 0;
     }
 
     .directory-dataset-picker-list {

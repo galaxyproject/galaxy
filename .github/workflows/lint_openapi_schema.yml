@@ -5,6 +5,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/lint_openapi_schema.yml'
@@ -21,6 +22,7 @@ on:
       - '**'
       - '!client/**'
       - '!doc/**'
+      - '!lib/galaxy_test/selenium/**'
       - '!packages/test_selenium/**'
       - '!.github/workflows/**'
       - '.github/workflows/lint_openapi_schema.yml'
@@ -32,6 +34,8 @@ on:
       - 'client/pnpm-lock.yaml'
       - 'client/pnpm-workspace.yaml'
       - 'client/packages/api-client/src/schema/schema.ts'
+env:
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -57,7 +61,7 @@ jobs:
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: ${{ steps.node-version.outputs.version }}
       - name: Setup pnpm

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { useRouter } from "vue-router";
 
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
@@ -9,6 +8,7 @@ import { useUploadState } from "./uploadState";
 
 import UploadMethodList from "./UploadMethodList.vue";
 import UploadProgressIndicator from "./UploadProgressIndicator.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const { hasUploads } = useUploadState();
@@ -30,16 +30,16 @@ function showProgressDetails() {
             </h2>
         </template>
         <template v-slot:header-buttons>
-            <BFormCheckbox
+            <GCheckbox
                 v-model="advancedMode"
                 v-g-tooltip.hover
                 data-test-id="upload-advanced-mode-toggle"
-                size="sm"
+                size="small"
                 switch
                 class="mx-2"
                 title="Show advanced upload options">
                 <span class="small">Advanced</span>
-            </BFormCheckbox>
+            </GCheckbox>
         </template>
 
         <template v-slot:header>

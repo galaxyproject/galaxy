@@ -66,6 +66,11 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    /** Id of the element that names a checkbox or radio group, which a ``<label for>`` cannot reach */
+    ariaLabelledby: {
+        type: String,
+        default: undefined,
+    },
 });
 
 const currentValue = computed({
@@ -156,8 +161,16 @@ defineExpose({
 
 <template>
     <div :id="`${id}-container`" class="form-selection">
-        <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
-        <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
+        <FormCheck
+            v-if="display === 'checkboxes'"
+            v-model="currentValue"
+            :aria-labelledby="ariaLabelledby"
+            :options="currentOptions" />
+        <FormRadio
+            v-else-if="display === 'radio'"
+            v-model="currentValue"
+            :aria-labelledby="ariaLabelledby"
+            :options="currentOptions" />
         <FormSelectMany
             v-else-if="displayMany"
             :id="id"

@@ -25,6 +25,7 @@ import FormNumber from "./Elements/FormNumber.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
+import FormSelectOrText from "./Elements/FormSelectOrText.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
@@ -172,6 +173,7 @@ function onConnect() {
 
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
+const titleId = computed(() => `${elementId.value}-title`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
@@ -330,11 +332,11 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     </GButton>
 
                     <span v-if="props.title" class="ui-form-title-text ml-1">
-                        <label :for="props.id">{{ props.title }}</label>
+                        <label :id="titleId" :for="props.id">{{ props.title }}</label>
                     </span>
                 </span>
                 <span v-else-if="props.title" class="ui-form-title-text">
-                    <label :for="props.id">{{ props.title }}</label>
+                    <label :id="titleId" :for="props.id">{{ props.title }}</label>
                 </span>
 
                 <span
@@ -432,6 +434,16 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     :cls="attrs.cls"
                     :datalist="attrs.datalist"
                     :type="props.type" />
+                <FormSelectOrText
+                    v-else-if="props.type === 'select_or_text'"
+                    :id="props.id"
+                    v-model="currentValue"
+                    :options="attrs.data"
+                    :other-label="attrs.other_label"
+                    :other-help="attrs.other_help"
+                    :other-placeholder="attrs.other_placeholder"
+                    :validate="attrs.validate"
+                    @alert="onAlert" />
                 <FormSelection
                     v-else-if="
                         (props.type === undefined && attrs.options) ||
@@ -439,6 +451,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                     "
                     :id="props.id"
                     v-model="currentValue"
+                    :aria-labelledby="props.title ? titleId : undefined"
                     :data="attrs.data"
                     :display="attrs.display"
                     :options="attrs.options"

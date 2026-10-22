@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import type { JobDisplayParametersSummary, ShowFullJobResponse } from "@/api/jobs";
+import type { JobBaseModel, JobDisplayParametersSummary, ShowFullJobResponse } from "@/api/jobs";
 import paramResponse from "@/components/JobParameters/parameters-response.json";
 
 import { TEST_JOBS_BY_STATES } from "./test/jobStepUtils";
@@ -118,5 +118,30 @@ describe("JobStepJobs", () => {
         expect(wrapper.find(SELECTORS.JOB_INFORMATION_TABLE).exists()).toBe(true);
 
         expect(wrapper.find("#galaxy-tool-id").text()).toBe(TEST_JOBS_BY_STATES["ok"]?.[0]?.tool_id);
+    });
+});
+
+describe("JobStepJobs state updates", () => {
+    it("uses the parent jobs without fetching each visible row", async () => {
+        let jobRequests = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                jobRequests++;
+                return response(200).json(TEST_JOBS_JSON[0] as ShowFullJobResponse);
+            }),
+        );
+        const job = { ...TEST_JOBS_JSON[0]!, state: "new" } as JobBaseModel;
+        const wrapper = mount(JobStepJobs, {
+            props: { jobs: [job], invocationId: "test-invocation-id", currentPage: 1, sortDesc: true, perPage: 10 },
+            global: localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
+        });
+        await flushPromises();
+        expect(wrapper.find(".job-state-badge").text()).toContain("new");
+        await wrapper.setProps({ jobs: [{ ...job, state: "running" }] });
+        await flushPromises();
+        expect(wrapper.find(".job-state-badge").text()).toContain("running");
+        expect(jobRequests).toBe(0);
+        wrapper.unmount();
     });
 });

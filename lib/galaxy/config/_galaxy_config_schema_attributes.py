@@ -100,6 +100,7 @@ class GalaxyAppConfigurationAttributes:
     visualization_plugins_directory: str
     tour_config_dir: str
     enable_tool_generated_tours: bool
+    admin_extensions_dir: str
     webhooks_dir: str
     job_working_directory: str
     template_cache_path: str
@@ -318,6 +319,7 @@ class GalaxyAppConfigurationAttributes:
     require_login: bool
     show_welcome_with_login: bool
     prefer_oidc_login: bool
+    allowed_login_redirect_hosts: list[str]
     allow_local_account_creation: bool
     disable_local_accounts: bool
     allow_user_deletion: bool

@@ -12,7 +12,6 @@ from typing import (
 
 from sqlalchemy import select
 
-from galaxy.agents import iwc
 from galaxy.agents.base import (
     JOB_LOG_EXCERPT_CHARS,
     truncate_middle,
@@ -48,6 +47,7 @@ from galaxy.tool_util.toolbox.base import (
 )
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.work.context import SessionRequestContext
+from galaxy.workflow import iwc
 
 log = logging.getLogger(__name__)
 

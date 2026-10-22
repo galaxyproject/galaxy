@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { dedupeInFlight, memoizeUntilRejected } from "./sharedPromise";
+import { dedupeInFlight, memoizeUntilRejected, rerunWhileBusy } from "./sharedPromise";
 
 /** A promise whose settlement the test controls. */
 function deferred<T>() {
@@ -99,5 +99,91 @@ describe("dedupeInFlight", () => {
         await expect(fetch("a")).rejects.toThrow("boom");
         await expect(fetch("a")).rejects.toThrow("boom");
         expect(request).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe("rerunWhileBusy", () => {
+    it("runs once when called while idle", async () => {
+        const task = vi.fn(async () => {});
+        const run = rerunWhileBusy(task);
+        await run();
+        expect(task).toHaveBeenCalledTimes(1);
+    });
+
+    it("runs once more after the current run for any calls made while it runs, and all callers wait for it", async () => {
+        const first = deferred<void>();
+        const second = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+        const run = rerunWhileBusy(task);
+        let settled = 0;
+        const calls = [run(), run(), run()].map((call) => call.then(() => settled++));
+        expect(task).toHaveBeenCalledTimes(1);
+
+        first.resolve();
+        await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(2));
+        expect(settled).toBe(0);
+
+        second.resolve();
+        await Promise.all(calls);
+        expect(settled).toBe(3);
+        expect(task).toHaveBeenCalledTimes(2);
+    });
+
+    it("still runs for a call made during a failing run, and callers get the last run's result", async () => {
+        const first = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        const waiting = [run(), run()];
+
+        first.reject(new Error("boom"));
+        await Promise.all(waiting);
+        expect(task).toHaveBeenCalledTimes(2);
+    });
+
+    it("rejects every waiting caller with the last run's error, then runs again on the next call", async () => {
+        const first = deferred<void>();
+        const second = deferred<void>();
+        const task = vi
+            .fn()
+            .mockReturnValueOnce(first.promise)
+            .mockReturnValueOnce(second.promise)
+            .mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        const waiting = [run(), run()];
+
+        first.reject(new Error("first"));
+        await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(2));
+        second.reject(new Error("second"));
+        await Promise.all(waiting.map((call) => expect(call).rejects.toThrow("second")));
+
+        await run();
+        expect(task).toHaveBeenCalledTimes(3);
+    });
+
+    it("turns a synchronous throw into a rejection, then runs again on the next call", async () => {
+        const task = vi
+            .fn()
+            .mockImplementationOnce(() => {
+                throw new Error("boom");
+            })
+            .mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        await expect(run()).rejects.toThrow("boom");
+
+        await run();
+        expect(task).toHaveBeenCalledTimes(2);
+    });
+
+    it("runs again for a call made just as the current run finishes", async () => {
+        const first = deferred<void>();
+        const task = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined);
+        const run = rerunWhileBusy(task);
+        const firstRun = run();
+        let lateRun: Promise<void> | undefined;
+        first.promise.then(() => (lateRun = run()));
+        first.resolve();
+        await firstRun;
+        await lateRun;
+        expect(task).toHaveBeenCalledTimes(2);
     });
 });

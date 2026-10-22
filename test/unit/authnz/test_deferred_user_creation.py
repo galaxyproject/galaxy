@@ -19,6 +19,7 @@ from webob import Request
 
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
+from galaxy.authnz import psa_authnz
 from galaxy.authnz.flow_state import (
     FlowState,
     InvalidFlow,
@@ -33,13 +34,20 @@ from galaxy.authnz.psa_authnz import (
 from galaxy.authnz.tapis import TapisOAuth2
 
 
+def url_builder(path, **query):
+    # Galaxy served below galaxy_url_prefix=/galaxy
+    return f"/galaxy{path}?{urlencode(query)}" if query else f"/galaxy{path}"
+
+
 @pytest.fixture
 def trans(monkeypatch):
     trans = MockTrans()
+    trans.url_builder = url_builder
     monkeypatch.setattr(trans.app.config, "enable_oidc", True, raising=False)
     monkeypatch.setattr(trans.app.config, "user_activation_on", False, raising=False)
     monkeypatch.setattr(trans.app.config, "oidc_auth_pipeline", None, raising=False)
     monkeypatch.setattr(trans.app.config, "oidc_auth_pipeline_extra", None, raising=False)
+    monkeypatch.setattr(trans.app.config, "enable_account_interface", True, raising=False)
     trans.app.config.fixed_delegated_auth = False
     trans.galaxy_session = model.GalaxySession(is_valid=True)
     trans.sa_session.add(trans.galaxy_session)
@@ -216,12 +224,27 @@ def start(trans, provider):
     return query
 
 
-def callback(trans, query):
+def callback(trans, query, login_redirect_url="/galaxy/"):
     trans.request = Request.blank(
         "https://galaxy.example/authnz/keycloak/callback?"
         + urlencode({"state": query["state"][0], "code": "local-code"})
     )
-    return adapter(trans).callback(query["state"][0], "local-code", trans, "/")
+    return adapter(trans).callback(query["state"][0], "local-code", trans, login_redirect_url)
+
+
+def test_confirmation_url_is_built_from_app_root(trans, provider):
+    redirect, user = callback(trans, start(trans, provider), "/galaxy/workflows/list")
+    assert user is None
+    url = urlsplit(redirect)
+    assert url.path == "/galaxy/login/start"
+    assert parse_qs(url.query)["confirm"] == ["true"]
+
+
+def test_new_identity_goes_to_destination(trans, provider):
+    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
+    redirect, user = callback(trans, start(trans, provider), "/galaxy/workflows/list")
+    assert user.email == "verified@example.com"
+    assert redirect == "/galaxy/workflows/list"
 
 
 @pytest.mark.parametrize("use_unique_user_id", [False, True])
@@ -375,3 +398,77 @@ def test_association_failure_cannot_reuse_confirmation(trans):
     assert counts(trans) == (1, 1, 0)
     with pytest.raises(InvalidFlow):
         adapter(trans).create_user(identifier, trans, "/")
+
+
+def without_username_claim(trans, provider, email):
+    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = False
+    trans.app.config.enable_account_interface = True
+    for source in (provider.claims, provider.userinfo):
+        source.update({"email": email, "preferred_username": None})
+
+
+def oidc_user(trans, email):
+    return trans.sa_session.query(model.User).filter_by(email=email).one()
+
+
+def test_new_user_without_username_claim_uses_email_local_part(trans, provider):
+    without_username_claim(trans, provider, "Jane.Doe+lab@example.com")
+    callback(trans, start(trans, provider))
+    assert oidc_user(trans, "jane.doe+lab@example.com").username == "janedoelab"
+
+
+def test_email_local_part_username_collision_gets_suffix(trans, provider):
+    trans.app.user_manager.create(email="other@example.com", username="janedoe")
+    without_username_claim(trans, provider, "jane.doe@example.com")
+    callback(trans, start(trans, provider))
+    username = oidc_user(trans, "jane.doe@example.com").username
+    assert username.startswith("janedoe")
+    assert username != "janedoe"
+
+
+def test_username_claim_takes_precedence_over_email(trans, provider):
+    without_username_claim(trans, provider, "jane.doe@example.com")
+    provider.userinfo["preferred_username"] = "jdoe"
+    callback(trans, start(trans, provider))
+    assert oidc_user(trans, "jane.doe@example.com").username == "jdoe"
+
+
+def test_unusable_email_local_part_keeps_random_username(trans, provider):
+    without_username_claim(trans, provider, "äö@example.com")
+    callback(trans, start(trans, provider))
+    username = oidc_user(trans, "äö@example.com").username
+    assert len(username) == 32
+    int(username, 16)
+
+
+def test_confirmation_without_username_claim_uses_email_local_part(trans, provider):
+    without_username_claim(trans, provider, "jane.doe@example.com")
+    trans.app.authnz_manager.oidc_backends_config["keycloak"]["require_create_confirmation"] = True
+    redirect, user = callback(trans, start(trans, provider))
+    assert user is None
+    identifier = parse_qs(urlsplit(redirect).query)["confirmation_id"][0]
+    _, user = adapter(trans).create_user(identifier, trans, "/")
+    assert user.username == "janedoe"
+
+
+def test_existing_user_found_by_email_keeps_username_details(trans, provider, monkeypatch):
+    # Later pipeline steps (e.g. profile sync) must not see the email-derived
+    # username as an IdP claim and apply it to the existing account.
+    trans.app.user_manager.create(email="jane.doe@example.com", username="custom-name")
+    without_username_claim(trans, provider, "jane.doe@example.com")
+    trans.app.config.fixed_delegated_auth = True
+    trans.app.config.enable_account_interface = False
+    monkeypatch.setattr(trans.app, "notification_manager", Mock(notifications_enabled=False), raising=False)
+    seen_details = []
+    decode_access_token = psa_authnz.decode_access_token
+
+    def record_details(**kwargs):
+        seen_details.append(kwargs["details"])
+        return decode_access_token(**kwargs)
+
+    monkeypatch.setattr(psa_authnz, "decode_access_token", record_details)
+    callback(trans, start(trans, provider))
+    user = oidc_user(trans, "jane.doe@example.com")
+    assert user.username == "custom-name"
+    assert trans.sa_session.query(model.UserAuthnzToken).one().user_id == user.id
+    assert [details["username"] for details in seen_details] == [None]

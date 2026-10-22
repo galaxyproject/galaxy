@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";
 import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 
 const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     message: `
@@ -50,9 +50,9 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 <template>
     <div>
         <div class="category-header">
-            <BFormCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
+            <GCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
                 <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
-            </BFormCheckbox>
+            </GCheckbox>
         </div>
 
         <div v-if="categoryDescription" v-localize class="category-description">

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
 interface Props {
@@ -42,32 +43,35 @@ const datasetsMappingDetails = computed(() =>
 
 <template>
     <BFormGroup label="Dataset files included in the export:">
-        <BFormCheckbox
-            :checked="props.includeFiles"
-            :disabled="props.disabled"
-            switch
-            data-test-id="include-files-checkbox"
-            @change="emit('update:include-files', $event)">
-            Include Active Files
-        </BFormCheckbox>
+        <!-- GCheckbox renders inline, so stack the switches here -->
+        <div class="d-flex flex-column align-items-start">
+            <GCheckbox
+                :model-value="props.includeFiles"
+                :disabled="props.disabled"
+                switch
+                data-test-id="include-files-checkbox"
+                @update:model-value="emit('update:include-files', $event)">
+                Include Active Files
+            </GCheckbox>
 
-        <BFormCheckbox
-            :checked="props.includeDeleted"
-            :disabled="props.disabled"
-            switch
-            data-test-id="include-deleted-checkbox"
-            @change="emit('update:include-deleted', $event)">
-            Include Deleted (not purged)
-        </BFormCheckbox>
+            <GCheckbox
+                :model-value="props.includeDeleted"
+                :disabled="props.disabled"
+                switch
+                data-test-id="include-deleted-checkbox"
+                @update:model-value="emit('update:include-deleted', $event)">
+                Include Deleted (not purged)
+            </GCheckbox>
 
-        <BFormCheckbox
-            :checked="props.includeHidden"
-            :disabled="props.disabled"
-            switch
-            data-test-id="include-hidden-checkbox"
-            @change="emit('update:include-hidden', $event)">
-            Include Hidden
-        </BFormCheckbox>
+            <GCheckbox
+                :model-value="props.includeHidden"
+                :disabled="props.disabled"
+                switch
+                data-test-id="include-hidden-checkbox"
+                @update:model-value="emit('update:include-hidden', $event)">
+                Include Hidden
+            </GCheckbox>
+        </div>
 
         <template v-slot:description>
             <span

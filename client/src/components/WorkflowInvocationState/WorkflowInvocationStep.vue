@@ -318,6 +318,7 @@ onUnmounted(() => {
 
                                     <GTab
                                         :class="{ 'invocation-view-step-config': props.inGraphView }"
+                                        title-item-class="invocation-step-config-tab"
                                         lazy
                                         @click="fetchStepConfig">
                                         <template v-slot:title>

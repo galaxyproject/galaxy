@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BSpinner } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export interface Props {
     entryId: string;
@@ -49,7 +50,7 @@ onMounted(async () => {
 <template>
     <div class="interactive-tool-frame">
         <div v-if="loading" class="d-flex justify-content-center align-items-center h-100">
-            <BSpinner label="Loading interactive tool..."></BSpinner>
+            <LoadingSpan message="Loading interactive tool" />
         </div>
         <div v-else-if="error" class="alert alert-danger m-3">
             {{ error }}

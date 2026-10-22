@@ -6,13 +6,12 @@ import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useConfig } from "@/composables/config";
 import { useToolRouting } from "@/composables/route";
+import { useCanRequestToolInstallation } from "@/composables/toolInstallationRequest";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
 import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import { MY_PANEL_VIEW_ID, PANEL_LABEL_IDS } from "./panelViews";
@@ -40,20 +39,12 @@ import MyToolsLanding from "./MyToolsLanding.vue";
 /** Section IDs that are only valid for the workflow editor toolbox, and should be excluded from the regular toolbox. */
 const WORKFLOW_ONLY_SECTION_IDS = ["expression_tools"];
 
-const { config, isConfigLoaded } = useConfig();
-const { isAnonymous } = storeToRefs(useUserStore());
+const canRequestToolInstallation = useCanRequestToolInstallation();
 const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
 
 const showToolInstallationRequestForm = ref(false);
-const showRequestToolButton = computed(
-    () =>
-        !props.workflow &&
-        isConfigLoaded.value &&
-        config.value?.enable_notification_system &&
-        config.value?.enable_tool_installation_request_form &&
-        !isAnonymous.value,
-);
+const showRequestToolButton = computed(() => !props.workflow && canRequestToolInstallation.value);
 
 const emit = defineEmits<{
     (e: "update:show-favorites", value: boolean): void;

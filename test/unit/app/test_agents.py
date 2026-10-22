@@ -1849,7 +1849,7 @@ class TestAgentUnitMocked:
                 ]
             }
         ]
-        from galaxy.agents import iwc
+        from galaxy.workflow import iwc
 
         iwc.clear_manifest_cache()
         try:

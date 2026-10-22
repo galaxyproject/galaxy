@@ -5,13 +5,13 @@ on:
       - 'client/src/components/Form/**'
       - 'client/src/components/Tool/**'
       - 'client/src/utils/navigation/navigation.yml'
-      - 'packages/navigation/src/galaxy/navigation/navigation.yml'
-      - 'packages/selenium/src/galaxy/selenium/navigates_galaxy.py'
-      - 'packages/test_selenium/src/galaxy_test/selenium/framework.py'
-      - 'packages/test_selenium/src/galaxy_test/selenium/test_tool_form_harness.py'
+      - 'lib/galaxy/navigation/navigation.yml'
+      - 'lib/galaxy/selenium/navigates_galaxy.py'
+      - 'lib/galaxy_test/selenium/framework.py'
+      - 'lib/galaxy_test/selenium/test_tool_form_harness.py'
       - 'test/functional/tools/**'
       - '.github/workflows/tool_form_harness.yaml'
-      - '.github/workflows/build_client.yaml'
+      - '.github/workflows/_build_client.yaml'
       - 'client/.node_version'
       - 'client/.npmrc'
       - 'client/package.json'
@@ -22,13 +22,13 @@ on:
       - 'client/src/components/Form/**'
       - 'client/src/components/Tool/**'
       - 'client/src/utils/navigation/navigation.yml'
-      - 'packages/navigation/src/galaxy/navigation/navigation.yml'
-      - 'packages/selenium/src/galaxy/selenium/navigates_galaxy.py'
-      - 'packages/test_selenium/src/galaxy_test/selenium/framework.py'
-      - 'packages/test_selenium/src/galaxy_test/selenium/test_tool_form_harness.py'
+      - 'lib/galaxy/navigation/navigation.yml'
+      - 'lib/galaxy/selenium/navigates_galaxy.py'
+      - 'lib/galaxy_test/selenium/framework.py'
+      - 'lib/galaxy_test/selenium/test_tool_form_harness.py'
       - 'test/functional/tools/**'
       - '.github/workflows/tool_form_harness.yaml'
-      - '.github/workflows/build_client.yaml'
+      - '.github/workflows/_build_client.yaml'
       - 'client/.node_version'
       - 'client/.npmrc'
       - 'client/package.json'
@@ -49,6 +49,7 @@ env:
   GALAXY_TEST_SELENIUM_HEADLESS: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  UV_HTTP_RETRIES: '6'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -60,7 +61,7 @@ jobs:
       || github.repository_owner != 'galaxyproject'
       || github.ref_name == 'dev'
       || startsWith(github.ref_name, 'release_')
-    uses: ./.github/workflows/build_client.yaml
+    uses: $/.github/workflows/_build_client.yaml
   test:
     if: >-
       github.event_name != 'push'
@@ -114,9 +115,13 @@ jobs:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
       - name: Run tests
-        run: ./run_tests.sh --coverage -playwright lib/galaxy_test/selenium/test_tool_form_harness.py
+        run: ./run_tests.sh -playwright lib/galaxy_test/selenium/test_tool_form_harness.py -- -n 3
+        env:
+          # Coverage slows the tests down; collect it for pushes and scheduled runs only.
+          GALAXY_TEST_COVERAGE: ${{ github.event_name != 'pull_request' && '1' || '' }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v7.1.1
+        if: github.event_name != 'pull_request'
         with:
           flags: tool-form-harness
           working-directory: 'galaxy root'

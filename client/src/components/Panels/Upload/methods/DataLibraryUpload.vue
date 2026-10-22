@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faDatabase, faFile, faFolder, faLock, faPlus, faShieldAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type {
@@ -32,6 +32,7 @@ import type { LibraryDatasetItem } from "../types/uploadItem";
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 import GTable from "@/components/Common/GTable.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
@@ -794,20 +795,22 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     @sort-changed="onSortChanged"
                     @row-click="onBrowserRowClick">
                     <template v-slot:head(select)>
-                        <BFormCheckbox
+                        <GCheckbox
                             v-if="props.multiple !== false && datasetsOnCurrentPage.length > 0"
+                            aria-label="Select all datasets on this page"
                             data-test-id="data-library-select-all"
-                            :checked="allDatasetsSelected"
                             :indeterminate="someDatasetsSelected"
+                            :model-value="allDatasetsSelected"
                             @change="toggleSelectAll" />
                     </template>
 
                     <template v-slot:cell(select)="{ item }">
-                        <BFormCheckbox
+                        <GCheckbox
                             v-if="item.isLeaf"
                             data-test-id="data-library-browser-item-checkbox"
+                            :aria-label="`Select ${item.label}`"
                             :data-label="item.label"
-                            :checked="isSelected(item)"
+                            :model-value="isSelected(item)"
                             @change="toggleFileSelection(item)"
                             @click.stop />
                     </template>

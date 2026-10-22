@@ -16,6 +16,10 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
 from galaxy import util
+from galaxy.agents.factory import build_registry as build_agent_registry
+from galaxy.agents.registry import AgentRegistry
+from galaxy.managers.agents import AgentService
+from galaxy.managers.jobs import JobManager as JobQueryManager
 from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -69,6 +73,12 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         except Exception:
             traceback.print_exc()
             sys.exit(1)
+
+    # The agent registry imports every agent class and with them pydantic-ai, so it
+    # is only built for the web app, which serves the agent API.
+    agent_registry = build_agent_registry(app.config)
+    app[AgentRegistry] = agent_registry
+    app[AgentService] = AgentService(app.config, JobQueryManager(app, app.history_manager), agent_registry)
 
     if kwargs.get("register_shutdown_at_exit", True):
         # Call app's shutdown method when the interpeter exits, this cleanly stops
