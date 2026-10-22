@@ -2,11 +2,15 @@ import logging
 import threading
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import (
     datetime,
     timezone,
 )
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
 from unittest.mock import MagicMock
 
 import pytest
@@ -25,12 +29,14 @@ from galaxy.tool_util.toolbox.panel import (
 from galaxy.tools.cached_toolbox import (
     CachedTool,
     CachedToolBox,
+    edited_tool_files,
     MaterializationReason,
     ToolMaterializationError,
 )
 from galaxy.tools.source_store import (
     populator,
     StoredToolSource,
+    ToolSourceStore,
 )
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.factory import _build_default_store
@@ -1263,29 +1269,57 @@ def test_invalidate_index_cache_drops_versions_a_reindex_removed():
     assert box.get_tool("probe", tool_version="1.1", exact=True).version == "1.2"
 
 
-def test_reindex_edited_tool_files_reindexes_only_changed_files(tmp_path, monkeypatch):
-    edited = tmp_path / "edited.xml"
-    untouched = tmp_path / "untouched.xml"
-    edited.write_text("<tool id='edited' version='1.1'/>")
-    untouched.write_text("<tool id='untouched' version='1.0'/>")
-    box = _seam_box()
-    box._store.read_only = False
-    unmodified = tmp_path / "unmodified.xml"
-    unmodified.write_text("<tool id='unmodified' version='1.0'/>")
-    index = ToolIndex()
-    for tool_id, path in (("edited", edited), ("untouched", untouched)):
-        index.add_entry(_entry(id=tool_id, source_path=str(path), file_hash=md5_hash_file(str(path))))
+@dataclass
+class _IndexStore:
+    read_only: bool
+    index: ToolIndex | None
+
+    def load_index(self) -> ToolIndex | None:
+        return self.index
+
+
+def _indexed(tmp_path, name, tool_id, **overrides):
+    path = tmp_path / name
+    path.write_text(f"<tool id='{tool_id}' version='1.0'/>")
+    return path, _entry(id=tool_id, source_path=str(path), file_hash=md5_hash_file(str(path)), **overrides)
+
+
+def test_edited_tool_files_selects_only_changed_files(tmp_path):
+    shed_guid = "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/1.0"
+    edited, edited_entry = _indexed(tmp_path, "edited.xml", "edited")
+    shed, shed_entry = _indexed(tmp_path, "shed.xml", shed_guid)
+    _, untouched_entry = _indexed(tmp_path, "untouched.xml", "untouched")
+    unmodified, _ = _indexed(tmp_path, "unmodified.xml", "unmodified")
     # Not modified since indexing: skipped without hashing, as the eager ToolCache does.
     indexed_at = datetime.fromtimestamp(unmodified.stat().st_mtime + 60, tz=timezone.utc)
-    index.add_entry(_entry(id="unmodified", source_path=str(unmodified), file_hash="stale", indexed_at=indexed_at))
-    box._store.load_index.return_value = index
-    edited.write_text("<tool id='edited' version='1.2'/>")
+    unmodified_entry = _entry(id="unmodified", source_path=str(unmodified), file_hash="stale", indexed_at=indexed_at)
+    writable = ToolIndex()
+    for entry in (edited_entry, shed_entry, untouched_entry, unmodified_entry):
+        writable.add_entry(entry)
+    published, published_entry = _indexed(tmp_path, "published.xml", "published")
+    read_only = ToolIndex()
+    read_only.add_entry(published_entry)
+    for path in (edited, shed, published):
+        path.write_text(path.read_text().replace("1.0", "1.1"))
+
+    stores = cast(
+        list[ToolSourceStore],
+        [_IndexStore(read_only=True, index=read_only), _IndexStore(read_only=False, index=writable)],
+    )
+    assert edited_tool_files(stores) == {str(edited): None, str(shed): shed_guid}
+
+
+def test_reindex_edited_tool_files_reindexes_selected_files(monkeypatch):
+    box = _seam_box()
+    box._store.load_index.return_value = ToolIndex()
+    monkeypatch.setattr(mod, "edited_tool_files", lambda stores: {"/t/edited.xml": None})
     calls: list[dict[str, str | None]] = []
     monkeypatch.setattr(box, "index_tool_files", calls.append)
 
     box._reindex_edited_tool_files()
 
-    assert calls == [{str(edited): None}]
+    assert calls == [{"/t/edited.xml": None}]
+    box._store.invalidate_index_cache.assert_called_once()
 
 
 @pytest.mark.parametrize(

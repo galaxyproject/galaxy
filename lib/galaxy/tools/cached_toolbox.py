@@ -523,6 +523,38 @@ class CachedTool:
         return real
 
 
+def edited_tool_files(stores: Iterable[ToolSourceStore]) -> dict[str, str | None]:
+    """Tool files of writable ``stores`` edited since indexed, mapped to their shed guid (or ``None``).
+
+    Like the eager ToolCache, only files modified since indexing are hashed,
+    against the hash recorded on their entry. Changes made only in an
+    imported macro file leave the tool file's hash unchanged and are missed.
+    """
+    changed: dict[str, str | None] = {}
+    checked: set[str] = set()
+    for store in stores:
+        if store.read_only:
+            continue
+        index = store.load_index()
+        if index is None:
+            continue
+        for entry in index.iter_entries():
+            path = entry.source_path
+            if not path or not entry.file_hash or path in checked:
+                continue
+            checked.add(path)
+            try:
+                mtime = os.stat(path).st_mtime
+            except OSError:
+                continue
+            if entry.indexed_at is not None and mtime <= entry.indexed_at.timestamp():
+                continue
+            file_hash = md5_hash_file(path)
+            if file_hash is not None and file_hash != entry.file_hash:
+                changed[path] = entry.id if is_shed_guid(entry.id) else None
+    return changed
+
+
 class CachedToolBox(ToolBox):
     """
     ToolBox that loads tools on-demand from the tool source store.
@@ -639,36 +671,10 @@ class CachedToolBox(ToolBox):
 
         The freshness token covers conf contents, not tool files, so a
         toolbox reload after editing a local tool's XML would otherwise keep
-        serving the indexed definition. Comparing the md5 of each file
-        modified since it was indexed with the hash recorded on its entry
-        finds the edits without parsing anything.
-        Changes made only in an imported macro file leave the tool file's
-        hash unchanged and are not detected here.
+        serving the indexed definition.
         """
-        changed: dict[str, str | None] = {}
-        checked: set[str] = set()
         try:
-            for _name, store in self._member_stores():
-                if store.read_only:
-                    continue
-                index = store.load_index()
-                if index is None:
-                    continue
-                for entry in index.iter_entries():
-                    path = entry.source_path
-                    if not path or not entry.file_hash or path in checked:
-                        continue
-                    checked.add(path)
-                    try:
-                        mtime = os.stat(path).st_mtime
-                    except OSError:
-                        continue
-                    # Like the eager ToolCache, only hash files modified since indexing.
-                    if entry.indexed_at is not None and mtime <= entry.indexed_at.timestamp():
-                        continue
-                    file_hash = md5_hash_file(path)
-                    if file_hash is not None and file_hash != entry.file_hash:
-                        changed[path] = entry.id if is_shed_guid(entry.id) else None
+            changed = edited_tool_files(store for _name, store in self._member_stores())
             if not changed:
                 return
             log.info("CachedToolBox: re-indexing %d tool file(s) changed since they were indexed", len(changed))
