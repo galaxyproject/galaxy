@@ -33,7 +33,6 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_util.abstract_tool import parse_tool_version_for_comparison
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirements,
@@ -47,7 +46,7 @@ from galaxy.tool_util.toolbox.base import (
 )
 from galaxy.tool_util.toolbox.lineages.factory import CachedLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-from galaxy.tool_util.version import parse_version
+from galaxy.tool_util.version import parse_tool_version
 from galaxy.tools.source_store import (
     StoredToolSource,
     ToolSourceStore,
@@ -361,7 +360,7 @@ class CachedTool:
 
     @property
     def version_object(self):
-        return parse_tool_version_for_comparison(self._entry.version or "")
+        return parse_tool_version(self._entry.version or "")
 
     @property
     def tool_shed_repository(self) -> "ToolShedRepository | None":
@@ -744,7 +743,7 @@ class CachedToolBox(ToolBox):
 
     def _index_entry_newer(self, entry: ToolIndexEntry, other: ToolIndexEntry) -> bool:
         try:
-            return parse_version(entry.version or "0") > parse_version(other.version or "0")
+            return parse_tool_version(entry.version or "0") > parse_tool_version(other.version or "0")
         except Exception:
             return (entry.version or "") > (other.version or "")
 
@@ -1005,12 +1004,12 @@ class CachedToolBox(ToolBox):
             if get_all_versions:
 
                 def _ver_key(v: str):
-                    # ``galaxy.tool_util.version.parse_version`` matches what
+                    # ``galaxy.tool_util.version.parse_tool_version`` matches what
                     # the eager ToolLineage uses to order versions and
                     # tolerates non-numeric segments (e.g. ``"1.0.0+galaxy0"``)
                     # via ``LegacyVersion`` fallback.
                     try:
-                        return (0, parse_version(v))
+                        return (0, parse_tool_version(v))
                     except Exception:
                         return (1, v)
 
@@ -1049,7 +1048,7 @@ class CachedToolBox(ToolBox):
                     cached = self._cached_tool_for_entry(entry)
                     ver_key: tuple[int, Any]
                     try:
-                        ver_key = (0, parse_version(cached.version or "0"))
+                        ver_key = (0, parse_tool_version(cached.version or "0"))
                     except Exception:
                         ver_key = (1, cached.version or "")
                     candidates.append((ver_key, cached))

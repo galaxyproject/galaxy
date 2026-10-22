@@ -79,10 +79,7 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
-from galaxy.tool_util.abstract_tool import (
-    AbstractTool,
-    parse_tool_version_for_comparison,
-)
+from galaxy.tool_util.abstract_tool import AbstractTool
 from galaxy.tool_util.deps import (
     build_dependency_manager,
     CachedDependencyManager,
@@ -143,6 +140,7 @@ from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
+    parse_tool_version,
     parse_version,
 )
 from galaxy.tool_util.version_updates import WORKFLOW_SAFE_TOOL_VERSION_UPDATES
@@ -382,7 +380,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": parse_version("1.0.1"),
     "substitutions1": parse_version("1.0.1"),
     "winSplitter": parse_version("1.0.1"),
-    "Interval2Maf1": parse_version("1.0.1+galaxy0"),
+    "Interval2Maf1": parse_tool_version("1.0.1+galaxy0"),
 }
 
 
@@ -422,7 +420,7 @@ def tool_requires_galaxy_python_environment(
     fixed_version = GALAXY_LIB_TOOLS_VERSIONED.get(old_id)
     if fixed_version is None:
         return False
-    parsed_version = parse_tool_version_for_comparison(version or "")
+    parsed_version = parse_tool_version(version or "")
     return parsed_version < fixed_version
 
 
@@ -1540,7 +1538,11 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                     break
         self.home_target = home_target
         self.tmp_target = tmp_target
+        self.runtime_environment_variables = tool_source.parse_runtime_environment_variables(strict=False)
+        if self.tool_type == "user_defined" and self.runtime_environment_variables:
+            raise ValueError("User-defined tools cannot declare runtime_environment_variable")
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
+        self.docker_env_pass_through.extend(variable.name for variable in self.runtime_environment_variables)
         if self.environment_variables:
             if not self.docker_env_pass_through:
                 self.docker_env_pass_through = []

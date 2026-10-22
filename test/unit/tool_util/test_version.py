@@ -3,6 +3,7 @@ from packaging.version import Version
 
 from galaxy.tool_util.version import (
     LegacyVersion,
+    parse_tool_version,
     parse_version,
 )
 
@@ -98,3 +99,35 @@ def test_legacy_version_fields(version: str) -> None:
 )
 def test_version_cmp(lower_ver: str, greater_ver: str) -> None:
     assert parse_version(lower_ver) < parse_version(greater_ver)
+
+
+# This list must be in the correct sorting order
+TOOL_VERSIONS = [
+    "1.8.1+2+galaxy0",
+    "1.0",
+    "1.0+galaxy",
+    "1.0+galaxy0",
+    "1.0+galaxy.1",
+    "1.0+galaxy1.1",
+    "1.0+galaxy2",
+    "1.0+galaxy9",
+    "1.0+galaxy10",
+    "1.0+galaxy11",
+    "1.0.1",
+    "1.0.1+galaxy0",
+    "1.0.1+galaxy1",
+    "1.1",
+]
+
+
+@pytest.mark.parametrize(
+    "lower_ver,greater_ver",
+    [(TOOL_VERSIONS[i], TOOL_VERSIONS[i + 1]) for i in range(len(TOOL_VERSIONS) - 1)]
+    + [(VERSIONS[i], VERSIONS[i + 1]) for i in range(len(VERSIONS) - 1)],
+)
+def test_tool_version_cmp(lower_ver: str, greater_ver: str) -> None:
+    assert parse_tool_version(lower_ver) < parse_tool_version(greater_ver)
+
+
+def test_tool_version_galaxy_suffix_dot_variants_equal() -> None:
+    assert parse_tool_version("1.0+galaxy1") == parse_tool_version("1.0+galaxy.1")

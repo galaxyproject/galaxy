@@ -557,6 +557,7 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         # BaseAppConfiguration declares str; always non-null at runtime
         "object_store_store_by": "str",
         # Listified by _process_config or CommonConfigurationMixin
+        "allowed_login_redirect_hosts": "list[str]",
         "allowed_origin_hostnames": "list[str]",
         "curated_workflow_owners": "list[str]",
         "mulled_channels": "list[str]",

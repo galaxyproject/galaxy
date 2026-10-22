@@ -36,6 +36,7 @@ from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
     listify,
+    normalize_https_authority,
     size_to_bytes,
     string_as_bool,
     unicodify,
@@ -66,6 +67,9 @@ log = logging.getLogger(__name__)
 
 DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+# A host name or a bracketed IPv6 address, optionally with a numeric port. Other entries
+# can never equal the authority of a URL.
+ALLOWED_LOGIN_REDIRECT_HOST = re.compile(r"(?:\[[0-9A-Fa-f:.]+\]|[^\s/\\@*:\[\]]+)(?::[0-9]+)?")
 
 GALAXY_APP_NAME = "galaxy"
 GALAXY_SCHEMAS_PATH = resource_path(__name__, "schemas")
@@ -1025,6 +1029,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         self.sanitize_allowlist_file = _sanitize_allowlist_path
 
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(self.allowed_origin_hostnames)
+        self.allowed_login_redirect_hosts = self._parse_allowed_login_redirect_hosts(self.allowed_login_redirect_hosts)
         if "trust_jupyter_notebook_conversion" not in kwargs:
             # if option not set, check IPython-named alternative, falling back to schema default if not set either
             _default = self.trust_jupyter_notebook_conversion
@@ -1541,6 +1546,18 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
         ):  # celery_conf is None or sub-dictionary is none or either key is not present
             fetch_disabled = False
         return celery_enabled and not fetch_disabled
+
+    @staticmethod
+    def _parse_allowed_login_redirect_hosts(allowed_login_redirect_hosts) -> list[str]:
+        hosts = []
+        for host in listify(allowed_login_redirect_hosts, do_strip=True):
+            if not host:
+                continue
+            if not ALLOWED_LOGIN_REDIRECT_HOST.fullmatch(host):
+                log.warning("Ignoring allowed_login_redirect_hosts entry %r, expected host or host:port", host)
+                continue
+            hosts.append(normalize_https_authority(host))
+        return hosts
 
     @staticmethod
     def _parse_allowed_origin_hostnames(allowed_origin_hostnames):

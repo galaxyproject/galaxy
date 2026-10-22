@@ -307,10 +307,13 @@ def stop_htcondor_docker(
 
 
 def _condor_history_count(container_name: str) -> int:
-    """Return the number of jobs recorded in the container's condor history.
+    """Return the number of completed jobs recorded in the container's condor history.
 
     Uses ``condor_history -format`` so the output contains exactly one line
-    per completed job, with no header — making the count unambiguous.
+    per completed job, with no header — making the count unambiguous.  Jobs
+    removed by the cancel tests are excluded: the schedd can write them to
+    history after Galaxy has already marked them deleted, i.e. during a
+    later test.
     """
     result = subprocess.run(
         [
@@ -318,6 +321,8 @@ def _condor_history_count(container_name: str) -> int:
             "exec",
             container_name,
             "condor_history",
+            "-constraint",
+            "JobStatus == 4",
             "-format",
             "%d\n",
             "ClusterId",

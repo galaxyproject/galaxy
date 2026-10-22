@@ -168,6 +168,22 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         kwargs.setdefault("secrets", CONTAINER_TEST_SECRETS)
         return self.credentials_populator.setup_credentials_context(**kwargs)
 
+    @skip_without_tool("runtime_environment")
+    def test_runtime_environment_scopes(self) -> None:
+        with self.dataset_populator.test_history() as history_id:
+            result = self.dataset_populator.run_tool("runtime_environment", {}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "LEGACY_VAR=unset" in content
+            assert "JOB_VAR=unset" in content
+            assert "TOOL_VAR=tool" in content
+            assert "DECLARED_VAR=declared" in content
+            assert "EMPTY_VAR=\n" in content
+            assert "CONTAINER_VAR=container" in content
+            job = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+            warnings = [m for m in job["job_messages"] if m["type"] == "runtime_environment_warning"]
+            assert warnings[0]["variable_names"] == ["MISSING_VAR"]
+
     def test_container_job_environment(self) -> None:
         """
         test job environment for non-legacy tools

@@ -88,6 +88,8 @@ def _add_galaxy_environment_variables(cpus, memory):
 
 
 class ChronosJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
+    runs_job_script_in_container = True
+
     runner_name = "ChronosRunner"
     RUNNER_PARAM_SPEC_KEY = "runner_param_specs"
     JOB_NAME_PREFIX = "galaxy-chronos-"

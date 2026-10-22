@@ -125,6 +125,25 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert "MIT" in self.workflow_editor_license_text()
 
     @selenium_test
+    def test_open_and_run_workflow_by_exact_title(self):
+        # The newer sibling also matches a search for ``name`` and is listed first.
+        name = self._get_random_name()
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=name)
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE, name=f"{name} (copy)")
+
+        self.workflow_index_open_with_name(name)
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        # Loading briefly marks the workflow changed; leaving then would raise the unsaved-changes prompt.
+        editor.canvas_loading.wait_for_absent()
+        assert editor.edit_name.wait_for_visible().get_attribute("value") == name
+        assert self.current_url.endswith(f"id={workflow_id}")
+
+        self.workflow_run_with_name(name)
+        self.components.workflow_run.run_workflow.wait_for_visible()
+        assert self.current_url.endswith(f"id={workflow_id}")
+
+    @selenium_test
     def test_parameter_regex_validation(self):
         editor = self.components.workflow_editor
         workflow_run = self.components.workflow_run

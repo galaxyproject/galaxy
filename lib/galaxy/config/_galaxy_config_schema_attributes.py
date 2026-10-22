@@ -319,6 +319,7 @@ class GalaxyAppConfigurationAttributes:
     require_login: bool
     show_welcome_with_login: bool
     prefer_oidc_login: bool
+    allowed_login_redirect_hosts: list[str]
     allow_local_account_creation: bool
     disable_local_accounts: bool
     allow_user_deletion: bool

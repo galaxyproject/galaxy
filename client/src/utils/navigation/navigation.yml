@@ -1149,6 +1149,7 @@ workflow_editor:
     node_inspector: '.tool-inspector'
     node_inspector_close: ".tool-inspector [title='close']"
     canvas_body: '#workflow-canvas'
+    canvas_loading: '#workflow-canvas .galaxy-loading-shade'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
     license_selector: '[data-description="license select"]'
@@ -1321,6 +1322,7 @@ invocations:
     input_details_name: '[data-label="${label}"] .name'
     step_title: '[data-step="${order_index}"] .step-title'
     step_details: '[data-step="${order_index}"] .portlet-operations'
+    step_header_state: '[data-step="${order_index}"] .portlet-header.header-${state}'
     step_outputs_tab_link: '.invocation-step-outputs-tab > a.nav-link'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
     step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .content-title'
