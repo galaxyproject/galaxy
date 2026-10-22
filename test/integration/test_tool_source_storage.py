@@ -15,6 +15,7 @@ from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import ToolIndex
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
+from galaxy.util import galaxy_directory
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
@@ -256,6 +257,40 @@ class TestCachedToolBoxReloadAfterLocalEdit(BaseToolSourceStorageIntegrationTest
         tool = response.json()
         assert tool["version"] == "1.2"
         assert tool["versions"] == ["1.2"]
+
+
+class TestCachedToolBoxKeepsConfiguredVersion(BaseToolSourceStorageIntegrationTestCase):
+    """A newer bundled version no conf names stays storage-only and isn't served."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        tmpdir = tempfile.mkdtemp(prefix="cached_configured_version_")
+        conf_path = os.path.join(tmpdir, "grep_tool_conf.xml")
+        tools_dir = os.path.join(galaxy_directory(), "tools")
+        with open(conf_path, "w") as f:
+            f.write(f'<toolbox tool_path="{tools_dir}"><tool file="filters/grep_1.0.1.xml"/></toolbox>')
+        config["use_cached_toolbox"] = True
+        existing_confs = config.get("tool_config_file") or "config/tool_conf.xml.sample"
+        if isinstance(existing_confs, str):
+            config["tool_config_file"] = f"{existing_confs},{conf_path}"
+        else:
+            config["tool_config_file"] = list(existing_confs) + [conf_path]
+
+    def test_show_serves_configured_version(self):
+        toolbox = self._app.toolbox
+        assert isinstance(toolbox, CachedToolBox)
+        assert toolbox._tool_index is not None
+        indexed = toolbox._tool_index.entries_by_version["Grep1"]
+        # Bundled filters/grep.xml (1.0.4) is indexed but no conf names it.
+        assert indexed["1.0.4"].in_panel is False
+        assert indexed["1.0.1"].in_panel is True
+
+        response = self._get("tools/Grep1")
+        self._assert_status_code_is(response, 200)
+        tool = response.json()
+        assert tool["version"] == "1.0.1"
+        assert tool["versions"] == ["1.0.1"]
 
 
 class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
