@@ -56,25 +56,28 @@ export default defineConfig(({ command }) => ({
         // with its own vue-router 3 copy. Without deduping, galaxy-ui's RouterLink is
         // the vue-router 3 component, which renders nothing under Vue 3.
         dedupe: ["vue-router"],
-        alias: {
+        alias: [
             // Use @vue/compat for Vue 2 compatibility mode
-            vue: "@vue/compat",
+            { find: "vue", replacement: "@vue/compat" },
             // Also alias the direct Vue 2 dist path that some libraries use
-            "vue/dist/vue.esm.js": "@vue/compat",
+            { find: "vue/dist/vue.esm.js", replacement: "@vue/compat" },
             // galaxy-ui is internal-only (no library build) and always
             // resolved from source -- the main client consumes the .vue
-            // files directly. Its stylesheets come first: aliases match by
-            // prefix, so the package alias would also swallow these subpaths.
-            "@galaxyproject/galaxy-ui/theme.css": resolve(__dirname, "packages/ui/src/styles/theme.css"),
-            "@galaxyproject/galaxy-ui/tokens.css": resolve(__dirname, "packages/ui/src/styles/tokens.css"),
-            "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
+            // files directly. Exact match: subpaths such as tokens.css resolve
+            // through the workspace symlink and the package's exports map.
+            { find: /^@galaxyproject\/galaxy-ui$/, replacement: resolve(__dirname, "packages/ui/src/index.ts") },
             // galaxy-api-client has a real tsup dist/ build and production
             // uses that via package.json exports. During `vite serve` we
             // resolve to source so edits trigger HMR without a rebuild.
             ...(command === "serve"
-                ? { "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts") }
-                : {}),
-        },
+                ? [
+                      {
+                          find: "@galaxyproject/galaxy-api-client",
+                          replacement: resolve(__dirname, "packages/api-client/src/index.ts"),
+                      },
+                  ]
+                : []),
+        ],
     },
     define: {
         // Make jQuery available globally for plugins and legacy code
