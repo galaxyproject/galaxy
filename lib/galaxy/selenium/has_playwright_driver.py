@@ -924,9 +924,11 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
         Uses a real DataTransfer so setData/getData work across the sequence,
         unlike synthetic DragEvents where Chrome restricts getData to return empty.
+        As in a real drag, dragenter comes a task after dragstart, once state that
+        dragstart's handlers set asynchronously has landed.
         """
         return self._frame_or_page.evaluate_handle(
-            """([source, target]) => {
+            """async ([source, target]) => {
                 const dataTransfer = new DataTransfer();
                 const drag = (element, type) =>
                     element.dispatchEvent(
@@ -939,6 +941,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
                 source.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
                 drag(source, "dragstart");
+                await new Promise((resolve) => setTimeout(resolve));
                 drag(target, "dragenter");
                 drag(target, "dragover");
                 return { source, ancestors, dataTransfer };
