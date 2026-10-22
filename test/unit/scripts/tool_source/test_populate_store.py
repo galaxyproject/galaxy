@@ -18,6 +18,8 @@ from typing import (
     Any,
 )
 
+import pytest
+
 # Add Galaxy lib to path for imports
 galaxy_root = Path(__file__).parent.parent.parent.parent.parent
 import sys
@@ -26,7 +28,10 @@ sys.path.insert(0, str(galaxy_root / "lib"))
 
 from galaxy.app_unittest_utils.tool_source_support import populate_config
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.tools.source_store import populator
+from galaxy.tools.source_store import (
+    discover,
+    populator,
+)
 from galaxy.tools.source_store.discover import discover_tools as actual_discover_tools
 from galaxy.tools.source_store.factory import _build_default_store
 from galaxy.tools.source_store.freshness import tool_confs_token
@@ -582,6 +587,52 @@ class TestIncrementalFastPath:
         payload = json.loads(sidecar.read_text())
         assert payload["store"] == DEFAULT_STORE_NAME
         assert payload["tool_snapshot"]["default_tool_count"] == 1
+
+
+class TestDefaultTargetConverters:
+    """A populate that writes the default store indexes the datatype converters."""
+
+    @staticmethod
+    def _setup(tmp_path, monkeypatch):
+        converters_dir = tmp_path / "converters"
+        _write_tool(converters_dir / "probe_converter.xml", "CONVERTER_probe")
+        registry = SimpleNamespace(
+            converters_path=str(converters_dir), converters=[("probe_converter.xml", "txt", "tabular")]
+        )
+        monkeypatch.setattr(populator, "_get_datatypes_registry", lambda: registry)
+        monkeypatch.setattr(discover, "_get_datatypes_registry", lambda: registry)
+        tool = _write_tool(tmp_path / "tools" / "probe.xml", "probe")
+        conf = _write_tool_conf(tmp_path / "tool_conf.xml", tool.parent, '<tool file="probe.xml"/>')
+        return populate_config(tmp_path, conf), tool
+
+    def test_default_target_rebuild_keeps_converters(self, tmp_path, monkeypatch):
+        cfg, _ = self._setup(tmp_path, monkeypatch)
+        _populate_default(cfg)
+        assert "CONVERTER_probe" in _load_default_index(cfg)[1].entries
+
+        _populate_default(cfg, prune=True)
+        assert "CONVERTER_probe" in _load_default_index(cfg)[1].entries
+
+    def test_registry_failure_fails_full_rebuild(self, tmp_path, monkeypatch):
+        cfg, _ = self._setup(tmp_path, monkeypatch)
+        monkeypatch.setattr(populator, "_ensure_datatypes_registry", _raise_registry_error)
+        with pytest.raises(RuntimeError, match="no registry"):
+            _populate_default(cfg)
+
+    def test_registry_failure_only_warns_on_partial_populate(self, tmp_path, monkeypatch, caplog):
+        cfg, tool = self._setup(tmp_path, monkeypatch)
+        _populate_default(cfg)
+        monkeypatch.setattr(populator, "_ensure_datatypes_registry", _raise_registry_error)
+        _write_tool(tool, "probe", version="1.1")
+
+        _populate_default(cfg, paths=[str(tool)], incremental=False)
+
+        assert "Could not build a datatypes registry" in caplog.text
+        assert _load_default_index(cfg)[1].entries["probe"].version == "1.1"
+
+
+def _raise_registry_error(config):
+    raise RuntimeError("no registry")
 
 
 class TestTwinDeterminism:
