@@ -555,7 +555,8 @@ class WorkflowsAPIController(
             "inputs": module.get_all_inputs(connectable_only=True),
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
-            "errors": errors or None,
+            # Report step-level errors (e.g. inverted input bounds) as soon as they are entered, not only on reload.
+            "errors": errors or module.get_errors() or None,
         }
         if module_type == "tool":
             step_dict["tool_version"] = module.get_version()
