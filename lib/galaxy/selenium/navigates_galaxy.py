@@ -1243,7 +1243,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def upload_paste_data(self, pasted_content, tab_id="regular"):
         tab_locator = f"div#{tab_id}"
-        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
+        # The button is disabled (g-disabled, not the disabled attribute) while earlier uploads run,
+        # and a click on it then adds no row.
+        self.wait_for_selector_clickable(
+            f"{tab_locator} button#btn-new:not(.g-disabled)", wait_type=WAIT_TYPES.JOB_COMPLETION
+        ).click()
 
         # Until the new row renders, the last row may be an uploaded one whose textarea is disabled.
         textarea = self.wait_for_selector_clickable(
