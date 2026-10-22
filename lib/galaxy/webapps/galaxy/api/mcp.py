@@ -35,7 +35,7 @@ from galaxy.tool_util.deps.mulled.recommend import (
     PackageSpec,
     recommend_container,
 )
-from galaxy.webapps.galaxy.api import api_key_header
+from galaxy.webapps.galaxy.api import API_KEY_HEADER_NAME
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -48,14 +48,12 @@ logging.getLogger("fakeredis").setLevel(logging.WARNING)
 logging.getLogger("docket").setLevel(logging.WARNING)
 logging.getLogger("docket.worker").setLevel(logging.WARNING)
 
-API_KEY_HEADER = api_key_header.model.name
-
 ApiKey = Annotated[
     str | None,
     Field(
         description=(
             "Galaxy API key. Omit it: the MCP client usually sends the key in an "
-            f"{API_KEY_HEADER} header. Only ask the user for a key if a call fails with 'API key required'."
+            f"{API_KEY_HEADER_NAME} header. Only ask the user for a key if a call fails with 'API key required'."
         )
     ),
 ]
@@ -67,7 +65,7 @@ def _resolve_api_key(api_key: str | None, headers: Mapping[str, str]) -> str | N
     The header comes from the operator's client config and the argument from the model, so the
     model can't override the operator's choice of user.
     """
-    return headers.get(API_KEY_HEADER) or api_key or None
+    return headers.get(API_KEY_HEADER_NAME) or api_key or None
 
 
 def get_mcp_url_builder(fallback_base_url: str):
@@ -230,7 +228,7 @@ def get_mcp_app(gx_app):
         api_key = _resolve_api_key(api_key, get_http_headers())
         if not api_key:
             raise ValueError(
-                f"API key required. Configure your MCP client to send it in an {API_KEY_HEADER} header, "
+                f"API key required. Configure your MCP client to send it in an {API_KEY_HEADER_NAME} header, "
                 "or pass it as the api_key argument. "
                 "You can create an API key in Galaxy under User -> Preferences -> Manage API Key."
             )
