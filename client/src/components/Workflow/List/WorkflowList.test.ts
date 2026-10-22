@@ -44,7 +44,7 @@ const FAKE_USER = getFakeRegisteredUser({
     username: FAKE_USERNAME,
 });
 
-async function mountWorkflowList(activeList: "my" | "shared_with_me" = "my") {
+async function mountWorkflowList(activeList: "my" | "shared_with_me" | "published" = "my") {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
@@ -124,6 +124,33 @@ describe("WorkflowList", () => {
 
         expect(wrapper.findAll(".workflow-card")).toHaveLength(3);
         expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
+    });
+
+    it("fetches only the user's own workflows on the my tab, so the total matches what is listed", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
+        await mountWorkflowList();
+
+        expect(mockedLoadWorkflows).toHaveBeenCalledWith(expect.objectContaining({ showShared: false }));
+    });
+
+    it("leaves shared workflows to the server default on the published tab", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
+        await mountWorkflowList("published");
+
+        expect(mockedLoadWorkflows).toHaveBeenCalled();
+        for (const [options] of mockedLoadWorkflows.mock.calls) {
+            expect(options.showShared).toBeUndefined();
+        }
+    });
+
+    it("leaves shared workflows to the server default on the shared with me tab", async () => {
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
+        await mountWorkflowList("shared_with_me");
+
+        expect(mockedLoadWorkflows).toHaveBeenCalled();
+        for (const [options] of mockedLoadWorkflows.mock.calls) {
+            expect(options.showShared).toBeUndefined();
+        }
     });
 
     it("toggle show deleted workflows", async () => {
