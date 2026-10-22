@@ -71,6 +71,11 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
         self.history_panel_wait_for_hid_state(FIRST_HID, state="discarded", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_discarded")
+        self._assert_title_buttons(FIRST_HID, ["display", "delete"])
+        # vGTooltip skips aria-disabled buttons, so the "not yet editable" title is never shown
+        edit_button = self.history_panel_item_component(hid=FIRST_HID).edit_button.wait_for_visible()
+        assert edit_button.get_attribute("aria-disabled") == "true"
+        self._assert_action_buttons(FIRST_HID, ["info"])
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
 
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -90,6 +95,8 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
         self.history_panel_wait_for_hid_state(FIRST_HID, state="deferred", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_deferred")
+        self._assert_title_buttons(FIRST_HID)
+        self._assert_action_buttons(FIRST_HID, ["info"])
         # Next if is a hack for recent changes to beta history...
         # https://github.com/galaxyproject/galaxy/pull/13477/files#r823842897
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
