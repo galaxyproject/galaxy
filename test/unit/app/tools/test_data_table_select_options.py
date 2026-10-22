@@ -54,38 +54,42 @@ def table_select(tmp_path):
     return build
 
 
+VERSION_FILTER = '<filter type="static_value" column="version" value="5.0"/>'
+REVERSE_PATH_SORT = '<filter type="sort_by" column="path" reverse_sort_order="True"/>'
+
+
+def _reload_cases(table_select, filters, multiple=False):
+    param, trans = table_select(f'<options from_data_table="refs">{filters}</options>', multiple=multiple)
+    yield param, trans
+    trans.app.tool_data_tables.reload_tables()
+    yield param, trans
+
+
 @pytest.mark.parametrize("multiple", [False, True])
 @pytest.mark.parametrize(
-    "filters, expected_options, path, count",
+    "filters, expected_options, count",
     [
-        ("", [("Human old", "hg38", False), ("Mouse", "mm10", False)], "/a/hg38.fa", 4),
-        (
-            '<filter type="static_value" column="version" value="5.0"/>',
-            [("Human current", "hg38", False), ("Mouse", "mm10", False)],
-            "/b/hg38.fa",
-            3,
-        ),
-        (
-            '<filter type="static_value" column="version" value="5.0"/>'
-            '<filter type="sort_by" column="path" reverse_sort_order="True"/>',
-            [("Mouse", "mm10", False), ("Human alternate", "hg38", False)],
-            "/c/hg38.fa",
-            3,
-        ),
+        ("", [("Human old", "hg38", False), ("Mouse", "mm10", False)], 4),
+        (VERSION_FILTER, [("Human current", "hg38", False), ("Mouse", "mm10", False)], 3),
+        (VERSION_FILTER + REVERSE_PATH_SORT, [("Mouse", "mm10", False), ("Human alternate", "hg38", False)], 3),
     ],
 )
-def test_table_dropdown_collapses_after_filters(table_select, caplog, multiple, filters, expected_options, path, count):
-    param, trans = table_select(f'<options from_data_table="refs">{filters}</options>', multiple=multiple)
-    for reload in (False, True):
-        if reload:
-            trans.app.tool_data_tables.reload_tables()
-        options = param.to_dict(trans)["options"]
-        assert options == expected_options
-        raw_options = param.get_options(trans, {})
-        assert len(raw_options) == count
+def test_table_dropdown_collapses_after_filters(table_select, multiple, filters, expected_options, count):
+    for param, trans in _reload_cases(table_select, filters, multiple=multiple):
+        assert param.to_dict(trans)["options"] == expected_options
+        assert len(param.get_options(trans, {})) == count
         assert len(trans.app.tool_data_tables["refs"].data) == 4
+
+
+@pytest.mark.parametrize("multiple", [False, True])
+@pytest.mark.parametrize(
+    "filters, path",
+    [("", "/a/hg38.fa"), (VERSION_FILTER, "/b/hg38.fa"), (VERSION_FILTER + REVERSE_PATH_SORT, "/c/hg38.fa")],
+)
+def test_table_dropdown_hidden_choices_stay_valid(table_select, caplog, multiple, filters, path):
+    expected = ["hg38"] if multiple else "hg38"
+    for param, trans in _reload_cases(table_select, filters, multiple=multiple):
         # Both labels remain valid aliases, even when hidden in the dropdown.
-        expected = ["hg38"] if multiple else "hg38"
         for alias in ("Human current", "Human alternate"):
             assert param.from_json([alias] if multiple else alias, trans) == expected
         assert param.from_json(expected, trans) == expected
