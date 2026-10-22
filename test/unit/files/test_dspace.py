@@ -8,6 +8,7 @@ from urllib.parse import (
 
 import pytest
 import responses
+from responses import matchers
 
 from galaxy.exceptions import (
     AuthenticationRequired,
@@ -150,3 +151,37 @@ def test_refused_access_asks_for_a_token_and_recursive_listing_is_invalid():
         _source(token="secret").get_file_source_path("gxfiles://dspace").file_source.list(f"/items/{ITEM}")
     with pytest.raises(RequestParameterInvalidException, match="Recursive listing"):
         _source().get_file_source_path("gxfiles://dspace").file_source.list("/", recursive=True)
+
+
+@responses.activate
+def test_a_community_pages_through_all_its_children_before_filtering():
+    _fake_repository()
+    groups = [{"uuid": f"00000000-0000-4000-8000-{i:012d}", "name": f"Group {i:03d}"} for i in range(150)]
+    responses.remove(responses.GET, f"{API}/core/communities/{COMMUNITY}/subcommunities")
+    for page in (0, 1):
+        responses.get(
+            f"{API}/core/communities/{COMMUNITY}/subcommunities",
+            json={
+                "_embedded": {"subcommunities": groups[page * 100 : page * 100 + 100]},
+                "page": {"totalElements": 150},
+            },
+            match=[matchers.query_param_matcher({"size": "100", "page": str(page)})],
+        )
+    responses.get(f"{API}/authn/status", json={"authenticated": True})
+    file_source = _source(token="secret").get_file_source_path("gxfiles://dspace").file_source
+
+    entries, total = file_source.list(f"/communities/{COMMUNITY}", limit=10, offset=145)
+    assert total == 151
+    assert [entry.name for entry in entries] == [
+        "Group 145",
+        "Group 146",
+        "Group 147",
+        "Group 148",
+        "Group 149",
+        "Data",
+    ]
+    entries, total = file_source.list(f"/communities/{COMMUNITY}", limit=3, offset=0, query="group 14")
+    assert total == 10
+    assert [entry.name for entry in entries] == ["Group 140", "Group 141", "Group 142"]
+    assert file_source.list("/", limit=10, offset=0, query="LA")[0][0].name == "Lab"
+    assert file_source.list("/", limit=10, offset=0, query="nothing") == ([], 0)
