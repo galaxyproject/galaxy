@@ -717,6 +717,40 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_input_label_needing_css_escape(self):
+        history_id, inputs = self.workflow_run_setup_inputs("""
+"it's input": "quoted\\n"
+plain_input: "plain\\n"
+""")
+        expected_input_ids = {label: value["id"] for label, value in inputs.items()}
+        self.workflow_run_open_workflow("""
+class: GalaxyWorkflow
+inputs:
+  "it's input": data
+  plain_input: data
+outputs:
+  output:
+    outputSource: cat/out_file1
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: "it's input"
+      queries_0|input2: plain_input
+""")
+        self.workflow_run_ensure_expanded()
+        self.workflow_run_specify_inputs(inputs)
+        self.workflow_run_submit()
+        invocation = self._wait_for_single_invocation(history_id)
+        invocation_input_ids = {value["label"]: value["id"] for value in invocation["inputs"].values()}
+        assert invocation_input_ids == expected_input_ids
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=invocation["outputs"]["output"]["id"]
+        )
+        assert content == "quoted\nplain\n"
+
+    @selenium_test
+    @managed_history
     def test_execution_with_multiple_integer_parameter(self):
         history_id, inputs = self.workflow_run_setup_inputs("""
 input:
