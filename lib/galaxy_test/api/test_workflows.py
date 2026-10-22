@@ -4433,6 +4433,25 @@ steps:
 """)
         assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a", "b"]
 
+    @skip_without_tool("cat")
+    def test_run_form_replacement_parameters_ignore_non_rename_actions(self):
+        run_form = self._yaml_workflow_run_form("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    out:
+      out_file1:
+        rename: "${a} suffix"
+        add_tags: ["name:${t}"]
+        change_datatype: "${d}"
+""")
+        assert sorted(run_form["steps"][1]["replacement_parameters"]) == ["a"]
+
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):
         with self.dataset_populator.test_history() as history_id:
