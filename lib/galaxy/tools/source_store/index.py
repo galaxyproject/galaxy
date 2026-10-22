@@ -290,16 +290,12 @@ class ToolIndex(BaseModel):
             return False
         versions.pop(version or "")
         if not versions:
-            if not keep_placements:
-                return self.remove_entry(tool_id)
-            del self.entries_by_version[tool_id]
-            self.entries.pop(tool_id, None)
-        else:
-            default = self.entries.get(tool_id)
-            if default is None or (default.version or "") == (version or ""):
-                self._select_default(tool_id)
-            if not keep_placements and not any(entry.in_panel for entry in versions.values()):
-                self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
+            return self.remove_entry(tool_id, keep_placements=keep_placements)
+        default = self.entries.get(tool_id)
+        if default is None or (default.version or "") == (version or ""):
+            self._select_default(tool_id)
+        if not keep_placements and not any(entry.in_panel for entry in versions.values()):
+            if self._drop_placements(tool_id):
                 self.rebuild_panel_projections()
         self.invalidate_caches()
         return True
@@ -374,17 +370,25 @@ class ToolIndex(BaseModel):
                 section_tool_ids.append(item.tool_id)
         self.by_section = by_section
 
-    def remove_entry(self, tool_id: str) -> bool:
-        """Remove a tool and every projection derived from it."""
+    def remove_entry(self, tool_id: str, keep_placements: bool = False) -> bool:
+        """Remove a tool and every projection derived from it.
+
+        ``keep_placements``: see :meth:`remove_version`.
+        """
         removed = self.entries.pop(tool_id, None)
         removed_versions = self.entries_by_version.pop(tool_id, None)
-        original_panel_size = len(self.panel_items)
-        self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
-        if removed is None and removed_versions is None and len(self.panel_items) == original_panel_size:
+        dropped = not keep_placements and self._drop_placements(tool_id)
+        if removed is None and removed_versions is None and not dropped:
             return False
         self.rebuild_panel_projections()
         self.invalidate_caches()
         return True
+
+    def _drop_placements(self, tool_id: str) -> bool:
+        """Remove ``tool_id``'s panel placements; whether any were removed."""
+        original_panel_size = len(self.panel_items)
+        self.panel_items = [item for item in self.panel_items if item.tool_id != tool_id]
+        return len(self.panel_items) != original_panel_size
 
     def list_all(
         self,
