@@ -4,7 +4,7 @@
  * for `to`, an anchor for `href`, or a button for `button`.
  */
 
-import { computed } from "vue";
+import { computed, useAttrs } from "vue";
 import { RouterLink } from "vue-router";
 
 import type { BadgeVariant, ColorVariant } from "./componentVariants";
@@ -27,6 +27,8 @@ const props = defineProps<{
     button?: boolean;
 }>();
 
+const attrs = useAttrs();
+
 const baseComponent = computed(() => {
     if (props.button) {
         return "button" as const;
@@ -45,7 +47,8 @@ const elementAttributes = computed(() => {
     if (baseComponent.value === "button") {
         return { type: "button" };
     } else if (baseComponent.value === "a") {
-        return { href: props.href };
+        // Keeps a new tab from reaching window.opener; a rel passed by the caller falls through and wins.
+        return { href: props.href, rel: attrs.target === "_blank" ? "noopener" : undefined };
     } else if (baseComponent.value === RouterLink) {
         return { to: props.to };
     }

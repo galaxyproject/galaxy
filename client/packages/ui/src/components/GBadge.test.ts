@@ -77,13 +77,28 @@ describe("GBadge", () => {
     it("renders an anchor for href and keeps target and rel", () => {
         const wrapper = mount(GBadge, {
             props: { href: "https://orcid.org/0000" },
-            attrs: { target: "_blank", rel: "noopener" },
+            attrs: { target: "_blank", rel: "noreferrer" },
         });
 
         expect(wrapper.element.tagName).toBe("A");
         expect(wrapper.attributes("href")).toBe("https://orcid.org/0000");
         expect(wrapper.attributes("target")).toBe("_blank");
+        expect(wrapper.attributes("rel")).toBe("noreferrer");
+    });
+
+    it("adds rel=noopener to an href badge that opens a new tab without a rel", () => {
+        const wrapper = mount(GBadge, {
+            props: { href: "https://orcid.org/0000" },
+            attrs: { target: "_blank" },
+        });
+
         expect(wrapper.attributes("rel")).toBe("noopener");
+    });
+
+    it("leaves rel unset on an href badge that opens in the same tab", () => {
+        const wrapper = mount(GBadge, { props: { href: "https://orcid.org/0000" } });
+
+        expect(wrapper.attributes("rel")).toBeUndefined();
     });
 
     it("renders a router link for to, with the router's own href", async () => {
