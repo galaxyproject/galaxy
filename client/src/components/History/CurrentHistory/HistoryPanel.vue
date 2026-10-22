@@ -311,24 +311,23 @@ function onScroll(newOffset: number) {
 }
 
 async function onUndelete(item: HistoryItemSummary) {
-    hideIfFilteredOut(item, { deleted: false });
-    isLoading.value = true;
-
-    try {
-        await updateContentFields(item, { deleted: false });
-        updateContentStats();
-    } finally {
-        isLoading.value = false;
-    }
+    await updateItem(item, { deleted: false });
 }
 
 async function onUnhide(item: HistoryItemSummary) {
-    hideIfFilteredOut(item, { visible: true });
+    await updateItem(item, { visible: true });
+}
+
+async function updateItem(item: HistoryItemSummary, change: Partial<HistoryItemSummary>) {
+    hideIfFilteredOut(item, change);
     isLoading.value = true;
 
     try {
-        await updateContentFields(item, { visible: true });
+        await updateContentFields(item, change);
         updateContentStats();
+    } catch (error) {
+        invisibleHistoryItems.value[item.hid] = false;
+        onOperationError({ errorMessage: error });
     } finally {
         isLoading.value = false;
     }

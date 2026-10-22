@@ -213,6 +213,34 @@ describe("History center panel View", () => {
         wrapper.unmount();
     });
 
+    it.each([
+        ["undelete", "deleted:true", 1, { 1: { deleted: true } }],
+        ["unhide", "visible:false", 2, { 2: { visible: false } }],
+    ])("failed %s with %s filter reshows item and reports error", async (operation, filterText, hid, overrides) => {
+        const history = create_history("history_1", "user_1");
+        const wrapper = await createWrapper(localVue, "user_1", history, overrides);
+        const historyStore = useHistoryStore();
+        const updateStats = vi.spyOn(historyStore, "updateContentStats").mockResolvedValue();
+        const contentRequest = vi.fn(() => HttpResponse.json({ err_msg: "Update failed" }, { status: 400 }));
+        server.use(http.put("/api/histories/{history_id}/contents/{type}s/{id}", contentRequest));
+        const renderedHids = () => wrapper.findAllComponents(ContentItem).map((item) => item.props("id"));
+
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filter-text", filterText);
+        await flushPromises();
+        expect(renderedHids()).toEqual([hid]);
+
+        wrapper.findComponent(ContentItem).vm.$emit(operation);
+        await flushPromises();
+
+        expect(contentRequest).toHaveBeenCalledTimes(1);
+        expect(updateStats).not.toHaveBeenCalled();
+        expect(renderedHids()).toEqual([hid]);
+        expect(wrapper.findComponent(OperationErrorDialog).props("operationError").errorMessage.message).toBe(
+            "Update failed",
+        );
+        wrapper.unmount();
+    });
+
     function expectCorrectLayout(wrapper) {
         // HistoryFilters should exist in HistoryView
         expect(wrapper.find("[data-description='filter text input']").exists()).toBe(true);
