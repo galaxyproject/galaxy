@@ -813,6 +813,52 @@ steps:
             "second_cat": {"input1": ("input1", "output")},
         }
 
+    @selenium_test
+    def test_connect_unlabelled_steps_by_order_index(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  input2: data
+steps:
+  - tool_id: cat
+  - tool_id: cat
+""")
+        # Both cat steps share a node-label, so only the order index tells them apart.
+        shared_label = self.components.workflow_editor.node._(label="Concatenate datasets (for test workflows)")
+        shared_label.wait_for_element_count_of_at_least(2)
+        assert len(shared_label.all()) == 2
+        self.workflow_editor_connect("input1#output", (2, "input1"))
+        assert self.workflow_editor_try_connect("input2#output", (3, "input1")) is None
+        self.workflow_editor_assert_connected("input1#output", (2, "input1"))
+        self.workflow_editor_assert_connected("input2#output", (3, "input1"))
+        self.assert_workflow_has_changes_and_save()
+        # Saving renumbers steps, so re-read order indices from the API after each save.
+        connections = self._saved_tool_step_connections()
+        from_input1 = {"input1": ("input1", "output")}
+        from_input2 = {"input1": ("input2", "output")}
+        assert sorted(connections.values(), key=repr) == [from_input1, from_input2]
+        input1_step = next(step_id for step_id, inputs in connections.items() if inputs == from_input1)
+        input2_step = next(step_id for step_id, inputs in connections.items() if inputs == from_input2)
+
+        self.workflow_editor_destroy_connection((input2_step, "input1"))
+        self.workflow_editor_assert_not_connected("input2#output", (input2_step, "input1"))
+        self.workflow_editor_assert_connected("input1#output", (input1_step, "input1"))
+        self.assert_workflow_has_changes_and_save()
+        connections = self._saved_tool_step_connections()
+        assert sorted(connections.values(), key=repr) == [from_input1, {}]
+        empty_step = next(step_id for step_id, inputs in connections.items() if not inputs)
+
+        self.workflow_editor_remove_node(empty_step)
+        self.assert_workflow_has_changes_and_save()
+        assert list(self._saved_tool_step_connections().values()) == [from_input1]
+
+    def _saved_tool_step_connections(self) -> dict[int, dict[str, tuple[str, str]]]:
+        """Map each unlabelled tool step's order index to its saved connections."""
+        tool_steps = [(step, inputs) for step, inputs in self._saved_steps_with_connections() if step["type"] == "tool"]
+        assert all(step["label"] is None for step, _ in tool_steps)
+        return {step["id"]: inputs for step, inputs in tool_steps}
+
     def _saved_steps_with_connections(self) -> list[tuple[dict[str, Any], dict[str, tuple[str, str]]]]:
         """Pair each saved step with its input connections, sources named by label."""
         steps = self._download_current_workflow()["steps"].values()
