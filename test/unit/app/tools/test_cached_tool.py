@@ -646,6 +646,22 @@ def test_index_tool_files_keeps_an_index_that_matches_the_store(tmp_path, monkey
     assert box._tool_index is index
 
 
+def test_index_tool_files_reloads_once_after_an_in_place_version_bump(tmp_path, monkeypatch):
+    # The old version's entry outlives a partial populate under the same path.
+    box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
+    path = str(tool_file)
+    new_guid = "toolshed.example.com/repos/owner/repo/updated/2.0"
+    tool_file.write_text(_shed_tool_xml("echo after", 'version="2.0"'))
+    populator.populate_store_inline(box.app.config, paths=[path], path_guids={path: new_guid}, incremental=False)
+
+    box.index_tool_files({path: new_guid})
+    caught_up = box._tool_index
+    box.index_tool_files({path: new_guid})
+
+    assert caught_up.get(new_guid, "2.0") is not None
+    assert box._tool_index is caught_up
+
+
 def test_create_tool_stamps_data_manager_conf_id_on_entry():
     box = _seam_box()
     e = _entry(id="dm_tool", tool_type="manage_data")

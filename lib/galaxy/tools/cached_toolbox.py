@@ -1285,11 +1285,9 @@ class CachedToolBox(ToolBox):
             self._rebuild_shed_short_id_map()
 
     def _index_lags_store(self, paths: Iterable[str]) -> bool:
-        """Whether an in-memory entry for one of ``paths`` holds another hash than the store's row.
+        """Whether one of ``paths`` has in-memory entries but none with the store's hash.
 
-        Matched by ``source_path``, as ``_stored_source_for_entry`` resolves
-        them: the stored row keeps the tool's raw version, which the index
-        entry may default (``version=""``) or lack entirely.
+        Matched by ``source_path``, as ``_stored_source_for_entry`` does: store rows keep the raw version.
         """
         assert self._store is not None
         index = self._tool_index
@@ -1305,10 +1303,11 @@ class CachedToolBox(ToolBox):
         entries = itertools.chain(
             index.entries.values(), *(versions.values() for versions in index.entries_by_version.values())
         )
-        return any(
-            entry.source_path in stored_hashes and entry.source_hash != stored_hashes[entry.source_path]
-            for entry in entries
-        )
+        held_hashes: dict[str, set[str]] = {}
+        for entry in entries:
+            if entry.source_path in stored_hashes:
+                held_hashes.setdefault(entry.source_path, set()).add(entry.source_hash)
+        return any(stored_hashes[path] not in hashes for path, hashes in held_hashes.items())
 
     def _index_source_paths(self) -> set[str]:
         """Every ``source_path`` the current in-memory index covers.
