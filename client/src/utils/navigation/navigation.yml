@@ -16,6 +16,7 @@ _:  # global stuff
     tooltip_balloon_with_text:
       type: xpath
       selector: '//*[contains(concat(" ", normalize-space(@class), " "), " g-tooltip-d ")][contains(string(.), "${text}")]'
+    tooltip_by_id: '#${id}'
     left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
@@ -1143,6 +1144,7 @@ workflow_editor:
         selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
+      input_terminal_dragging: "${_} [input-name='${name}'].is-dragging"
       input_mapping_icon: "${_} [input-name='${name}'].mapped-over"
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
