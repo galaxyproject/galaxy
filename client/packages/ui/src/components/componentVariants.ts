@@ -3,7 +3,7 @@ export type ComponentSize = "small" | "medium" | "large";
 
 /**
  * Basic color variants for components that only support
- * color-based styling like alerts, badges, and backgrounds (no outline variants).
+ * color-based styling like alerts and backgrounds (no outline variants).
  */
 export type ColorVariant = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
 
