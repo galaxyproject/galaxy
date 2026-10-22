@@ -53,6 +53,12 @@ describe("test filtering helpers to convert filters to filter text", () => {
         expect(Object.keys(anonFilters.getValidFilters(filters).validFilters)).not.toContain("shared_with_me");
     });
 
+    it("my workflows filters exclude shared_with_me, since that list does not fetch shared workflows", async () => {
+        const filters = { shared_with_me: true };
+        expect(Object.keys(MyWorkflowFilters.getValidFilters(filters).validFilters)).not.toContain("shared_with_me");
+        expect(Object.keys(MyWorkflowFilters.getValidFilters(filters).invalidFilters)).toContain("shared_with_me");
+    });
+
     it("verify correct conversion of filters", async () => {
         const filters = {
             deleted: HistoryFilters.defaultFilters.deleted,
