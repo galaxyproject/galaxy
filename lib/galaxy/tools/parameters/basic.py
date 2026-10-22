@@ -49,6 +49,7 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    ImplicitlyConvertedDatasetAssociation,
     LibraryDatasetDatasetAssociation,
 )
 from galaxy.model.dataset_collections import (
@@ -1908,6 +1909,11 @@ def _load_owned_items(trans, history, keys: list[tuple[str, int]]) -> dict[tuple
             .options(
                 contains_eager(HistoryDatasetAssociation.dataset),
                 selectinload(HistoryDatasetAssociation.tags),
+                # An off-page value that needs an implicit conversion is
+                # offered as its existing converted dataset, tags included.
+                selectinload(HistoryDatasetAssociation.implicitly_converted_datasets)  # type: ignore[arg-type]
+                .selectinload(ImplicitlyConvertedDatasetAssociation.dataset)
+                .selectinload(HistoryDatasetAssociation.tags),
             )
         )
         for hda in trans.sa_session.scalars(hda_stmt):
@@ -1921,7 +1927,10 @@ def _load_owned_items(trans, history, keys: list[tuple[str, int]]) -> dict[tuple
                 HistoryDatasetCollectionAssociation.deleted == false(),
                 owned,
             )
-            .options(selectinload(HistoryDatasetCollectionAssociation.tags))
+            .options(
+                selectinload(HistoryDatasetCollectionAssociation.collection),
+                selectinload(HistoryDatasetCollectionAssociation.tags),
+            )
         )
         for hdca in trans.sa_session.scalars(hdca_stmt):
             # Nested-collection summary, not a column; same check as from_json.

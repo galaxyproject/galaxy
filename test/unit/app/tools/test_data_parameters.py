@@ -2,8 +2,10 @@ from typing import (
     Any,
     Optional,
 )
+from unittest import mock
 
 import pytest
+from sqlalchemy import event
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
@@ -101,6 +103,71 @@ class TestDataToolParameter(BaseParameterTestCase):
         }
         field = self._simple_field(other_values={"data2": hda1}, incoming_value=batch)
         assert sorted(o["name"] for o in field["options"]["hda"]) == ["(hidden) hda1", "(hidden) hda2"]
+
+    def test_field_display_batch_query_count_independent_of_batch_size(self):
+        # Off-page batch values that need an implicit conversion are matched
+        # against their existing converted datasets; that must not cost a
+        # query per value.
+        session = self.app.model.context
+        hdas = []
+        converted_ids = []
+        for i in range(12):
+            hda = self._new_hda(name=f"hda{i}")
+            hda.extension = "fastqsanger"
+            hda.history = self.test_history
+            converted = self._new_hda(name=f"hda{i} converted")
+            converted.extension = "fasta"
+            converted.visible = False
+            converted.history = self.test_history
+            session.add(model.ImplicitlyConvertedDatasetAssociation(parent=hda, dataset=converted, file_type="fasta"))
+            hdas.append(hda)
+            converted_ids.append(converted.id)
+        session.commit()
+        hda_ids = [hda.id for hda in hdas]
+        self.stub_active_datasets()
+        self.trans = galaxy_mock.MockTrans(app=self.app, history=self.test_history)
+        self._param = self._parameter_for(
+            tool=self.mock_tool, xml='<param name="data2" type="data" format="fasta"></param>'
+        )
+        registry = model._get_datatypes_registry()
+        get_converters = registry.get_converters_by_datatype
+        engine = self.app.model.engine
+
+        def counted_to_dict(batch_ids):
+            # Start from an empty identity map for datasets, like a new request.
+            session.expire_all()
+            for obj in list(session):
+                if isinstance(obj, (model.DatasetInstance, model.Dataset, model.ImplicitlyConvertedDatasetAssociation)):
+                    session.expunge(obj)
+            first = session.get(model.HistoryDatasetAssociation, batch_ids[0])
+            batch = {"batch": True, "values": [{"src": "hda", "id": hda_id} for hda_id in batch_ids]}
+            statements = []
+
+            def count(conn, cursor, statement, *args):
+                statements.append(statement)
+
+            event.listen(engine, "before_cursor_execute", count)
+            try:
+                field = self._simple_field(other_values={"data2": first}, incoming_value=batch)
+            finally:
+                event.remove(engine, "before_cursor_execute", count)
+            return field, len(statements)
+
+        with mock.patch.object(
+            registry,
+            "get_converters_by_datatype",
+            side_effect=lambda ext: {"fasta": None} if ext == "fastqsanger" else get_converters(ext),
+        ):
+            counted_to_dict(hda_ids[:1])  # warm up one-off loads
+            _, small_count = counted_to_dict(hda_ids[:3])
+            field, large_count = counted_to_dict(hda_ids)
+        pinned = field["pinned"]["hda"]
+        assert sorted(entry["name"] for entry in pinned) == sorted(f"hda{i} (as fasta)" for i in range(12))
+        # Each value is offered as its existing converted dataset.
+        assert sorted(entry["id"] for entry in pinned) == sorted(
+            self.trans.security.encode_id(converted_id) for converted_id in converted_ids
+        )
+        assert large_count == small_count
 
     def test_field_display_deleted_hdas_only_if_selected(self):
         hda1 = self._new_hda(name="hda1")
