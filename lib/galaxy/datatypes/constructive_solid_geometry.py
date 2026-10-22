@@ -908,10 +908,7 @@ class VtkXml(GenericXml):
         >>> VtkXml().get_download_extension(dataset)
         'vtkxml'
         """
-        dataset_type = getattr(dataset.metadata, "dataset_type", None)
-        if not isinstance(dataset_type, str):
-            return dataset.extension
-        return VTK_XML_FILE_EXTENSIONS.get(dataset_type, dataset.extension)
+        return VTK_XML_FILE_EXTENSIONS.get(dataset.metadata.dataset_type, dataset.extension)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Check for the key string 'VTKFile' to determine if this is a VTK dataset file.
