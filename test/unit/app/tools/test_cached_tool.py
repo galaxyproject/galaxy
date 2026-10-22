@@ -612,6 +612,21 @@ def test_index_tool_files_catches_up_with_a_peer_populate_of_the_same_update(tmp
     assert entry.source_hash != stale.source_hash
 
 
+def test_materializing_a_stale_entry_after_a_peer_populate_heals(tmp_path, monkeypatch):
+    box, tool_file = _indexed_shed_tool_box(tmp_path, monkeypatch, _shed_tool_xml("echo before"))
+    path = str(tool_file)
+    stale = box._tool_index.get(GUID, "1.0")
+    assert stale is not None
+    tool_file.write_text(_shed_tool_xml("echo after"))
+    populator.populate_store_inline(box.app.config, paths=[path], path_guids={path: GUID}, incremental=False)
+    box._materialization_locks = (threading.Lock(),)
+    box._create_tool_from_stored_source = lambda stored, entry=None: stored
+
+    materialized = box._load_tool_on_demand(stale, MaterializationReason.EXECUTION)
+
+    assert "echo after" in materialized.raw_source
+
+
 @pytest.mark.parametrize(
     "version_attr", ['version="1.0"', 'version=""', ""], ids=["version", "empty-version", "no-version"]
 )
