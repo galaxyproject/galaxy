@@ -1020,8 +1020,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             # ---- for single files, we add the true extension to id and name and store that single filename
             else:
                 # some dataset names can contain their original file extensions, don't repeat
-                if not archive_path.endswith(f".{content.extension}"):
-                    archive_path += f".{content.extension}"
+                extension = content.datatype.get_download_extension(content)
+                if not archive_path.endswith(f".{extension}"):
+                    archive_path += f".{extension}"
                 paths_and_files.append((content.get_file_name(), archive_path))
 
         # filter the contents that contain datasets using any filters possible from index above and map the datasets
