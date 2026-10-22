@@ -233,6 +233,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
     ):
+        self._ensure_target_in_container(target_path)
         record_id, filename = self.parse_path(target_path)
         self.repository.upload_file_to_draft_container(record_id, filename, native_path, context)
 

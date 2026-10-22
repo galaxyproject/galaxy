@@ -11,7 +11,7 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
-import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
+import { fileSourcePluginToItem, isSamePath, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
     type ItemsProviderContext,
@@ -68,6 +68,9 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
 
 const { config, isConfigLoaded } = useConfig();
 
+/** RDM sources are only needed to prevent selecting a repository root as directory, so they are not fetched otherwise */
+const rdmFileSources = props.mode === "directory" ? useFileSources({ include: ["rdm"] }) : null;
+
 const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const query = ref<string>();
@@ -104,8 +107,24 @@ const fields = computed(() => {
 
 const fileMode = computed(() => props.mode == "file");
 
+/** RDM repositories (e.g. Dataverse, Invenio) only hold files inside their records, not at their root */
+const isAtRdmRepositoryRoot = computed(() => {
+    if (!rdmFileSources || !urlTracker.current.value?.url) {
+        return false;
+    }
+    const url = urlTracker.current.value.url;
+    const rdmFileSource = rdmFileSources.getFileSourceByUri(url);
+    if (!rdmFileSource) {
+        return false;
+    }
+    return isSamePath(url, rdmFileSource.uri_root);
+});
+
 const okButtonDisabled = computed(
-    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.isAtRoot.value),
+    () =>
+        (fileMode.value && !hasValue.value) ||
+        isBusy.value ||
+        (!fileMode.value && (urlTracker.isAtRoot.value || isAtRdmRepositoryRoot.value)),
 );
 
 const canCreateNewFileSource = computed(() => {
@@ -504,6 +523,9 @@ onMounted(() => {
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
                     form with your email to create a password for your account.</span
                 >
+            </BAlert>
+            <BAlert v-if="isAtRdmRepositoryRoot" id="rdm-root-helper" variant="info" show>
+                This repository has no files at its top level. Open one of the folders below to select it.
             </BAlert>
         </template>
         <template v-slot:buttons>

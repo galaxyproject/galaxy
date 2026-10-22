@@ -36,6 +36,10 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
+    rdmDatasetId,
+    rdmFileSourceTypes,
+    rdmRootId,
+    rdmRootResponse,
     rootId,
     rootResponse,
     someErrorText,
@@ -80,6 +84,7 @@ const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
         subsubdirectoryResponse,
     ],
     [paramsToKey({ target: "gxftp://", recursive: "false" }), pdbResponse],
+    [paramsToKey({ target: "dataverse://my-dataverse", recursive: "false" }), rdmRootResponse],
 ]);
 
 const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
@@ -90,7 +95,10 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
     const localVue = getLocalVue();
 
     server.use(
-        http.get("/api/remote_files/plugins", ({ response }) => {
+        http.get("/api/remote_files/plugins", ({ response, query }) => {
+            if (query.get("include_kind") === "rdm") {
+                return response(200).json(rootResponse.filter((fs) => rdmFileSourceTypes.includes(fs.type)));
+            }
             return response(200).json(rootResponse);
         }),
 
@@ -330,6 +338,15 @@ describe("FilesDialog, directory mode", () => {
         await utils.openRootDirectory();
         utils.openDirectoryById(directoryId);
 
+        utils.expectOkButtonEnabled();
+    });
+
+    it("should not allow to select the root of a RDM repository, only its records", async () => {
+        await utils.openRoot();
+        await utils.openDirectoryById(rdmRootId);
+        utils.expectOkButtonDisabled();
+
+        await utils.openDirectoryById(rdmDatasetId);
         utils.expectOkButtonEnabled();
     });
 
