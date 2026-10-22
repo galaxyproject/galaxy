@@ -352,9 +352,11 @@ describe("FilesDialog, directory mode", () => {
         await utils.openRoot();
         await utils.openDirectoryById(rdmRootId);
         utils.expectOkButtonDisabled();
+        expect(wrapper.find("#rdm-root-helper").exists()).toBe(true);
 
         await utils.openDirectoryById(rdmDatasetId);
         utils.expectOkButtonEnabled();
+        expect(wrapper.find("#rdm-root-helper").exists()).toBe(false);
     });
 
     it("should not allow to select the root of a RDM repository added after the dialog was opened", async () => {
