@@ -49,10 +49,10 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
         item = self._prepare_dataset()
         self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
         item.dbkey.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.edit_dataset_attributes.dbkey_dropdown.wait_for_visible()
         self.screenshot("history_panel_edit_dbkey_post_click")
         self.edit_dataset_dbkey(TEST_DBKEY_TEXT)
-        self.sleep_for(self.wait_types.JOB_COMPLETION)
+        self._wait_on(lambda *_: "apiMel3" in item.dbkey.wait_for_text(), "history item dbkey to update")
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
 
