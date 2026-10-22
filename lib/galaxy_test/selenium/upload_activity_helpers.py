@@ -327,10 +327,14 @@ class UploadContext(_UploadStaging):
             raise AssertionError("stage_remote_file is only available for the remote-files method")
 
         self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
-        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
-        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
+        self._select_remote_file(file_label)
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
         return self._create_item(RemoteFileUploadItem, metadata)
+
+    def _select_remote_file(self, file_label: str) -> None:
+        # search first: a large source pages its files
+        self.components.upload_activity.remote_files_search.wait_for_and_clear_and_send_keys(file_label)
+        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
 
     def stage_remote_files(
         self,
@@ -349,8 +353,7 @@ class UploadContext(_UploadStaging):
         self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
 
         for file_label in file_labels:
-            self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
-            self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
+            self._select_remote_file(file_label)
 
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
 

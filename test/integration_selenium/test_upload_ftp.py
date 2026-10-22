@@ -25,10 +25,14 @@ class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase, UsesUploadAc
     def _upload_all(self, n):
         self.home()
         context = self.upload_context("remote-files")
-        context.stage_remote_files(source_label="FTP Directory", file_labels=[f"{i}.txt" for i in range(n)])
+        file_labels = [f"{i}.txt" for i in range(n)]
+        context.stage_remote_files(source_label="FTP Directory", file_labels=file_labels)
         context.start()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_history()
+        for hid in range(1, n + 1):
+            self.history_panel_wait_for_hid_ok(hid)
+        contents = self.dataset_populator.get_history_contents(self.current_history_id())
+        assert sorted(c["name"] for c in contents) == sorted(file_labels), contents
 
     def _create_ftp_dir(self):
         email = self.get_user_email()
