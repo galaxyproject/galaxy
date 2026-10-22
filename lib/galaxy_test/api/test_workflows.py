@@ -10584,6 +10584,29 @@ steps: {}
         assert empty_input["value"] == ""
         assert empty_input["options"] == [["A", "a", False], ["Empty", "", True]]
 
+    @skip_without_tool("collection_creates_pair_format")
+    def test_value_restriction_connected_empty_default_selected(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  out_format:
+    type: text
+    restrictOnConnections: true
+    default: ""
+steps:
+  split:
+    tool_id: collection_creates_pair_format
+    in:
+      input1: input1
+      out_format: out_format
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        runtime_input = run_workflow["steps"][1]["inputs"][0]
+        assert runtime_input["value"] == ""
+        assert runtime_input["options"] == [["do not change", "", True], ["interval", "interval", False]]
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
