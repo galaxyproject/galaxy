@@ -81,6 +81,19 @@ const SEMANTIC_COLORS = [
     "ring",
 ];
 
+// Non-color tokens that predate the semantic layer; client SCSS still reads them.
+const LEGACY_TOKENS = [
+    "--background-color",
+    "--font-size-small",
+    "--font-size-medium",
+    "--font-size-large",
+    "--spacing",
+    ...[1, 2, 3, 4, 5, 6, 7, 8].map((step) => `--spacing-${step}`),
+    ...["small", "medium", "large"].flatMap((size) =>
+        ["height", "padding-x", "padding-y", "radius"].map((part) => `--field-${part}-${size}`),
+    ),
+];
+
 describe("galaxy-ui design tokens", () => {
     it("ships a tokens.css generated from the current theme.css", () => {
         // Regenerate with `pnpm --filter @galaxyproject/galaxy-ui build:tokens`.
@@ -101,6 +114,18 @@ describe("galaxy-ui design tokens", () => {
         for (const shade of COLOR_SHADES) {
             expect(tokens.get(`--color-grey-${shade}`)).toBe(`var(--color-gray-${shade})`);
         }
+    });
+
+    it("keeps every legacy non-color token resolvable", () => {
+        const missing = LEGACY_TOKENS.filter((name) => {
+            try {
+                resolveToken(name);
+                return false;
+            } catch {
+                return true;
+            }
+        });
+        expect(missing).toEqual([]);
     });
 
     it("declares every semantic color, resolving to a hex color", () => {
