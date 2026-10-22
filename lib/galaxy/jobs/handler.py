@@ -495,13 +495,26 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         self.__cache_user_job_count()
         # Check resubmit jobs first so that limits of new jobs will still be enforced
         for job in resubmit_jobs:
-            log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
             # Reassemble resubmit job destination from persisted value, walking
-            # any dynamic destination chain afresh.
-            jw = self.__recover_job_wrapper(job, resubmit=True)
+            # any dynamic destination chain afresh. Resubmissions are handled
+            # before new jobs on every poll, so one that cannot be mapped must
+            # not escape and stop all dispatch from this handler.
+            try:
+                jw = self.__recover_job_wrapper(job, resubmit=True)
+            except JobNotReadyException:
+                log.debug("(%s) Resubmitted job is not ready to be dispatched", job.id)
+                continue
+            except Exception as e:
+                job_wrapper = self.job_wrapper(job)
+                # Without a destination, fail() would map the job again, from
+                # the tool's default rather than the resubmit destination.
+                job_wrapper.set_cached_job_destination(JobDestination(id="__fail__"))
+                self.__fail_unmappable_job(job_wrapper, e)
+                continue
             if jw.is_ready_for_resubmission(job):
                 self.increase_running_job_count(job.user_id, jw.job_destination.id)
                 self.dispatcher.put(jw)
+                log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
         new_waiting_jobs = []
@@ -790,6 +803,18 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     job_to_input_dataset_association.dataset_version = job_to_input_dataset_association.dataset.version
         return state
 
+    def __fail_unmappable_job(self, job_wrapper: JobWrapper, exception: Exception) -> None:
+        """Fail a job whose destination could not be determined.
+
+        Must be called from the ``except`` block handling ``exception``.
+        """
+        failure_message = getattr(exception, "failure_message", DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)
+        if failure_message == DEFAULT_JOB_RUNNER_FAILURE_MESSAGE:
+            log.exception("(%s) Failed to generate job destination", job_wrapper.job_id)
+        else:
+            log.debug("(%s) Intentionally failing job with message (%s)", job_wrapper.job_id, failure_message)
+        job_wrapper.fail(failure_message)
+
     def __verify_job_ready(self, job: model.Job, job_wrapper: JobWrapper):
         """Compute job destination and verify job is ready at that
         destination by checking job limits and quota. If this method
@@ -813,12 +838,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 self._mapper_waiting_partitions.add(self._ready_job_partition(job))
             return job_state, None
         except Exception as e:
-            failure_message = getattr(e, "failure_message", DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)
-            if failure_message == DEFAULT_JOB_RUNNER_FAILURE_MESSAGE:
-                log.exception("Failed to generate job destination")
-            else:
-                log.debug(f"Intentionally failing job with message ({failure_message})")
-            job_wrapper.fail(failure_message)
+            self.__fail_unmappable_job(job_wrapper, e)
             return JOB_ERROR, job_destination
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
