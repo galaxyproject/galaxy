@@ -1,6 +1,7 @@
 import json
 import posixpath
 import re
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import (
@@ -89,6 +90,9 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
     ) -> tuple[list[AnyRemoteEntry], int]:
         if recursive:
             raise MessageException("Recursive listing is not supported for DSpace file sources.")
+        parts = self._split(path)
+        if len(parts) == 2:
+            parts[1] = self._uuid(parts[1], path)
         config = context.config
         if (config.token or "").strip():
             # DSpace quietly treats an expired token as no token, so ask whether it still logs in
@@ -96,7 +100,6 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
             if not status.get("authenticated"):
                 raise self._token_not_accepted()
         query = query.strip() if query else None
-        parts = self._split(path)
         if not parts:
             endpoint = "core/communities/search/top"
             if query:
@@ -135,8 +138,9 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         parts = self._split(source_path, maxsplit=2)
         if len(parts) != 3 or parts[0] != "bitstreams":
             raise ObjectNotFound(f"The specified DSpace path is not a file [{source_path}].")
+        bitstream_id = self._uuid(parts[1], source_path)
         config = context.config
-        with self._open_url(config, self._url(config.api_url, f"core/bitstreams/{parts[1]}/content")) as response:
+        with self._open_url(config, self._url(config.api_url, f"core/bitstreams/{bitstream_id}/content")) as response:
             stream_to_path(response, native_path)
 
     def _write_from(
@@ -315,6 +319,13 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
 
     def _url(self, api_url: str, endpoint: str) -> str:
         return f"{api_url.rstrip('/')}/{endpoint}"
+
+    def _uuid(self, value: str, path: str) -> str:
+        # DSpace answers 400 to an id that is not a uuid, the same as to a token it no longer accepts
+        try:
+            return str(uuid.UUID(value))
+        except ValueError as e:
+            raise ObjectNotFound(f"The specified DSpace path has no valid DSpace id [{path}].") from e
 
     def _split(self, path: str, maxsplit: int = -1) -> list[str]:
         path = posixpath.normpath(f"/{path or ''}").strip("/")
