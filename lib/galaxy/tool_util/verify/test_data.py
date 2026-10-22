@@ -1,7 +1,9 @@
 import hashlib
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 from string import Template
 
 from galaxy.util import (
@@ -100,9 +102,19 @@ class GitDataResolver(FileDataResolver):
         self.updated = True
         if not os.path.exists(self.file_dir):
             parent_dir = os.path.dirname(self.file_dir)
-            if not os.path.exists(parent_dir):
-                os.makedirs(parent_dir)
-            self.execute(f"git clone '{self.repository}' '{self.file_dir}'")
+            os.makedirs(parent_dir, exist_ok=True)
+            # Clone next to the cache and move it into place, so that another process sharing the
+            # cache (e.g. a pytest-xdist worker) never sees a partially checked out repository.
+            clone_dir = tempfile.mkdtemp(prefix=f"{os.path.basename(self.file_dir)}.", dir=parent_dir)
+            cloned = self.execute(f"git clone '{self.repository}' '{clone_dir}'") == 0
+            try:
+                if cloned:
+                    os.rename(clone_dir, self.file_dir)
+            except OSError:
+                # Another process moved its clone into place first.
+                cloned = False
+            if not cloned:
+                shutil.rmtree(clone_dir, ignore_errors=True)
         update_command = UPDATE_TEMPLATE.safe_substitute(dir=self.file_dir)
         self.execute(update_command)
 
@@ -122,3 +134,4 @@ class GitDataResolver(FileDataResolver):
                 "stderr": stderr,
             }
             print(UPDATE_FAILED_TEMPLATE.substitute(**kwds))
+        return p.returncode
