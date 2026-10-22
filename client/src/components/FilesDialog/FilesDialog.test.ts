@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 
 /**
@@ -91,15 +92,21 @@ const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
     [paramsToKey({ target: "gxfiles://empty-dir", recursive: "false" }), []],
 ]);
 
-const initComponent = async (props: { multiple: boolean; mode?: string }, hasTemplates = false) => {
+const isRdmFileSource = (fs: BrowsableFilesSourcePlugin) => rdmFileSourceTypes.includes(fs.type);
+
+const initComponent = async (
+    props: { multiple: boolean; mode?: string },
+    hasTemplates = false,
+    plugins = rootResponse,
+) => {
     const localVue = getLocalVue();
 
     server.use(
         http.get("/api/remote_files/plugins", ({ response, query }) => {
             if (query.get("include_kind") === "rdm") {
-                return response(200).json(rootResponse.filter((fs) => rdmFileSourceTypes.includes(fs.type)));
+                return response(200).json(plugins.filter(isRdmFileSource));
             }
-            return response(200).json(rootResponse);
+            return response(200).json(plugins);
         }),
 
         http.get("/api/remote_files", ({ response, query }) => {
@@ -348,6 +355,19 @@ describe("FilesDialog, directory mode", () => {
 
         await utils.openDirectoryById(rdmDatasetId);
         utils.expectOkButtonEnabled();
+    });
+
+    it("should not allow to select the root of a RDM repository added after the dialog was opened", async () => {
+        const plugins = rootResponse.filter((fs) => !isRdmFileSource(fs));
+        const dialog = await initComponent({ multiple: false, mode: "directory" }, false, plugins);
+        const dialogUtils = new Utils(dialog);
+        await dialogUtils.openDirectoryById(rootId);
+
+        plugins.push(...rootResponse.filter(isRdmFileSource));
+        await dialogUtils.navigateBack();
+        await dialogUtils.openDirectoryById(rdmRootId);
+
+        dialogUtils.expectOkButtonDisabled();
     });
 
     it("should show loading error and can return back when there is an error", async () => {
