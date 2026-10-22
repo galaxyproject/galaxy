@@ -340,7 +340,8 @@ watch(
         transition: none;
     }
 
-    &:hover:not(:disabled) {
+    // The current page keeps its fill: blue-100 text on grey-200 would drop to 1.22:1
+    &:hover:not(:disabled):not([aria-current="page"]) {
         background-color: var(--color-grey-200);
     }
 
