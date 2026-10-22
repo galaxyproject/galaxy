@@ -1031,7 +1031,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         login.submit.wait_for_and_click()
         self.snapshot("login-submitted")
 
-    def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
+    def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True, via_masthead=False):
+        """Register a user from the login page's "Register here" form, or the masthead's Register button."""
         if email is None:
             email = self._get_random_email()
         if password is None:
@@ -1042,9 +1043,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             username = email.split("@")[0]
 
         self.home()
-        self.components.masthead.login_masthead_button.wait_for_and_click()
         registration = self.components.registration
-        registration.toggle.wait_for_and_click()
+        if via_masthead:
+            self.components.masthead.register_masthead_button.wait_for_and_click()
+        else:
+            self.components.masthead.login_masthead_button.wait_for_and_click()
+            registration.toggle.wait_for_and_click()
         form = registration.form.wait_for_visible()
         self.fill(form, dict(email=email, password=password, username=username, confirm=confirm))
         registration.submit.wait_for_and_click()
