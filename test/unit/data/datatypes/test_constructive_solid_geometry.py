@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from galaxy.datatypes.constructive_solid_geometry import (
@@ -24,6 +26,13 @@ def test_vtkXml_set_meta():
     assert dataset.metadata.dataset_type == "UnstructuredGrid"
 
 
+def _vtk_xml_dataset(dataset_type: str | None) -> Any:
+    dataset: Any = MockDataset(1)
+    dataset.extension = "vtkxml"
+    dataset.metadata.dataset_type = dataset_type
+    return dataset
+
+
 @pytest.mark.parametrize(
     "dataset_type, expected_extension",
     [
@@ -40,20 +49,12 @@ def test_vtkXml_set_meta():
     ],
 )
 def test_vtkXml_download_extension(dataset_type, expected_extension):
-    dataset = MockDataset(1)
-    dataset.extension = "vtkxml"
-    dataset.metadata.dataset_type = dataset_type
-
-    assert VtkXml().get_download_extension(dataset) == expected_extension
+    assert VtkXml().get_download_extension(_vtk_xml_dataset(dataset_type)) == expected_extension
 
 
 @pytest.mark.parametrize("dataset_type", [None, "?", "NotAVTKDataSetType"])
 def test_vtkXml_download_extension_unknown_type(dataset_type):
-    dataset = MockDataset(1)
-    dataset.extension = "vtkxml"
-    dataset.metadata.dataset_type = dataset_type
-
-    assert VtkXml().get_download_extension(dataset) == "vtkxml"
+    assert VtkXml().get_download_extension(_vtk_xml_dataset(dataset_type)) == "vtkxml"
 
 
 def test_vtkXml_download_filename():
