@@ -446,6 +446,21 @@ class TestDatasetsApi(ApiTestCase):
             assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
             assert response.content == content
 
+    def test_vtkxml_download_filename(self, history_id):
+        hda = self.dataset_populator.new_dataset(
+            history_id,
+            content='<?xml version="1.0"?>\n<VTKFile type="PolyData" version="0.1">\n</VTKFile>\n',
+            file_type="vtkxml",
+            name="mesh",
+            wait=True,
+        )
+        for params in ({}, {"to_ext": "data"}, {"to_ext": "vtkxml"}):
+            response = self._get(f"datasets/{hda['id']}/download", params)
+            self._assert_status_code_is(response, 200)
+            assert response.headers["Content-Disposition"].startswith(
+                f'attachment; filename="Galaxy{hda["hid"]}-[mesh].vtp"'
+            )
+
     def test_display_images_inline(self, history_id):
         for extension, content_type in (("png", "image/png"), ("pdf", "application/pdf")):
             filename = f"454Score.{extension}"
