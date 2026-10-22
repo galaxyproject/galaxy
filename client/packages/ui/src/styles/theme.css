@@ -10,8 +10,11 @@
  * `selected`, `highlight`, `inverse`.
  *
  * Prefer the semantic names over raw palette shades in new code.
+ *
+ * `static` makes Tailwind emit every token, not only those a utility uses:
+ * components read them through var().
  */
-@theme {
+@theme static {
     /* palette */
     --color-blue-900: #040b21;
     --color-blue-800: #191f33;

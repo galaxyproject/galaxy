@@ -22,10 +22,10 @@ const HEADER = `/*
 
 export function generateTokens(themeSource) {
     const body = themeSource.slice(themeSource.indexOf("@theme"));
-    if (!body.startsWith("@theme {")) {
-        throw new Error("theme.css must contain a single `@theme {` block");
+    if (!body.startsWith("@theme static {")) {
+        throw new Error("theme.css must contain a single `@theme static {` block");
     }
-    return HEADER + body.replace("@theme {", ":root,\n.reset-theme-variables {");
+    return HEADER + body.replace("@theme static {", ":root,\n.reset-theme-variables {");
 }
 
 /**
