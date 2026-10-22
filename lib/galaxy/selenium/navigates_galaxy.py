@@ -2815,6 +2815,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 details_component.wait_for_absent_or_hidden()
             else:
                 details_component.wait_for_visible()
+                # details are clipped until the expand transition ends
+                item_component.details_expanded.wait_for_present()
         return item_component
 
     def history_panel_ensure_showing_item_details(self, hid):
