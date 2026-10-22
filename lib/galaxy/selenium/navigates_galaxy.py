@@ -1313,6 +1313,28 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.screenshot(screenshot_partial)
         self.drag_and_drop(source_element, sink_element)
 
+    def workflow_editor_try_connect(
+        self, source: EditorTerminalReference, sink: EditorTerminalReference, screenshot_partial: str | None = None
+    ) -> str | None:
+        """Drag ``source`` onto ``sink``; return the editor's reason for refusing the drop, or None if it accepted."""
+        source_element, sink_element = self.workflow_editor_source_sink_terminal_elements(source, sink)
+        sink_node, sink_input_name = self.workflow_editor_node_and_terminal(sink)
+        with self.drag_over(source_element, sink_element):
+            # Idle terminals also carry can-not-accept; only judge once the drag has registered.
+            dragged_over = sink_node.input_terminal_dragging(name=sink_input_name).wait_for_present()
+            if sink_node.input_terminal(name=sink_input_name).has_class("can-accept"):
+                return None
+            tooltip_id = dragged_over.get_attribute("aria-describedby")
+            reason = self.components._.tooltip_by_id(id=tooltip_id).wait_for_text()
+            if screenshot_partial:
+                self.screenshot(screenshot_partial)
+            return reason
+
+    def workflow_editor_remove_node(self, node_ref: EditorNodeReference):
+        node = self.workflow_editor_node(node_ref)
+        node.destroy.wait_for_and_click()
+        node.wait_for_absent()
+
     def workflow_editor_node(self, node_ref: EditorNodeReference) -> SmartComponent:
         node = self.components.workflow_editor.node
         return node._(id=node_ref) if isinstance(node_ref, int) else node._(label=node_ref)
