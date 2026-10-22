@@ -218,6 +218,7 @@ class ImportOptions:
     allow_library_creation: bool
     allow_dataset_object_edit: bool
     discarded_data: ImportDiscardedDataType
+    commit: bool
 
     def __init__(
         self,
@@ -225,6 +226,7 @@ class ImportOptions:
         allow_library_creation: bool = False,
         allow_dataset_object_edit: bool | None = None,
         discarded_data: ImportDiscardedDataType = DEFAULT_DISCARDED_DATA_TYPE,
+        commit: bool = True,
     ) -> None:
         self.allow_edit = allow_edit
         self.allow_library_creation = allow_library_creation
@@ -233,6 +235,9 @@ class ImportOptions:
         else:
             self.allow_dataset_object_edit = allow_dataset_object_edit
         self.discarded_data = discarded_data
+        # Transaction ownership may be delegated to a caller that commits the
+        # import together with its recovery receipt. Preserve native defaults.
+        self.commit = commit
 
 
 class SessionlessContext:
@@ -854,7 +859,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     ld.library_dataset_dataset_association = ldda
                 self._session_add(ld)
 
-            self.sa_session.commit()
+            self._flush()
             return library_folder
 
         libraries_attrs = self.library_properties()
@@ -1466,7 +1471,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
-        self.sa_session.commit()
+        if self.import_options.commit:
+            self.sa_session.commit()
+        else:
+            self.sa_session.flush()
 
 
 def _copied_from_object_key(
