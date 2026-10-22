@@ -11,7 +11,10 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    field_validator,
+)
 from urllib3.util import parse_url
 
 from galaxy.exceptions import (
@@ -67,6 +70,11 @@ class DSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
     ] = None
     writable: Literal[False] = False
 
+    @field_validator("token")
+    @classmethod
+    def strip_token(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
+
 
 class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, DSpaceFileSourceConfiguration]):
     plugin_type = "dspace"
@@ -93,7 +101,7 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         if len(parts) == 2:
             parts[1] = self._uuid(parts[1], path)
         config = context.config
-        if (config.token or "").strip():
+        if config.token:
             # DSpace quietly treats an expired token as no token, so ask whether it still logs in
             status = self._get_json(config, self._url(config.api_url, "authn/status"), {})
             if not status.get("authenticated"):
@@ -256,7 +264,7 @@ class DSpaceFilesSource(BaseFilesSource[DSpaceFileSourceTemplateConfiguration, D
         params: dict[str, str] | None = None,
         accept: str = "application/octet-stream",
     ) -> Iterator[Any]:
-        token = (config.token or "").strip()
+        token = config.token
         try:
             # redirects are followed here, so every address is checked before it is requested
             for _ in range(MAX_REDIRECTS + 1):

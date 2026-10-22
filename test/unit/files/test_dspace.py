@@ -99,7 +99,7 @@ def test_download_checks_every_redirect_and_keeps_the_token_on_dspace():
     _fake_repository()
     responses.get(f"{API}/core/bitstreams/{FASTQ}/content", status=302, headers={"Location": CDN})
     responses.get(CDN, body=b"abc")
-    file_sources = _source(token="secret")
+    file_sources = _source(token=" secret\n")
     assert realize_to_temp_file(file_sources, f"gxfiles://dspace/bitstreams/{FASTQ}/reads.fastq") == "abc"
     auth = {str(call.request.url).split("?")[0]: call.request.headers.get("Authorization") for call in responses.calls}
     assert auth[f"{API}/core/bitstreams/{FASTQ}/content"] == "Bearer secret"
