@@ -1389,15 +1389,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_editor_node(self, node_ref: EditorNodeReference) -> SmartComponent:
         node = self.components.workflow_editor.node
-        return node._(id=node_ref) if isinstance(node_ref, int) else node._(label=node_ref)
+        return node._(id=node_ref) if isinstance(node_ref, int) else node._(label=css_attribute_value(node_ref))
 
     def workflow_editor_node_and_terminal(self, terminal: EditorTerminalReference) -> tuple[SmartComponent, str]:
-        """Resolve a ``label#terminal`` or ``(node, terminal)`` reference to a node component and terminal name."""
+        """Resolve a ``label#terminal`` or ``(node, terminal)`` reference to a node component and CSS-escaped terminal name."""
         if isinstance(terminal, tuple):
             node_ref, terminal_name = terminal
         else:
             node_ref, terminal_name = terminal.split("#", 1)
-        return self.workflow_editor_node(node_ref), terminal_name
+        return self.workflow_editor_node(node_ref), css_attribute_value(terminal_name)
 
     def workflow_editor_source_sink_terminal_ids(
         self, source: EditorTerminalReference, sink: EditorTerminalReference

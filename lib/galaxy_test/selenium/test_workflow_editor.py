@@ -853,6 +853,55 @@ steps:
         self.assert_workflow_has_changes_and_save()
         assert list(self._saved_tool_step_connections().values()) == [from_input1]
 
+    @selenium_test
+    def test_connections_with_labels_needing_css_escapes(self):
+        self.open_in_workflow_editor(r"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  nested:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        "it's an input": data
+      outputs:
+        "it's a \\ output":
+          outputSource: inner_cat/out_file1
+      steps:
+        inner_cat:
+          tool_id: cat
+          in:
+            input1: "it's an input"
+  "cat's downstream":
+    tool_id: cat
+""")
+        # Step labels and subworkflow terminal names are free text.
+        nested_input = "nested#it's an input"
+        nested_output = ("nested", "it's a \\ output")
+        downstream_input = "cat's downstream#input1"
+        self.workflow_editor_connect("outer_input#output", nested_input)
+        self.workflow_editor_connect(nested_output, downstream_input)
+        self.workflow_editor_assert_connected("outer_input#output", nested_input)
+        self.workflow_editor_assert_connected(nested_output, downstream_input)
+        self.assert_workflow_has_changes_and_save()
+        connections = self._saved_step_connections_by_label()
+        assert connections == {
+            "outer_input": {},
+            "nested": {"it's an input": ("outer_input", "output")},
+            "cat's downstream": {"input1": ("nested", "it's a \\ output")},
+        }
+
+        self.workflow_editor_destroy_connection(nested_input)
+        self.workflow_editor_assert_not_connected("outer_input#output", nested_input)
+        self.workflow_editor_assert_connected(nested_output, downstream_input)
+        self.assert_workflow_has_changes_and_save()
+        assert self._saved_step_connections_by_label() == {
+            "outer_input": {},
+            "nested": {},
+            "cat's downstream": {"input1": ("nested", "it's a \\ output")},
+        }
+
     def _saved_step_connections_by_label(self) -> dict[str, dict[str, tuple[str, str]]]:
         """Map each saved step's label to its input connections."""
         return {step["label"]: inputs for step, inputs in self._saved_steps_with_connections()}
