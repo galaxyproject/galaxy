@@ -1243,9 +1243,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def upload_paste_data(self, pasted_content, tab_id="regular"):
         tab_locator = f"div#{tab_id}"
-        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
+        # The button is disabled (g-disabled, not the disabled attribute) while earlier uploads run,
+        # and a click on it then adds no row.
+        self.wait_for_selector_clickable(
+            f"{tab_locator} button#btn-new:not(.g-disabled)", wait_type=WAIT_TYPES.JOB_COMPLETION
+        ).click()
 
-        textarea = self.wait_for_selector(f"{tab_locator} .upload-row:last-of-type .upload-text-content")
+        # Until the new row renders, the last row may be an uploaded one whose textarea is disabled.
+        textarea = self.wait_for_selector_clickable(
+            f"{tab_locator} .upload-row.upload-init:last-of-type .upload-text-content"
+        )
         textarea.send_keys(pasted_content)
 
     def upload_uri(self, uri, wait=False):
@@ -2204,17 +2211,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         invocations.invocations_table.wait_for_visible()
         return invocations.invocations_table_rows.all()
 
-    def open_toolbox(self):
+    def open_toolbox(self) -> None:
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        if self.element_absent(self.components.tools.tools_activity_workflow_editor):
-            if self.element_absent(self.components._.toolbox_panel):
-                self.components.tools.activity.wait_for_and_click()
-        else:
-            if self.element_absent(self.components._.toolbox_panel):
-                self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+        toolbox_panel = self.components._.toolbox_panel
 
-        self.sleep_for(self.wait_types.UX_RENDER)
+        def ensure_open() -> None:
+            if toolbox_panel.is_absent or not toolbox_panel.is_displayed:
+                if self.components.tools.tools_activity_workflow_editor.is_absent:
+                    self.components.tools.activity.wait_for_and_click()
+                else:
+                    self.components.tools.tools_activity_workflow_editor.wait_for_and_click()
+            toolbox_panel.wait_for_visible()
+
+        retry_call_during_transitions(
+            ensure_open,
+            attempts=0,
+            exception_check=lambda exception: isinstance(exception, SeleniumTimeoutException)
+            or exception_seems_to_indicate_transition(exception),
+        )
 
     def swap_to_tool_panel(self, panel_id: str) -> None:
         tool_panel = self.components.tool_panel

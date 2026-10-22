@@ -64,7 +64,7 @@ jobs:
           playwright install
         working-directory: 'galaxy root'
       - name: Run tests
-        run: ./run_tests.sh -toolshed
+        run: ./run_tests.sh -toolshed ./lib/tool_shed/test/functional -- -n 3 --dist loadscope
         env:
           TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
         working-directory: 'galaxy root'

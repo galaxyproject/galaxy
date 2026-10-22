@@ -25,6 +25,7 @@ from urllib.parse import urlparse
 
 from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
+from sqlalchemy.engine import make_url
 from starlette.routing import Mount
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
@@ -386,6 +387,9 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
         database_connection = os.environ[dburi_var]
         # only template if postgres - not mysql or sqlite
         do_template = prefer_template_database and database_connection.startswith("p")
+        if not do_template and (xdist_worker := os.environ.get("PYTEST_XDIST_WORKER")):
+            # Every pytest-xdist worker runs its own server, which needs its own database.
+            database_connection = _worker_database_connection(database_connection, xdist_worker)
         if do_template:
             database_template_parsed = urlparse(database_connection)
             template_name = database_template_parsed.path[1:]  # drop / from /galaxy
@@ -419,6 +423,12 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     if template_name:
         config["database_template"] = template_name
     return config
+
+
+def _worker_database_connection(database_connection: str, worker_id: str) -> str:
+    url = make_url(database_connection)
+    root, ext = os.path.splitext(url.database or "")
+    return url.set(database=f"{root}_{worker_id}{ext}").render_as_string(hide_password=False)
 
 
 def install_database_conf(db_path, default_merged=False):
@@ -536,8 +546,33 @@ def attempt_ports(port=None, set_galaxy_web_port=True) -> str:
         raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
 
 
-def uvicorn_serve(app, port, host=None):
-    """Serve the webapp on a recommend port or a free one.
+def reserve_port(host: str, port: str | None = None) -> socket.socket:
+    """Bind and listen on the server socket now, and keep it until the server serves on it.
+
+    A port released while the app builds can be taken by another test server, whose
+    responses would then satisfy this server's readiness check. Listening makes the
+    reservation exclusive: Linux lets several SO_REUSEADDR sockets bind one port while
+    none of them listens.
+    """
+    candidates = [int(port)] if port is not None else [random.randint(8000, 10000) for _ in range(9)]
+    for candidate in candidates:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((host, candidate))
+            sock.listen()
+        except OSError:
+            sock.close()
+            continue
+        os.environ["GALAXY_WEB_PORT"] = str(candidate)
+        return sock
+    if port is not None:
+        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
+    raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
+
+
+def uvicorn_serve(app, sock: socket.socket, host=None):
+    """Serve the webapp on the reserved socket.
 
     Return the port the webapp is running on.
     """
@@ -546,14 +581,17 @@ def uvicorn_serve(app, port, host=None):
     from uvicorn.config import Config
     from uvicorn.server import Server
 
+    port = str(sock.getsockname()[1])
     access_log = False if "GALAXY_TEST_DISABLE_ACCESS_LOG" in os.environ else True
-    config = Config(app, host=host, port=int(port), access_log=access_log)
+    # requests does not retry a POST on a pooled connection that the server just closed, so
+    # keep idle connections open across slow test steps.
+    config = Config(app, host=host, port=int(port), access_log=access_log, timeout_keep_alive=600)
     server = Server(config=config)
 
     def run_in_loop(loop):
         try:
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(server.serve())
+            loop.run_until_complete(server.serve(sockets=[sock]))
         finally:
             loop.close()
             asyncio.set_event_loop(None)
@@ -865,8 +903,13 @@ def _rebind_tus_routes(app: FastAPI, gx_app, original_lifespan_context) -> None:
 
 
 def _is_tus_route(route) -> bool:
-    path = getattr(route, "path", None)
-    return bool(path and any(path.startswith(p) for p in _TUS_PREFIXES))
+    """Recognize the routes ``include_tus`` contributed, however FastAPI stored them.
+
+    An included router may appear as one ``_IncludedRouter`` entry carrying no ``path``
+    of its own, in which case its prefix identifies it.
+    """
+    prefix = getattr(route, "path", None) or getattr(getattr(route, "original_router", None), "prefix", None)
+    return bool(prefix and prefix.startswith(_TUS_PREFIXES))
 
 
 def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
@@ -940,17 +983,21 @@ def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     ``build_galaxy_web_app`` as its ``init_fast_app``. Other callers keep
     using the default uncached ``init_galaxy_fast_app``.
 
-    Falls back to a fresh build when the topology differs from the
-    cached shell (non-default ``galaxy_url_prefix`` or MCP enabled),
-    because those paths produce a parent wrapper / lifespan-bound
-    app that is awkward to re-bind.
+    Builds a fresh app for shapes ``_rebind_fast_app_for_launch`` cannot produce:
+    a non-default ``galaxy_url_prefix`` or MCP (parent wrapper / lifespan-bound
+    app), and ``use_access_logging_middleware`` (middleware chosen at build time).
     """
-    topology_differs = gx_app.config.galaxy_url_prefix != "/" or gx_app.config.enable_mcp_server
+
+    config = gx_app.config
+    topology_differs = (
+        config.galaxy_url_prefix != "/" or config.enable_mcp_server or config.use_access_logging_middleware
+    )
     if topology_differs:
         return init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
     slot = _test_fast_app_slot()
     existing = slot.get("app")
     if existing is None:
+        log.debug("Creating cached FastAPI app")
         app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
         slot["app"] = app
         slot["lifespan_context"] = app.router.lifespan_context
@@ -979,9 +1026,16 @@ def launch_server(
 ):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
-    port = attempt_ports(port)
-
     enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
+    use_gravity = enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY")
+    sock = None
+    if use_gravity:
+        # Gravity binds the port in its own processes.
+        port = attempt_ports(port)
+    else:
+        sock = reserve_port(host, port)
+        port = str(sock.getsockname()[1])
+
     if enable_realtime_mapping:
         interactive_tool_defaults = {
             "interactivetools_map": tempfile.NamedTemporaryFile(
@@ -994,18 +1048,23 @@ def launch_server(
         interactive_tool_defaults.update(galaxy_config or {})
         galaxy_config = interactive_tool_defaults
 
-    if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
+    if use_gravity:
         galaxy_config["root"] = galaxy_root
         state_dir, galaxyctl, gxit_port = launch_gravity(port=port, galaxy_config=galaxy_config)
         gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, galaxyctl, gxit_port=gxit_port)
         gravity_wrapper.wait_for_server()
         return gravity_wrapper
 
-    web_app = webapp_bundle_factory()
+    assert sock is not None
+    try:
+        web_app = webapp_bundle_factory()
+    except BaseException:
+        sock.close()
+        raise
     app = web_app.app
     url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
 
-    server, port, thread = uvicorn_serve(web_app.asgi_app, host=host, port=port)
+    server, port, thread = uvicorn_serve(web_app.asgi_app, sock, host=host)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
     log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)

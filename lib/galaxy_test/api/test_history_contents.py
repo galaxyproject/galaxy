@@ -5,6 +5,7 @@ from typing import (
     Union,
 )
 
+from galaxy.util.wait import wait_on
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
     requires_admin,
@@ -1591,16 +1592,23 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
-            new_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "tabular"
                     assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                     assert "metadata_column_names" in item
-                if item["history_content_type"] == "dataset_collection":
-                    new_collection_update_times.append(item["update_time"])
 
-            assert original_collection_update_times != new_collection_update_times
+            # The collection's update_time is touched by the last task in the chain, after the datasets change.
+            def collection_update_times_changed():
+                history_contents = self._get_history_contents(history_id, query="?v=dev&keys=update_time")
+                update_times = [
+                    item["update_time"]
+                    for item in history_contents
+                    if item["history_content_type"] == "dataset_collection"
+                ]
+                return update_times != original_collection_update_times or None
+
+            wait_on(collection_update_times_changed, "collection update times to change", timeout=30)
 
     def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
         with self.dataset_populator.test_history() as history_id:

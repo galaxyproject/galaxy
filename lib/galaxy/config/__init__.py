@@ -668,7 +668,8 @@ class CommonConfigurationMixin:
     def _ensure_directory(self, path):
         if path not in [None, False] and not os.path.isdir(path):
             try:
-                os.makedirs(path)
+                # Another process starting with the same configuration may create it first.
+                os.makedirs(path, exist_ok=True)
             except Exception as e:
                 raise ConfigurationError(f"Unable to create missing directory: {path}\n{unicodify(e)}")
 
@@ -1452,6 +1453,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
             self.data_dir,
+            self.file_path,
             self.ftp_upload_dir,
             self.library_import_dir,
             self.managed_config_dir,
