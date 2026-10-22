@@ -450,11 +450,11 @@ class TextToolParameter(SimpleTextToolParameter):
     ...     p.validate([["ab"]])
     >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
     ...     p.validate([True])
+    >>> with assert_throws_param_value_error("Parameter '_name': entries must be text"):
+    ...     p.validate([1])
     >>> with assert_throws_param_value_error("Parameter '_name': at least one value is required"):
     ...     p.validate(None)
     >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "optional": True}).validate(None)
-    >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": [1, 2]}).get_initial_value(None, {})
-    ['1', '2']
     >>> p.from_json("ab", trans)
     ['ab']
     >>> TextToolParameter(None, {"name": "_name", "type": "text", "multiple": True, "value": "ab"}).get_initial_value(None, {})
@@ -491,9 +491,8 @@ class TextToolParameter(SimpleTextToolParameter):
         values = self._multiple_values(value)
         if any(v is None or v == "" for v in values):
             raise ParameterValueError("entries cannot be empty", self.name, value)
-        if any(isinstance(v, bool) or not isinstance(v, (str, int, float)) for v in values):
+        if any(not isinstance(v, str) for v in values):
             raise ParameterValueError("entries must be text", self.name, value)
-        values = [str(v) for v in values]
         if any("\n" in v for v in values):
             message = "values cannot contain newlines"
             if not isinstance(value, list):
@@ -513,7 +512,7 @@ class TextToolParameter(SimpleTextToolParameter):
 
     def get_initial_value(self, trans: "ProvidesHistoryContext | None", other_values):
         if self.multiple and self.value is not None:
-            return [str(v) for v in self._multiple_values(self.value)]
+            return self._multiple_values(self.value)
         return super().get_initial_value(trans, other_values)
 
     def to_json(self, value, app, use_security):

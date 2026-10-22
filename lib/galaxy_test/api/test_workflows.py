@@ -10407,7 +10407,7 @@ steps:
         assert [value for _, value, selected in options if selected] == ["ex2", "--ex3"]
 
     @skip_without_tool("multi_select_numeric")
-    def test_value_restriction_selects_multiple_numeric_text_list_default(self):
+    def test_value_restriction_rejects_multiple_numeric_text_list_default(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -10422,10 +10422,10 @@ steps:
       select_numeric: values
 """)
         with self.dataset_populator.test_history() as history_id:
-            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
-        (runtime_input,) = run_workflow["steps"][0]["inputs"]
-        assert runtime_input["value"] == ["1", "2"]
-        assert [value for _, value, selected in runtime_input["options"] if selected] == ["1", "2"]
+            response = self._get(f"workflows/{workflow_id}/download", data={"style": "run", "history_id": history_id})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow step 'values' cannot be run")
+        assert_error_message_contains(response, "the attribute 'value' must be text")
 
     def test_value_restriction_with_select_from_subworkflow_input(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
