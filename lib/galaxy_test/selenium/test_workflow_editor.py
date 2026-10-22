@@ -806,7 +806,7 @@ steps:
         self.workflow_editor_remove_node("first_cat")
         self.assert_workflow_has_changes_and_save()
 
-        connections = {step["label"]: inputs for step, inputs in self._saved_steps_with_connections()}
+        connections = self._saved_step_connections_by_label()
         assert connections == {
             "input1": {},
             "int_input": {},
@@ -852,6 +852,10 @@ steps:
         self.workflow_editor_remove_node(empty_step)
         self.assert_workflow_has_changes_and_save()
         assert list(self._saved_tool_step_connections().values()) == [from_input1]
+
+    def _saved_step_connections_by_label(self) -> dict[str, dict[str, tuple[str, str]]]:
+        """Map each saved step's label to its input connections."""
+        return {step["label"]: inputs for step, inputs in self._saved_steps_with_connections()}
 
     def _saved_tool_step_connections(self) -> dict[int, dict[str, tuple[str, str]]]:
         """Map each unlabelled tool step's order index to its saved connections."""
