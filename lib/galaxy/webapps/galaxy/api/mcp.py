@@ -35,6 +35,7 @@ from galaxy.tool_util.deps.mulled.recommend import (
     PackageSpec,
     recommend_container,
 )
+from galaxy.webapps.galaxy.api import api_key_header
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -47,7 +48,7 @@ logging.getLogger("fakeredis").setLevel(logging.WARNING)
 logging.getLogger("docket").setLevel(logging.WARNING)
 logging.getLogger("docket.worker").setLevel(logging.WARNING)
 
-API_KEY_HEADER = "x-api-key"
+API_KEY_HEADER = api_key_header.model.name
 
 ApiKey = Annotated[
     str | None,
