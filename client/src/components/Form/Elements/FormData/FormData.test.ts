@@ -644,7 +644,7 @@ describe("FormData", () => {
                 { type: "data_collection", collectionTypes: ["list", "list:list"] },
                 "list:list:list",
                 "list:list",
-                "7: dropped (one job per list:list)",
+                "7: dropped (one job per list:list collection)",
             ],
         ])(
             "appears once on %s after the server lists it",
@@ -916,6 +916,21 @@ describe("FormData batch hint", () => {
             /^The supplied input will be .*mapped over this tool: one job per paired_or_unpaired collection\.$/,
         );
         expect(wrapper.find(`${BATCH_INFO} code`).text()).toBe("paired_or_unpaired");
+    });
+
+    it.each([
+        ["single_datasets", "dataset"],
+        ["paired", "dataset pair"],
+        ["list:list", "list:list collection"],
+    ])("names the same job unit in the selected %s row and the hint", async (mapOverType, unit) => {
+        const wrapper = createTarget({
+            type: "data_collection",
+            value: { values: [{ id: "hdca9", src: "hdca", map_over_type: mapOverType }] },
+            options: { hdca: [{ id: "hdca9", hid: 9, name: "samples", src: "hdca", map_over_type: mapOverType }] },
+        });
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(SELECTED_VALUE).text()).toBe(`9: samples (one job per ${unit})`);
+        expect(batchInfoText(wrapper)).toMatch(new RegExp(`mapped over this tool: one job per ${unit}\\.$`));
     });
 
     it("names no job unit when several selected collections map over", async () => {

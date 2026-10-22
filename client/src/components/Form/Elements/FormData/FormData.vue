@@ -231,20 +231,14 @@ const mapsOver = computed(
 );
 
 /**
- * What each mapped over job receives for a single selected collection, e.g. a "dataset pair",
- * a `paired_or_unpaired` (`code`) collection or a dataset; unknown for multiple selections
+ * What each mapped over job receives for a single selected collection; unknown for multiple selections
  */
-const mapOverUnit = computed((): { code?: string; text: string } | null => {
+const mapOverUnit = computed((): MapOverUnit | null => {
     const [single, ...rest] = currentValue.value ?? [];
     if (!mapsOver.value || !single || rest.length > 0) {
         return null;
     }
-    const type = single.map_over_type;
-    if (!type || type === "single_datasets") {
-        return { text: localize("dataset") };
-    }
-    const label = COLLECTION_TYPE_TO_LABEL[type];
-    return label ? { text: localize(label.toLowerCase()) } : { code: type, text: localize("collection") };
+    return mapOverUnitFor(single.map_over_type);
 });
 
 /**
@@ -499,6 +493,21 @@ function createValue(val?: Array<DataOption> | DataOption | null) {
     }
 }
 
+type MapOverUnit = { code?: string; text: string };
+
+/**
+ * What each mapped over job receives for a map-over type, e.g. a "dataset pair", a
+ * `paired_or_unpaired` (`code`) collection or a dataset
+ */
+function mapOverUnitFor(mapOverType?: string | null): MapOverUnit {
+    // ``single_datasets`` is also the server's map-over type for a plain list fed to a ``paired_or_unpaired`` input
+    if (!mapOverType || mapOverType === "single_datasets") {
+        return { text: localize("dataset") };
+    }
+    const label = COLLECTION_TYPE_TO_LABEL[mapOverType];
+    return label ? { text: localize(label.toLowerCase()) } : { code: mapOverType, text: localize("collection") };
+}
+
 /**
  * Tells a collection input's map-over option apart from its direct option. Collections on a
  * dataset input all map over, so they carry no suffix.
@@ -507,9 +516,8 @@ function mapOverSuffix(option: DataOption): string {
     if (props.type !== "data_collection" || !option.map_over_type) {
         return "";
     }
-    // the server's map-over type for a plain list fed to a ``paired_or_unpaired`` input
-    const unit = option.map_over_type === "single_datasets" ? "dataset" : collectionTypeToText(option.map_over_type);
-    return ` (one job per ${unit})`;
+    const { code, text } = mapOverUnitFor(option.map_over_type);
+    return ` (${localize("one job per")} ${code ? `${code} ` : ""}${text})`;
 }
 
 /**
