@@ -39,6 +39,8 @@ export { default as GLink } from "./components/GLink.vue";
 export { default as GModal } from "./components/GModal.vue";
 export { default as GOverlay } from "./components/GOverlay.vue";
 export { default as GPopover } from "./components/GPopover.vue";
+export { default as GProgress } from "./components/GProgress.vue";
+export { default as GProgressBar } from "./components/GProgressBar.vue";
 export { default as GTab } from "./components/GTab.vue";
 export type {
     BootstrapSize,
@@ -62,6 +64,7 @@ export { default as GToast } from "./components/GToast.vue";
 export { default as GTooltip } from "./components/GTooltip.vue";
 export { type CustomIconDefinition, type IconLike } from "./components/iconTypes";
 export { liveRegionKey } from "./components/liveRegionContext";
+export { type ProgressVariant } from "./components/progressContext";
 export { useAccessibleHover } from "./composables/accessibleHover";
 export { type ClickableProps, useClickableElement } from "./composables/clickableElement";
 export { type HasTitleProps, useCurrentTitle } from "./composables/currentTitle";
