@@ -5,9 +5,11 @@ import pytest
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
+    MessageException,
     RequestParameterInvalidException,
 )
 from galaxy.files.uris import (
+    refuse_a_private_address,
     validate_non_local,
     validate_uri_access,
 )
@@ -65,6 +67,18 @@ def test_validate_non_local_strips_surrounding_whitespace():
     # slip through to getaddrinfo and raise an opaque error.
     assert validates_as_non_local("  http://google.com/x  ", [])
     assert validates_as_non_local("\thttp://google.com/x\n", [])
+
+
+@pytest.mark.usefixtures("fake_public_dns")
+def test_refuse_a_private_address_parses_the_url_as_requests_does():
+    refuse_a_private_address("https://google.com/api", [], "Repo", "https://example.org/api")
+    refuse_a_private_address("http://[::1]:8080/api", [ipaddress.ip_address("::1")], "Repo", "https://example.org/api")
+    for private in ("HTTP://127.0.0.1/api", "http://[::1]:8080/api", " http://169.254.169.254/latest"):
+        with pytest.raises(ConfigDoesNotAllowException, match="Repo points to .* fetch_url_allowlist"):
+            refuse_a_private_address(private, [], "Repo", "https://example.org/api")
+    for malformed in ("ftp://google.com/api", "google.com/api", "http:///api"):
+        with pytest.raises(MessageException, match="Repo needs an http or https URL like https://example.org/api"):
+            refuse_a_private_address(malformed, [], "Repo", "https://example.org/api")
 
 
 def validates_as_non_local(uri: str, allow_list):
