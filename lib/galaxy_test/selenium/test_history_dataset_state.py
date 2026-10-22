@@ -135,8 +135,6 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions, UsesU
             assert item.download_button.is_displayed
         else:
             item.download_button.assert_absent_or_hidden()
-        item.dataset_operations.wait_for_visible()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):
         item = self.history_panel_item_component(hid=hid)
