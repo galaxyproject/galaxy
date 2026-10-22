@@ -13,6 +13,7 @@ from galaxy.exceptions import (
     AuthenticationRequired,
     ConfigDoesNotAllowException,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
 from ._util import (
@@ -129,3 +130,11 @@ def test_an_id_that_is_not_a_uuid_is_not_found_without_asking_dspace():
         with pytest.raises(ObjectNotFound):
             file_sources.get_file_source_path("gxfiles://dspace").file_source.list(path.format(ITEM=ITEM))
     assert not responses.calls
+
+
+@responses.activate
+def test_a_search_dspace_cannot_parse_is_an_invalid_request():
+    responses.get(f"{API}/discover/search/objects", status=422)
+    file_source = _source().get_file_source_path("gxfiles://dspace").file_source
+    with pytest.raises(RequestParameterInvalidException, match=r"could not search for \("):
+        file_source.list(f"/collections/{COLLECTION}", limit=10, offset=0, query="(")
