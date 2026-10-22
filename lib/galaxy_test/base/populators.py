@@ -2410,7 +2410,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
         name: str | None = None,
     ) -> Generator[str, None, None]:
         with self.galaxy_interactor.test_history(
-            require_new=require_new, cleanup_callback=cleanup_callback
+            require_new=require_new, cleanup_callback=cleanup_callback, name=name
         ) as history_id:
             yield history_id
 
