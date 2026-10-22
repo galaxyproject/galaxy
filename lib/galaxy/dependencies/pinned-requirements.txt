@@ -44,7 +44,7 @@ cachecontrol==0.14.4
 cachetools==6.2.4
 caio==0.9.25
 celery==5.6.2
-certifi==2026.1.4
+certifi==2026.10.19
 cffi==2.0.0 ; implementation_name == 'pypy' or platform_python_implementation != 'PyPy'
 charset-normalizer==3.4.4
 circus==0.19.0
