@@ -162,6 +162,18 @@ def get_session(
     return None
 
 
+def get_user_from_credentials(user_manager: UserManager, api_key: str | None, access_token: str | None) -> User | None:
+    """Find the user for a Galaxy API key or, failing that, an OIDC access token.
+
+    Shared by the REST API and the MCP server.
+    """
+    if api_key:
+        return user_manager.by_api_key(api_key=api_key)
+    if access_token:
+        return user_manager.by_oidc_access_token(access_token=access_token)
+    return None
+
+
 def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
@@ -176,12 +188,11 @@ def get_api_user(
         ),
     ),
 ) -> User | None:
-    if api_key := key or x_api_key:
-        user = user_manager.by_api_key(api_key=api_key)
-    elif bearer_token:
-        user = user_manager.by_oidc_access_token(access_token=bearer_token.credentials)
-    else:
+    api_key = key or x_api_key
+    access_token = bearer_token.credentials if bearer_token else None
+    if not (api_key or access_token):
         return None
+    user = get_user_from_credentials(user_manager, api_key, access_token)
     if run_as:
         if user_manager.user_can_do_run_as(user):
             return user_manager.by_id(run_as)
