@@ -1489,6 +1489,19 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def get_dataset_permissions(self, dataset_id: str) -> dict[str, list[str]]:
+        response = self._get(f"datasets/{dataset_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()["permissions"]
+
+    def assert_history_datasets_permissions(self, history_id: str, expected_count: int, access_private: bool) -> None:
+        role_id = self.user_private_role_id()
+        datasets = self.get_history_contents_of_type(history_id, "datasets")
+        assert len(datasets) == expected_count, [d["name"] for d in datasets]
+        expected = {"manage": [role_id], "access": [role_id] if access_private else []}
+        permissions = {d["name"]: self.get_dataset_permissions(d["id"]) for d in datasets}
+        assert permissions == dict.fromkeys(permissions, expected)
+
     def get_usage(self) -> list[dict[str, Any]]:
         usage_response = self.galaxy_interactor.get("users/current/usage")
         usage_response.raise_for_status()

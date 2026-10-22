@@ -91,26 +91,26 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
             history_id, contents=["a\n", "b\n"], direct_upload=True, wait=True
         )
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        self._assert_history_datasets_private(history_id, expected_count=2)
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=2, access_private=True)
 
     def test_discovered_datasets_get_default_permissions(self, history_id):
         response = self.dataset_populator.run_tool("multi_output", {"input": 7}, history_id)
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
-        self._assert_history_datasets_private(history_id, expected_count=2)
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=2, access_private=True)
+
+    def test_all_output_types_get_default_permissions(self, history_id):
+        response = self.dataset_populator.run_tool("all_output_types", {}, history_id)
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        # 4 static outputs, discovered_output plus its discovered dataset, discovered_output_replaced,
+        # the static pair's 2 elements, and discovered_list's element.
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=10, access_private=True)
 
     def test_dynamic_collection_elements_get_default_permissions(self, history_id):
         response = self.dataset_populator.run_tool(
             "collection_creates_dynamic_list_of_pairs", {"foo": "bar"}, history_id
         )
         self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
-        self._assert_history_datasets_private(history_id, expected_count=6)
-
-    def _assert_history_datasets_private(self, history_id, expected_count):
-        role_id = self.dataset_populator.user_private_role_id()
-        datasets = self.dataset_populator.get_history_contents_of_type(history_id, "datasets")
-        assert len(datasets) == expected_count, [d["name"] for d in datasets]
-        permissions = {d["name"]: self._get(f"datasets/{d['id']}").json().get("permissions") for d in datasets}
-        assert permissions == {name: {"manage": [role_id], "access": [role_id]} for name in permissions}
+        self.dataset_populator.assert_history_datasets_permissions(history_id, expected_count=6, access_private=True)
 
     def test_fetch_data_library(self):
         history_id, library, destination = self.library_populator.setup_fetch_to_folder("extended_metadata")

@@ -35,11 +35,13 @@ from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
     and_,
     func,
+    inspect,
     or_,
     select,
     update,
 )
 from sqlalchemy.engine import CursorResult
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     model,
@@ -2190,9 +2192,20 @@ class MinimalJobWrapper(HasResourceParameters):
                 )
                 object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
                 # Datasets discovered by the job are created by the import, without permissions.
-                permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
-                for hda in [*object_import_tracker.hdas_by_key.values(), *object_import_tracker.hdas_by_id.values()]:
-                    permission_provider.set_default_hda_permissions(hda)
+                # Precreated outputs (hdas_by_id) got their permissions when the job was created.
+                # The import's commit expired the new HDAs, so load them and their dataset permissions in one go.
+                if discovered_hda_ids := [
+                    inspect(hda).identity[0] for hda in object_import_tracker.hdas_by_key.values()
+                ]:
+                    discovered_hdas = self.sa_session.scalars(
+                        select(model.HistoryDatasetAssociation)
+                        .where(model.HistoryDatasetAssociation.id.in_(discovered_hda_ids))
+                        .options(joinedload(model.HistoryDatasetAssociation.dataset).selectinload(Dataset.actions))
+                    )
+                    permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
+                    # Copied HDAs share a Dataset.
+                    for hda in {hda.dataset: hda for hda in discovered_hdas}.values():
+                        permission_provider.set_default_hda_permissions(hda)
                 # The import leaves job.state untouched so nothing polling the job can see it finish before
                 # exec_after_process and the final commit below have run.
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
