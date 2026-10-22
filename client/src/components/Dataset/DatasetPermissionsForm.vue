@@ -41,7 +41,12 @@ watch(props, () => {
         <div v-else-if="simplePermissions && !selectedAdvancedForm">
             <PortletSection :icon="faUsers" :title="title">
                 <div class="mb-3">
-                    <BFormCheckbox v-model="checkedInForm" name="check-button" switch @change="change">
+                    <BFormCheckbox
+                        v-model="checkedInForm"
+                        name="check-button"
+                        data-description="make new datasets private"
+                        switch
+                        @change="change">
                         Make new datasets private
                     </BFormCheckbox>
                 </div>

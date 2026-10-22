@@ -865,6 +865,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         ).wait_for_and_click()
         self.components.edit_dataset_attributes.save_button.wait_for_and_click()
 
+    def edit_dataset_permission_roles(self) -> dict[str, list[str]]:
+        """On the dataset edit view, open the Permissions tab; return its ``manage`` and ``access`` role names."""
+        edit = self.components.edit_dataset_attributes
+        edit.permissions_tab.wait_for_and_click()
+        edit.permission_field(permission="DATASET_ACCESS").wait_for_visible()
+        fields = {"manage": "DATASET_MANAGE_PERMISSIONS", "access": "DATASET_ACCESS"}
+        return {
+            key: [tag.text for tag in edit.permission_roles(permission=field).all()] for key, field in fields.items()
+        }
+
     def get_history_card(self, card_name):
         card_list = self.components.histories.history_cards.all()
         for card in card_list:
@@ -1544,6 +1554,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.home()
         self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
+
+    def user_preferences_new_datasets_private(self) -> bool:
+        """Open Preferences > Set Dataset Permissions for New Histories; return its Make new datasets private switch."""
+        self.navigate_to_user_preferences()
+        preferences = self.components.preferences
+        preferences.dataset_permissions.wait_for_and_click()
+        return preferences.new_datasets_private_input.wait_for_present().is_selected()
+
+    def user_preferences_set_new_datasets_private(self, private: bool):
+        """Set Preferences > Set Dataset Permissions for New Histories' Make new datasets private switch."""
+        if self.user_preferences_new_datasets_private() != private:
+            self.components.preferences.new_datasets_private_label.wait_for_and_click()
+            self.components.toast.message_with_text(text="Permissions have been saved").wait_for_visible()
 
     def navigate_to_invocations_grid(self):
         self.home()

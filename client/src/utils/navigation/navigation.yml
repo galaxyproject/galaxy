@@ -83,6 +83,10 @@ preferences:
     toolbox_filters: '#g-card-edit-preferences-toolbox-filters'
     manage_api_key: '#g-card-edit-preferences-api-key'
     custom_builds: '#g-card-edit-preferences-custom-builds'
+    dataset_permissions: '#g-card-edit-preferences-permissions'
+    # Set Dataset Permissions for New Histories' "Make new datasets private" switch
+    new_datasets_private_input: '[data-description="make new datasets private"]'
+    new_datasets_private_label: '[data-description="make new datasets private"] + label'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
@@ -408,6 +412,10 @@ edit_dataset_attributes:
     info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
     annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
     datatypes_tab: '.dataset-edit-datatype-tab'
+    permissions_tab: '.dataset-edit-permissions-tab'
+    # permission: DATASET_MANAGE_PERMISSIONS or DATASET_ACCESS
+    permission_field: '#form-element-${permission}'
+    permission_roles: '#form-element-${permission} .multiselect__tag'
     datatype_dropdown: '#datatype-container .multiselect'
     dbkey_dropdown: '#dbkey-container .multiselect'
     save_button: '#dataset-attributes-default-save'
