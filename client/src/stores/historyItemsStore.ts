@@ -10,7 +10,7 @@ import { computed, ref } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
 import { getContentItemState, type State } from "@/components/History/Content/model/states";
-import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { getClientFilters, HistoryFilters, itemPassesFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/stores/utilities/history.utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
@@ -34,22 +34,14 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
     const getHistoryItems = computed(() => {
         return (historyId: string, filterText: string) => {
             const itemArray = items.value[historyId] || [];
-            const filters = HistoryFilters.getFiltersForText(filterText).filter(
-                (filter: [string, string]) => !filter[0].includes("related"),
-            );
+            const filters = getClientFilters(filterText);
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
             const filtered = itemArray.filter((item: ExtendedHistoryItem) => {
                 if (!item) {
                     return false;
                 }
-                if (!HistoryFilters.testFilters(filters, item)) {
-                    // filters don't pass on the item, but they might pass on any of its sub_items
-                    if (
-                        !item.sub_items ||
-                        !item.sub_items.some((subItem) => HistoryFilters.testFilters(filters, subItem))
-                    ) {
-                        return false;
-                    }
+                if (!itemPassesFilters(filters, item)) {
+                    return false;
                 }
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                 if (relatedHid && !relatedItems.value[relationKey]) {
