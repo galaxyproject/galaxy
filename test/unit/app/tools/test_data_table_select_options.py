@@ -11,6 +11,7 @@ from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.model import (
     HistoryDatasetAssociation,
     User,
+    WorkflowStepConnection,
 )
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.parameters.basic import SelectToolParameter
@@ -149,7 +150,7 @@ def test_workflow_restricted_options_collapse_table_choices(table_select):
     tool_module = mock.Mock(spec=ToolModule)
     tool_module.tool = Bunch(inputs={"ref": param})
     tool_module.state = Bunch(inputs={})
-    connection = Bunch(input_step=Bunch(module=tool_module), input_name="ref")
+    connection = cast(WorkflowStepConnection, Bunch(input_step=Bunch(module=tool_module), input_name="ref"))
     options = InputParameterModule(trans).restrict_options(None, [connection], "hg38")
     assert options == [
         {"label": "Human old", "value": "hg38", "selected": True},
