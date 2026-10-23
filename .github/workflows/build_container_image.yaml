@@ -12,7 +12,7 @@ concurrency:
 jobs:
   build:
     name: Build container image for Galaxy repos
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository_owner == 'galaxyproject'
     outputs:
       tag: ${{ steps.branch.outputs.name }}
@@ -74,7 +74,7 @@ jobs:
 
   smoke-test:
     name: Try installing the new image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [ build ]
     steps:
       - name: Start k8s locally
@@ -182,7 +182,7 @@ jobs:
 
   pr:
     name: Create a PR to update the Galaxy Helm chart when a release is tagged
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [smoke-test, build]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
