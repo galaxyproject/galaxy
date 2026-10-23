@@ -494,10 +494,10 @@ class TestDatasetsApi(ApiTestCase):
         assert meta["median"] == 5
 
     def test_raw_data_tabular_numeric_column_with_uncastable_value(self, history_id):
-        meta = self._raw_data_column_meta(history_id, "1\t2\n3\tNA\n5\t4\n", 1)
-        assert meta["count"] == 3
-        assert meta["mean"] == 3
-        assert meta["median"] == 3
+        meta = self._raw_data_column_meta(history_id, "1\t2\n3\tNA\n5\t4\n7\t9\n", 1)
+        assert meta["count"] == 4
+        assert meta["mean"] == 5
+        assert meta["median"] == 4
 
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data
