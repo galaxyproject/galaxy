@@ -142,7 +142,8 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     hal: {
         icon: faNetworkWired,
-        message: "This is a read-only file source for browsing and importing versioned HAL deposits and their attached files.",
+        message:
+            "This is a read-only file source for browsing and importing versioned HAL deposits and their attached files.",
     },
 };
 

@@ -1,7 +1,11 @@
 """Public, read-only access to versioned HAL deposits and their attached files."""
 
+import logging
 import re
+from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from typing import TypedDict
 from urllib.parse import (
     quote,
     unquote,
@@ -10,7 +14,10 @@ from urllib.parse import (
     urlunsplit,
 )
 
-from requests import RequestException
+from requests import (
+    RequestException,
+    Response,
+)
 
 from galaxy.exceptions import (
     MessageException,
@@ -39,6 +46,23 @@ from galaxy.util.config_templates import TemplateExpansion
 DEFAULT_API_URL = "https://api.hal.science/search/"
 RECORD_RE = re.compile(r"([a-z][a-z0-9-]*-[0-9]+)v([1-9][0-9]*)")
 FIELDS = "halId_s,version_i,title_s,files_s,fileAnnexes_s"
+SIZE_LOOKUP_TIMEOUT = 5
+MAX_SIZE_LOOKUP_WORKERS = 4
+
+log = logging.getLogger(__name__)
+
+
+class HALRecord(TypedDict, total=False):
+    halId_s: str
+    version_i: int
+    title_s: list[str]
+    files_s: list[str]
+    fileAnnexes_s: list[str]
+
+
+class HALSearchResult(TypedDict):
+    docs: list[HALRecord]
+    numFound: int
 
 
 class HALFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -68,8 +92,8 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
     def _list(
         self,
         context: FilesSourceRuntimeContext[HALFileSourceConfiguration],
-        path="/",
-        recursive=False,
+        path: str = "/",
+        recursive: bool = False,
         write_intent: bool = False,
         limit: int | None = None,
         offset: int | None = None,
@@ -112,9 +136,32 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
             if not query or query.casefold() in name.casefold()
         ]
         start = offset or 0
-        return entries[start : start + limit if limit is not None else None], len(entries)
+        page = entries[start : start + limit if limit is not None else None]
+        if page:
+            # Only probe visible files, with bounded concurrency so a large record remains responsive.
+            with ThreadPoolExecutor(max_workers=MAX_SIZE_LOOKUP_WORKERS) as executor:
+                sizes = executor.map(self._file_size, (files[entry.path][1] for entry in page))
+                for entry, size in zip(page, sizes):
+                    if isinstance(entry, RemoteFile):
+                        entry.size = size
+        return page, len(entries)
 
-    def _realize_to(self, source_path, native_path, context: FilesSourceRuntimeContext[HALFileSourceConfiguration]):
+    def _file_size(self, url: str) -> int:
+        """Best-effort metadata lookup; never download a body to calculate a file's size."""
+        try:
+            with self._open_url(url, method="HEAD", timeout=SIZE_LOOKUP_TIMEOUT) as response:
+                # Content-Length describes the encoded representation if the server ignores identity.
+                if response.status_code != 200 or response.headers.get("Content-Encoding", "identity") != "identity":
+                    return 0
+                length = response.headers.get("Content-Length", "")
+                return int(length) if re.fullmatch(r"[0-9]+", length) else 0
+        except (MessageException, ValueError):
+            log.debug("Could not retrieve HAL file size for %s", url, exc_info=True)
+            return 0
+
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HALFileSourceConfiguration]
+    ) -> None:
         record_id, filename = self._split_path(source_path)
         if filename is None:
             raise ObjectNotFound(f"HAL path is not a file: {source_path}")
@@ -126,16 +173,18 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
             response.raw.decode_content = True
             stream_to_path(response.raw, native_path)
 
-    def _write_from(self, target_path, native_path, context):
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[HALFileSourceConfiguration]
+    ) -> None:
         raise MessageException("HAL file sources are read-only and do not support exporting files.")
 
-    def _search(self, config: HALFileSourceConfiguration, **params):
+    def _search(self, config: HALFileSourceConfiguration, **params: str | int) -> HALSearchResult:
         with self._open_url(config.api_url, params={"wt": "json", "fl": FIELDS, **params}) as response:
             try:
                 result = response.json()["response"]
                 if not isinstance(result["docs"], list) or not isinstance(result["numFound"], int):
                     raise ValueError("Invalid search results")
-                return result
+                return {"docs": result["docs"], "numFound": result["numFound"]}
             except (ValueError, KeyError, TypeError) as exc:
                 raise MessageException("Invalid response from the HAL search API.") from exc
 
@@ -180,7 +229,7 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
         return dict(sorted(files.items()))
 
     @staticmethod
-    def _record_id(record) -> str:
+    def _record_id(record: HALRecord) -> str:
         record_id = f"{record.get('halId_s')}v{record.get('version_i')}"
         if not RECORD_RE.fullmatch(record_id):
             raise MessageException("HAL returned an invalid deposit identifier or version.")
@@ -194,7 +243,13 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
         return parts[0], parts[1] if len(parts) == 2 else None
 
     @contextmanager
-    def _open_url(self, url: str, params=None):
+    def _open_url(
+        self,
+        url: str,
+        params: dict[str, str | int] | None = None,
+        method: str = "GET",
+        timeout: float = DEFAULT_SOCKET_TIMEOUT,
+    ) -> Iterator[Response]:
         """Validate every redirect before making the next request, including metadata-supplied URLs."""
         allowlist = self._file_sources_config.fetch_url_allowlist or []
         try:
@@ -209,13 +264,17 @@ class HALFilesSource(BaseFilesSource[HALFileSourceTemplateConfiguration, HALFile
                     ):
                         raise MessageException("Invalid HAL HTTP URL.")
                     validate_non_local(url, allowlist)
-                    with session.get(
+                    headers = {"User-Agent": "Galaxy HAL file source"}
+                    if method == "HEAD":
+                        headers["Accept-Encoding"] = "identity"
+                    with session.request(
+                        method,
                         url,
                         params=params,
                         stream=True,
                         allow_redirects=False,
-                        timeout=DEFAULT_SOCKET_TIMEOUT,
-                        headers={"User-Agent": "Galaxy HAL file source"},
+                        timeout=timeout,
+                        headers=headers,
                     ) as response:
                         if response.is_redirect:
                             url = urljoin(response.url, response.headers["Location"])

@@ -13916,6 +13916,7 @@ export interface components {
                 | "rspace"
                 | "dataverse"
                 | "cbioportal"
+                | "hal"
                 | "huggingface"
                 | "github"
                 | "iiif"
@@ -13929,8 +13930,7 @@ export interface components {
                 | "commoncrawl"
                 | "gitlab"
                 | "arc"
-                | "nomad"
-                | "hal";
+                | "nomad";
             /** Variables */
             variables?:
                 | (
@@ -27337,6 +27337,7 @@ export interface components {
                 | "rspace"
                 | "dataverse"
                 | "cbioportal"
+                | "hal"
                 | "huggingface"
                 | "github"
                 | "iiif"
@@ -27350,8 +27351,7 @@ export interface components {
                 | "commoncrawl"
                 | "gitlab"
                 | "arc"
-                | "nomad"
-                | "hal";
+                | "nomad";
             /** Uri Root */
             uri_root: string;
             /**

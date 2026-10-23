@@ -387,6 +387,7 @@ def test_production_hal():
         user_details={},
         environment={},
     )
+    assert isinstance(configuration, HALFileSourceConfiguration)
     assert configuration.api_url == "https://api.hal.science/search/FRANCE-GRILLES/"
 
 
