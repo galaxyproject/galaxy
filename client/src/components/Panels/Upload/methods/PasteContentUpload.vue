@@ -88,8 +88,12 @@ const { clear: clearStaging } = useUploadStaging<PasteContentItem>(props.method.
     disableStore: props.transient,
 });
 
+function contentByteSize(content: string): number {
+    return new Blob([content]).size;
+}
+
 const { tableSortProps, tableSortEvents } = useUploadTableSorting(pasteItems, {
-    size: (item) => new Blob([item.content]).size,
+    size: (item) => contentByteSize(item.content),
 });
 
 const isSingleMode = computed(() => props.multiple === false);
@@ -152,7 +156,7 @@ function reset() {
 }
 
 function getItemSize(content: string) {
-    return bytesToString(new Blob([content]).size);
+    return bytesToString(contentByteSize(content));
 }
 
 function getExpandToggleTitle(detailsShowing: boolean): string {
