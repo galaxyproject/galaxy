@@ -175,7 +175,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
     @selenium_test
     def test_int_parameter_minimum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "int_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -186,22 +185,18 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.components.tool_form.parameter_input(parameter="parameter_definition|min").wait_for_and_send_keys("4")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # follow up with a bigger PR to just make this (4 <= value) right? need to set default message
-        # in parameter validators
-        assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3",
+            expected_alert="3 is out of range! (3 < 4)",
+            expected_value="4",
+            screenshot_name="workflow_run_int_parameter_below_minimum",
+        )
 
     @selenium_test
     def test_float_parameter_maximum_validation(self):
         editor = self.components.workflow_editor
-        workflow_run = self.components.workflow_run
 
         parameter_name = "float_param"
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -210,17 +205,26 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.components.tool_form.parameter_input(parameter="parameter_definition|max").wait_for_and_send_keys("3.14")
         self.save_after_node_form_changes()
 
-        self.workflow_run_with_name(name)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        input_element = workflow_run.simplified_input(label=parameter_name).wait_for_and_click()
-        input_element.send_keys("3.2")
-        workflow_run.run_workflow_disabled.wait_for_absent()
-        workflow_run.run_error.assert_absent_or_hidden()
-        self.workflow_run_submit()
-        element = workflow_run.run_error.wait_for_present()
-        # see message in test test_int_parameter_minimum_validation about making this a little more human
-        # friendly.
-        assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
+        self._workflow_run_assert_number_clamped(
+            name,
+            parameter_name,
+            entered="3.2",
+            expected_alert="3.2 is out of range! (3.2 > 3.14)",
+            expected_value="3.14",
+            screenshot_name="workflow_run_float_parameter_above_maximum",
+        )
+
+    def _workflow_run_assert_number_clamped(
+        self, workflow_name, label, entered, expected_alert, expected_value, screenshot_name
+    ):
+        workflow_run = self.components.workflow_run
+        self.workflow_run_with_name(workflow_name)
+        input_element = workflow_run.simplified_input(label=label).wait_for_and_click()
+        input_element.send_keys(entered, Keys.TAB)
+        alert = workflow_run.simplified_input_alert(label=label).wait_for_text()
+        self.screenshot(screenshot_name)
+        assert expected_alert in alert, alert
+        assert input_element.get_attribute("value") == expected_value
 
     @selenium_test
     def test_optional_select_data_field(self):
