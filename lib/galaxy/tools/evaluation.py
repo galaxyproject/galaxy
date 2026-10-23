@@ -1055,6 +1055,27 @@ class PartialToolEvaluator(ToolEvaluator):
         )
 
 
+def _add_element_identifiers(cwl_style_inputs, input_datasets, incoming) -> None:
+    """Set ``element_identifier`` on input files of a job mapped over a collection.
+
+    The job records each mapped dataset's identifier as ``<name>|__identifier__``, which XML tools
+    read through ``ElementIdentifierMapper``; neither ``runtimeify`` nor ``to_cwl`` carries it over.
+    """
+    if not isinstance(cwl_style_inputs, dict) or not input_datasets:
+        return
+    for name in input_datasets:
+        identifier = incoming.get(f"{name}|__identifier__")
+        if identifier is None:
+            continue
+        *parents, leaf = name.split("|")
+        node = cwl_style_inputs
+        for part in parents:
+            node = node.get(part) if isinstance(node, dict) else None
+        value = node.get(leaf) if isinstance(node, dict) else None
+        if isinstance(value, dict) and value.get("class") == "File" and not value.get("element_identifier"):
+            value["element_identifier"] = identifier
+
+
 class UserToolEvaluator(ToolEvaluator):
 
     param_dict_style = "json"
@@ -1138,6 +1159,7 @@ class UserToolEvaluator(ToolEvaluator):
             )
             hda_references = []
             cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+        _add_element_identifiers(cwl_style_inputs, input_datasets, incoming)
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):

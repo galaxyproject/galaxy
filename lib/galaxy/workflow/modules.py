@@ -305,6 +305,8 @@ def to_cwl(
             set_basename_and_derived_properties(
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
+            if element_identifier is not None:
+                properties["element_identifier"] = element_identifier
             return properties
     elif isinstance(value, model.DatasetCollection):
         if value.collection_type == "list":
