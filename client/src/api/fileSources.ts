@@ -140,6 +140,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faAtom,
         message: "This is a read-only file repository plugin that connects with a NOMAD instance.",
     },
+    hal: {
+        icon: faNetworkWired,
+        message: "This is a read-only file source for browsing and importing versioned HAL deposits and their attached files.",
+    },
 };
 
 export const FileSourcesValidFilters = {

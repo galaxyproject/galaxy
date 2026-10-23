@@ -13929,7 +13929,8 @@ export interface components {
                 | "commoncrawl"
                 | "gitlab"
                 | "arc"
-                | "nomad";
+                | "nomad"
+                | "hal";
             /** Variables */
             variables?:
                 | (
@@ -27349,7 +27350,8 @@ export interface components {
                 | "commoncrawl"
                 | "gitlab"
                 | "arc"
-                | "nomad";
+                | "nomad"
+                | "hal";
             /** Uri Root */
             uri_root: string;
             /**
