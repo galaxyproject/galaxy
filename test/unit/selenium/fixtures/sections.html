@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tool Form Sections Test Page</title>
+  </head>
+  <body>
+    <!-- Shaped like FormCard sections: "sec" is collapsed and holds a repeat, "open" is expanded and
+         holds the collapsed "inner_sec". data-path exists only to drive this page. -->
+    <span data-description="galaxy tool version">1.0</span>
+    <div class="ui-portlet-section" id="sec">
+      <div class="portlet-header">Sec</div>
+      <div class="portlet-content" style="display: none">
+        <span
+          data-description="repeat insert"
+          data-repeat-name="queries"
+          data-path="sec|queries"
+          >Insert Queries</span
+        >
+      </div>
+    </div>
+    <div class="ui-portlet-section" id="open">
+      <div class="portlet-header">Open</div>
+      <div class="portlet-content">
+        <div class="ui-portlet-section" id="inner_sec">
+          <div class="portlet-header">Inner Sec</div>
+          <div class="portlet-content" style="display: none">inner</div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const insert = (span) => {
+        const path = span.dataset.path;
+        let n = 0;
+        while (document.getElementById(`${path}_${n}_up`)) n++;
+        const div = document.createElement("div");
+        div.className = "ui-form-element";
+        div.id = `form-element-${path}_${n}|x`;
+        div.append(document.createElement("input"));
+        // A repeat block is a non-collapsible FormCard: its operations sit in the header.
+        const block = document.createElement("div");
+        block.className = "ui-portlet-section card";
+        block.dataset.description = "repeat block";
+        block.innerHTML = `<div class="portlet-header"><div class="portlet-operations"><button id="${path}_${n}_up"></button></div></div><div class="portlet-content"></div>`;
+        block.querySelector(".portlet-content").append(div);
+        span.before(block);
+      };
+      document.querySelectorAll(".portlet-header").forEach((header) =>
+        header.addEventListener("click", () => {
+          const content = header.nextElementSibling;
+          content.style.display =
+            content.style.display === "none" ? "" : "none";
+        }),
+      );
+      document
+        .querySelectorAll("[data-path]")
+        .forEach((span) => span.addEventListener("click", () => insert(span)));
+    </script>
+  </body>
+</html>

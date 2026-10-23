@@ -120,6 +120,108 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         return key_value_pairs
 
     @selenium_test
+    def test_tool_form_fill_by_parameter_path(self):
+        history_id = self.current_history_id()
+        first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
+        second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
+        self.home()
+        self.tool_open("cat1")
+        self.tool_form_fill(data={"input1": first["hid"], "queries_0|input2": second["hid"]})
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(3)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\n"
+
+    @selenium_test
+    def test_tool_form_fill_maps_over_collection(self):
+        history_id = self.current_history_id()
+        single = self.dataset_populator.new_dataset(history_id, content="single\n", wait=True)
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["a1\n", "a2\n"], wait=True
+        ).json()["output_collections"][0]
+        self.home()
+        self.tool_open("cat1")
+        self.tool_form_fill(data={"input1": hdca["hid"], "queries_0|input2": single["hid"]})
+        hint = self.tool_form_wait_for_batch_info("input1", "mapped over")
+        assert hint.startswith("The supplied input will be mapped over this tool"), hint
+        self.screenshot("tool_form_fill_maps_over_collection")
+
+    @selenium_test
+    def test_tool_form_parameters_match_form(self):
+        self.home()
+        self.tool_open("gx_conditional_select")
+        parameters = self.tool_form_parameters("gx_conditional_select")
+        test_path = "conditional_parameter|test_parameter"
+        shown = [p.path for p in parameters if p.condition in (None, f"{test_path}=a")]
+        assert shown == [test_path, "conditional_parameter|integer_parameter"]
+        for path in shown:
+            self.components.tool_form.parameter_div(parameter=path).wait_for_visible()
+
+        boolean = next(p for p in parameters if p.condition == f"{test_path}=b")
+        # Same depth, so the boolean is tried first, before case b shows it, and must be retried.
+        self.tool_form_fill(values={boolean.path: True, test_path: "b"})
+        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=boolean.path).wait_for_present()
+        assert checkbox.is_selected()
+
+    @selenium_test
+    def test_tool_form_fill_adds_repeat_instances_in_conditional(self):
+        history_id = self.current_history_id()
+        first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
+        second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
+        self.home()
+        self.tool_open("async_conditional_no_default_nested_data")
+        # rep_level sits in the select_data conditional and has min="1", so rep_level_0 is already rendered.
+        self.tool_form_fill(
+            data={
+                "select_data|rep_level_0|countsFile": first["hid"],
+                "select_data|rep_level_1|countsFile": second["hid"],
+            }
+        )
+        self.components.tool_form.parameter_div(parameter="select_data|rep_level_2|countsFile").assert_absent()
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(3)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\ndone\n"
+
+    @selenium_test
+    def test_tool_form_fill_adds_repeat_instances_in_the_conditional_case_it_selects(self):
+        history_id = self.current_history_id()
+        first = self.dataset_populator.new_dataset(history_id, content="first\n", wait=True)
+        second = self.dataset_populator.new_dataset(history_id, content="second\n", wait=True)
+        self.home()
+        self.tool_open("async_conditional_no_default_nested_data")
+        # Leave the case holding rep_level, so its insert button isn't rendered until the fill selects it again.
+        self.tool_form_fill(values={"select_data|how": "Group tags"})
+        self.components.tool_form.parameter_div(parameter="select_data|rep_level_0|countsFile").wait_for_absent()
+        self.tool_form_fill(
+            values={"select_data|how": "Datasets per level"},
+            data={
+                "select_data|rep_level_0|countsFile": first["hid"],
+                "select_data|rep_level_1|countsFile": second["hid"],
+            },
+        )
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(3)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=3) == "first\nsecond\ndone\n"
+
+    @selenium_test
+    def test_tool_form_fill_conditional_named_like_a_repeat_instance(self):
+        self.home()
+        self.tool_open("conditional_name_digit_suffix")
+        self.tool_form_fill(values={"outer|inner_options_1|mode": "By Name", "outer|inner_options_1|label": "lbl"})
+        label = self.components.tool_form.parameter_text_input(parameter="outer|inner_options_1|label")
+        assert label.wait_for_value() == "lbl"
+
+    @selenium_test
+    def test_tool_form_fill_expands_only_collapsed_sections(self):
+        history_id = self.current_history_id()
+        self.home()
+        self.tool_open("section")
+        # The int section starts expanded and the float section collapsed; both must end up open.
+        self.tool_form_fill(values={"int|inttest": 12456, "float|floattest": 6.789})
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+        assert self.dataset_populator.get_history_dataset_content(history_id, hid=1) == "12456\n6.789\n"
+
+    @selenium_test
     def test_repeat_reordering(self):
         self.home()
         self.tool_open("text_repeat")
@@ -220,6 +322,18 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
+
+    @selenium_test
+    def test_tool_form_parameters_for_rerun(self):
+        self._run_environment_test_tool()
+        self.history_panel_wait_for_hid_ok(1)
+        job_id = self.dataset_populator.get_history_dataset_details(self.current_history_id(), hid=1)["creating_job"]
+        self.hda_click_primary_action_button(1, "rerun")
+        inttest = next(p for p in self.tool_form_parameters(job_id=job_id) if p.path == "inttest")
+        # The job's value, not the tool's default of 1.
+        assert str(inttest.value) == "42"
+        input_element = self.components.tool_form.parameter_input(parameter="inttest").wait_for_visible()
+        assert input_element.get_attribute("value") == "42"
 
     @selenium_test
     def test_rerun_with_non_latest_version(self):

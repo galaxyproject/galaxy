@@ -820,9 +820,20 @@ def exception_indicates_stale_element(exception):
     return "stale" in exception_str or "not attached to the DOM" in exception_str
 
 
+def exception_indicates_playwright_timeout(exception):
+    # Imported here so a Selenium-only install doesn't need playwright.
+    try:
+        from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
+
+        return isinstance(exception, PlaywrightTimeoutError)
+    except ImportError:
+        return False
+
+
 __all__ = (
     "exception_indicates_click_intercepted",
     "exception_indicates_not_clickable",
+    "exception_indicates_playwright_timeout",
     "exception_indicates_stale_element",
     "HasDriver",
     "SeleniumTimeoutException",

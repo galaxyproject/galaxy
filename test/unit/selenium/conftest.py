@@ -1,5 +1,7 @@
 """Pytest configuration and fixtures for selenium unit tests."""
 
+from typing import cast
+
 import pytest
 from playwright.sync_api import sync_playwright
 from selenium import webdriver
@@ -9,7 +11,17 @@ from galaxy.selenium.availability import (
     PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE,
     SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE,
 )
+from galaxy.selenium.has_driver_protocol import HasDriverProtocol
+from galaxy.selenium.has_driver_proxy import HasDriverProxyImpl
 from galaxy.selenium.has_playwright_driver import PlaywrightResources
+from galaxy.selenium.navigates_galaxy import (
+    NavigatesGalaxy,
+    WaitType,
+)
+from .test_has_driver import (
+    TestHasDriverImpl,
+    TestHasPlaywrightDriverImpl,
+)
 from .test_server import TestHTTPServer
 from .util import (
     check_playwright_cached,
@@ -105,3 +117,34 @@ def playwright_resources():
     page.close()
     browser.close()
     playwright.stop()
+
+
+class FixturePage(HasDriverProxyImpl[WaitType], NavigatesGalaxy):
+    """``NavigatesGalaxy`` helpers driving a static fixture page instead of a Galaxy server."""
+
+    def build_url(self, url: str, for_selenium: bool = True) -> str:
+        raise NotImplementedError("fixture pages have no Galaxy to build URLs for")
+
+    def screenshot(self, label: str) -> None:
+        pass
+
+    def sleep_for(self, wait_type: WaitType) -> None:
+        # Fixture pages render synchronously, and the test driver's fixed timeout would sleep 10s per wait.
+        pass
+
+
+@pytest.fixture(params=["selenium", "playwright"])
+def fixture_page(request, base_url):
+    """Open a page from ``fixtures/`` with ``NavigatesGalaxy`` helpers, once per browser backend."""
+    impl: HasDriverProtocol
+    if request.param == "selenium":
+        impl = cast(HasDriverProtocol, TestHasDriverImpl(request.getfixturevalue("driver")))
+    else:
+        impl = cast(HasDriverProtocol, TestHasPlaywrightDriverImpl(request.getfixturevalue("playwright_resources")))
+    page = FixturePage(impl)
+
+    def open_page(name: str) -> FixturePage:
+        page.navigate_to(f"{base_url}/{name}")
+        return page
+
+    return open_page

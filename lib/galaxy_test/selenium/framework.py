@@ -21,15 +21,12 @@ import pytest
 import requests
 import yaml
 from requests.models import Response
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.by import By
 
 from galaxy.selenium import driver_factory
 from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.has_driver import (
     DEFAULT_AXE_SCRIPT_URL,
-    SeleniumTimeoutException,
 )
 from galaxy.selenium.has_driver_protocol import (
     BackendType,
@@ -903,198 +900,24 @@ class RunsToolTests(NavigatesGalaxyMixin):
         required_filenames: set,
         collection_hid_map: dict | None = None,
     ):
-        """Fill tool form inputs from test definition.
-
-        Two-pass approach for conditionals: set shallow params first so
-        conditionals reveal nested params, then retry deferred ones.
-        Data/collection params set last.
-        """
-        inputs = test_def.get("inputs", {})
-        if not inputs:
-            return
+        """Fill the tool form from a test definition's inputs, selecting staged data by hid."""
         collection_hid_map = collection_hid_map or {}
-
-        data_params = []
-        collection_params = []
-        non_data_params = []
-        repeat_counts: dict[str, int] = {}
-
-        for key, value in inputs.items():
+        values: dict = {}
+        data: dict[str, int | str] = {}
+        collections: dict[str, int | str] = {}
+        for key, value in test_def.get("inputs", {}).items():
             raw_value = value[0] if isinstance(value, list) and len(value) == 1 else value
-
-            repeat_match = self._parse_repeat_key(key)
-            if repeat_match:
-                repeat_name, repeat_index, _child_key = repeat_match
-                if repeat_name not in repeat_counts:
-                    repeat_counts[repeat_name] = 0
-                repeat_counts[repeat_name] = max(repeat_counts[repeat_name], repeat_index + 1)
-
             if isinstance(raw_value, dict) and raw_value.get("model_class") == "TestCollectionDef":
-                collection_params.append((key, raw_value))
+                hid = collection_hid_map.get(key)
+                assert hid is not None, f"No staged collection for param {key}"
+                collections[key] = f"{hid}: {raw_value.get('name', '')}"
             elif isinstance(raw_value, str) and raw_value in required_filenames:
-                data_params.append((key, value))
+                hid = hid_map.get(raw_value)
+                assert hid is not None, f"No staged file for data param {key}={raw_value}"
+                data[key] = f"{hid}: {raw_value}"
             else:
-                non_data_params.append((key, value))
-
-        for repeat_name, count in repeat_counts.items():
-            self._add_repeat_instances(repeat_name, count)
-
-        self._expand_collapsed_sections()
-
-        non_data_params.sort(key=lambda kv: kv[0].count("|"))
-
-        deferred = []
-        for key, value in non_data_params:
-            try:
-                self._set_tool_form_value(key, value, required_filenames)
-                self.sleep_for(self.wait_types.UX_RENDER)
-            except (NoSuchElementException, SeleniumTimeoutException, AssertionError):
-                deferred.append((key, value))
-
-        if deferred:
-            self.sleep_for(self.wait_types.UX_RENDER)
-            for key, value in deferred:
-                expanded_id = key.replace("|", "-")
-                if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
-                    continue
-                self._set_tool_form_value(key, value, required_filenames)
-
-        for key, value in data_params:
-            if isinstance(value, list) and len(value) == 1:
-                value = value[0]
-            hid = hid_map.get(value)
-            assert hid is not None, f"No staged file for data param {key}={value}"
-            is_multiple = self._is_multi_data_param(key)
-            if is_multiple:
-                self._clear_multiselect_tags(key)
-            self.tool_set_value(key, f"{hid}: {value}", expected_type="data", multiple=is_multiple)
-
-        for key, coll_def in collection_params:
-            hid = collection_hid_map.get(key)
-            assert hid is not None, f"No staged collection for param {key}"
-            coll_name = coll_def.get("name", "")
-            self.tool_set_value(key, f"{hid}: {coll_name}", expected_type="data")
-
-    def _is_multi_data_param(self, expanded_id: str) -> bool:
-        return not self.components.tool_form.parameter_form_selection(parameter=expanded_id).is_absent
-
-    def _clear_multiselect_tags(self, expanded_id: str):
-        tag_close = self.components.tool_form.parameter_multiselect_tag_close(parameter=expanded_id)
-        for _ in range(20):
-            close_buttons = tag_close.all()
-            if not close_buttons:
-                break
-            close_buttons[0].click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-
-    @staticmethod
-    def _parse_repeat_key(key: str):
-        import re
-
-        if match := re.match(r"^(.+?)_(\d+)\|(.+)$", key):
-            return match.group(1), int(match.group(2)), match.group(3)
-        return None
-
-    def _add_repeat_instances(self, repeat_name: str, count: int):
-        for _ in range(count):
-            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-
-    def _expand_collapsed_sections(self):
-        self.components.tool_form.execute.wait_for_visible()
-        for header in self.components.tool_form.section_header.all():
-            header.click()
-            self.sleep_for(self.wait_types.UX_RENDER)
-
-    # -- Type detection and value setting --
-
-    def _detect_param_type(self, expanded_id: str) -> str:
-        """Inspect DOM to determine param type.
-
-        Detection order matters:
-        - drilldown before checkbox_select (drilldown also has checkboxes)
-        - checkbox_select before boolean (both have input[type='checkbox'])
-        """
-        tf = self.components.tool_form
-
-        param_div = tf.parameter_div(parameter=expanded_id).wait_for_visible()
-        if param_div.find_elements(By.CSS_SELECTOR, tf.drilldown_option.selector):
-            return "drilldown"
-
-        checkboxes = tf.parameter_checkbox_input(parameter=expanded_id).all()
-        if len(checkboxes) > 1:
-            return "checkbox_select"
-        if checkboxes:
-            return "boolean"
-
-        if not tf.parameter_color_input(parameter=expanded_id).is_absent:
-            return "color"
-        if not tf.parameter_select(parameter=expanded_id).is_absent:
-            return "select"
-
-        return "text"
-
-    def _set_tool_form_value(self, key: str, value, required_filenames: set):
-        if isinstance(value, list) and len(value) == 1:
-            value = value[0]
-        if isinstance(value, str) and value in required_filenames:
-            return
-
-        param_type = self._detect_param_type(key)
-
-        if param_type == "drilldown":
-            values = value if isinstance(value, list) else [value]
-            self._set_drilldown_value(key, values)
-        elif param_type == "checkbox_select":
-            values = value if isinstance(value, list) else [value]
-            self._set_checkbox_select_value(key, values)
-        elif param_type == "boolean":
-            self._set_boolean_value(key, value)
-        elif param_type == "color":
-            self._set_color_value(key, value)
-        elif param_type == "select":
-            self.tool_set_value(key, str(value), expected_type="select")
-        else:
-            self._set_text_value(key, str(value))
-
-    def _set_boolean_value(self, expanded_id: str, value):
-        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).wait_for_present()
-        is_checked = checkbox.is_selected()
-        want_checked = str(value).lower() in ("true", "1", "yes")
-        if is_checked != want_checked:
-            self.execute_script("arguments[0].click();", checkbox)
-
-    def _set_checkbox_select_value(self, expanded_id: str, values: list):
-        all_checkboxes = self.components.tool_form.parameter_checkbox_input(parameter=expanded_id).all()
-        for val in values:
-            matched = [cb for cb in all_checkboxes if cb.get_attribute("value") == val]
-            assert matched, f"No checkbox with value '{val}' in param {expanded_id}"
-            if not matched[0].is_selected():
-                self.execute_script("arguments[0].click();", matched[0])
-
-    def _set_drilldown_value(self, expanded_id: str, values: list):
-        """Set drill-down param by clicking option checkboxes.
-
-        TODO: DOM id is ``drilldown-option-{option.name}`` but test API returns
-        option *values*. Works only when name == value. If a tool has
-        ``<option name="Label" value="key">``, the lookup will fail.
-        Fixing requires changing FormDrilldownOption.vue (breaks library export)
-        or adding a value->name mapping step here.
-        """
-        for val in values:
-            checkbox = self.components.tool_form.parameter_drilldown_option(
-                parameter=expanded_id, value=val
-            ).wait_for_present()
-            if not checkbox.is_selected():
-                self.execute_script("arguments[0].click();", checkbox)
-
-    def _set_color_value(self, expanded_id: str, value: str):
-        color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(color_input, value)
-
-    def _set_text_value(self, expanded_id: str, value: str):
-        input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
-        self.set_element_value(input_element, value)
+                values[key] = value
+        self.tool_form_fill(values, {**data, **collections})
 
     # -- Output verification --
 
