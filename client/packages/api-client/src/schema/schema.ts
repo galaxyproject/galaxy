@@ -28769,7 +28769,7 @@ export interface components {
                 | null;
             /**
              * Invocation state
-             * @description State of workflow invocation.
+             * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.
              */
             state: components["schemas"]["InvocationState"];
             /**
@@ -28896,7 +28896,7 @@ export interface components {
             };
             /**
              * Invocation state
-             * @description State of workflow invocation.
+             * @description State of workflow invocation. `completed` means every job reached a terminal state (ok, error, deleted, skipped, paused or stopped), not that every job succeeded; see `job_state_summary` in `/api/invocations/{invocation_id}/completion`.
              */
             state: components["schemas"]["InvocationState"];
             /**
