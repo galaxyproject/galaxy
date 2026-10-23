@@ -2682,15 +2682,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_click_copy_elements(self):
         self.use_bootstrap_dropdown(option="copy datasets", menu="history options")
 
-    def use_bootstrap_dropdown(self, option=None, menu=None):
+    def use_bootstrap_dropdown(self, option=None, menu=None, scope=".history-index"):
         """uses bootstrap dropdown by data-description attributes"""
         if option is None:
             raise TypeError
         if menu is None:
             raise TypeError
-        toggle = self.history_element(menu).descendant("button")
+        toggle = self.history_element(menu, scope=scope).descendant("button")
         self.wait_for_and_click(toggle)
-        return self.history_element(option).wait_for_and_click()
+        return self.history_element(option, scope=scope).wait_for_and_click()
 
     @retry_during_transitions
     def histories_click_advanced_search(self):
@@ -2733,8 +2733,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_multi_operations_show(self):
         return self.wait_for_and_click(self.navigation.history_panel.multi_operations.selectors.show_button)
 
-    def history_panel_muli_operation_select_hid(self, hid):
-        item_selector = self.history_panel_item_selector(hid, wait=True)
+    def history_panel_muli_operation_select_hid(self, hid, history_id=None):
+        item_selector = self.history_panel_item_selector(hid, wait=True, history_id=history_id)
         operation_radio_selector = f"{item_selector} .selector"
         self.wait_for_and_click_selector(operation_radio_selector)
 
@@ -2838,9 +2838,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         raise ValueError(f"No visualization [{visualization_name}] found.")
 
-    def history_panel_item_selector(self, hid, wait=False):
-        current_history_id = self.current_history_id()
-        contents = self.api_get(f"histories/{current_history_id}/contents")
+    def history_panel_item_selector(self, hid, wait=False, history_id=None):
+        history_id = history_id or self.current_history_id()
+        contents = self.api_get(f"histories/{history_id}/contents")
         try:
             history_item = [d for d in contents if d["hid"] == hid][0]
         except IndexError:
@@ -2894,8 +2894,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             return False
         return item_component.details.is_displayed
 
-    def history_panel_build_list_auto(self):
-        return self.use_bootstrap_dropdown(option="auto build list", menu="selected content menu")
+    def history_panel_build_list_auto(self, scope=".history-index"):
+        return self.use_bootstrap_dropdown(option="auto build list", menu="selected content menu", scope=scope)
 
     def history_panel_build_list_advanced(self):
         return self.use_bootstrap_dropdown(option="advanced build list", menu="selected content menu")
