@@ -21,7 +21,7 @@ defaults:
 jobs:
   check:
     name: Check database indexes
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         db: ['postgresql', 'sqlite']

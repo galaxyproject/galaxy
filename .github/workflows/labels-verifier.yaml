@@ -7,7 +7,7 @@ jobs:
     name: "Check Labels on merge"
     permissions:
       pull-requests: write
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check Labels on merge
         if: |

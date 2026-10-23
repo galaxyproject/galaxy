@@ -7,7 +7,7 @@ on:
 jobs:
   update-title:
     if: github.event.action != 'edited' || github.event.changes.base.ref.from != ''
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:

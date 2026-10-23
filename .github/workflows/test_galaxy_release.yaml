@@ -20,7 +20,7 @@ concurrency:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:

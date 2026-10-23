@@ -2,7 +2,7 @@ on:
   workflow_call:
 jobs:
   setup_chromedriver:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - name: Install chromedriver
         uses: nanasess/setup-chromedriver@v2

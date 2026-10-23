@@ -10,7 +10,7 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     env:
       MILESTONE_NUMBER: 33
     steps:

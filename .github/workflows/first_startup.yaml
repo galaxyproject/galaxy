@@ -21,7 +21,7 @@ jobs:
   test:
     name: Startup test
     needs: build-client
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:

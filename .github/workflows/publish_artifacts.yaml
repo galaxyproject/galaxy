@@ -19,7 +19,7 @@ on:
 jobs:
   check-permissions:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check if user can create releases
         run: |
@@ -38,7 +38,7 @@ jobs:
        (github.event_name == 'workflow_dispatch' && !cancelled() && !failure()))
     needs: [check-permissions]
     name: Build Python packages for PyPI
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -70,7 +70,7 @@ jobs:
     if: always() && needs.build-python-packages.result == 'success'
     needs: [build-python-packages]
     name: Upload packages to PyPI
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
     steps:
@@ -90,7 +90,7 @@ jobs:
        (github.event_name == 'workflow_dispatch' && !cancelled() && !failure()))
     needs: [check-permissions]
     name: Build and Publish to NPM
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
     steps:

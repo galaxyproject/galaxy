@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:17
