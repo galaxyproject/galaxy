@@ -49,15 +49,13 @@ class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
 
         # this is testing the global storage dashboard for the user - should be separated out
         # but I think it stuck them together so there is an existing history with data.
-        self.home()
-        self.components.masthead.storage_dashboard_link.wait_for_and_click()
+        self.navigate_to_storage_dashboard()
         self.screenshot("storage_dashboard")
         self.components.storage_dashboard.free_space_link.wait_for_and_click()
         self.screenshot("storage_dashboard_manage_free_space_landing")
         self.assert_baseline_accessibility()
 
-        self.home()
-        self.components.masthead.storage_dashboard_link.wait_for_and_click()
+        self.navigate_to_storage_dashboard()
         self.components.storage_dashboard.explore_usage_link.wait_for_and_click()
         self.screenshot("storage_dashboard_manage_explore_usage_landing")
         self.assert_baseline_accessibility()

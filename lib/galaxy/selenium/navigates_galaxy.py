@@ -1572,6 +1572,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.histories.activity.wait_for_and_click()
         self.components.histories.history_cards.wait_for_present()
 
+    def navigate_to_storage_dashboard(self):
+        self.home()
+        self.components.masthead.storage_dashboard_link.wait_for_and_click()
+        self.components.storage_dashboard.free_space_link.wait_for_visible()
+
     def navigate_to_saved_visualizations(self):
         self.home()
         visualizations = self.components.visualization
