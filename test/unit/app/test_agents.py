@@ -1356,6 +1356,13 @@ class TestAgentUnitMocked:
             ),
         ]
 
+    @pytest.mark.parametrize(
+        "url", ["javascript:alert(1)", "JavaScript:alert(1)", "data:text/html,x", "//evil.example/x"]
+    )
+    def test_source_citation_rejects_non_http_urls(self, url):
+        with pytest.raises(ValidationError):
+            SourceCitation(title="RNA-seq", url=url, source_type="gtn_tutorial")
+
     def test_gtn_verify_unlinks_unretrieved_urls_in_prose(self):
         agent = self._gtn_agent_with_retrieved([self._RNASEQ_RESULT])
         tutorial_url = self._RNASEQ_TUTORIAL["url"]

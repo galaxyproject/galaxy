@@ -247,6 +247,30 @@ describe("ChatMessageCell", () => {
             expect(link.text()).toContain("Reference-based RNA-Seq");
         });
 
+        it("drops sources whose URL isn't http(s)", async () => {
+            const message = makeAssistantMessage({
+                content: "test",
+                agentResponse: {
+                    content: "test",
+                    agent_type: "gtn_training",
+                    confidence: "high",
+                    suggestions: [],
+                    sources: [
+                        { title: "Reference-based RNA-Seq", url: tutorialUrl, source_type: "gtn_tutorial" },
+                        { title: "Forged", url: "javascript:alert(1)", source_type: "gtn_tutorial" },
+                    ],
+                    metadata: {},
+                },
+            });
+            const wrapper = mountCell(message);
+            expect(wrapper.find(".links-count").text()).toBe("1");
+
+            await wrapper.find(".links-toggle").trigger("click");
+            const links = wrapper.findAll(".reference-link");
+            expect(links.length).toBe(1);
+            expect(links[0]!.attributes("href")).toBe(tutorialUrl);
+        });
+
         it("hides the references button when there are no sources", () => {
             const wrapper = mountCell(makeAssistantMessage({ content: "See https://example.org/page." }));
             expect(wrapper.find(".reference-links").exists()).toBe(false);

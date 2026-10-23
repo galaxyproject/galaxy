@@ -6,10 +6,12 @@ from enum import Enum
 from typing import (
     Any,
 )
+from urllib.parse import urlparse
 
 from pydantic import (
     BaseModel,
     Field,
+    field_validator,
     model_validator,
 )
 
@@ -66,6 +68,14 @@ class SourceCitation(BaseModel):
     title: str = Field(description="Title of the source")
     url: str = Field(description="URL of the source")
     source_type: str = Field(description="Kind of source, e.g. 'gtn_tutorial' or 'gtn_faq'")
+
+    @field_validator("url")
+    @classmethod
+    def url_must_be_http(cls, url: str) -> str:
+        # The client binds this straight into an href, and a forged router handoff can supply it.
+        if urlparse(url).scheme.lower() not in ("http", "https"):
+            raise ValueError("source url must be http(s)")
+        return url
 
 
 class AgentResponse(BaseModel):

@@ -60,8 +60,11 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
 const linksExpanded = ref(false);
 
 // Only sources the agent verified against its search results, never URLs
-// scraped from model-written text.
-const sources = computed(() => props.message.agentResponse?.sources ?? []);
+// scraped from model-written text. The scheme check is defense in depth: the
+// URL lands in a raw href.
+const sources = computed(() =>
+    (props.message.agentResponse?.sources ?? []).filter((source) => /^https?:\/\//i.test(source.url)),
+);
 </script>
 
 <template>
