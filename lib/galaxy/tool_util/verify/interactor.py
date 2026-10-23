@@ -295,6 +295,20 @@ def raise_for_status(response: Response) -> None:
         raise requests.exceptions.HTTPError(f"{e} - Response body: {body}", response=response) from e
 
 
+DISCOVERED_OUTPUT_PREFIX = "__new_primary_file_"
+
+
+def discovered_output_name(name: str, designation: str) -> str:
+    """Job output association name of a dataset discovered for output ``name``."""
+    return f"{DISCOVERED_OUTPUT_PREFIX}{name}|{designation}__"
+
+
+def is_discovered_output(output_name: str, name: str | None = None) -> bool:
+    """Whether ``output_name`` is a discovered dataset, optionally of output ``name``."""
+    prefix = DISCOVERED_OUTPUT_PREFIX if name is None else f"{DISCOVERED_OUTPUT_PREFIX}{name}|"
+    return output_name.startswith(prefix)
+
+
 def split_declared_job_outputs(job_outputs: list[dict[str, Any]]) -> tuple[OutputsDict, dict[str, Any]]:
     """Split job outputs into declared datasets and collections."""
     outputs = OutputsDict()
@@ -455,7 +469,7 @@ class GalaxyInteractorApi:
         outputs = outputs_response.json()
         found_datasets = 0
         for output in outputs:
-            if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
+            if output["name"] == name or is_discovered_output(output["name"], name):
                 found_datasets += 1
         if expected_count is not None and expected_count != found_datasets:
             raise AssertionError(
@@ -472,7 +486,7 @@ class GalaxyInteractorApi:
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
-                if output["name"] == f"__new_primary_file_{name}|{designation}__":
+                if output["name"] == discovered_output_name(name, designation):
                     primary_output = output
                     break
 
