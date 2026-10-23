@@ -548,9 +548,9 @@ def _matching_case_for_value(
             # if static options are available can find the one specified as default or
             # fallback on top most option (like GUI).
 
-            for name, _, selected in static_options:
+            for _, value, selected in static_options:
                 if selected:
-                    default_option = name
+                    default_option = value
                     break
             else:
                 first_option = static_options[0]
