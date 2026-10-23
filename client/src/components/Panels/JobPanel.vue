@@ -232,6 +232,7 @@ const currentItemId = computed(() => {
             :prop-items="currentSortedJobs"
             :prop-total-count="totalJobCount"
             adjust-for-total-count-changes
+            retry-message="Clear your search or click the button at the bottom of the list to retry."
             name="job"
             name-plural="jobs"
             :load-disabled="!currentUser || currentUser.isAnonymous">
