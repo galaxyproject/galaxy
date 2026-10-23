@@ -2890,6 +2890,60 @@ class TwoBit(Binary):
         magic = file_prefix.magic_header(">L")
         return magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP
 
+    def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
+        """Check the header, the sequence index, and that the last sequence record is complete.
+
+        A 2bit truncated or written empty by a failed job still sniffs (or is simply 0 bytes);
+        reading the records the index points at is what tells a whole file from a partial one.
+        """
+        path = dataset.get_file_name()
+        size = os.path.getsize(path)
+        if size < 16:
+            return DatatypeValidation.invalid(f"TwoBit file is {size} bytes; the header alone is 16.")
+        with open(path, "rb") as fh:
+            magic = struct.unpack(">L", fh.read(4))[0]
+            if magic == TWOBIT_MAGIC_NUMBER:
+                order = ">"
+            elif magic == TWOBIT_MAGIC_NUMBER_SWAP:
+                order = "<"
+            else:
+                return DatatypeValidation.invalid("TwoBit magic number not found.")
+            version, count, _ = struct.unpack(f"{order}LLL", fh.read(12))
+            if version not in (0, 1):
+                return DatatypeValidation.invalid(f"Unsupported TwoBit version {version}.")
+            if count == 0:
+                return DatatypeValidation.invalid("TwoBit file holds no sequences.")
+            offset_format = f"{order}Q" if version == 1 else f"{order}L"
+            offset_size = struct.calcsize(offset_format)
+            offsets = []
+            for _ in range(count):
+                name_size = fh.read(1)
+                if not name_size:
+                    return DatatypeValidation.invalid("TwoBit sequence index is truncated.")
+                fh.seek(name_size[0], os.SEEK_CUR)
+                raw = fh.read(offset_size)
+                if len(raw) != offset_size:
+                    return DatatypeValidation.invalid("TwoBit sequence index is truncated.")
+                offsets.append(struct.unpack(offset_format, raw)[0])
+            if any(o >= size for o in offsets):
+                return DatatypeValidation.invalid("TwoBit sequence index points past the end of the file.")
+            fh.seek(max(offsets))
+            header = fh.read(8)
+            if len(header) != 8:
+                return DatatypeValidation.invalid("TwoBit sequence record is truncated.")
+            dna_size, n_blocks = struct.unpack(f"{order}LL", header)
+            fh.seek(8 * n_blocks, os.SEEK_CUR)
+            raw = fh.read(4)
+            if len(raw) != 4:
+                return DatatypeValidation.invalid("TwoBit sequence record is truncated.")
+            (mask_blocks,) = struct.unpack(f"{order}L", raw)
+            end = fh.tell() + 8 * mask_blocks + 4 + (dna_size + 3) // 4
+        if end > size:
+            return DatatypeValidation.invalid(
+                f"TwoBit file is truncated: {size} bytes, the last sequence ends at {end}."
+            )
+        return DatatypeValidation.validated()
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary TwoBit format nucleotide file"

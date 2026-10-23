@@ -31,6 +31,25 @@ def test_vcf_validation():
     _assert_invalid("vcf", _truncate("1.vcf", bytes=30))
 
 
+def test_twobit_validation():
+    _assert_valid("twobit", "1.twobit")
+    _assert_invalid("twobit", _truncate("1.twobit", bytes=3))
+    _assert_invalid("twobit", _empty())
+
+
+def test_lav_validation():
+    _assert_valid("lav", "alignment.lav")
+    _assert_invalid("lav", _truncate("alignment.lav", bytes=8))
+    _assert_invalid("lav", _empty())
+    _assert_invalid("lav", "alignment.axt")
+
+
+def _empty():
+    o = tempfile.NamedTemporaryFile(delete=False)
+    o.close()
+    return o.name
+
+
 def _truncate(file_name, bytes=10):
     o = tempfile.NamedTemporaryFile(delete=False)
     with open(get_test_fname(file_name), "rb") as f:
