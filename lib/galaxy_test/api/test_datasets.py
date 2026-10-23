@@ -499,6 +499,13 @@ class TestDatasetsApi(ApiTestCase):
         assert meta["mean"] == 5
         assert meta["median"] == 4
 
+    def test_raw_data_tabular_numeric_column_without_castable_values(self, history_id):
+        meta = self._raw_data_column_meta(history_id, "1\tNA\n3\tNA\n5\tNA\n", 1)
+        assert meta["count"] == 3
+        assert meta["min"] is None
+        assert "mean" not in meta
+        assert "median" not in meta
+
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data
         # in the bam datatype. This is the endpoint is very close to the legacy non-API
