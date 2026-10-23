@@ -19,6 +19,7 @@ import { selectionToArray } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadTableSorting } from "@/composables/upload/uploadTableSorting";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -185,6 +186,8 @@ const hasPagination = computed(() => {
     }
     return totalMatches.value > perPage.value;
 });
+
+const { tableSortProps, tableSortEvents } = useUploadTableSorting(libraryDatasetItems);
 
 const hasItems = computed(() => libraryDatasetItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
@@ -895,7 +898,14 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <div ref="tableContainerRef" class="file-table-container">
-                <GTable striped compact :items="libraryDatasetItems" :fields="tableFields" class="file-table">
+                <GTable
+                    v-bind="tableSortProps"
+                    striped
+                    compact
+                    :items="libraryDatasetItems"
+                    :fields="tableFields"
+                    class="file-table"
+                    v-on="tableSortEvents">
                     <template v-slot:cell(name)="{ item }">
                         <span class="font-weight-medium">{{ item.name }}</span>
                     </template>
