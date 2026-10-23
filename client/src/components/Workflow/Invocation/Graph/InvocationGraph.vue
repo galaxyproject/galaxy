@@ -48,8 +48,8 @@ interface Props {
     initialX?: number;
     /** The initial y position for the graph */
     initialY?: number;
-    /** Whether the graph is being rendered on the dedicated invocation page/route */
-    isFullPage?: boolean;
+    /** Fit the graph and step details to the page height instead of scrolling */
+    fitToPage?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,7 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
     initialX: -40,
     initialY: -40,
     visible: true,
-    isFullPage: false,
+    fitToPage: false,
 });
 
 const loadingGraph = ref(true);
@@ -181,7 +181,7 @@ async function pollInvocationGraph() {
 }
 
 function scrollStepToView() {
-    if (!props.isFullPage) {
+    if (!props.fitToPage) {
         const stepCardHeader = stepCard.value?.querySelector(".card-header");
         stepCardHeader?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -200,7 +200,7 @@ function toggleDetailedView() {
 </script>
 
 <template>
-    <div :class="{ 'full-page': props.isFullPage }">
+    <div :class="{ 'fit-to-page': props.fitToPage }">
         <GAlert v-if="initialLoading" show variant="info">
             <LoadingSpan message="Loading Invocation Graph" />
         </GAlert>
@@ -231,7 +231,7 @@ function toggleDetailedView() {
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
                             :detailed-view="detailedViewEnabled"
-                            :fixed-height="props.isFullPage ? undefined : 60"
+                            :fixed-height="props.fitToPage ? undefined : 60"
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
@@ -269,7 +269,7 @@ function toggleDetailedView() {
                         :invocation-step="props.invocation.steps[activeNodeId]" />
                     <div class="d-flex flex-gapx-1">
                         <GButton
-                            v-if="!props.isFullPage"
+                            v-if="!props.fitToPage"
                             title="Scroll to Step"
                             size="small"
                             transparent
@@ -391,8 +391,8 @@ function toggleDetailedView() {
     min-height: 500px;
 }
 
-// Full page: graph fills the space, splits 50/50 with the step card, and only the step body scrolls.
-.full-page {
+// Fit to page: graph fills the space, splits 50/50 with the step card, and only the step body scrolls.
+.fit-to-page {
     @include fill-column;
     overflow: hidden;
 
