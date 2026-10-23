@@ -847,6 +847,7 @@ tool_form:
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
     parameter_data_input_collection: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Dataset collection"]'
+    parameter_data_input_collection_pressed: 'div.ui-form-element[id="form-element-${parameter}"] button.g-pressed[title="Dataset collection"]'
     parameter_data_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
     parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
     parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'

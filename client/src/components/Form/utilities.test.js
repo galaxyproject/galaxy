@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import toolModel from "./test-data/tool";
-import { buildNestedState, matchCase, matchInputs, validateInputs, visitAllInputs, visitInputs } from "./utilities";
+import {
+    buildNestedState,
+    findInputByDottedName,
+    findInputPathByDottedName,
+    matchCase,
+    matchInputs,
+    validateInputs,
+    visitAllInputs,
+    visitInputs,
+} from "./utilities";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -94,6 +103,75 @@ describe("form component utilities", () => {
         expect(matchCase(input, "")).toEqual(0);
         expect(matchCase(input, "unavailable")).toEqual(-1);
         expect(matchCase(input, "falsevalue")).toEqual(1);
+    });
+
+    it("finds data inputs by dotted name inside sections, repeat blocks and active conditional cases", () => {
+        const x = { name: "x", type: "data" };
+        const y = { name: "y", type: "data_collection" };
+        const z = { name: "z", type: "data" };
+        const inputs = [
+            { name: "t", type: "text" },
+            {
+                name: "sec",
+                type: "section",
+                inputs: [{ name: "rep", type: "repeat", cache: [[], [x]] }],
+            },
+            {
+                name: "cond",
+                type: "conditional",
+                test_param: { name: "mode", type: "select", value: "a" },
+                cases: [
+                    { value: "a", inputs: [y] },
+                    { value: "b", inputs: [z] },
+                ],
+            },
+        ];
+        expect(findInputByDottedName(inputs, "sec|rep_1|x")).toBe(x);
+        expect(findInputByDottedName(inputs, "cond|y")).toBe(y);
+        expect(findInputByDottedName(inputs, "cond|z")).toBeNull();
+        expect(findInputByDottedName(inputs, "t")).toBeNull();
+        expect(findInputByDottedName(inputs, "cond|mode")).toBeNull();
+        expect(findInputByDottedName(inputs, "missing")).toBeNull();
+    });
+
+    it("passes enclosing sections, conditionals and repeat blocks to visitInputs callbacks", () => {
+        const inputs = [
+            {
+                name: "sec",
+                type: "section",
+                inputs: [
+                    {
+                        name: "rep",
+                        type: "repeat",
+                        cache: [[], [{ name: "x", type: "data" }]],
+                    },
+                ],
+            },
+            {
+                name: "cond",
+                type: "conditional",
+                test_param: { name: "mode", type: "select", value: "a" },
+                cases: [{ value: "a", inputs: [{ name: "y", type: "text" }] }],
+            },
+        ];
+        const visits = {};
+        visitInputs(inputs, (node, name, _context, parents) => {
+            visits[name] = parents?.map(({ node, index }) =>
+                index === undefined ? node.name : `${node.name}[${index}]`,
+            );
+        });
+        expect(visits).toEqual({ "sec|rep_1|x": ["sec", "rep[1]"], "cond|mode": [], "cond|y": ["cond"] });
+    });
+
+    it("returns a dotted-name input with its enclosing containers", () => {
+        const x = { name: "x", type: "data" };
+        const rep = { name: "rep", type: "repeat", cache: [[], [x]] };
+        const sec = { name: "sec", type: "section", inputs: [rep] };
+        expect(findInputPathByDottedName([sec], "sec|rep_1|x")).toEqual({
+            node: x,
+            parents: [{ node: sec }, { node: rep, index: 1 }],
+        });
+        expect(findInputPathByDottedName([sec], "sec|rep_0|x")).toBeNull();
     });
 
     it("test basic value validation", () => {
