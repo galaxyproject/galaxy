@@ -1282,6 +1282,12 @@ class ModelFilterParser(HasAModelManager):
         return any(filter.filter_type == "function" for filter in filters)
 
 
+def get_count(session, statement) -> int:
+    """Count the rows ``statement`` would return."""
+    stmt = sqlalchemy.select(sqlalchemy.func.count()).select_from(statement.subquery())
+    return session.scalar(stmt)
+
+
 def parse_bool(bool_string: str | bool) -> bool:
     """
     Parse a boolean from a string.
