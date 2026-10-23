@@ -447,7 +447,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def by_credentials(self, api_key: str | None, access_token: str | None) -> model.User | None:
         """Find the user for a Galaxy API key or, failing that, an OIDC access token.
 
-        A bad API key raises, but an access token that matches no user returns None.
+        The API key is tried first. A bad API key raises, but an access token that matches no user
+        returns None.
         """
         if api_key:
             return self.by_api_key(api_key=api_key)
@@ -558,7 +559,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # TODO: trans
         return trans.user
 
-    def user_can_do_run_as(self, user) -> bool:
+    def user_can_do_run_as(self, user: model.User | schema.BootstrapAdminUser | None) -> bool:
         run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
         if not run_as_users:
             return False
