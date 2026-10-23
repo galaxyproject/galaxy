@@ -31,6 +31,7 @@ from starlette.routing import Route
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.exceptions import AuthenticationFailed
 from galaxy.managers.users import UserManager
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps.mulled.recommend import (
     biocontainer_tag_built,
     ContainerRecommendation,
@@ -221,7 +222,7 @@ def _biocontainer_recommendation_payload(
     }
 
 
-def get_mcp_app(gx_app):
+def get_mcp_app(gx_app: StructuredApp):
     """Create and configure the MCP server application."""
     fastmcp_settings.stateless_http = True
 
