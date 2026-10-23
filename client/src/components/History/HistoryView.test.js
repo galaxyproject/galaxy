@@ -197,11 +197,7 @@ describe("History center panel View", () => {
         expect(before).toContain(hid);
 
         const target = wrapper.findAllComponents(ContentItem).find((item) => item.props("id") === hid);
-        if (operation === "delete") {
-            target.vm.$emit("delete", target.props("item"), false);
-        } else {
-            target.vm.$emit(operation);
-        }
+        await target.find(`.${operation}-btn`).trigger("click");
         await flushPromises();
 
         expect(contentRequest).toHaveBeenCalledTimes(1);
@@ -225,11 +221,14 @@ describe("History center panel View", () => {
         server.use(http.put("/api/histories/{history_id}/contents/{type}s/{id}", contentRequest));
         const renderedHids = () => wrapper.findAllComponents(ContentItem).map((item) => item.props("id"));
 
-        wrapper.findComponent(FilterMenu).vm.$emit("update:filter-text", filterText);
+        vi.useFakeTimers();
+        await wrapper.find("[data-description='filter text input']").setValue(filterText);
+        vi.runOnlyPendingTimers();
+        vi.useRealTimers();
         await flushPromises();
         expect(renderedHids()).toEqual([hid]);
 
-        wrapper.findComponent(ContentItem).vm.$emit(operation);
+        await wrapper.findComponent(ContentItem).find(`.${operation}-btn`).trigger("click");
         await flushPromises();
 
         expect(contentRequest).toHaveBeenCalledTimes(1);
