@@ -93,6 +93,25 @@ class TestJobPanel(SeleniumTestCase):
         self._assert_job_card_visible(random_lines_job_id, "random_lines1")
 
     @skip_without_tool("cat1")
+    @skip_without_tool("random_lines1")
+    @selenium_test
+    @managed_history
+    def test_search_jobs_by_tool_name(self):
+        history_id = self.current_history_id()
+        cat1_job_id = self._run_cat1(history_id)
+        random_lines_job_id = self._run_random_lines1(history_id)
+
+        self._open_job_panel()
+        self.components.job_panel.name_mode_toggle.wait_for_and_click()
+
+        self._assert_job_card_visible(cat1_job_id, "Concatenate multiple datasets or collections")
+
+        self._inline_search_for(self.navigation.job_panel.search_input, "'Select random lines'", escape_to_clear=True)
+
+        self._assert_job_card_visible(random_lines_job_id, "Select random lines")
+        self._assert_job_card_absent(cat1_job_id)
+
+    @skip_without_tool("cat1")
     @selenium_test
     @managed_history
     def test_filter_by_invalid_filter_key_shows_an_error_instead_of_the_unfiltered_list(self):
