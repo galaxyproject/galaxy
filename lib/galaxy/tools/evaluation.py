@@ -1068,7 +1068,7 @@ def _add_element_identifiers(cwl_style_inputs, input_datasets, incoming) -> None
         if identifier is None:
             continue
         *parents, leaf = name.split("|")
-        node = cwl_style_inputs
+        node: Any = cwl_style_inputs
         for part in parents:
             node = node.get(part) if isinstance(node, dict) else None
         value = node.get(leaf) if isinstance(node, dict) else None
