@@ -3,6 +3,7 @@ import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
+import { getMyHistories } from "@/api/histories";
 import type { TableField } from "@/components/Common/GTable.types";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
@@ -141,36 +142,20 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
 
         const limit = ctx.perPage;
         const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
-        const sortDesc = ctx.sortDesc;
         const sortBy: HistorySortByLiteral =
             ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
-        const queryDict = HistoriesFilters.getQueryDict(ctx.filter ?? "");
 
-        const { response, data, error } = await GalaxyApi().GET("/api/histories", {
-            params: {
-                query: {
-                    search: filter,
-                    view: "summary",
-                    keys: "create_time",
-                    show_own: true,
-                    offset: offset,
-                    limit: limit,
-                    q: Object.keys(queryDict),
-                    qv: Object.values(queryDict),
-                    sort_by: sortBy,
-                    sort_desc: sortDesc,
-                },
-            },
+        const { data, total } = await getMyHistories({
+            limit,
+            offset,
+            search: filter,
+            sortBy,
+            sortDesc: ctx.sortDesc ?? true,
         });
 
-        if (error) {
-            errorMessage.value = errorMessageAsString(error);
-            return [];
-        }
+        totalItems.value = total;
 
-        totalItems.value = parseInt(response.headers.get("total_matches") ?? "0");
-
-        items.value = (data as HistorySummary[]).map(historyEntryToRecord);
+        items.value = data.map(historyEntryToRecord);
 
         formatRows();
 

@@ -1041,7 +1041,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         login.submit.wait_for_and_click()
         self.snapshot("login-submitted")
 
-    def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
+    def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True, via_masthead=False):
+        """Register a user from the login page's "Register here" form, or the masthead's Register button."""
         if email is None:
             email = self._get_random_email()
         if password is None:
@@ -1052,9 +1053,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             username = email.split("@")[0]
 
         self.home()
-        self.components.masthead.login_masthead_button.wait_for_and_click()
         registration = self.components.registration
-        registration.toggle.wait_for_and_click()
+        if via_masthead:
+            self.components.masthead.register_masthead_button.wait_for_and_click()
+        else:
+            self.components.masthead.login_masthead_button.wait_for_and_click()
+            registration.toggle.wait_for_and_click()
         form = registration.form.wait_for_visible()
         self.fill(form, dict(email=email, password=password, username=username, confirm=confirm))
         registration.submit.wait_for_and_click()
@@ -1505,30 +1509,54 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
     def workflow_editor_search_for_workflow(self, name: str):
-        self.wait_for_and_click(self.components.workflow_editor.workflow_activity)
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.clear_tooltips(".workflow-scroll-list")
+        editor = self.components.workflow_editor
+        # The activity button toggles: clicking it with the panel open (a second insert) closes it.
+        if editor.workflow_activity_panel.is_absent:
+            self.wait_for_and_click(editor.workflow_activity)
+        search = editor.workflow_activity_search.wait_for_visible()
+        # Rest the pointer on the search input: hovering the list can land on a card badge's tooltip.
+        self.clear_tooltips(editor.workflow_activity_search.selector)
 
-        input = self.wait_for_selector(".activity-panel input")
-        input.send_keys(name)
+        search.clear()
+        search.send_keys(name)
 
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-    def workflow_editor_add_steps(self, name: str):
+    def _workflow_editor_panel_card_action(self, name: str, action: Target):
+        """Search the Workflows panel for ``name`` and click ``action`` in its card."""
         self.workflow_editor_search_for_workflow(name)
 
-        self.components.workflows.workflow_copy_steps.wait_for_and_click()
+        def click_action():
+            card = self._wait_on(
+                lambda: self._workflow_editor_panel_card_titled(name),
+                f"Workflows panel with a workflow titled [{name}]",
+                wait_type=self.wait_types.DATABASE_OPERATION,
+            )
+            card.find_element(*action.element_locator).click()
 
+        # Cards can re-render under the lookup or the click while the debounced search reloads them.
+        retry_call_during_transitions(click_action)
+
+    def _workflow_editor_panel_card_titled(self, name: str):
+        """Panel card titled exactly ``name``, which is right whether or not the debounced search has applied."""
+        cards = self.find_elements(
+            self.navigation.workflow_editor.workflow_activity_list.descendant(self.navigation.workflows.workflow_card)
+        )
+        title_locator = self.navigation.workflows.workflow_card_title.element_locator
+        titles = [card.find_element(*title_locator).text for card in cards]
+        return cards[titles.index(name)] if name in titles else None
+
+    def workflow_editor_add_steps(self, name: str):
+        self._workflow_editor_panel_card_action(name, self.navigation.workflows.workflow_copy_steps)
+
+        # Copied steps keep their own labels, so there is no single node to wait on.
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_add_subworkflow(self, name: str):
-        self.workflow_editor_search_for_workflow(name)
+        self._workflow_editor_panel_card_action(name, self.navigation.workflows.workflow_insert_sub_workflow)
 
-        self.components.workflows.workflow_insert_sub_workflow.wait_for_and_click()
-
-        self.components.workflow_editor.node._(label=name).wait_for_present()
-
-        self.sleep_for(self.wait_types.UX_RENDER)
+        node = self.components.workflow_editor.node._(label=name)
+        node.wait_for_visible()
+        # The node renders before its module request fills in inputs and outputs.
+        node.loading.wait_for_absent(wait_type=self.wait_types.DATABASE_OPERATION)
 
     def workflow_editor_enter_column_definitions(self, column_definitions: list[ColumnDefinition]):
         for index, column_definition in enumerate(column_definitions):
@@ -3350,7 +3378,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         for parameter in parameters:
             form_type = parameter.form_element_type
             if form_type in ["integer", "string"]:
-                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_send_keys(
+                # Inputs may be prefilled with the variable's default value.
+                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_clear_and_send_keys(
                     str(parameter.value),
                 )
             else:

@@ -192,6 +192,8 @@ export async function getBeaconHistories(beaconHistoryName: string): Promise<Bea
  * All visibility flags are optional and default to a listing of the current
  * user's own, non-archived histories. They are always sent explicitly, so a
  * listing can never pick up the backend's `show_published=true` default.
+ * `search` is likewise always sent (default `""`): without it the endpoint falls
+ * back to a legacy listing that ignores sorting and doesn't report `total_matches`.
  *
  * @param {GetHistoryListOptions} options The options for fetching histories
  * @returns {Promise<HistoryListResult<T>>} A promise that resolves to the matching history entries

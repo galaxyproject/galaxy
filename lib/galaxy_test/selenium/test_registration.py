@@ -18,6 +18,10 @@ class TestRegistration(SeleniumTestCase):
         self.register()
 
     @selenium_test
+    def test_registration_from_masthead(self):
+        self.register(via_masthead=True)
+
+    @selenium_test
     def test_registration_accessibility(self):
         self.home()
         self.components.masthead.login_masthead_button.wait_for_and_click()
