@@ -11,7 +11,7 @@ def test_preferred_visualization_direct_mapping():
 
 def test_preferred_visualization_not_inherited_by_sibling_subclass():
     registry = example_datatype_registry_for_sample()
-    for extension in ("anvio_state", "freq.json", "hivtrace"):
+    for extension in ("anvio_state", "freq.json", "mzqc"):
         assert get_preferred_visualization(registry, extension) is None
 
 
