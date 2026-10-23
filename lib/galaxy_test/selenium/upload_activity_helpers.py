@@ -383,7 +383,8 @@ class UploadContext(_UploadStaging):
         else:
             for dataset in datasets:
                 dataset.wait_for_and_click()
-        upload_activity.data_library_add_selected.wait_for_and_click()
+        # GButton is only aria-disabled until the selection registers, so a plain click wait can no-op
+        upload_activity.data_library_add_selected_enabled.wait_for_and_click()
         return [self._create_item(DataLibraryUploadItem) for _ in dataset_labels]
 
     def select_composite(self, composite_type: str) -> "UploadContext":

@@ -1749,6 +1749,7 @@ upload_activity:
       type: xpath
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     data_library_add_selected: '[data-test-id="data-library-add-selected"]'
+    data_library_add_selected_enabled: '[data-test-id="data-library-add-selected"]:not([aria-disabled])'
 
 upload_method_inline:
   selectors:
