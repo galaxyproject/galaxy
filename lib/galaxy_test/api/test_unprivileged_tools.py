@@ -161,6 +161,12 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             contents = self.dataset_populator.get_collection_element_contents(history_id, implicit["id"])
         assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
 
+    def test_run_mapped_over_converted_input_writes_element_identifier(self):
+        tabular_input = [{**TOOL_WITH_ELEMENT_IDENTIFIER["inputs"][0], "format": "tabular"}]
+        tool = {**TOOL_WITH_ELEMENT_IDENTIFIER, "inputs": tabular_input}
+        contents = self._run_mapped_over_list(tool, [("sample_a", "a,1\n"), ("sample_b", "b,2\n")], ext="csv")
+        assert contents == {"sample_a": "sample_a\n", "sample_b": "sample_b\n"}
+
     def test_run_plain_dataset_element_identifier(self):
         with (
             self.dataset_populator.test_history() as history_id,
