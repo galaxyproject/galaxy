@@ -5,6 +5,7 @@ from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    TOOL_WITH_ELEMENT_IDENTIFIER,
     TOOL_WITH_SHELL_COMMAND,
 )
 from ._framework import ApiTestCase
@@ -129,6 +130,25 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             output_content = self.dataset_populator.get_history_dataset_content(history_id)
             assert output_content == "abc\n"
+
+    def test_run_plain_dataset_element_identifier(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_ELEMENT_IDENTIFIER)
+            )
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content="abc", name="reads.txt")
+            self._run(
+                history_id=history_id,
+                tool_uuid=dynamic_tool["uuid"],
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                assert_ok=True,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert output_content == "null\n"
 
     def test_rerun_private_udt_denied_for_non_owner_with_execute_role(self):
         with (
