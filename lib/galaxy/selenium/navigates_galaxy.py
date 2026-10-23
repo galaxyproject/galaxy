@@ -2864,9 +2864,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         list_wizard.wizard_next_button.wait_for_and_click()
 
     def list_wizard_click_cell_and_send_keys(self, column_identifier: str, row_index: int, text: str):
-        list_wizard = self.components.collection_builders.list_wizard
-        list_wizard.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
-        input = list_wizard.cell_input(row_index=row_index, column_identifier=column_identifier)
+        self.ag_grid_edit_cell(self.components.collection_builders.list_wizard, column_identifier, row_index, text)
+
+    def ag_grid_edit_cell(self, grid: SmartComponent, column_identifier: str, row_index: int, text: str):
+        """Edit a cell of ``grid``, a component with ``cell`` and ``cell_input`` selectors."""
+        grid.cell(row_index=row_index, column_identifier=column_identifier).wait_for_and_double_click()
+        input = grid.cell_input(row_index=row_index, column_identifier=column_identifier)
         input.wait_for_and_send_keys(text)
         self.send_enter(input.wait_for_present())
 
