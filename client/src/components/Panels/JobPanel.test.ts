@@ -166,6 +166,31 @@ describe("JobPanel", () => {
         expect(wrapper.find("#g-card-job-goneJob .job-card-title-text").text()).toBe("uninstalled_tool");
     });
 
+    it("hides a job once a live update takes it out of the active filter's criteria", async () => {
+        server.use(
+            http.get("/api/jobs", ({ response }) => {
+                return response(200).json([buildJob({ id: "job1", state: "queued" })], {
+                    headers: { total_matches: "1" },
+                });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "state:queued");
+        await flushPromises();
+        await scrollOnce();
+
+        expect(wrapper.find("#g-card-job-job1").exists()).toBe(true);
+
+        // Simulate the job reaching a terminal state while the panel is still showing it
+        // (e.g. via JobState's own polling), same as a real state change would.
+        useJobStore().updateJob("job1", buildJob({ id: "job1", state: "ok" }));
+        await flushPromises();
+
+        expect(wrapper.find("#g-card-job-job1").exists()).toBe(false);
+    });
+
     it("shows an invalid filter error with a clear-search hint", async () => {
         const wrapper = mountJobPanel();
         await flushPromises();

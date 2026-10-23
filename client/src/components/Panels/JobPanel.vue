@@ -6,7 +6,7 @@ import { useRoute } from "vue-router";
 import type { RegisteredUser } from "@/api";
 import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/api/jobs";
 import { fetchJobs } from "@/api/jobs";
-import { jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
+import { type JobMatcher, jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
 import { useJobStore } from "@/stores/jobStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -120,10 +120,25 @@ watch(
     { immediate: true },
 );
 
+/** Matches a job against the current filter text, so a job can be dropped from the list as soon as
+ * a live update (e.g. a state change) takes it out of the filter's criteria. Falls back to
+ * matching everything if the filter text itself is invalid; `loadJobs` is what reports that error
+ * to the user, so this just needs to avoid throwing during render. */
+const currentJobMatcher = computed<JobMatcher>(() => {
+    if (!filterText.value.trim()) {
+        return () => true;
+    }
+    try {
+        return jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).matchesJob;
+    } catch {
+        return () => true;
+    }
+});
+
 /** The jobs matching the current filters, kept up to date reactively as the store updates
  * (e.g. job state changes polled elsewhere), same as `sortedStoredInvocations` for invocations. */
 const currentSortedJobs = computed(() => {
-    return sortedStoredJobs.value.filter((job) => currentJobIds.value.has(job.id));
+    return sortedStoredJobs.value.filter((job) => currentJobIds.value.has(job.id) && currentJobMatcher.value(job));
 });
 
 /** If user information is available, determines whether the job belongs to another user. */
@@ -160,7 +175,7 @@ async function loadJobs(_offset: number, limit: number) {
     }
     const extraProps: JobFetchExtraParams = {
         user_id: currentUser.value.id,
-        ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value),
+        ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value).params,
     };
 
     loading.value = true;
