@@ -14,6 +14,7 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadTableSorting } from "@/composables/upload/uploadTableSorting";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { buildPreparedUpload } from "@/utils/upload";
 import { mapToPasteUrlUpload } from "@/utils/upload/itemMappers";
@@ -96,6 +97,8 @@ const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, 
 });
 
 const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.txt";
+
+const { tableSortProps, tableSortEvents } = useUploadTableSorting(urlItems);
 
 const hasItems = computed(() => urlItems.value.length > 0);
 const isSingleMode = computed(() => props.multiple === false);
@@ -282,7 +285,16 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <div ref="tableContainerRef" class="url-table-container">
-                <GTable hover striped fixed compact :items="urlItems" :fields="tableFields" class="url-table">
+                <GTable
+                    v-bind="tableSortProps"
+                    hover
+                    striped
+                    fixed
+                    compact
+                    :items="urlItems"
+                    :fields="tableFields"
+                    class="url-table"
+                    v-on="tableSortEvents">
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item, index }">
                         <UploadTableNameCell

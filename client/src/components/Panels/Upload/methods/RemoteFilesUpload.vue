@@ -21,6 +21,7 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadTableSorting } from "@/composables/upload/uploadTableSorting";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -172,6 +173,8 @@ const hasPagination = computed(() => {
     const itemCount = supportsServerPagination.value ? totalMatches.value : allFetchedItems.value.length;
     return itemCount > perPage.value;
 });
+
+const { tableSortProps, tableSortEvents } = useUploadTableSorting(remoteFileItems);
 
 const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
@@ -785,7 +788,14 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             </div>
 
             <div ref="tableContainerRef" class="file-table-container">
-                <GTable :items="remoteFileItems" :fields="tableFields" hover striped table-class="table-sm file-table">
+                <GTable
+                    v-bind="tableSortProps"
+                    :items="remoteFileItems"
+                    :fields="tableFields"
+                    hover
+                    striped
+                    table-class="table-sm file-table"
+                    v-on="tableSortEvents">
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item }">
                         <UploadTableNameCell
