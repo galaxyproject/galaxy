@@ -1705,6 +1705,7 @@ upload_activity:
       type: xpath
       selector: '//button[normalize-space() = "Cancel"]'
     row_name_input: '[data-test-id="upload-row-${row}-name"]'
+    table_sortable_header: 'th.g-table-sortable[id^="g-table-field-${field}-"]'
     row_extension_select: '[data-test-id="upload-row-${row}-extension"] .single-item-selector'
     row_dbkey_select: '[data-test-id="upload-row-${row}-dbkey"] .single-item-selector'
     paste_content_row_toggle_button: '[data-test-id="paste-content-toggle-${row}"]'
