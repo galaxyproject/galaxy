@@ -311,6 +311,11 @@ function hideTooltip(el: HTMLElement) {
     }
 }
 
+// A dispatched focusin without real focus isn't :focus, so it still shows
+function isNonKeyboardFocus(target: EventTarget | null): boolean {
+    return target instanceof Element && target.matches(":focus") && !target.matches(":focus-visible");
+}
+
 function setupListeners(el: HTMLElement, modifiers: DirectiveBinding["modifiers"], arg?: string): () => void {
     const listeners: Array<[string, EventListener, boolean]> = [];
 
@@ -321,7 +326,11 @@ function setupListeners(el: HTMLElement, modifiers: DirectiveBinding["modifiers"
 
     const focusOnly = (modifiers.focus || arg === "focus") && !modifiers.hover && arg !== "hover";
     const hoverShowHandler = () => scheduleShowTooltip(el);
-    const focusShowHandler = () => {
+    const focusShowHandler = (event: Event) => {
+        // Pointer or programmatic focus, e.g. restored by a closing dialog, is left to the hover trigger
+        if (!focusOnly && isNonKeyboardFocus(event.target)) {
+            return;
+        }
         clearPendingShow(el);
         showTooltip(el);
     };

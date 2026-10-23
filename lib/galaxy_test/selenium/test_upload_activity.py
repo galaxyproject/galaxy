@@ -190,6 +190,8 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         context.to_list("library list")
         self._assert_target_history_change_link_in_banner()
         context.select_target_history(target_history_id)
+        # focus returns to the change link when the selector closes; that must not pop its tooltip
+        self.components._.tooltip_balloon_with_text(text="Change target history for this upload").assert_absent()
         # collection config is applied by start(), so this shows the staged items and target history
         self._screenshot_when_startable("upload_activity_data_library_target_history_staged")
         context.start()

@@ -13,6 +13,9 @@ _:  # global stuff
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip, .g-tooltip-d'
     tooltip_inner: '.tooltip-inner, .g-tooltip-d-inner'
+    tooltip_balloon_with_text:
+      type: xpath
+      selector: '//*[contains(concat(" ", normalize-space(@class), " "), " g-tooltip-d ")][contains(string(.), "${text}")]'
     left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
