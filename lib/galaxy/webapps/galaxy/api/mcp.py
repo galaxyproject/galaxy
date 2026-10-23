@@ -243,7 +243,7 @@ def get_mcp_app(gx_app):
 
         user = user_manager.by_credentials(api_key, access_token)
         if not user:
-            # A bad API key raises, but an access token that matches no OIDC user comes back empty.
+            # Only an access token that matches no OIDC user gets here; a bad API key already raised.
             raise AuthenticationFailed("Invalid access token.")
 
         url_builder = get_mcp_url_builder(base_url)
