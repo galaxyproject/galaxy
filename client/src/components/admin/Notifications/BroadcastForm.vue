@@ -90,6 +90,7 @@ function addActionLink() {
     broadcastData.value.content.action_links?.push({
         action_name: "",
         link: "",
+        target: "_self",
     });
 }
 

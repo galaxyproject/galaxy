@@ -7823,7 +7823,7 @@ export interface components {
              * @default _self
              * @enum {string}
              */
-            target?: "_self" | "_blank";
+            target: "_self" | "_blank";
         };
         /**
          * ActionSuggestion

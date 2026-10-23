@@ -110,9 +110,9 @@ describe("BroadcastsOverlay.vue", () => {
         expect(link.attributes("target")).toBe("_blank");
     });
 
-    it("opens an action link in the current tab when no target is set", async () => {
+    it("opens an action link in the current tab when the target is _self", async () => {
         const wrapper = await mountBroadcastsOverlayWith([
-            broadcastWithActionLink({ action_name: "External", link: "https://example.org" }),
+            broadcastWithActionLink({ action_name: "External", link: "https://example.org", target: "_self" }),
         ]);
 
         const link = wrapper.find(actionLinkSelector);
