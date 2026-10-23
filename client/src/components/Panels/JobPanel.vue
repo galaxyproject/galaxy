@@ -50,8 +50,11 @@ const totalJobCount = ref<number | undefined>(undefined);
 const serverOffset = ref(0);
 
 /** Changing this key remounts the `ScrollList`, so it drops the jobs it has loaded and
- * requests the first page again with the new filters. */
-const filterKey = computed(() => filterText.value.trim());
+ * requests the first page again with the new filters. Name mode changes what the text matches. */
+const filterKey = computed(() => {
+    const text = filterText.value.trim();
+    return text ? `${showToolNamesInJobPanel.value ? "name" : "id"}:${text}` : "";
+});
 
 /** IDs of jobs fetched for the *current* filters. `sortedStoredJobs` is a global, id-keyed
  * cache shared across the whole app, so it can hold jobs from a previous filter. This set
@@ -80,7 +83,11 @@ function stopRetainingCurrentJobs() {
     unretainJobById.clear();
 }
 
+/** Bumped on every filter change, so pages requested under an earlier filter can be dropped. */
+let filterGeneration = 0;
+
 watch(filterKey, () => {
+    filterGeneration++;
     stopRetainingCurrentJobs();
     currentJobIds.value = new Set();
     serverOffset.value = 0;
@@ -123,6 +130,7 @@ async function loadJobs(_offset: number, limit: number) {
     if (!currentUser.value || currentUser.value.isAnonymous) {
         return { items: [], total: 0 };
     }
+    const requestGeneration = filterGeneration;
     const extraProps: JobFetchExtraParams = {
         user_id: currentUser.value.id,
         ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value),
@@ -135,6 +143,10 @@ async function loadJobs(_offset: number, limit: number) {
         [data, totalMatches] = await fetchJobs(serverOffset.value, limit, extraProps);
     } finally {
         loading.value = false;
+    }
+    if (requestGeneration !== filterGeneration) {
+        // Filters changed while loading; this page belongs to the discarded list.
+        return { items: [], total: 0 };
     }
     serverOffset.value += data.length;
 

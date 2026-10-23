@@ -7,9 +7,11 @@ import { describe, expect, it, vi } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { ShowFullJobResponse } from "@/api/jobs";
 import { MAX_CACHED_JOBS, useJobStore } from "@/stores/jobStore";
+import { type Tool, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import JobPanel from "./JobPanel.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 
 const { server, http } = useServerMock();
 
@@ -110,6 +112,59 @@ describe("JobPanel", () => {
         await flushPromises();
 
         expect(wrapper.text()).toContain("cat1");
+    });
+
+    it("refetches in name mode when the name toggle flips with filter text present", async () => {
+        const requests: URLSearchParams[] = [];
+        server.use(
+            http.get("/api/jobs", ({ request, response }) => {
+                requests.push(new URL(request.url).searchParams);
+                return response(200).json([], { headers: { total_matches: "0" } });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        useToolStore().saveAllTools([{ id: "cat1", name: "Concatenate datasets" }] as unknown as Tool[]);
+        await flushPromises();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "concat");
+        await flushPromises();
+        await scrollOnce();
+        expect(requests.at(-1)?.get("search")).toBe("tool:concat");
+
+        useUserStore().showToolNamesInJobPanel = true;
+        await flushPromises();
+        await scrollOnce();
+
+        expect(requests.at(-1)?.getAll("tool_id")).toEqual(["cat1"]);
+    });
+
+    it("drops a page that resolves after the filter changed", async () => {
+        let releaseStalePage: () => void = () => {};
+        const stalePage = new Promise<void>((resolve) => {
+            releaseStalePage = resolve;
+        });
+        server.use(
+            http.get("/api/jobs", async ({ request, response }) => {
+                if (new URL(request.url).searchParams.get("search") === "tool:cat1") {
+                    return response(200).json([], { headers: { total_matches: "0" } });
+                }
+                await stalePage;
+                return response(200).json([buildJob({ id: "staleJob", tool_id: "random_lines1" })], {
+                    headers: { total_matches: "1" },
+                });
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        loadMore?.();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "tool_id:cat1");
+        await flushPromises();
+        await scrollOnce();
+        releaseStalePage();
+        await flushPromises();
+
+        expect(wrapper.find("#g-card-job-staleJob").exists()).toBe(false);
     });
 
     it("keeps showing more jobs once scrolling has loaded past jobStore's cache cap", async () => {
