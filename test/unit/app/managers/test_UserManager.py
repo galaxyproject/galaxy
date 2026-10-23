@@ -584,6 +584,13 @@ class TestUserManager(BaseTestCase):
             assert self.user_manager.by_credentials(None, None) is None
             authnz_manager.match_access_token_to_user.assert_called_once()
 
+    def test_user_can_do_run_as_without_user(self):
+        # A Bearer token that matches no user reaches the run_as check with no user at all.
+        user2 = self.user_manager.create(**user2_data)
+        with patch.object(self.app.config, "api_allow_run_as", user2.email, create=True):
+            assert self.user_manager.user_can_do_run_as(user2)
+            assert not self.user_manager.user_can_do_run_as(None)
+
     def test_purge_deletes_oidc_tokens(self):
         self.log("purging a user should unlink their external identities")
         self.trans.app.config.allow_user_deletion = True
