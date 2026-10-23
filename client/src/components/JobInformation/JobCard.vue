@@ -47,7 +47,7 @@ const actions = computed(() => {
 
 const cardTitle = computed(() => {
     if (props.showToolName) {
-        return toolStore.getToolNameById(props.job.tool_id) || props.job.tool_id;
+        return toolStore.getToolNameById(props.job.tool_id, props.job.tool_id);
     }
     return props.job.tool_id;
 });

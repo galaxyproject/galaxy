@@ -8,6 +8,7 @@ import type { JobBaseModel, JobFetchExtraParams, ShowFullJobResponse } from "@/a
 import { fetchJobs } from "@/api/jobs";
 import { jobsFilterParams, JobsFiltersById, JobsFiltersByName } from "@/components/Jobs/JobsFilters";
 import { useJobStore } from "@/stores/jobStore";
+import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
@@ -31,6 +32,18 @@ const { currentUser, showToolNamesInJobPanel } = storeToRefs(userStore);
 
 const jobStore = useJobStore();
 const { sortedStoredJobs } = storeToRefs(jobStore);
+
+const toolStore = useToolStore();
+
+/** Name mode resolves names through the tool store, which nothing else may have loaded yet. */
+let toolsRequest: Promise<void> | undefined;
+function loadTools() {
+    toolsRequest ??= toolStore.fetchTools().catch((error) => {
+        toolsRequest = undefined;
+        throw error;
+    });
+    return toolsRequest;
+}
 
 const filterText = ref("");
 const showAdvanced = ref(false);
@@ -96,6 +109,17 @@ watch(filterKey, () => {
 
 onUnmounted(stopRetainingCurrentJobs);
 
+watch(
+    showToolNamesInJobPanel,
+    (showToolNames) => {
+        if (showToolNames) {
+            // Titles fall back to tool ids on failure; `loadJobs` reports errors for name searches.
+            loadTools().catch(() => {});
+        }
+    },
+    { immediate: true },
+);
+
 /** The jobs matching the current filters, kept up to date reactively as the store updates
  * (e.g. job state changes polled elsewhere), same as `sortedStoredInvocations` for invocations. */
 const currentSortedJobs = computed(() => {
@@ -131,6 +155,9 @@ async function loadJobs(_offset: number, limit: number) {
         return { items: [], total: 0 };
     }
     const requestGeneration = filterGeneration;
+    if (showToolNamesInJobPanel.value) {
+        await loadTools();
+    }
     const extraProps: JobFetchExtraParams = {
         user_id: currentUser.value.id,
         ...jobsFilterParams(filterText.value, showToolNamesInJobPanel.value),
