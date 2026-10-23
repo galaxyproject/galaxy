@@ -449,6 +449,8 @@ MetadataParameter sub-classes.
 class IntParameter(MetadataParameter):
     @classmethod
     def marshal(cls, value):
+        if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
+            raise RequestParameterInvalidException(f"Expected an integer, got {value!r}")
         if value is None or isinstance(value, int):
             return value
         if isinstance(value, str) and not value.strip():
