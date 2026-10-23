@@ -6,7 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import type { JobBaseModel } from "@/api/jobs";
+import { type JobBaseModel, TERMINAL_STATES } from "@/api/jobs";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useRerunnableTool } from "@/composables/rerunnableTool";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -52,6 +52,11 @@ const cardTitle = computed(() => {
     return props.job.tool_id;
 });
 
+/** `undefined` makes `JobState` poll the job until it is terminal; paused jobs can wait indefinitely. */
+const jobStateJob = computed(() =>
+    TERMINAL_STATES.includes(props.job.state) || props.job.state === "paused" ? props.job : undefined,
+);
+
 function cardClicked(job: JobBaseModel) {
     router.push(`/jobs/${job.id}/view`);
 }
@@ -73,7 +78,7 @@ function cardClicked(job: JobBaseModel) {
                     <FontAwesomeIcon class="mr-1" :icon="faWrench" fixed-width />
                     <span v-g-tooltip.onoverflow class="job-card-title-text" :title="cardTitle">{{ cardTitle }}</span>
                 </Heading>
-                <JobState class="flex-shrink-0" :job-id="props.job.id" :job="props.job" />
+                <JobState class="flex-shrink-0" :job-id="props.job.id" :job="jobStateJob" />
             </div>
         </template>
         <template v-slot:description>

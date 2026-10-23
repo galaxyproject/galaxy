@@ -112,6 +112,25 @@ describe("JobPanel", () => {
         expect(wrapper.text()).toContain("cat1");
     });
 
+    it.each(["running", "finishing"] as const)("updates the state of a listed %s job", async (state) => {
+        server.use(
+            http.get("/api/jobs", ({ response }) => {
+                return response(200).json([buildJob({ id: "activeJob", state })], {
+                    headers: { total_matches: "1" },
+                });
+            }),
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                return response(200).json(buildJob({ id: "activeJob", state: "ok" }));
+            }),
+        );
+
+        const wrapper = mountJobPanel();
+        await flushPromises();
+        await scrollOnce();
+
+        expect(wrapper.find("#g-card-job-activeJob .job-state-badge").text()).toContain("ok");
+    });
+
     it("keeps showing more jobs once scrolling has loaded past jobStore's cache cap", async () => {
         // Pages through a pool larger than MAX_CACHED_JOBS, so later pages' `updateJob` calls
         // would evict earlier pages' jobs from the store if the panel didn't retain them
