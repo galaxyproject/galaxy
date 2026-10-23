@@ -2458,6 +2458,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_history_option_sharing(self):
         self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
 
+    def click_history_option_resume_paused_jobs(self):
+        """Open History options > Resume Paused Jobs."""
+        self.use_bootstrap_dropdown(option="resume paused jobs", menu="history options")
+
     def click_history_option_extract_workflow(self):
         self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
 
