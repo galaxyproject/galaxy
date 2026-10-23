@@ -18,12 +18,14 @@ import {
     quoteToolTagValue,
 } from "../Panels/utilities";
 
+import GAlert from "../BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FilterMenu from "../Common/FilterMenu.vue";
 import Heading from "../Common/Heading.vue";
 import ToolsListSectionFilters from "./ToolsListSectionFilters.vue";
 import ToolsListTable from "./ToolsListTable.vue";
+import ToolsListTagFilter from "./ToolsListTagFilter.vue";
 
 interface Props {
     name?: string;
@@ -64,11 +66,7 @@ const { loading } = storeToRefs(toolStore);
 const ontologyList = computed(() =>
     toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations")),
 );
-const tagAutocompleteValues = computed(() =>
-    [...new Set(Object.values(toolStore.toolsById).flatMap((tool) => tool.tool_tags || []))].sort((left, right) =>
-        left.localeCompare(right),
-    ),
-);
+const tagAutocompleteValues = computed(() => toolStore.toolTagNames);
 
 function normalizeInlineFilterValue(value: string) {
     const normalized = value
@@ -105,6 +103,8 @@ function buildInlineWhooshClause(key: string, value: string) {
 type InlineFilterClause = {
     key: string;
     value: string;
+    /** The clause as written, e.g. `tag:"data cleanup"` */
+    text: string;
 };
 
 function parseInlineFilterClauses(searchText: string) {
@@ -115,13 +115,14 @@ function parseInlineFilterClauses(searchText: string) {
     let match;
 
     while ((match = filterClause.exec(searchText)) !== null) {
-        const [fullMatch, leadingWhitespace = "", , key = "", quotedDouble, quotedSingle, unquotedValue] = match;
+        const [fullMatch, leadingWhitespace = "", text = "", key = "", quotedDouble, quotedSingle, unquotedValue] =
+            match;
         const clauseStart = match.index + leadingWhitespace.length;
         const clauseLength = fullMatch.length - leadingWhitespace.length;
         const value = quotedDouble ?? quotedSingle ?? unquotedValue;
 
         if (value) {
-            clauses.push({ key, value });
+            clauses.push({ key, value, text });
         }
 
         consumedText += searchText.slice(cursor, clauseStart);
@@ -143,7 +144,8 @@ function parseInlineFilterClauses(searchText: string) {
 }
 
 function hasExplicitBooleanQuery(searchText: string) {
-    return /\b(?:AND|OR|NOT)\b/.test(searchText);
+    const outsideQuotes = searchText.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, "");
+    return /\b(?:AND|OR|NOT)\b/.test(outsideQuotes);
 }
 
 function translateInlineStructuredSearch(searchText: string) {
@@ -291,6 +293,59 @@ const shouldPreserveRawSearchText = computed(
         structuredFilterText.value !== filterText.value.trim(),
 );
 
+/** The search split into its free text and its structured filters, which the pickers edit
+ * while the free text is kept as written. `null` if a picker would change what the search means:
+ * boolean expressions and favorites searches only work as a whole. */
+const pickerSearch = computed(() => {
+    const searchText = filterText.value.trim();
+    if (hasExplicitBooleanQuery(searchText)) {
+        return null;
+    }
+    const parsed = parseInlineFilterClauses(searchText);
+    const remainder = parsed ? parsed.remainder : searchText;
+    if (remainder.split(/\s+/).some((word) => FAVORITES_KEYS.includes(word))) {
+        return null;
+    }
+    return { remainder, clauses: parsed?.clauses ?? [] };
+});
+const canUseFilterPickers = computed(() => pickerSearch.value !== null);
+const pickerFilterText = computed(() => pickerSearch.value?.clauses.map(({ text }) => text).join(" ") ?? "");
+const selectedPickerTags = computed(
+    () => pickerSearch.value?.clauses.filter(({ key }) => key === "tag").map(({ value }) => value) ?? [],
+);
+
+function isSameFilterValue(filter: string, left: string, right: string) {
+    const normalizedLeft = normalizeToolTagValue(left);
+    const normalizedRight = normalizeToolTagValue(right);
+    // Tags are matched case-insensitively by the backend
+    return filter === "tag"
+        ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+        : normalizedLeft === normalizedRight;
+}
+
+function buildFilterClause(filter: string, value: string): InlineFilterClause {
+    const normalized = normalizeToolTagValue(value);
+    const quoted = /\s/.test(normalized) ? `"${escapeQuotedWhooshToken(normalized)}"` : normalized;
+    // Keep values the caller quoted (e.g. EDAM ids) quoted
+    const written = /^".*"$/.test(value.trim()) ? value.trim() : quoted;
+    return { key: filter, value: normalized, text: `${filter}:${written}` };
+}
+
+/** Toggles `value` like `Filtering.setFilterValue`, leaving every other clause as written:
+ * a matching clause is removed, otherwise multi-valued filters gain the value and
+ * single-valued filters are replaced by it. */
+function toggleFilterClause(clauses: InlineFilterClause[], filter: string, value: string) {
+    const matching = clauses.filter(
+        ({ key, value: current }) => key === filter && isSameFilterValue(filter, current, value),
+    );
+    if (matching.length) {
+        return clauses.filter((clause) => !matching.includes(clause));
+    }
+    const multiValued = validFilters.value[filter]?.type === "MultiTags";
+    const kept = multiValued ? clauses : clauses.filter(({ key }) => key !== filter);
+    return [...kept, buildFilterClause(filter, value)];
+}
+
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
 const whooshQuery = computed(
@@ -302,6 +357,15 @@ const whooshQuery = computed(
 
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
+
+const hasActiveFilters = computed(() => Boolean(filterText.value.trim()));
+const clearFiltersLabel = computed(() =>
+    pickerSearch.value && !pickerSearch.value.clauses.length ? "Clear search" : "Clear all filters",
+);
+
+function clearFilters() {
+    filterText.value = "";
+}
 
 /** There is currently an active `owner:` filter */
 const hasOwnerFilter = computed(() => {
@@ -324,21 +388,33 @@ watch(
             routerParams.query = { search: filterText.value.trim() };
         }
         router.push(routerParams);
-        await searchTools(newQuery);
+        await toolStore.fetchTools(newQuery);
     },
 );
 
 // The component mounts with the whooshQuery already generated; perform fetch!
-searchTools(whooshQuery.value);
-async function searchTools(query: string) {
-    await toolStore.fetchTools(query);
-    // Curated tags are fetched lazily out-of-band so tag chips on result cards
-    // and the `tag:` autocomplete work without bloating /api/tools.
-    await toolStore.fetchToolTagsMapping();
-}
+const loadingTags = ref(true);
+const tagsError = ref(false);
+toolStore
+    .fetchToolTagsMapping()
+    .catch(() => {
+        tagsError.value = true;
+    })
+    .finally(() => {
+        loadingTags.value = false;
+    });
+toolStore.fetchTools(whooshQuery.value);
 
 function applyFilter(filter: string, value: string | string[]) {
-    filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+    const search = pickerSearch.value;
+    if (!search) {
+        filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+        return;
+    }
+    // `Filtering` would drop the free text, fold words that follow a filter into its value
+    // and merge repeated filters, so the clauses are edited as written instead.
+    const clauses = [value].flat().reduce((current, item) => toggleFilterClause(current, filter, item), search.clauses);
+    filterText.value = [search.remainder, ...clauses.map(({ text }) => text)].filter(Boolean).join(" ");
 }
 
 function onToggleView(newView: ListViewMode) {
@@ -478,9 +554,19 @@ function onToggleView(newView: ListViewMode) {
 
             <ToolsListSectionFilters
                 :filter-class="ToolFilters"
-                :filter-text="filterText"
-                :disabled="loading"
+                :filter-text="pickerFilterText"
+                :disabled="loading || !canUseFilterPickers"
                 @apply-filter="applyFilter">
+                <template v-slot:tag-filter>
+                    <ToolsListTagFilter
+                        :tags="tagAutocompleteValues"
+                        :loading="loadingTags"
+                        :error="tagsError"
+                        :selected-tags="selectedPickerTags"
+                        :disabled="loading || !canUseFilterPickers"
+                        @toggle-tag="applyFilter('tag', $event)" />
+                </template>
+
                 <template v-slot:list-view-controls>
                     <!-- TODO: This div here and in ListHeader.vue needs to be a reusable component -->
                     <div class="d-flex flex-gapx-1 align-items-center">
@@ -513,10 +599,30 @@ function onToggleView(newView: ListViewMode) {
                     </div>
                 </template>
             </ToolsListSectionFilters>
+
+            <div class="d-flex flex-wrap align-items-center flex-gapx-1 mt-1">
+                <small v-if="selectedPickerTags.length" class="text-muted"> Tools must match all selected tags. </small>
+                <small v-if="!canUseFilterPickers" class="text-muted">
+                    Edit this search in the search field to preserve its conditions.
+                </small>
+                <GButton
+                    v-if="hasActiveFilters"
+                    data-description="clear-all-tool-filters"
+                    size="small"
+                    transparent
+                    @click="clearFilters">
+                    {{ clearFiltersLabel }}
+                </GButton>
+            </div>
         </div>
 
         <div class="tools-list-body">
+            <GAlert v-if="!loading && !itemsLoaded.length && hasActiveFilters" variant="info" show>
+                <p class="mb-2">No tools match your search. Try removing a filter or using a broader search term.</p>
+                <GButton size="small" outline @click="clearFilters">Clear filters and show all tools</GButton>
+            </GAlert>
             <ToolsListTable
+                v-else
                 :tools="itemsLoaded"
                 :loading="loading"
                 :has-owner-filter="hasOwnerFilter"
