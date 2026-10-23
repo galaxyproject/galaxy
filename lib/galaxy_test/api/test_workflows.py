@@ -5161,6 +5161,14 @@ steps:
             )
             details = self.dataset_populator.get_history_collection_details(history_id)
             assert details["element_count"] == 2, details
+            # Identifiers come from the id_cond default (idx).
+            elements = details["elements"]
+            assert [e["element_identifier"] for e in elements] == ["0", "1"], details
+            contents = [
+                self.dataset_populator.get_history_dataset_content(history_id, dataset_id=e["object"]["id"])
+                for e in elements
+            ]
+            assert [c.strip() for c in contents] == ["a", "b"], contents
 
     @skip_without_tool("section_name_digit_suffix")
     def test_section_name_digit_suffix_connection_without_fill_defaults(self):
