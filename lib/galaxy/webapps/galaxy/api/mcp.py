@@ -228,10 +228,10 @@ def get_mcp_app(gx_app):
     mcp = FastMCP("Galaxy")
 
     base_url = gx_app.config.galaxy_infrastructure_url
-    user_manager = UserManager(gx_app)
+    user_manager = gx_app[UserManager]
 
     def get_operations_manager(api_key: str | None, ctx: MCPContext) -> AgentOperationsManager:
-        """Look up user from API key and return an AgentOperationsManager."""
+        """Look up the user from an API key or OIDC access token and return an AgentOperationsManager."""
         api_key, access_token = _resolve_credentials(api_key, get_http_headers(include={"authorization"}))
         if not (api_key or access_token):
             raise ValueError(
