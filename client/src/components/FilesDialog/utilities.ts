@@ -6,6 +6,11 @@ import type { SelectionItem } from "../SelectionDialog/selectionTypes";
 export const isSubPath = (originPath: string, destinationPath: string) => {
     return subPathCondition(ensureTrailingSlash(originPath), ensureTrailingSlash(destinationPath));
 };
+
+export const isSamePath = (path: string, otherPath: string) => {
+    return ensureTrailingSlash(path) === ensureTrailingSlash(otherPath);
+};
+
 // we need "/" at the end to avoid a use case, when we have 2 folders with similar name
 // namely, "folder_example" starts with "folder"
 function ensureTrailingSlash(path: string) {
