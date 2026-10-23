@@ -21,7 +21,7 @@ jobs:
   test:
     name: Test
     if: ${{ false }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ startsWith(matrix.marker, 'red') }}
     strategy:
       fail-fast: false
