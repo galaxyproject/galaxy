@@ -2,6 +2,9 @@ import { JOB_STATES, type JobsQueryParams } from "@/api/jobs";
 import { useToolStore } from "@/stores/toolStore";
 import Filtering, { compare, contains, equals, toDate, type ValidFilter } from "@/utils/filtering";
 
+/** Name mode sends every matching tool id in the query string, so keep the URL bounded. */
+export const MAX_TOOL_NAME_MATCHES = 50;
+
 type UserJobsQueryParams = Pick<
     NonNullable<JobsQueryParams>,
     "state" | "date_range_min" | "date_range_max" | "search" | "tool_id"
@@ -83,6 +86,11 @@ export function jobsFilterParams(filterText: string, useNameFilter = false): Use
             // entered some tool name, but it didn't match any existing tools.
             if (params.tool_id.length === 0) {
                 throw new Error(`No tools matched the provided name: ${toolName}`);
+            }
+            if (params.tool_id.length > MAX_TOOL_NAME_MATCHES) {
+                throw new Error(
+                    `${params.tool_id.length} tools matched the provided name: ${toolName}. Please refine your search.`,
+                );
             }
         }
     }
