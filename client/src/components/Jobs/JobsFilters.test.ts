@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
@@ -72,11 +72,13 @@ describe("jobsFilterParams", () => {
     });
 
     describe("search by name mode", () => {
-        setActivePinia(createPinia());
-        useToolStore().saveAllTools([
-            { id: "cut1", name: "Cut" },
-            { id: "adv_cut1", name: "Advanced Cut" },
-        ] as unknown as Tool[]);
+        beforeEach(() => {
+            setActivePinia(createPinia());
+            useToolStore().saveAllTools([
+                { id: "cut1", name: "Cut" },
+                { id: "adv_cut1", name: "Advanced Cut" },
+            ] as unknown as Tool[]);
+        });
 
         it("matches all tools whose name contains the unspecified text", () => {
             expect(jobsFilterParams("cut", true).tool_id?.sort()).toEqual(["adv_cut1", "cut1"]);
@@ -121,10 +123,10 @@ describe("jobsFilterParams", () => {
         });
 
         it("combines a name filter with state, out of search", () => {
-            expect(jobsFilterParams("cut state:ok", true)).toEqual({
-                state: ["ok"],
-                tool_id: ["cut1", "adv_cut1"],
-            });
+            const params = jobsFilterParams("cut state:ok", true);
+            expect(params.state).toEqual(["ok"]);
+            expect(params.tool_id?.sort()).toEqual(["adv_cut1", "cut1"]);
+            expect(Object.keys(params).sort()).toEqual(["state", "tool_id"]);
         });
 
         it("does not set tool_id when no name text is present", () => {
