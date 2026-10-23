@@ -1,5 +1,4 @@
 import collections
-import errno
 import logging
 import os
 import signal
@@ -168,7 +167,10 @@ from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
 from galaxy.tool_shed.galaxy_install.update_repository_manager import (
     UpdateRepositoryManager,
 )
-from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
+from galaxy.tool_util.data import (
+    ToolDataTableConfig,
+    ToolDataTableManager as BaseToolDataTableManager,
+)
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -459,24 +461,49 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         )
 
     def _configure_tool_data_tables(self, from_shed_config):
-        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_filename=self.config.tool_data_table_config_path,
-            other_config_dict=self.config,
-        )
-        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        try:
-            tool_data_tables.load_from_config_file(
-                config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=tool_data_tables.tool_data_path,
-                from_shed_config=from_shed_config,
+        managed = self.config.shed_tool_data_table_config
+        managed_identity = os.path.normcase(os.path.realpath(managed))
+        sources = []
+        managed_seen = False
+        for filename in listify(self.config.tool_data_table_config_path):
+            if not filename:
+                continue
+            is_managed = os.path.normcase(os.path.realpath(filename)) == managed_identity
+            if is_managed and managed_seen:
+                continue
+            if is_managed:
+                managed_seen = True
+            sources.append(
+                ToolDataTableConfig(
+                    filename,
+                    from_shed_config=from_shed_config if is_managed else False,
+                    optional=is_managed and not self.config.is_set("shed_tool_data_table_config"),
+                )
             )
-        except OSError as exc:
-            # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
-                raise
-        self._tool_data_tables = tool_data_tables
+        if not managed_seen:
+            sources.append(
+                ToolDataTableConfig(
+                    managed,
+                    from_shed_config=from_shed_config,
+                    optional=not self.config.is_set("shed_tool_data_table_config"),
+                )
+            )
+        self._tool_data_tables = ToolDataTableManager(
+            tool_data_path=self.config.tool_data_path,
+            config_sources=sources,
+            other_config_dict=self.config,
+            on_registration=self._tool_data_tables_registered,
+        )
+
+    def _tool_data_tables_registered(self, table_names: list[str]) -> None:
+        if isinstance(self, StructuredApp):
+            self.watchers.update_watch_data_table_paths()
+        queue_worker: Optional[GalaxyQueueWorker] = getattr(self, "queue_worker", None)
+        if queue_worker is not None:
+            for table_name in table_names:
+                queue_worker.send_control_task(
+                    "reload_tool_data_tables", noop_self=True, kwargs={"table_name": table_name}
+                )
 
     @property
     def tool_data_tables(self) -> BaseToolDataTableManager:
