@@ -8,10 +8,7 @@ from typing import (
     cast,
     TYPE_CHECKING,
 )
-from unittest.mock import (
-    Mock,
-    patch,
-)
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import (
@@ -22,6 +19,7 @@ from sqlalchemy import (
 from galaxy import (
     exceptions,
     model,
+    schema,
 )
 from galaxy.managers import (
     base as base_manager,
@@ -46,6 +44,14 @@ user2_data = dict(email="user2@user2.user2", username="user2", password=default_
 user3_data = dict(email="user3@user3.user3", username="user3", password=default_password)
 user4_data = dict(email="user4@user4.user4", username="user4", password=default_password)
 uppercase_email_user = dict(email="USER5@USER5.USER5", username="USER5", password=default_password)
+
+
+class FakeAuthnzManager:
+    def __init__(self, users_by_token: dict[str, model.User]) -> None:
+        self.users_by_token = users_by_token
+
+    def match_access_token_to_user(self, sa_session, access_token: str) -> model.User | None:
+        return self.users_by_token.get(access_token)
 
 
 def assert_user_display_name_is(user: model.User, display_name: str | None) -> None:
@@ -569,26 +575,31 @@ class TestUserManager(BaseTestCase):
         user2 = self.user_manager.create(**user2_data)
         user3 = self.user_manager.create(**user3_data)
         api_key = ApiKeyManager(self.app).create_api_key(user2).key
-        authnz_manager = Mock()
-        authnz_manager.match_access_token_to_user.return_value = user3
+        authnz_manager = FakeAuthnzManager({"good-token": user3})
         with patch.object(self.app, "authnz_manager", authnz_manager, create=True):
             self.log("an API key wins over an access token")
-            assert self.user_manager.by_credentials(api_key, "token") == user2
-            authnz_manager.match_access_token_to_user.assert_not_called()
+            assert self.user_manager.by_credentials(api_key, "good-token") == user2
+
+            self.log("a bad API key raises, even with a good access token alongside")
+            with pytest.raises(exceptions.AuthenticationFailed):
+                self.user_manager.by_credentials("not-a-real-key", "good-token")
 
             self.log("an access token alone goes to the OIDC lookup")
-            assert self.user_manager.by_credentials(None, "token") == user3
-            authnz_manager.match_access_token_to_user.assert_called_once()
+            assert self.user_manager.by_credentials(None, "good-token") == user3
+            assert self.user_manager.by_credentials(None, "unknown-token") is None
 
             self.log("no credentials means no user")
             assert self.user_manager.by_credentials(None, None) is None
-            authnz_manager.match_access_token_to_user.assert_called_once()
 
-    def test_user_can_do_run_as_without_user(self):
-        # A Bearer token that matches no user reaches the run_as check with no user at all.
+    def test_user_can_do_run_as(self):
         user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
         with patch.object(self.app.config, "api_allow_run_as", user2.email, create=True):
             assert self.user_manager.user_can_do_run_as(user2)
+            assert not self.user_manager.user_can_do_run_as(user3)
+            # The master API key's user has no email, but may always run as others.
+            assert self.user_manager.user_can_do_run_as(schema.BootstrapAdminUser())
+            # A Bearer token that matches no user reaches the run_as check with no user at all.
             assert not self.user_manager.user_can_do_run_as(None)
 
     def test_purge_deletes_oidc_tokens(self):
