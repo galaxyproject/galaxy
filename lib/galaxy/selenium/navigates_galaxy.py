@@ -2728,11 +2728,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         _click_action_in_menu()
 
-    def history_panel_delete_selected(self, purge: bool = False):
-        """Delete the selected history items from the Selection menu, permanently with ``purge``, and confirm."""
-        self.use_bootstrap_dropdown(option="purge option" if purge else "delete option", menu="selected content menu")
+    def history_panel_confirm_selected_operation(self, option: str):
+        """Pick ``option`` (e.g. "hide option") from the Selection menu and confirm it."""
+        self.use_bootstrap_dropdown(option=option, menu="selected content menu")
         self.components.confirm_dialog.ok_button.wait_for_and_click()
         self.components.confirm_dialog.ok_button.wait_for_absent_or_hidden()
+
+    def history_panel_delete_selected(self, purge: bool = False):
+        """Delete the selected history items from the Selection menu, permanently with ``purge``, and confirm."""
+        self.history_panel_confirm_selected_operation("purge option" if purge else "delete option")
+
+    def history_panel_undelete_selected(self):
+        """Undelete the selected history items from the Selection menu and confirm."""
+        self.history_panel_confirm_selected_operation("undelete option")
+
+    def history_panel_hide_selected(self, unhide: bool = False):
+        """Hide (or ``unhide``) the selected history items from the Selection menu and confirm."""
+        self.history_panel_confirm_selected_operation("unhide option" if unhide else "hide option")
 
     def history_panel_item_delete(self, hid):
         """Delete history item ``hid`` with its trash button."""
