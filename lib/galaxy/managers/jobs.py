@@ -747,17 +747,21 @@ class JobSearch:
             e._metadata == c._metadata,
             e.version == a.dataset_version,
         ]
+        identifier_key = f"{k}|__identifier__"
         if identifier:
             stmt = stmt.join(d)
             data_conditions.append(
                 and_(
-                    d.name == f"{k}|__identifier__",
+                    d.name == identifier_key,
                     d.value == json.dumps(identifier),
                 )
             )
         elif require_name_match:
             hda_history_join_conditions.append(e.name == c.name)
             name_condition.append(b.name == c.name)
+            # A job mapped over a collection saw an element identifier instead of the dataset name.
+            f = aliased(model.JobParameter)
+            data_conditions.append(~exists().where(f.job_id == model.Job.id, f.name == identifier_key))
 
         stmt = stmt.outerjoin(e, and_(*hda_history_join_conditions))
         data_conditions.append(
