@@ -1069,6 +1069,7 @@ workflow_run:
     simplified_value_list_add:
       type: xpath
       selector: //div[@data-label="${label}"]//button[@data-description="add value"]
+    simplified_input_alert: 'div[data-label="${label}"] [data-description="form number alert"]'
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
