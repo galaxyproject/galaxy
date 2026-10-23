@@ -574,7 +574,6 @@ async function onCancel() {
 @import "@/style/scss/mixins";
 
 .full-page {
-    height: 100%;
     min-height: 400px;
 }
 
