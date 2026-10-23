@@ -86,3 +86,29 @@ class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
         # Verify dataset is removed from storage view
         self.components.history_storage.dataset_by_size(name="big").wait_for_absent()
         self.screenshot("history_storage_post_delete")
+
+    @selenium_test
+    def test_purge_deleted_datasets_from_storage_dashboard(self):
+        history_id = self.current_history_id()
+        deleted = self.dataset_populator.new_dataset(history_id, content="purge me\n", wait=True)
+        kept = self.dataset_populator.new_dataset(history_id, content="keep\n", wait=True)
+        deleted_size = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=deleted["id"])[
+            "file_size"
+        ]
+        kept_size = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=kept["id"])["file_size"]
+        self.dataset_populator.delete_dataset(history_id, deleted["id"])
+        # deleted datasets still count toward usage
+        self._wait_on(
+            lambda: self.dataset_populator.total_disk_usage() == deleted_size + kept_size,
+            "usage to count both datasets",
+        )
+
+        self.storage_dashboard_cleanup("deleted_datasets", screenshot_prefix="storage_dashboard_deleted_datasets")
+        self.components.storage_dashboard.cleanup.no_items(operation="deleted_datasets").wait_for_visible()
+        self.screenshot("storage_dashboard_deleted_datasets_purged")
+        details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=deleted["id"])
+        assert details["purged"]
+        assert not self.dataset_populator.get_history_dataset_details(history_id, dataset_id=kept["id"])["deleted"]
+        self._wait_on(
+            lambda: self.dataset_populator.total_disk_usage() == kept_size, "usage to drop the purged dataset"
+        )

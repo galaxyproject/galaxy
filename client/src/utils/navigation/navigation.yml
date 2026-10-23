@@ -440,6 +440,19 @@ storage_dashboard:
     free_space_link: '[data-description="free-space card"] button'
     explore_usage_link: '[data-description="explore-storage card"] button'
 
+  # Free up disk space; review_link/no_items take a cleanup id (e.g. deleted_datasets), the rest are the shared dialogs
+  cleanup:
+    selectors:
+      review_link: '[data-description="${operation} cleanup"] [data-test-id="review-link"]'
+      no_items: '[data-description="${operation} cleanup"] [data-test-id="no-items-indicator"]'
+      review_item: '[data-test-id="review-table"] tbody tr[aria-rowindex]'
+      select_all: '[data-test-id="review-table"] [data-test-id="select-all-checkbox"]'
+      # GButton disables via the g-disabled class, not the disabled attribute
+      delete_button_enabled: '[data-test-id="delete-button"]:not(.g-disabled)'
+      agreement: '[data-test-id="agreement-checkbox"]'
+      confirm_enabled: '#confirmation-modal .g-modal-confirm-buttons button:last-child:not(.g-disabled)'
+      success: '#cleanup-result-modal [data-test-id="success-info"]'
+
 edit_dataset_attributes:
   selectors:
     _: '[aria-labelledby="dataset-attributes-heading"]'
