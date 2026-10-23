@@ -18,7 +18,7 @@ concurrency:
 jobs:
   validate-schema:
     name: Validate OpenAPI schema
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
