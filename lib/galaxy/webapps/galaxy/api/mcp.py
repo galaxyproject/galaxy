@@ -37,10 +37,7 @@ from galaxy.tool_util.deps.mulled.recommend import (
     PackageSpec,
     recommend_container,
 )
-from galaxy.webapps.galaxy.api import (
-    API_KEY_HEADER_NAME,
-    get_user_from_credentials,
-)
+from galaxy.webapps.galaxy.api import API_KEY_HEADER_NAME
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -244,7 +241,7 @@ def get_mcp_app(gx_app):
                 "You can create an API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        user = get_user_from_credentials(user_manager, api_key, access_token)
+        user = user_manager.by_credentials(api_key, access_token)
         if not user:
             # A bad API key raises, but an access token that matches no OIDC user comes back empty.
             raise AuthenticationFailed("Invalid access token.")
