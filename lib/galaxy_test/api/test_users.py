@@ -1,7 +1,11 @@
 from urllib.parse import quote
 
+from galaxy.exceptions import error_codes
 from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_object_id_error,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -418,6 +422,22 @@ class TestUsersApi(ApiTestCase):
             url = self._api_url("users/current")
             updated_theme = self._get(url).json()["preferences"]["theme"]
             assert updated_theme == "test_theme"
+
+    def test_custom_build_from_unconvertible_dataset(self):
+        user_id = self._get("users/current").json()["id"]
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        with dataset_populator.test_history() as history_id:
+            hda = dataset_populator.new_dataset(history_id, content="chr1\t0\t100\n", file_type="bed", wait=True)
+            response = self._put(
+                f"users/{user_id}/custom_builds/unconvertible_build",
+                data={"name": "Unconvertible build", "len|type": "fasta", "len|value": hda["id"]},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+            assert_error_message_contains(response, "Conversion from 'bed' to 'len' not possible")
+            builds = self._get(f"users/{user_id}/custom_builds").json()
+            assert "unconvertible_build" not in [build["id"] for build in builds]
 
     @requires_admin
     @requires_new_user

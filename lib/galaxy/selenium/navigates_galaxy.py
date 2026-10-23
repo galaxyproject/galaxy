@@ -3275,7 +3275,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         for parameter in parameters:
             form_type = parameter.form_element_type
             if form_type in ["integer", "string"]:
-                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_send_keys(
+                # Inputs may be prefilled with the variable's default value.
+                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_clear_and_send_keys(
                     str(parameter.value),
                 )
             else:

@@ -1,5 +1,8 @@
 from typing import (
+    Any,
     Literal,
+    Optional,
+    TypedDict,
     Union,
 )
 
@@ -24,12 +27,47 @@ tool_param_type = Union[
 ]
 
 
-def get_default_parameter(param_type: INPUT_PARAMETER_TYPES) -> tool_param_type:
+class NumericBounds(TypedDict):
+    min: Optional[Union[int, float]]
+    max: Optional[Union[int, float]]
+
+
+def split_numeric_bounds(
+    parameter_def: dict[str, Any],
+) -> tuple[Optional[NumericBounds], list[dict[str, Any]]]:
+    """Separate an integer or float input's ``in_range`` validator, which the parameter expresses as min/max.
+
+    Bounds are ``None`` when the input has no range validator or neither end is set.
+    """
+    validators = list(parameter_def.get("validators") or [])
+    if parameter_def["parameter_type"] not in ["integer", "float"]:
+        return None, validators
+    range_validator = next((v for v in validators if v["type"] == "in_range"), None)
+    if range_validator is None:
+        return None, validators
+    validators.remove(range_validator)
+    lower, upper = range_validator.get("min"), range_validator.get("max")
+    if lower is None and upper is None:
+        return None, validators
+    return NumericBounds(min=lower, max=upper), validators
+
+
+def numeric_bounds_inverted(bounds: NumericBounds) -> bool:
+    lower, upper = bounds["min"], bounds["max"]
+    return lower is not None and upper is not None and lower > upper
+
+
+def get_default_parameter(param_type: INPUT_PARAMETER_TYPES, bounds: Optional[NumericBounds] = None) -> tool_param_type:
     """
     param_type is the type of parameter we want to build up, stored_parameter_type is the parameter_type
     as stored in the tool state
     """
     default_source: default_source_type = dict(name="default", label="Default Value", type=param_type, optional=False)
+    if bounds:
+        if bounds["min"] is not None:
+            default_source["min"] = bounds["min"]
+        if bounds["max"] is not None:
+            default_source["max"] = bounds["max"]
     if param_type == "text":
         input_default_value: tool_param_type = TextToolParameter(None, default_source)
     elif param_type == "integer":

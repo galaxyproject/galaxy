@@ -27,6 +27,7 @@ from galaxy import (
     model,
 )
 from galaxy.exceptions import (
+    RequestParameterInvalidException,
     ToolInputsNotReadyException,
     ToolMissingException,
 )
@@ -142,6 +143,9 @@ from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
+    numeric_bounds_inverted,
+    NumericBounds,
+    split_numeric_bounds,
 )
 
 if TYPE_CHECKING:
@@ -1393,8 +1397,11 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
+        bounds, _ = split_numeric_bounds(parameter_def)
+        if bounds and numeric_bounds_inverted(bounds):
+            bounds = None
         for param_type in POSSIBLE_PARAMETER_TYPES:
-            default_parameter = get_default_parameter(param_type)
+            default_parameter = get_default_parameter(param_type, bounds if param_type == parameter_type else None)
 
             optional_value = optional_param()
             optional_cond = Conditional("optional")
@@ -1677,6 +1684,16 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
+    def get_errors(self, **kwargs):
+        bounds, _ = split_numeric_bounds(self._parse_state_into_dict())
+        return self._inverted_bounds_error(bounds) if bounds else None
+
+    def _inverted_bounds_error(self, bounds: NumericBounds) -> Optional[str]:
+        if not numeric_bounds_inverted(bounds):
+            return None
+        input_name = f"Workflow input '{self.label}'" if self.label else "A workflow input"
+        return f"{input_name} has a minimum ({bounds['min']}) greater than its maximum ({bounds['max']})."
+
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
@@ -1687,7 +1704,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: dict[str, Union[str, list[dict[str, Any]]]] = {}
+        parameter_kwds: dict[str, Any] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1726,8 +1743,14 @@ class InputParameterModule(WorkflowModule):
             parameter_kwds["options"] = _parameter_def_list_to_options(restriction_values)
             restricted_inputs = True
 
-        if parameter_def.get("validators"):
-            parameter_kwds["validators"] = parameter_def["validators"]
+        # Pass bounds as min/max so the run form gets them; the parameter adds an equivalent implicit range validator.
+        bounds, validators = split_numeric_bounds(parameter_def)
+        if bounds:
+            if inverted_bounds_error := self._inverted_bounds_error(bounds):
+                raise RequestParameterInvalidException(inverted_bounds_error)
+            parameter_kwds.update(bounds)
+        if validators:
+            parameter_kwds["validators"] = validators
 
         client_parameter_type = parameter_type
         if restricted_inputs:
