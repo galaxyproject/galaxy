@@ -7,12 +7,10 @@ real config and workflow resolution, email delivery and the rate limiter.
 """
 
 import copy
-import json
 import os
 import re
 from typing import (
     Any,
-    ClassVar,
 )
 
 from galaxy_test.base.api_util import ADMIN_TEST_USER
@@ -21,7 +19,10 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
-from galaxy_test.driver.integration_util import IntegrationTestCase
+from galaxy_test.driver.integration_util import (
+    ConfiguresMockEmails,
+    IntegrationTestCase,
+)
 
 TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY: dict[str, Any] = {
     "recipients": {"user_ids": [], "group_ids": [], "role_ids": []},
@@ -109,20 +110,17 @@ class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormInte
             assert "workflow_id" in response.json()["err_msg"]
 
 
-class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationRequestFormIntegrationBase):
-    email_directory: ClassVar[str]
-
+class TestToolInstallationRequestFormEmailContentIntegration(
+    ToolInstallationRequestFormIntegrationBase, ConfiguresMockEmails
+):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.email_directory = cls._test_driver.mkdtemp()
+        cls._configure_mock_emails(config)
         # The email channel is only registered when async (Celery) processing is on.
         config["enable_celery_tasks"] = True
-        config["email_from"] = "galaxy-no-reply@example.com"
-        config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
 
     def test_admin_email_is_rendered_and_sent_by_the_dispatcher(self):
-        email_path = os.path.join(self.email_directory, "email.json")
         user = self._setup_user("tool_installation_request_email_delivery@galaxy.test")
         with self._different_user(user["email"]):
             workflow_id = self.workflow_populator.simple_workflow("tool_installation_request_email_workflow")
@@ -143,10 +141,9 @@ class TestToolInstallationRequestFormEmailContentIntegration(ToolInstallationReq
             self.dataset_populator.wait_on_task_id(response.json()["id"])
 
         # Emails are delivered by the periodic background dispatcher, not during the request.
-        assert not os.path.exists(email_path)
+        assert not os.path.exists(self.email_path)
         assert self._app.notification_manager.dispatch_pending_notifications_via_channels() >= 1
-        with open(email_path) as f:
-            email = json.load(f)
+        email = self._read_mock_email()
         assert email["to"] == ADMIN_TEST_USER
         assert email["subject"] == "[Galaxy] Tool installation request: FastQC"
         assert re.search(rf"^Requested by: {re.escape(user['email'])}$", email["body"], re.MULTILINE)

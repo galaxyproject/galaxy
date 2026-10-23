@@ -7458,6 +7458,119 @@ steps:
         assert not self.workflow_populator.workflow_invocations(workflow_id)
         assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
 
+    @skip_without_tool("test_data_source")
+    @pytest.mark.parametrize("new_history", [False, True])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_run_with_workflow_incompatible_tool(self, history_id, new_history, nested):
+        workflow = """
+class: GalaxyWorkflow
+steps:
+  data_source:
+    tool_id: test_data_source
+"""
+        if nested:
+            workflow += """
+  child:
+    run:
+      class: GalaxyWorkflow
+      steps:
+        data_source:
+          tool_id: test_data_source
+"""
+        workflow_id = self._upload_yaml_workflow(workflow)
+        history_name = f"incompatible workflow tool history {uuid4()}"
+        target = {"new_history_name": history_name} if new_history else {"history_id": history_id}
+        response = self.workflow_populator.invoke_workflow_raw(workflow_id, target)
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following tools are not workflow-compatible: "
+            "test_data_source (version 1.0.0)"
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert self._history_jobs(history_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @skip_without_tool("test_data_source")
+    @pytest.mark.parametrize("exact", [False, True])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_run_with_missing_and_incompatible_tools(self, exact, nested):
+        workflow = """
+class: GalaxyWorkflow
+steps:
+  data_source:
+    tool_id: test_data_source
+  missing:
+    tool_id: nonexistent_tool
+    tool_version: "0.1"
+"""
+        if nested:
+            workflow += """
+  child:
+    run:
+      class: GalaxyWorkflow
+      steps:
+        missing:
+          tool_id: nonexistent_tool
+          tool_version: "0.1"
+        data_source:
+          tool_id: test_data_source
+"""
+        workflow_id = self._upload_yaml_workflow(workflow)
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["steps"]["1"]["tool_id"] == "nonexistent_tool"
+        assert workflow["steps"]["1"]["tool_version"] == "0.1"
+        history_name = f"missing workflow tool history {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "require_exact_tool_versions": exact},
+        )
+        self._assert_status_code_is(response, 400)
+        expected_tool = "nonexistent_tool (version 0.1)" if exact else "nonexistent_tool"
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: " + expected_tool
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
+    @pytest.mark.parametrize("exact", [False, True])
+    def test_run_with_nested_missing_tool_versions(self, exact):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  missing:
+    tool_id: nonexistent_tool
+    tool_version: "0.1"
+  child:
+    run:
+      class: GalaxyWorkflow
+      steps:
+        repeated:
+          tool_id: nonexistent_tool
+          tool_version: "0.1"
+        other_version:
+          tool_id: nonexistent_tool
+          tool_version: "0.2"
+""")
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["steps"]["0"]["tool_version"] == "0.1"
+        child_steps = workflow["steps"]["1"]["subworkflow"]["steps"]
+        assert child_steps["0"]["tool_version"] == "0.1"
+        assert child_steps["1"]["tool_version"] == "0.2"
+        history_name = f"nested missing workflow tool versions {uuid4()}"
+        response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id,
+            {"new_history_name": history_name, "require_exact_tool_versions": exact},
+        )
+        self._assert_status_code_is(response, 400)
+        expected_tools = (
+            "nonexistent_tool (version 0.1), nonexistent_tool (version 0.2)" if exact else "nonexistent_tool"
+        )
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: " + expected_tools
+        )
+        assert self.workflow_populator.workflow_invocations(workflow_id) == []
+        assert not [h for h in self.dataset_populator.get_histories() if h["name"].startswith(history_name)]
+
     def test_run_with_optional_data_specified_to_multi_data(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
@@ -10294,6 +10407,39 @@ steps:
         # Options are sorted by label when there are multiple connections
         option_values = {opt[1] for opt in options}
         assert option_values == {"--ex1", "ex2", "--ex3", "--ex4", "ex5"}
+
+    def test_numeric_input_bounds_reach_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(1, 5)
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        count_input = run_workflow["steps"][0]["inputs"][0]
+        assert (count_input["min"], count_input["max"]) == (1, 5)
+
+    def test_numeric_input_inverted_bounds_rejected_on_run_form(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        with self.dataset_populator.test_history() as history_id:
+            response = self.workflow_populator.download_workflow_raw(workflow_id, style="run", history_id=history_id)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Workflow input 'count' has a minimum (5) greater than its maximum (1)")
+
+    def test_numeric_input_inverted_bounds_flagged_in_editor_and_export(self):
+        workflow_id = self._upload_bounded_integer_workflow(5, 1)
+        message = "Workflow input 'count' has a minimum (5) greater than its maximum (1)."
+        editor_steps = self._download_workflow(workflow_id, style="editor")["steps"]
+        assert editor_steps["0"]["errors"] == message
+        export_steps = self._download_workflow(workflow_id)["steps"]
+        assert export_steps["0"]["errors"] == message
+
+    def _upload_bounded_integer_workflow(self, minimum: int, maximum: int) -> str:
+        return self.workflow_populator.upload_yaml_workflow(f"""
+class: GalaxyWorkflow
+inputs:
+  count:
+    type: int
+    min: {minimum}
+    max: {maximum}
+steps: []
+""")
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):

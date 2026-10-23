@@ -15,7 +15,10 @@ from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.source_store import ToolIndex
 from galaxy.tools.source_store.composite import CompositeToolSourceStore
 from galaxy.tools.source_store.sqlalchemy import SqlAlchemyToolSourceStore
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
 from galaxy_test.driver import integration_util
 
 
@@ -301,6 +304,27 @@ class TestCachedToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
             assert content.strip() == "Hidden Version 0.1"
+
+    def test_exact_workflow_invocation_reports_missing_tool_version(self):
+        # The cached toolbox's ``get_tool(exact=True)`` falls back to another
+        # indexed version of ``multiple_versions``; invocation must still
+        # report the pinned version missing.
+        workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+        workflow_id = workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  pinned:
+    tool_id: multiple_versions
+    tool_version: "0.3"
+""")
+        with self.dataset_populator.test_history() as history_id:
+            response = workflow_populator.invoke_workflow_raw(
+                workflow_id, {"history_id": history_id, "require_exact_tool_versions": True}
+            )
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Workflow was not invoked; the following required tools are not installed: multiple_versions (version 0.3)"
+        )
 
     # --- Default-panel response shape ---------------------------------------
 

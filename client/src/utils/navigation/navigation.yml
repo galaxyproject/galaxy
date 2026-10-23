@@ -816,6 +816,11 @@ registration:
       type: xpath
       selector: "//button[@name='create']"
 
+inactivity_box:
+  selectors:
+    _: '#inactivebox'
+    resend_verification: '#inactivebox a[href*="resend_verification"]'
+
 window_manager:
   selectors:
     _: '.window-manager-window'
@@ -1065,6 +1070,7 @@ workflow_run:
     simplified_value_list_add:
       type: xpath
       selector: //div[@data-label="${label}"]//button[@data-description="add value"]
+    simplified_input_alert: 'div[data-label="${label}"] [data-description="form number alert"]'
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
@@ -1079,6 +1085,7 @@ workflow_editor:
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
+      loading: '${_} .card-header .loading-icon'
       output_data_row:
         type: xpath
         selector: '//div[@data-output-name="${output_name}"]//span[text()[contains(., "(${extension})")]]'
@@ -1251,6 +1258,9 @@ workflow_editor:
     state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'
     save_as_modal_close: '[data-description="save-as-modal"] .g-modal-close-button'
     workflow_activity: '#activity-workflow-editor-workflows'
+    workflow_activity_panel: ".activity-panel[data-description='Workflows']"
+    workflow_activity_search: ".activity-panel[data-description='Workflows'] input"
+    workflow_activity_list: ".activity-panel[data-description='Workflows'] .workflow-scroll-list"
     save_as_activity: "#activity-save-workflow-as"
     column_definitions: '[data-description="edit column definitions"]'
     add_column_definition: '[data-description="edit column definitions add"]'

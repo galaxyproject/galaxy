@@ -2639,7 +2639,9 @@ class WorkflowContentsManager(UsesAnnotations):
                             }
                         )
             elif step.type == "subworkflow":
-                tools.extend(self.get_all_tools(step.subworkflow))
+                for tool in self.get_all_tools(step.subworkflow):
+                    if tool not in tools:
+                        tools.append(tool)
         return tools
 
     def get_or_create_workflow_from_trs(

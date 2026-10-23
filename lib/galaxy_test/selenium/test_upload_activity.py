@@ -50,6 +50,15 @@ class TestUploadActivity(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAs
 
     @selenium_test
     @managed_history
+    def test_paste_content_converts_to_posix_lines_by_default(self):
+        """Pasted content gets a trailing newline because POSIX line conversion is on by default"""
+        self.upload_context("paste-content").stage_paste_content("a", {"extension": "txt"}).start()
+        self.history_panel_wait_for_hid_ok(1)
+        content = self.dataset_populator.get_history_dataset_content(self.current_history_id(), hid=1)
+        assert content == "a\n"
+
+    @selenium_test
+    @managed_history
     def test_deferred_upload(self):
         """Upload with deferred status"""
         uploader = self.upload_context("paste-links")
