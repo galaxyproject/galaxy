@@ -797,6 +797,51 @@ steps:
         self._search(search_payload, expected_search_count=0)
 
     @pytest.mark.require_new_history
+    def test_cached_job_mapped_run_reuses_mapped_job(self, history_id):
+        hdca_id, _, _ = self._list_of_existing_dataset(history_id)
+        inputs = _mapped_inputs(hdca_id)
+        mapped = self._run_tool_and_wait(history_id, inputs)
+        cached = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
+        assert self._copied_from_and_identifier(history_id, cached) == (mapped["jobs"][0]["id"], "sample_a")
+
+    @pytest.mark.require_new_history
+    def test_cached_job_name_agnostic_plain_run_reuses_mapped_job(self, history_id):
+        hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+        inputs = _mapped_inputs(hdca_id)
+        mapped = self._run_tool_and_wait(history_id, inputs, tool_id="cat1")
+        plain = self._run_tool_and_wait(
+            history_id, {"input1": {"src": "hda", "id": hda_id}}, use_cached_job=True, tool_id="cat1"
+        )
+        assert self._copied_from_job_id(plain) == mapped["jobs"][0]["id"]
+
+    def _list_of_existing_dataset(self, history_id):
+        # Element identifier differs from the dataset name.
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=[("sample_a", "a\n")], direct_upload=False, wait=True
+        ).json()
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca["id"])
+        hda_id = hdca["elements"][0]["object"]["id"]
+        hda_name = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=hda_id)["name"]
+        assert hda_name != "sample_a"
+        return hdca["id"], hda_id, hda_name
+
+    def _run_tool_and_wait(self, history_id, inputs, use_cached_job=False, tool_id="identifier_single"):
+        response = self.dataset_populator.run_tool(tool_id, inputs, history_id, use_cached_job=use_cached_job)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return response
+
+    def _copied_from_job_id(self, run_response):
+        job = self.dataset_populator.get_job_details(run_response["jobs"][0]["id"], full=True).json()
+        return job["copied_from_job_id"]
+
+    def _copied_from_and_identifier(self, history_id, run_response):
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset_id=run_response["outputs"][0]["id"]
+        )
+        # Last word of the first line; newer identifier_single prefixes "identifier ".
+        return self._copied_from_job_id(run_response), content.splitlines()[0].split()[-1]
+
+    @pytest.mark.require_new_history
     def test_search_delete_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1203,3 +1248,7 @@ steps:
         jobs = jobs_response.json()
         assert isinstance(jobs, list)
         return jobs
+
+
+def _mapped_inputs(hdca_id):
+    return {"input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}}
