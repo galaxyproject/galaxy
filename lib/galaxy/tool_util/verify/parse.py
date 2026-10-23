@@ -524,6 +524,7 @@ def _matching_case_for_value(
 
     assert test_param.parse_input_type() == "param"
     test_param_type = test_param.get("type")
+    effective_value: Any = declared_value
 
     if test_param_type == "boolean":
         if declared_value is None:
@@ -531,6 +532,7 @@ def _matching_case_for_value(
             query_value = boolean_is_checked(test_param)
         else:
             query_value = _process_bool_param_value(test_param, declared_value, allow_legacy_test_case_parameters)
+        effective_value = query_value
 
         def matches_declared_value(case_value):
             return _process_bool_param_value(test_param, case_value, allow_legacy_test_case_parameters) == query_value
@@ -556,6 +558,7 @@ def _matching_case_for_value(
                 first_option = static_options[0]
                 first_option_value = first_option[1]
                 default_option = first_option_value
+            effective_value = default_option
 
             def matches_declared_value(case_value):
                 return case_value == default_option
@@ -577,7 +580,7 @@ def _matching_case_for_value(
             return case_when, case_input_sources
     else:
         msg_template = "%s - Failed to find case matching value (%s) for test parameter specification for conditional %s. Remainder of test behavior is unspecified."
-        msg = msg_template % (tool_id, declared_value, cond_name)
+        msg = msg_template % (tool_id, effective_value, cond_name)
         log.info(msg)
     return None
 
