@@ -240,7 +240,7 @@ describe("JobPanel", () => {
                 const jobs = Array.from({ length: Math.min(limit, TOTAL_JOBS - offset) }, (_, i) =>
                     buildJob({
                         id: `job${offset + i}`,
-                        update_time: `2024-01-01T00:${String(offset + i).padStart(2, "0")}:00`,
+                        update_time: new Date(Date.UTC(2024, 0, 1) - (offset + i) * 60_000).toISOString(),
                     }),
                 );
                 return response(200).json(jobs, { headers: { total_matches: `${TOTAL_JOBS}` } });
@@ -256,6 +256,9 @@ describe("JobPanel", () => {
         }
 
         expect(wrapper.text()).toContain("All jobs loaded");
-        expect(wrapper.findAll(".job-card-title-text").length).toBe(TOTAL_JOBS);
+        const cardIds = wrapper.findAll(".g-card").map((card) => card.attributes("id"));
+        expect(cardIds.length).toBe(TOTAL_JOBS);
+        expect(cardIds[0]).toBe("g-card-job-job0");
+        expect(cardIds.at(-1)).toBe(`g-card-job-job${TOTAL_JOBS - 1}`);
     });
 });
