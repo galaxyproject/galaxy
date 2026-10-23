@@ -33,15 +33,15 @@ def test_vcf_validation():
 
 def test_twobit_validation():
     _assert_valid("twobit", "1.twobit")
-    _assert_invalid("twobit", _truncate("1.twobit", bytes=3))
-    _assert_invalid("twobit", _empty())
+    _assert_invalid("twobit", _truncate("1.twobit", bytes=3), "TwoBit file is truncated")
+    _assert_invalid("twobit", _empty(), "TwoBit file is 0 bytes")
 
 
 def test_lav_validation():
     _assert_valid("lav", "alignment.lav")
-    _assert_invalid("lav", _truncate("alignment.lav", bytes=8))
-    _assert_invalid("lav", _empty())
-    _assert_invalid("lav", "alignment.axt")
+    _assert_invalid("lav", _truncate("alignment.lav", bytes=8), "does not end with '#:eof'")
+    _assert_invalid("lav", _empty(), "does not start with '#:lav'")
+    _assert_invalid("lav", "alignment.axt", "does not start with '#:lav'")
 
 
 def _empty():
@@ -58,9 +58,11 @@ def _truncate(file_name, bytes=10):
     return o.name
 
 
-def _assert_invalid(extension, file_name):
+def _assert_invalid(extension, file_name, message=None):
     validation = _run_validation(extension, file_name)
     assert validation.state == "invalid", validation
+    if message is not None:
+        assert message in validation.message, validation
 
 
 def _assert_valid(extension, file_name):
