@@ -44,6 +44,11 @@ interface Props {
      */
     label?: string;
     /**
+     * Extra classes for the legend, e.g. to tighten its spacing
+     * @default undefined
+     */
+    legendClass?: string | string[] | Record<string, boolean>;
+    /**
      * The v-model value: the value of the selected radio
      * @default undefined
      */
@@ -75,6 +80,7 @@ const props = withDefaults(defineProps<Props>(), {
     buttonVariant: "grey",
     disabled: false,
     label: undefined,
+    legendClass: undefined,
     modelValue: undefined,
     name: undefined,
     options: () => [],
@@ -119,7 +125,7 @@ provide(radioGroupKey, {
         role="radiogroup"
         :aria-labelledby="label || $slots.label ? legendId : undefined"
         :disabled="disabled">
-        <legend v-if="label || $slots.label" :id="legendId" class="g-radio-group-legend">
+        <legend v-if="label || $slots.label" :id="legendId" class="g-radio-group-legend" :class="legendClass">
             <slot name="label">{{ label }}</slot>
         </legend>
 
@@ -143,20 +149,20 @@ provide(radioGroupKey, {
 
 .g-radio-group-legend {
     width: auto;
-    margin-bottom: var(--spacing-1, 0.25rem);
-    padding: 0;
+    margin-bottom: 0;
+    // 7px below the legend so a labelled group lines up with the other labelled form fields
+    padding: 0 0 calc(0.375rem + 1px);
     font-size: inherit;
 }
 
 .g-radio-group-options {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-1, 0.25rem) var(--spacing-4, 1rem);
+    gap: 0 var(--spacing-4, 1rem);
 
     &.g-stacked {
         flex-direction: column;
         align-items: flex-start;
-        row-gap: 0;
     }
 
     // Joined like GButtonGroup: square inner corners, no doubled borders
