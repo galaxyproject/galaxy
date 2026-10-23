@@ -2813,7 +2813,7 @@ class ToolModule(WorkflowModule):
                 return
 
             index = int(index)
-            repeat = self.tool.inputs[repeat_name]
+            repeat = self.tool.inputs.get(repeat_name)
             if not isinstance(repeat, Repeat):
                 return
 

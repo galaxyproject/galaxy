@@ -5162,6 +5162,30 @@ steps:
             details = self.dataset_populator.get_history_collection_details(history_id)
             assert details["element_count"] == 2, details
 
+    @skip_without_tool("section_name_digit_suffix")
+    def test_section_name_digit_suffix_connection_without_fill_defaults(self):
+        # `opts_1|input1` targets a section, not instance 1 of a repeat named `opts`.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  first: data
+steps:
+  cat:
+    tool_id: section_name_digit_suffix
+    in:
+      opts_1|input1: first
+""",
+            fill_defaults=False,
+        )
+        with self.dataset_populator.test_history() as history_id:
+            first = self.dataset_populator.new_dataset(history_id, content="a\n", wait=True)
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, history_id=history_id, inputs={"0": self._ds_entry(first)}
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
+            assert content.split() == ["a"], content
+
     def test_run_subworkflow_with_required_input_with_default_unconnected(self):
         """Test subworkflow with required parameter input that has default value but is unconnected.
 
