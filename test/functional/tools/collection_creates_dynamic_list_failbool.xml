@@ -1,0 +1,24 @@
+<tool id="collection_creates_dynamic_list_failbool" name="collection_creates_dynamic_list_failbool" version="0.1.0">
+  <command detect_errors="exit_code"><![CDATA[
+    #if str($failbool) == "true"
+      exit 1
+    #else
+      echo "A" > a.txt &&
+      echo "B" > b.txt
+    #end if
+  ]]></command>
+  <inputs>
+    <param name="failbool" type="boolean" label="Fail before writing any output" truevalue="true" falsevalue="false" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list" label="Discovered list">
+      <discover_datasets pattern="__name_and_ext__" visible="false" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="failbool" value="false" />
+      <output_collection name="list_output" type="list" count="2" />
+    </test>
+  </tests>
+</tool>
