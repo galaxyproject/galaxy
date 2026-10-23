@@ -1423,8 +1423,9 @@ steps:
         assert isinstance(jobs, list)
         return jobs
 
-    def __jobs_index_with_total(self, **kwds):
-        jobs_response = self._get("jobs", **kwds)
+    def __jobs_index_with_total(self, data=None, **kwds):
+        data = {**(data or {}), "include_total_count": True}
+        jobs_response = self._get("jobs", data=data, **kwds)
         self._assert_status_code_is(jobs_response, 200)
         return jobs_response.json(), int(jobs_response.headers["total_matches"])
 
