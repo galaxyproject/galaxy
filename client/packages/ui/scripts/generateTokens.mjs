@@ -35,7 +35,8 @@ export function generateTokens(themeSource) {
  */
 export function parseCustomProperties(source) {
     const properties = new Map();
-    for (const match of source.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+    // A block's last declaration may omit its semicolon; `#{...}` is SCSS interpolation.
+    for (const match of source.matchAll(/(--[\w-]+)\s*:\s*((?:#\{[^}]*\}|[^;{}])+?)\s*(?:;|(?=\}))/g)) {
         properties.set(match[1], match[2].trim());
     }
     return properties;
