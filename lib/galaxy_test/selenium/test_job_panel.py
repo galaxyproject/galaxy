@@ -125,3 +125,5 @@ class TestJobPanel(SeleniumTestCase):
 
         # The invalid filter must not silently fall back to showing every job.
         self._assert_job_card_absent(job_id)
+        alert_text = self.components.job_panel.error_alert.wait_for_text()
+        assert "Invalid filter(s) in query: xx" in alert_text, alert_text

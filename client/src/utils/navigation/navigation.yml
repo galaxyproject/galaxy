@@ -1364,6 +1364,7 @@ job_panel:
     job_card: '#g-card-job-${job_id}'
     job_card_title: '#g-card-job-${job_id} .job-card-title-text'
     job_card_state: '#g-card-job-${job_id} .job-state-badge'
+    error_alert: '[data-description="Jobs"] .alert-danger'
 
 tour:
   popover:
