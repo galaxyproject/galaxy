@@ -120,7 +120,7 @@ pfzy==0.3.4
 pillow==12.2.0
 pkce==1.0.3
 platformdirs==4.9.6
-playwright==1.59.0
+playwright==1.64.0
 pluggy==1.6.0
 port-for==1.0.0
 prettytable==3.17.0
