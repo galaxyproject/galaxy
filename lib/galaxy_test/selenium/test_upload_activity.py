@@ -206,6 +206,10 @@ class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHi
         assert hdca["name"] == "library list"
         assert hdca["collection_type"] == "list"
         assert [e["element_identifier"] for e in hdca["elements"]] == ["1.bed", "2.bed"]
+        # the list's own elements are the only datasets imported, all hidden
+        datasets = [c for c in self.history_contents(target_history_id) if c["history_content_type"] == "dataset"]
+        assert sorted(d["id"] for d in datasets) == sorted(e["object"]["id"] for e in hdca["elements"])
+        assert not any(d["visible"] for d in datasets)
         assert self.history_contents(current_history_id) == []
 
     def _assert_target_history_change_link_in_banner(self):
