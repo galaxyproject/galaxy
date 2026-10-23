@@ -144,6 +144,13 @@ class TestMCPApiKey(IntegrationTestCase):
         result = self._call_tool("get_user", {}, headers={"Authorization": "Bearer not-a-real-token"})
         assert "Invalid access token" in self._error_text(result)
 
+    def test_invalid_bearer_token_with_valid_argument(self) -> None:
+        _, argument_key = self._setup_user_get_key("mcp-argument-behind-bearer@bx.psu.edu")
+        result = self._call_tool(
+            "get_user", {"api_key": argument_key}, headers={"Authorization": "Bearer not-a-real-token"}
+        )
+        assert "Invalid access token" in self._error_text(result)
+
     def test_api_key_as_bearer_token(self) -> None:
         # Like the REST API, a Bearer token is an OIDC access token, never a Galaxy API key.
         _, key = self._setup_user_get_key("mcp-key-as-bearer@bx.psu.edu")
