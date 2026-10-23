@@ -12,6 +12,7 @@ from dateutil.parser import isoparse
 
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
+from galaxy_test.base.decorators import requires_new_user
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -839,6 +840,21 @@ steps:
         inputs = _mapped_inputs(other_hdca_id)
         mapped = self._run_tool_and_wait(history_id, inputs, use_cached_job=True)
         assert self._copied_from_and_identifier(history_id, mapped) == (None, "sample_b")
+
+    @requires_new_user
+    def test_cached_job_mapped_run_skips_renamed_input(self):
+        # model_attributes echoes $input1.name and needs a user address.
+        with self._different_user_with_address("lab"), self.dataset_populator.test_history() as history_id:
+            hdca_id, hda_id, _ = self._list_of_existing_dataset(history_id)
+            self._run_tool_and_wait(history_id, _mapped_inputs(hdca_id), tool_id="model_attributes")
+            self.dataset_populator.rename_dataset(hda_id, "renamed")
+            mapped = self._run_tool_and_wait(
+                history_id, _mapped_inputs(hdca_id), use_cached_job=True, tool_id="model_attributes"
+            )
+            assert self._copied_from_job_id(mapped) is None
+            out_file1 = next(o for o in mapped["outputs"] if o["output_name"] == "out_file1")
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=out_file1["id"])
+            assert content == "renamed\n"
 
     def _list_of_existing_dataset(self, history_id):
         # Element identifier differs from the dataset name.
