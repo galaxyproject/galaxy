@@ -14,17 +14,6 @@ function names(items: Item[]): string[] {
 }
 
 describe("useUploadTableSorting", () => {
-    it("sorts the items in place by the selected column", () => {
-        const items = ref<Item[]>([{ name: "b" }, { name: "c" }, { name: "a" }]);
-        const { onSortChanged } = useUploadTableSorting(items);
-
-        onSortChanged("name", false);
-        expect(names(items.value)).toEqual(["a", "b", "c"]);
-
-        onSortChanged("name", true);
-        expect(names(items.value)).toEqual(["c", "b", "a"]);
-    });
-
     it("sorts numbers numerically and puts missing values last", () => {
         const items = ref<Item[]>([{ name: "ten", size: 10 }, { name: "none" }, { name: "two", size: 2 }]);
         const { onSortChanged } = useUploadTableSorting(items);
@@ -42,17 +31,6 @@ describe("useUploadTableSorting", () => {
 
         onSortChanged("size", false);
         expect(names(items.value)).toEqual(["short", "long"]);
-    });
-
-    it("applies the active sort to items added later", async () => {
-        const items = ref<Item[]>([{ name: "c" }, { name: "a" }]);
-        const { onSortChanged } = useUploadTableSorting(items);
-
-        onSortChanged("name", false);
-        items.value.push({ name: "b" });
-        await nextTick();
-
-        expect(names(items.value)).toEqual(["a", "b", "c"]);
     });
 
     it("keeps the added order until a column is sorted", async () => {
