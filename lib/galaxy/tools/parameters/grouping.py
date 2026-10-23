@@ -169,16 +169,17 @@ class Repeat(Group):
         return rval
 
     def get_initial_value(self, trans, context):
+        return [self.get_initial_instance(trans, context, i) for i in range(self.default)]
+
+    def get_initial_instance(self, trans, context, index: int) -> dict[str, Any]:
+        """Return the initial state of repeat instance ``index``."""
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
-        rval = []
-        for i in range(self.default):
-            rval_dict = {"__index__": i}
-            child_context = ExpressionContext(rval_dict, context)
-            for input in self.inputs.values():
-                rval_dict[input.name] = input.get_initial_value(trans, child_context)
-            rval.append(rval_dict)
-        return rval
+        rval_dict: dict[str, Any] = {"__index__": index}
+        child_context = ExpressionContext(rval_dict, context)
+        for input in self.inputs.values():
+            rval_dict[input.name] = input.get_initial_value(trans, child_context)
+        return rval_dict
 
     def to_dict(self, trans):
         if self.inputs is None:
