@@ -4,7 +4,7 @@ import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { ShowFullJobResponse } from "@/api/jobs";
 import { MAX_CACHED_JOBS, useJobStore } from "@/stores/jobStore";
 import { type Tool, useToolStore } from "@/stores/toolStore";
@@ -64,9 +64,11 @@ describe("JobPanel", () => {
      * instead of sharing one `beforeEach`-mounted instance. `getLocalVue()` creates and activates
      * its own Pinia instance, so it must run before `useUserStore()` below -- otherwise the store
      * it sets state on isn't the one `mount()` ends up using. */
-    function mountJobPanel(): VueWrapper {
+    function mountJobPanel({ showToolNames = false } = {}): VueWrapper {
         const localVue = getLocalVue();
-        useUserStore().currentUser = getFakeRegisteredUser({ id: "fakeUser", email: "fake_user_email" });
+        const userStore = useUserStore();
+        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser", email: "fake_user_email" });
+        userStore.showToolNamesInJobPanel = showToolNames;
         return mount(JobPanel as object, { localVue, router });
     }
 
@@ -136,6 +138,32 @@ describe("JobPanel", () => {
         await scrollOnce();
 
         expect(requests.at(-1)?.getAll("tool_id")).toEqual(["cat1"]);
+    });
+
+    it("loads the tool store to search and title jobs by tool name", async () => {
+        const requests: URLSearchParams[] = [];
+        server.use(
+            http.untyped.get("/api/tools", () => {
+                return HttpResponse.json([{ id: "cat1", name: "Concatenate datasets" }]);
+            }),
+            http.get("/api/jobs", ({ request, response }) => {
+                requests.push(new URL(request.url).searchParams);
+                return response(200).json(
+                    [buildJob({ id: "catJob" }), buildJob({ id: "goneJob", tool_id: "uninstalled_tool" })],
+                    { headers: { total_matches: "2" } },
+                );
+            }),
+        );
+
+        const wrapper = mountJobPanel({ showToolNames: true });
+        await flushPromises();
+        wrapper.findComponent(FilterMenu).vm.$emit("update:filterText", "concat");
+        await flushPromises();
+        await scrollOnce();
+
+        expect(requests.at(-1)?.getAll("tool_id")).toEqual(["cat1"]);
+        expect(wrapper.find("#g-card-job-catJob .job-card-title-text").text()).toBe("Concatenate datasets");
+        expect(wrapper.find("#g-card-job-goneJob .job-card-title-text").text()).toBe("uninstalled_tool");
     });
 
     it("drops a page that resolves after the filter changed", async () => {
