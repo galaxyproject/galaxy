@@ -2814,7 +2814,7 @@ class ToolModule(WorkflowModule):
 
             index = int(index)
             repeat = self.tool.inputs[repeat_name]
-            if repeat.type != "repeat":
+            if not isinstance(repeat, Repeat):
                 return
 
             if repeat_name not in inputs_states:
