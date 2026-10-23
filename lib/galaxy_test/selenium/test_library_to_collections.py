@@ -40,15 +40,13 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
         self.list_of_pairs_export()
 
     def prepare_library_for_data_export(self, files_to_import, history_name=None):
-        self.admin_login()
         self.create_new_library()
         self.home()
         self.history_panel_create_new()
         self.libraries_open_with_name(self.name)
         self.assert_num_displayed_items_is(0)
         self.populate_library_folder_from_import_dir(self.name, files_to_import)
-        for i in range(len(files_to_import)):
-            self.components.libraries.folder.select_dataset(row_index=i).wait_for_and_click()
+        self.libraries_folder_select_datasets(files_to_import)
         self.components.libraries.folder.add_to_history.wait_for_and_click()
         self.components.libraries.folder.add_to_history_collection.wait_for_and_click()
         if history_name is not None:
@@ -62,6 +60,7 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
 
     def collection_export(self, is_new_history=False, collection_option=None):
         random_name = self._get_random_name()
+        self.admin_login()
         self.prepare_library_for_data_export(["1.bam", "1.bed"], random_name if is_new_history else None)
         if collection_option is not None:
             self.select_by_value(
@@ -75,6 +74,7 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
 
     def list_of_pairs_export(self, is_new_history=False):
         history_name = self._get_random_name()
+        self.admin_login()
         self.prepare_library_for_data_export(
             ["bam_from_sam.bam", "asian_chars_1.txt", "1.bam", "1.bed"], history_name if is_new_history else None
         )

@@ -91,21 +91,22 @@ class ImportCollectionModal {
             });
         }
         const new_history_name = modal.el.querySelector('input[name="history_name"]').value;
+        this.resolveTargetHistoryId(new_history_name)
+            .then((history_id) => this.collectionImport(collection_elements, history_id))
+            .catch((error) => {
+                console.error(error);
+                Toast.error("An error occurred.");
+            });
+    }
+
+    /** Create the named history (making it current), or take the picked one; resolves to its id. */
+    async resolveTargetHistoryId(new_history_name) {
         if (new_history_name !== "") {
-            this.createNewHistory(new_history_name)
-                .then((new_history) => {
-                    Toast.success("History created");
-                    this.collectionImport(collection_elements, new_history.id);
-                })
-                .catch((error) => {
-                    console.error(error);
-                    Toast.error("An error occurred.");
-                });
-        } else {
-            this.select_collection_history = modal.el.querySelector("#library-collection-history-select");
-            const selected_history_id = this.select_collection_history.value;
-            this.collectionImport(collection_elements, selected_history_id);
+            const new_history = await this.createNewHistory(new_history_name);
+            Toast.success("History created");
+            return new_history.id;
         }
+        return modal.el.querySelector("#library-collection-history-select").value;
     }
 
     collectionImport(collectionElements, historyId) {
