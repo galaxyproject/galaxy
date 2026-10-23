@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
-import { jobsFilterParams } from "./JobsFilters";
+import { jobsFilterParams, MAX_TOOL_NAME_MATCHES } from "./JobsFilters";
 
 describe("jobsFilterParams", () => {
     describe("search by id mode", () => {
@@ -105,6 +105,18 @@ describe("jobsFilterParams", () => {
         it("throws an error when no tool name matches", () => {
             expect(() => jobsFilterParams("nonexistent-tool", true)).toThrow(
                 `No tools matched the provided name: nonexistent-tool`,
+            );
+        });
+
+        it("throws instead of sending an unbounded tool_id list", () => {
+            const tools = Array.from({ length: MAX_TOOL_NAME_MATCHES + 1 }, (_, i) => ({
+                id: `filter${i}`,
+                name: `Filter ${i}`,
+            }));
+            useToolStore().saveAllTools(tools as unknown as Tool[]);
+            expect(jobsFilterParams("'Filter 1'", true)).toEqual({ tool_id: ["filter1"] });
+            expect(() => jobsFilterParams("filter", true)).toThrow(
+                `${MAX_TOOL_NAME_MATCHES + 1} tools matched the provided name: filter. Please refine your search.`,
             );
         });
 
