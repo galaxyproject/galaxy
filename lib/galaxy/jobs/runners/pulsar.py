@@ -5,6 +5,7 @@ More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 
 import copy
 import errno
+import json
 import logging
 import os
 import re
@@ -47,6 +48,7 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.job_metrics.instrumenters.pulsar import PulsarPlugin
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
@@ -98,6 +100,7 @@ NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatype
 GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
+DETACHED_LOCAL_CAPABILITIES = "_pulsar_detached_local"
 
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
 
@@ -280,6 +283,19 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     recovers_finishing_jobs = True
     client_manager_kwargs: dict[str, Any] = {}
 
+    @staticmethod
+    def _detached_local_capabilities(job_wrapper):
+        """Read attempt capabilities saved alongside its destination.
+
+        Capabilities come from setup, rather than an administrator guessing
+        which lifecycle protocol a manager implements. Persisting them also
+        makes recovery independent of a running manager during startup.
+        """
+        destination = getattr(job_wrapper, "job_destination", None)
+        params = getattr(destination, "params", {})
+        capabilities = params.get(DETACHED_LOCAL_CAPABILITIES, {})
+        return capabilities if isinstance(capabilities, dict) and capabilities.get("schema") == 1 else {}
+
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
         super().__init__(app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds)
@@ -389,6 +405,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             return self.check_watched_item_state(job_state)
 
     def check_watched_item_state(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
+        full_status = None
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
@@ -396,11 +413,25 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             log.error("Communication error with Pulsar server on state check, will retry: %s", exc)
             return job_state
         except Exception:
+            if self._detached_local_capabilities(job_state.job_wrapper):
+                # An unavailable daemon or unreadable process record does not
+                # prove that detached writers have exited.
+                log.exception("(%s) Detached execution state unavailable; will retry", job_state.job_id)
+                return job_state
             # An orphaned job was put into the queue at app startup, so remote server went down
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        return self._update_job_state_for_status(job_state, status)
+        if status == "failed" and self._detached_local_capabilities(job_state.job_wrapper):
+            try:
+                full_status = client.full_status()
+            except Exception:
+                # Terminal proof already exists. Missing diagnostics should
+                # neither turn a failure into success nor replay the command.
+                log.exception("(%s) Unable to retrieve detached failure diagnostics", job_state.job_id)
+        if full_status is None:
+            return self._update_job_state_for_status(job_state, status)
+        return self._update_job_state_for_status(job_state, status, full_status=full_status)
 
     def _update_job_state_for_status(
         self,
@@ -412,7 +443,27 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if pulsar_status in ["complete", "cancelled"]:
             self.mark_as_finished(job_state)
             return None
+        detached = self._detached_local_capabilities(job_state.job_wrapper)
+        if detached and pulsar_status == "lost":
+            log.warning(
+                "(%s) Detached execution identity is uncertain; retaining staging and monitoring", job_state.job_id
+            )
+            return job_state
+        if detached and pulsar_status == "failed":
+            if full_status and not full_status.get("stderr") and full_status.get("job_stderr"):
+                # Base fail_job preserves tool streams, but not runner streams.
+                # Surface a worker's limit/launch failure when no tool stderr
+                # exists, while leaving the original status response unchanged.
+                full_status = dict(full_status, stderr=full_status["job_stderr"])
+            self.fail_job(job_state, message=FAILED_REMOTE_ERROR, full_status=full_status)
+            return None
         if job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+            if detached.get("asynchronous_cancel"):
+                try:
+                    self.get_client_from_state(job_state).kill()
+                except Exception:
+                    log.exception("(%s) Detached cancellation deferred; will retry", job_state.job_id)
+                return job_state
             client = self.get_client_from_state(job_state)
             client.kill()
             self.mark_as_finished(job_state)
@@ -449,6 +500,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             source=remote_job_config.get("pulsar_version_source", "unreported"),
         )
 
+        detached_attempt_id = None
+        uncertain_submission = False
         try:
             dependencies_description = PulsarJobRunner.__dependencies_description(client, job_wrapper)
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
@@ -541,6 +594,17 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 guest_ports=job_wrapper.guest_ports,
                 tool_directory_required_files=tool_directory_required_files,
             )
+            if self._detached_local_capabilities(job_wrapper):
+                # Save the manager-assigned attempt before launch can execute.
+                # A restart between server acceptance and submit's return must
+                # still be able to address that exact execution.
+                job_wrapper.set_job_destination(
+                    job_destination,
+                    external_id=str(remote_job_config["job_id"]),
+                    flush=True,
+                    job=job_wrapper.get_job(),
+                )
+                detached_attempt_id = str(remote_job_config["job_id"])
             external_job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info(f"Pulsar job submitted with job_id {external_job_id}")
             job = job_wrapper.get_job()
@@ -548,13 +612,37 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             # params from the Pulsar client.
             job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=True, job=job)
         except Exception:
-            job_wrapper.fail("failure running job", exception=True)
-            log.exception("failure running job %d", job_wrapper.job_id)
-            return
+            if detached_attempt_id is None:
+                job_wrapper.fail("failure running job", exception=True)
+                log.exception("failure running job %d", job_wrapper.job_id)
+                return
+            # The server may have accepted the command before the transport or
+            # final destination commit failed. Monitor the saved attempt rather
+            # than failing/resubmitting a command that could still be writing.
+            external_job_id = detached_attempt_id
+            uncertain_submission = True
+            log.exception(
+                "(%s) Detached submission outcome uncertain; monitoring saved attempt %s without replay",
+                job_wrapper.job_id,
+                external_job_id,
+            )
+            session = getattr(job_wrapper, "sa_session", None)
+            if session is not None:
+                try:
+                    session.rollback()
+                except Exception:
+                    log.exception("(%s) Unable to reset submission transaction; retaining attempt", job_wrapper.job_id)
 
         pulsar_job_state = AsynchronousJobState(
-            job_wrapper=job_wrapper, job_destination=job_destination, job_id=external_job_id
+            # Initializing file/name defaults with a wrapper queries Galaxy's
+            # database. Preserve monitoring even while that database is down;
+            # Pulsar does not require these local-runner file defaults.
+            job_wrapper=None if uncertain_submission else job_wrapper,
+            job_destination=job_destination,
+            job_id=external_job_id,
         )
+        if uncertain_submission:
+            pulsar_job_state.job_wrapper = job_wrapper
         pulsar_job_state.old_state = model.Job.states.NEW
         pulsar_job_state.running = False
         self.monitor_job(pulsar_job_state)
@@ -579,6 +667,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
+            detached = remote_job_config.get("system_properties", {}).get("detached_local", {})
+            if isinstance(detached, dict) and detached.get("schema") == 1:
+                job_destination.params[DETACHED_LOCAL_CAPABILITIES] = copy.deepcopy(detached)
+            else:
+                job_destination.params.pop(DETACHED_LOCAL_CAPABILITIES, None)
+                detached = {}
             remote_container_handling = PulsarJobRunner.__remote_container_handling(client)
             if remote_container_handling:
                 # Handle this remotely and don't pass it to build_command
@@ -658,6 +752,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_job_directory=remote_job_directory,
                 metadata_container=metadata_container,
             )
+            if detached.get("execution_policy"):
+                if remote_container is not None:
+                    raise UnsupportedPulsarException(
+                        "Detached local execution requires Galaxy-side container command generation."
+                    )
+                self._write_detached_execution_configuration(
+                    job_wrapper, remote_job_config, compute_environment, container, metadata_container
+                )
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -671,10 +773,62 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         # If we were unable to get a command line, there was problem
         fail_or_resubmit = fail_or_resubmit or not command_line
         if fail_or_resubmit:
+            if self._detached_local_capabilities(job_wrapper):
+                command_line = None
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
             self.work_queue.put((self.fail_job, job_state))
 
         return command_line, client, remote_job_config, compute_environment, remote_container
+
+    def _write_detached_execution_configuration(
+        self, job_wrapper, remote_job_config, compute_environment, container, metadata_container
+    ):
+        """Stage execution policy from resolved objects, never command parsing."""
+        containers = []
+        for role, resolved in (("tool", container), ("metadata", metadata_container)):
+            # Foreground Apptainer/Singularity exec stays in the verified
+            # command process session. Only Docker needs an additional daemon
+            # lifecycle descriptor; it can outlive its local client process.
+            if resolved is not None and resolved.container_type == "docker":
+                containers.append(
+                    {
+                        "role": role,
+                        "container_type": resolved.container_type,
+                        "container_name": resolved.container_name,
+                        "connection_configuration": getattr(resolved, "connection_configuration", {}),
+                        "expected_mount": remote_job_config["job_directory"],
+                    }
+                )
+        configured_limits = self.app.job_config.limits
+        walltimes = []
+        if configured_limits.walltime_delta is not None:
+            walltimes.append(configured_limits.walltime_delta.total_seconds())
+        tool_timelimit = job_wrapper.tool.timelimit
+        if tool_timelimit and tool_timelimit > 0:
+            walltimes.append(tool_timelimit)
+        output_paths = self.get_output_files(job_wrapper)
+        if compute_environment is not None:
+            output_paths = [compute_environment.path_mapper.remote_output_path_rewrite(path) for path in output_paths]
+        configuration = {
+            "schema": 1,
+            "containers": containers,
+            "limits": {
+                "walltime_seconds": min(walltimes) if walltimes else None,
+                "output_size_bytes": (
+                    configured_limits.output_size
+                    if configured_limits.output_size is not None and configured_limits.output_size > 0
+                    else None
+                ),
+                "output_paths": output_paths,
+            },
+        }
+        configuration_path = os.path.join(
+            ensure_configs_directory(job_wrapper.working_directory), "detached_execution.json"
+        )
+        with open(configuration_path, "w") as configuration_file:
+            json.dump(configuration, configuration_file)
+        if configuration_path not in job_wrapper.extra_filenames:
+            job_wrapper.extra_filenames.append(configuration_path)
 
     @staticmethod
     def _rewrite_container_for_compute_environment(container, compute_environment):
@@ -782,6 +936,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             # Galaxy job id. Pass it beside the Galaxy id so provider operations use
             # the recorded task while Galaxy file and token endpoints remain valid.
             get_client_kwds["external_id"] = str(external_id)
+            detached = job_destination_params.get(DETACHED_LOCAL_CAPABILITIES, {})
+            if isinstance(detached, dict) and detached.get("schema") == 1:
+                # File/token endpoints above remain bound to the Galaxy job.
+                # Manager operations address the unique Pulsar attempt returned
+                # by setup, including after resubmission and recovery.
+                get_client_kwds["job_id"] = str(external_id)
         # Turn MutableDict into standard dict for pulsar consumption
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
@@ -822,6 +982,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
                 exit_code = 0
             cleanup_job = job_wrapper.cleanup_job
+            deferred_collection = self._detached_local_capabilities(job_wrapper).get("collection_ack", False)
             job_metrics_directory = _job_metrics_directory(job_wrapper)
             # Describe outputs as at submission - the remote collected them that way.
             submitted_pulsar_version = PulsarJobRunner.submitted_pulsar_version(job_metrics_directory, run_results)
@@ -829,7 +990,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             finish_args = dict(
                 client=client,
                 job_completed_normally=completed_normally,
-                cleanup_job=cleanup_job,
+                cleanup_job="never" if deferred_collection else cleanup_job,
                 client_outputs=client_outputs,
                 pulsar_outputs=pulsar_outputs,
             )
@@ -840,6 +1001,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 job_wrapper.fail(
                     "Failed to find or download one or more job outputs from remote server.", exception=True
                 )
+                if deferred_collection:
+                    return
         except Exception:
             self.fail_job(job_state, message=GENERIC_REMOTE_ERROR, exception=True)
             log.exception("failure finishing job %d", job_wrapper.job_id)
@@ -873,7 +1036,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             ) as exit_code_file:
                 exit_code_file.write(str(result.exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
-        self._finish_pulsar_job(job_wrapper, result)
+        if self._finish_pulsar_job(job_wrapper, result):
+            self._acknowledge_staged_collection(job_wrapper)
 
     def _finish_pulsar_job(self, job_wrapper, result: PulsarFinishJobResult):
         try:
@@ -886,9 +1050,35 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 remote_metadata_directory=result.remote_metadata_directory,
                 job_metrics_directory=result.job_metrics_directory,
             )
+            return True
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=result.job_metrics_directory)
+            return False
+
+    def _acknowledge_staged_collection(self, job_wrapper):
+        """Authorize remote cleanup only after successful Galaxy import."""
+        if not self._detached_local_capabilities(job_wrapper).get("collection_ack"):
+            return
+        if job_wrapper.get_state() != model.Job.states.OK:
+            return
+        job = job_wrapper.get_job()
+        failed_states = (model.Dataset.states.ERROR, model.Dataset.states.FAILED_METADATA)
+        associations = [*job.output_datasets, *job.output_library_datasets]
+        if any(association.dataset.state in failed_states for association in associations):
+            return
+        try:
+            client = self.get_client(job.destination_params, job.id, external_id=job.get_job_runner_external_id())
+            response = client.acknowledge_collection()
+            if not response.get("acknowledged"):
+                log.warning("(%s) Pulsar has not confirmed collection acknowledgment; retaining staging", job.id)
+                return
+            if job_wrapper.cleanup_job in ("always", "onsuccess"):
+                client.clean()
+        except Exception:
+            # The database import has already succeeded. Retain staging for an
+            # idempotent acknowledgment retry instead of failing a finished job.
+            log.exception("(%s) Unable to acknowledge Pulsar collection; retaining staging", job.id)
 
     def _finish_staged_job(self, job_state):
         """Redo the tail of ``finish_job`` for a job interrupted during external metadata."""
@@ -946,6 +1136,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         job = job_wrapper.get_job()
         if not job.job_runner_external_id:
             return
+        if self._detached_local_capabilities(job_wrapper).get("asynchronous_cancel"):
+            self.get_client(job.destination_params, job.id, external_id=job.job_runner_external_id).kill()
+            return
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client(
             job.destination_params, job.job_runner_external_id, external_id=job.job_runner_external_id
@@ -995,6 +1188,12 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
         if state == model.Job.states.FINISHING:
+            if self._detached_local_capabilities(job_wrapper).get("collection_ack"):
+                # Retained staging is authoritative, including its metadata
+                # directory and attempt ID. Repeat native staging/import rather
+                # than switching to a local-only completion path.
+                self.work_queue.put((self.finish_job, job_state))
+                return
             log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running external metadata for recovery")
             self.work_queue.put((self._finish_staged_job, job_state))
         elif state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:

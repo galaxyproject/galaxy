@@ -198,7 +198,24 @@ class InteractiveToolManager:
         # There can be multiple entry points that reference the same tool port (could have different entry URLs)
         configured = []
         not_configured = []
-        for ep in job.interactivetool_entry_points:
+        detached = (getattr(job, "destination_params", None) or {}).get("_pulsar_detached_local", {})
+        detached = isinstance(detached, dict) and detached.get("schema") == 1
+        entry_points = job.interactivetool_entry_points
+        if detached:
+            # A supervisor may retry publication while the user presses Stop.
+            # Refresh under a row lock so a stale relationship cannot publish
+            # an already revoked link. The Stop UPDATE serializes with this
+            # transaction and removes any publication that won the race.
+            entry_points = self.sa_session.scalars(
+                select(InteractiveToolEntryPoint)
+                .where(InteractiveToolEntryPoint.job_id == job.id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            ).all()
+        for ep in entry_points:
+            if detached and ep.deleted:
+                not_configured.append(ep)
+                continue
             port_dict = ports_dict.get(str(ep.tool_port), None)
             if port_dict is None:
                 log.error("Did not find port to assign to InteractiveToolEntryPoint by tool port: %s.", ep.tool_port)
@@ -224,6 +241,9 @@ class InteractiveToolManager:
                     # The DB commit is authoritative; the SSE event is best
                     # effort. Never let a dispatch failure poison the caller.
                     log.exception("Failed to dispatch entry_point_update SSE event for job %s", job.id)
+        elif detached:
+            # Release the callback's row locks even when all links were revoked.
+            self.sa_session.commit()
         return dict(not_configured=not_configured, configured=configured)
 
     def save_entry_point(self, entry_point: InteractiveToolEntryPoint) -> None:

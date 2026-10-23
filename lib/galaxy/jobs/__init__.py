@@ -2240,6 +2240,7 @@ class MinimalJobWrapper(HasResourceParameters):
         check_output_detected_state: str | None = None,
         remote_metadata_directory: str | None = None,
         job_metrics_directory: str | None = None,
+        finish_context: Any | None = None,
     ) -> None:
         """
         Called to indicate that the associated command has been run. Updates
@@ -2252,6 +2253,17 @@ class MinimalJobWrapper(HasResourceParameters):
 
         # default post job setup
         job = self.get_job()
+        if finish_context is None:
+            candidate = getattr(self, "finish_context", None)
+            finish_context = candidate if getattr(candidate, "enabled", False) is True else None
+        if finish_context is not None:
+            finish_context.begin()
+            if finish_context.already_finalized:
+                cleanup_job = self.cleanup_job
+                self.cleanup(
+                    delete_files=cleanup_job == "always" or (job.state == job.states.OK and cleanup_job == "onsuccess")
+                )
+                return
 
         def fail(message: str = job.info or "Unknown error", exception: Exception | None = None) -> None:
             if not isinstance(exception, (AssertionError, MessageException)):
@@ -2295,7 +2307,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
         # We set final_job_state to use for dataset management, but *don't* set
         # job.state until after dataset discovery to prevent history issues
-        if check_output_detected_state is None:
+        if finish_context is not None and finish_context.imported:
+            check_output_detected_state = finish_context.detected_state
+        elif check_output_detected_state is None:
             check_output_detected_state = self.check_tool_output(
                 tool_stdout,
                 tool_stderr,
@@ -2304,6 +2318,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 job_stdout=job_stdout,
                 job_stderr=job_stderr,
             )
+        if finish_context is not None:
+            finish_context.detected_state = check_output_detected_state
 
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = job.states.OK
@@ -2335,7 +2351,9 @@ class MinimalJobWrapper(HasResourceParameters):
         assert self.tool is not None
         if extended_metadata:
             try:
-                import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+                import_options = store.ImportOptions(
+                    allow_dataset_object_edit=True, allow_edit=True, commit=finish_context is None
+                )
                 import_model_store = store.get_import_model_store_for_directory(
                     os.path.join(self.working_directory, "metadata", "outputs_populated"),
                     app=self.app,
@@ -2343,7 +2361,10 @@ class MinimalJobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
-                object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                if finish_context is None:
+                    object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                else:
+                    object_import_tracker = finish_context.import_outputs(import_model_store)
                 # Datasets discovered by the job are created by the import, without permissions.
                 permission_provider = PermissionProvider(job.io_dicts()[0], self.app.security_agent, job)
                 for hda in [*object_import_tracker.hdas_by_key.values(), *object_import_tracker.hdas_by_id.values()]:
@@ -2353,10 +2374,14 @@ class MinimalJobWrapper(HasResourceParameters):
                 if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
                     final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
+                if finish_context is not None:
+                    raise
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
                 return fail(str(e), exception=e)
             except Exception as e:
+                if finish_context is not None:
+                    raise
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
                 return fail(str(e), exception=e)
         else:
@@ -2436,115 +2461,136 @@ class MinimalJobWrapper(HasResourceParameters):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = Dataset.states.OK
 
-        if job.states.ERROR == final_job_state:
-            for dataset_assoc in output_dataset_associations:
-                assert dataset_assoc.dataset.dataset is not None
-                log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
-                # TODO: This is where the state is being set to error. Change it!
-                dataset_assoc.dataset.dataset.state = Dataset.states.ERROR
-                # Pause any dependent jobs (and those jobs' outputs)
-                for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
-                    self.pause(
-                        dep_job_assoc.job,
-                        "Execution of this dataset's job is paused because its input datasets are in an error state.",
+        task_wrapper = None
+        if finish_context is None or not finish_context.postprocessed:
+            if finish_context is not None:
+                finish_context.prepare_postprocessing()
+            if job.states.ERROR == final_job_state:
+                for dataset_assoc in output_dataset_associations:
+                    assert dataset_assoc.dataset.dataset is not None
+                    log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
+                    # TODO: This is where the state is being set to error. Change it!
+                    dataset_assoc.dataset.dataset.state = Dataset.states.ERROR
+                    # Pause any dependent jobs (and those jobs' outputs)
+                    for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
+                        self.pause(
+                            dep_job_assoc.job,
+                            "Execution of this dataset's job is paused because its input datasets are in an error state.",
+                        )
+
+            for pja in job.post_job_actions:
+                if pja.post_job_action.action_type not in ActionBox.immediate_actions:
+                    ActionBox.execute(
+                        self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state
                     )
 
-        for pja in job.post_job_actions:
-            if pja.post_job_action.action_type not in ActionBox.immediate_actions:
-                ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
+            # The exit code will be null if there is no exit code to be set.
+            # This is so that we don't assign an exit code, such as 0, that
+            # is either incorrect or has the wrong semantics.
+            if tool_exit_code is not None:
+                job.exit_code = tool_exit_code
+            # custom post process setup
 
-        # The exit code will be null if there is no exit code to be set.
-        # This is so that we don't assign an exit code, such as 0, that
-        # is either incorrect or has the wrong semantics.
-        if tool_exit_code is not None:
-            job.exit_code = tool_exit_code
-        # custom post process setup
-
-        collected_bytes = 0
-        quota_source_info = None
-        # Once datasets are collected, set the total dataset size (includes extra files)
-        for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset.dataset
-            assert dataset is not None
-            # assume all datasets in a job get written to the same objectstore
-            quota_source_info = dataset.quota_source_info
-            collected_bytes += dataset.set_total_size()
-            if dataset.purged:
-                # Purge, in case job wrote directly to object store
-                dataset.full_delete()
-                collected_bytes = 0
-
-        # Calculate dataset hash - only if the job completed successfully,
-        # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
-        if final_job_state == job.states.OK:
-            for dataset_assoc in output_dataset_associations:
+            collected_bytes = 0
+            quota_source_info = None
+            # Once datasets are collected, set the total dataset size (includes extra files)
+            for dataset_assoc in job.output_datasets:
                 dataset = dataset_assoc.dataset.dataset
                 assert dataset is not None
-                if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
-                    if self.app.config.calculate_dataset_hash == "always" or (
-                        self.app.config.calculate_dataset_hash == "upload"
-                        and job.tool_id in ("upload1", "__DATA_FETCH__")
-                    ):
-                        # Calculate dataset hash via a celery task
-                        if self.app.config.enable_celery_tasks:
-                            from galaxy.celery.tasks import compute_dataset_hash
+                # assume all datasets in a job get written to the same objectstore
+                quota_source_info = dataset.quota_source_info
+                collected_bytes += dataset.set_total_size()
+                if dataset.purged:
+                    # Purge, in case job wrote directly to object store
+                    dataset.full_delete()
+                    collected_bytes = 0
 
-                            extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
-                            request = ComputeDatasetHashTaskRequest(
-                                dataset_id=dataset.id,
-                                extra_files_path=extra_files_path,
-                                hash_function=self.app.config.hash_function,
-                            )
-                            compute_dataset_hash.delay(request=request)
+            # Calculate dataset hash - only if the job completed successfully,
+            # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
+            if final_job_state == job.states.OK:
+                for dataset_assoc in output_dataset_associations:
+                    dataset = dataset_assoc.dataset.dataset
+                    assert dataset is not None
+                    if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
+                        if self.app.config.calculate_dataset_hash == "always" or (
+                            self.app.config.calculate_dataset_hash == "upload"
+                            and job.tool_id in ("upload1", "__DATA_FETCH__")
+                        ):
+                            # Calculate dataset hash via a celery task
+                            if self.app.config.enable_celery_tasks:
+                                from galaxy.celery.tasks import compute_dataset_hash
 
-        user = job.user
-        if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
-            user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+                                extra_files_path = (
+                                    dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                                )
+                                request = ComputeDatasetHashTaskRequest(
+                                    dataset_id=dataset.id,
+                                    extra_files_path=extra_files_path,
+                                    hash_function=self.app.config.hash_function,
+                                )
+                                compute_dataset_hash.delay(request=request)
 
-        # Certain tools require tasks to be completed after job execution
-        # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        param_dict = self.get_param_dict(job)
-        task_wrapper = None
-        try:
-            task_wrapper = self.tool.exec_after_process(
-                self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state
+            user = job.user
+            if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
+                user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
+
+            # Certain tools require tasks to be completed after job execution
+            # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
+            param_dict = self.get_param_dict(job)
+            task_wrapper = None
+            try:
+                task_wrapper = self.tool.exec_after_process(
+                    self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state
+                )
+            except Exception as e:
+                if finish_context is not None:
+                    raise
+                log.exception(f"exec_after_process hook failed for job {self.job_id}")
+                return fail("exec_after_process hook failed", exception=e)
+
+            # Call 'exec_after_process' hook
+            self.tool.call_hook(
+                "exec_after_process",
+                self.app,
+                inp_data=inp_data,
+                out_data=out_data,
+                param_dict=param_dict,
+                tool=self.tool,
+                stdout=job.stdout,
+                stderr=job.stderr,
             )
-        except Exception as e:
-            log.exception(f"exec_after_process hook failed for job {self.job_id}")
-            return fail("exec_after_process hook failed", exception=e)
 
-        # Call 'exec_after_process' hook
-        self.tool.call_hook(
-            "exec_after_process",
-            self.app,
-            inp_data=inp_data,
-            out_data=out_data,
-            param_dict=param_dict,
-            tool=self.tool,
-            stdout=job.stdout,
-            stderr=job.stderr,
-        )
+            self._set_unknown_output_extensions_to_data(job)
+            self._fix_output_permissions()
 
-        self._set_unknown_output_extensions_to_data(job)
-        self._fix_output_permissions()
+            # Empirically, we need to update job.user and
+            # job.workflow_invocation_step.workflow_invocation in separate
+            # transactions. Best guess as to why is that the workflow_invocation
+            # may or may not exist when the job is first loaded by the handler -
+            # and depending on whether it is or not sqlalchemy orders the updates
+            # differently and deadlocks can occur (one thread updates user and
+            # waits on invocation and the other updates invocation and waits on
+            # user).
+            if finish_context is None:
+                self.sa_session.commit()
+            else:
+                finish_context.commit_postprocessed(final_job_state)
 
-        # Empirically, we need to update job.user and
-        # job.workflow_invocation_step.workflow_invocation in separate
-        # transactions. Best guess as to why is that the workflow_invocation
-        # may or may not exist when the job is first loaded by the handler -
-        # and depending on whether it is or not sqlalchemy orders the updates
-        # differently and deadlocks can occur (one thread updates user and
-        # waits on invocation and the other updates invocation and waits on
-        # user).
-        self.sa_session.commit()
+        else:
+            final_job_state = finish_context.final_job_state
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
+        if finish_context is not None:
+            finish_context.prepare_finalization()
         job.set_final_state(final_job_state)
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
-        self.sa_session.commit()
+        if finish_context is None:
+            self.sa_session.commit()
+        else:
+            finish_context.commit_finalized(final_job_state)
         if job.state == job.states.ERROR:
             self._report_error()
         elif task_wrapper:

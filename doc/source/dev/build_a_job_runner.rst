@@ -363,3 +363,49 @@ The following is a generic code snippet for the ``recover`` method.
         ajs.old_state = 'Q'
         ajs.running = False
         self.monitor_queue.put(ajs)
+
+Opt-in upload completion recovery
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``galaxy.jobs.upload_finish.UploadFinishContext`` lets a runner resume the
+database completion of an upload after an interruption. It records receipts for
+output import, postprocessing, and final state in the job's destination
+parameters. Each receipt commits with its phase's database changes, so a retry
+can reuse imported object identities and skip committed phases, including quota
+updates. This is an opt-in runner API; adding the context does not enable it in
+existing runners or provide process restart recovery by itself.
+
+The context supports only the standard ``upload1`` and ``__DATA_FETCH__`` tools
+with extended metadata. Custom completion methods, completion hooks, post-job
+actions, and enabled Celery task publication are rejected. Call
+``validate_upload(job_wrapper)`` before starting execution to reject unsupported
+jobs before they produce side effects. These restrictions do not establish
+exactly-once behavior for arbitrary tools, object-store operations, or external
+services.
+
+A runner adopting this API must:
+
+* Preserve one stable execution token and the immutable
+  ``metadata/outputs_populated`` model store across retries. The context checks
+  its manifest digest and saved output identities before resuming.
+* Serialize the entire completion call for a job across all runner threads and
+  handlers. The context's database locks protect each phase against concurrent
+  cancellation; they do not replace this caller-owned completion lock.
+* Attach ``UploadFinishContext(job_wrapper, execution_token)`` to
+  ``job_wrapper.finish_context`` before calling the normal finish path. The
+  wrapper uses its explicitly enabled context, and ``BaseJobRunner`` propagates
+  completion exceptions to the runner instead of immediately failing the job.
+* On an interrupted or uncertain SQL commit, discard the failed SQL session and
+  recreate the wrapper and context from committed database state before retrying.
+  Retain the metadata and output files until the receipt confirms finalization.
+* Treat ``UploadFinishError`` as a permanent protocol or identity error and
+  preserve artifacts for investigation. Handle its ``UploadFinishCancelled``
+  subclass by preserving the cancellation state rather than marking the job
+  successful. Other interrupted operations can be retried through the runner's
+  own durable recovery mechanism.
+
+The receipt uses the neutral ``upload_finish_recovery`` destination-parameter
+key. No database migration or global configuration switch is required. The
+underlying ``ImportOptions(commit=False)`` option delegates transaction ownership
+to the context so model import and its receipt share a commit; the default
+``commit=True`` preserves existing model-store import behavior.
