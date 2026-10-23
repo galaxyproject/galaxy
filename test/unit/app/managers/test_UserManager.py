@@ -8,7 +8,10 @@ from typing import (
     cast,
     TYPE_CHECKING,
 )
-from unittest.mock import patch
+from unittest.mock import (
+    Mock,
+    patch,
+)
 
 import pytest
 from sqlalchemy import (
@@ -25,6 +28,7 @@ from galaxy.managers import (
     histories,
     users,
 )
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.schema.schema import UserUpdatePayload
 from galaxy.security.passwords import check_password
@@ -560,6 +564,25 @@ class TestUserManager(BaseTestCase):
         assert self.user_manager.get_user_by_identity(uppercase_email_user["username"].capitalize()) is None
         # Email lookups should be case-insensitive
         assert self.user_manager.get_user_by_identity(uppercase_email_user["email"].capitalize()) == uppercase_user
+
+    def test_by_credentials(self):
+        user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
+        api_key = ApiKeyManager(self.app).create_api_key(user2).key
+        authnz_manager = Mock()
+        authnz_manager.match_access_token_to_user.return_value = user3
+        with patch.object(self.app, "authnz_manager", authnz_manager, create=True):
+            self.log("an API key wins over an access token")
+            assert self.user_manager.by_credentials(api_key, "token") == user2
+            authnz_manager.match_access_token_to_user.assert_not_called()
+
+            self.log("an access token alone goes to the OIDC lookup")
+            assert self.user_manager.by_credentials(None, "token") == user3
+            authnz_manager.match_access_token_to_user.assert_called_once()
+
+            self.log("no credentials means no user")
+            assert self.user_manager.by_credentials(None, None) is None
+            authnz_manager.match_access_token_to_user.assert_called_once()
 
     def test_purge_deletes_oidc_tokens(self):
         self.log("purging a user should unlink their external identities")
