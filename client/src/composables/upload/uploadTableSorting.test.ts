@@ -20,6 +20,9 @@ describe("useUploadTableSorting", () => {
 
         onSortChanged("size", false);
         expect(names(items.value)).toEqual(["two", "ten", "none"]);
+
+        onSortChanged("size", true);
+        expect(names(items.value)).toEqual(["ten", "two", "none"]);
     });
 
     it("uses a column accessor when one is given", () => {

@@ -16,7 +16,8 @@ export type SortValueGetters<T> = Record<string, (item: T) => SortValue>;
 
 const collator = new Intl.Collator();
 
-function compareValues(a: SortValue, b: SortValue): number {
+/** Missing values sort last in both directions, as in GTable. */
+function compareValues(a: SortValue, b: SortValue, desc: boolean): number {
     if (a == null && b == null) {
         return 0;
     }
@@ -26,10 +27,8 @@ function compareValues(a: SortValue, b: SortValue): number {
     if (b == null) {
         return -1;
     }
-    if (typeof a === "number" && typeof b === "number") {
-        return a - b;
-    }
-    return collator.compare(String(a), String(b));
+    const comparison = typeof a === "number" && typeof b === "number" ? a - b : collator.compare(String(a), String(b));
+    return desc ? -comparison : comparison;
 }
 
 /**
@@ -52,10 +51,9 @@ export function useUploadTableSorting<T extends object>(items: Ref<T[]>, sortVal
         if (!key) {
             return;
         }
-        const direction = sortDesc.value ? -1 : 1;
         // Compute each sort value once and sort outside the reactive proxy, then replace the array once.
         const keyed = toRaw(items.value).map((item) => ({ item, value: sortValue(item, key) }));
-        keyed.sort((a, b) => direction * compareValues(a.value, b.value));
+        keyed.sort((a, b) => compareValues(a.value, b.value, sortDesc.value));
         items.value = keyed.map(({ item }) => item);
     }
 
