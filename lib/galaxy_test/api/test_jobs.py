@@ -152,6 +152,25 @@ class TestJobsApi(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @requires_new_history
+    def test_index_total_matches(self, history_id):
+        for _ in range(3):
+            self.__history_with_new_dataset(history_id)
+
+        jobs, total_matches = self.__jobs_index_with_total(data={"history_id": history_id, "limit": 1})
+        assert len(jobs) == 1
+        assert total_matches == 3
+
+        jobs, total_matches = self.__jobs_index_with_total(data={"history_id": history_id, "limit": 1, "offset": 2})
+        assert len(jobs) == 1
+        assert total_matches == 3
+
+        jobs, total_matches = self.__jobs_index_with_total(
+            data={"history_id": history_id, "search": "tool:no_such_tool"}
+        )
+        assert jobs == []
+        assert total_matches == 0
+
+    @requires_new_history
     @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
@@ -1403,6 +1422,11 @@ steps:
         jobs = jobs_response.json()
         assert isinstance(jobs, list)
         return jobs
+
+    def __jobs_index_with_total(self, **kwds):
+        jobs_response = self._get("jobs", **kwds)
+        self._assert_status_code_is(jobs_response, 200)
+        return jobs_response.json(), int(jobs_response.headers["total_matches"])
 
 
 class TestDataManagerJobsApi(ApiTestCase):
